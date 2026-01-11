@@ -13,6 +13,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
     public interface IPhaseChangeService
     {
         Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason);
+        Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options);
+        Task RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null);
+
         Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason);
+        Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options);
+        Task RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null);
     }
 }

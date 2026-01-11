@@ -4,7 +4,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Phases
@@ -31,7 +35,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             _intentRegistry = intentRegistry ?? throw new ArgumentNullException(nameof(intentRegistry));
         }
 
-        public async Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason)
+        public Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason)
+        {
+            return RequestPhaseInPlaceAsync(plan, reason, options: null);
+        }
+
+        public Task RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)
+        {
+            return RequestPhaseInPlaceAsync(BuildPlan(phaseId), reason, options);
+        }
+
+        public async Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)
         {
             if (!plan.IsValid)
             {
@@ -40,6 +54,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return;
             }
 
+            DebugUtility.Log<PhaseChangeService>(
+                $"[OBS][Phase] PhaseChangeRequested event=phase_change_inplace mode={PhaseChangeMode.InPlace} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}'",
+                DebugUtility.Colors.Info);
+
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
@@ -47,8 +65,37 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return;
             }
 
+            var normalizedOptions = NormalizeOptions(options);
+
+            // ADR-0017: In-Place deve fluir sem interrupções visuais.
+            // Mesmo que um caller forneça opções visuais, elas são ignoradas/forçadas para OFF.
+            if (normalizedOptions.UseFade || normalizedOptions.UseLoadingHud)
+            {
+                UnityEngine.Debug.LogWarning("[PhaseChangeService] In-Place ignora opções visuais (UseFade/UseLoadingHud). Para transição visual, use SceneTransition.");
+            }
+            normalizedOptions.UseFade = false;
+            normalizedOptions.UseLoadingHud = false;
+
+var signature = $"phase.inplace:{plan.PhaseId}";
+            IDisposable gateHandle = null;
+            var hudShown = false;
+            var fadeOutCompleted = false;
+
             try
             {
+                gateHandle = AcquireGateHandle();
+
+                if (normalizedOptions.UseFade)
+                {
+                    await TryFadeInAsync(normalizedOptions, signature);
+                }
+
+                if (normalizedOptions.UseLoadingHud)
+                {
+                    await TryShowHudAsync(normalizedOptions, signature, plan.PhaseId);
+                    hudShown = true;
+                }
+
                 _phaseContext.SetPending(plan, reason);
 
                 var resetReason = $"PhaseChange/InPlace plan='{plan}' reason='{reason ?? "n/a"}'";
@@ -56,7 +103,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     $"[PhaseChange] InPlace -> pending set. Disparando WorldReset. {resetReason}",
                     DebugUtility.Colors.Info);
 
-                await _worldReset.RequestResetAsync(resetReason);
+                await AwaitWithTimeoutAsync(
+                    _worldReset.RequestResetAsync(signature),
+                    normalizedOptions.TimeoutMs,
+                    "RequestResetAsync");
+
+                if (normalizedOptions.UseFade)
+                {
+                    await TryFadeOutAsync(normalizedOptions, signature);
+                    fadeOutCompleted = true;
+                }
             }
             catch (Exception ex)
             {
@@ -64,15 +120,35 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     $"[PhaseChange] Falha no InPlace. Limpando pending por segurança. ex={ex}");
 
                 _phaseContext.ClearPending($"PhaseChange/InPlace failed: {ex.GetType().Name}");
-                throw;
             }
             finally
             {
+                if (hudShown)
+                {
+                    TryHideHud(signature, plan.PhaseId);
+                }
+
+                if (normalizedOptions.UseFade && !fadeOutCompleted)
+                {
+                    await TryFadeOutAsync(normalizedOptions, signature);
+                }
+
+                gateHandle?.Dispose();
                 Interlocked.Exchange(ref _inProgress, 0);
             }
         }
 
-        public async Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)
+        public Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)
+        {
+            return RequestPhaseWithTransitionAsync(plan, transition, reason, options: null);
+        }
+
+        public Task RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)
+        {
+            return RequestPhaseWithTransitionAsync(BuildPlan(phaseId), transition, reason, options);
+        }
+
+        public async Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)
         {
             if (!plan.IsValid)
             {
@@ -102,12 +178,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return;
             }
 
+            var normalizedOptions = NormalizeOptions(options);
+
             try
             {
-                var context = SceneTransitionSignatureUtil.BuildContext(transition);
+                var normalizedRequest = EnsureContextSignature(transition);
+                var context = SceneTransitionSignatureUtil.BuildContext(normalizedRequest);
                 var signature = SceneTransitionSignatureUtil.Compute(context);
 
-                if (!_intentRegistry.TrySet(signature, plan, reason))
+                var intent = new PhaseTransitionIntent(
+                    plan: plan,
+                    mode: PhaseChangeMode.SceneTransition,
+                    reason: reason,
+                    sourceSignature: signature,
+                    transitionProfile: normalizedRequest.TransitionProfileName,
+                    targetScene: normalizedRequest.TargetActiveScene,
+                    timestampUtc: DateTime.UtcNow);
+
+                if (!_intentRegistry.RegisterIntent(intent))
                 {
                     DebugUtility.LogWarning<PhaseChangeService>(
                         $"[PhaseChange] Falha ao registrar PhaseIntent. Ignorando RequestPhaseWithTransitionAsync. signature='{signature}', plan='{plan}'.");
@@ -115,11 +203,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 }
 
                 DebugUtility.Log<PhaseChangeService>(
-                    $"[PhaseChange] WithTransition -> intent registrado. Iniciando SceneFlow. " +
-                    $"plan='{plan}', reason='{reason ?? "n/a"}', profile='{transition.TransitionProfileName}', active='{transition.TargetActiveScene}'.",
+                    $"[OBS][Phase] PhaseChangeRequested event=phase_change_transition mode={PhaseChangeMode.SceneTransition} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}' signature='{signature}' profile='{normalizedRequest.TransitionProfileName}'",
                     DebugUtility.Colors.Info);
 
-                await _sceneFlow.TransitionAsync(transition);
+                DebugUtility.Log<PhaseChangeService>(
+                    $"[PhaseChange] WithTransition -> intent registrado. Iniciando SceneFlow. " +
+                    $"plan='{plan}', reason='{reason ?? "n/a"}', profile='{normalizedRequest.TransitionProfileName}', active='{normalizedRequest.TargetActiveScene}'.",
+                    DebugUtility.Colors.Info);
+
+                DebugUtility.LogVerbose<PhaseChangeService>(
+                    $"[PhaseChange] WithTransition signature='{signature}'.");
+
+                var transitionOk = await AwaitWithTimeoutAsync(
+                    _sceneFlow.TransitionAsync(normalizedRequest),
+                    normalizedOptions.TimeoutMs,
+                    "TransitionAsync");
+
+                if (!transitionOk)
+                {
+                    _intentRegistry.ClearIntent($"PhaseChange/WithTransition timeout sig='{signature}'");
+                }
 
                 // Commit/Apply ocorrerá no WorldLifecycleRuntimeCoordinator (ScenesReady).
             }
@@ -128,17 +231,144 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 DebugUtility.LogError<PhaseChangeService>(
                     $"[PhaseChange] Falha no WithTransition. Limpando intent por segurança. ex={ex}");
 
-                if (transition != null)
-                {
-                    var context = SceneTransitionSignatureUtil.BuildContext(transition);
-                    _intentRegistry.Clear(SceneTransitionSignatureUtil.Compute(context));
-                }
-                throw;
+                _intentRegistry.ClearIntent($"PhaseChange/WithTransition failed: {ex.GetType().Name}");
             }
             finally
             {
                 Interlocked.Exchange(ref _inProgress, 0);
             }
+        }
+
+        private static PhasePlan BuildPlan(string phaseId)
+        {
+            return new PhasePlan(phaseId, string.Empty);
+        }
+
+        private static PhaseChangeOptions NormalizeOptions(PhaseChangeOptions? options)
+        {
+            var normalized = options?.Clone() ?? PhaseChangeOptions.Default;
+            if (normalized.TimeoutMs <= 0)
+            {
+                normalized.TimeoutMs = PhaseChangeOptions.DefaultTimeoutMs;
+            }
+
+            return normalized;
+        }
+
+        private static IDisposable AcquireGateHandle()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
+            {
+                DebugUtility.LogWarning<PhaseChangeService>(
+                    "[PhaseChange] ISimulationGateService indisponível. Gate não será adquirido para InPlace.");
+                return null;
+            }
+
+            return gate.Acquire(SimulationGateTokens.PhaseInPlace);
+        }
+
+        private static async Task<bool> AwaitWithTimeoutAsync(Task task, int timeoutMs, string label)
+        {
+            if (task == null)
+            {
+                return true;
+            }
+
+            if (timeoutMs <= 0)
+            {
+                await task;
+                return true;
+            }
+
+            var completed = await Task.WhenAny(task, Task.Delay(timeoutMs));
+            if (completed != task)
+            {
+                DebugUtility.LogError<PhaseChangeService>(
+                    $"[PhaseChange] Timeout aguardando '{label}'. timeoutMs={timeoutMs}.");
+
+                _ = task.ContinueWith(t =>
+                {
+                    if (t.Exception != null)
+                    {
+                        DebugUtility.LogWarning<PhaseChangeService>(
+                            $"[PhaseChange] '{label}' terminou com erro após timeout. ex={t.Exception.GetBaseException()}");
+                    }
+                });
+
+                return false;
+            }
+
+            await task;
+            return true;
+        }
+
+        private static async Task TryFadeInAsync(PhaseChangeOptions options, string signature)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<INewScriptsFadeService>(out var fade) || fade == null)
+            {
+                DebugUtility.LogWarning<PhaseChangeService>(
+                    $"[PhaseChange] Fade solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
+                return;
+            }
+
+            await AwaitWithTimeoutAsync(fade.FadeInAsync(), options.TimeoutMs, "FadeInAsync");
+        }
+
+        private static async Task TryFadeOutAsync(PhaseChangeOptions options, string signature)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<INewScriptsFadeService>(out var fade) || fade == null)
+            {
+                DebugUtility.LogWarning<PhaseChangeService>(
+                    $"[PhaseChange] FadeOut solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
+                return;
+            }
+
+            await AwaitWithTimeoutAsync(fade.FadeOutAsync(), options.TimeoutMs, "FadeOutAsync");
+        }
+
+        private static async Task TryShowHudAsync(PhaseChangeOptions options, string signature, string phaseId)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<INewScriptsLoadingHudService>(out var hud) || hud == null)
+            {
+                DebugUtility.LogWarning<PhaseChangeService>(
+                    $"[PhaseChange] LoadingHUD solicitado, mas serviço indisponível. signature='{signature}'.");
+                return;
+            }
+
+            await AwaitWithTimeoutAsync(hud.EnsureLoadedAsync(), options.TimeoutMs, "LoadingHud.EnsureLoadedAsync");
+            hud.Show(signature, phaseId);
+        }
+
+        private static void TryHideHud(string signature, string phaseId)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<INewScriptsLoadingHudService>(out var hud) || hud == null)
+            {
+                return;
+            }
+
+            hud.Hide(signature, phaseId);
+        }
+
+        private static string Sanitize(string? s)
+            => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
+
+        private static SceneTransitionRequest EnsureContextSignature(SceneTransitionRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.ContextSignature))
+            {
+                return request;
+            }
+
+            var context = SceneTransitionSignatureUtil.BuildContext(request);
+            var signature = SceneTransitionSignatureUtil.Compute(context);
+
+            return new SceneTransitionRequest(
+                scenesToLoad: request.ScenesToLoad,
+                scenesToUnload: request.ScenesToUnload,
+                targetActiveScene: request.TargetActiveScene,
+                useFade: request.UseFade,
+                transitionProfileId: request.TransitionProfileId,
+                contextSignature: signature);
         }
     }
 }

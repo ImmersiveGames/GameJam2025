@@ -6,348 +6,137 @@
 
 ## Contexto
 
-Com o fechamento do **Baseline 2.0**, o projeto passou a ter um **WorldLifecycle determinístico**, com reset canônico disparado em pontos bem definidos do fluxo (em especial em `SceneTransitionScenesReadyEvent`), além de um **sistema de Phase** já integrado ao reset do mundo.
+Com o fechamento do **Baseline 2.0**, o projeto possui um **WorldLifecycle determinístico**, com reset canônico disparado em pontos bem definidos do fluxo (principalmente em `SceneTransitionScenesReadyEvent`) e com evidências observáveis via logs e eventos.
 
 Durante a evolução do gameplay, surgiram requisitos adicionais:
 
-1. Suporte a **múltiplas fases (Phase 1, Phase 2, …)** com:
+1. Suporte a **múltiplas fases** (Phase 1, Phase 2, …), com:
+    - spawns distintos,
+    - dados/configuração distinta,
+    - comportamento distinto.
 
-   - spawns distintos,
-   - dados distintos,
-   - comportamento distinto.
+2. Suporte a **dois modos de troca de fase**, com semânticas diferentes:
+    - **In-Place**: troca dentro do gameplay **sem troca de cena base** (sem SceneFlow/Unload do “core”).
+    - **SceneTransition**: troca via **SceneFlow**, com possibilidade de carregar/descarregar cenas e perfis de transição.
 
-2. Necessidade de **dois modos diferentes de troca de fase**:
+3. Necessidade de uma etapa **antes da revelação do gameplay** (“pré-jogo”), após FadeIn e reset, para:
+    - splash screen,
+    - cutscene,
+    - preparação de UI/objetivos,
+    - orquestração leve (sem bloquear o fluxo quando não existir).
 
-   - troca direta no mesmo gameplay (sem trocar cenas),
-   - troca com transição completa (fade, loading, novas cenas).
+Além disso, foi observado em QA que o modo **In-Place** pode ser executado com Fade/Loading HUD (por opções de teste), mas a intenção de design é que **In-Place não produza interrupções visuais por padrão** (ver ADR-0017).
 
-3. Necessidade de uma etapa **antes da revelação da cena** (após FadeIn e reset), para:
+## Definições
 
-   - splash screen,
-   - cutscene,
-   - preparação de UI,
-   - prewarm de sistemas,
+- **PhasePlan**: objeto que representa a “intenção” de fase (mínimo: `phaseId` + `contentSignature`).
+  Observação: o contrato não impõe enum; `phaseId` pode ser string.
 
-   sem bloquear indefinidamente o fluxo.
+- **Current**: fase atualmente comprometida/ativa no runtime (aplicada).
 
-Além disso, existe um requisito de produto importante:
+- **Pending**: fase “armada” (planejada) para ser aplicada; só vira `Current` quando houver **commit explícito** (ponto canônico).
 
-- **O sistema não deve impor um “gatilho fixo” de avanço de fase.**
-  - Alguns jogos terão apenas uma fase.
-  - Em jogos com múltiplas fases, o avanço pode ocorrer por múltiplos critérios (objetivos, UI, hub, narrativa, etc.).
+- **Commit de fase**: momento em que `Pending` é promovida a `Current`. No contrato atual, isso ocorre no “ponto canônico” do pipeline: **ResetCompleted**.
 
-Este ADR formaliza essas decisões **sem alterar o Baseline 2.0**, apenas estendendo o modelo de forma compatível.
+- **Intent Registry**: repositório que guarda uma intenção de fase associada a uma assinatura de transição do SceneFlow (para o modo SceneTransition).
 
----
+- **PreGame**: etapa opcional anterior ao início do gameplay jogável. Conceitualmente é uma fase do GameLoop ou um “subestado” antes de `Playing`. Não deve bloquear o fluxo quando inexistente.
 
-## Decisões
+## Decisão
 
-### 1. Phase é um input do Reset do Mundo (não do SceneFlow)
+### 1) O commit de fase ocorre no ponto canônico: `WorldLifecycleResetCompleted`
 
-Uma **Phase** representa um **estado lógico do mundo** que influencia:
+Para manter determinismo e previsibilidade:
+- A fase pode ser definida previamente como **Pending**.
+- A fase **só se torna Current** quando o reset do mundo é concluído com sucesso (ou skip controlado), emitindo o evento de completude.
 
-- quais spawns são criados,
-- quais dados são aplicados,
-- como o mundo é reconstruído após um reset.
+Isso elimina “troca de fase no meio do reset”, reduz estados intermediários e simplifica evidências.
 
-**Princípio-chave (já existente e reafirmado):**
+### 2) Existem dois mecanismos de “armar Pending”, dependendo do tipo de troca
 
-> Uma Phase só é efetivamente aplicada no início de um World Reset.
+- **In-Place (sem SceneFlow)**:
+    1) Define `Pending` imediatamente.
+    2) Dispara um **World Reset** com `sourceSignature` específico (ex.: `phase.inplace:<phaseId>`).
+    3) No `ResetCompleted`, faz commit de `Pending`.
 
-Isso garante:
+- **SceneTransition (com SceneFlow)**:
+    1) Registra um **intent** (plan + mode + reason) no `IPhaseTransitionIntentRegistry`, associado à assinatura de transição do SceneFlow.
+    2) Dispara a transição via `ISceneTransitionService` (SceneFlow).
+    3) Em `SceneTransitionScenesReadyEvent`, o `WorldLifecycleRuntimeCoordinator`:
+        - consome o intent,
+        - seta `Pending` com reason enriquecido (incluindo `signature`),
+        - dispara o reset canônico.
+    4) No `ResetCompleted`, faz commit de `Pending`.
 
-- determinismo,
-- atomicidade,
-- ausência de estados intermediários inválidos.
+### 3) PreGame é opcional e não bloqueia o fluxo
 
-A Phase **não controla**:
+- PreGame é um “slot” de pipeline para ações antes do estado jogável.
+- Se não existir implementação registrada/ativa, o sistema deve:
+    - concluir imediatamente (no-op),
+    - não segurar gate tokens,
+    - não impedir entrada em `Playing` quando o gameplay estiver pronto.
 
-- fade,
-- loading,
-- troca de cenas,
-- apresentação visual.
+## Regras de observabilidade (evidências)
 
-**Implementação atual (base):**
+As seguintes assinaturas/logs são consideradas evidência canônica de que o pipeline está funcionando:
 
-- `PhasePlan` representa o “plano” (ex.: `id` + `contentSignature`).
-- `PhaseContextService` mantém `Current` e `Pending`.
-- `PhaseChangeService` é o façador (façade) de gameplay para:
-  - armar `Pending`,
-  - pedir reset in-place,
-  - limpar `Pending`.
+- `"[OBS][Phase] PhaseChangeRequested ..."` (solicitação do usuário/sistema)
+- `"[PhaseIntent] Registered ..."` e `"[OBS][Phase] PhaseIntentConsumed ..."` (apenas SceneTransition)
+- `"[PhaseContext] PhasePendingSet ..."`
+- `"[PhaseContext] PhaseCommitted ..."`
+- `"[OBS][Phase] PhaseCommitted ..."` (observabilidade do coordenador)
+- `"[WorldLifecycle] Reset REQUESTED ..."` + `WorldLifecycleResetCompletedEvent`
 
----
+## Diagrama — visão macro do pipeline
 
-### 2. Dois tipos explícitos de troca de fase
+```mermaid
+flowchart TD
+    A[PhaseChange Requested] --> B{Tipo de troca?}
 
-Para evitar ambiguidade arquitetural, a troca de fase passa a ter **dois nomes oficiais**, com responsabilidades distintas.
+    B -->|In-Place| C[Set Pending (PhaseContext)]
+    C --> D[Request World Reset
+sourceSignature=phase.inplace:<id>]
+    D --> E[WorldLifecycle Reset Pipeline
+(despawn/spawn/hooks)]
+    E --> F[ResetCompleted]
+    F --> G[Commit Pending -> Current
+(PhaseContext)]
 
-> Nota: o *quando* avançar fase é responsabilidade do jogo (ver Decisão 2.3). Este ADR define *como* executar a troca de fase de forma canônica.
-
----
-
-#### 2.1 InPlacePhaseChange (Troca de Fase In-Place)
-
-**Definição**
-
-Troca de fase **no mesmo conjunto de cenas**, reconstruindo o mundo no local atual.
-
-**Fluxo canônico (produção)**
-
-1. `IPhaseChangeService.SetPending(PhasePlan plan, string reason)`
-2. `IPhaseChangeService.RequestInPlaceReset(string reason)`
-3. WorldLifecycle executa:
-   - Despawn
-   - Spawn conforme a Phase *pendente*
-4. No final do reset, a Phase *pendente* é **commitada** (vira `Current`) e o gameplay continua.
-
-**Características**
-
-- ❌ Não envolve `SceneFlow`
-- ❌ Não troca cenas
-- ✅ Reset completo do mundo
-- ✅ Ideal para progressão contínua (ex.: fase 1 → fase 2)
-
-**Uso típico**
-
-- Fases sequenciais dentro da mesma arena/mapa
-- Progressão de dificuldade
-- Ondas de inimigos
-
----
-
-#### 2.2 SceneFlowPhaseTransition (Troca de Fase com Transição)
-
-**Definição**
-
-Troca de fase **associada a uma transição de cenas**, com fade, loading e possível troca de layout/bioma.
-
-**Fluxo canônico (conceitual)**
-
-1. Definir “fase alvo” (por regra de jogo / UI / narrativa).
-2. `IGameNavigationService.NavigateAsync(...)` dispara `SceneTransitionService`.
-3. `SceneTransitionService` executa:
-   - FadeIn
-   - Load/Unload de cenas
-4. `SceneTransitionScenesReadyEvent`
-5. WorldLifecycle executa reset **canônico**
-6. Cena é revelada (FadeOut)
-
-**Ponto crítico (comportamento atual):**
-
-- `PhaseContextSceneFlowBridge` **limpa `Pending`** ao receber `SceneTransitionStartedEvent`.
-- Portanto, uma `Pending` armada **antes** do início da transição **não atravessa** a transição.
-
-**Consequência:**
-
-- Para suportar “phase + scene transition” de forma robusta, a fase alvo deve ser:
-  - **carregada como dado de navegação** (route/intent), e
-  - aplicada **depois** do `SceneTransitionStartedEvent` (após o auto-clear) e **antes** do `SceneTransitionScenesReadyEvent` (quando o reset é disparado), via um bridge dedicado.
-
-**Status:**
-
-- O fluxo de reset em transição de cenas já existe e é o caminho canônico do Baseline.
-- O “carry” de Phase (phase-alvo acoplada à navegação) **ainda não tem call-site de produção**; hoje o uso é essencialmente via QA / chamadas explícitas.
-
-**Características**
-
-- ✅ Usa `SceneFlow`
-- ✅ Usa Fade / Loading
-- ✅ Reset ocorre em `SceneTransitionScenesReadyEvent`
-- ✅ Ideal para mudanças estruturais de gameplay
-
-**Uso típico**
-
-- Troca de mapas
-- Mudança de bioma
-- Gameplay → Boss Arena
-- Gameplay → Challenge Room
-
----
-
-#### 2.3 Gatilhos de avanço são responsabilidade do jogo (não da infra)
-
-Para evitar acoplamento indevido entre “fases” e “progressão”, fica definido:
-
-- O sistema de Phase fornece **um procedimento único e documentado** para **aplicar** uma fase (SetPending → Reset → Commit).
-- O sistema **não define**:
-  - quando avançar,
-  - qual critério decide,
-  - se existe “fase 2”, “fase 3”, etc.
-
-Isso permite que cada jogo (ou cada modo) implemente sua regra (objetivo concluído, UI de hub, seleção do jogador, narrativa, etc.) sem forçar um fluxo fixo.
-
----
-
-### 3. PreGame / PreReveal não é Phase do Mundo
-
-Para evitar confusão conceitual, fica definido:
-
-> **PreGame / PreReveal NÃO é Phase.**
-
-Ele não altera spawn, dados ou estado lógico do mundo.
-
----
-
-#### 3.1 Definição de PreReveal
-
-**PreReveal** é uma **etapa opcional de apresentação**, executada:
-
-- **após**:
-  - FadeIn (cortina fechada),
-  - `SceneTransitionScenesReadyEvent`,
-  - `WorldLifecycleResetCompletedEvent` (ou Skip),
-- **antes**:
-  - FadeOut (revelar a cena ao jogador).
-
-Exemplos:
-
-- Splash screen
-- Cutscene
-- Tela “Fase X”
-- Preparação visual de UI
-- Pequena narrativa contextual
-
----
-
-#### 3.2 PreReveal não pode bloquear o fluxo
-
-Regras obrigatórias:
-
-- PreReveal é **opcional**
-- Deve ter **timeout**
-- Deve sempre **completar automaticamente** se não configurado
-- Nunca pode impedir o FadeOut definitivo
-
----
-
-#### 3.3 Encaixe técnico no pipeline existente
-
-O PreReveal se encaixa **sem alterar o Baseline 2.0**, usando o ponto já existente:
-
-```text
-SceneFlow:
-  SceneTransitionScenesReady
-    → WorldLifecycleResetCompleted
-      → Completion Gate
-        → FadeOut
+    B -->|SceneTransition| H[Register Intent
+(PhaseIntentRegistry)]
+    H --> I[SceneFlow Transition
+(load/unload/fade/hud por perfil)]
+    I --> J[ScenesReady]
+    J --> K[Consume Intent
++ Set Pending]
+    K --> L[Request World Reset
+(signature=SceneFlow)]
+    L --> M[WorldLifecycle Reset Pipeline]
+    M --> N[ResetCompleted]
+    N --> O[Commit Pending -> Current]
 ```
-
-Decisão:
-
-- O **Completion Gate** passa a poder ser **composto**, incluindo:
-  - `WorldLifecycleResetCompletionGate` (existente)
-  - `PreRevealGate` (novo, opcional)
-
-Se não houver PreReveal configurado:
-
-- o gate completa imediatamente,
-- o comportamento atual é preservado.
-
----
-
-### 4. Escopo do sistema de Phase
-
-- O **sistema de Phase do mundo** é considerado **gameplay-centric**:
-  - só produz efeito real quando há reset/spawn.
-- Em `startup` e `frontend`:
-  - Phase pode existir como dado,
-  - mas o WorldLifecycle continua aplicando **Skip**, conforme Baseline 2.0.
-
-Já o **PreReveal / Presentation Flow**:
-
-- pode existir tanto em gameplay quanto em frontend,
-- pois não depende de spawn nem reset.
-
----
-
-### 5. Assets de Phase (ScriptableObjects)
-
-Este ADR **não força** o uso de `Resources`.
-
-Regra explícita:
-
-- Se o resolver usa `Resources.Load`, o asset **deve** estar em `Resources/`.
-- Se não se deseja usar `Resources`, o resolver **deve** usar:
-  - referência serializada,
-  - Addressables,
-  - ou outro registry explícito.
-
-Isso é uma decisão de infraestrutura, não de Phase.
-
----
 
 ## Consequências
 
 ### Benefícios
 
-- Clareza absoluta entre:
-  - Phase (estado do mundo),
-  - Transição (SceneFlow),
-  - Apresentação (PreReveal).
-- Elimina regressões conceituais ao mudar de chat/IA.
-- Permite evolução futura (cutscenes, narrativa, loading rico) sem quebrar baseline.
+- **Determinismo**: fase muda em um único ponto canônico (commit no ResetCompleted).
+- **Testabilidade/QA**: logs/eventos reproduzíveis e fáceis de buscar.
+- **Separação de responsabilidades**:
+    - SceneFlow decide transição de cena.
+    - WorldLifecycle decide reset/spawn determinístico.
+    - PhaseContext mantém estado (Pending/Current).
+    - PhaseIntentRegistry apenas “transporta” intenção entre requests e ScenesReady.
 
-### Custos
+### Trade-offs
 
-- Introdução de mais um conceito (PreRevealGate).
-- Necessidade de documentar bem as rotas de navegação que usam Phase + SceneFlow.
+- A troca de fase não é “instantânea”: sempre passa por um reset (hard reset do mundo), mesmo em In-Place.
+- Qualquer “efeito visual” em In-Place precisa ser um feature separado e explícito (ver ADR-0017).
 
----
+## Notas de QA (estado atual)
 
-## Relação com outros ADRs
+Os logs coletados demonstraram que:
+- **In-Place**: Pending set → ResetRequested (sourceSignature `phase.inplace:<id>`) → ResetCompleted → Commit.
+- **SceneTransition**: Intent registrado → SceneFlow reload → Intent consumed em ScenesReady → Pending set → Reset → Commit.
 
-- **Baseline 2.0**: totalmente preservado.
-- **ADR de Fade/Loading**: apenas complementado (não substituído).
-- **ADR de WorldLifecycle Hooks**: inalterado.
-- **ADR de SceneFlow**: inalterado.
-- **ADR-0017 (Tipos de troca de fase)**: complementa este ADR ao nomear e separar `InPlacePhaseChange` vs `SceneFlowPhaseTransition`.
-
-Este ADR **não reescreve**, apenas **especializa e nomeia** comportamentos já emergentes no sistema.
-
----
-
-## Status Final
-
-Este ADR encerra a discussão conceitual sobre:
-
-- fases,
-- resets,
-- transições,
-- pregame.
-
-A partir deste ponto, qualquer implementação futura **deve referenciar este documento** como fonte de verdade.
-
----
-
-## Referências de implementação
-
-### ResetWorld (produção) — caminho real do fluxo
-
-O gatilho de produção para **ResetWorld em transição de cenas** já existe e está ancorado em `SceneTransitionScenesReadyEvent`:
-
-- `SceneTransitionService` emite `SceneTransitionStartedEvent` / `SceneTransitionScenesReadyEvent` / `SceneTransitionCompletedEvent`
-- `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e chama `IWorldResetRequestService.RequestReset(...)` quando `profile='gameplay'`
-- `WorldLifecycleController` + `WorldLifecycleOrchestrator` executam o reset (despawn/spawn + hooks)
-- Ao final do reset, o runtime emite `WorldLifecycleResetCompletedEvent(signature, reason)`
-- `GameLoopSceneFlowCoordinator` aguarda `SceneTransitionScenesReadyEvent` + `WorldLifecycleResetCompletedEvent` e então chama `IGameLoopService.RequestStart()`
-
-**Arquivos-chave (implementação atual):**
-
-- `NewScripts/Infrastructure/SceneFlow/SceneTransitionService.cs` (eventos Started/ScenesReady/Completed)
-- `NewScripts/Infrastructure/WorldLifecycle/Runtime/WorldLifecycleRuntimeCoordinator.cs` (gatilho do reset pós-ScenesReady)
-- `NewScripts/Infrastructure/WorldLifecycle/Runtime/WorldLifecycleController.cs` + `NewScripts/Infrastructure/WorldLifecycle/WorldLifecycleOrchestrator.cs` (execução do reset)
-- `NewScripts/Gameplay/GameLoop/GameLoopSceneFlowCoordinator.cs` (start do GameLoop após reset)
-- `NewScripts/Infrastructure/GlobalBootstrap.cs` (registro global do runtime/coordenadores)
-
-### Troca de fase (produção) — status
-
-O **serviço** de troca de fase existe (`IPhaseChangeService` / `PhaseChangeService`), porém **não há um call-site “produção”** conectado ao gameplay que decida “quando” avançar fase (ex.: fim de fase, fim de run, seleção em hub, etc.). Hoje, o uso é essencialmente via QA / chamadas explícitas.
-
-**Arquivos-chave (implementação atual):**
-
-- `NewScripts/Gameplay/Phases/IPhaseChangeService.cs`
-- `NewScripts/Gameplay/Phases/PhaseChangeService.cs`
-- `NewScripts/Gameplay/Phases/PhaseContextService.cs`
-- `NewScripts/Infrastructure/Gameplay/PhaseContextSceneFlowBridge.cs` (auto-clear de Pending em `SceneTransitionStartedEvent`)
-
+O aspecto visual (Fade/HUD) observado no teste In-Place foi induzido por opções de QA; o contrato de produto estabelece que **In-Place não deve introduzir interrupções visuais** por padrão (ADR-0017).

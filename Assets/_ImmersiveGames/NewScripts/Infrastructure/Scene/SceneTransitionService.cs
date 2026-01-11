@@ -23,19 +23,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         // Compatibilidade: logging / debug pode exibir o texto do profile.
         public string TransitionProfileName => TransitionProfileId.Value;
+        public string ContextSignature { get; }
 
         public SceneTransitionRequest(
             IReadOnlyList<string> scenesToLoad,
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             bool useFade = true,
-            SceneFlowProfileId transitionProfileId = default)
+            SceneFlowProfileId transitionProfileId = default,
+            string contextSignature = null)
         {
             ScenesToLoad = scenesToLoad;
             ScenesToUnload = scenesToUnload;
             TargetActiveScene = targetActiveScene;
             UseFade = useFade;
             TransitionProfileId = transitionProfileId;
+            ContextSignature = contextSignature;
         }
     }
 
@@ -234,14 +237,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private async Task RunSceneOperationsAsync(SceneTransitionContext context)
         {
-            await LoadScenesAsync(context.ScenesToLoad);
+            var reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
+            var loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
+            await LoadScenesAsync(loadScenes);
+
+            if (reloadScenes.Count > 0)
+            {
+                await HandleReloadScenesAsync(context, reloadScenes);
+            }
 
             await SetActiveSceneAsync(context.TargetActiveScene);
 
-            await UnloadScenesAsync(context.ScenesToUnload, context.TargetActiveScene);
+            var unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
+            await UnloadScenesAsync(unloadScenes, context.TargetActiveScene);
         }
 
-        private async Task LoadScenesAsync(IReadOnlyList<string> scenesToLoad)
+        private async Task LoadScenesAsync(IReadOnlyList<string> scenesToLoad, bool forceLoad = false)
         {
             if (scenesToLoad == null || scenesToLoad.Count == 0)
             {
@@ -250,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             foreach (var sceneName in scenesToLoad)
             {
-                if (_loaderAdapter.IsSceneLoaded(sceneName))
+                if (!forceLoad && _loaderAdapter.IsSceneLoaded(sceneName))
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>(
                         $"[SceneFlow] Cena '{sceneName}' já está carregada. Pulando load.");
@@ -313,6 +324,150 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
                 await _loaderAdapter.UnloadSceneAsync(sceneName);
             }
+        }
+
+        private async Task HandleReloadScenesAsync(SceneTransitionContext context, IReadOnlyList<string> reloadScenes)
+        {
+            var tempActive = ResolveTempActiveScene(reloadScenes);
+            if (!string.IsNullOrWhiteSpace(tempActive) &&
+                !string.Equals(tempActive, _loaderAdapter.GetActiveSceneName(), StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<SceneTransitionService>(
+                    $"[SceneFlow] Reload: definindo cena ativa temporária '{tempActive}'.");
+                await SetActiveSceneAsync(tempActive);
+            }
+
+            await UnloadScenesForReloadAsync(reloadScenes);
+            await LoadScenesAsync(reloadScenes, forceLoad: true);
+
+            DebugUtility.LogVerbose<SceneTransitionService>(
+                $"[SceneFlow] Reload concluído. TargetActiveScene='{context.TargetActiveScene}'.");
+        }
+
+        private async Task UnloadScenesForReloadAsync(IReadOnlyList<string> reloadScenes)
+        {
+            foreach (var sceneName in reloadScenes)
+            {
+                if (!_loaderAdapter.IsSceneLoaded(sceneName))
+                {
+                    DebugUtility.LogVerbose<SceneTransitionService>(
+                        $"[SceneFlow] Reload: cena '{sceneName}' já está descarregada. Pulando unload.");
+                    continue;
+                }
+
+                DebugUtility.LogVerbose<SceneTransitionService>(
+                    $"[SceneFlow] Reload: descarregando cena '{sceneName}'...");
+
+                await _loaderAdapter.UnloadSceneAsync(sceneName);
+            }
+        }
+
+        private static IReadOnlyList<string> GetReloadScenes(
+            IReadOnlyList<string> scenesToLoad,
+            IReadOnlyList<string> scenesToUnload)
+        {
+            if (scenesToLoad == null || scenesToUnload == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            var unloadSet = new HashSet<string>(scenesToUnload, StringComparer.Ordinal);
+            var reload = new List<string>();
+
+            foreach (var sceneName in scenesToLoad)
+            {
+                if (string.IsNullOrWhiteSpace(sceneName))
+                {
+                    continue;
+                }
+
+                var trimmed = sceneName.Trim();
+                if (trimmed.Length == 0)
+                {
+                    continue;
+                }
+
+                if (unloadSet.Contains(trimmed))
+                {
+                    reload.Add(trimmed);
+                }
+            }
+
+            return reload;
+        }
+
+        private static IReadOnlyList<string> FilterScenesExcluding(
+            IReadOnlyList<string> scenes,
+            IReadOnlyList<string> excludedScenes)
+        {
+            if (scenes == null || scenes.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            if (excludedScenes == null || excludedScenes.Count == 0)
+            {
+                return scenes;
+            }
+
+            var excludeSet = new HashSet<string>(excludedScenes, StringComparer.Ordinal);
+            var filtered = new List<string>();
+
+            foreach (var sceneName in scenes)
+            {
+                if (string.IsNullOrWhiteSpace(sceneName))
+                {
+                    continue;
+                }
+
+                var trimmed = sceneName.Trim();
+                if (trimmed.Length == 0)
+                {
+                    continue;
+                }
+
+                if (!excludeSet.Contains(trimmed))
+                {
+                    filtered.Add(trimmed);
+                }
+            }
+
+            return filtered;
+        }
+
+        private string ResolveTempActiveScene(IReadOnlyList<string> reloadScenes)
+        {
+            var reloadSet = new HashSet<string>(reloadScenes, StringComparer.Ordinal);
+            const string UiGlobalSceneName = "UIGlobalScene";
+
+            if (_loaderAdapter.IsSceneLoaded(UiGlobalSceneName) && !reloadSet.Contains(UiGlobalSceneName))
+            {
+                return UiGlobalSceneName;
+            }
+
+            var currentActive = _loaderAdapter.GetActiveSceneName();
+            if (!string.IsNullOrWhiteSpace(currentActive) && !reloadSet.Contains(currentActive))
+            {
+                return currentActive;
+            }
+
+            var sceneCount = SceneManager.sceneCount;
+            for (var i = 0; i < sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (!scene.IsValid() || !scene.isLoaded)
+                {
+                    continue;
+                }
+
+                var name = scene.name;
+                if (!string.IsNullOrWhiteSpace(name) && !reloadSet.Contains(name))
+                {
+                    return name;
+                }
+            }
+
+            return string.Empty;
         }
     }
 

@@ -1,136 +1,122 @@
-﻿# ADR-0017 — Tipos de troca de fase (in-place vs com transição)
+﻿# ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
 
-* Status: **Aceito / Em uso (com follow-ups descritos abaixo)**
-* Data: 2026-01-07
-* Relacionado: ADR-0016 (Phases & WorldLifecycle), Baseline 2.0 (assinaturas / evidências)
+## Status
+
+**Aceito / Ativo**
 
 ## Contexto
 
-No NewScripts, “fase” representa um **contexto de conteúdo/objetivo** que pode (ou não) existir em cada jogo.
+O sistema de fases precisa suportar dois tipos de troca com objetivos distintos:
 
-- Alguns jogos terão múltiplas fases (ex.: fase 1 → fase 2).
-- Outros jogos podem ter apenas uma fase, ou **nenhuma fase** (não devem ser obrigados a “progredir fase”).
-- A decisão de *quando* trocar de fase é **game-specific** (objetivo completado, seleção em HUD/Hub, narrativa, debug, etc.). Portanto, o framework não deve acoplar “fase” a um gatilho fixo.
+- **Troca dentro do gameplay** (ex.: “fase 1 concluída, inicia fase 2 na mesma rodada”), sem descarregar a cena base.
+- **Troca com transição completa** (ex.: nova fase exige troca de cenas, unload de conteúdos atuais, loading e fade).
 
-Ainda assim, quando um jogo *quer* trocar de fase, ele precisa de um procedimento único, observável e testável que:
-
-1) registre intenção (qual é a próxima fase planejada),
-2) execute a troca de forma segura (reset determinístico + opcionalmente transição de cenas),
-3) deixe evidências claras (logs/eventos) e evite estado “pendente” vazando entre cenas.
-
-## Problema
-
-Existem dois cenários diferentes de “troca de fase”:
-
-1. **Reset in-place**: a fase muda durante o mesmo gameplay (sem descarregar/carregar cenas). Ex.: fase 1 concluída → fase 2 começa no mesmo loop.
-2. **Troca com transição**: a fase muda exigindo **mudança de cenas** (Fade/Loading/SceneFlow). Ex.: jogador escolhe fase em um Hub, ou é necessário carregar outro layout de gameplay.
-
-Precisamos **nomear e documentar** esses dois tipos para evitar ambiguidade, e garantir um caminho único e verificável para quem quiser trocar de fase, sem impor um “gatilho fixo”.
+Durante QA, observou-se que o modo In-Place pode ser executado com Fade/Loading HUD via opções de teste. Contudo, a intenção de design é que a troca **In-Place flua sem interrupções visuais**, ao contrário de SceneTransition, que por regra geral envolve transição/visual feedback.
 
 ## Decisão
 
-1) O framework fornece **um único ponto de entrada** para solicitar troca de fase: `IPhaseChangeService`.
+### 1) Definir dois tipos explícitos
 
-2) O framework fornece um **buffer de intenção** para a fase: `IPhaseContextService`, com os conceitos:
-- `Pending` (plano proposto para a próxima fase)
-- `Current` (plano já aplicado/comprometido)
-- `TryCommitPending(...)` como momento explícito de aplicar.
+1. **PhaseChange/In-Place**
+    - **Não** executa `ISceneTransitionService` (SceneFlow).
+    - **Não** descarrega a cena base do gameplay.
+    - Pode **adicionar** cenas (Additive) se necessário, mas a cena base permanece carregada.
+    - Realiza **World Reset** para aplicar spawns/dados da nova fase.
+    - **Contrato visual:** **não deve** disparar Fade e **não deve** exibir Loading HUD.
+      Se algum “curtain” for necessário no futuro, será um **terceiro modo explícito** (não “In-Place”).
 
-3) O framework **não define o gatilho de produção** (não existe “avança fase automaticamente”):
-- Quem decide chamar `IPhaseChangeService` é o jogo (ex.: sistema de objetivos, UI do Hub, fluxo de campanha, etc.).
-- Se o jogo não tem fases, ele simplesmente não chama o serviço.
+2. **PhaseChange/SceneTransition**
+    - Executa `ISceneTransitionService` (SceneFlow).
+    - Pode descarregar/recarregar a cena base e outras cenas (reload/unload).
+    - Usa Fade/Loading conforme perfil de transição (SceneFlow Profile).
+    - Aplica a fase via intent consumido em `ScenesReady` e commit no `ResetCompleted`.
 
-## Tipos de troca (nomes oficiais)
+### 2) Regras operacionais
 
-### 1) Troca de fase *in-place* (sem transição de cenas)
+- Ambos os tipos:
+    - bloqueiam ação via SimulationGate (token dedicado) enquanto a troca está em curso,
+    - setam `Pending` antes do reset (direto ou em ScenesReady),
+    - fazem commit de `Pending` em `WorldLifecycleResetCompleted`.
 
-**Intenção:** mudar de fase mantendo a mesma cena carregada, forçando um reset determinístico do mundo (despawn + spawn) dentro do pipeline do WorldLifecycle.
+- Apenas SceneTransition:
+    - mantém um `signature` de SceneFlow para correlacionar intent ↔ ScenesReady ↔ reset.
 
-**API:** `IPhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason)`
+### 3) Política de UX/Visual (contrato)
 
-**Implementação (estado atual do projeto):**
+- **In-Place**: sem interrupção visual, sem Fade, sem Loading HUD.
+- **SceneTransition**: Fade + Loading HUD permitido/esperado e controlado por perfil de transição (e.g. `gameplay`).
 
-- `PhaseChangeService` faz `IPhaseContextService.SetPending(plan, reason)` e solicita reset in-place via `IWorldResetRequestService.RequestResetInPlace(...)`.
-- O `WorldLifecycleRuntimeCoordinator` chama `IPhaseContextService.TryCommitPending(...)` **após** o reset (dentro do evento de reset concluído), materializando o plano em `Current`.
+Isso evita ambiguidade: “In-Place” significa continuidade visual do gameplay; “SceneTransition” significa transição visível.
 
-**Evidências principais:**
+## Diagramas
 
-- `[PhaseContext] PhasePendingSet plan='1 | phase:1' reason='QA/PhaseContext/TC02:Set'`
-- `[WorldLifecycle] Reset REQUESTED. reason='ScenesReady/GameplayScene', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'`
-- `[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='gameplay', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'`
-- `[PhaseContext] PhaseCommitted prev='<none>' current='1 | phase:1' reason='WorldLifecycle/ResetCompleted'` (após o reset)
+### Diagrama 1 — Sequência (In-Place)
 
-### 2) Troca de fase *com transição* (SceneFlow/Fade/Loading)
+```mermaid
+sequenceDiagram
+    participant Caller as Gameplay/QA Caller
+    participant PhaseChange as PhaseChangeService
+    participant PhaseCtx as PhaseContextService
+    participant WL as WorldLifecycleRuntimeCoordinator
+    participant WLC as WorldLifecycleController
 
-**Intenção:** mudar de fase exigindo alteração de cenas (carregar/descarregar), normalmente com Fade/Loading e pipeline de `SceneTransitionService`.
+    Caller->>PhaseChange: RequestPhaseInPlaceAsync(plan, reason)
+    PhaseChange->>PhaseCtx: SetPending(plan, reason)
+    PhaseChange->>WL: RequestResetAsync(sourceSignature=phase.inplace:<id>)
+    WL->>WLC: Reset pipeline (despawn/spawn/hooks)
+    WLC-->>WL: ResetCompleted
+    WL->>PhaseCtx: TryCommitPending(reason=WorldLifecycle/ResetCompleted...)
+    PhaseCtx-->>PhaseChange: Pending committed (Current=plan)
 
-**API:** `IPhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, GameNavigationRouteId route, string reason)`
-- O serviço delega a execução da transição para `IGameNavigationService` / `SceneTransitionService`.
+    Note over PhaseChange: CONTRATO: sem Fade / sem Loading HUD / sem SceneFlow
+```
 
-**Importante (estado atual + implicação):**
+### Diagrama 2 — Sequência (SceneTransition)
 
-- Existe um mecanismo de segurança global: `PhaseContextSceneFlowBridge` limpa qualquer `Pending` ao observar `SceneTransitionStartedEvent`:
-    - `[PhaseContext] PhasePendingCleared reason='SceneFlow/TransitionStarted ...'`
-- Isso é intencional para evitar “pending vazando” entre cenas quando alguém arma um plano e navega sem commit.
+```mermaid
+sequenceDiagram
+    participant Caller as Gameplay/QA Caller
+    participant PhaseChange as PhaseChangeService
+    participant Intent as PhaseTransitionIntentRegistry
+    participant SceneFlow as SceneTransitionService
+    participant WL as WorldLifecycleRuntimeCoordinator
+    participant PhaseCtx as PhaseContextService
+    participant WLC as WorldLifecycleController
 
-**Consequência direta:**
+    Caller->>PhaseChange: RequestPhaseWithSceneTransitionAsync(plan, reason)
+    PhaseChange->>Intent: Register(signature, plan, mode=SceneTransition, reason)
+    PhaseChange->>SceneFlow: RequestTransition(signature/profile=gameplay)
+    SceneFlow-->>WL: SceneTransitionScenesReadyEvent(signature)
+    WL->>Intent: Consume(signature)
+    WL->>PhaseCtx: SetPending(plan, reason+signature)
+    WL->>WLC: Reset pipeline
+    WLC-->>WL: ResetCompleted
+    WL->>PhaseCtx: TryCommitPending(...)
+    PhaseCtx-->>WL: Pending committed (Current=plan)
 
-- **No estado atual**, um fluxo “SetPending → iniciar transição → commit mais tarde” não funciona, porque o `Pending` é limpo no início da transição.
-
-### Follow-up recomendado (registrado neste ADR)
-
-Para permitir troca de fase **com transição** preservando a segurança do auto-clear, precisamos de uma destas opções (a escolher em implementação futura):
-
-A) `PhaseContextSceneFlowBridge` só limpa `Pending` quando a transição **não** for “phase-carry”, com um sinal explícito no contexto (ex.: flag no `SceneTransitionContext`/request), ou
-
-B) `IPhaseChangeService.RequestPhaseWithTransitionAsync` faz `TryCommitPending` imediatamente (transformando em `Current`) antes de iniciar a transição, e o WorldLifecycle usa `Current` como fonte de verdade durante a montagem pós-load, ou
-
-C) Armazenar o “PhasePlan solicitado” em um carrier de transição separado (ex.: service global dedicado) que não seja limpo por segurança.
-
-Este ADR não escolhe uma opção ainda; ele registra o conflito e o requisito.
-
-## Invariantes e evidências (contrato observável)
-
-### Invariantes de PhaseContext (serviço)
-
-- `SetPending(valid)` deve:
-    - manter `Current` inalterado,
-    - tornar `HasPending=True`,
-    - emitir `PhasePendingSetEvent` e log correspondente.
-- `TryCommitPending(...)` com pending válido deve:
-    - mover `Pending` → `Current`,
-    - limpar `Pending` e `HasPending`,
-    - emitir `PhaseCommittedEvent` e log correspondente.
-- `SetPending(invalid)` deve ser ignorado:
-    - `HasPending` permanece `False`,
-    - não deve emitir `PhasePendingSetEvent`,
-    - deve logar o warning de rejeição.
-
-### Invariante de segurança em transição de cenas
-
-- Ao iniciar uma transição (`SceneTransitionStartedEvent`), `Pending` deve ser limpo para evitar vazamento entre cenas.
-    - Evidência: `[PhaseContext] PhasePendingCleared reason='SceneFlow/TransitionStarted ...'`
-
-## Testes (QA via Context Menu)
-
-O componente `PhaseContextQATester` expõe ações de QA via **Unity Context Menu**. Observação: os textos `before/after` são **labels de log**, não nomes de menu.
-
-Ações principais:
-
-- `QA/PhaseContext/TC00 - Resolve IPhaseContextService (Global DI)`
-- `QA/PhaseContext/TC01 - SetPending (expect PhasePendingSet)`
-- `QA/PhaseContext/TC02 - CommitPending (expect PhaseCommitted)`
-- `QA/PhaseContext/TC03 - ClearPending (expect PhasePendingCleared)`
-- `QA/PhaseContext/TC04 - Invalid plan rejected (expect NO PhasePendingSet)`
-
-Evidência esperada (exemplos):
-
-- TC02: `PhasePendingSet` → `PhaseCommitted`
-- TC03 + navegação: `PhasePendingCleared reason='SceneFlow/TransitionStarted ...'`
-- TC04: `Ignorando SetPending com PhasePlan inválido.` + counters zerados
+    Note over SceneFlow: Fade/Loading HUD controlados pelo Profile
+```
 
 ## Consequências
 
-- O framework fica flexível: fases são opcionais, e o gatilho é do jogo.
-- Existe um caminho único e observável (IPhaseChangeService + PhaseContext) para quem quiser trocar de fase.
-- O tipo “com transição” requer um follow-up técnico para suportar transporte de PhasePlan sem perder a segurança do auto-clear.
+### Benefícios
+
+- A nomenclatura elimina ambiguidade de produto/QA:
+    - In-Place = continuidade visual + reset determinístico.
+    - SceneTransition = transição visível + possível unload/reload.
+
+- A arquitetura permanece coerente com Baseline 2.0:
+    - Reset e commit continuam canônicos e observáveis.
+
+### Trade-offs
+
+- In-Place exige que qualquer reorganização de conteúdo que “precise de cortina” seja modelada como outro modo explícito no futuro.
+- SceneTransition tem maior custo (load/unload) e maior risco de regressões, porém é necessário quando a fase requer troca de cenas.
+
+## Ações derivadas (obrigatórias para compliance do ADR)
+
+1. **Ignorar/forçar desligado** Fade/HUD em In-Place no código de produção.
+    - Se alguma API aceitar `options`, deve sanitizar para `UseFade=false` e `UseLoadingHud=false` (ou emitir warning e ignorar).
+2. Atualizar QA:
+    - O teste In-Place não deve habilitar Fade/HUD.
+    - Opcionalmente, criar um teste separado “InPlaceWithCurtain (experimental)” se for necessário testar efeitos visuais.
