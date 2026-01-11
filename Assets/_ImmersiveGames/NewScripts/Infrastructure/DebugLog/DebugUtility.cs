@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         {
             if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose)) return;
 
-            if (!TrackCall(type, message, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate)) return;
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
             var type = typeof(T);
             if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose)) return;
 
-            if (!TrackCall(type, message, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate)) return;
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -202,9 +202,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
             Debug.Log(ApplyColor(BuildLogMessage("INFO", typeof(DebugUtility), message), null), context);
         }
 
-        private static bool TrackCall(Type type, string message, bool deduplicate)
+        private static bool TrackCall(Type type, string message, Object context, bool deduplicate)
         {
-            string key = $"{type.Name}:{message}";
+            int contextId = context != null ? context.GetInstanceID() : 0;
+            string key = $"{type.Name}:{message}:ctx={contextId}";
             int frame = Time.frameCount;
             var trackerKey = (key, frame);
 

@@ -50,7 +50,6 @@ namespace _ImmersiveGames.NewScripts.UI
                     "[FrontendButton] Button não atribuído e GetComponent<Button>() falhou. OnClick() (Inspector) pode não funcionar.");
             }
 
-            ArmClickGuardOncePerEnable(ignoreClicksForSecondsAfterEnable, "Awake/EnableGuard");
         }
 
         protected virtual void OnEnable()
@@ -125,10 +124,12 @@ namespace _ImmersiveGames.NewScripts.UI
             }
 
             _ignoreClicksUntilUnscaledTime = Mathf.Max(_ignoreClicksUntilUnscaledTime, Time.unscaledTime + seconds);
+            var buttonName = button != null ? button.name : "<null>";
 
             DebugUtility.LogVerbose<FrontendButtonBinderBase>(
-                $"[FrontendButton] Click-guard armado por {seconds:0.000}s (label='{label}').",
-                DebugUtility.Colors.Info);
+                $"[FrontendButton] Click-guard armado por {seconds:0.000}s (label='{label}', go='{gameObject.name}', btn='{buttonName}').",
+                DebugUtility.Colors.Info,
+                context: this);
         }
 
         private void ArmClickGuardOncePerEnable(float seconds, string label)
