@@ -26,6 +26,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static readonly Dictionary<Type, DebugLevel> _attributeLevels = new();
         private static readonly HashSet<Type> _disabledVerboseTypes = new();
         private static readonly HashSet<(string key, int frame)> _callTracker = new();
+        private static readonly HashSet<(string key, int frame)> _repeatedCallTracker = new();
         private static readonly StringBuilder _stringBuilder = new(256);
         private static readonly Dictionary<string, string> _messagePool = new();
         private const string RepeatedCallColor = "#FFD54F";
@@ -57,6 +58,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             _attributeLevels.Clear();
             _disabledVerboseTypes.Clear();
             _callTracker.Clear();
+            _repeatedCallTracker.Clear();
             _messagePool.Clear();
 
             LogInternal("DebugUtility inicializado antes de todos os sistemas.");
@@ -203,17 +205,24 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             var trackerKey = (key, frame);
 
             bool isRepeat = _callTracker.Contains(trackerKey);
-    
+
+            _callTracker.RemoveWhere(k => k.frame < frame);
+            _repeatedCallTracker.RemoveWhere(k => k.frame < frame);
+
             if (isRepeat)
             {
                 // ✅ REPETIÇÃO: registra como verbose colorido quando não houver deduplicação
                 if (!deduplicate && _repeatedCallVerboseEnabled)
-                    LogRepeatedCallVerbose(type, message, frame);
+                {
+                    if (_repeatedCallTracker.Add(trackerKey))
+                    {
+                        LogRepeatedCallVerbose(type, message, frame);
+                    }
+                }
                 return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite novo log após registrar verbose
             }
 
             // ✅ PRIMEIRA VEZ: adiciona ao tracker
-            _callTracker.RemoveWhere(k => k.frame < frame); // Limpa antigos
             _callTracker.Add(trackerKey);
             return true;
         }

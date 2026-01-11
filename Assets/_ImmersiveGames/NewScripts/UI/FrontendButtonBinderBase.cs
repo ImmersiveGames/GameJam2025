@@ -35,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.UI
         [SerializeField] private bool disableButtonDuringAction = false;
 
         private float _ignoreClicksUntilUnscaledTime;
+        private bool _clickGuardArmedThisEnable;
 
         protected virtual void Awake()
         {
@@ -49,17 +50,22 @@ namespace _ImmersiveGames.NewScripts.UI
                     "[FrontendButton] Button não atribuído e GetComponent<Button>() falhou. OnClick() (Inspector) pode não funcionar.");
             }
 
-            ArmClickGuard(ignoreClicksForSecondsAfterEnable, "Awake/EnableGuard");
+            ArmClickGuardOncePerEnable(ignoreClicksForSecondsAfterEnable, "Awake/EnableGuard");
         }
 
         protected virtual void OnEnable()
         {
-            ArmClickGuard(ignoreClicksForSecondsAfterEnable, "OnEnable/Guard");
+            ArmClickGuardOncePerEnable(ignoreClicksForSecondsAfterEnable, "OnEnable/Guard");
 
             if (clearEventSystemSelectionOnEnable)
             {
                 TryClearEventSystemSelection();
             }
+        }
+
+        protected virtual void OnDisable()
+        {
+            _clickGuardArmedThisEnable = false;
         }
 
         /// <summary>
@@ -123,6 +129,17 @@ namespace _ImmersiveGames.NewScripts.UI
             DebugUtility.LogVerbose<FrontendButtonBinderBase>(
                 $"[FrontendButton] Click-guard armado por {seconds:0.000}s (label='{label}').",
                 DebugUtility.Colors.Info);
+        }
+
+        private void ArmClickGuardOncePerEnable(float seconds, string label)
+        {
+            if (_clickGuardArmedThisEnable)
+            {
+                return;
+            }
+
+            _clickGuardArmedThisEnable = true;
+            ArmClickGuard(seconds, label);
         }
 
         protected void TryClearEventSystemSelection()
