@@ -238,13 +238,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         private async Task RunSceneOperationsAsync(SceneTransitionContext context)
         {
             var reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
+            var loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
+            await LoadScenesAsync(loadScenes);
+
             if (reloadScenes.Count > 0)
             {
                 await HandleReloadScenesAsync(context, reloadScenes);
             }
-
-            var loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
-            await LoadScenesAsync(loadScenes);
 
             await SetActiveSceneAsync(context.TargetActiveScene);
 
