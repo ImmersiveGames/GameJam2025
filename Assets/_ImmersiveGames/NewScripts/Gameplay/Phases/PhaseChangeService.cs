@@ -40,12 +40,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return RequestPhaseInPlaceAsync(plan, reason, options: null);
         }
 
-        public Task RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions options = null)
+        public Task RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)
         {
             return RequestPhaseInPlaceAsync(BuildPlan(phaseId), reason, options);
         }
 
-        public async Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions options)
+        public async Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)
         {
             if (!plan.IsValid)
             {
@@ -133,12 +133,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return RequestPhaseWithTransitionAsync(plan, transition, reason, options: null);
         }
 
-        public Task RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions options = null)
+        public Task RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)
         {
             return RequestPhaseWithTransitionAsync(BuildPlan(phaseId), transition, reason, options);
         }
 
-        public async Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions options)
+        public async Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)
         {
             if (!plan.IsValid)
             {
@@ -230,7 +230,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return new PhasePlan(phaseId, string.Empty);
         }
 
-        private static PhaseChangeOptions NormalizeOptions(PhaseChangeOptions options)
+        private static PhaseChangeOptions NormalizeOptions(PhaseChangeOptions? options)
         {
             var normalized = options?.Clone() ?? PhaseChangeOptions.Default;
             if (normalized.TimeoutMs <= 0)
