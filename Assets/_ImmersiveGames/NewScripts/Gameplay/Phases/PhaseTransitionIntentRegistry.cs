@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Phases
@@ -9,7 +8,95 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
     public sealed class PhaseTransitionIntentRegistry : IPhaseTransitionIntentRegistry
     {
         private readonly object _lock = new();
-        private readonly Dictionary<string, PhaseTransitionIntent> _intents = new();
+        private bool _hasIntent;
+        private PhaseTransitionIntent _intent;
+
+        public bool RegisterIntent(PhaseTransitionIntent intent)
+        {
+            if (!intent.Plan.IsValid)
+            {
+                return false;
+            }
+
+            if (intent.Mode != PhaseChangeMode.SceneTransition)
+            {
+                return false;
+            }
+
+            lock (_lock)
+            {
+                if (_hasIntent)
+                {
+                    return false;
+                }
+
+                _intent = intent;
+                _hasIntent = true;
+            }
+
+            DebugUtility.Log<PhaseTransitionIntentRegistry>(
+                $"[PhaseIntent] Registered sig='{intent.SourceSignature}' plan='{intent.Plan}' mode='{intent.Mode}' reason='{Sanitize(intent.Reason)}'");
+            return true;
+        }
+
+        public bool TryConsumeIntent(out PhaseTransitionIntent intent)
+        {
+            intent = default;
+
+            lock (_lock)
+            {
+                if (!_hasIntent)
+                {
+                    return false;
+                }
+
+                intent = _intent;
+                _intent = default;
+                _hasIntent = false;
+            }
+
+            DebugUtility.Log<PhaseTransitionIntentRegistry>(
+                $"[PhaseIntent] Consumed sig='{intent.SourceSignature}' plan='{intent.Plan}' mode='{intent.Mode}'");
+            return true;
+        }
+
+        public bool TryPeekIntent(out PhaseTransitionIntent intent)
+        {
+            intent = default;
+
+            lock (_lock)
+            {
+                if (!_hasIntent)
+                {
+                    return false;
+                }
+
+                intent = _intent;
+                return true;
+            }
+        }
+
+        public void ClearIntent(string reason)
+        {
+            bool cleared;
+            PhaseTransitionIntent clearedIntent;
+
+            lock (_lock)
+            {
+                cleared = _hasIntent;
+                clearedIntent = _intent;
+                _intent = default;
+                _hasIntent = false;
+            }
+
+            if (!cleared)
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning<PhaseTransitionIntentRegistry>(
+                $"[PhaseIntent] Cleared sig='{clearedIntent.SourceSignature}' reason='{Sanitize(reason)}'");
+        }
 
         public bool TrySet(string contextSignature, PhasePlan plan, string reason, DateTime? timestampUtc = null)
         {
@@ -18,27 +105,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return false;
             }
 
-            if (!plan.IsValid)
-            {
-                return false;
-            }
-
             var signature = contextSignature.Trim();
-            var intent = new PhaseTransitionIntent(plan, reason ?? string.Empty, timestampUtc ?? DateTime.UtcNow);
 
-            lock (_lock)
-            {
-                if (_intents.ContainsKey(signature))
-                {
-                    return false;
-                }
-
-                _intents[signature] = intent;
-            }
-
-            DebugUtility.Log<PhaseTransitionIntentRegistry>(
-                $"[PhaseIntent] Set sig={signature} plan='{plan}' reason='{Sanitize(reason)}'");
-            return true;
+            return RegisterIntent(new PhaseTransitionIntent(
+                plan: plan,
+                mode: PhaseChangeMode.SceneTransition,
+                reason: reason ?? string.Empty,
+                sourceSignature: signature,
+                transitionProfile: string.Empty,
+                targetScene: string.Empty,
+                timestampUtc: timestampUtc ?? DateTime.UtcNow));
         }
 
         public bool TryConsume(string contextSignature, out PhaseTransitionIntent intent)
@@ -52,19 +128,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var signature = contextSignature.Trim();
 
-            lock (_lock)
+            if (!TryPeekIntent(out var peek))
             {
-                if (!_intents.TryGetValue(signature, out intent))
-                {
-                    return false;
-                }
-
-                _intents.Remove(signature);
+                return false;
             }
 
-            DebugUtility.Log<PhaseTransitionIntentRegistry>(
-                $"[PhaseIntent] Consumed sig={signature} plan='{intent.Plan}'");
-            return true;
+            if (!string.Equals(peek.SourceSignature, signature, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return TryConsumeIntent(out intent);
         }
 
         public void Clear(string contextSignature)
@@ -76,10 +150,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var signature = contextSignature.Trim();
 
-            lock (_lock)
+            if (!TryPeekIntent(out var peek))
             {
-                _intents.Remove(signature);
+                return;
             }
+
+            if (!string.Equals(peek.SourceSignature, signature, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            ClearIntent($"SignatureClear sig='{signature}'");
         }
 
         private static string Sanitize(string? s)

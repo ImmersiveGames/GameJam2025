@@ -66,6 +66,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 _activeTransitionProfileId = context.TransitionProfileId;
                 _activeTransitionTargetScene = context.TargetActiveScene ?? string.Empty;
             }
+
+            ClearPhaseIntentIfMismatched(context);
         }
 
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
@@ -103,6 +105,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
 
             var intentFound = TryConsumePhaseIntent(signature, out var intent);
+            if (intentFound)
+            {
+                DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
+                    $"[OBS][Phase] PhaseIntentConsumed phaseId='{intent.Plan.PhaseId}' mode='{intent.Mode}' signature='{signature}' reason='{intent.Reason}'.",
+                    DebugUtility.Colors.Info);
+            }
 
             // SKIP canônico: startup + frontend.
             var skipByProfile = profileId.IsStartupOrFrontend;
@@ -376,7 +384,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
 
                 var commitReason = $"WorldLifecycle/ResetCompleted sig='{sourceSignature}' reason='{resetReason}'";
-                phaseContext.TryCommitPending(commitReason, out _);
+                if (phaseContext.TryCommitPending(commitReason, out var committed))
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
+                        $"[OBS][Phase] PhaseCommitted phaseId='{committed.PhaseId}' signature='{sourceSignature}' reason='{resetReason}'.",
+                        DebugUtility.Colors.Info);
+                }
             }
             catch (Exception ex)
             {
@@ -399,7 +412,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return false;
             }
 
-            return registry.TryConsume(signature, out intent);
+            if (!registry.TryPeekIntent(out var peek))
+            {
+                return false;
+            }
+
+            if (!string.Equals(peek.SourceSignature, signature, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return registry.TryConsumeIntent(out intent);
         }
 
         private static void ApplyPhaseIntent(string signature, PhaseTransitionIntent intent)
@@ -413,7 +436,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             var applyReason = $"{intent.Reason}/SceneFlow sig={signature}";
             phaseContext.SetPending(intent.Plan, applyReason);
-            phaseContext.TryCommitPending($"SceneFlow/PhaseIntentApplied sig='{signature}'", out _);
+        }
+
+        private static void ClearPhaseIntentIfMismatched(SceneTransitionContext context)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseTransitionIntentRegistry>(out var registry) || registry == null)
+            {
+                return;
+            }
+
+            if (!registry.TryPeekIntent(out var intent))
+            {
+                return;
+            }
+
+            var signature = GetContextSignature(context);
+            if (string.Equals(intent.SourceSignature, signature, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
+                $"[PhaseIntent] ClearOnTransitionStarted (signature mismatch). intentSig='{intent.SourceSignature}', transitionSig='{signature}'.");
+            registry.ClearIntent($"SceneFlow/TransitionStarted sig={signature}");
         }
     }
 }
