@@ -35,7 +35,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             bool useFade,
-            SceneFlowProfileId transitionProfileId)
+            SceneFlowProfileId transitionProfileId,
+            string contextSignature = null)
         {
             ScenesToLoad = scenesToLoad;
             ScenesToUnload = scenesToUnload;
@@ -43,12 +44,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             UseFade = useFade;
             TransitionProfileId = transitionProfileId;
 
-            ContextSignature = ComputeSignature(
-                scenesToLoad: ScenesToLoad,
-                scenesToUnload: ScenesToUnload,
-                targetActiveScene: TargetActiveScene,
-                useFade: UseFade,
-                transitionProfileId: TransitionProfileId);
+            ContextSignature = !string.IsNullOrWhiteSpace(contextSignature)
+                ? contextSignature.Trim()
+                : ComputeSignature(
+                    scenesToLoad: ScenesToLoad,
+                    scenesToUnload: ScenesToUnload,
+                    targetActiveScene: TargetActiveScene,
+                    useFade: UseFade,
+                    transitionProfileId: TransitionProfileId);
         }
 
         private static string ComputeSignature(

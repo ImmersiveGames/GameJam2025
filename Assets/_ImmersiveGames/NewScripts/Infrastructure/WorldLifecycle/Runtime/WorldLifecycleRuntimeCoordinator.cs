@@ -104,6 +104,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
                 $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
 
+            DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
+                $"[WorldLifecycle] ScenesReady signature='{signature}'.",
+                DebugUtility.Colors.Info);
+
             var intentFound = TryConsumePhaseIntent(signature, out var intent);
             if (intentFound)
             {

@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             }
 
             var normalizedOptions = NormalizeOptions(options);
-            var signature = $"inplace:{plan.PhaseId}";
+            var signature = $"phase.inplace:{plan.PhaseId}";
             IDisposable gateHandle = null;
             var hudShown = false;
             var fadeOutCompleted = false;
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     DebugUtility.Colors.Info);
 
                 await AwaitWithTimeoutAsync(
-                    _worldReset.RequestResetAsync(resetReason),
+                    _worldReset.RequestResetAsync(signature),
                     normalizedOptions.TimeoutMs,
                     "RequestResetAsync");
 
@@ -172,7 +172,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             try
             {
-                var context = SceneTransitionSignatureUtil.BuildContext(transition);
+                var normalizedRequest = EnsureContextSignature(transition);
+                var context = SceneTransitionSignatureUtil.BuildContext(normalizedRequest);
                 var signature = SceneTransitionSignatureUtil.Compute(context);
 
                 var intent = new PhaseTransitionIntent(
@@ -180,8 +181,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     mode: PhaseChangeMode.SceneTransition,
                     reason: reason,
                     sourceSignature: signature,
-                    transitionProfile: transition.TransitionProfileName,
-                    targetScene: transition.TargetActiveScene,
+                    transitionProfile: normalizedRequest.TransitionProfileName,
+                    targetScene: normalizedRequest.TargetActiveScene,
                     timestampUtc: DateTime.UtcNow);
 
                 if (!_intentRegistry.RegisterIntent(intent))
@@ -192,16 +193,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 }
 
                 DebugUtility.Log<PhaseChangeService>(
-                    $"[OBS][Phase] PhaseChangeRequested event=phase_change_transition mode={PhaseChangeMode.SceneTransition} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}' signature='{signature}' profile='{transition.TransitionProfileName}'",
+                    $"[OBS][Phase] PhaseChangeRequested event=phase_change_transition mode={PhaseChangeMode.SceneTransition} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}' signature='{signature}' profile='{normalizedRequest.TransitionProfileName}'",
                     DebugUtility.Colors.Info);
 
                 DebugUtility.Log<PhaseChangeService>(
                     $"[PhaseChange] WithTransition -> intent registrado. Iniciando SceneFlow. " +
-                    $"plan='{plan}', reason='{reason ?? "n/a"}', profile='{transition.TransitionProfileName}', active='{transition.TargetActiveScene}'.",
+                    $"plan='{plan}', reason='{reason ?? "n/a"}', profile='{normalizedRequest.TransitionProfileName}', active='{normalizedRequest.TargetActiveScene}'.",
                     DebugUtility.Colors.Info);
 
+                DebugUtility.LogVerbose<PhaseChangeService>(
+                    $"[PhaseChange] WithTransition signature='{signature}'.");
+
                 var transitionOk = await AwaitWithTimeoutAsync(
-                    _sceneFlow.TransitionAsync(transition),
+                    _sceneFlow.TransitionAsync(normalizedRequest),
                     normalizedOptions.TimeoutMs,
                     "TransitionAsync");
 
@@ -337,5 +341,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         private static string Sanitize(string? s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
+
+        private static SceneTransitionRequest EnsureContextSignature(SceneTransitionRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.ContextSignature))
+            {
+                return request;
+            }
+
+            var context = SceneTransitionSignatureUtil.BuildContext(request);
+            var signature = SceneTransitionSignatureUtil.Compute(context);
+
+            return new SceneTransitionRequest(
+                scenesToLoad: request.ScenesToLoad,
+                scenesToUnload: request.ScenesToUnload,
+                targetActiveScene: request.TargetActiveScene,
+                useFade: request.UseFade,
+                transitionProfileId: request.TransitionProfileId,
+                contextSignature: signature);
+        }
     }
 }

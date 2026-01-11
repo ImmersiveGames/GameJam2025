@@ -23,19 +23,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         // Compatibilidade: logging / debug pode exibir o texto do profile.
         public string TransitionProfileName => TransitionProfileId.Value;
+        public string ContextSignature { get; }
 
         public SceneTransitionRequest(
             IReadOnlyList<string> scenesToLoad,
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             bool useFade = true,
-            SceneFlowProfileId transitionProfileId = default)
+            SceneFlowProfileId transitionProfileId = default,
+            string contextSignature = null)
         {
             ScenesToLoad = scenesToLoad;
             ScenesToUnload = scenesToUnload;
             TargetActiveScene = targetActiveScene;
             UseFade = useFade;
             TransitionProfileId = transitionProfileId;
+            ContextSignature = contextSignature;
         }
     }
 

@@ -94,5 +94,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 useFade: true,
                 transitionProfileId: SceneFlowProfileId.Frontend);
         }
+
+        /// <summary>
+        /// Gameplay -> Gameplay (reload).
+        /// </summary>
+        public SceneTransitionRequest BuildGameplayReload()
+        {
+            return new SceneTransitionRequest(
+                scenesToLoad: new[] { SceneGameplay, SceneUIGlobal },
+                scenesToUnload: new[] { SceneGameplay },
+                targetActiveScene: SceneGameplay,
+                useFade: true,
+                transitionProfileId: SceneFlowProfileId.Gameplay);
+        }
     }
 }

@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
                 return;
             }
 
-            var transition = BuildTransitionRequest();
+            var transition = BuildGameplayReloadRequest();
             if (transition == null)
             {
                 DebugUtility.LogWarning<PhaseChangeQATester>(
@@ -83,23 +83,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
             }
         }
 
-        private static SceneTransitionRequest? BuildTransitionRequest()
+        private static SceneTransitionRequest? BuildGameplayReloadRequest()
         {
             var activeScene = SceneManager.GetActiveScene().name;
             var catalog = GameNavigationCatalog.CreateDefaultMinimal();
 
-            if (string.Equals(activeScene, GameNavigationCatalog.SceneMenu, StringComparison.Ordinal))
-            {
-                return catalog.BuildMenuToGameplay();
-            }
-
             if (string.Equals(activeScene, GameNavigationCatalog.SceneGameplay, StringComparison.Ordinal))
             {
-                return catalog.BuildGameplayToMenu();
+                return catalog.BuildGameplayReload();
             }
 
             DebugUtility.LogWarning<PhaseChangeQATester>(
-                $"[QA][Phase] Cena ativa '{activeScene}' não suportada no catálogo QA.");
+                $"[QA][Phase] Cena ativa '{activeScene}' não é Gameplay. QA WithTransition ignorado.");
             return null;
         }
 
