@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -130,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            var context = BuildContext(request);
+            var context = SceneTransitionSignatureUtil.BuildContext(request);
 
             try
             {
@@ -198,27 +197,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 DebugUtility.LogWarning<SceneTransitionService>(
                     $"[SceneFlow] Completion gate falhou/abortou. Prosseguindo com FadeOut. ex={ex.GetType().Name}: {ex.Message}");
             }
-        }
-
-        private static SceneTransitionContext BuildContext(SceneTransitionRequest request)
-        {
-            var loadList = NormalizeList(request.ScenesToLoad);
-            var unloadList = NormalizeList(request.ScenesToUnload);
-            return new SceneTransitionContext(loadList, unloadList, request.TargetActiveScene, request.UseFade,
-                request.TransitionProfileId);
-        }
-
-        private static IReadOnlyList<string> NormalizeList(IReadOnlyList<string> source)
-        {
-            if (source == null)
-            {
-                return Array.Empty<string>();
-            }
-
-            return source
-                .Where(entry => !string.IsNullOrWhiteSpace(entry))
-                .Select(entry => entry.Trim())
-                .ToArray();
         }
 
         private async Task RunFadeInIfNeeded(SceneTransitionContext context)

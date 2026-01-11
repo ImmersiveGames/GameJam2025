@@ -164,6 +164,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // Baseline 3B: Pending NÃO pode atravessar transição.
             RegisterPhaseContextSceneFlowBridge();
 
+            RegisterPhaseTransitionIntentRegistry();
+
             // PhaseChange depende de PhaseContext + SceneFlow/WorldReset (para "in place" vs "transition").
             RegisterPhaseChangeService();
 
@@ -719,12 +721,38 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseTransitionIntentRegistry>(out var intentRegistry) || intentRegistry == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[PhaseChange] IPhaseTransitionIntentRegistry indisponível. IPhaseChangeService não será registrado.");
+                return;
+            }
+
             DependencyManager.Provider.RegisterGlobal<IPhaseChangeService>(
-                new PhaseChangeService(phaseContext, worldReset, sceneFlow),
+                new PhaseChangeService(phaseContext, worldReset, sceneFlow, intentRegistry),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[PhaseChange] PhaseChangeService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPhaseTransitionIntentRegistry()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPhaseTransitionIntentRegistry>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[PhaseIntent] IPhaseTransitionIntentRegistry já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPhaseTransitionIntentRegistry>(
+                new PhaseTransitionIntentRegistry(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[PhaseIntent] PhaseTransitionIntentRegistry registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
