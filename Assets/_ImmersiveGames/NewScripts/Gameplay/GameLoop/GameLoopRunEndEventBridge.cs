@@ -1,7 +1,9 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
@@ -60,6 +62,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void OnGameRunEnded(GameRunEndedEvent evt)
         {
+            if (!IsGameplayScene())
+            {
+                DebugUtility.LogWarning<GameLoopRunEndEventBridge>(
+                    $"[OBS][PostPlay] PostPlaySkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
+                return;
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
             {
                 DebugUtility.LogWarning<GameLoopRunEndEventBridge>(
@@ -72,6 +81,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 $"[GameLoop] GameRunEndedEvent recebido. Outcome={evt?.Outcome}, Reason='{reason}'. Sinalizando EndRequested.");
 
             gameLoopService.RequestEnd();
+        }
+
+        private static bool IsGameplayScene()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
+            {
+                return classifier.IsGameplayScene();
+            }
+
+            var sceneName = SceneManager.GetActiveScene().name;
+            return string.Equals(sceneName, "GameplayScene", System.StringComparison.Ordinal);
         }
     }
 }

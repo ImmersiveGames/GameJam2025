@@ -35,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         [Inject] private IInputModeService _inputModeService;
         [Inject] private ISimulationGateService _gateService;
+        [Inject] private IPostPlayOwnershipService _postPlayOwnership;
 
         private bool _dependenciesInjected;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
@@ -78,13 +79,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private void OnDisable()
         {
             UnregisterBindings();
-            ReleasePostGameGate("OnDisable");
+            if (ShouldOverlayManageOwnership())
+            {
+                ReleasePostGameGate("OnDisable");
+            }
         }
 
         private void OnDestroy()
         {
             UnregisterBindings();
-            ReleasePostGameGate("OnDestroy");
+            if (ShouldOverlayManageOwnership())
+            {
+                ReleasePostGameGate("OnDestroy");
+            }
         }
 
         /// <summary>
@@ -151,7 +158,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 DebugUtility.Colors.Info);
 
             HideImmediate();
-            ApplyGameplayInputMode("PostGame/RunStarted");
+            if (ShouldOverlayManageOwnership())
+            {
+                ApplyGameplayInputMode("PostGame/RunStarted");
+            }
         }
 
         private void OnGameRunEnded(GameRunEndedEvent evt)
@@ -227,14 +237,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private void Show()
         {
             SetVisible(true);
-            ApplyPostGameInputMode("PostGame/Show");
-            AcquirePostGameGate();
+            if (ShouldOverlayManageOwnership())
+            {
+                ApplyPostGameInputMode("PostGame/Show");
+                AcquirePostGameGate();
+            }
         }
 
         private void HideImmediate()
         {
             SetVisible(false);
-            ReleasePostGameGate("HideImmediate");
+            if (ShouldOverlayManageOwnership())
+            {
+                ReleasePostGameGate("HideImmediate");
+            }
         }
 
         private void SetVisible(bool visible)
@@ -277,6 +293,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
             DebugUtility.LogWarning<PostGameOverlayController>(
                 "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
+        }
+
+        private bool ShouldOverlayManageOwnership()
+        {
+            return _postPlayOwnership == null || !_postPlayOwnership.IsOwnerEnabled;
         }
 
         private void EnsureDependenciesInjected()

@@ -1,5 +1,7 @@
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -30,6 +32,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         public void RequestDefeat(string reason) => Request(GameRunOutcome.Defeat, reason);
 
+        [ContextMenu("QA/Test3 - ForcePostPlay")]
+        private void QA_ForcePostPlay()
+        {
+            DebugUtility.Log<GameRunEndRequestTrigger>(
+                "[QA][Test3] ForcePostPlay acionado.",
+                DebugUtility.Colors.Info);
+            Request(GameRunOutcome.Victory, "QA/Test3/ForcePostPlay");
+        }
+
         public void Request(GameRunOutcome outcome, string reason)
         {
             if (requireActiveGameplayScene && !IsActiveGameplayScene())
@@ -53,9 +64,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private static bool IsActiveGameplayScene()
         {
-            var sceneName = SceneManager.GetActiveScene().name;
-            return !string.IsNullOrEmpty(sceneName) &&
-                   sceneName.IndexOf("Gameplay", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) &&
+                classifier != null)
+            {
+                return classifier.IsGameplayScene();
+            }
+
+            return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", System.StringComparison.Ordinal);
         }
     }
 }

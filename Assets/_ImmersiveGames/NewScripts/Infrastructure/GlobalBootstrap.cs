@@ -26,6 +26,8 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.PostGame;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Baseline;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -135,6 +137,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterGameLoop();
             RegisterPregameCoordinator();
+            RegisterGameplaySceneClassifier();
+            RegisterDefaultPregameStep();
 
             // Resolve IGameLoopService UMA vez para serviços dependentes.
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
@@ -144,9 +148,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterGameRunStatusService(gameLoopService);
             RegisterGameRunOutcomeService(gameLoopService);
             RegisterGameRunOutcomeEventInputBridge();
+            RegisterPostPlayOwnershipService();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
+            RegisterSceneFlowSignatureCache();
             RegisterWorldResetRequestService();
 
             RegisterGameNavigationService();
@@ -416,6 +422,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterPostPlayOwnershipService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPostPlayOwnershipService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[PostPlay] IPostPlayOwnershipService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPostPlayOwnershipService>(
+                new PostPlayOwnershipService(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[PostPlay] PostPlayOwnershipService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterPregameCoordinator()
         {
             if (DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var existing) && existing != null)
@@ -432,6 +457,44 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Pregame] PregameCoordinator registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameplaySceneClassifier()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Gameplay] IGameplaySceneClassifier já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IGameplaySceneClassifier>(
+                new DefaultGameplaySceneClassifier(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Gameplay] IGameplaySceneClassifier registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterDefaultPregameStep()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPregameStep>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pregame] IPregameStep já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPregameStep>(
+                new ConfirmToStartPregameStep(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Pregame] ConfirmToStartPregameStep registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -473,6 +536,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterSceneFlowSignatureCache()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneFlow] ISceneFlowSignatureCache já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<ISceneFlowSignatureCache>(
+                new SceneFlowSignatureCache(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[SceneFlow] SceneFlowSignatureCache registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
