@@ -60,32 +60,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 gameLoop.RequestPregameStart();
             }
 
-            var result = "completed";
-
             try
             {
-                var completed = await AwaitWithTimeoutAsync(
-                    step.RunAsync(context, CancellationToken.None),
-                    DefaultTimeoutMs);
-
-                if (!completed)
-                {
-                    result = "timeout";
-                }
+                var stepName = step.GetType().Name;
+                var result = await ExecuteStepWithTimeoutAsync(step, stepName, context, DefaultTimeoutMs);
+                LogCompletion(signature, targetScene, context.ProfileId.Value, result);
             }
             catch (Exception ex)
             {
-                result = "failed";
                 DebugUtility.LogWarning<PregameCoordinator>(
                     $"[Pregame] Falha ao executar pregame. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Failed);
             }
             finally
             {
                 gameLoop?.RequestPregameComplete();
-
-                DebugUtility.Log<PregameCoordinator>(
-                    $"[OBS][Pregame] PregameCompleted signature='{signature}' result='{result}' profile='{context.ProfileId.Value}' target='{targetScene}'.",
-                    DebugUtility.Colors.Info);
 
                 Interlocked.Exchange(ref _inProgress, 0);
             }
@@ -110,39 +99,59 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 : null;
         }
 
-        private static async Task<bool> AwaitWithTimeoutAsync(Task task, int timeoutMs)
+        private static async Task<PregameRunResult> ExecuteStepWithTimeoutAsync(
+            IPregameStep step,
+            string stepName,
+            PregameContext context,
+            int timeoutMs)
         {
-            if (task == null)
+            var stepTask = step?.RunAsync(context, CancellationToken.None);
+            if (stepTask == null)
             {
-                return true;
+                return PregameRunResult.Completed;
             }
 
             if (timeoutMs <= 0)
             {
-                await task;
-                return true;
+                try
+                {
+                    await stepTask;
+                    return PregameRunResult.Completed;
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogWarning<PregameCoordinator>(
+                        $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    return PregameRunResult.Failed;
+                }
             }
 
-            var completed = await Task.WhenAny(task, Task.Delay(timeoutMs));
-            if (completed != task)
+            var completed = await Task.WhenAny(stepTask, Task.Delay(timeoutMs));
+            if (completed != stepTask)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Timeout aguardando pregame. timeoutMs={timeoutMs}.");
-
-                _ = task.ContinueWith(t =>
-                {
-                    if (t.Exception != null)
-                    {
-                        DebugUtility.LogWarning<PregameCoordinator>(
-                            $"[Pregame] Pregame terminou com erro após timeout. ex={t.Exception.GetBaseException()}");
-                    }
-                });
-
-                return false;
+                    $"[OBS][Pregame] PregameTimedOut step='{stepName}' timeoutMs={timeoutMs} signature='{NormalizeSignature(context.ContextSignature)}'.");
+                return PregameRunResult.TimedOut;
             }
 
-            await task;
-            return true;
+            try
+            {
+                await stepTask;
+                return PregameRunResult.Completed;
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning<PregameCoordinator>(
+                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                return PregameRunResult.Failed;
+            }
+        }
+
+        private static void LogCompletion(string signature, string targetScene, string profile, PregameRunResult result)
+        {
+            DebugUtility.Log<PregameCoordinator>(
+                $"[OBS][Pregame] PregameCompleted signature='{signature}' result='{FormatResult(result)}' profile='{profile}' target='{targetScene}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void LogSkipped(string reason, PregameContext context)
@@ -150,6 +159,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             DebugUtility.Log<PregameCoordinator>(
                 $"[OBS][Pregame] PregameSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static string FormatResult(PregameRunResult result)
+        {
+            return result switch
+            {
+                PregameRunResult.Completed => "completed",
+                PregameRunResult.TimedOut => "timed_out",
+                PregameRunResult.Failed => "failed",
+                _ => "unknown"
+            };
         }
 
         private static string NormalizeSignature(string signature)
@@ -160,5 +180,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static string NormalizeValue(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+
+        private enum PregameRunResult
+        {
+            Completed,
+            TimedOut,
+            Failed
+        }
     }
 }

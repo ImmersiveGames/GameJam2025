@@ -38,7 +38,7 @@ Definimos nomenclatura e comandos distintos (sem flags obscuras):
 
 - Executa **após ScenesReady + reset** e **antes do FadeOut** (revelação).
 - Se não houver `IPregameStep` (ou `HasContent == false`), o pipeline **não bloqueia**.
-- Um **timeout** assegura progresso mesmo se o passo de pregame não concluir.
+- Um **timeout** assegura progresso mesmo se o passo de pregame não concluir; o fluxo segue para o FadeOut.
 - O GameLoop expõe o estado **Pregame**, sincronizado via `RequestPregameStart`/`RequestPregameComplete`.
 
 ## Detalhes (pipeline)
@@ -75,8 +75,8 @@ Definimos nomenclatura e comandos distintos (sem flags obscuras):
    - Executa `IPregameCoordinator` com `PregameContext` (signature/profile/scene/reason).
 3. `PregameCoordinator`:
    - Resolve `IPregameStep` (fallback **NoOp**).
-   - Loga **PregameSkipped** / **PregameStarted** / **PregameCompleted**.
-   - Usa timeout para garantir progresso.
+   - Loga **PregameSkipped** / **PregameStarted** / **PregameTimedOut** / **PregameCompleted**.
+   - Timeout é **fail-safe**: se o step não terminar, registra `PregameTimedOut` e o pipeline continua.
 4. `GameLoop`:
    - Estado **Pregame** é ativado via `RequestPregameStart`.
    - `RequestStart` (após `TransitionCompleted`) libera `Playing`.
@@ -94,7 +94,7 @@ Definimos nomenclatura e comandos distintos (sem flags obscuras):
 - `[PhaseContext] PhasePendingSet ...` / `[PhaseContext] PhaseCommitted ...`.
 - `[OBS][Phase] PhaseCommitted ...`.
 - `[OBS][Pregame] PregameSkipped ...`.
-- `[OBS][Pregame] PregameStarted ...` / `[OBS][Pregame] PregameCompleted ...`.
+- `[OBS][Pregame] PregameStarted ...` / `[OBS][Pregame] PregameTimedOut ...` / `[OBS][Pregame] PregameCompleted ...`.
 
 ## Alternativas consideradas
 
@@ -126,6 +126,5 @@ Definimos nomenclatura e comandos distintos (sem flags obscuras):
 ### Evidência esperada
 
 - Logs de `PhaseChangeRequested` + `PhaseCommitted`.
-- Logs de `PregameSkipped` ou `PregameStarted/Completed`.
+- Logs de `PregameSkipped`, `PregameTimedOut` ou `PregameStarted/Completed`.
 - SceneFlow com ordem **FadeIn → ScenesReady → Reset → Pregame → FadeOut → Completed**.
-

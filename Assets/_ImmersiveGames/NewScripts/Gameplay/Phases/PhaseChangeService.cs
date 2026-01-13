@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var normalizedOptions = NormalizeOptions(options);
 
-            // ADR-0017: In-Place não deve ter interrupções visuais por padrão.
+            // ADR-0016: In-Place não deve ter interrupções visuais por padrão.
             // Se o caller solicitar, permitimos apenas mini-transição (Fade curto) sem HUD de loading.
             if (normalizedOptions.UseLoadingHud)
             {

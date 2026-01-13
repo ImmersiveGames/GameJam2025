@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
 
             var options = new PhaseChangeOptions
             {
-                // ADR-0017: InPlace não deve executar Fade/Loading HUD/SceneFlow.
+                // ADR-0016: InPlace não deve executar Fade/Loading HUD/SceneFlow.
                 TimeoutMs = PhaseChangeOptions.DefaultTimeoutMs
             };
 
