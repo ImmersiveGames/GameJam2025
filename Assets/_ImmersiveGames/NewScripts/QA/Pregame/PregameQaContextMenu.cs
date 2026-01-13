@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
     [DisallowMultipleComponent]
     public sealed class PregameQaContextMenu : MonoBehaviour
     {
-        [ContextMenu("QA/Pregame/Complete (Exit Pregame -> Start)")]
+        [ContextMenu("QA/Pregame/Complete (Force)")]
         private void CompletePregame()
         {
             var controlService = ResolveControlService();
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/Pregame/Skip (Exit Pregame -> Start)")]
+        [ContextMenu("QA/Pregame/Skip (Force)")]
         private void SkipPregame()
         {
             var controlService = ResolveControlService();
