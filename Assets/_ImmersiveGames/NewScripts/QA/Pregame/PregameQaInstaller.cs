@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
         private static PregameQaInstaller _instance;
         private const string QaGameObjectName = "QA_Pregame";
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void InstallOnLoad()
         {
             EnsureInstalled();
@@ -18,8 +18,12 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
 
         public static void EnsureInstalled()
         {
-            if (TryResolveExisting())
+            if (TryResolveExisting(out var resolved))
             {
+                EnsureContextMenu(resolved.gameObject);
+                DebugUtility.Log<PregameQaInstaller>(
+                    "[QA][Pregame] QA_Pregame já presente; instalação ignorada.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
@@ -27,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
             {
                 var go = new GameObject(QaGameObjectName);
                 _instance = go.AddComponent<PregameQaInstaller>();
-                go.AddComponent<PregameQaContextMenu>();
+                EnsureContextMenu(go);
                 DontDestroyOnLoad(go);
 
                 DebugUtility.Log<PregameQaInstaller>(
@@ -41,21 +45,61 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
             }
         }
 
-        private static bool TryResolveExisting()
+        private static bool TryResolveExisting(out PregameQaInstaller resolved)
         {
+            resolved = null;
             if (_instance != null)
             {
+                resolved = _instance;
                 return true;
             }
 
-            var existing = FindFirstObjectByType<PregameQaInstaller>(FindObjectsInactive.Include);
+            var existing = FindExistingInstaller();
             if (existing == null)
             {
                 return false;
             }
 
             _instance = existing;
+            resolved = existing;
             return true;
+        }
+
+        private static PregameQaInstaller FindExistingInstaller()
+        {
+            var installers = FindObjectsOfType<PregameQaInstaller>(true);
+            if (installers == null || installers.Length == 0)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < installers.Length; i++)
+            {
+                if (installers[i] == null)
+                {
+                    continue;
+                }
+
+                return installers[i];
+            }
+
+            return null;
+        }
+
+        private static void EnsureContextMenu(GameObject go)
+        {
+            if (go == null)
+            {
+                return;
+            }
+
+            if (!go.TryGetComponent<PregameQaContextMenu>(out _))
+            {
+                go.AddComponent<PregameQaContextMenu>();
+                DebugUtility.Log<PregameQaInstaller>(
+                    "[QA][Pregame] PregameQaContextMenu ausente; componente adicionado.",
+                    DebugUtility.Colors.Info);
+            }
         }
     }
 }
