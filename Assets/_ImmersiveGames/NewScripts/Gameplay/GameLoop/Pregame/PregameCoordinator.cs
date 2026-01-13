@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
@@ -12,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PregameCoordinator : IPregameCoordinator
     {
+        private const string SimulationGateToken = "flow.pregame";
         private int _inProgress;
 
         public async Task RunPregameAsync(PregameContext context)
@@ -42,6 +44,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var reason = NormalizeReason(context.Reason);
             var targetScene = NormalizeValue(context.TargetScene);
 
+            var simulationGate = ResolveSimulationGateService();
+            var simulationGateAcquired = false;
+
             DebugUtility.Log<PregameCoordinator>(
                 $"[OBS][Pregame] PregameStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
@@ -61,6 +66,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     DebugUtility.LogWarning<PregameCoordinator>(
                         "[Pregame] IPregameControlService indisponível. Pregame será concluído imediatamente.");
                     gameLoop?.RequestPregameStart();
+                    simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
                     LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
                     RequestStartIfNeeded(gameLoop);
                     return;
@@ -68,6 +74,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
                 controlService.BeginPregame(context);
                 gameLoop?.RequestPregameStart();
+                simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
 
                 if (step == null || !step.HasContent)
                 {
@@ -102,6 +109,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             finally
             {
                 gameLoop?.RequestPregameComplete();
+                if (simulationGateAcquired)
+                {
+                    ReleaseSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene);
+                }
                 Interlocked.Exchange(ref _inProgress, 0);
             }
         }
@@ -138,6 +149,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private static IPregameControlService? ResolvePregameControlService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var service) && service != null)
+            {
+                return service;
+            }
+
+            return null;
+        }
+
+        private static ISimulationGateService? ResolveSimulationGateService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var service) && service != null)
             {
                 return service;
             }
@@ -190,6 +211,49 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestStart();
+        }
+
+        private static bool AcquireSimulationGate(
+            ISimulationGateService? gateService,
+            string signature,
+            string profile,
+            string targetScene,
+            string reason)
+        {
+            if (gateService == null)
+            {
+                DebugUtility.LogWarning<PregameCoordinator>(
+                    "[Pregame] ISimulationGateService indisponível; simulação não será bloqueada durante Pregame.");
+                return false;
+            }
+
+            gateService.Acquire(SimulationGateToken);
+
+            DebugUtility.Log<PregameCoordinator>(
+                $"[OBS][Pregame] PregameSimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"profile='{profile}' target='{targetScene}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            return true;
+        }
+
+        private static void ReleaseSimulationGate(
+            ISimulationGateService? gateService,
+            string signature,
+            string profile,
+            string targetScene)
+        {
+            if (gateService == null)
+            {
+                return;
+            }
+
+            gateService.Release(SimulationGateToken);
+
+            DebugUtility.Log<PregameCoordinator>(
+                $"[OBS][Pregame] PregameSimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"profile='{profile}' target='{targetScene}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void LogCompletion(string signature, string targetScene, string profile, PregameRunResult result)
