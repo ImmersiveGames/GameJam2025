@@ -2,8 +2,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
@@ -17,20 +19,27 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             if (!context.ProfileId.IsGameplay)
             {
-                LogSkipped("profile_not_gameplay", context);
+                LogSkipped("profile_not_gameplay", context, SceneManager.GetActiveScene().name);
+                return;
+            }
+
+            var classifier = ResolveGameplaySceneClassifier();
+            if (classifier != null && !classifier.IsGameplayScene())
+            {
+                LogSkipped("scene_not_gameplay", context, SceneManager.GetActiveScene().name);
                 return;
             }
 
             var step = ResolveStep(out var fromDi);
             if (step == null)
             {
-                LogSkipped("no_step", context);
+                LogSkipped("no_step", context, SceneManager.GetActiveScene().name);
                 return;
             }
 
             if (!step.HasContent)
             {
-                LogSkipped(fromDi ? "no_content" : "no_step", context);
+                LogSkipped(fromDi ? "no_content" : "no_step", context, SceneManager.GetActiveScene().name);
                 return;
             }
 
@@ -97,6 +106,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var loop)
                 ? loop
                 : null;
+        }
+
+        private static IGameplaySceneClassifier? ResolveGameplaySceneClassifier()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
+            {
+                return classifier;
+            }
+
+            return new DefaultGameplaySceneClassifier();
         }
 
         private static async Task<PregameRunResult> ExecuteStepWithTimeoutAsync(
@@ -169,10 +188,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 DebugUtility.Colors.Info);
         }
 
-        private static void LogSkipped(string reason, PregameContext context)
+        private static void LogSkipped(string reason, PregameContext context, string sceneName)
         {
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.",
+                $"[OBS][Pregame] PregameSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' " +
+                $"profile='{context.ProfileId.Value}' target='{NormalizeValue(context.TargetScene)}' scene='{NormalizeValue(sceneName)}'.",
                 DebugUtility.Colors.Info);
         }
 

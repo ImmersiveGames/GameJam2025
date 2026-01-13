@@ -30,6 +30,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         public void RequestDefeat(string reason) => Request(GameRunOutcome.Defeat, reason);
 
+        [ContextMenu("QA/Test3/ForceEndVictory")]
+        private void QA_ForceEndVictory()
+        {
+            DebugUtility.Log<GameRunEndRequestTrigger>(
+                "[QA][Test3] ForceEndVictory acionado.",
+                DebugUtility.Colors.Info);
+            Request(GameRunOutcome.Victory, "QA/Test3/ForceEndVictory");
+        }
+
         public void Request(GameRunOutcome outcome, string reason)
         {
             if (requireActiveGameplayScene && !IsActiveGameplayScene())

@@ -26,6 +26,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Baseline;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -135,6 +136,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterGameLoop();
             RegisterPregameCoordinator();
+            RegisterGameplaySceneClassifier();
+            RegisterDefaultPregameStep();
 
             // Resolve IGameLoopService UMA vez para serviços dependentes.
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
@@ -147,6 +150,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
+            RegisterSceneFlowSignatureCache();
             RegisterWorldResetRequestService();
 
             RegisterGameNavigationService();
@@ -435,6 +439,44 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterGameplaySceneClassifier()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Gameplay] IGameplaySceneClassifier já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IGameplaySceneClassifier>(
+                new DefaultGameplaySceneClassifier(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Gameplay] IGameplaySceneClassifier registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterDefaultPregameStep()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPregameStep>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pregame] IPregameStep já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPregameStep>(
+                new TimedPregameStep(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Pregame] TimedPregameStep registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         // --------------------------------------------------------------------
         // SceneFlow / WorldLifecycle
         // --------------------------------------------------------------------
@@ -473,6 +515,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterSceneFlowSignatureCache()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneFlow] ISceneFlowSignatureCache já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<ISceneFlowSignatureCache>(
+                new SceneFlowSignatureCache(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[SceneFlow] SceneFlowSignatureCache registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
