@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PregameCoordinator : IPregameCoordinator
     {
-        private const string SimulationGateToken = "flow.pregame";
+        private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
         private int _inProgress;
 
         public async Task RunPregameAsync(PregameContext context)
@@ -223,14 +223,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (gateService == null)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    "[Pregame] ISimulationGateService indisponível; simulação não será bloqueada durante Pregame.");
+                    "[Pregame] ISimulationGateService indisponível; simulação gameplay pode não ser bloqueada durante Pregame.");
                 return false;
             }
 
             gateService.Acquire(SimulationGateToken);
 
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameSimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"[OBS][Pregame] GameplaySimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
                 $"profile='{profile}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
@@ -251,7 +251,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             gateService.Release(SimulationGateToken);
 
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameSimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"[OBS][Pregame] GameplaySimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
                 $"profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
