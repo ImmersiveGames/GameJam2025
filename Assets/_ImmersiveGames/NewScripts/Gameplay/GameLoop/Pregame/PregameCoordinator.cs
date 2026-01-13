@@ -97,6 +97,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     $"[Pregame] Falha ao executar pregame. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
                 LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Failed);
+                RequestStartIfNeeded(gameLoop);
             }
             finally
             {
