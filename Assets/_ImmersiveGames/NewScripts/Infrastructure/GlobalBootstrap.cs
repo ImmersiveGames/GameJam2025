@@ -26,6 +26,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Baseline;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
@@ -147,6 +148,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterGameRunStatusService(gameLoopService);
             RegisterGameRunOutcomeService(gameLoopService);
             RegisterGameRunOutcomeEventInputBridge();
+            RegisterPostPlayOwnershipService();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
@@ -420,6 +422,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterPostPlayOwnershipService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPostPlayOwnershipService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[PostPlay] IPostPlayOwnershipService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPostPlayOwnershipService>(
+                new PostPlayOwnershipService(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[PostPlay] PostPlayOwnershipService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterPregameCoordinator()
         {
             if (DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var existing) && existing != null)
@@ -469,11 +490,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             DependencyManager.Provider.RegisterGlobal<IPregameStep>(
-                new TimedPregameStep(),
+                new ConfirmToStartPregameStep(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] TimedPregameStep registrado no DI global.",
+                "[Pregame] ConfirmToStartPregameStep registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -175,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
-            ApplyPostPlayInputMode(info);
+            NotifyPostPlayOwnerEntered(info);
         }
 
         private void HandlePostPlayExited(GameLoopStateId nextState)
@@ -188,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
-            ApplyPostPlayExitInputMode(info, nextState, reason);
+            NotifyPostPlayOwnerExited(info, nextState, reason);
         }
 
         private static string ResolvePostPlayExitReason(GameLoopStateId nextState)
@@ -202,51 +203,36 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             };
         }
 
-        private void ApplyPostPlayInputMode(SignatureInfo info)
+        private void NotifyPostPlayOwnerEntered(SignatureInfo info)
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
+            var owner = ResolvePostPlayOwnershipService();
+            if (owner == null || !owner.IsOwnerEnabled)
             {
-                DebugUtility.LogWarning<GameLoopService>(
-                    "[PostPlay] IInputModeService indisponível. InputMode não será alternado.");
                 return;
             }
 
-            DebugUtility.Log<GameLoopService>(
-                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='PostPlay' reason='PostPlay/Entered' " +
-                $"signature='{info.Signature}' scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
-                DebugUtility.Colors.Info);
-
-            inputMode.SetFrontendMenu("PostPlay/Entered");
+            owner.OnPostPlayEntered(new PostPlayOwnershipContext(
+                info.Signature,
+                info.SceneName,
+                info.Profile,
+                info.Frame));
         }
 
-        private void ApplyPostPlayExitInputMode(SignatureInfo info, GameLoopStateId nextState, string reason)
+        private void NotifyPostPlayOwnerExited(SignatureInfo info, GameLoopStateId nextState, string reason)
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
+            var owner = ResolvePostPlayOwnershipService();
+            if (owner == null || !owner.IsOwnerEnabled)
             {
-                DebugUtility.LogWarning<GameLoopService>(
-                    "[PostPlay] IInputModeService indisponível. InputMode não será alternado.");
                 return;
             }
 
-            var applyGameplay = nextState == GameLoopStateId.Playing;
-            var modeName = applyGameplay ? "Gameplay" : "FrontendMenu";
-            var mapName = applyGameplay ? "Player" : "UI";
-
-            DebugUtility.Log<GameLoopService>(
-                $"[OBS][InputMode] Apply mode='{modeName}' map='{mapName}' phase='PostPlayExit' reason='PostPlay/{reason}' " +
-                $"signature='{info.Signature}' scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
-                DebugUtility.Colors.Info);
-
-            if (applyGameplay)
-            {
-                inputMode.SetGameplay($"PostPlay/{reason}");
-            }
-            else
-            {
-                inputMode.SetFrontendMenu($"PostPlay/{reason}");
-            }
+            owner.OnPostPlayExited(new PostPlayOwnershipExitContext(
+                info.Signature,
+                info.SceneName,
+                info.Profile,
+                info.Frame,
+                reason,
+                nextState.ToString()));
         }
 
         private void ApplyGameplayInputMode()
@@ -269,6 +255,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private static IInputModeService ResolveInputModeService()
         {
             return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service)
+                ? service
+                : null;
+        }
+
+        private static IPostPlayOwnershipService ResolvePostPlayOwnershipService()
+        {
+            return DependencyManager.Provider.TryGetGlobal<IPostPlayOwnershipService>(out var service)
                 ? service
                 : null;
         }

@@ -51,10 +51,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
 
-        [ContextMenu("QA/Test3/ForcePregameNow")]
-        private async void QA_ForcePregameNow()
+        [ContextMenu("QA/Test3 - ForcePregame")]
+        private async void QA_ForcePregame()
         {
-            DebugUtility.Log<PregameQATester>("[QA][Test3] ForcePregameNow acionado.", DebugUtility.Colors.Info);
+            DebugUtility.Log<PregameQATester>("[QA][Test3] ForcePregame acionado.", DebugUtility.Colors.Info);
 
             var coordinator = ResolveCoordinator();
             if (coordinator == null)
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (classifier != null && !classifier.IsGameplayScene())
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    $"[QA][Test3] ForcePregameNow ignorado (scene_not_gameplay). scene='{SceneManager.GetActiveScene().name}'.");
+                    $"[QA][Test3] ForcePregame ignorado (scene_not_gameplay). scene='{SceneManager.GetActiveScene().name}'.");
                 return;
             }
 
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 contextSignature: signature,
                 profileId: SceneFlowProfileId.Gameplay,
                 targetScene: activeScene,
-                reason: "QA/Test3/ForcePregameNow");
+                reason: "QA/Test3/ForcePregame");
 
             try
             {
