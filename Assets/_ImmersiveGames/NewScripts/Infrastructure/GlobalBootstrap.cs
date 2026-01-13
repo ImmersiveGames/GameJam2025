@@ -44,6 +44,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.QA.Pregame;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -168,6 +169,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
             // ADR-0016: PhaseContext precisa existir no DI global.
             RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
+
+            RegisterPregameQaInstaller();
 
             // Baseline 3B: Pending NÃO pode atravessar transição.
             RegisterPhaseContextSceneFlowBridge();
@@ -705,6 +708,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[PhaseContext] PhaseContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending).",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPregameQaInstaller()
+        {
+            try
+            {
+                PregameQaInstaller.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    $"[QA][Pregame] Falha ao instalar PregameQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
         }
 
         // --------------------------------------------------------------------
