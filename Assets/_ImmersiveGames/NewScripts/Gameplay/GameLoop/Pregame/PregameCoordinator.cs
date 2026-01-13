@@ -62,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                         "[Pregame] IPregameControlService indisponível. Pregame será concluído imediatamente.");
                     gameLoop?.RequestPregameStart();
                     LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
+                    RequestStartIfNeeded(gameLoop);
                     return;
                 }
 
@@ -163,8 +164,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     return;
                 }
 
+                var exception = t.Exception.GetBaseException();
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{t.Exception.GetBaseException()}'.");
+                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{exception}'.");
+
+                controlService.SkipPregame("step_failed");
             }, TaskScheduler.Default);
         }
 

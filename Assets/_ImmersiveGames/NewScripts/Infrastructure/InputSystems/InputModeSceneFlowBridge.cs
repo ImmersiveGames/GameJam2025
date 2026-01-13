@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     /// <summary>
     /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
     /// Também sincroniza o GameLoop com a intenção do profile:
-    /// - Gameplay: garante RequestStart (ou Resume se já estiver pausado).
+    /// - Gameplay: aplica InputMode e dispara o Pregame (o início real ocorre após conclusão explícita do Pregame).
     /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
     /// </summary>
     public sealed class InputModeSceneFlowBridge : IDisposable
