@@ -75,6 +75,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 controlService.BeginPregame(context);
                 gameLoop?.RequestPregameStart();
                 simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
+                DebugUtility.Log<PregameCoordinator>(
+                    "[Pregame] Pregame ativo: simulação gameplay bloqueada; use QA/Pregame/Complete ou QA/Pregame/Skip para prosseguir.",
+                    DebugUtility.Colors.Info);
 
                 if (step == null || !step.HasContent)
                 {
