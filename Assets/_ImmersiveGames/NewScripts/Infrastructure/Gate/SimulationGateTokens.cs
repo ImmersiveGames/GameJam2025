@@ -20,7 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         public const string Cinematic = "flow.cinematic";
         public const string SoftReset = "flow.soft_reset";
         public const string Loading = "flow.loading";
-        public const string PhaseInPlace = "phase.inplace";
+        public const string PhaseTransition = "flow.phase_transition";
+        public const string PhaseInPlace = "flow.phase_inplace";
 
         // QA / Debug
         public const string QaGameplayPause = "qa.gameplay_pause";

@@ -1,4 +1,4 @@
-﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/Phases/PhaseChangeService.cs
+﻿﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/Phases/PhaseChangeService.cs
 #nullable enable
 using System;
 using System.Threading;
@@ -67,16 +67,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var normalizedOptions = NormalizeOptions(options);
 
-            // ADR-0017: In-Place deve fluir sem interrupções visuais.
-            // Mesmo que um caller forneça opções visuais, elas são ignoradas/forçadas para OFF.
-            if (normalizedOptions.UseFade || normalizedOptions.UseLoadingHud)
+            // ADR-0016: In-Place não deve ter interrupções visuais por padrão.
+            // Se o caller solicitar, permitimos apenas mini-transição (Fade curto) sem HUD de loading.
+            if (normalizedOptions.UseLoadingHud)
             {
-                UnityEngine.Debug.LogWarning("[PhaseChangeService] In-Place ignora opções visuais (UseFade/UseLoadingHud). Para transição visual, use SceneTransition.");
+                UnityEngine.Debug.LogWarning("[PhaseChangeService] In-Place ignora Loading HUD. Use SceneTransition para loading completo.");
+                normalizedOptions.UseLoadingHud = false;
             }
-            normalizedOptions.UseFade = false;
-            normalizedOptions.UseLoadingHud = false;
 
-var signature = $"phase.inplace:{plan.PhaseId}";
+            var signature = $"phase.inplace:{plan.PhaseId}";
             IDisposable gateHandle = null;
             var hudShown = false;
             var fadeOutCompleted = false;
@@ -180,8 +179,12 @@ var signature = $"phase.inplace:{plan.PhaseId}";
 
             var normalizedOptions = NormalizeOptions(options);
 
+            IDisposable gateHandle = null;
+
             try
             {
+                gateHandle = AcquirePhaseTransitionGateHandle();
+
                 var normalizedRequest = EnsureContextSignature(transition);
                 var context = SceneTransitionSignatureUtil.BuildContext(normalizedRequest);
                 var signature = SceneTransitionSignatureUtil.Compute(context);
@@ -235,6 +238,7 @@ var signature = $"phase.inplace:{plan.PhaseId}";
             }
             finally
             {
+                gateHandle?.Dispose();
                 Interlocked.Exchange(ref _inProgress, 0);
             }
         }
@@ -246,7 +250,10 @@ var signature = $"phase.inplace:{plan.PhaseId}";
 
         private static PhaseChangeOptions NormalizeOptions(PhaseChangeOptions? options)
         {
-            var normalized = options?.Clone() ?? PhaseChangeOptions.Default;
+            // IMPORTANT: nunca use diretamente PhaseChangeOptions.Default se ele for instância compartilhada.
+            // Sempre clone para evitar mutação global acidental.
+            var normalized = options?.Clone() ?? PhaseChangeOptions.Default.Clone();
+
             if (normalized.TimeoutMs <= 0)
             {
                 normalized.TimeoutMs = PhaseChangeOptions.DefaultTimeoutMs;
@@ -265,6 +272,18 @@ var signature = $"phase.inplace:{plan.PhaseId}";
             }
 
             return gate.Acquire(SimulationGateTokens.PhaseInPlace);
+        }
+
+        private static IDisposable AcquirePhaseTransitionGateHandle()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
+            {
+                DebugUtility.LogWarning<PhaseChangeService>(
+                    "[PhaseChange] ISimulationGateService indisponível. Gate não será adquirido para WithTransition.");
+                return null;
+            }
+
+            return gate.Acquire(SimulationGateTokens.PhaseTransition);
         }
 
         private static async Task<bool> AwaitWithTimeoutAsync(Task task, int timeoutMs, string label)

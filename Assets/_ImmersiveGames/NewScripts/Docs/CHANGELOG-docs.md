@@ -1,5 +1,30 @@
 # Changelog (Docs)
 
+## [2026-01-13]
+### Added
+- Registro incremental de evidências do **Baseline 2.0** (cenários 1 e 2) a partir do log fornecido nesta conversa.
+
+### Evidência (log) usada como fonte de verdade
+- **Teste 1 — Startup → Menu (profile=`startup`)**
+    - `WorldLifecycleRuntimeCoordinator` solicitou reset e **SKIPOU** por perfil não-gameplay: `Reset SKIPPED (startup/frontend). why='profile'` e emitiu `WorldLifecycleResetCompletedEvent(signature, reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene')`.
+    - `WorldLifecycleResetCompletionGate` recebeu o `WorldLifecycleResetCompletedEvent(...)` e liberou o `SceneTransitionService` **antes do FadeOut** (gate cached + “Completion gate concluído. Prosseguindo para FadeOut.”).
+
+- **Teste 2 — Menu → Gameplay (profile=`gameplay`)**
+    - `SceneTransitionScenesReady` observado antes de `SceneTransitionCompleted` (ordem preservada).
+    - `WorldLifecycleRuntimeCoordinator` executou **hard reset após ScenesReady**: `Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene'`.
+    - `WorldLifecycleController/Orchestrator` completou o pipeline determinístico:
+        - Hooks: `OnBeforeDespawn` → `Despawn` → `OnAfterDespawn` → `OnBeforeSpawn` → `Spawn` → `OnAfterActorSpawn` → `OnAfterSpawn`.
+        - Spawns OK: `Spawn services registered from definition: 2` (Player + Eater) e `ActorRegistry count at 'After Spawn': 2`.
+    - `WorldLifecycleRuntimeCoordinator` emitiu `WorldLifecycleResetCompletedEvent(signature, reason='ScenesReady/GameplayScene')` e o `WorldLifecycleResetCompletionGate` liberou a continuação do SceneFlow.
+    - Após `SceneTransitionCompleted`: `InputMode` mudou para `Gameplay` e o `GameLoop` entrou em `Playing` (`ENTER: Playing (active=True)`).
+
+- **Teste 2 — PostGame → ExitToMenu (profile=`frontend`)**
+    - `GameRunEndedEvent` publicado (Outcome=Defeat, Reason='Gameplay/Timeout'), overlay exibido e gate adquirido com `token='state.postgame'` (bloqueio esperado).
+    - Em `ExitToMenu`: navegação para Menu com `Profile='frontend'` e reset novamente **SKIPADO**: `reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'`.
+
+### Notes
+- Observação de ordenação: há um log pontual de `GameplayNotReady` imediatamente antes do snapshot final marcar `gameplayReady=True` no `SceneTransitionCompleted`. Isso é consistente com a janela entre “Completed:Gameplay” e a publicação do snapshot “scene_transition_completed”.
+
 ## [2026-01-05]
 ### Added
 - `IWorldResetRequestService` como gatilho de produção para `ResetWorld` fora de transição, com reason padronizado e dedupe por `contextSignature` durante o fluxo de SceneFlow.

@@ -24,6 +24,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
         // InPlace (sem SceneFlow)
         // -------------------------
 
+        [ContextMenu("QA/Phase/Advance In-Place (TestCase: PhaseInPlace)")]
+        private async void QA_AdvanceInPlace_TestCase()
+            => await RequestInPlaceAsync(Phase1Id, "QA/TestCase:PhaseInPlace");
+
         [ContextMenu("QA/Phase/InPlace -> Phase1")]
         private async void QA_InPlace_Phase1()
             => await RequestInPlaceAsync(Phase1Id, "QA/Phase/InPlace");
@@ -39,6 +43,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
         // --------------------------------
         // WithTransition (com SceneFlow)
         // --------------------------------
+
+        [ContextMenu("QA/Phase/Advance With Transition (TestCase: PhaseWithTransition)")]
+        private async void QA_AdvanceWithTransition_TestCase()
+            => await RequestWithTransitionAsync(Phase1Id, "QA/TestCase:PhaseWithTransition");
 
         [ContextMenu("QA/Phase/WithTransition -> Phase1 (SceneFlow)")]
         private async void QA_WithTransition_Phase1()
@@ -64,9 +72,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
                 return;
             }
 
+            // ADR-0016: InPlace não deve executar Fade/Loading HUD/SceneFlow por padrão.
+            // Este testcase força explicitamente os flags para não depender de defaults globais.
             var options = new PhaseChangeOptions
             {
-                // ADR-0017: InPlace não deve executar Fade/Loading HUD/SceneFlow.
+                UseFade = false,
+                UseLoadingHud = false,
                 TimeoutMs = PhaseChangeOptions.DefaultTimeoutMs
             };
 

@@ -32,6 +32,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void RequestReady() => _signals.MarkReady();
         public void RequestReset() => _signals.MarkReset();
         public void RequestEnd() => _signals.MarkEnd();
+        public void RequestPregameStart() => _signals.MarkPregameStart();
+        public void RequestPregameComplete() => _signals.MarkPregameComplete();
 
         public void Initialize()
         {
@@ -66,6 +68,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _runStartedEmittedThisRun = false;
 
             _signals.ClearStartPending();
+            _signals.ClearPregameFlags();
             _signals.ResetTransientSignals();
         }
 
@@ -81,15 +84,28 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             // - Em Resume (Paused -> Playing), NÃO publicamos de novo.
             if (stateId == GameLoopStateId.Boot ||
                 stateId == GameLoopStateId.Ready ||
+                stateId == GameLoopStateId.Pregame ||
                 stateId == GameLoopStateId.PostPlay)
             {
                 _runStartedEmittedThisRun = false;
+            }
+
+            if (stateId == GameLoopStateId.Pregame)
+            {
+                _signals.ClearPregamePending();
+            }
+            else if (stateId == GameLoopStateId.Boot ||
+                     stateId == GameLoopStateId.Ready ||
+                     stateId == GameLoopStateId.PostPlay)
+            {
+                _signals.ClearPregameFlags();
             }
 
             if (stateId == GameLoopStateId.Playing)
             {
                 // Garantia: StartPending nunca deve ficar “colado” após entrar em Playing.
                 _signals.ClearStartPending();
+                _signals.ClearPregameFlags();
 
                 // Correção: se já emitimos nesta run (ex.: Paused -> Playing), apenas não publica novamente.
                 // Importante: NÃO gerar log extra de "resume/duplicate" para evitar ruído no baseline/smoke.
@@ -123,6 +139,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
             private bool _startPending;
+            private bool _pregamePending;
+            private bool _pregameCompleted;
 
             public bool StartRequested => _startPending;
             public bool PauseRequested { get; private set; }
@@ -130,6 +148,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             public bool ReadyRequested { get; private set; }
             public bool ResetRequested { get; private set; }
             public bool EndRequested { get; private set; }
+            public bool PregameRequested => _pregamePending;
+            public bool PregameCompleted => _pregameCompleted;
 
             bool IGameLoopSignals.EndRequested
             {
@@ -144,6 +164,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             public void MarkReset() => ResetRequested = true;
             public void MarkEnd() => EndRequested = true;
             public void ClearStartPending() => _startPending = false;
+            public void MarkPregameStart() => _pregamePending = true;
+            public void MarkPregameComplete() => _pregameCompleted = true;
+            public void ClearPregamePending() => _pregamePending = false;
+            public void ClearPregameFlags()
+            {
+                _pregamePending = false;
+                _pregameCompleted = false;
+            }
 
             public void ResetTransientSignals()
             {

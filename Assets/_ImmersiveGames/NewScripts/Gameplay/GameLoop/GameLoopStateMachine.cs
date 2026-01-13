@@ -60,7 +60,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     break;
 
                 case GameLoopStateId.Ready:
-                    if (_signals.StartRequested)
+                    if (_signals.PregameRequested)
+                    {
+                        next = GameLoopStateId.Pregame;
+                    }
+                    else if (_signals.StartRequested)
+                    {
+                        next = GameLoopStateId.Playing;
+                    }
+                    break;
+
+                case GameLoopStateId.Pregame:
+                    if (_signals.StartRequested && _signals.PregameCompleted)
                     {
                         next = GameLoopStateId.Playing;
                     }
@@ -129,6 +140,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel,
 
             GameLoopStateId.Ready =>
+                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
+
+            GameLoopStateId.Pregame =>
                 action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
 
             GameLoopStateId.Playing =>

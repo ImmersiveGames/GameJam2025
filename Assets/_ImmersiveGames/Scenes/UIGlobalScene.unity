@@ -245,6 +245,7 @@ GameObject:
   - component: {fileID: 53060358}
   - component: {fileID: 53060359}
   - component: {fileID: 53060360}
+  - component: {fileID: 53060361}
   m_Layer: 0
   m_Name: QA
   m_TagString: Untagged
@@ -296,6 +297,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3eaa78f52b270b64baa5539cf54dc52d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &53060361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 53060356}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dea8860070304bd2a4e708df368e7ed0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  qaSignature: qa.pregame
+  qaReason: QA/PregameOptional
 --- !u!1 &128670549
 GameObject:
   m_ObjectHideFlags: 0
