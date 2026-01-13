@@ -137,6 +137,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterGameLoop();
             RegisterPregameCoordinator();
+            RegisterPregameControlService();
             RegisterGameplaySceneClassifier();
             RegisterDefaultPregameStep();
 
@@ -460,6 +461,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterPregameControlService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pregame] IPregameControlService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPregameControlService>(
+                new PregameControlService(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Pregame] PregameControlService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterGameplaySceneClassifier()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var existing) && existing != null)
@@ -523,11 +543,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
             {
                 var resetGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                completionGate = new PregameSceneTransitionCompletionGate(resetGate);
+                completionGate = resetGate;
                 DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (PregameSceneTransitionCompletionGate -> WorldLifecycleResetCompletionGate).",
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
                     DebugUtility.Colors.Info);
             }
 

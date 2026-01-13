@@ -1,10 +1,12 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 {
@@ -87,6 +89,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     return;
                 }
 
+                if (!IsGameplayScene())
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        $"[InputModeSceneFlowBridge] [Pregame] Cena ativa não é gameplay. Pregame ignorado. scene='{SceneManager.GetActiveScene().name}'.",
+                        DebugUtility.Colors.Info);
+                }
+                else
+                {
+                    gameLoopService.RequestPregameStart();
+
+                    var coordinator = ResolvePregameCoordinator();
+                    if (coordinator == null)
+                    {
+                        DebugUtility.LogWarning<InputModeSceneFlowBridge>(
+                            "[InputModeSceneFlowBridge] [Pregame] IPregameCoordinator indisponível; pregame não será executado.");
+                    }
+                    else
+                    {
+                        var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+                        var pregameContext = new PregameContext(
+                            contextSignature: signature,
+                            profileId: evt.Context.TransitionProfileId,
+                            targetScene: evt.Context.TargetActiveScene,
+                            reason: "SceneFlow/Completed");
+
+                        _ = coordinator.RunPregameAsync(pregameContext);
+                    }
+                }
+
                 gameLoopService.RequestStart();
                 return;
             }
@@ -145,6 +176,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             }
 
             return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var service) ? service : null;
+        }
+
+        private static IPregameCoordinator ResolvePregameCoordinator()
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                return null;
+            }
+
+            return DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var service) ? service : null;
+        }
+
+        private static bool IsGameplayScene()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
+            {
+                return classifier.IsGameplayScene();
+            }
+
+            return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", StringComparison.Ordinal);
         }
     }
 }
