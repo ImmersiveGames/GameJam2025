@@ -97,8 +97,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 }
                 else
                 {
-                    gameLoopService.RequestPregameStart();
-
                     var coordinator = ResolvePregameCoordinator();
                     if (coordinator == null)
                     {
@@ -117,8 +115,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                         _ = coordinator.RunPregameAsync(pregameContext);
                     }
                 }
-
-                gameLoopService.RequestStart();
                 return;
             }
 

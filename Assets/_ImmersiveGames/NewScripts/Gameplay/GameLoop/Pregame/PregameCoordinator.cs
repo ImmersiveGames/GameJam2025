@@ -87,6 +87,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 {
                     LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
                 }
+
+                RequestStartIfNeeded(gameLoop);
             }
             catch (Exception ex)
             {
@@ -164,6 +166,25 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 DebugUtility.LogWarning<PregameCoordinator>(
                     $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{t.Exception.GetBaseException()}'.");
             }, TaskScheduler.Default);
+        }
+
+        private static void RequestStartIfNeeded(IGameLoopService? gameLoop)
+        {
+            if (gameLoop == null)
+            {
+                return;
+            }
+
+            if (string.Equals(gameLoop.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<PregameCoordinator>(
+                "[Pregame] Solicitando RequestStart após conclusão explícita do Pregame.",
+                DebugUtility.Colors.Info);
+
+            gameLoop.RequestStart();
         }
 
         private static void LogCompletion(string signature, string targetScene, string profile, PregameRunResult result)
