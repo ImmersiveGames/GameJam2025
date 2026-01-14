@@ -78,6 +78,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 DebugUtility.Log<PregameCoordinator>(
                     "[Pregame] Pregame ativo: simulação gameplay bloqueada; use QA/Pregame/Complete ou QA/Pregame/Skip para prosseguir.",
                     DebugUtility.Colors.Info);
+                DebugUtility.Log<PregameCoordinator>(
+                    "[QA][Pregame] Use Inspector(ContextMenu) OU MenuItem para Complete/Skip.",
+                    DebugUtility.Colors.Info);
 
                 if (step == null || !step.HasContent)
                 {

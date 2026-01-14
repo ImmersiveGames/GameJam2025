@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
                 DebugUtility.Log<PregameQaInstaller>(
                     "[QA][Pregame] QA_Pregame já presente; instalação ignorada.",
                     DebugUtility.Colors.Info);
+                LogInspectorHint();
                 return;
             }
 
@@ -37,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
                 DebugUtility.Log<PregameQaInstaller>(
                     "[QA][Pregame] PregameQaContextMenu instalado (DontDestroyOnLoad).",
                     DebugUtility.Colors.Info);
+                LogInspectorHint();
             }
             catch (Exception ex)
             {
@@ -90,6 +92,8 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
         {
             if (go == null)
             {
+                DebugUtility.LogWarning<PregameQaInstaller>(
+                    "[QA][Pregame] QA_Pregame não disponível; ContextMenu não pode ser anexado.");
                 return;
             }
 
@@ -100,6 +104,13 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
                     "[QA][Pregame] PregameQaContextMenu ausente; componente adicionado.",
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private static void LogInspectorHint()
+        {
+            DebugUtility.Log<PregameQaInstaller>(
+                "[QA][Pregame] Para acessar o ContextMenu, selecione o GameObject 'QA_Pregame' no Hierarchy (DontDestroyOnLoad).",
+                DebugUtility.Colors.Info);
         }
     }
 }
