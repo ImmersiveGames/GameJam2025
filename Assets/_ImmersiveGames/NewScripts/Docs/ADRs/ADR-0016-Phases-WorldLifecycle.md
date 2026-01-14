@@ -10,6 +10,7 @@ Com o **Baseline 2.0** estabelecido, o projeto já possui:
 
 - **WorldLifecycle determinístico**, com reset canônico em `SceneTransitionScenesReadyEvent` (quando o profile exige reset).
 - **SceneFlow** com ordem estável de eventos (**FadeIn → ScenesReady → Reset → FadeOut → Completed**).
+- **GameReadiness/SimulationGate** controlando o gate durante transições (token `flow.scene_transition`), fechando o gameplay durante o pipeline e liberando ao concluir.
 - **PhaseContext** com `Pending` e `Current`, além de **intent registry** para transições de cena.
 - **GameLoop** com integração ao SceneFlow (entrada no gameplay após o pipeline de cenas estar concluído).
 
@@ -50,9 +51,9 @@ Onde:
     - `UseLoadingHud` (in-Place ignora; transição completa depende do profile),
     - `TimeoutMs`.
 
-### 2) Pregame é uma fase opcional do GameLoop, disparada **após o FadeOut (Completed)**
+### 2) Pregame é uma fase opcional do GameLoop, disparada na conclusão do SceneFlow (Completed)
 
-**Intenção oficial (estado atual do código):**
+**Intenção oficial (estado atual do código + evidência em logs):**
 
 - O Pregame existe para exibir conteúdo **com a cena já revelada** (após o `FadeOut`), antes de liberar o início do gameplay.
 - O disparo ocorre em `SceneTransitionCompletedEvent`, via bridge de SceneFlow:
@@ -62,6 +63,9 @@ Onde:
     - `IPregameControlService.CompletePregame(string reason)` (conclui)
     - `IPregameControlService.SkipPregame(string reason)` (pula/cancela)
 
+**Nota operacional (ordem observada):**
+- O Pregame pode iniciar **durante o manuseio do Completed**, antes do `flow.scene_transition` ser liberado (dependendo da ordem de callbacks do pipeline). Isso é aceitável: durante esse intervalo o gameplay já está bloqueado pela transição, e permanece bloqueado pelo `sim.gameplay` até a conclusão explícita do Pregame.
+
 **Regra de não-bloqueio:** se não houver conteúdo, o Pregame deve “auto-skip”:
 - `IPregameStep.HasContent == false` → o coordenador solicita `SkipPregame(...)` automaticamente.
 
@@ -69,13 +73,13 @@ Onde:
 
 ### Sequência de SceneFlow + WorldLifecycle (profile gameplay)
 
-1. SceneFlow inicia transição (FadeIn).
+1. SceneFlow inicia transição (FadeIn) e o gate fecha (`flow.scene_transition`).
 2. `SceneTransitionScenesReadyEvent`
 3. WorldLifecycle executa reset determinístico (quando aplicável).
 4. SceneFlow executa FadeOut.
 5. `SceneTransitionCompletedEvent` (cena revelada; fluxo visual concluído).
 6. Bridge solicita Pregame (opcional).
-7. Ao terminar o Pregame, GameLoop pode iniciar o gameplay normalmente.
+7. Ao terminar o Pregame, o GameLoop pode iniciar o gameplay normalmente.
 
 ### Pregame — composição e contrato de conclusão
 
@@ -90,16 +94,21 @@ Contrato:
 - O step (produção) deve chamar **exatamente um** dos comandos:
     - `CompletePregame(...)` (conteúdo concluído) **ou**
     - `SkipPregame(...)` (pulo/cancelamento).
-- O coordenador aguarda `WaitForCompletionAsync(...)` e, ao concluir, libera o gate e solicita início do GameLoop quando necessário.
+- O coordenador aguarda `WaitForCompletionAsync(...)` e, ao concluir:
+    - libera o token `sim.gameplay`,
+    - emite eventos/logs de observabilidade (`PregameCompleted|PregameSkipped`),
+    - solicita a progressão do GameLoop (ex.: `RequestStart`) para atingir `Playing`.
 
 ### Gates e invariantes
 
-- **Durante Pregame**: token `sim.gameplay` fechado (gameplay bloqueado, UI/menu pode continuar operando conforme política do StateDependent).
+- **Durante Pregame**: token `sim.gameplay` fechado (gameplay bloqueado; UI/menu pode continuar operando conforme política do `IStateDependentService`).
+- **Durante SceneFlow**: token `flow.scene_transition` fecha o gate, garantindo que ações de gameplay fiquem bloqueadas durante load/unload/fade.
 - **In-Place Phase Change**:
     - token `flow.phase_inplace` para serialização e rastreabilidade.
     - Por padrão, **sem HUD**; `UseFade` opcional (mini transição).
 - **Phase Change com transição**:
-    - token `flow.phase_transition` e execução via SceneFlow + reset em `ScenesReady`.
+    - executa via SceneFlow; o bloqueio de simulação é governado pelo token `flow.scene_transition` (como qualquer transição de cena).
+    - o commit de fase ocorre após o reset em `ScenesReady` (via intent + `PhaseContext`).
 
 ## Como testar (QA)
 
@@ -129,9 +138,12 @@ Há duas formas canônicas de encerrar o Pregame em QA (ambas chamam `IPregameCo
 ### Evidência esperada (observability)
 
 - Pregame:
-    - `[OBS][Pregame] PregameStarted ...`
+    - `[OBS][Pregame] PregameStarted ... reason='SceneFlow/Completed'`
+    - `[OBS][Pregame] GameplaySimulationBlocked token='sim.gameplay' ...`
     - log orientativo de QA (Complete/Skip)
     - `[OBS][Pregame] PregameCompleted|PregameSkipped ...`
+    - `[OBS][Pregame] GameplaySimulationUnblocked token='sim.gameplay' ...`
+    - `GameLoop ENTER: Playing` após a conclusão explícita do Pregame
 - Phase:
     - logs de `PhaseContext` (Pending/Commit)
     - logs de `WorldLifecycle` em reset + commit após reset (quando aplicável)

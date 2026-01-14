@@ -204,6 +204,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<GameRunStartedEvent>.Clear();
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
+            EventBus<PhaseCommittedEvent>.Clear();
+            EventBus<PhasePendingSetEvent>.Clear();
+            EventBus<PhasePendingClearedEvent>.Clear();
 
             // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
             EventBus<SceneTransitionStartedEvent>.Clear();

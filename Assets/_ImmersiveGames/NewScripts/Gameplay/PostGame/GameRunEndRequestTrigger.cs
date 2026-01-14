@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private void QA_PostGame_AfterPhaseChange()
         {
             DebugUtility.Log<GameRunEndRequestTrigger>(
-                "[QA][PostGame] Trigger after phase change solicitado (expect PostGame rearmed).",
+                "[OBS][QA][PostGame] Trigger after phase change solicitado (expect PostGame rearmed).",
                 DebugUtility.Colors.Info);
             Request(GameRunOutcome.Victory, "QA/PostGame/AfterPhaseChange");
         }

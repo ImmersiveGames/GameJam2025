@@ -127,13 +127,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     TryHideHud(signature, plan.PhaseId);
                 }
 
-                if (normalizedOptions.UseFade && !fadeOutCompleted)
-                {
-                    await TryFadeOutAsync(normalizedOptions, signature);
-                }
-
                 gateHandle?.Dispose();
                 Interlocked.Exchange(ref _inProgress, 0);
+
+                if (normalizedOptions.UseFade && !fadeOutCompleted)
+                {
+                    try
+                    {
+                        await TryFadeOutAsync(normalizedOptions, signature);
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugUtility.LogWarning<PhaseChangeService>(
+                            $"[PhaseChange] Falha ao executar FadeOut final (InPlace). ex={ex.GetType().Name}: {ex.Message}");
+                    }
+                }
             }
         }
 

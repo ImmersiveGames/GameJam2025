@@ -22,13 +22,13 @@ Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distin
     - Executa reset determinístico **sem SceneFlow**.
     - **Sem Loading HUD** (mesmo se solicitado via options, o serviço ignora no In-Place).
     - **Fade opcional** (`options.UseFade=true`) permitido como “mini transição” quando for desejável esconder reconstrução do reset.
-    - Token de gate: `flow.phase_inplace`.
+    - Gate/serialização: token `flow.phase_inplace`.
 
 2. **PhaseChange/SceneTransition**
     - API: `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
     - Registra intent e inicia **SceneFlow** (transição completa, com Fade/Loading conforme profile).
     - O `WorldLifecycleRuntimeCoordinator` consome o intent em `SceneTransitionScenesReadyEvent`, seta `Pending`, executa reset e faz commit da fase após o reset.
-    - Token de gate: `flow.phase_transition`.
+    - Gate: o bloqueio de simulação durante a transição é governado pelo token padrão do SceneFlow (`flow.scene_transition`), conforme o pipeline de transição de cenas.
 
 ### Termos e tipos (nomes reais do código)
 
@@ -73,6 +73,7 @@ sequenceDiagram
     participant PhaseChange as PhaseChangeService
     participant Intent as PhaseTransitionIntentRegistry
     participant SceneFlow as SceneTransitionService
+    participant Readiness as GameReadinessService
     participant WL as WorldLifecycleRuntimeCoordinator
     participant PhaseCtx as PhaseContextService
     participant WLC as WorldLifecycleController
@@ -80,6 +81,8 @@ sequenceDiagram
     Caller->>PhaseChange: RequestPhaseWithTransitionAsync(plan, options, reason)
     PhaseChange->>Intent: Register(signature, plan, reason)
     PhaseChange->>SceneFlow: RequestTransition(signature/profile=gameplay)
+    SceneFlow-->>Readiness: SceneTransitionStarted
+    Readiness->>Readiness: Acquire gate token 'flow.scene_transition'
     SceneFlow-->>WL: SceneTransitionScenesReadyEvent(signature)
     WL->>Intent: TryConsume(signature)
     WL->>PhaseCtx: SetPending(plan, reason+signature)
@@ -87,6 +90,8 @@ sequenceDiagram
     WLC-->>WL: ResetCompleted
     WL->>PhaseCtx: TryCommitPendingPhase(...)
     PhaseCtx-->>WL: Pending committed (Current=plan)
+    SceneFlow-->>Readiness: SceneTransitionCompleted
+    Readiness->>Readiness: Release gate token 'flow.scene_transition'
 
     Note over SceneFlow: Fade/Loading HUD são controlados pelo profile/SceneFlow
 ```
