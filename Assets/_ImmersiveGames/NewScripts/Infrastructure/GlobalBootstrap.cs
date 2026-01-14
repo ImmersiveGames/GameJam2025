@@ -44,6 +44,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.QA.Pregame;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -137,6 +138,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterGameLoop();
             RegisterPregameCoordinator();
+            RegisterPregameControlService();
             RegisterGameplaySceneClassifier();
             RegisterDefaultPregameStep();
 
@@ -167,6 +169,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
             // ADR-0016: PhaseContext precisa existir no DI global.
             RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
+
+            RegisterPregameQaInstaller();
 
             // Baseline 3B: Pending NÃO pode atravessar transição.
             RegisterPhaseContextSceneFlowBridge();
@@ -460,6 +464,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterPregameControlService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pregame] IPregameControlService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPregameControlService>(
+                new PregameControlService(),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Pregame] PregameControlService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterGameplaySceneClassifier()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var existing) && existing != null)
@@ -523,11 +546,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
             {
                 var resetGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                completionGate = new PregameSceneTransitionCompletionGate(resetGate);
+                completionGate = resetGate;
                 DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (PregameSceneTransitionCompletionGate -> WorldLifecycleResetCompletionGate).",
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
                     DebugUtility.Colors.Info);
             }
 
@@ -685,6 +708,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[PhaseContext] PhaseContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending).",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPregameQaInstaller()
+        {
+            try
+            {
+                PregameQaInstaller.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    $"[QA][Pregame] Falha ao instalar PregameQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
         }
 
         // --------------------------------------------------------------------

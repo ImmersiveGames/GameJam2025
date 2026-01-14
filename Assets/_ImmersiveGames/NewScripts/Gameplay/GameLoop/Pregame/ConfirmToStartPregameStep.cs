@@ -13,19 +13,22 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Passo mínimo de pregame com confirmação/timeout para evidência de Teste 3.
+    /// Passo mínimo de pregame com confirmação via input.
+    /// O timeout é opcional e só deve ser habilitado para QA/dev.
     /// </summary>
     public sealed class ConfirmToStartPregameStep : IPregameStep
     {
-        private const float DefaultTimeoutSeconds = 0.5f;
+        private const float DefaultTimeoutSeconds = 10f;
         private const string UiMapName = "UI";
         private const string SubmitActionName = "Submit";
         private const string CancelActionName = "Cancel";
 
         private readonly float _timeoutSeconds;
+        private readonly bool _timeoutEnabled;
 
-        public ConfirmToStartPregameStep(float timeoutSeconds = DefaultTimeoutSeconds)
+        public ConfirmToStartPregameStep(bool enableTimeout = false, float timeoutSeconds = DefaultTimeoutSeconds)
         {
+            _timeoutEnabled = enableTimeout;
             _timeoutSeconds = Mathf.Max(0.1f, timeoutSeconds);
         }
 
@@ -33,31 +36,43 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public async Task RunAsync(PregameContext context, CancellationToken cancellationToken)
         {
-            var signature = NormalizeSignature(context.ContextSignature);
-            var reason = NormalizeValue(context.Reason);
-            var targetScene = NormalizeValue(context.TargetScene);
             var activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
             var profile = context.ProfileId.Value;
 
-            DebugUtility.Log<ConfirmToStartPregameStep>(
-                $"[OBS][Pregame] PregameStarted signature='{signature}' reason='{reason}' target='{targetScene}' scene='{activeScene}' profile='{profile}'.",
-                DebugUtility.Colors.Info);
-
+            var signature = NormalizeSignature(context.ContextSignature);
             ApplyUiInputMode(signature, activeScene, profile);
 
-            var completedReason = await AwaitCompletionAsync(cancellationToken).ConfigureAwait(false);
-
-            if (completedReason == PregameCompletionReason.Timeout || completedReason == PregameCompletionReason.Cancelled)
+            var controlService = ResolvePregameControlService();
+            if (controlService == null)
             {
-                var skipReason = completedReason == PregameCompletionReason.Timeout ? "timeout" : "cancelled";
-                DebugUtility.Log<ConfirmToStartPregameStep>(
-                    $"[OBS][Pregame] PregameSkipped signature='{signature}' reason='{skipReason}' target='{targetScene}' scene='{activeScene}' profile='{profile}'.",
-                    DebugUtility.Colors.Info);
+                DebugUtility.LogWarning<ConfirmToStartPregameStep>(
+                    "[Pregame] IPregameControlService indisponível. ConfirmToStart não poderá concluir o Pregame.");
+                return;
             }
 
-            DebugUtility.Log<ConfirmToStartPregameStep>(
-                $"[OBS][Pregame] PregameCompleted signature='{signature}' result='{completedReason}' target='{targetScene}' scene='{activeScene}' profile='{profile}'.",
-                DebugUtility.Colors.Info);
+            var actions = new List<InputAction>();
+
+            void CompleteFromInput(InputAction.CallbackContext _)
+                => controlService.CompletePregame("confirm");
+
+            TryBindUiActions(actions, CompleteFromInput);
+
+            try
+            {
+                if (_timeoutEnabled)
+                {
+                    _ = TriggerTimeoutAsync(controlService, cancellationToken);
+                }
+
+                await controlService.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                for (int i = 0; i < actions.Count; i++)
+                {
+                    actions[i].performed -= CompleteFromInput;
+                }
+            }
         }
 
         private static void ApplyUiInputMode(string signature, string sceneName, string profile)
@@ -77,42 +92,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             inputMode.SetFrontendMenu("Pregame/ConfirmToStart");
         }
 
-        private async Task<PregameCompletionReason> AwaitCompletionAsync(CancellationToken cancellationToken)
+        private async Task TriggerTimeoutAsync(IPregameControlService controlService, CancellationToken cancellationToken)
         {
-            var completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var actions = new List<InputAction>();
-
-            void CompleteFromInput(InputAction.CallbackContext _) => completionSource.TrySetResult(true);
-
-            TryBindUiActions(actions, CompleteFromInput);
-
             try
             {
-                var delayTask = Task.Delay(TimeSpan.FromSeconds(_timeoutSeconds), cancellationToken);
-                var completed = await Task.WhenAny(completionSource.Task, delayTask).ConfigureAwait(false);
-
-                if (completed == completionSource.Task)
-                {
-                    return PregameCompletionReason.Confirmed;
-                }
-
-                if (delayTask.IsCanceled)
-                {
-                    return PregameCompletionReason.Cancelled;
-                }
-
-                return PregameCompletionReason.Timeout;
+                await Task.Delay(TimeSpan.FromSeconds(_timeoutSeconds), cancellationToken).ConfigureAwait(false);
+                controlService.CompletePregame("timeout");
             }
             catch (OperationCanceledException)
             {
-                return PregameCompletionReason.Cancelled;
-            }
-            finally
-            {
-                for (int i = 0; i < actions.Count; i++)
-                {
-                    actions[i].performed -= CompleteFromInput;
-                }
+                return;
             }
         }
 
@@ -172,17 +161,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 : null;
         }
 
+        private static IPregameControlService? ResolvePregameControlService()
+        {
+            return DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var service)
+                ? service
+                : null;
+        }
+
         private static string NormalizeSignature(string signature)
             => string.IsNullOrWhiteSpace(signature) ? "<none>" : signature.Trim();
 
         private static string NormalizeValue(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
-
-        private enum PregameCompletionReason
-        {
-            Confirmed,
-            Timeout,
-            Cancelled
-        }
     }
 }

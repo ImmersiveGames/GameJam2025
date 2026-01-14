@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PregameCoordinator : IPregameCoordinator
     {
-        private const int DefaultTimeoutMs = 10000;
+        private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
         private int _inProgress;
 
         public async Task RunPregameAsync(PregameContext context)
@@ -31,17 +32,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             var step = ResolveStep(out var fromDi);
-            if (step == null)
-            {
-                LogSkipped("no_step", context, SceneManager.GetActiveScene().name);
-                return;
-            }
-
-            if (!step.HasContent)
-            {
-                LogSkipped(fromDi ? "no_content" : "no_step", context, SceneManager.GetActiveScene().name);
-                return;
-            }
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
@@ -54,6 +44,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var reason = NormalizeReason(context.Reason);
             var targetScene = NormalizeValue(context.TargetScene);
 
+            var simulationGate = ResolveSimulationGateService();
+            var simulationGateAcquired = false;
+
             DebugUtility.Log<PregameCoordinator>(
                 $"[OBS][Pregame] PregameStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
@@ -64,16 +57,52 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 DebugUtility.LogWarning<PregameCoordinator>(
                     "[Pregame] IGameLoopService indisponível. Pregame seguirá sem sincronizar estado do GameLoop.");
             }
-            else
-            {
-                gameLoop.RequestPregameStart();
-            }
 
             try
             {
-                var stepName = step.GetType().Name;
-                var result = await ExecuteStepWithTimeoutAsync(step, stepName, context, DefaultTimeoutMs);
-                LogCompletion(signature, targetScene, context.ProfileId.Value, result);
+                var controlService = ResolvePregameControlService();
+                if (controlService == null)
+                {
+                    DebugUtility.LogWarning<PregameCoordinator>(
+                        "[Pregame] IPregameControlService indisponível. Pregame será concluído imediatamente.");
+                    gameLoop?.RequestPregameStart();
+                    simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
+                    LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
+                    RequestStartIfNeeded(gameLoop);
+                    return;
+                }
+
+                controlService.BeginPregame(context);
+                gameLoop?.RequestPregameStart();
+                simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
+                DebugUtility.Log<PregameCoordinator>(
+                    "[Pregame] Pregame ativo: simulação gameplay bloqueada; use QA/Pregame/Complete ou QA/Pregame/Skip para prosseguir.",
+                    DebugUtility.Colors.Info);
+                DebugUtility.Log<PregameCoordinator>(
+                    "[QA][Pregame] Use Inspector(ContextMenu) OU MenuItem para Complete/Skip.",
+                    DebugUtility.Colors.Info);
+
+                if (step == null || !step.HasContent)
+                {
+                    controlService.SkipPregame(fromDi ? "no_content" : "no_step");
+                }
+                else
+                {
+                    _ = RunStepSafelyAsync(step, context, controlService);
+                }
+
+                var completion = await controlService.WaitForCompletionAsync(CancellationToken.None).ConfigureAwait(false);
+                if (completion.WasSkipped)
+                {
+                    LogSkipped(NormalizeValue(completion.Reason), context, SceneManager.GetActiveScene().name);
+                    LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Skipped);
+                }
+                else
+                {
+                    LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
+                }
+
+                RequestStartIfNeeded(gameLoop);
             }
             catch (Exception ex)
             {
@@ -81,10 +110,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     $"[Pregame] Falha ao executar pregame. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
                 LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Failed);
+                RequestStartIfNeeded(gameLoop);
             }
             finally
             {
                 gameLoop?.RequestPregameComplete();
+                if (simulationGateAcquired)
+                {
+                    ReleaseSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene);
+                }
                 Interlocked.Exchange(ref _inProgress, 0);
             }
         }
@@ -118,67 +152,114 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return new DefaultGameplaySceneClassifier();
         }
 
-        private static async Task<PregameRunResult> ExecuteStepWithTimeoutAsync(
-            IPregameStep step,
-            string stepName,
-            PregameContext context,
-            int timeoutMs)
+        private static IPregameControlService? ResolvePregameControlService()
         {
-            if (step == null)
+            if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var service) && service != null)
             {
-                return PregameRunResult.Completed;
+                return service;
             }
 
-            // Mesmo com timeout fail-safe, passamos um token que cancela no timeout (melhor esforço).
-            using var cts = timeoutMs > 0 ? new CancellationTokenSource(timeoutMs) : new CancellationTokenSource();
+            return null;
+        }
+
+        private static ISimulationGateService? ResolveSimulationGateService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var service) && service != null)
+            {
+                return service;
+            }
+
+            return null;
+        }
+
+        private static Task RunStepSafelyAsync(
+            IPregameStep step,
+            PregameContext context,
+            IPregameControlService controlService)
+        {
+            var stepName = step.GetType().Name;
+            var cts = new CancellationTokenSource();
 
             var stepTask = step.RunAsync(context, cts.Token);
+            _ = controlService.WaitForCompletionAsync(CancellationToken.None)
+                .ContinueWith(_ => cts.Cancel(), TaskScheduler.Default);
 
-            if (timeoutMs <= 0)
+            return stepTask.ContinueWith(t =>
             {
-                try
+                cts.Dispose();
+                if (t.Exception == null)
                 {
-                    await stepTask;
-                    return PregameRunResult.Completed;
+                    return;
                 }
-                catch (Exception ex)
-                {
-                    DebugUtility.LogWarning<PregameCoordinator>(
-                        $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
-                    return PregameRunResult.Failed;
-                }
+
+                var exception = t.Exception.GetBaseException();
+                DebugUtility.LogWarning<PregameCoordinator>(
+                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{exception}'.");
+
+                controlService.SkipPregame("step_failed");
+            }, TaskScheduler.Default);
+        }
+
+        private static void RequestStartIfNeeded(IGameLoopService? gameLoop)
+        {
+            if (gameLoop == null)
+            {
+                return;
             }
 
-            var completed = await Task.WhenAny(stepTask, Task.Delay(timeoutMs));
-            if (completed != stepTask)
+            if (string.Equals(gameLoop.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<PregameCoordinator>(
+                "[Pregame] Solicitando RequestStart após conclusão explícita do Pregame.",
+                DebugUtility.Colors.Info);
+
+            gameLoop.RequestStart();
+        }
+
+        private static bool AcquireSimulationGate(
+            ISimulationGateService? gateService,
+            string signature,
+            string profile,
+            string targetScene,
+            string reason)
+        {
+            if (gateService == null)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[OBS][Pregame] PregameTimedOut step='{stepName}' timeoutMs={timeoutMs} signature='{NormalizeSignature(context.ContextSignature)}'.");
-
-                // Observe/log eventual falha tardia do step para evitar UnobservedTaskException.
-                _ = stepTask.ContinueWith(t =>
-                {
-                    if (t.Exception != null)
-                    {
-                        DebugUtility.LogWarning<PregameCoordinator>(
-                            $"[Pregame] Step terminou com erro após timeout. step='{stepName}', ex='{t.Exception.GetBaseException()}'.");
-                    }
-                });
-
-                return PregameRunResult.TimedOut;
+                    "[Pregame] ISimulationGateService indisponível; simulação gameplay pode não ser bloqueada durante Pregame.");
+                return false;
             }
 
-            try
+            gateService.Acquire(SimulationGateToken);
+
+            DebugUtility.Log<PregameCoordinator>(
+                $"[OBS][Pregame] GameplaySimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"profile='{profile}' target='{targetScene}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            return true;
+        }
+
+        private static void ReleaseSimulationGate(
+            ISimulationGateService? gateService,
+            string signature,
+            string profile,
+            string targetScene)
+        {
+            if (gateService == null)
             {
-                await stepTask;
-                return PregameRunResult.Completed;
+                return;
             }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
-                return PregameRunResult.Failed;
-            }
+
+            gateService.Release(SimulationGateToken);
+
+            DebugUtility.Log<PregameCoordinator>(
+                $"[OBS][Pregame] GameplaySimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"profile='{profile}' target='{targetScene}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void LogCompletion(string signature, string targetScene, string profile, PregameRunResult result)
@@ -201,7 +282,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return result switch
             {
                 PregameRunResult.Completed => "completed",
-                PregameRunResult.TimedOut => "timed_out",
+                PregameRunResult.Skipped => "skipped",
                 PregameRunResult.Failed => "failed",
                 _ => "unknown"
             };
@@ -219,7 +300,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private enum PregameRunResult
         {
             Completed,
-            TimedOut,
+            Skipped,
             Failed
         }
     }

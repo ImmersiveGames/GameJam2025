@@ -23,6 +23,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         public const string PhaseTransition = "flow.phase_transition";
         public const string PhaseInPlace = "flow.phase_inplace";
 
+        // Simulação de gameplay (deve bloquear apenas lógica de gameplay, não UI).
+        public const string GameplaySimulation = "sim.gameplay";
+
         // QA / Debug
         public const string QaGameplayPause = "qa.gameplay_pause";
     }
