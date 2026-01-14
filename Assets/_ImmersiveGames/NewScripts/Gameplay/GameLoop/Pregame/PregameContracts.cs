@@ -42,6 +42,33 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
+    /// Serviço global para controlar a conclusão do Pregame via comando explícito.
+    /// </summary>
+    public interface IPregameControlService
+    {
+        bool IsPregameActive { get; }
+        void BeginPregame(PregameContext context);
+        Task<PregameCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken);
+        void CompletePregame(string reason);
+        void SkipPregame(string reason);
+    }
+
+    /// <summary>
+    /// Resultado final do Pregame (com razão e indicação de skip).
+    /// </summary>
+    public readonly struct PregameCompletionResult
+    {
+        public string Reason { get; }
+        public bool WasSkipped { get; }
+
+        public PregameCompletionResult(string reason, bool wasSkipped)
+        {
+            Reason = reason ?? string.Empty;
+            WasSkipped = wasSkipped;
+        }
+    }
+
+    /// <summary>
     /// Implementação default (no-op) para ausência de conteúdo.
     /// </summary>
     public sealed class NoOpPregameStep : IPregameStep

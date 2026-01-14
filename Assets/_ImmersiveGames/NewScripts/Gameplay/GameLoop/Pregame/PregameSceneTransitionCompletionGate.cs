@@ -1,8 +1,6 @@
 #nullable enable
-using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
@@ -20,34 +18,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
             await _innerGate.AwaitBeforeFadeOutAsync(context);
-
-            try
-            {
-                var coordinator = ResolveCoordinator();
-                var signature = SceneTransitionSignatureUtil.Compute(context);
-                var pregameContext = new PregameContext(
-                    contextSignature: signature,
-                    profileId: context.TransitionProfileId,
-                    targetScene: context.TargetActiveScene,
-                    reason: "SceneFlow/BeforeFadeOut");
-
-                await coordinator.RunPregameAsync(pregameContext);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PregameSceneTransitionCompletionGate>(
-                    $"[Pregame] Falha ao executar pregame no gate. ex='{ex.GetType().Name}: {ex.Message}'.");
-            }
-        }
-
-        private static IPregameCoordinator ResolveCoordinator()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var coordinator) && coordinator != null)
-            {
-                return coordinator;
-            }
-
-            return new PregameCoordinator();
         }
     }
 }

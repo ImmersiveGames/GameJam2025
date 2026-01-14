@@ -301,6 +301,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             return _gateService.ActiveTokenCount == 1;
         }
 
+        /// <summary>
+        /// Durante Pregame, o gate pode estar fechado somente pelo token de simulação gameplay.
+        /// Nesse caso, devemos manter UI/menu habilitados.
+        /// </summary>
+        private bool IsGameplaySimulationOnlyByGate()
+        {
+            TryResolveGateService();
+
+            if (_gateService == null)
+            {
+                return false;
+            }
+
+            if (!_gateService.IsTokenActive(SimulationGateTokens.GameplaySimulation))
+            {
+                return false;
+            }
+
+            return _gateService.ActiveTokenCount == 1;
+        }
+
         private bool IsInfraReady()
         {
             if (_gateService is { IsOpen: false })
@@ -326,6 +347,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 
             if (_gateService is { IsOpen: false })
             {
+                if (IsGameplaySimulationOnlyByGate())
+                {
+                    return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel
+                        or ActionType.RequestReset or ActionType.RequestQuit;
+                }
+
                 return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel;
             }
 
