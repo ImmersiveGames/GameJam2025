@@ -164,6 +164,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterSceneFlowLoadingIfAvailable();
 
             RegisterInputModeSceneFlowBridge();
+            RegisterPhaseStartPhaseCommitBridge();
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
@@ -685,6 +686,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[InputMode] InputModeSceneFlowBridge registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPhaseStartPhaseCommitBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<PhaseStartPhaseCommitBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[PhaseStart] PhaseStartPhaseCommitBridge já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new PhaseStartPhaseCommitBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> Pregame).",
                 DebugUtility.Colors.Info);
         }
 
