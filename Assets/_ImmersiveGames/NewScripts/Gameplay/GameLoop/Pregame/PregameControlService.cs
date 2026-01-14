@@ -33,6 +33,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             lock (_sync)
             {
+                if (_isActive)
+                {
+                    DebugUtility.LogWarning<PregameControlService>(
+                        "[Pregame] BeginPregame chamado enquanto outro pregame ainda está ativo. Reiniciando gate de conclusão.");
+                }
+
                 _isActive = true;
                 _activeContext = context;
                 _completionSource = new TaskCompletionSource<PregameCompletionResult>(

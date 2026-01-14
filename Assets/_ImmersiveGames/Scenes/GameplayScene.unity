@@ -148,15 +148,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc1c08bff4564e57be553fa46bda8f2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableTimeout: 1
+  enableTimeout: 0
   timeoutSeconds: 30
   timeoutOutcome: 2
   timeoutReason: Gameplay/Timeout
+  useUnscaledTime: 0
   enableDevManualTriggers: 1
   devVictoryKey: 290
   devDefeatKey: 291
   devVictoryReason: Gameplay/DevManualVictory
   devDefeatReason: Gameplay/DevManualDefeat
+  rearmOnGameRunStarted: 1
 --- !u!4 &312800929
 Transform:
   m_ObjectHideFlags: 0

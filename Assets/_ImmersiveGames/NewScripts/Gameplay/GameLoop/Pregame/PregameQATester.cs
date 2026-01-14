@@ -1,26 +1,32 @@
 #nullable enable
 using System;
+using System.Collections;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
-using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// QA helper para disparar Pregame manualmente (sem depender do SceneFlow).
+    /// QA helper para:
+    /// - Disparar Pregame manualmente (sem depender do SceneFlow).
+    /// - Forçar Complete/Skip do Pregame (o gatilho canônico que destrava o gameplay).
+    /// - (Opcional) Auto-Complete com delay usando Coroutine (main thread), evitando Task/threads.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PregameQATester : MonoBehaviour
     {
-        [SerializeField]
-        private string qaSignature = "qa.pregame";
+        [Header("Run Pregame QA")]
+        [SerializeField] private string qaSignature = "qa.pregame";
+        [SerializeField] private string qaReason = "QA/PregameOptional";
 
-        [SerializeField]
-        private string qaReason = "QA/PregameOptional";
+        [Header("Completion QA")]
+        [SerializeField, Min(0f)] private float autoCompleteDelaySeconds = 0.5f;
+
+        private Coroutine? _autoCompleteRoutine;
 
         [ContextMenu("QA/Pregame/Run Optional (TestCase: PregameOptional)")]
         private async void QA_RunPregameOptional()
@@ -42,6 +48,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             try
             {
+                DebugUtility.Log<PregameQATester>(
+                    $"[QA][Pregame] RunPregameOptional solicitado. signature='{qaSignature}' scene='{activeScene}'.",
+                    DebugUtility.Colors.Info);
+
                 await coordinator.RunPregameAsync(context);
             }
             catch (Exception ex)
@@ -51,43 +61,83 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
 
-        [ContextMenu("QA/Test3 - ForcePregame")]
-        private async void QA_ForcePregame()
+        [ContextMenu("QA/Pregame/Complete Active (Force)")]
+        private void QA_CompleteActivePregame_Force()
         {
-            DebugUtility.Log<PregameQATester>("[QA][Test3] ForcePregame acionado.", DebugUtility.Colors.Info);
+            CancelAutoCompleteIfRunning();
 
-            var coordinator = ResolveCoordinator();
-            if (coordinator == null)
+            var control = ResolveControlService();
+            if (control == null)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    "[QA][Test3] IPregameCoordinator não encontrado no DI global.");
+                    "[QA][Pregame] IPregameControlService não encontrado no DI global; Complete ignorado.");
                 return;
             }
 
-            var classifier = ResolveGameplaySceneClassifier();
-            if (classifier != null && !classifier.IsGameplayScene())
+            control.CompletePregame("QA/PregameQATester/Complete");
+            DebugUtility.Log<PregameQATester>(
+                "[QA][Pregame] CompletePregame solicitado (Force).",
+                DebugUtility.Colors.Info);
+        }
+
+        [ContextMenu("QA/Pregame/Skip Active (Force)")]
+        private void QA_SkipActivePregame_Force()
+        {
+            CancelAutoCompleteIfRunning();
+
+            var control = ResolveControlService();
+            if (control == null)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    $"[QA][Test3] ForcePregame ignorado (scene_not_gameplay). scene='{SceneManager.GetActiveScene().name}'.");
+                    "[QA][Pregame] IPregameControlService não encontrado no DI global; Skip ignorado.");
                 return;
             }
 
-            var activeScene = SceneManager.GetActiveScene().name;
-            var signature = ResolveSignatureFallback(activeScene);
-            var context = new PregameContext(
-                contextSignature: signature,
-                profileId: SceneFlowProfileId.Gameplay,
-                targetScene: activeScene,
-                reason: "QA/Test3/ForcePregame");
+            control.SkipPregame("QA/PregameQATester/Skip");
+            DebugUtility.Log<PregameQATester>(
+                "[QA][Pregame] SkipPregame solicitado (Force).",
+                DebugUtility.Colors.Info);
+        }
 
-            try
-            {
-                await coordinator.RunPregameAsync(context);
-            }
-            catch (Exception ex)
+        [ContextMenu("QA/Pregame/Auto-Complete in 0.5s (Force)")]
+        private void QA_AutoCompleteActivePregame_Force()
+        {
+            CancelAutoCompleteIfRunning();
+            _autoCompleteRoutine = StartCoroutine(AutoCompleteRoutine());
+        }
+
+        private IEnumerator AutoCompleteRoutine()
+        {
+            var delay = Mathf.Max(0f, autoCompleteDelaySeconds);
+            DebugUtility.Log<PregameQATester>(
+                $"[QA][Pregame] Auto-Complete agendado. delay='{delay:0.###}s'.",
+                DebugUtility.Colors.Info);
+
+            yield return new WaitForSecondsRealtime(delay);
+
+            var control = ResolveControlService();
+            if (control == null)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    $"[QA][Test3] Falha ao executar pregame forçado. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    "[QA][Pregame] IPregameControlService indisponível; Auto-Complete abortado.");
+                _autoCompleteRoutine = null;
+                yield break;
+            }
+
+            control.CompletePregame("QA/PregameQATester/AutoComplete");
+            DebugUtility.Log<PregameQATester>(
+                "[QA][Pregame] Auto-Complete executado (CompletePregame).",
+                DebugUtility.Colors.Info);
+
+            _autoCompleteRoutine = null;
+        }
+
+        private void CancelAutoCompleteIfRunning()
+        {
+            if (_autoCompleteRoutine != null)
+            {
+                StopCoroutine(_autoCompleteRoutine);
+                _autoCompleteRoutine = null;
             }
         }
 
@@ -98,23 +148,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 : null;
         }
 
-        private static IGameplaySceneClassifier? ResolveGameplaySceneClassifier()
+        private static IPregameControlService? ResolveControlService()
         {
-            return DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier)
-                ? classifier
+            return DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var control)
+                ? control
                 : null;
-        }
-
-        private static string ResolveSignatureFallback(string sceneName)
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var cache) &&
-                cache != null &&
-                cache.TryGetLast(out var signature, out _, out _))
-            {
-                return signature;
-            }
-
-            return $"qa.test3|scene:{sceneName}|frame:{Time.frameCount}";
         }
     }
 }

@@ -91,7 +91,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     _ = RunStepSafelyAsync(step, context, controlService);
                 }
 
-                var completion = await controlService.WaitForCompletionAsync(CancellationToken.None).ConfigureAwait(false);
+                // IMPORTANT: Must resume on Unity main thread because this method touches Unity APIs
+                // (SceneManager, SimulationGate callbacks, etc.). Avoid ConfigureAwait(false) here.
+                var completion = await controlService.WaitForCompletionAsync(CancellationToken.None);
                 if (completion.WasSkipped)
                 {
                     LogSkipped(NormalizeValue(completion.Reason), context, SceneManager.GetActiveScene().name);
@@ -172,32 +174,37 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return null;
         }
 
-        private static Task RunStepSafelyAsync(
+        private static async Task RunStepSafelyAsync(
             IPregameStep step,
             PregameContext context,
             IPregameControlService controlService)
         {
-            var stepName = step.GetType().Name;
-            var cts = new CancellationTokenSource();
+            // This method is intentionally fire-and-forget from RunPregameAsync.
+            // Keep Unity API interactions on the Unity thread by avoiding ConfigureAwait(false).
 
-            var stepTask = step.RunAsync(context, cts.Token);
+            var stepName = step.GetType().Name;
+            using var cts = new CancellationTokenSource();
+
+            // If the pregame finishes by QA (Complete/Skip), cancel the step.
             _ = controlService.WaitForCompletionAsync(CancellationToken.None)
                 .ContinueWith(_ => cts.Cancel(), TaskScheduler.Default);
 
-            return stepTask.ContinueWith(t =>
+            try
             {
-                cts.Dispose();
-                if (t.Exception == null)
-                {
-                    return;
-                }
-
-                var exception = t.Exception.GetBaseException();
+                await step.RunAsync(context, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when QA completes/skips pregame.
+            }
+            catch (Exception ex)
+            {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{exception}'.");
+                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
+                // Ensure a canonical end if the step fails.
                 controlService.SkipPregame("step_failed");
-            }, TaskScheduler.Default);
+            }
         }
 
         private static void RequestStartIfNeeded(IGameLoopService? gameLoop)
