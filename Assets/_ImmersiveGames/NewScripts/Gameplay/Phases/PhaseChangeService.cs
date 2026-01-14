@@ -10,7 +10,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
-using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 {
@@ -80,7 +79,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             IDisposable gateHandle = null;
             var hudShown = false;
             var fadeOutCompleted = false;
-            var resetSucceeded = false;
 
             try
             {
@@ -109,8 +107,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     normalizedOptions.TimeoutMs,
                     "RequestResetAsync");
 
-                resetSucceeded = true;
-
                 if (normalizedOptions.UseFade)
                 {
                     await TryFadeOutAsync(normalizedOptions, signature);
@@ -122,10 +118,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 DebugUtility.LogError<PhaseChangeService>(
                     $"[PhaseChange] Falha no InPlace. Limpando pending por segurança. ex={ex}");
 
-                if (!resetSucceeded)
-                {
-                    _phaseContext.ClearPending($"PhaseChange/InPlace failed: {ex.GetType().Name}");
-                }
+                _phaseContext.ClearPending($"PhaseChange/InPlace failed: {ex.GetType().Name}");
             }
             finally
             {
@@ -137,18 +130,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 if (normalizedOptions.UseFade && !fadeOutCompleted)
                 {
                     await TryFadeOutAsync(normalizedOptions, signature);
-                }
-
-                if (resetSucceeded)
-                {
-                    var phaseStartReason = $"PhaseStart/InPlace plan='{plan}' reason='{reason ?? "n/a"}'";
-                    var phaseStart = new PhaseStartRequest(
-                        contextSignature: signature,
-                        phaseId: plan.PhaseId,
-                        targetScene: SceneManager.GetActiveScene().name,
-                        reason: phaseStartReason);
-
-                    await PhaseStartPipeline.RunAsync(phaseStart);
                 }
 
                 gateHandle?.Dispose();
