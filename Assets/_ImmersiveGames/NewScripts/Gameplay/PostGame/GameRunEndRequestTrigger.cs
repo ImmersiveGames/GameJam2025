@@ -41,6 +41,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             Request(GameRunOutcome.Victory, "QA/Test3/ForcePostPlay");
         }
 
+        [ContextMenu("QA/PostGame/Trigger after phase change")]
+        private void QA_PostGame_AfterPhaseChange()
+        {
+            DebugUtility.Log<GameRunEndRequestTrigger>(
+                "[QA][PostGame] Trigger after phase change solicitado (expect PostGame rearmed).",
+                DebugUtility.Colors.Info);
+            Request(GameRunOutcome.Victory, "QA/PostGame/AfterPhaseChange");
+        }
+
         public void Request(GameRunOutcome outcome, string reason)
         {
             if (requireActiveGameplayScene && !IsActiveGameplayScene())

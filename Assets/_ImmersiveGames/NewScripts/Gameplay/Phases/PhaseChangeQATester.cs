@@ -40,6 +40,42 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
         private async void QA_InPlace_Phase3()
             => await RequestInPlaceAsync(Phase3Id, "QA/Phase/InPlace");
 
+        [ContextMenu("QA/Phase/Advance In-Place -> Expect Pregame (gate fechado)")]
+        private async void QA_AdvanceInPlace_ExpectPregame()
+        {
+            DebugUtility.Log<PhaseChangeQATester>(
+                "[QA][Phase] Advance In-Place solicitado. Expectativa: Pregame + gate fechado até Complete.",
+                DebugUtility.Colors.Info);
+            await RequestInPlaceAsync(Phase2Id, "QA/Phase/InPlaceExpectPregame");
+        }
+
+        [ContextMenu("QA/Phase/Restart Current Phase -> Expect Pregame (gate fechado)")]
+        private async void QA_RestartCurrentPhase_ExpectPregame()
+        {
+            var phaseContext = ResolvePhaseContextService();
+            if (phaseContext == null)
+            {
+                DebugUtility.LogWarning<PhaseChangeQATester>(
+                    "[QA][Phase] IPhaseContextService não encontrado; Restart Current Phase ignorado.");
+                return;
+            }
+
+            var current = phaseContext.Current;
+            if (!current.IsValid)
+            {
+                DebugUtility.LogWarning<PhaseChangeQATester>(
+                    "[QA][Phase] Phase atual inválida; usando fallback Phase1 para Restart.");
+                current = new PhasePlan(Phase1Id, string.Empty);
+            }
+
+            DebugUtility.Log<PhaseChangeQATester>(
+                $"[QA][Phase] Restart Current Phase solicitado. phaseId='{current.PhaseId}'. " +
+                "Expectativa: Pregame + gate fechado até Complete.",
+                DebugUtility.Colors.Info);
+
+            await RequestInPlaceAsync(current.PhaseId, "QA/Phase/RestartCurrent");
+        }
+
         // --------------------------------
         // WithTransition (com SceneFlow)
         // --------------------------------
@@ -151,6 +187,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
             {
                 DebugUtility.LogWarning<PhaseChangeQATester>(
                     "[QA][Phase] IPhaseChangeService não encontrado no DI global.");
+                return null;
+            }
+
+            return service;
+        }
+
+        private static IPhaseContextService? ResolvePhaseContextService()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseContextService>(out var service) || service == null)
+            {
                 return null;
             }
 
