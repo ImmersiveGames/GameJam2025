@@ -30,6 +30,7 @@ using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Baseline;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
+using _ImmersiveGames.NewScripts.Infrastructure.Debug;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -172,6 +173,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // ADR-0016: PhaseContext precisa existir no DI global.
             RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
 
+            RegisterDebugOverlay();
             RegisterPregameQaInstaller();
 
             // Baseline 3B: Pending NÃO pode atravessar transição.
@@ -767,6 +769,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
                     $"[QA][Pregame] Falha ao instalar PregameQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
+        }
+
+        private static void RegisterDebugOverlay()
+        {
+#if NEWSCRIPTS_MODE
+            DebugOverlayController.EnsureInstalled();
+#endif
         }
 
         // --------------------------------------------------------------------
