@@ -59,10 +59,10 @@ Onde:
 - O disparo ocorre **após** `SceneTransitionCompletedEvent`, via bridge de SceneFlow:
     - `InputModeSceneFlowBridge` identifica `profile=gameplay` e solicita início da IntroStage (API canônica: IntroStage).
 - **A IntroStage não faz parte do Completion Gate da transição de cenas**; ela acontece **depois** de `SceneTransitionCompletedEvent` e é uma fase do **GameLoop/gameplay**.
-- Enquanto a IntroStage está ativa, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`).
+- Enquanto a IntroStage está ativa, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`) e o InputMode fica em UI.
 - A IntroStage termina por um sinal canônico:
-    - `IIntroStageControlService.CompleteIntroStage(string reason)` (conclui)
-    - `IIntroStageControlService.SkipIntroStage(string reason)` (pula/cancela)
+    - `IIntroStageControlService.CompleteIntroStage(string reason)` (conclui, ex.: `IntroStage/UIConfirm`)
+    - `IIntroStageControlService.SkipIntroStage(string reason)` (pula/cancela, ex.: `IntroStage/NoContent`)
 
 **Nota operacional (ordem observada):**
 - A IntroStage inicia **após** `SceneTransitionCompletedEvent` e **não** segura o `flow.scene_transition`. O bloqueio de gameplay ocorre apenas via `sim.gameplay` até a conclusão explícita da IntroStage.
@@ -86,7 +86,7 @@ Onde:
 6. `SceneTransitionCompletedEvent` (cena revelada; fluxo visual concluído).
 7. Bridge solicita IntroStage.
 8. Ao terminar a IntroStage, o GameLoop solicita `RequestStart`.
-9. GameLoop entra em `Playing` (gameplay liberado).
+9. GameLoop entra em `Playing` (gameplay liberado) e o InputMode volta para `Gameplay`.
 
 ### IntroStage — composição e contrato de conclusão
 
@@ -104,7 +104,7 @@ Contrato:
 - O coordenador aguarda `WaitForCompletionAsync(...)` e, ao concluir:
     - libera o token `sim.gameplay`,
     - emite eventos/logs de observabilidade (`IntroStageCompleted|IntroStageSkipped`),
-    - solicita a progressão do GameLoop (ex.: `RequestStart`) para atingir `Playing`.
+    - solicita a progressão do GameLoop (ex.: `RequestStart`) para atingir `Playing` e reabilita o InputMode de gameplay.
 
 ### Gates e invariantes
 
@@ -147,10 +147,12 @@ Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IIntroS
 - IntroStage:
     - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
     - `[OBS][IntroStage] GameplaySimulationBlocked token='sim.gameplay' ...`
-    - log orientativo de QA (Complete/Skip)
+    - `InputMode` aplicado em UI durante a IntroStage
+    - `CompleteIntroStage received reason='IntroStage/UIConfirm'` **ou** `IntroStageSkipped ... reason='IntroStage/NoContent'`
     - `[OBS][IntroStage] IntroStageCompleted|IntroStageSkipped ...`
     - `[OBS][IntroStage] GameplaySimulationUnblocked token='sim.gameplay' ...`
     - `GameLoop ENTER: Playing` após a conclusão explícita da IntroStage
+    - `InputMode` aplicado em `Gameplay` no `GameLoop/Playing`
 - Phase:
     - logs de `PhaseContext` (Pending/Commit)
     - logs de `WorldLifecycle` em reset + commit após reset (quando aplicável)

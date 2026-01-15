@@ -26,6 +26,15 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 
 5) Em `SceneTransitionCompletedEvent`, executar um “safety hide” (idempotente).
 
+**Ordem observada (UseFade=true):**
+- `SceneTransitionStarted` → `FadeIn` (alpha=1)
+- `SceneTransitionFadeInCompleted` → `LoadingHUD.Show`
+- Load/Unload/Additive + `SceneTransitionScenesReady`
+- `WorldLifecycleResetCompletedEvent` (ou SKIP) **antes** do completion gate liberar
+- `SceneTransitionBeforeFadeOutEvent` → `LoadingHUD.Hide`
+- `FadeOut` (alpha=0)
+- `SceneTransitionCompletedEvent` → safety hide
+
 ## Consequências
 
 - Fade e Loading permanecem responsabilidades separadas.
@@ -64,16 +73,17 @@ No fluxo de produção:
         - `SceneTransitionScenesReadyEvent` (cenas carregadas).
         - `WorldLifecycleResetCompletedEvent` (reset/spawn concluído).
         - `SceneTransitionCompletedEvent(Profile=gameplay)` após o gate e FadeOut.
-    - O `InputModeService` aplica o modo `'Gameplay'` em `SceneFlow/Completed:Gameplay`.
-    - O `InputModeSceneFlowBridge` observa `SceneTransitionCompletedEvent` com `Profile='gameplay'` e,
-      ao detectar o GameLoop em `Ready`, solicita `GameLoop.RequestStart()` para entrar em `Playing`.
+    - O `InputModeSceneFlowBridge` aplica o modo `Gameplay` em `SceneFlow/Completed:Gameplay`,
+      solicita a **IntroStage** (PostReveal) e mantém o gameplay bloqueado via `sim.gameplay`.
+    - A IntroStage termina por confirmação UI (`IntroStage/UIConfirm`) ou auto-skip (`IntroStage/NoContent`),
+      e só então o GameLoop faz `RequestStart()` para entrar em `Playing`.
 
 Com isso:
 
 - O GameLoop só entra em `Playing` **depois** que:
     - O reset/spawn foi concluído (WorldLifecycle).
     - A transição foi marcada como `Completed(Profile=gameplay)`.
-    - O `InputMode` já foi trocado para `'Gameplay'` (input pronto).
+    - A IntroStage foi concluída (ou pulada) e o token `sim.gameplay` foi liberado.
 
 - O `IGameNavigationService` continua responsável apenas por **disparar transições de cena**
   (`SceneTransitionService.TransitionAsync(...)`), sem chamar `RequestStart()` diretamente.
@@ -114,5 +124,5 @@ seguir as regras já descritas para SceneFlow/WorldLifecycle.
 - Documentada a integração de loading com GameLoop/InputMode, explicitando que:
     - bootstrap/startup é orquestrado pelo `GameLoopSceneFlowCoordinator` (Boot → Ready);
     - Menu → Gameplay em produção usa `InputModeSceneFlowBridge` em `SceneTransitionCompleted(Profile=gameplay)`
-      para solicitar `GameLoop.RequestStart()` (Ready → Playing), após reset/spawn e troca de input;
+      para iniciar a IntroStage (PostReveal) e só então avançar para `GameLoop.RequestStart()` após `UIConfirm`/`NoContent`;
     - `IGameNavigationService` **não** emite `RequestStart()` diretamente; ele apenas dispara transições de cena.

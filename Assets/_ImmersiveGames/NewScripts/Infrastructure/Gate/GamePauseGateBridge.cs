@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
 
             _pauseBinding = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _resumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => ReleasePauseGate(ReasonResumeRequested));
-            _exitToMenuBinding = new EventBinding<GameExitToMenuRequestedEvent>(_ => OnExitToMenuRequested());
+            _exitToMenuBinding = new EventBinding<GameExitToMenuRequestedEvent>(OnExitToMenuRequested);
 
             TryRegisterBindings();
         }
@@ -105,10 +105,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
             }
         }
 
-        private void OnExitToMenuRequested()
+        private void OnExitToMenuRequested(GameExitToMenuRequestedEvent evt)
         {
+            var reason = evt?.Reason ?? "<null>";
             DebugUtility.LogVerbose<GamePauseGateBridge>(
-                "[PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge).");
+                $"[PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge). reason='{reason}'.");
             ReleasePauseGate(ReasonExitToMenuRequested);
         }
 

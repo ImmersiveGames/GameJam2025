@@ -1,5 +1,11 @@
 # Changelog (Docs)
 
+## [2026-01-16]
+### Changed
+- Baseline 2.0 checklist atualizado com evidências A–E do log refeito (SceneFlow, WorldLifecycle reset/skip, IntroStage, Pause/Resume, PostGame/Restart/ExitToMenu) e ordem Fade/Loading detalhada.
+- ADR-0016 refinado para explicitar contrato operacional da IntroStage (token `sim.gameplay`, InputMode UI/Gameplay, `UIConfirm`/`NoContent`).
+- ADR-0010 alinhado à ordem real do Fade/Loading HUD e à integração com IntroStage (post-reveal) antes do `RequestStart()`.
+
 ## [2026-01-15]
 ### Changed
 - ADR-0016 e ADR-0017 revisados para tornar **IntroStage** o termo canônico e registrar **IntroStage** como termo canônico, sem compatibilidade legada.

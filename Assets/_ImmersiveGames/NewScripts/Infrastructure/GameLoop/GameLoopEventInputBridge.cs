@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
                 return;
 
             DebugUtility.LogVerbose<GameLoopEventInputBridge>(
-                "[GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing).");
+                $"[GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing). reason='{evt?.Reason ?? "<null>"}'.");
             loop.RequestReady();
         }
 
@@ -92,6 +92,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
             if (!TryResolveLoop(out var loop))
                 return;
 
+            DebugUtility.Log<GameLoopEventInputBridge>(
+                $"[GameLoop] RestartRequested -> RequestReset (expect Boot cycle). reason='{evt?.Reason ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
             loop.RequestReset();
         }
     }

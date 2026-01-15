@@ -47,11 +47,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 return;
             }
 
+            var reason = evt?.Reason ?? RestartReason;
+
             DebugUtility.Log<RestartNavigationBridge>(
-                "[Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync.",
+                $"[Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync. reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            _ = navigation.RequestGameplayAsync(RestartReason);
+            _ = navigation.RequestGameplayAsync(reason);
         }
     }
 }
