@@ -82,11 +82,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 gameLoop?.RequestIntroStageStart();
                 simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
                 DebugUtility.Log<IntroStageCoordinator>(
-                    "[IntroStage] IntroStage ativa: simulação gameplay bloqueada; use QA/IntroStage/Complete ou QA/IntroStage/Skip para prosseguir.",
+                    "[IntroStage] IntroStage ativa: simulação gameplay bloqueada; aguardando confirmação (UI).",
                     DebugUtility.Colors.Info);
-                DebugUtility.Log<IntroStageCoordinator>(
-                    "[QA][IntroStage] Use Inspector(ContextMenu) OU MenuItem para Complete/Skip.",
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                DebugUtility.LogVerbose<IntroStageCoordinator>(
+                    "[QA][IntroStage] ContextMenu/MenuItem disponíveis para Complete/Skip em Editor/Dev.",
                     DebugUtility.Colors.Info);
+#endif
 
                 if (step == null || !step.HasContent)
                 {

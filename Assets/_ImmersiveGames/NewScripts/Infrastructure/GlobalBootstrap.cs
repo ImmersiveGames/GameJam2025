@@ -172,7 +172,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // ADR-0016: PhaseContext precisa existir no DI global.
             RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
+#endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageRuntimeDebugGui();
 #endif

@@ -58,8 +58,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 if (!_duplicateDestroyedLogged)
                 {
                     _duplicateDestroyedLogged = true;
-                    DebugUtility.LogWarning<IntroStageRuntimeDebugGui>(
-                        "[IntroStage][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata.");
+                    DebugUtility.LogVerbose<IntroStageRuntimeDebugGui>(
+                        "[IntroStage][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata.",
+                        DebugUtility.Colors.Info);
                 }
 
                 Destroy(gameObject);

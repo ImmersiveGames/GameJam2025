@@ -119,7 +119,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                      stateId == GameLoopStateId.Ready ||
                      stateId == GameLoopStateId.PostPlay)
             {
-                _signals.ClearIntroStageFlags();
+                if (!_signals.IntroStageRequested)
+                {
+                    _signals.ClearIntroStageFlags();
+                }
             }
 
             if (stateId == GameLoopStateId.PostPlay)
