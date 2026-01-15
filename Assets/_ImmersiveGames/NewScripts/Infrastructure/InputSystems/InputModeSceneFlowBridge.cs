@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
-        // Per-instance dedupe to avoid cross-instance suppression after restarts.
+        // Dedupe por instância para evitar supressão entre instâncias após restarts.
         private string _lastProcessedSignature;
 
         public InputModeSceneFlowBridge()
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
 
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                "[InputMode] InputModeSceneFlowBridge registrado nos eventos de SceneTransitionCompletedEvent.",
+                "[InputMode] InputModeSceneFlowBridge registrado nos eventos de SceneTransitionStartedEvent e SceneTransitionCompletedEvent.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
@@ -70,17 +70,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
             var dedupeKey = $"{profile}|{signature}";
 
-            if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
-                && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
-            {
-                DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                    $"[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            _lastProcessedSignature = dedupeKey;
-
             // ===== Gameplay =====
             if (string.Equals(profile, SceneFlowProfileNames.Gameplay, StringComparison.OrdinalIgnoreCase))
             {
@@ -93,6 +82,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                         "[InputModeSceneFlowBridge] [GameLoop] IGameLoopService indisponivel; sincronizacao ignorada.");
                     return;
                 }
+
+                var isBootState = string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Boot), StringComparison.Ordinal);
+                if (!isBootState
+                    && !string.IsNullOrWhiteSpace(_lastProcessedSignature)
+                    && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        $"[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                if (isBootState)
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        "[InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> bypass dedupe (Restart/Boot cycle).",
+                        DebugUtility.Colors.Info);
+                }
+
+                _lastProcessedSignature = dedupeKey;
 
                 DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                     "[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop.",
@@ -119,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     return;
                 }
 
-                if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Boot), StringComparison.Ordinal))
+                if (isBootState)
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                         "[InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestStart() antes da IntroStage.",
@@ -173,6 +182,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             if (string.Equals(profile, SceneFlowProfileNames.Startup, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(profile, SceneFlowProfileNames.Frontend, StringComparison.OrdinalIgnoreCase))
             {
+                if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
+                    && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        $"[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                _lastProcessedSignature = dedupeKey;
                 inputModeService.SetFrontendMenu("SceneFlow/Completed:Frontend");
 
                 // Correção-alvo:
@@ -201,6 +220,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
                 return;
             }
+
+            if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
+                && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                    $"[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastProcessedSignature = dedupeKey;
 
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                 $"[InputMode] Profile nao reconhecido ('{profile}'); input mode nao alterado.",
