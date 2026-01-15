@@ -13,6 +13,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     public sealed class PregameCoordinator : IPregameCoordinator
     {
         private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
+        // Fail-safe operacional: evita travar o fluxo se nenhum sinal canônico for emitido.
+        private const int PregameCompletionTimeoutMs = 20000;
         private int _inProgress;
 
         public async Task RunPregameAsync(PregameContext context)
@@ -97,7 +99,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
                 // IMPORTANT: Must resume on Unity main thread because this method touches Unity APIs
                 // (SceneManager, SimulationGate callbacks, etc.). Avoid ConfigureAwait(false) here.
-                var completion = await controlService.WaitForCompletionAsync(CancellationToken.None);
+                var completionTask = controlService.WaitForCompletionAsync(CancellationToken.None);
+                var completedTask = await Task.WhenAny(completionTask, Task.Delay(PregameCompletionTimeoutMs));
+
+                if (completedTask != completionTask)
+                {
+                    DebugUtility.LogWarning<PregameCoordinator>(
+                        $"[OBS][Pregame] PregameTimedOut signature='{signature}' profile='{context.ProfileId.Value}' " +
+                        $"target='{targetScene}' timeoutMs={PregameCompletionTimeoutMs}.");
+                    controlService.SkipPregame("timeout");
+                }
+
+                var completion = await completionTask;
                 if (completion.WasSkipped)
                 {
                     LogSkipped(NormalizeValue(completion.Reason), context, SceneManager.GetActiveScene().name);

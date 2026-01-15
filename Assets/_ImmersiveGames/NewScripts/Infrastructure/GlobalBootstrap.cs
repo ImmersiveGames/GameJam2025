@@ -574,11 +574,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
             {
                 var resetGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                completionGate = resetGate;
+                completionGate = new PregameSceneTransitionCompletionGate(resetGate);
                 DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (PregameSceneTransitionCompletionGate).",
                     DebugUtility.Colors.Info);
             }
 
