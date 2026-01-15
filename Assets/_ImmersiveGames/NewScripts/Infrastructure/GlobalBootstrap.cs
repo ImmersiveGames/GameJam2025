@@ -173,6 +173,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
 
             RegisterIntroStageQaInstaller();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RegisterIntroStageRuntimeDebugGui();
+#endif
 
             // Baseline 3B: Pending NÃO pode atravessar transição.
             RegisterPhaseContextSceneFlowBridge();
@@ -779,6 +782,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                     $"[QA][IntroStage] Falha ao instalar IntroStageQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static void RegisterIntroStageRuntimeDebugGui()
+        {
+            IntroStageRuntimeDebugGui.EnsureInstalled();
+        }
+#endif
 
         // --------------------------------------------------------------------
         // StateDependent / Camera
