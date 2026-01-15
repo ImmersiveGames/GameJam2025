@@ -90,6 +90,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     return;
                 }
 
+                var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+
                 if (!IsGameplayScene())
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
@@ -98,21 +100,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 }
                 else
                 {
-                    
                     // Evita disparo duplicado:
                     // - PhaseStartPhaseCommitBridge agenda IntroStage após TransitionCompleted quando uma PhaseCommitted ocorre durante SceneTransition.
                     // - Este bridge dispara IntroStage em SceneFlow/Completed para o caso "entrada no gameplay" sem pipeline pendente.
                     if (DependencyManager.Provider.TryGetGlobal<PhaseStartPhaseCommitBridge>(out var phaseBridge)
                         && phaseBridge != null
-                        && phaseBridge.HasPendingFor(evt.Context.ContextSignature))
+                        && phaseBridge.ShouldSuppressIntroStage(signature))
                     {
                         DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                            $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (PhaseStart pipeline pendente). signature='{evt.Context.ContextSignature}'.",
+                            $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (PhaseStart pipeline pendente). signature='{signature}'.",
                             DebugUtility.Colors.Info);
                         return;
                     }
 
-var coordinator = ResolveIntroStageCoordinator();
+                    var coordinator = ResolveIntroStageCoordinator();
                     if (coordinator == null)
                     {
                         DebugUtility.LogWarning<InputModeSceneFlowBridge>(
@@ -120,7 +121,6 @@ var coordinator = ResolveIntroStageCoordinator();
                     }
                     else
                     {
-                        var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
                         var introStageContext = new IntroStageContext(
                             contextSignature: signature,
                             profileId: evt.Context.TransitionProfileId,

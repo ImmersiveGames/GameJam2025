@@ -79,6 +79,30 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return string.Equals(_pendingSignature, verifiableSig, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Indica se o pipeline pendente deve suprimir a IntroStage para esta assinatura concluída.
+        /// </summary>
+        public bool ShouldSuppressIntroStage(string completedSignature)
+        {
+            if (_disposed || _pendingRequest == null)
+            {
+                return false;
+            }
+
+            if (_pendingSignature.Length == 0)
+            {
+                return true;
+            }
+
+            var verifiableSig = NormalizeVerifiableSignature(completedSignature);
+            if (verifiableSig.Length == 0)
+            {
+                return false;
+            }
+
+            return string.Equals(_pendingSignature, verifiableSig, StringComparison.Ordinal);
+        }
+
         private async void OnPhaseCommitted(PhaseCommittedEvent evt)
         {
             if (_disposed)
@@ -95,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var reason = string.IsNullOrWhiteSpace(evt.Reason) ? "PhaseCommitted" : evt.Reason.Trim();
             var signature = ResolveContextSignature(out var targetScene);
-            var phaseStartReason = $"PhaseStart/Committed phaseId='{evt.Current.PhaseId}' reason='{reason}'";
+            var phaseStartReason = $"PhaseStart/Committed|phaseId={evt.Current.PhaseId}|reason={reason}";
 
             if (!IsGameplaySceneOrTarget(targetScene))
             {
