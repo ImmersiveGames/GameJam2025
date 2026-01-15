@@ -92,6 +92,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
             if (!TryResolveLoop(out var loop))
                 return;
 
+            DebugUtility.Log<GameLoopEventInputBridge>(
+                "[GameLoop] RestartRequested -> RequestReset (expect Boot cycle).",
+                DebugUtility.Colors.Info);
             loop.RequestReset();
         }
     }

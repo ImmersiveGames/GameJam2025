@@ -32,11 +32,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private bool TryTransitionOnce()
         {
             // Reset tem prioridade máxima (determinístico).
-            // Importante (contrato): Reset/Reinício NÃO deve voltar ao Boot.
-            // Boot fica reservado ao ciclo de inicialização global (startup).
+            // Importante (contrato): Reset/Reinício volta ao Boot para reiniciar a run por etapas.
             if (_signals.ResetRequested)
             {
-                return TransitionTo(GameLoopStateId.Ready);
+                return TransitionTo(GameLoopStateId.Boot);
             }
 
             // ReadyRequested tem prioridade alta. Se isso NÃO for desejado globalmente,

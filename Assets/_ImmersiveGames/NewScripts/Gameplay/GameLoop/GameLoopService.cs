@@ -91,6 +91,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             CurrentStateIdName = stateId.ToString();
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {stateId} (active={isActive})");
 
+            if (stateId == GameLoopStateId.Boot && _signals.ResetRequested)
+            {
+                DebugUtility.Log<GameLoopService>(
+                    "[GameLoop] Restart->Boot confirmado (reinício determinístico).",
+                    DebugUtility.Colors.Info);
+            }
+
             // Etapa 3: delimita o “início de run”.
             // Regras:
             // - Em Boot/Ready/PostPlay, consideramos que ainda não iniciou uma run ativa.
