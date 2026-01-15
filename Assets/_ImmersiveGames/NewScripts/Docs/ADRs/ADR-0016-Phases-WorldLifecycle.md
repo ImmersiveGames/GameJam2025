@@ -1,4 +1,4 @@
-# ADR-0016 — Phases + modos de avanço + Pregame opcional (WorldLifecycle/SceneFlow)
+# ADR-0016 — Phases + modos de avanço + IntroStage (Pregame legado) opcional (WorldLifecycle/SceneFlow)
 
 ## Status
 
@@ -25,14 +25,14 @@ Durante a evolução do gameplay, surgiram requisitos adicionais:
     - **In-Place** (troca dentro da mesma cena de gameplay).
     - **Com transição completa** (troca que usa SceneFlow, podendo envolver unload/load de cenas).
 
-3. Necessidade de uma etapa opcional antes do jogo começar de fato (**Pregame**), para:
+3. Necessidade de uma etapa opcional antes do jogo começar de fato (**IntroStage**, termo legado: **Pregame**), para:
     - cutscene,
     - splash screen,
     - tutorial,
     - “press any button”,
     - ou qualquer preparação de entrada do gameplay.
 
-O ponto crítico: o Pregame **não pode bloquear o fluxo de forma irreversível**; ele deve ter um mecanismo canônico de conclusão (para produção) e um mecanismo equivalente via QA (para testes determinísticos).
+O ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversível**; ela deve ter um mecanismo canônico de conclusão (para produção) e um mecanismo equivalente via QA (para testes determinísticos).
 
 ## Decisão
 
@@ -51,20 +51,21 @@ Onde:
     - `UseLoadingHud` (in-Place ignora; transição completa depende do profile),
     - `TimeoutMs`.
 
-### 2) Pregame é uma fase opcional do GameLoop, disparada na conclusão do SceneFlow (Completed)
+### 2) IntroStage (Pregame legado) é uma fase opcional do GameLoop, **PostReveal**, disparada após o SceneFlow (Completed)
 
 **Intenção oficial (estado atual do código + evidência em logs):**
 
-- O Pregame existe para exibir conteúdo **com a cena já revelada** (após o `FadeOut`), antes de liberar o início do gameplay.
-- O disparo ocorre em `SceneTransitionCompletedEvent`, via bridge de SceneFlow:
-    - `InputModeSceneFlowBridge` identifica `profile=gameplay` e solicita início do Pregame.
-- Enquanto o Pregame está ativo, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`).
-- O Pregame termina por um sinal canônico:
+- A IntroStage existe para exibir conteúdo **com a cena já revelada** (**PostReveal**, após o `FadeOut`), antes de liberar o início do gameplay.
+- O disparo ocorre **após** `SceneTransitionCompletedEvent`, via bridge de SceneFlow:
+    - `InputModeSceneFlowBridge` identifica `profile=gameplay` e solicita início da IntroStage (API legado: Pregame).
+- **A IntroStage não faz parte do Completion Gate da transição de cenas**; ela acontece **depois** de `SceneTransitionCompletedEvent` e é uma fase do **GameLoop/gameplay**.
+- Enquanto a IntroStage está ativa, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`).
+- A IntroStage termina por um sinal canônico (nomes legados):
     - `IPregameControlService.CompletePregame(string reason)` (conclui)
     - `IPregameControlService.SkipPregame(string reason)` (pula/cancela)
 
 **Nota operacional (ordem observada):**
-- O Pregame pode iniciar **durante o manuseio do Completed**, antes do `flow.scene_transition` ser liberado (dependendo da ordem de callbacks do pipeline). Isso é aceitável: durante esse intervalo o gameplay já está bloqueado pela transição, e permanece bloqueado pelo `sim.gameplay` até a conclusão explícita do Pregame.
+- A IntroStage pode iniciar **durante o manuseio do Completed**, antes do `flow.scene_transition` ser liberado (dependendo da ordem de callbacks do pipeline). Isso é aceitável: durante esse intervalo o gameplay já está bloqueado pela transição, e permanece bloqueado pelo `sim.gameplay` até a conclusão explícita da IntroStage.
 
 **Regra de não-bloqueio:** se não houver conteúdo, o Pregame deve “auto-skip”:
 - `IPregameStep.HasContent == false` → o coordenador solicita `SkipPregame(...)` automaticamente.
@@ -73,21 +74,26 @@ Onde:
 
 ### Sequência de SceneFlow + WorldLifecycle (profile gameplay)
 
+**Ordem canônica do pipeline (com IntroStage/PostReveal):**
+
+`FadeIn → Load/Unload → ScenesReady → Reset (ou skip) → FadeOut → IntroStage (PostReveal) → Playing (liberar gameplay)`
+
 1. SceneFlow inicia transição (FadeIn) e o gate fecha (`flow.scene_transition`).
-2. `SceneTransitionScenesReadyEvent`
-3. WorldLifecycle executa reset determinístico (quando aplicável).
-4. SceneFlow executa FadeOut.
-5. `SceneTransitionCompletedEvent` (cena revelada; fluxo visual concluído).
-6. Bridge solicita Pregame (opcional).
-7. Ao terminar o Pregame, o GameLoop pode iniciar o gameplay normalmente.
+2. Load/Unload de cenas conforme profile.
+3. `SceneTransitionScenesReadyEvent`
+4. WorldLifecycle executa reset determinístico (quando aplicável).
+5. SceneFlow executa FadeOut.
+6. `SceneTransitionCompletedEvent` (cena revelada; fluxo visual concluído).
+7. Bridge solicita IntroStage (opcional, legado: Pregame).
+8. Ao terminar a IntroStage, o GameLoop pode iniciar o gameplay normalmente.
 
-### Pregame — composição e contrato de conclusão
+### IntroStage (Pregame legado) — composição e contrato de conclusão
 
-O Pregame é coordenado por:
+A IntroStage é coordenada por:
 
 - `PregameCoordinator` (orquestra execução, logs de observabilidade e bloqueio da simulação).
 - `IPregameStep` (conteúdo real: cutscene/splash/tutorial/press button).
-- `IPregameControlService` (canal canônico para **encerrar** o Pregame).
+- `IPregameControlService` (canal canônico para **encerrar** a IntroStage).
 
 Contrato:
 
@@ -101,7 +107,7 @@ Contrato:
 
 ### Gates e invariantes
 
-- **Durante Pregame**: token `sim.gameplay` fechado (gameplay bloqueado; UI/menu pode continuar operando conforme política do `IStateDependentService`).
+- **Durante IntroStage (Pregame legado)**: token `sim.gameplay` fechado (gameplay bloqueado; UI/menu pode continuar operando conforme política do `IStateDependentService`).
 - **Durante SceneFlow**: token `flow.scene_transition` fecha o gate, garantindo que ações de gameplay fiquem bloqueadas durante load/unload/fade.
 - **In-Place Phase Change**:
     - token `flow.phase_inplace` para serialização e rastreabilidade.
@@ -112,9 +118,9 @@ Contrato:
 
 ## Como testar (QA)
 
-### Pregame
+### IntroStage (Pregame legado)
 
-Há duas formas canônicas de encerrar o Pregame em QA (ambas chamam `IPregameControlService`):
+Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IPregameControlService`):
 
 1. **Context Menu (Play Mode)**
     - Componente: `PregameQaContextMenu` (namespace `_ImmersiveGames.NewScripts.QA.Pregame`)
@@ -137,7 +143,7 @@ Há duas formas canônicas de encerrar o Pregame em QA (ambas chamam `IPregameCo
 
 ### Evidência esperada (observability)
 
-- Pregame:
+- IntroStage (Pregame legado):
     - `[OBS][Pregame] PregameStarted ... reason='SceneFlow/Completed'`
     - `[OBS][Pregame] GameplaySimulationBlocked token='sim.gameplay' ...`
     - log orientativo de QA (Complete/Skip)
@@ -152,14 +158,18 @@ Há duas formas canônicas de encerrar o Pregame em QA (ambas chamam `IPregameCo
 
 ### Benefícios
 
-- Pregame fica explícito como etapa opcional, com disparo determinístico e contrato de conclusão.
-- QA consegue encerrar Pregame sem depender de conteúdo in-game (cutscene etc.).
+- IntroStage (Pregame legado) fica explícita como etapa opcional, com disparo determinístico e contrato de conclusão.
+- QA consegue encerrar IntroStage sem depender de conteúdo in-game (cutscene etc.).
 - Dois modos de troca de fase ficam claros (e sem ambiguidade de “reset global” vs “troca de cena”).
 
 ### Trade-offs
 
-- Pregame depende do hook `SceneTransitionCompletedEvent` (pós-FadeOut).
+- IntroStage depende do hook `SceneTransitionCompletedEvent` (pós-FadeOut).
 - Se o step padrão tiver conteúdo e não disparar `Complete/Skip`, o gameplay ficará bloqueado (por design). Em QA, isso é resolvido via menu/context menu.
+
+## Changelog
+
+- **2026-01-14** — Renomeado semanticamente “Pregame” para **IntroStage (PostReveal)** no discurso arquitetural, mantendo **compatibilidade** com o termo legado e APIs (`Pregame*`). Compat note: **“Pregame (termo legado) agora = IntroStage/PostReveal”**.
 
 ## Referências
 
