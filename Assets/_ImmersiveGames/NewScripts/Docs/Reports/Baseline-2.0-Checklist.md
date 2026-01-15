@@ -6,18 +6,18 @@
 
 ## Resumo
 - Validação manual devido à instabilidade do parser (`Baseline2SmokeLastRunTool`).
-- O log cobre: **Startup → Menu → Gameplay → Pause/Resume → Victory → Restart → Defeat → ExitToMenu → Menu**.
+- O log cobre: **Startup → Menu → Gameplay → IntroStage → Pause/Resume → Victory → Restart → Defeat → ExitToMenu → Menu**.
 - Evidência hard foi extraída do `Baseline-2.0-Smoke-LastRun.log` usando assinaturas/strings **exatas**.
 
 ## Checklist por cenário (A–E)
 
 | ID | Cenário | Evidências principais (resumo) | Status |
 |---|---|---|---|
-| A | Boot → Menu (startup) | `SceneTransitionStarted → gate adquirido` (Profile='startup'); `Reset SKIPPED (startup/frontend)`; `Emitting WorldLifecycleResetCompletedEvent` com `signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'`; `Completion gate concluído ... Prosseguindo para FadeOut` | PASS |
-| B | Menu → Gameplay (gameplay) | `NavigateAsync ... routeId='to-gameplay' ... Profile='gameplay'`; `Disparando hard reset após ScenesReady`; `Emitting WorldLifecycleResetCompletedEvent ... signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'`; `ActorRegistry count at 'After Spawn': 2`; `GameLoop ENTER: Playing` | PASS |
-| C | Pause → Resume | `Acquire token='state.pause'` + `GameLoop ENTER: Paused`; `Release token='state.pause'` + `GameLoop EXIT: Paused` | PASS |
-| D | PostGame (Defeat) → Restart | `RequestEnd(Defeat, reason='Gameplay/DevManualDefeat')`; `NavigateAsync ... routeId='to-gameplay' ... Profile='gameplay'`; reset completo com `ActorRegistry count at 'After Spawn': 2` (segunda execução) | PASS |
-| E | PostGame (Victory) → ExitToMenu | `RequestEnd(Victory, reason='Gameplay/DevManualVictory')`; `NavigateAsync ... routeId='to-menu' ... Profile='frontend'`; `Reset SKIPPED (startup/frontend)` + `WorldLifecycleResetCompletedEvent` com `signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'` | PASS |
+| A | Boot → Menu (startup) | `SceneTransitionStarted ... profile='startup'`; `Reset SKIPPED (startup/frontend)` com `reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'`; `SceneTransitionCompleted ... profile='startup'`; `GameLoop: Boot → Ready` | PASS |
+| B | Menu → Gameplay (gameplay) | `NavigateAsync ... routeId='to-gameplay' ... profile='gameplay'`; `WorldLifecycle Reset REQUESTED reason='ScenesReady/GameplayScene'`; spawn `Player + Eater`; `Emitting WorldLifecycleResetCompletedEvent ... reason='ScenesReady/GameplayScene'`; `Completion gate concluído ... Prosseguindo para FadeOut` | PASS |
+| C | IntroStage / PreGame (opcional) | `IntroStageStarted ... reason='SceneFlow/Completed'`; `Acquire token='sim.gameplay'`; `CompleteIntroStage ... reason='IntroStage/UIConfirm'` **ou** `IntroStage/NoContent`; `GameLoop: IntroStage → Playing`; `InputMode Apply mode='Gameplay' ... reason='GameLoop/Playing'` | PASS |
+| D | Pause → Resume | `Acquire token='state.pause'` + `GameLoop: Playing → Paused`; `Release token='state.pause'` + `GameLoop: Paused → Playing` | PASS |
+| E | PostGame (Victory/Defeat) + Restart + ExitToMenu | `GameRunEndedEvent Outcome=Victory/Defeat`; `Restart -> NavigateAsync routeId='to-gameplay' ... profile='gameplay'` (Boot cycle determinístico); `ExitToMenu -> NavigateAsync routeId='to-menu' ... profile='frontend'`; `Reset SKIPPED ... reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'` | PASS |
 
 ## Invariantes globais
 
@@ -30,34 +30,39 @@
 | I5 | Correlação usa `ContextSignature` canônica (ex.: `signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'`) | PASS |
 
 ## Ordem Fade/Loading (UseFade=true)
-- `FadeIn` → `LoadingHUD.Show` → Load/Unload → `ScenesReady` → `ResetCompleted` → `LoadingHUD.Hide` → `FadeOut` → `Completed`.
+- `TransitionStarted` → `FadeIn` (alpha=1) → `LoadingHUD.Show` → Load/Unload → `ScenesReady` → `ResetCompleted` (ou SKIP) → `LoadingHUD.Hide` (BeforeFadeOut) → `FadeOut` (alpha=0) → `Completed` (safety hide).
 
 ## Evidências hard (log — strings exatas)
 - **Boot → Menu (startup)**
-  - `[Readiness] SceneTransitionStarted → gate adquirido ... Profile='startup'`
-  - `[WorldLifecycle] Reset SKIPPED (startup/frontend). ... profile='startup', activeScene='MenuScene'.`
-  - `[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='startup', signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.`
-  - `[SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'.`
+  - `[SceneFlow] TransitionStarted ... profile='startup'`
+  - `[WorldLifecycle] Reset SKIPPED (startup/frontend) ... reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'`
+  - `[SceneFlow] TransitionCompleted ... profile='startup'`
+  - `GameLoop: Boot → Ready`
 - **Menu → Gameplay (gameplay)**
-  - `[Navigation] NavigateAsync -> routeId='to-gameplay', reason='Menu/PlayButton', ... Profile='gameplay'.`
-  - `[WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene', profile='gameplay'`
-  - `[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='gameplay', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='ScenesReady/GameplayScene'.`
-  - `[WorldLifecycleOrchestrator] ActorRegistry count at 'After Spawn': 2`
-  - `[GameLoop] ENTER: Playing (active=True)`
+  - `[Navigation] NavigateAsync ... routeId='to-gameplay' ... profile='gameplay'`
+  - `[WorldLifecycle] Reset REQUESTED reason='ScenesReady/GameplayScene'`
+  - `Spawn: Player + Eater`
+  - `[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent ... reason='ScenesReady/GameplayScene'`
+  - `[SceneFlow] Completion gate concluído -> FadeOut -> Completed`
+- **IntroStage / PreGame**
+  - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
+  - `Acquire token='sim.gameplay'`
+  - `CompleteIntroStage received reason='IntroStage/UIConfirm'`
+  - `GameLoop: IntroStage → Playing`
+  - `[InputMode] Apply mode='Gameplay' ... reason='GameLoop/Playing'`
+- **IntroStage / NoContent (auto-skip)**
+  - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
+  - `[OBS][IntroStage] IntroStageSkipped ... reason='IntroStage/NoContent'`
 - **Pause → Resume**
-  - `[Gate] Acquire token='state.pause'. Active=1. IsOpen=False`
-  - `[GameLoop] ENTER: Paused (active=False)`
-  - `[Gate] Release token='state.pause'. Active=0. IsOpen=True`
-  - `[GameLoop] EXIT: Paused`
+  - `Acquire token='state.pause'` → `GameLoop: Playing → Paused`
+  - `Release token='state.pause'` → `GameLoop: Paused → Playing`
 - **PostGame (Victory) → ExitToMenu**
-  - `[GameRunEndRequestService] RequestEnd(Victory, reason='Gameplay/DevManualVictory')`
-  - `[Navigation] NavigateAsync -> routeId='to-menu', reason='ExitToMenu/Event', ... Profile='frontend'.`
-  - `[WorldLifecycle] Reset SKIPPED (startup/frontend). ... profile='frontend', activeScene='MenuScene'.`
-  - `[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='frontend', signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'.`
+  - `GameRunEndedEvent Outcome=Victory`
+  - `[Navigation] NavigateAsync -> routeId='to-menu' ... profile='frontend'`
+  - `[WorldLifecycle] Reset SKIPPED ... reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'`
 - **PostGame (Defeat) → Restart**
-  - `[GameRunEndRequestService] RequestEnd(Defeat, reason='Gameplay/DevManualDefeat')`
-  - `[Navigation] NavigateAsync -> routeId='to-gameplay', reason='PostGame/Restart', ... Profile='gameplay'.`
-  - `[WorldLifecycleOrchestrator] ActorRegistry count at 'After Spawn': 2`
+  - `GameRunEndedEvent Outcome=Defeat`
+  - `Restart -> NavigateAsync routeId='to-gameplay' ... profile='gameplay'`
 
 ## Dívida aceita
 - `Baseline2SmokeLastRunTool` permanece **não-bloqueante**; o log é a evidência oficial até o tool estabilizar.
