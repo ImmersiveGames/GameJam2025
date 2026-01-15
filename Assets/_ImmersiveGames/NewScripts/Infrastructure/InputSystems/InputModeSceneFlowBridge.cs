@@ -131,9 +131,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 if (isBootState)
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                        "[InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestStart() antes da IntroStage.",
+                        "[InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStage (Restart/Boot cycle).",
                         DebugUtility.Colors.Info);
-                    gameLoopService.RequestStart();
+                    gameLoopService.RequestReady();
                 }
 
                 if (!IsGameplayScene())
