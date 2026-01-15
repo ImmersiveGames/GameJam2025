@@ -1,8 +1,10 @@
 # Changelog (Docs)
 
-## [2026-01-16]
+## [2026-01-15]
 ### Changed
-- Baseline 2.0 checklist atualizado com evidências A–E do log refeito (SceneFlow, WorldLifecycle reset/skip, IntroStage, Pause/Resume, PostGame/Restart/ExitToMenu) e ordem Fade/Loading detalhada.
+- Baseline 2.0 checklist ajustado para evidências atuais do log (A, B, D, E; IntroStage pendente) e ordem Fade/Loading detalhada.
+- Correção evidence-driven do checklist para usar apenas strings literais do log.
+- ADR-0016 e ADR-0017 alinhados às assinaturas reais do PhaseChangeService (overloads + `SceneTransitionRequest` no modo WithTransition).
 - ADR-0016 refinado para explicitar contrato operacional da IntroStage (token `sim.gameplay`, InputMode UI/Gameplay, `UIConfirm`/`NoContent`).
 - ADR-0010 alinhado à ordem real do Fade/Loading HUD e à integração com IntroStage (post-reveal) antes do `RequestStart()`.
 

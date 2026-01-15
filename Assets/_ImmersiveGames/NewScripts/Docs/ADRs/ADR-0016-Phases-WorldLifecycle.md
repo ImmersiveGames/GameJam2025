@@ -38,10 +38,16 @@ O ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversív
 
 ### 1) Nomenclatura e contratos (sem flags obscuras)
 
-O sistema define duas operações públicas e rastreáveis (nomes reais do código):
+O sistema define duas operações públicas e rastreáveis (nomes reais do código), com overloads explícitos:
 
-- **In-Place**: `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
-- **Com transição**: `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
+- **In-Place**
+    - `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason)`
+    - `PhaseChangeService.RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)`
+    - `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)`
+- **Com transição**
+    - `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)`
+    - `PhaseChangeService.RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)`
+    - `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)`
 
 Onde:
 

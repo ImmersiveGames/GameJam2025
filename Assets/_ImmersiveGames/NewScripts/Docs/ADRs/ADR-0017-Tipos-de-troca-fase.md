@@ -18,14 +18,20 @@ A meta é eliminar ambiguidades (ex.: “troca de fase” significar tanto reset
 Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distintos:
 
 1. **PhaseChange/In-Place**
-    - API: `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
+    - API (overloads canônicos):
+        - `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason)`
+        - `PhaseChangeService.RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)`
+        - `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)`
     - Executa reset determinístico **sem SceneFlow**.
     - **Sem Loading HUD** (mesmo se solicitado via options, o serviço ignora no In-Place).
     - **Fade opcional** (`options.UseFade=true`) permitido como “mini transição” quando for desejável esconder reconstrução do reset.
     - Gate/serialização: token `flow.phase_inplace`.
 
 2. **PhaseChange/SceneTransition**
-    - API: `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
+    - API (overloads canônicos):
+        - `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)`
+        - `PhaseChangeService.RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)`
+        - `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)`
     - Registra intent e inicia **SceneFlow** (transição completa, com Fade/Loading conforme profile).
     - O `WorldLifecycleRuntimeCoordinator` consome o intent em `SceneTransitionScenesReadyEvent`, seta `Pending`, executa reset e faz commit da fase após o reset.
     - Gate: o bloqueio de simulação durante a transição é governado pelo token padrão do SceneFlow (`flow.scene_transition`), conforme o pipeline de transição de cenas.
@@ -53,7 +59,7 @@ sequenceDiagram
     participant WLC as WorldLifecycleController
     participant PhaseCtx as PhaseContextService
 
-    Caller->>PhaseChange: RequestPhaseInPlaceAsync(plan, options, reason)
+    Caller->>PhaseChange: RequestPhaseInPlaceAsync(plan, reason, options)
     PhaseChange->>PhaseCtx: SetPending(plan, reason+signature)
     PhaseChange->>WL: ResetAsync(sourceSignature="phase.inplace:<PhaseId>")
     WL->>WLC: Reset pipeline (despawn/spawn/hooks)
@@ -78,7 +84,7 @@ sequenceDiagram
     participant PhaseCtx as PhaseContextService
     participant WLC as WorldLifecycleController
 
-    Caller->>PhaseChange: RequestPhaseWithTransitionAsync(plan, options, reason)
+    Caller->>PhaseChange: RequestPhaseWithTransitionAsync(plan, transition, reason, options)
     PhaseChange->>Intent: Register(signature, plan, reason)
     PhaseChange->>SceneFlow: RequestTransition(signature/profile=gameplay)
     SceneFlow-->>Readiness: SceneTransitionStarted
