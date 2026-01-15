@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[OBS][Pregame] PregameSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.");
+                    $"[OBS][IntroStage] IntroStageSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.");
                 return;
             }
 
@@ -55,13 +55,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var simulationGateAcquired = false;
 
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
+                $"[OBS][IntroStage] IntroStageStarted phase='PostReveal' signature='{signature}' " +
+                $"profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             if (gameLoop == null)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    "[Pregame] IGameLoopService indisponível. Pregame seguirá sem sincronizar estado do GameLoop.");
+                    "[IntroStage] IGameLoopService indisponível. IntroStage seguirá sem sincronizar estado do GameLoop.");
             }
 
             try
@@ -70,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 if (controlService == null)
                 {
                     DebugUtility.LogWarning<PregameCoordinator>(
-                        "[Pregame] IPregameControlService indisponível. Pregame será concluído imediatamente.");
+                        "[IntroStage] IPregameControlService indisponível. IntroStage será concluída imediatamente.");
                     gameLoop?.RequestPregameStart();
                     simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
                     LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
@@ -82,10 +83,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 gameLoop?.RequestPregameStart();
                 simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
                 DebugUtility.Log<PregameCoordinator>(
-                    "[Pregame] Pregame ativo: simulação gameplay bloqueada; use QA/Pregame/Complete ou QA/Pregame/Skip para prosseguir.",
+                    "[IntroStage] IntroStage ativa: simulação gameplay bloqueada; use QA/IntroStage/Complete ou QA/IntroStage/Skip para prosseguir.",
                     DebugUtility.Colors.Info);
                 DebugUtility.Log<PregameCoordinator>(
-                    "[QA][Pregame] Use Inspector(ContextMenu) OU MenuItem para Complete/Skip.",
+                    "[QA][IntroStage] Use Inspector(ContextMenu) OU MenuItem para Complete/Skip.",
                     DebugUtility.Colors.Info);
 
                 if (step == null || !step.HasContent)
@@ -105,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 if (completedTask != completionTask)
                 {
                     DebugUtility.LogWarning<PregameCoordinator>(
-                        $"[OBS][Pregame] PregameTimedOut signature='{signature}' profile='{context.ProfileId.Value}' " +
+                        $"[OBS][IntroStage] IntroStageTimedOut signature='{signature}' profile='{context.ProfileId.Value}' " +
                         $"target='{targetScene}' timeoutMs={PregameCompletionTimeoutMs}.");
                     controlService.SkipPregame("timeout");
                 }
@@ -126,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Falha ao executar pregame. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[IntroStage] Falha ao executar IntroStage. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
                 LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Failed);
                 RequestStartIfNeeded(gameLoop);
@@ -217,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[IntroStage] Falha ao executar IntroStage. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
                 // Ensure a canonical end if the step fails.
                 controlService.SkipPregame("step_failed");
@@ -237,7 +238,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             DebugUtility.LogVerbose<PregameCoordinator>(
-                "[Pregame] Solicitando RequestStart após conclusão explícita do Pregame.",
+                "[IntroStage] Solicitando RequestStart após conclusão explícita da IntroStage.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestStart();
@@ -253,14 +254,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (gateService == null)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
-                    "[Pregame] ISimulationGateService indisponível; simulação gameplay pode não ser bloqueada durante Pregame.");
+                    "[IntroStage] ISimulationGateService indisponível; simulação gameplay pode não ser bloqueada durante IntroStage.");
                 return false;
             }
 
             gateService.Acquire(SimulationGateToken);
 
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] GameplaySimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"[OBS][IntroStage] GameplaySimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
                 $"profile='{profile}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
@@ -281,7 +282,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             gateService.Release(SimulationGateToken);
 
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] GameplaySimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
+                $"[OBS][IntroStage] GameplaySimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
                 $"profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
@@ -289,14 +290,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private static void LogCompletion(string signature, string targetScene, string profile, PregameRunResult result)
         {
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameCompleted signature='{signature}' result='{FormatResult(result)}' profile='{profile}' target='{targetScene}'.",
+                $"[OBS][IntroStage] IntroStageCompleted signature='{signature}' result='{FormatResult(result)}' profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void LogCompletionWithReason(string signature, string targetScene, string profile, string reason)
         {
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameCompleted signature='{signature}' result='completed' reason='{NormalizeReason(reason)}' " +
+                $"[OBS][IntroStage] IntroStageCompleted signature='{signature}' result='completed' reason='{NormalizeReason(reason)}' " +
                 $"profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
@@ -304,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private static void LogSkipped(string reason, PregameContext context, string sceneName)
         {
             DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' " +
+                $"[OBS][IntroStage] IntroStageSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' " +
                 $"profile='{context.ProfileId.Value}' target='{NormalizeValue(context.TargetScene)}' scene='{NormalizeValue(sceneName)}'.",
                 DebugUtility.Colors.Info);
         }

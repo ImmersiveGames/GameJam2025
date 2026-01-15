@@ -12,8 +12,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
     /// QA helper para:
-    /// - Disparar Pregame manualmente (sem depender do SceneFlow).
-    /// - Forçar Complete/Skip do Pregame (o gatilho canônico que destrava o gameplay).
+    /// - Disparar IntroStage manualmente (sem depender do SceneFlow).
+    /// - Forçar Complete/Skip do IntroStage (o gatilho canônico que destrava o gameplay).
     /// - (Opcional) Auto-Complete com delay usando Coroutine (main thread), evitando Task/threads.
     /// </summary>
     [DisallowMultipleComponent]
@@ -21,21 +21,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     {
         [Header("Run Pregame QA")]
         [SerializeField] private string qaSignature = "qa.pregame";
-        [SerializeField] private string qaReason = "QA/PregameOptional";
+        [SerializeField] private string qaReason = "QA/IntroStageOptional";
 
         [Header("Completion QA")]
         [SerializeField, Min(0f)] private float autoCompleteDelaySeconds = 0.5f;
 
         private Coroutine? _autoCompleteRoutine;
 
-        [ContextMenu("QA/Pregame/Run Optional (TestCase: PregameOptional)")]
+        [ContextMenu("QA/IntroStage/Run Optional (TestCase: IntroStageOptional)")]
         private async void QA_RunPregameOptional()
         {
             var coordinator = ResolveCoordinator();
             if (coordinator == null)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    "[QA][Pregame] IPregameCoordinator não encontrado no DI global.");
+                    "[QA][IntroStage] IPregameCoordinator não encontrado no DI global.");
                 return;
             }
 
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             try
             {
                 DebugUtility.Log<PregameQATester>(
-                    $"[QA][Pregame] RunPregameOptional solicitado. signature='{qaSignature}' scene='{activeScene}'.",
+                    $"[QA][IntroStage] RunIntroStageOptional solicitado. signature='{qaSignature}' scene='{activeScene}'.",
                     DebugUtility.Colors.Info);
 
                 await coordinator.RunPregameAsync(context);
@@ -57,11 +57,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    $"[QA][Pregame] Falha ao executar pregame QA. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStage] Falha ao executar IntroStage QA. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
-        [ContextMenu("QA/Pregame/Complete Active (Force)")]
+        [ContextMenu("QA/IntroStage/Complete Active (Force)")]
         private void QA_CompleteActivePregame_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -70,17 +70,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (control == null)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    "[QA][Pregame] IPregameControlService não encontrado no DI global; Complete ignorado.");
+                    "[QA][IntroStage] IPregameControlService não encontrado no DI global; Complete ignorado.");
                 return;
             }
 
-            control.CompletePregame("QA/PregameQATester/Complete");
+            control.CompletePregame("QA/IntroStageQATester/Complete");
             DebugUtility.Log<PregameQATester>(
-                "[QA][Pregame] CompletePregame solicitado (Force).",
+                "[QA][IntroStage] CompletePregame solicitado (Force).",
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/Pregame/Skip Active (Force)")]
+        [ContextMenu("QA/IntroStage/Skip Active (Force)")]
         private void QA_SkipActivePregame_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -89,17 +89,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (control == null)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    "[QA][Pregame] IPregameControlService não encontrado no DI global; Skip ignorado.");
+                    "[QA][IntroStage] IPregameControlService não encontrado no DI global; Skip ignorado.");
                 return;
             }
 
-            control.SkipPregame("QA/PregameQATester/Skip");
+            control.SkipPregame("QA/IntroStageQATester/Skip");
             DebugUtility.Log<PregameQATester>(
-                "[QA][Pregame] SkipPregame solicitado (Force).",
+                "[QA][IntroStage] SkipPregame solicitado (Force).",
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/Pregame/Auto-Complete in 0.5s (Force)")]
+        [ContextMenu("QA/IntroStage/Auto-Complete in 0.5s (Force)")]
         private void QA_AutoCompleteActivePregame_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             var delay = Mathf.Max(0f, autoCompleteDelaySeconds);
             DebugUtility.Log<PregameQATester>(
-                $"[QA][Pregame] Auto-Complete agendado. delay='{delay:0.###}s'.",
+                $"[QA][IntroStage] Auto-Complete agendado. delay='{delay:0.###}s'.",
                 DebugUtility.Colors.Info);
 
             yield return new WaitForSecondsRealtime(delay);
@@ -119,14 +119,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (control == null)
             {
                 DebugUtility.LogWarning<PregameQATester>(
-                    "[QA][Pregame] IPregameControlService indisponível; Auto-Complete abortado.");
+                    "[QA][IntroStage] IPregameControlService indisponível; Auto-Complete abortado.");
                 _autoCompleteRoutine = null;
                 yield break;
             }
 
-            control.CompletePregame("QA/PregameQATester/AutoComplete");
+            control.CompletePregame("QA/IntroStageQATester/AutoComplete");
             DebugUtility.Log<PregameQATester>(
-                "[QA][Pregame] Auto-Complete executado (CompletePregame).",
+                "[QA][IntroStage] Auto-Complete executado (CompletePregame).",
                 DebugUtility.Colors.Info);
 
             _autoCompleteRoutine = null;

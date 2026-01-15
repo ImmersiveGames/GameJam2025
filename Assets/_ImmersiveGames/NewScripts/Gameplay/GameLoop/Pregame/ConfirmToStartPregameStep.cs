@@ -45,8 +45,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var controlService = ResolvePregameControlService();
             if (controlService == null)
             {
-                DebugUtility.LogWarning<ConfirmToStartPregameStep>(
-                    "[Pregame] IPregameControlService indisponível. ConfirmToStart não poderá concluir o Pregame.");
+            DebugUtility.LogWarning<ConfirmToStartPregameStep>(
+                "[IntroStage] IPregameControlService indisponível. ConfirmToStart não poderá concluir a IntroStage.");
                 return;
             }
 
@@ -80,16 +80,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var inputMode = ResolveInputModeService();
             if (inputMode == null)
             {
-                DebugUtility.LogWarning<ConfirmToStartPregameStep>(
-                    "[Pregame] IInputModeService indisponível. InputMode não será alternado.");
+            DebugUtility.LogWarning<ConfirmToStartPregameStep>(
+                "[IntroStage] IInputModeService indisponível. InputMode não será alternado.");
                 return;
             }
 
             DebugUtility.Log<ConfirmToStartPregameStep>(
-                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='Pregame' reason='Pregame/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}'.",
+                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='IntroStage' reason='IntroStage/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}'.",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetFrontendMenu("Pregame/ConfirmToStart");
+            inputMode.SetFrontendMenu("IntroStage/ConfirmToStart");
         }
 
         private async Task TriggerTimeoutAsync(IPregameControlService controlService, CancellationToken cancellationToken)

@@ -7,7 +7,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Serviço global que controla o término do Pregame via comando explícito.
+    /// Serviço global que controla o término da IntroStage (Pregame legado) via comando explícito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PregameControlService : IPregameControlService
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 if (_isActive)
                 {
                     DebugUtility.LogWarning<PregameControlService>(
-                        "[Pregame] BeginPregame chamado enquanto outro pregame ainda está ativo. Reiniciando gate de conclusão.");
+                        "[IntroStage] BeginPregame chamado enquanto outro IntroStage ainda está ativo. Reiniciando gate de conclusão.");
                 }
 
                 _isActive = true;
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             var normalizedReason = NormalizeValue(reason);
             DebugUtility.Log<PregameControlService>(
-                $"[OBS][Pregame] CompletePregame received reason='{normalizedReason}' " +
+                $"[OBS][IntroStage] IntroStageCompleted received reason='{normalizedReason}' " +
                 $"skip={wasSkipped.ToString().ToLowerInvariant()} " +
                 $"signature='{NormalizeValue(context.ContextSignature)}' " +
                 $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.",
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
             {
                 DebugUtility.LogWarning<PregameControlService>(
-                    $"[OBS][Pregame] PregameTimedOut signature='{NormalizeValue(context.ContextSignature)}' " +
+                    $"[OBS][IntroStage] IntroStageTimedOut signature='{NormalizeValue(context.ContextSignature)}' " +
                     $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.");
             }
 

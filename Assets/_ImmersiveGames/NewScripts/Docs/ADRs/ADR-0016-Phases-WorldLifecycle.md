@@ -65,9 +65,9 @@ Onde:
     - `IPregameControlService.SkipPregame(string reason)` (pula/cancela)
 
 **Nota operacional (ordem observada):**
-- A IntroStage pode iniciar **durante o manuseio do Completed**, antes do `flow.scene_transition` ser liberado (dependendo da ordem de callbacks do pipeline). Isso é aceitável: durante esse intervalo o gameplay já está bloqueado pela transição, e permanece bloqueado pelo `sim.gameplay` até a conclusão explícita da IntroStage.
+- A IntroStage inicia **após** `SceneTransitionCompletedEvent` e **não** segura o `flow.scene_transition`. O bloqueio de gameplay ocorre apenas via `sim.gameplay` até a conclusão explícita da IntroStage.
 
-**Regra de não-bloqueio:** se não houver conteúdo, o Pregame deve “auto-skip”:
+**Regra de não-bloqueio:** se não houver conteúdo, a IntroStage deve “auto-skip”:
 - `IPregameStep.HasContent == false` → o coordenador solicita `SkipPregame(...)` automaticamente.
 
 ## Detalhamento operacional
@@ -76,7 +76,7 @@ Onde:
 
 **Ordem canônica do pipeline (com IntroStage/PostReveal):**
 
-`FadeIn → Load/Unload → ScenesReady → Reset (ou skip) → FadeOut → IntroStage (PostReveal) → Playing (liberar gameplay)`
+`FadeIn → Load/Unload → ScenesReady → Reset (ou skip) → FadeOut → SceneTransitionCompleted → IntroStage (PostReveal) → RequestStart → Playing (liberar gameplay)`
 
 1. SceneFlow inicia transição (FadeIn) e o gate fecha (`flow.scene_transition`).
 2. Load/Unload de cenas conforme profile.
@@ -85,7 +85,8 @@ Onde:
 5. SceneFlow executa FadeOut.
 6. `SceneTransitionCompletedEvent` (cena revelada; fluxo visual concluído).
 7. Bridge solicita IntroStage (opcional, legado: Pregame).
-8. Ao terminar a IntroStage, o GameLoop pode iniciar o gameplay normalmente.
+8. Ao terminar a IntroStage, o GameLoop solicita `RequestStart`.
+9. GameLoop entra em `Playing` (gameplay liberado).
 
 ### IntroStage (Pregame legado) — composição e contrato de conclusão
 
@@ -102,7 +103,7 @@ Contrato:
     - `SkipPregame(...)` (pulo/cancelamento).
 - O coordenador aguarda `WaitForCompletionAsync(...)` e, ao concluir:
     - libera o token `sim.gameplay`,
-    - emite eventos/logs de observabilidade (`PregameCompleted|PregameSkipped`),
+    - emite eventos/logs de observabilidade (`IntroStageCompleted|IntroStageSkipped`),
     - solicita a progressão do GameLoop (ex.: `RequestStart`) para atingir `Playing`.
 
 ### Gates e invariantes
@@ -125,13 +126,13 @@ Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IPregam
 1. **Context Menu (Play Mode)**
     - Componente: `PregameQaContextMenu` (namespace `_ImmersiveGames.NewScripts.QA.Pregame`)
     - Ações:
-        - `QA/Pregame/Complete (Force)` → `CompletePregame("QA/...")`
-        - `QA/Pregame/Skip (Force)` → `SkipPregame("QA/...")`
+    - `QA/IntroStage/Complete (Force)` → `CompletePregame("QA/...")`
+    - `QA/IntroStage/Skip (Force)` → `SkipPregame("QA/...")`
     - Uso: adicionar o componente a um GameObject ativo (ex.: em `GameplayScene`) e executar via Inspector.
 
 2. **MenuItem (Editor)**
-    - `Tools/NewScripts/QA/Pregame/Complete (Force)`
-    - `Tools/NewScripts/QA/Pregame/Skip (Force)`
+    - `Tools/NewScripts/QA/IntroStage/Complete (Force)`
+    - `Tools/NewScripts/QA/IntroStage/Skip (Force)`
     - Requer Play Mode e `IPregameControlService` disponível no DI global.
 
 ### Phase Change
@@ -144,12 +145,12 @@ Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IPregam
 ### Evidência esperada (observability)
 
 - IntroStage (Pregame legado):
-    - `[OBS][Pregame] PregameStarted ... reason='SceneFlow/Completed'`
-    - `[OBS][Pregame] GameplaySimulationBlocked token='sim.gameplay' ...`
+    - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
+    - `[OBS][IntroStage] GameplaySimulationBlocked token='sim.gameplay' ...`
     - log orientativo de QA (Complete/Skip)
-    - `[OBS][Pregame] PregameCompleted|PregameSkipped ...`
-    - `[OBS][Pregame] GameplaySimulationUnblocked token='sim.gameplay' ...`
-    - `GameLoop ENTER: Playing` após a conclusão explícita do Pregame
+    - `[OBS][IntroStage] IntroStageCompleted|IntroStageSkipped ...`
+    - `[OBS][IntroStage] GameplaySimulationUnblocked token='sim.gameplay' ...`
+    - `GameLoop ENTER: Playing` após a conclusão explícita da IntroStage
 - Phase:
     - logs de `PhaseContext` (Pending/Commit)
     - logs de `WorldLifecycle` em reset + commit após reset (quando aplicável)
@@ -166,6 +167,11 @@ Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IPregam
 
 - IntroStage depende do hook `SceneTransitionCompletedEvent` (pós-FadeOut).
 - Se o step padrão tiver conteúdo e não disparar `Complete/Skip`, o gameplay ficará bloqueado (por design). Em QA, isso é resolvido via menu/context menu.
+
+## Alternativas consideradas
+
+1. **IntroStage antes do FadeOut (durante loading):** rejeitada. Isso aumenta a percepção de loading e conflita com a intenção de conteúdo pós-revelação.
+2. **IntroStage no Completion Gate do SceneFlow:** rejeitada. O gate deve esperar apenas etapas estruturais (ScenesReady + Reset/Skip); a IntroStage acontece **depois** do `SceneTransitionCompletedEvent`.
 
 ## Changelog
 

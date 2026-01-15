@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
             {
                 EnsureContextMenu(resolved.gameObject);
                 DebugUtility.Log<PregameQaInstaller>(
-                    "[QA][Pregame] QA_Pregame já presente; instalação ignorada.",
+                    "[QA][IntroStage] QA_Pregame já presente; instalação ignorada.",
                     DebugUtility.Colors.Info);
                 LogInspectorHint();
                 return;
@@ -36,14 +36,14 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
                 DontDestroyOnLoad(go);
 
                 DebugUtility.Log<PregameQaInstaller>(
-                    "[QA][Pregame] PregameQaContextMenu instalado (DontDestroyOnLoad).",
+                    "[QA][IntroStage] PregameQaContextMenu instalado (DontDestroyOnLoad).",
                     DebugUtility.Colors.Info);
                 LogInspectorHint();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<PregameQaInstaller>(
-                    $"[QA][Pregame] Falha ao instalar PregameQaContextMenu. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStage] Falha ao instalar PregameQaContextMenu. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
             if (go == null)
             {
                 DebugUtility.LogWarning<PregameQaInstaller>(
-                    "[QA][Pregame] QA_Pregame não disponível; ContextMenu não pode ser anexado.");
+                    "[QA][IntroStage] QA_Pregame não disponível; ContextMenu não pode ser anexado.");
                 return;
             }
 
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
             {
                 go.AddComponent<PregameQaContextMenu>();
                 DebugUtility.Log<PregameQaInstaller>(
-                    "[QA][Pregame] PregameQaContextMenu ausente; componente adicionado.",
+                    "[QA][IntroStage] PregameQaContextMenu ausente; componente adicionado.",
                     DebugUtility.Colors.Info);
             }
         }
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
         private static void LogInspectorHint()
         {
             DebugUtility.Log<PregameQaInstaller>(
-                "[QA][Pregame] Para acessar o ContextMenu, selecione o GameObject 'QA_Pregame' no Hierarchy (DontDestroyOnLoad).",
+                "[QA][IntroStage] Para acessar o ContextMenu, selecione o GameObject 'QA_Pregame' no Hierarchy (DontDestroyOnLoad).",
                 DebugUtility.Colors.Info);
         }
     }

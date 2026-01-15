@@ -8,6 +8,9 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     [DebugLevel(DebugLevel.Verbose)]
+    /// <summary>
+    /// Legacy gate wrapper. Mantido por compatibilidade; não deve bloquear FadeOut/Completed.
+    /// </summary>
     public sealed class PregameSceneTransitionCompletionGate : ISceneTransitionCompletionGate
     {
         private readonly ISceneTransitionCompletionGate _innerGate;
@@ -30,12 +33,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 var policy = policyResolver?.Resolve(
                     context.TransitionProfileId,
                     context.TargetActiveScene,
-                    "SceneFlow/Pregame") ?? PregamePolicy.Manual;
+                    "SceneFlow/IntroStage") ?? PregamePolicy.Manual;
 
                 if (policy == PregamePolicy.Disabled)
                 {
                     DebugUtility.LogVerbose<PregameSceneTransitionCompletionGate>(
-                        "[SceneFlowGate] Pregame policy disabled; gate ignorado.",
+                        "[SceneFlowGate] IntroStage policy disabled; gate ignorado.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -58,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 contextSignature: context.ContextSignature,
                 profileId: context.TransitionProfileId,
                 targetScene: context.TargetActiveScene,
-                reason: "SceneFlow/Pregame");
+                reason: "SceneFlow/IntroStage");
 
             try
             {
@@ -67,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<PregameSceneTransitionCompletionGate>(
-                    $"[SceneFlowGate] Falha ao executar Pregame. signature='{context.ContextSignature}' " +
+                    $"[SceneFlowGate] Falha ao executar IntroStage. signature='{context.ContextSignature}' " +
                     $"profile='{context.TransitionProfileName}' target='{context.TargetActiveScene}' " +
                     $"ex='{ex.GetType().Name}: {ex.Message}'.");
             }

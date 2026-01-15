@@ -457,7 +457,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregameCoordinator já registrado no DI global.",
+                    "[IntroStage] IPregameCoordinator já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -467,7 +467,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] PregameCoordinator registrado no DI global.",
+                "[IntroStage] PregameCoordinator registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -476,7 +476,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregameControlService já registrado no DI global.",
+                    "[IntroStage] IPregameControlService já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -486,7 +486,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] PregameControlService registrado no DI global.",
+                "[IntroStage] PregameControlService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -495,7 +495,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IPregamePolicyResolver>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregamePolicyResolver já registrado no DI global.",
+                    "[IntroStage] IPregamePolicyResolver já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -509,7 +509,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] DefaultPregamePolicyResolver registrado no DI global.",
+                "[IntroStage] DefaultPregamePolicyResolver registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -537,7 +537,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IPregameStep>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregameStep já registrado no DI global.",
+                    "[IntroStage] IPregameStep já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -547,7 +547,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] ConfirmToStartPregameStep registrado no DI global.",
+                "[IntroStage] ConfirmToStartPregameStep registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -732,7 +732,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> Pregame).",
+                "[PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> IntroStage).",
                 DebugUtility.Colors.Info);
         }
 
@@ -767,7 +767,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[QA][Pregame] Falha ao instalar PregameQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStage] Falha ao instalar PregameQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

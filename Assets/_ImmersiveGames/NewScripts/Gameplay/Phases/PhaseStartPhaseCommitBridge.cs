@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
 
             DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                "[PhaseStart] Bridge registrado (PhaseCommittedEvent -> Pregame pipeline).",
+                "[PhaseStart] Bridge registrado (PhaseCommittedEvent -> IntroStage pipeline).",
                 DebugUtility.Colors.Info);
         }
 

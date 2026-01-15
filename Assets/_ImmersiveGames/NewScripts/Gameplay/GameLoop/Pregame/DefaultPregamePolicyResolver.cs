@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Resolver padrão de política do Pregame (preparado para produção).
+    /// Resolver padrão de política da IntroStage (Pregame legado) (preparado para produção).
     /// </summary>
     public sealed class DefaultPregamePolicyResolver : IPregamePolicyResolver
     {

@@ -9,37 +9,37 @@ namespace _ImmersiveGames.NewScripts.QA.Pregame
     [DisallowMultipleComponent]
     public sealed class PregameQaContextMenu : MonoBehaviour
     {
-        [ContextMenu("QA/Pregame/Complete (Force)")]
+        [ContextMenu("QA/IntroStage/Complete (Force)")]
         private void CompletePregame()
         {
             var controlService = ResolveControlService();
             if (controlService == null)
             {
                 DebugUtility.LogWarning<PregameQaContextMenu>(
-                    "[QA][Pregame] IPregameControlService indisponível; Complete ignorado.");
+                    "[QA][IntroStage] IPregameControlService indisponível; Complete ignorado.");
                 return;
             }
 
-            controlService.CompletePregame("QA/Pregame/Complete");
+            controlService.CompletePregame("QA/IntroStage/Complete");
             DebugUtility.Log<PregameQaContextMenu>(
-                "[QA][Pregame] CompletePregame solicitado.",
+                "[QA][IntroStage] CompletePregame solicitado.",
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/Pregame/Skip (Force)")]
+        [ContextMenu("QA/IntroStage/Skip (Force)")]
         private void SkipPregame()
         {
             var controlService = ResolveControlService();
             if (controlService == null)
             {
                 DebugUtility.LogWarning<PregameQaContextMenu>(
-                    "[QA][Pregame] IPregameControlService indisponível; Skip ignorado.");
+                    "[QA][IntroStage] IPregameControlService indisponível; Skip ignorado.");
                 return;
             }
 
-            controlService.SkipPregame("QA/Pregame/Skip");
+            controlService.SkipPregame("QA/IntroStage/Skip");
             DebugUtility.Log<PregameQaContextMenu>(
-                "[QA][Pregame] SkipPregame solicitado.",
+                "[QA][IntroStage] SkipPregame solicitado.",
                 DebugUtility.Colors.Info);
         }
 

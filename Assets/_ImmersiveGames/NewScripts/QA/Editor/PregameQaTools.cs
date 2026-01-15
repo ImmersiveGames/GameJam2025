@@ -9,12 +9,12 @@ namespace _ImmersiveGames.NewScripts.QA.Editor
     {
         private const string QaGameObjectName = "QA_Pregame";
 
-        [MenuItem("Tools/NewScripts/QA/Select QA_Pregame")]
+        [MenuItem("Tools/NewScripts/QA/Select QA_IntroStage")]
         private static void SelectQaPregame()
         {
             if (!EditorApplication.isPlaying)
             {
-                Debug.LogWarning("[QA][Pregame] Selecao requer Play Mode.");
+                Debug.LogWarning("[QA][IntroStage] Selecao requer Play Mode.");
                 return;
             }
 
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.QA.Editor
 
             if (go == null)
             {
-                Debug.LogWarning("[QA][Pregame] QA_Pregame nao encontrado. Verifique o log de instalacao do QA.");
+                Debug.LogWarning("[QA][IntroStage] QA_Pregame nao encontrado. Verifique o log de instalacao do QA.");
                 return;
             }
 

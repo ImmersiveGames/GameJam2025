@@ -1,5 +1,9 @@
 # Changelog (Docs)
 
+## [2026-01-15]
+### Changed
+- ADR-0016 ajustado para explicitar o pipeline pós-revelação (IntroStage após `SceneTransitionCompleted`) e atualizar nomenclatura/observability de IntroStage.
+
 ## [2026-01-14]
 ### Changed
 - ADR-0016 atualizado para renomear semanticamente **Pregame** como **IntroStage (PostReveal)**, mantendo o termo legado em nota de compatibilidade e explicitando que ocorre após `FadeOut` e `SceneTransitionCompleted` (fora do Completion Gate).

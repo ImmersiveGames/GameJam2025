@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 if (!IsGameplayScene())
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                        $"[InputModeSceneFlowBridge] [Pregame] Cena ativa não é gameplay. Pregame ignorado. scene='{SceneManager.GetActiveScene().name}'.",
+                        $"[InputModeSceneFlowBridge] [IntroStage] Cena ativa não é gameplay. IntroStage ignorada. scene='{SceneManager.GetActiveScene().name}'.",
                         DebugUtility.Colors.Info);
                 }
                 else
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     if (coordinator == null)
                     {
                         DebugUtility.LogWarning<InputModeSceneFlowBridge>(
-                            "[InputModeSceneFlowBridge] [Pregame] IPregameCoordinator indisponível; pregame não será executado.");
+                            "[InputModeSceneFlowBridge] [IntroStage] IPregameCoordinator indisponível; IntroStage não será executada.");
                     }
                     else
                     {

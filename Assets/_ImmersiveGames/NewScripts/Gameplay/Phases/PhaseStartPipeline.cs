@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (coordinator == null)
             {
                 DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    "[PhaseStart] IPregameCoordinator indisponível; pregame não será executado.");
+                    "[PhaseStart] IPregameCoordinator indisponível; IntroStage não será executada.");
                 return;
             }
 
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 : request.TargetScene.Trim();
 
             DebugUtility.Log(typeof(PhaseStartPipeline),
-                $"[OBS][Phase] PhaseStartPipeline -> Pregame. phaseId='{request.PhaseId}' signature='{request.ContextSignature}' " +
+                $"[OBS][Phase] PhaseStartPipeline -> IntroStage. phaseId='{request.PhaseId}' signature='{request.ContextSignature}' " +
                 $"scene='{targetScene}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] Falha ao executar Pregame. phaseId='{request.PhaseId}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[PhaseStart] Falha ao executar IntroStage. phaseId='{request.PhaseId}', ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (ShouldRequestReady(state))
             {
                 DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] RequestReady antes do Pregame. state='{state}' phaseId='{request.PhaseId}'.");
+                    $"[PhaseStart] RequestReady antes da IntroStage. state='{state}' phaseId='{request.PhaseId}'.");
                 gameLoop.RequestReady();
             }
 
