@@ -21,7 +21,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
-        private static string _lastProcessedSignature;
+        // Per-instance dedupe to avoid cross-instance suppression after restarts.
+        private string _lastProcessedSignature;
 
         public InputModeSceneFlowBridge()
         {
