@@ -80,11 +80,27 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         }
 
         /// <summary>
-        /// Indica se existe qualquer pipeline pendente, independentemente de assinatura verificável.
+        /// Indica se o pipeline pendente deve suprimir a IntroStage para esta assinatura concluída.
         /// </summary>
-        public bool HasAnyPending()
+        public bool ShouldSuppressIntroStage(string completedSignature)
         {
-            return !_disposed && _pendingRequest != null;
+            if (_disposed || _pendingRequest == null)
+            {
+                return false;
+            }
+
+            if (_pendingSignature.Length == 0)
+            {
+                return true;
+            }
+
+            var verifiableSig = NormalizeVerifiableSignature(completedSignature);
+            if (verifiableSig.Length == 0)
+            {
+                return false;
+            }
+
+            return string.Equals(_pendingSignature, verifiableSig, StringComparison.Ordinal);
         }
 
         private async void OnPhaseCommitted(PhaseCommittedEvent evt)
