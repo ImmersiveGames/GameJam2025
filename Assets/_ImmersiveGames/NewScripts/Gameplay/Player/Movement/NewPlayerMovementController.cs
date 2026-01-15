@@ -59,6 +59,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private bool _stateBlockedLogged;
 
+        private string _gateLogContext = string.Empty;
+        private int _lastGateLogFrame = -1;
+        private bool _lastGateLogOpen;
+
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
         private bool _hasInitialPose;
@@ -348,8 +352,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
             if (logGateChanges || verbose)
             {
-                DebugUtility.LogVerbose<NewPlayerMovementController>(
-                    $"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}'.");
+                // Evita log duplicado no mesmo frame (principalmente em multiplayer/local split).
+                if (ShouldLogGateChange(isOpen))
+                {
+                    DebugUtility.LogVerbose<NewPlayerMovementController>(
+                        $"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}', actor='{_gateLogContext}'.");
+                }
             }
 
             if (!isOpen)
@@ -404,6 +412,30 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             _rigidbody = GetComponent<Rigidbody>();
             _actor = GetComponent<PlayerActor>();
             _sceneName = gameObject.scene.name;
+            _gateLogContext = BuildGateLogContext();
+        }
+
+        private bool ShouldLogGateChange(bool isOpen)
+        {
+            var frame = Time.frameCount;
+            if (_lastGateLogFrame == frame && _lastGateLogOpen == isOpen)
+            {
+                return false;
+            }
+
+            _lastGateLogFrame = frame;
+            _lastGateLogOpen = isOpen;
+            return true;
+        }
+
+        private string BuildGateLogContext()
+        {
+            if (_actor != null && !string.IsNullOrWhiteSpace(_actor.ActorId))
+            {
+                return _actor.ActorId;
+            }
+
+            return $"{gameObject.name}#{gameObject.GetInstanceID()}";
         }
 
         private void CacheInitialPose()

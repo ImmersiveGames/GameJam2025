@@ -570,17 +570,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             var loaderAdapter = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
             var fadeAdapter = NewScriptsSceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
 
-            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir (e IntroStage opcional).
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
+            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
+            ISceneTransitionCompletionGate completionGate = null;
+            if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) && existingGate != null)
             {
-                var resetGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                completionGate = resetGate;
-                DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
+                completionGate = existingGate;
+            }
+
+            if (completionGate is not WorldLifecycleResetCompletionGate)
+            {
+                if (completionGate != null)
+                {
+                    DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                        $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir ADR-0016/0017.");
+                }
+
+                completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
+                DependencyManager.Provider.RegisterGlobal<ISceneTransitionCompletionGate>(completionGate, allowOverride: true);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                     "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
                     DebugUtility.Colors.Info);
-}
+            }
 
             var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);

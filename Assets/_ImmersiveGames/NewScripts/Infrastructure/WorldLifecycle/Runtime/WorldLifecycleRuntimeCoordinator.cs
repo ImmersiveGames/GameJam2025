@@ -387,7 +387,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     return;
                 }
 
-                var commitReason = $"WorldLifecycle/ResetCompleted sig='{sourceSignature}' reason='{resetReason}'";
+                var commitReason = BuildPhaseCommitReason(sourceSignature, resetReason);
                 if (phaseContext.TryCommitPending(commitReason, out var committed))
                 {
                     DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
@@ -438,8 +438,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return;
             }
 
-            var applyReason = $"{intent.Reason}/SceneFlow sig={signature}";
+            var applyReason = $"{intent.Reason}/SceneFlow|sig={signature}";
             phaseContext.SetPending(intent.Plan, applyReason);
+        }
+
+        private static string BuildPhaseCommitReason(string sourceSignature, string resetReason)
+        {
+            var safeSignature = string.IsNullOrWhiteSpace(sourceSignature) ? "<none>" : sourceSignature.Trim();
+            var safeReason = string.IsNullOrWhiteSpace(resetReason) ? "<none>" : resetReason.Trim();
+            return $"WorldLifecycle/ResetCompleted|sig={safeSignature}|reason={safeReason}";
         }
 
         private static void ClearPhaseIntentIfMismatched(SceneTransitionContext context)

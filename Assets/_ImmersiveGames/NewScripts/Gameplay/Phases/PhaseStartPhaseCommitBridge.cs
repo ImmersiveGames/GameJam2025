@@ -95,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var reason = string.IsNullOrWhiteSpace(evt.Reason) ? "PhaseCommitted" : evt.Reason.Trim();
             var signature = ResolveContextSignature(out var targetScene);
-            var phaseStartReason = $"PhaseStart/Committed phaseId='{evt.Current.PhaseId}' reason='{reason}'";
+            var phaseStartReason = $"PhaseStart/Committed|phaseId={evt.Current.PhaseId}|reason={reason}";
 
             if (!IsGameplaySceneOrTarget(targetScene))
             {
