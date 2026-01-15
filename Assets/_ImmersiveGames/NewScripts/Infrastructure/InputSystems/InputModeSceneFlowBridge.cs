@@ -53,9 +53,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
             var profile = evt.Context.TransitionProfileName;
             var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            var dedupeKey = $"{profile}|{signature}";
 
             if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
-                && string.Equals(_lastProcessedSignature, signature, StringComparison.Ordinal))
+                && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                     $"[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
@@ -63,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 return;
             }
 
-            _lastProcessedSignature = signature;
+            _lastProcessedSignature = dedupeKey;
 
             // ===== Gameplay =====
             if (string.Equals(profile, SceneFlowProfileNames.Gameplay, StringComparison.OrdinalIgnoreCase))
@@ -101,6 +102,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                         "source=SceneFlow/Completed:Gameplay state=Playing.",
                         DebugUtility.Colors.Info);
                     return;
+                }
+
+                if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Boot), StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        "[InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestStart() antes da IntroStage.",
+                        DebugUtility.Colors.Info);
+                    gameLoopService.RequestStart();
                 }
 
                 if (!IsGameplayScene())
@@ -164,7 +173,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
                 if (string.Equals(state, nameof(GameLoopStateId.Playing), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.Paused), StringComparison.Ordinal)
-                    || string.Equals(state, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal))
+                    || string.Equals(state, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal)
+                    || string.Equals(state, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                         $"[InputModeSceneFlowBridge] [GameLoop] Frontend completed com estado ativo ('{state}'). " +
