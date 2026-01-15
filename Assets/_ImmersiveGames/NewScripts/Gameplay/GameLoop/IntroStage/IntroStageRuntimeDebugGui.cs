@@ -65,19 +65,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 Destroy(gameObject);
                 return;
             }
-            var existing = FindExistingRuntimeGuiObject();
-            if (existing != null && existing != gameObject)
-            {
-                if (!_duplicateDestroyedLogged)
-                {
-                    _duplicateDestroyedLogged = true;
-                    DebugUtility.LogWarning<IntroStageRuntimeDebugGui>(
-                        "[IntroStage][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata.");
-                }
-
-                Destroy(gameObject);
-                return;
-            }
 
             _instance = this;
         }
