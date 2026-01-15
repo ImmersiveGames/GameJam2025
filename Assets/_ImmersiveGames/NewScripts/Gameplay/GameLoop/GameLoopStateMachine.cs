@@ -38,15 +38,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return TransitionTo(GameLoopStateId.Boot);
             }
 
-            // ReadyRequested tem prioridade alta. Se isso NÃO for desejado globalmente,
-            // restrinja por estado (ex.: apenas Boot/PostPlay/Paused) e remova a prioridade global.
+            // ReadyRequested tem prioridade alta APENAS em estados não-ativos.
+            // Evita capturar reset/restart durante transições em gameplay.
             if (_signals.ReadyRequested)
             {
-                // Variante restrita (descomente se quiser limitar):
-                // if (Current is GameLoopStateId.Boot or GameLoopStateId.Paused or GameLoopStateId.PostPlay)
-                //     return TransitionTo(GameLoopStateId.Ready);
-
-                return TransitionTo(GameLoopStateId.Ready);
+                if (Current is GameLoopStateId.Boot
+                    or GameLoopStateId.Paused
+                    or GameLoopStateId.PostPlay
+                    or GameLoopStateId.IntroStage)
+                {
+                    return TransitionTo(GameLoopStateId.Ready);
+                }
             }
 
             var next = Current;

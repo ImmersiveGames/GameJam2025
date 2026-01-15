@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             CurrentStateIdName = stateId.ToString();
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {stateId} (active={isActive})");
 
-            if (stateId == GameLoopStateId.Boot && _signals.ResetRequested)
+            if (stateId == GameLoopStateId.Boot && previousState != GameLoopStateId.Boot)
             {
                 DebugUtility.Log<GameLoopService>(
                     "[GameLoop] Restart->Boot confirmado (reinício determinístico).",
