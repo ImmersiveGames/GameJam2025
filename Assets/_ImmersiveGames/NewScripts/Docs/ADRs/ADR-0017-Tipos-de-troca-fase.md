@@ -1,4 +1,4 @@
-﻿# ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
+# ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
 
 ## Status
 
@@ -15,35 +15,62 @@ A meta é eliminar ambiguidades (ex.: “troca de fase” significar tanto reset
 
 ## Decisão
 
-Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distintos:
+Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distintos (nomes reais do código):
 
-1. **PhaseChange/In-Place**
-    - API: `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
-    - Executa reset determinístico **sem SceneFlow**.
-    - **Sem Loading HUD** (mesmo se solicitado via options, o serviço ignora no In-Place).
-    - **Fade opcional** (`options.UseFade=true`) permitido como “mini transição” quando for desejável esconder reconstrução do reset.
-    - Gate/serialização: token `flow.phase_inplace`.
+### 1) PhaseChange/In-Place
 
-2. **PhaseChange/SceneTransition**
-    - API: `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
-    - Registra intent e inicia **SceneFlow** (transição completa, com Fade/Loading conforme profile).
-    - O `WorldLifecycleRuntimeCoordinator` consome o intent em `SceneTransitionScenesReadyEvent`, seta `Pending`, executa reset e faz commit da fase após o reset.
-    - Gate: o bloqueio de simulação durante a transição é governado pelo token padrão do SceneFlow (`flow.scene_transition`), conforme o pipeline de transição de cenas.
+**Quando usar:** a fase muda dentro da mesma “rodada”/cena (sem unload/load de cena).
 
-### Termos e tipos (nomes reais do código)
+**API (overloads canônicos):**
 
-- `PhasePlan`:
-    - `PhaseId` (identificador lógico da fase)
-    - `ContentSignature` (assinatura rastreável do “conteúdo montado”)
-- `PhaseContextService`:
-    - `Current` / `Pending`
-    - `TryCommitPendingPhase(...)`
-- `PhaseTransitionIntentRegistry`:
-    - `Register(...)` / `TryConsume(...)`
-- `PhaseChangeOptions`:
-    - `UseFade`, `UseLoadingHud`, `TimeoutMs`
+- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason)`
+- `PhaseChangeService.RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)`
+- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)`
 
-## Diagrama 1 — Sequência (In-Place)
+**Contrato operacional:**
+
+- Executa reset determinístico **sem SceneFlow**.
+- **Sem Loading HUD** (mesmo se solicitado via options, o serviço ignora por design).
+- **Fade opcional** (via `options.UseFade=true`) permitido como “mini transição” quando for desejável esconder reconstrução do reset.
+- Gate/serialização: token `flow.phase_inplace`.
+- Timeout: `options.TimeoutMs`.
+
+### 2) PhaseChange/SceneTransition
+
+**Quando usar:** a nova fase exige transição completa (cenas, recursos pesados, feedback visual de loading, etc.).
+
+**API (overloads canônicos):**
+
+- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)`
+- `PhaseChangeService.RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)`
+- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)`
+
+**Contrato operacional:**
+
+- Registra intent (`PhaseTransitionIntentRegistry`) e inicia **SceneFlow** via `ISceneTransitionService.TransitionAsync(transition)`.
+- O `WorldLifecycleRuntimeCoordinator` consome o intent em `SceneTransitionScenesReadyEvent`, seta `Pending`, executa reset e faz commit da fase após o reset.
+- Gate de simulação durante a transição é governado pelo token padrão do SceneFlow (`flow.scene_transition`).
+- Fade/HUD são controlados pelo **profile do `SceneTransitionRequest`** (não por `PhaseChangeOptions`).
+- Timeout: `options.TimeoutMs`.
+
+## Termos e tipos (nomes reais do código)
+
+- `PhasePlan`
+  - `PhaseId` (identificador lógico da fase)
+  - `ContentSignature` (assinatura rastreável do “conteúdo montado”)
+- `PhaseContextService`
+  - `Current` / `Pending`
+  - `TryCommitPendingPhase(...)`
+- `PhaseTransitionIntentRegistry`
+  - `Register(...)` / `TryConsume(...)`
+- `PhaseChangeOptions`
+  - `UseFade`, `UseLoadingHud`, `TimeoutMs`
+- `SceneTransitionRequest`
+  - representa a solicitação do SceneFlow (load/unload/active/profile/useFade/contextSignature)
+
+## Diagramas (sequência)
+
+### In-Place
 
 ```mermaid
 sequenceDiagram
@@ -53,7 +80,7 @@ sequenceDiagram
     participant WLC as WorldLifecycleController
     participant PhaseCtx as PhaseContextService
 
-    Caller->>PhaseChange: RequestPhaseInPlaceAsync(plan, options, reason)
+    Caller->>PhaseChange: RequestPhaseInPlaceAsync(plan, reason, options)
     PhaseChange->>PhaseCtx: SetPending(plan, reason+signature)
     PhaseChange->>WL: ResetAsync(sourceSignature="phase.inplace:<PhaseId>")
     WL->>WLC: Reset pipeline (despawn/spawn/hooks)
@@ -65,7 +92,7 @@ sequenceDiagram
     Note over PhaseChange: Sem SceneFlow (não há unload/load de cenas)
 ```
 
-## Diagrama 2 — Sequência (SceneTransition)
+### SceneTransition
 
 ```mermaid
 sequenceDiagram
@@ -78,9 +105,9 @@ sequenceDiagram
     participant PhaseCtx as PhaseContextService
     participant WLC as WorldLifecycleController
 
-    Caller->>PhaseChange: RequestPhaseWithTransitionAsync(plan, options, reason)
+    Caller->>PhaseChange: RequestPhaseWithTransitionAsync(plan, transition, reason, options)
     PhaseChange->>Intent: Register(signature, plan, reason)
-    PhaseChange->>SceneFlow: RequestTransition(signature/profile=gameplay)
+    PhaseChange->>SceneFlow: TransitionAsync(transition)
     SceneFlow-->>Readiness: SceneTransitionStarted
     Readiness->>Readiness: Acquire gate token 'flow.scene_transition'
     SceneFlow-->>WL: SceneTransitionScenesReadyEvent(signature)
@@ -93,7 +120,7 @@ sequenceDiagram
     SceneFlow-->>Readiness: SceneTransitionCompleted
     Readiness->>Readiness: Release gate token 'flow.scene_transition'
 
-    Note over SceneFlow: Fade/Loading HUD são controlados pelo profile/SceneFlow
+    Note over SceneFlow: Fade/Loading HUD são controlados pelo profile do SceneFlow
 ```
 
 ## Consequências
@@ -102,7 +129,7 @@ sequenceDiagram
 
 - Nomenclatura elimina ambiguidade de “troca de fase”.
 - In-Place atende casos de “próxima fase no mesmo gameplay” sem custo de trocar cenas.
-- SceneTransition atende casos de “nova fase exige troca de conteúdo pesado” (cenas/recursos) com feedback visual e reset canônico.
+- SceneTransition atende casos de “nova fase exige troca de conteúdo pesado” com feedback visual e reset canônico.
 
 ### Trade-offs
 

@@ -65,25 +65,33 @@ garantindo que o jogador só veja a cena quando o mundo já foi preparado.
 
 No fluxo de produção:
 
-- O `GameLoopSceneFlowCoordinator` orquestra o `GameLoop.RequestStart()` na transição de **bootstrap/startup**
-  (ex.: `NewBootstrap` → `MenuScene`), levando o GameLoop de `Boot` para `Ready` após `ScenesReady + gate`.
+- O `GameLoopSceneFlowCoordinator` orquestra um `StartPlan` e, ao final do pipeline (`ScenesReady` + `WorldLifecycleResetCompletedEvent` + completion gate),
+  solicita `GameLoop.RequestStart()`.
+  - Em **startup/frontend**, isso normalmente leva `Boot → Ready` (não-inicia gameplay).
+  - Em **gameplay**, se o GameLoop ainda estiver em `Boot/Ready`, isso pode levar `Ready → Playing`.
 
 - Em transições **Menu → Gameplay** com `Profile='gameplay'`, a responsabilidade é dividida:
     - O SceneFlow + WorldLifecycle garantem:
         - `SceneTransitionScenesReadyEvent` (cenas carregadas).
         - `WorldLifecycleResetCompletedEvent` (reset/spawn concluído).
         - `SceneTransitionCompletedEvent(Profile=gameplay)` após o gate e FadeOut.
-    - O `InputModeSceneFlowBridge` aplica o modo `Gameplay` em `SceneFlow/Completed:Gameplay`,
-      solicita a **IntroStage** (PostReveal) e mantém o gameplay bloqueado via `sim.gameplay`.
-    - A IntroStage termina por confirmação UI (`IntroStage/UIConfirm`) ou auto-skip (`IntroStage/NoContent`),
+    - O `InputModeSceneFlowBridge` aplica o modo `Gameplay` em `SceneFlow/Completed:Gameplay` e tenta iniciar a **IntroStage** (PostReveal),
+      mantendo o gameplay bloqueado via `sim.gameplay`.
+    - **Nota (estado atual do código):** se o GameLoop já tiver entrado em `Playing` antes do `SceneTransitionCompletedEvent` (por exemplo, via `GameLoopSceneFlowCoordinator`),
+      o bridge considera o gameplay ativo e **não** inicia a IntroStage.
+    - Quando a IntroStage roda, ela termina por confirmação UI (`IntroStage/UIConfirm`) ou auto-skip (`IntroStage/NoContent`),
       e só então o GameLoop faz `RequestStart()` para entrar em `Playing`.
 
-Com isso:
+Contrato esperado:
 
 - O GameLoop só entra em `Playing` **depois** que:
     - O reset/spawn foi concluído (WorldLifecycle).
     - A transição foi marcada como `Completed(Profile=gameplay)`.
     - A IntroStage foi concluída (ou pulada) e o token `sim.gameplay` foi liberado.
+
+> Observação: no estado atual do código, o GameLoop pode entrar em `Playing` antes do `Completed` em alguns fluxos
+> (ex.: quando `RequestStart()` é solicitado cedo). Ao consolidar a IntroStage como gate de entrada, a chamada
+> `RequestStart()` em gameplay deve ser postergada (preferindo `RequestReady()` até a conclusão da IntroStage).
 
 - O `IGameNavigationService` continua responsável apenas por **disparar transições de cena**
   (`SceneTransitionService.TransitionAsync(...)`), sem chamar `RequestStart()` diretamente.
