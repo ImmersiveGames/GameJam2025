@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
@@ -14,24 +13,31 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     public sealed class PregameCoordinator : IPregameCoordinator
     {
         private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
+        // Fail-safe operacional: evita travar o fluxo se nenhum sinal canônico for emitido.
+        private const int PregameCompletionTimeoutMs = 20000;
         private int _inProgress;
 
         public async Task RunPregameAsync(PregameContext context)
         {
-            if (!context.ProfileId.IsGameplay)
+            var gameLoop = ResolveGameLoop();
+            var policy = ResolvePolicy(context);
+
+            if (policy == PregamePolicy.Disabled)
             {
-                LogSkipped("profile_not_gameplay", context, SceneManager.GetActiveScene().name);
+                LogSkipped("policy_disabled", context, SceneManager.GetActiveScene().name);
+                RequestStartIfNeeded(gameLoop);
                 return;
             }
 
-            var classifier = ResolveGameplaySceneClassifier();
-            if (classifier != null && !classifier.IsGameplayScene())
+            if (policy == PregamePolicy.AutoComplete)
             {
-                LogSkipped("scene_not_gameplay", context, SceneManager.GetActiveScene().name);
+                var normalizeSignature = NormalizeSignature(context.ContextSignature);
+                var normalizedTargetScene = NormalizeValue(context.TargetScene);
+
+                LogCompletionWithReason(normalizeSignature, normalizedTargetScene, context.ProfileId.Value, "policy_autocomplete");
+                RequestStartIfNeeded(gameLoop);
                 return;
             }
-
-            var step = ResolveStep(out var fromDi);
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
@@ -44,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var reason = NormalizeReason(context.Reason);
             var targetScene = NormalizeValue(context.TargetScene);
 
+            var step = ResolveStep(out var fromDi);
             var simulationGate = ResolveSimulationGateService();
             var simulationGateAcquired = false;
 
@@ -51,7 +58,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 $"[OBS][Pregame] PregameStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            var gameLoop = ResolveGameLoop();
             if (gameLoop == null)
             {
                 DebugUtility.LogWarning<PregameCoordinator>(
@@ -93,7 +99,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
                 // IMPORTANT: Must resume on Unity main thread because this method touches Unity APIs
                 // (SceneManager, SimulationGate callbacks, etc.). Avoid ConfigureAwait(false) here.
-                var completion = await controlService.WaitForCompletionAsync(CancellationToken.None);
+                var completionTask = controlService.WaitForCompletionAsync(CancellationToken.None);
+                var completedTask = await Task.WhenAny(completionTask, Task.Delay(PregameCompletionTimeoutMs));
+
+                if (completedTask != completionTask)
+                {
+                    DebugUtility.LogWarning<PregameCoordinator>(
+                        $"[OBS][Pregame] PregameTimedOut signature='{signature}' profile='{context.ProfileId.Value}' " +
+                        $"target='{targetScene}' timeoutMs={PregameCompletionTimeoutMs}.");
+                    controlService.SkipPregame("timeout");
+                }
+
+                var completion = await completionTask;
                 if (completion.WasSkipped)
                 {
                     LogSkipped(NormalizeValue(completion.Reason), context, SceneManager.GetActiveScene().name);
@@ -144,16 +161,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 : null;
         }
 
-        private static IGameplaySceneClassifier? ResolveGameplaySceneClassifier()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
-            {
-                return classifier;
-            }
-
-            return new DefaultGameplaySceneClassifier();
-        }
-
         private static IPregameControlService? ResolvePregameControlService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var service) && service != null)
@@ -162,6 +169,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             return null;
+        }
+
+        private static PregamePolicy ResolvePolicy(PregameContext context)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPregamePolicyResolver>(out var resolver) && resolver != null)
+            {
+                return resolver.Resolve(context.ProfileId, context.TargetScene, context.Reason);
+            }
+
+            return PregamePolicy.Manual;
         }
 
         private static ISimulationGateService? ResolveSimulationGateService()
@@ -273,6 +290,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             DebugUtility.Log<PregameCoordinator>(
                 $"[OBS][Pregame] PregameCompleted signature='{signature}' result='{FormatResult(result)}' profile='{profile}' target='{targetScene}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogCompletionWithReason(string signature, string targetScene, string profile, string reason)
+        {
+            DebugUtility.Log<PregameCoordinator>(
+                $"[OBS][Pregame] PregameCompleted signature='{signature}' result='completed' reason='{NormalizeReason(reason)}' " +
+                $"profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
 

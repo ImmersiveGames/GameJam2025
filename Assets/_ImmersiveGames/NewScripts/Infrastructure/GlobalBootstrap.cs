@@ -140,6 +140,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterPregameCoordinator();
             RegisterPregameControlService();
             RegisterGameplaySceneClassifier();
+            RegisterPregamePolicyResolver();
             RegisterDefaultPregameStep();
 
             // Resolve IGameLoopService UMA vez para serviços dependentes.
@@ -487,6 +488,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterPregamePolicyResolver()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPregamePolicyResolver>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pregame] IPregamePolicyResolver já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var classifier = DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var resolved) && resolved != null
+                ? resolved
+                : new DefaultGameplaySceneClassifier();
+
+            DependencyManager.Provider.RegisterGlobal<IPregamePolicyResolver>(
+                new DefaultPregamePolicyResolver(classifier),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Pregame] DefaultPregamePolicyResolver registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterGameplaySceneClassifier()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var existing) && existing != null)
@@ -550,11 +574,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
             {
                 var resetGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                completionGate = resetGate;
+                completionGate = new PregameSceneTransitionCompletionGate(resetGate);
                 DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (PregameSceneTransitionCompletionGate).",
                     DebugUtility.Colors.Info);
             }
 
