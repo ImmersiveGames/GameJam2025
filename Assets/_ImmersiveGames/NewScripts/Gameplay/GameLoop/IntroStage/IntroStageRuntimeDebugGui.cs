@@ -1,5 +1,6 @@
 #nullable enable
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
@@ -20,11 +21,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private bool _isVisible;
         private IIntroStageControlService? _controlService;
+        private static bool _installed;
+        private static bool _duplicateDestroyedLogged;
 
         public static void EnsureInstalled()
         {
-            if (FindObjectOfType<IntroStageRuntimeDebugGui>(true) != null)
+            if (_installed)
             {
+                return;
+            }
+
+            if (FindObjectOfType<IntroStageRuntimeDebugGui>(true) != null || FindExistingRuntimeGuiObject() != null)
+            {
+                _installed = true;
                 return;
             }
 
@@ -32,6 +41,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             go.hideFlags = HideFlags.DontSave;
             DontDestroyOnLoad(go);
             go.AddComponent<IntroStageRuntimeDebugGui>();
+            _installed = true;
+        }
+
+        private void Awake()
+        {
+            var existing = FindExistingRuntimeGuiObject();
+            if (existing != null && existing != gameObject)
+            {
+                if (!_duplicateDestroyedLogged)
+                {
+                    _duplicateDestroyedLogged = true;
+                    DebugUtility.LogWarning<IntroStageRuntimeDebugGui>(
+                        "[IntroStage][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata.");
+                }
+
+                Destroy(gameObject);
+                return;
+            }
         }
 
         private void Update()
@@ -103,6 +130,25 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             _controlService = service;
             return _controlService;
+        }
+
+        private static GameObject? FindExistingRuntimeGuiObject()
+        {
+            var objects = FindObjectsOfType<GameObject>(true);
+            foreach (var obj in objects)
+            {
+                if (!string.Equals(obj.name, RuntimeGuiObjectName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (obj.GetComponent<IntroStageRuntimeDebugGui>() != null)
+                {
+                    return obj;
+                }
+            }
+
+            return null;
         }
     }
 }
