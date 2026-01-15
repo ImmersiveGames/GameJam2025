@@ -43,9 +43,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void RequestIntroStageStart() => _signals.MarkIntroStageStart();
         public void RequestIntroStageComplete() => _signals.MarkIntroStageComplete();
 
-        public void RequestPregameStart() => RequestIntroStageStart();
-        public void RequestPregameComplete() => RequestIntroStageComplete();
-
         public void Initialize()
         {
             if (_initialized)
@@ -340,8 +337,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             public bool EndRequested { get; private set; }
             public bool IntroStageRequested => _introStagePending;
             public bool IntroStageCompleted => _introStageCompleted;
-            public bool PregameRequested => IntroStageRequested;
-            public bool PregameCompleted => IntroStageCompleted;
 
             bool IGameLoopSignals.EndRequested
             {

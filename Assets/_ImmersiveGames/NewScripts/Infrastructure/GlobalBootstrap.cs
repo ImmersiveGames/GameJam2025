@@ -460,12 +460,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            var coordinator = new IntroStageCoordinator();
             DependencyManager.Provider.RegisterGlobal<IIntroStageCoordinator>(
-                coordinator,
-                allowOverride: false);
-            DependencyManager.Provider.RegisterGlobal<IPregameCoordinator>(
-                coordinator,
+                new IntroStageCoordinator(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -483,12 +479,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            var controlService = new IntroStageControlService();
             DependencyManager.Provider.RegisterGlobal<IIntroStageControlService>(
-                controlService,
-                allowOverride: false);
-            DependencyManager.Provider.RegisterGlobal<IPregameControlService>(
-                controlService,
+                new IntroStageControlService(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -510,12 +502,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 ? resolved
                 : new DefaultGameplaySceneClassifier();
 
-            var policyResolver = new DefaultIntroStagePolicyResolver(classifier);
             DependencyManager.Provider.RegisterGlobal<IIntroStagePolicyResolver>(
-                policyResolver,
-                allowOverride: false);
-            DependencyManager.Provider.RegisterGlobal<IPregamePolicyResolver>(
-                policyResolver,
+                new DefaultIntroStagePolicyResolver(classifier),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -552,12 +540,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            var step = new ConfirmToStartIntroStageStep();
             DependencyManager.Provider.RegisterGlobal<IIntroStageStep>(
-                step,
-                allowOverride: false);
-            DependencyManager.Provider.RegisterGlobal<IPregameStep>(
-                step,
+                new ConfirmToStartIntroStageStep(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),

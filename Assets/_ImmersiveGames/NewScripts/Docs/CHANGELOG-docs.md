@@ -2,12 +2,12 @@
 
 ## [2026-01-15]
 ### Changed
-- ADR-0016 e ADR-0017 revisados para tornar **IntroStage** o termo canônico e registrar **Pregame** apenas como legado/compatibilidade temporária.
+- ADR-0016 e ADR-0017 revisados para tornar **IntroStage** o termo canônico e registrar **IntroStage** como termo canônico, sem compatibilidade legada.
 
 ## [2026-01-14]
 ### Changed
-- ADR-0016 atualizado para renomear semanticamente **Pregame** como **IntroStage (PostReveal)**, mantendo o termo legado em nota de compatibilidade e explicitando que ocorre após `FadeOut` e `SceneTransitionCompleted` (fora do Completion Gate).
-- ADR-0017 referenciado para refletir a nova nomenclatura (IntroStage/Pregame legado).
+- ADR-0016 atualizado para consolidar **IntroStage (PostReveal)** como nomenclatura canônica e explicitando que ocorre após `FadeOut` e `SceneTransitionCompleted` (fora do Completion Gate).
+- ADR-0017 referenciado para refletir a nova nomenclatura (IntroStage/IntroStage).
 
 ## [2026-01-13]
 ### Added

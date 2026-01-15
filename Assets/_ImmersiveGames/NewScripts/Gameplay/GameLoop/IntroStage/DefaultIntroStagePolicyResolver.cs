@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// <summary>
     /// Resolver padrão de política da IntroStage (preparado para produção).
     /// </summary>
-    public sealed class DefaultIntroStagePolicyResolver : IIntroStagePolicyResolver, IPregamePolicyResolver
+    public sealed class DefaultIntroStagePolicyResolver : IIntroStagePolicyResolver
     {
         private const string FallbackGameplaySceneName = "GameplayScene";
         private readonly IGameplaySceneClassifier _sceneClassifier;
@@ -34,9 +34,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return IntroStagePolicy.Manual;
         }
 
-        PregamePolicy IPregamePolicyResolver.Resolve(SceneFlowProfileId profile, string targetScene, string reason)
-            => (PregamePolicy)Resolve(profile, targetScene, reason);
-
         private bool IsGameplayTargetScene(string targetScene)
         {
             if (string.IsNullOrWhiteSpace(targetScene))
@@ -53,19 +50,5 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             return string.Equals(targetScene, FallbackGameplaySceneName, StringComparison.Ordinal);
         }
-    }
-
-    [Obsolete("Use DefaultIntroStagePolicyResolver. Será removido após a migração para IntroStage.")]
-    public sealed class DefaultPregamePolicyResolver : IPregamePolicyResolver
-    {
-        private readonly DefaultIntroStagePolicyResolver _inner;
-
-        public DefaultPregamePolicyResolver(IGameplaySceneClassifier sceneClassifier)
-        {
-            _inner = new DefaultIntroStagePolicyResolver(sceneClassifier);
-        }
-
-        public PregamePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason)
-            => (PregamePolicy)_inner.Resolve(profile, targetScene, reason);
     }
 }

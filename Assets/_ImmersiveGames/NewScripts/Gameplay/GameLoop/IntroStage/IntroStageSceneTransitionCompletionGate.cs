@@ -73,18 +73,4 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
     }
-
-    [Obsolete("Use IntroStageSceneTransitionCompletionGate. Será removido após a migração para IntroStage.")]
-    public sealed class PregameSceneTransitionCompletionGate : ISceneTransitionCompletionGate
-    {
-        private readonly IntroStageSceneTransitionCompletionGate _inner;
-
-        public PregameSceneTransitionCompletionGate(ISceneTransitionCompletionGate innerGate)
-        {
-            _inner = new IntroStageSceneTransitionCompletionGate(innerGate);
-        }
-
-        public Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
-            => _inner.AwaitBeforeFadeOutAsync(context);
-    }
 }

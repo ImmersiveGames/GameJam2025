@@ -10,8 +10,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         /// Fase opcional antes do gameplay jogável (IntroStage/PostReveal).
         /// </summary>
         IntroStage,
-        [Obsolete("Use IntroStage. Será removido após a migração para IntroStage.")]
-        Pregame = IntroStage,
         Playing,
         Paused,
         /// <summary>
@@ -30,12 +28,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         bool EndRequested { get; set; }
         bool IntroStageRequested { get; }
         bool IntroStageCompleted { get; }
-
-        [Obsolete("Use IntroStageRequested. Será removido após a migração para IntroStage.")]
-        bool PregameRequested { get; }
-
-        [Obsolete("Use IntroStageCompleted. Será removido após a migração para IntroStage.")]
-        bool PregameCompleted { get; }
     }
 
     public interface IGameLoopStateObserver
@@ -57,13 +49,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void RequestEnd();
         void RequestIntroStageStart();
         void RequestIntroStageComplete();
-
-        [Obsolete("Use RequestIntroStageStart. Será removido após a migração para IntroStage.")]
-        void RequestPregameStart();
-
-        [Obsolete("Use RequestIntroStageComplete. Será removido após a migração para IntroStage.")]
-        void RequestPregameComplete();
-
         string CurrentStateIdName { get; }
     }
 

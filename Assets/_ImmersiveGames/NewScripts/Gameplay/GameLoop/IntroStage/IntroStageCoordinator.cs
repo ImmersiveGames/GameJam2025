@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class IntroStageCoordinator : IIntroStageCoordinator, IPregameCoordinator
+    public sealed class IntroStageCoordinator : IIntroStageCoordinator
     {
         private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
         // Fail-safe operacional: evita travar o fluxo se nenhum sinal canônico for emitido.
@@ -141,9 +141,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 Interlocked.Exchange(ref _inProgress, 0);
             }
         }
-
-        Task IPregameCoordinator.RunPregameAsync(PregameContext context)
-            => RunIntroStageAsync(context.ToIntroStageContext());
 
         private static IIntroStageStep ResolveStep(out bool fromDi)
         {
@@ -338,14 +335,5 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             Skipped,
             Failed
         }
-    }
-
-    [Obsolete("Use IntroStageCoordinator. Será removido após a migração para IntroStage.")]
-    public sealed class PregameCoordinator : IPregameCoordinator
-    {
-        private readonly IntroStageCoordinator _inner = new();
-
-        public Task RunPregameAsync(PregameContext context)
-            => _inner.RunIntroStageAsync(context.ToIntroStageContext());
     }
 }

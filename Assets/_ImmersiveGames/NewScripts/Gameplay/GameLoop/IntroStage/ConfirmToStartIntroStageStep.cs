@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// Passo mínimo de IntroStage com confirmação via input.
     /// O timeout é opcional e só deve ser habilitado para QA/dev.
     /// </summary>
-    public sealed class ConfirmToStartIntroStageStep : IIntroStageStep, IPregameStep
+    public sealed class ConfirmToStartIntroStageStep : IIntroStageStep
     {
         private const float DefaultTimeoutSeconds = 10f;
         private const string UiMapName = "UI";
@@ -74,11 +74,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 }
             }
         }
-
-        Task IPregameStep.RunAsync(PregameContext context, CancellationToken cancellationToken)
-            => RunAsync(context.ToIntroStageContext(), cancellationToken);
-
-        bool IPregameStep.HasContent => HasContent;
 
         private static void ApplyUiInputMode(string signature, string sceneName, string profile)
         {
@@ -178,21 +173,5 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static string NormalizeValue(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
-    }
-
-    [Obsolete("Use ConfirmToStartIntroStageStep. Será removido após a migração para IntroStage.")]
-    public sealed class ConfirmToStartPregameStep : IPregameStep
-    {
-        private readonly ConfirmToStartIntroStageStep _inner;
-
-        public ConfirmToStartPregameStep(bool enableTimeout = false, float timeoutSeconds = DefaultTimeoutSeconds)
-        {
-            _inner = new ConfirmToStartIntroStageStep(enableTimeout, timeoutSeconds);
-        }
-
-        public bool HasContent => _inner.HasContent;
-
-        public Task RunAsync(PregameContext context, CancellationToken cancellationToken)
-            => _inner.RunAsync(context.ToIntroStageContext(), cancellationToken);
     }
 }

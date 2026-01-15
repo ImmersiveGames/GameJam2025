@@ -1,5 +1,4 @@
 #nullable enable
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
@@ -90,98 +89,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// <summary>
     /// Implementação default (no-op) para ausência de conteúdo.
     /// </summary>
-    public sealed class NoOpIntroStageStep : IIntroStageStep, IPregameStep
+    public sealed class NoOpIntroStageStep : IIntroStageStep
     {
         public bool HasContent => false;
 
         public Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
-            => Task.CompletedTask;
-
-        Task IPregameStep.RunAsync(PregameContext context, CancellationToken cancellationToken)
-            => RunAsync(context.ToIntroStageContext(), cancellationToken);
-
-        bool IPregameStep.HasContent => HasContent;
-    }
-
-    [Obsolete("Use IntroStageContext. Será removido após a migração para IntroStage.")]
-    public readonly struct PregameContext
-    {
-        public string ContextSignature { get; }
-        public SceneFlowProfileId ProfileId { get; }
-        public string TargetScene { get; }
-        public string Reason { get; }
-
-        public PregameContext(string contextSignature, SceneFlowProfileId profileId, string targetScene, string reason)
-        {
-            ContextSignature = contextSignature ?? string.Empty;
-            ProfileId = profileId;
-            TargetScene = targetScene ?? string.Empty;
-            Reason = reason ?? string.Empty;
-        }
-
-        public IntroStageContext ToIntroStageContext()
-            => new IntroStageContext(ContextSignature, ProfileId, TargetScene, Reason);
-    }
-
-    [Obsolete("Use IntroStagePolicy. Será removido após a migração para IntroStage.")]
-    public enum PregamePolicy
-    {
-        Disabled,
-        Manual,
-        AutoComplete
-    }
-
-    [Obsolete("Use IIntroStagePolicyResolver. Será removido após a migração para IntroStage.")]
-    public interface IPregamePolicyResolver
-    {
-        PregamePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason);
-    }
-
-    [Obsolete("Use IIntroStageStep. Será removido após a migração para IntroStage.")]
-    public interface IPregameStep
-    {
-        bool HasContent { get; }
-        Task RunAsync(PregameContext context, CancellationToken cancellationToken);
-    }
-
-    [Obsolete("Use IIntroStageCoordinator. Será removido após a migração para IntroStage.")]
-    public interface IPregameCoordinator
-    {
-        Task RunPregameAsync(PregameContext context);
-    }
-
-    [Obsolete("Use IIntroStageControlService. Será removido após a migração para IntroStage.")]
-    public interface IPregameControlService
-    {
-        bool IsPregameActive { get; }
-        void BeginPregame(PregameContext context);
-        Task<PregameCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken);
-        void CompletePregame(string reason);
-        void SkipPregame(string reason);
-    }
-
-    [Obsolete("Use IntroStageCompletionResult. Será removido após a migração para IntroStage.")]
-    public readonly struct PregameCompletionResult
-    {
-        public string Reason { get; }
-        public bool WasSkipped { get; }
-
-        public PregameCompletionResult(string reason, bool wasSkipped)
-        {
-            Reason = reason ?? string.Empty;
-            WasSkipped = wasSkipped;
-        }
-
-        public IntroStageCompletionResult ToIntroStageCompletionResult()
-            => new IntroStageCompletionResult(Reason, WasSkipped);
-    }
-
-    [Obsolete("Use NoOpIntroStageStep. Será removido após a migração para IntroStage.")]
-    public sealed class NoOpPregameStep : IPregameStep
-    {
-        public bool HasContent => false;
-
-        public Task RunAsync(PregameContext context, CancellationToken cancellationToken)
             => Task.CompletedTask;
     }
 }

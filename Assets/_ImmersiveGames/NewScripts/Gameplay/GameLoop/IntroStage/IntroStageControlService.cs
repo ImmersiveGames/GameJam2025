@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// Serviço global que controla o término da IntroStage via comando explícito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class IntroStageControlService : IIntroStageControlService, IPregameControlService
+    public sealed class IntroStageControlService : IIntroStageControlService
     {
         private readonly object _sync = new();
         private TaskCompletionSource<IntroStageCompletionResult> _completionSource =
@@ -72,22 +72,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             FinishIntroStage(reason, wasSkipped: true);
         }
 
-        public bool IsPregameActive => IsIntroStageActive;
-
-        public void BeginPregame(PregameContext context)
-            => BeginIntroStage(context.ToIntroStageContext());
-
-        Task<PregameCompletionResult> IPregameControlService.WaitForCompletionAsync(CancellationToken cancellationToken)
-            => WaitForCompletionAsync(cancellationToken)
-                .ContinueWith(task => new PregameCompletionResult(task.Result.Reason, task.Result.WasSkipped),
-                    TaskScheduler.Default);
-
-        public void CompletePregame(string reason)
-            => CompleteIntroStage(reason);
-
-        public void SkipPregame(string reason)
-            => SkipIntroStage(reason);
-
         private void FinishIntroStage(string reason, bool wasSkipped)
         {
             TaskCompletionSource<IntroStageCompletionResult> source;
@@ -144,27 +128,5 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static string NormalizeValue(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
-    }
-
-    [Obsolete("Use IntroStageControlService. Será removido após a migração para IntroStage.")]
-    public sealed class PregameControlService : IPregameControlService
-    {
-        private readonly IntroStageControlService _inner = new();
-
-        public bool IsPregameActive => _inner.IsIntroStageActive;
-
-        public void BeginPregame(PregameContext context)
-            => _inner.BeginIntroStage(context.ToIntroStageContext());
-
-        public Task<PregameCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken)
-            => _inner.WaitForCompletionAsync(cancellationToken)
-                .ContinueWith(task => new PregameCompletionResult(task.Result.Reason, task.Result.WasSkipped),
-                    TaskScheduler.Default);
-
-        public void CompletePregame(string reason)
-            => _inner.CompleteIntroStage(reason);
-
-        public void SkipPregame(string reason)
-            => _inner.SkipIntroStage(reason);
     }
 }

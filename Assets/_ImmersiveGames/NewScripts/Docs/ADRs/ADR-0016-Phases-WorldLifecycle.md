@@ -1,4 +1,4 @@
-# ADR-0016 — Phases + modos de avanço + IntroStage (Pregame legado) opcional (WorldLifecycle/SceneFlow)
+# ADR-0016 — Phases + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow)
 
 ## Status
 
@@ -25,7 +25,7 @@ Durante a evolução do gameplay, surgiram requisitos adicionais:
     - **In-Place** (troca dentro da mesma cena de gameplay).
     - **Com transição completa** (troca que usa SceneFlow, podendo envolver unload/load de cenas).
 
-3. Necessidade de uma etapa opcional antes do jogo começar de fato (**IntroStage**, termo legado: **Pregame**), para:
+3. Necessidade de uma etapa opcional antes do jogo começar de fato (**IntroStage**), para:
     - cutscene,
     - splash screen,
     - tutorial,
@@ -51,16 +51,16 @@ Onde:
     - `UseLoadingHud` (in-Place ignora; transição completa depende do profile),
     - `TimeoutMs`.
 
-### 2) IntroStage (Pregame legado) é uma fase opcional do GameLoop, **PostReveal**, disparada após o SceneFlow (Completed)
+### 2) IntroStage é uma fase opcional do GameLoop, **PostReveal**, disparada após o SceneFlow (Completed)
 
 **Intenção oficial (estado atual do código + evidência em logs):**
 
 - A IntroStage existe para exibir conteúdo **com a cena já revelada** (**PostReveal**, após o `FadeOut`), antes de liberar o início do gameplay.
 - O disparo ocorre **após** `SceneTransitionCompletedEvent`, via bridge de SceneFlow:
-    - `InputModeSceneFlowBridge` identifica `profile=gameplay` e solicita início da IntroStage (API legado: Pregame).
+    - `InputModeSceneFlowBridge` identifica `profile=gameplay` e solicita início da IntroStage (API canônica: IntroStage).
 - **A IntroStage não faz parte do Completion Gate da transição de cenas**; ela acontece **depois** de `SceneTransitionCompletedEvent` e é uma fase do **GameLoop/gameplay**.
 - Enquanto a IntroStage está ativa, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`).
-- A IntroStage termina por um sinal canônico (nomes legados):
+- A IntroStage termina por um sinal canônico:
     - `IIntroStageControlService.CompleteIntroStage(string reason)` (conclui)
     - `IIntroStageControlService.SkipIntroStage(string reason)` (pula/cancela)
 
@@ -84,11 +84,11 @@ Onde:
 4. WorldLifecycle executa reset determinístico (quando aplicável).
 5. SceneFlow executa FadeOut.
 6. `SceneTransitionCompletedEvent` (cena revelada; fluxo visual concluído).
-7. Bridge solicita IntroStage (opcional, legado: Pregame).
+7. Bridge solicita IntroStage.
 8. Ao terminar a IntroStage, o GameLoop solicita `RequestStart`.
 9. GameLoop entra em `Playing` (gameplay liberado).
 
-### IntroStage (Pregame legado) — composição e contrato de conclusão
+### IntroStage — composição e contrato de conclusão
 
 A IntroStage é coordenada por:
 
@@ -108,7 +108,7 @@ Contrato:
 
 ### Gates e invariantes
 
-- **Durante IntroStage (Pregame legado)**: token `sim.gameplay` fechado (gameplay bloqueado; UI/menu pode continuar operando conforme política do `IStateDependentService`).
+- **Durante IntroStage**: token `sim.gameplay` fechado (gameplay bloqueado; UI/menu pode continuar operando conforme política do `IStateDependentService`).
 - **Durante SceneFlow**: token `flow.scene_transition` fecha o gate, garantindo que ações de gameplay fiquem bloqueadas durante load/unload/fade.
 - **In-Place Phase Change**:
     - token `flow.phase_inplace` para serialização e rastreabilidade.
@@ -119,7 +119,7 @@ Contrato:
 
 ## Como testar (QA)
 
-### IntroStage (Pregame legado)
+### IntroStage
 
 Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IIntroStageControlService`):
 
@@ -144,7 +144,7 @@ Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IIntroS
 
 ### Evidência esperada (observability)
 
-- IntroStage (Pregame legado):
+- IntroStage:
     - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
     - `[OBS][IntroStage] GameplaySimulationBlocked token='sim.gameplay' ...`
     - log orientativo de QA (Complete/Skip)
@@ -159,7 +159,7 @@ Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IIntroS
 
 ### Benefícios
 
-- IntroStage (Pregame legado) fica explícita como etapa opcional, com disparo determinístico e contrato de conclusão.
+- IntroStage fica explícita como etapa opcional, com disparo determinístico e contrato de conclusão.
 - QA consegue encerrar IntroStage sem depender de conteúdo in-game (cutscene etc.).
 - Dois modos de troca de fase ficam claros (e sem ambiguidade de “reset global” vs “troca de cena”).
 
@@ -175,7 +175,7 @@ Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IIntroS
 
 ## Changelog
 
-- **2026-01-14** — Renomeado semanticamente “Pregame” para **IntroStage (PostReveal)** no discurso arquitetural, mantendo **compatibilidade** com o termo legado e APIs (`Pregame*`). Compat note: **“Pregame (termo legado) agora = IntroStage/PostReveal”**.
+- **2026-01-14** — IntroStage consolidada como etapa PostReveal no discurso arquitetural.
 
 ## Referências
 
