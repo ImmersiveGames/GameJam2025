@@ -20,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     public sealed class InputModeSceneFlowBridge : IDisposable
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
+        private static string _lastProcessedSignature;
 
         public InputModeSceneFlowBridge()
         {
@@ -51,6 +52,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             }
 
             var profile = evt.Context.TransitionProfileName;
+            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+
+            if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
+                && string.Equals(_lastProcessedSignature, signature, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                    $"[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastProcessedSignature = signature;
 
             // ===== Gameplay =====
             if (string.Equals(profile, SceneFlowProfileNames.Gameplay, StringComparison.OrdinalIgnoreCase))
@@ -90,8 +103,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     return;
                 }
 
-                var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
-
                 if (!IsGameplayScene())
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
@@ -121,6 +132,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     }
                     else
                     {
+                        gameLoopService.RequestIntroStageStart();
                         var introStageContext = new IntroStageContext(
                             contextSignature: signature,
                             profileId: evt.Context.TransitionProfileId,
@@ -151,14 +163,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 var state = gameLoopService.CurrentStateIdName;
 
                 if (string.Equals(state, nameof(GameLoopStateId.Playing), StringComparison.Ordinal)
-                    || string.Equals(state, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
+                    || string.Equals(state, nameof(GameLoopStateId.Paused), StringComparison.Ordinal)
+                    || string.Equals(state, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                         $"[InputModeSceneFlowBridge] [GameLoop] Frontend completed com estado ativo ('{state}'). " +
-                        "Solicitando RequestEnd() para garantir menu inativo.",
+                        "Solicitando RequestReady() para garantir menu inativo.",
                         DebugUtility.Colors.Info);
 
-                    gameLoopService.RequestEnd();
+                    gameLoopService.RequestReady();
                 }
 
                 return;
