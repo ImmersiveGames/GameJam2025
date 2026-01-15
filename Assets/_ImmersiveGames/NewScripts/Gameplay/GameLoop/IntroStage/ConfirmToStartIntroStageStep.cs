@@ -13,10 +13,10 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Passo mínimo de pregame com confirmação via input.
+    /// Passo mínimo de IntroStage com confirmação via input.
     /// O timeout é opcional e só deve ser habilitado para QA/dev.
     /// </summary>
-    public sealed class ConfirmToStartPregameStep : IPregameStep
+    public sealed class ConfirmToStartIntroStageStep : IIntroStageStep, IPregameStep
     {
         private const float DefaultTimeoutSeconds = 10f;
         private const string UiMapName = "UI";
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private readonly float _timeoutSeconds;
         private readonly bool _timeoutEnabled;
 
-        public ConfirmToStartPregameStep(bool enableTimeout = false, float timeoutSeconds = DefaultTimeoutSeconds)
+        public ConfirmToStartIntroStageStep(bool enableTimeout = false, float timeoutSeconds = DefaultTimeoutSeconds)
         {
             _timeoutEnabled = enableTimeout;
             _timeoutSeconds = Mathf.Max(0.1f, timeoutSeconds);
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public bool HasContent => true;
 
-        public async Task RunAsync(PregameContext context, CancellationToken cancellationToken)
+        public async Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
         {
             var activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
             var profile = context.ProfileId.Value;
@@ -42,18 +42,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var signature = NormalizeSignature(context.ContextSignature);
             ApplyUiInputMode(signature, activeScene, profile);
 
-            var controlService = ResolvePregameControlService();
+            var controlService = ResolveIntroStageControlService();
             if (controlService == null)
             {
-                DebugUtility.LogWarning<ConfirmToStartPregameStep>(
-                    "[Pregame] IPregameControlService indisponível. ConfirmToStart não poderá concluir o Pregame.");
+                DebugUtility.LogWarning<ConfirmToStartIntroStageStep>(
+                    "[IntroStage] IIntroStageControlService indisponível. ConfirmToStart não poderá concluir a IntroStage.");
                 return;
             }
 
             var actions = new List<InputAction>();
 
             void CompleteFromInput(InputAction.CallbackContext _)
-                => controlService.CompletePregame("confirm");
+                => controlService.CompleteIntroStage("confirm");
 
             TryBindUiActions(actions, CompleteFromInput);
 
@@ -75,29 +75,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
 
+        Task IPregameStep.RunAsync(PregameContext context, CancellationToken cancellationToken)
+            => RunAsync(context.ToIntroStageContext(), cancellationToken);
+
+        bool IPregameStep.HasContent => HasContent;
+
         private static void ApplyUiInputMode(string signature, string sceneName, string profile)
         {
             var inputMode = ResolveInputModeService();
             if (inputMode == null)
             {
-                DebugUtility.LogWarning<ConfirmToStartPregameStep>(
-                    "[Pregame] IInputModeService indisponível. InputMode não será alternado.");
+                DebugUtility.LogWarning<ConfirmToStartIntroStageStep>(
+                    "[IntroStage] IInputModeService indisponível. InputMode não será alternado.");
                 return;
             }
 
-            DebugUtility.Log<ConfirmToStartPregameStep>(
-                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='Pregame' reason='Pregame/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}'.",
+            DebugUtility.Log<ConfirmToStartIntroStageStep>(
+                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='IntroStage' reason='IntroStage/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}'.",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetFrontendMenu("Pregame/ConfirmToStart");
+            inputMode.SetFrontendMenu("IntroStage/ConfirmToStart");
         }
 
-        private async Task TriggerTimeoutAsync(IPregameControlService controlService, CancellationToken cancellationToken)
+        private async Task TriggerTimeoutAsync(IIntroStageControlService controlService, CancellationToken cancellationToken)
         {
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(_timeoutSeconds), cancellationToken).ConfigureAwait(false);
-                controlService.CompletePregame("timeout");
+                controlService.CompleteIntroStage("timeout");
             }
             catch (OperationCanceledException)
             {
@@ -161,9 +166,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 : null;
         }
 
-        private static IPregameControlService? ResolvePregameControlService()
+        private static IIntroStageControlService? ResolveIntroStageControlService()
         {
-            return DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var service)
+            return DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service)
                 ? service
                 : null;
         }
@@ -173,5 +178,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static string NormalizeValue(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+    }
+
+    [Obsolete("Use ConfirmToStartIntroStageStep. Será removido após a migração para IntroStage.")]
+    public sealed class ConfirmToStartPregameStep : IPregameStep
+    {
+        private readonly ConfirmToStartIntroStageStep _inner;
+
+        public ConfirmToStartPregameStep(bool enableTimeout = false, float timeoutSeconds = DefaultTimeoutSeconds)
+        {
+            _inner = new ConfirmToStartIntroStageStep(enableTimeout, timeoutSeconds);
+        }
+
+        public bool HasContent => _inner.HasContent;
+
+        public Task RunAsync(PregameContext context, CancellationToken cancellationToken)
+            => _inner.RunAsync(context.ToIntroStageContext(), cancellationToken);
     }
 }

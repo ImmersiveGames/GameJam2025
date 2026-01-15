@@ -61,14 +61,14 @@ Onde:
 - **A IntroStage não faz parte do Completion Gate da transição de cenas**; ela acontece **depois** de `SceneTransitionCompletedEvent` e é uma fase do **GameLoop/gameplay**.
 - Enquanto a IntroStage está ativa, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`).
 - A IntroStage termina por um sinal canônico (nomes legados):
-    - `IPregameControlService.CompletePregame(string reason)` (conclui)
-    - `IPregameControlService.SkipPregame(string reason)` (pula/cancela)
+    - `IIntroStageControlService.CompleteIntroStage(string reason)` (conclui)
+    - `IIntroStageControlService.SkipIntroStage(string reason)` (pula/cancela)
 
 **Nota operacional (ordem observada):**
 - A IntroStage inicia **após** `SceneTransitionCompletedEvent` e **não** segura o `flow.scene_transition`. O bloqueio de gameplay ocorre apenas via `sim.gameplay` até a conclusão explícita da IntroStage.
 
 **Regra de não-bloqueio:** se não houver conteúdo, a IntroStage deve “auto-skip”:
-- `IPregameStep.HasContent == false` → o coordenador solicita `SkipPregame(...)` automaticamente.
+- `IIntroStageStep.HasContent == false` → o coordenador solicita `SkipIntroStage(...)` automaticamente.
 
 ## Detalhamento operacional
 
@@ -92,15 +92,15 @@ Onde:
 
 A IntroStage é coordenada por:
 
-- `PregameCoordinator` (orquestra execução, logs de observabilidade e bloqueio da simulação).
-- `IPregameStep` (conteúdo real: cutscene/splash/tutorial/press button).
-- `IPregameControlService` (canal canônico para **encerrar** a IntroStage).
+- `IntroStageCoordinator` (orquestra execução, logs de observabilidade e bloqueio da simulação).
+- `IIntroStageStep` (conteúdo real: cutscene/splash/tutorial/press button).
+- `IIntroStageControlService` (canal canônico para **encerrar** a IntroStage).
 
 Contrato:
 
 - O step (produção) deve chamar **exatamente um** dos comandos:
-    - `CompletePregame(...)` (conteúdo concluído) **ou**
-    - `SkipPregame(...)` (pulo/cancelamento).
+    - `CompleteIntroStage(...)` (conteúdo concluído) **ou**
+    - `SkipIntroStage(...)` (pulo/cancelamento).
 - O coordenador aguarda `WaitForCompletionAsync(...)` e, ao concluir:
     - libera o token `sim.gameplay`,
     - emite eventos/logs de observabilidade (`IntroStageCompleted|IntroStageSkipped`),
@@ -121,19 +121,19 @@ Contrato:
 
 ### IntroStage (Pregame legado)
 
-Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IPregameControlService`):
+Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IIntroStageControlService`):
 
 1. **Context Menu (Play Mode)**
-    - Componente: `PregameQaContextMenu` (namespace `_ImmersiveGames.NewScripts.QA.Pregame`)
+    - Componente: `IntroStageQaContextMenu` (namespace `_ImmersiveGames.NewScripts.QA.IntroStage`)
     - Ações:
-    - `QA/IntroStage/Complete (Force)` → `CompletePregame("QA/...")`
-    - `QA/IntroStage/Skip (Force)` → `SkipPregame("QA/...")`
+    - `QA/IntroStage/Complete (Force)` → `CompleteIntroStage("QA/...")`
+    - `QA/IntroStage/Skip (Force)` → `SkipIntroStage("QA/...")`
     - Uso: adicionar o componente a um GameObject ativo (ex.: em `GameplayScene`) e executar via Inspector.
 
 2. **MenuItem (Editor)**
     - `Tools/NewScripts/QA/IntroStage/Complete (Force)`
     - `Tools/NewScripts/QA/IntroStage/Skip (Force)`
-    - Requer Play Mode e `IPregameControlService` disponível no DI global.
+    - Requer Play Mode e `IIntroStageControlService` disponível no DI global.
 
 ### Phase Change
 

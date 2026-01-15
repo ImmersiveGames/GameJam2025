@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     /// <summary>
     /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
     /// Também sincroniza o GameLoop com a intenção do profile:
-    /// - Gameplay: aplica InputMode e dispara o Pregame (o início real ocorre após conclusão explícita do Pregame).
+    /// - Gameplay: aplica InputMode e dispara a IntroStage (o início real ocorre após conclusão explícita da IntroStage).
     /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
     /// </summary>
     public sealed class InputModeSceneFlowBridge : IDisposable
@@ -92,27 +92,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 if (!IsGameplayScene())
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                        $"[InputModeSceneFlowBridge] [Pregame] Cena ativa não é gameplay. Pregame ignorado. scene='{SceneManager.GetActiveScene().name}'.",
+                        $"[InputModeSceneFlowBridge] [IntroStage] Cena ativa não é gameplay. IntroStage ignorada. scene='{SceneManager.GetActiveScene().name}'.",
                         DebugUtility.Colors.Info);
                 }
                 else
                 {
-                    var coordinator = ResolvePregameCoordinator();
+                    var coordinator = ResolveIntroStageCoordinator();
                     if (coordinator == null)
                     {
                         DebugUtility.LogWarning<InputModeSceneFlowBridge>(
-                            "[InputModeSceneFlowBridge] [Pregame] IPregameCoordinator indisponível; pregame não será executado.");
+                            "[InputModeSceneFlowBridge] [IntroStage] IIntroStageCoordinator indisponível; IntroStage não será executada.");
                     }
                     else
                     {
                         var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
-                        var pregameContext = new PregameContext(
+                        var introStageContext = new IntroStageContext(
                             contextSignature: signature,
                             profileId: evt.Context.TransitionProfileId,
                             targetScene: evt.Context.TargetActiveScene,
                             reason: "SceneFlow/Completed");
 
-                        _ = coordinator.RunPregameAsync(pregameContext);
+                        _ = coordinator.RunIntroStageAsync(introStageContext);
                     }
                 }
                 return;
@@ -174,14 +174,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var service) ? service : null;
         }
 
-        private static IPregameCoordinator ResolvePregameCoordinator()
+        private static IIntroStageCoordinator ResolveIntroStageCoordinator()
         {
             if (!DependencyManager.HasInstance)
             {
                 return null;
             }
 
-            return DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var service) ? service : null;
+            return DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var service) ? service : null;
         }
 
         private static bool IsGameplayScene()

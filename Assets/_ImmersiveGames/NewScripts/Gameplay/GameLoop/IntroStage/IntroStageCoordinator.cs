@@ -10,26 +10,26 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PregameCoordinator : IPregameCoordinator
+    public sealed class IntroStageCoordinator : IIntroStageCoordinator, IPregameCoordinator
     {
         private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
         // Fail-safe operacional: evita travar o fluxo se nenhum sinal canônico for emitido.
-        private const int PregameCompletionTimeoutMs = 20000;
+        private const int IntroStageCompletionTimeoutMs = 20000;
         private int _inProgress;
 
-        public async Task RunPregameAsync(PregameContext context)
+        public async Task RunIntroStageAsync(IntroStageContext context)
         {
             var gameLoop = ResolveGameLoop();
             var policy = ResolvePolicy(context);
 
-            if (policy == PregamePolicy.Disabled)
+            if (policy == IntroStagePolicy.Disabled)
             {
                 LogSkipped("policy_disabled", context, SceneManager.GetActiveScene().name);
                 RequestStartIfNeeded(gameLoop);
                 return;
             }
 
-            if (policy == PregamePolicy.AutoComplete)
+            if (policy == IntroStagePolicy.AutoComplete)
             {
                 var normalizeSignature = NormalizeSignature(context.ContextSignature);
                 var normalizedTargetScene = NormalizeValue(context.TargetScene);
@@ -41,8 +41,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
-                DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[OBS][Pregame] PregameSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.");
+                DebugUtility.LogWarning<IntroStageCoordinator>(
+                    $"[OBS][IntroStage] IntroStageSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.");
                 return;
             }
 
@@ -54,43 +54,43 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var simulationGate = ResolveSimulationGateService();
             var simulationGateAcquired = false;
 
-            DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStage] IntroStageStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             if (gameLoop == null)
             {
-                DebugUtility.LogWarning<PregameCoordinator>(
-                    "[Pregame] IGameLoopService indisponível. Pregame seguirá sem sincronizar estado do GameLoop.");
+                DebugUtility.LogWarning<IntroStageCoordinator>(
+                    "[IntroStage] IGameLoopService indisponível. IntroStage seguirá sem sincronizar estado do GameLoop.");
             }
 
             try
             {
-                var controlService = ResolvePregameControlService();
+                var controlService = ResolveIntroStageControlService();
                 if (controlService == null)
                 {
-                    DebugUtility.LogWarning<PregameCoordinator>(
-                        "[Pregame] IPregameControlService indisponível. Pregame será concluído imediatamente.");
-                    gameLoop?.RequestPregameStart();
+                    DebugUtility.LogWarning<IntroStageCoordinator>(
+                        "[IntroStage] IIntroStageControlService indisponível. IntroStage será concluída imediatamente.");
+                    gameLoop?.RequestIntroStageStart();
                     simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
-                    LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
+                    LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Completed);
                     RequestStartIfNeeded(gameLoop);
                     return;
                 }
 
-                controlService.BeginPregame(context);
-                gameLoop?.RequestPregameStart();
+                controlService.BeginIntroStage(context);
+                gameLoop?.RequestIntroStageStart();
                 simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
-                DebugUtility.Log<PregameCoordinator>(
-                    "[Pregame] Pregame ativo: simulação gameplay bloqueada; use QA/Pregame/Complete ou QA/Pregame/Skip para prosseguir.",
+                DebugUtility.Log<IntroStageCoordinator>(
+                    "[IntroStage] IntroStage ativa: simulação gameplay bloqueada; use QA/IntroStage/Complete ou QA/IntroStage/Skip para prosseguir.",
                     DebugUtility.Colors.Info);
-                DebugUtility.Log<PregameCoordinator>(
-                    "[QA][Pregame] Use Inspector(ContextMenu) OU MenuItem para Complete/Skip.",
+                DebugUtility.Log<IntroStageCoordinator>(
+                    "[QA][IntroStage] Use Inspector(ContextMenu) OU MenuItem para Complete/Skip.",
                     DebugUtility.Colors.Info);
 
                 if (step == null || !step.HasContent)
                 {
-                    controlService.SkipPregame(fromDi ? "no_content" : "no_step");
+                    controlService.SkipIntroStage(fromDi ? "no_content" : "no_step");
                 }
                 else
                 {
@@ -100,40 +100,40 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 // IMPORTANT: Must resume on Unity main thread because this method touches Unity APIs
                 // (SceneManager, SimulationGate callbacks, etc.). Avoid ConfigureAwait(false) here.
                 var completionTask = controlService.WaitForCompletionAsync(CancellationToken.None);
-                var completedTask = await Task.WhenAny(completionTask, Task.Delay(PregameCompletionTimeoutMs));
+                var completedTask = await Task.WhenAny(completionTask, Task.Delay(IntroStageCompletionTimeoutMs));
 
                 if (completedTask != completionTask)
                 {
-                    DebugUtility.LogWarning<PregameCoordinator>(
-                        $"[OBS][Pregame] PregameTimedOut signature='{signature}' profile='{context.ProfileId.Value}' " +
-                        $"target='{targetScene}' timeoutMs={PregameCompletionTimeoutMs}.");
-                    controlService.SkipPregame("timeout");
+                    DebugUtility.LogWarning<IntroStageCoordinator>(
+                        $"[OBS][IntroStage] IntroStageTimedOut signature='{signature}' profile='{context.ProfileId.Value}' " +
+                        $"target='{targetScene}' timeoutMs={IntroStageCompletionTimeoutMs}.");
+                    controlService.SkipIntroStage("timeout");
                 }
 
                 var completion = await completionTask;
                 if (completion.WasSkipped)
                 {
                     LogSkipped(NormalizeValue(completion.Reason), context, SceneManager.GetActiveScene().name);
-                    LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Skipped);
+                    LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Skipped);
                 }
                 else
                 {
-                    LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Completed);
+                    LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Completed);
                 }
 
                 RequestStartIfNeeded(gameLoop);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Falha ao executar pregame. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                DebugUtility.LogWarning<IntroStageCoordinator>(
+                    $"[IntroStage] Falha ao executar IntroStage. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
-                LogCompletion(signature, targetScene, context.ProfileId.Value, PregameRunResult.Failed);
+                LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Failed);
                 RequestStartIfNeeded(gameLoop);
             }
             finally
             {
-                gameLoop?.RequestPregameComplete();
+                gameLoop?.RequestIntroStageComplete();
                 if (simulationGateAcquired)
                 {
                     ReleaseSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene);
@@ -142,16 +142,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
 
-        private static IPregameStep ResolveStep(out bool fromDi)
+        Task IPregameCoordinator.RunPregameAsync(PregameContext context)
+            => RunIntroStageAsync(context.ToIntroStageContext());
+
+        private static IIntroStageStep ResolveStep(out bool fromDi)
         {
             fromDi = false;
-            if (DependencyManager.Provider.TryGetGlobal<IPregameStep>(out var step) && step != null)
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageStep>(out var step) && step != null)
             {
                 fromDi = true;
                 return step;
             }
 
-            return new NoOpPregameStep();
+            return new NoOpIntroStageStep();
         }
 
         private static IGameLoopService? ResolveGameLoop()
@@ -161,9 +164,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 : null;
         }
 
-        private static IPregameControlService? ResolvePregameControlService()
+        private static IIntroStageControlService? ResolveIntroStageControlService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var service) && service != null)
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service) && service != null)
             {
                 return service;
             }
@@ -171,14 +174,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return null;
         }
 
-        private static PregamePolicy ResolvePolicy(PregameContext context)
+        private static IntroStagePolicy ResolvePolicy(IntroStageContext context)
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPregamePolicyResolver>(out var resolver) && resolver != null)
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStagePolicyResolver>(out var resolver) && resolver != null)
             {
                 return resolver.Resolve(context.ProfileId, context.TargetScene, context.Reason);
             }
 
-            return PregamePolicy.Manual;
+            return IntroStagePolicy.Manual;
         }
 
         private static ISimulationGateService? ResolveSimulationGateService()
@@ -192,17 +195,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         }
 
         private static async Task RunStepSafelyAsync(
-            IPregameStep step,
-            PregameContext context,
-            IPregameControlService controlService)
+            IIntroStageStep step,
+            IntroStageContext context,
+            IIntroStageControlService controlService)
         {
-            // This method is intentionally fire-and-forget from RunPregameAsync.
+            // This method is intentionally fire-and-forget from RunIntroStageAsync.
             // Keep Unity API interactions on the Unity thread by avoiding ConfigureAwait(false).
 
             var stepName = step.GetType().Name;
             using var cts = new CancellationTokenSource();
 
-            // If the pregame finishes by QA (Complete/Skip), cancel the step.
+            // If the IntroStage finishes by QA (Complete/Skip), cancel the step.
             _ = controlService.WaitForCompletionAsync(CancellationToken.None)
                 .ContinueWith(_ => cts.Cancel(), TaskScheduler.Default);
 
@@ -212,15 +215,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
             catch (OperationCanceledException)
             {
-                // Expected when QA completes/skips pregame.
+                // Expected when QA completes/skips IntroStage.
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<PregameCoordinator>(
-                    $"[Pregame] Falha ao executar pregame. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                DebugUtility.LogWarning<IntroStageCoordinator>(
+                    $"[IntroStage] Falha ao executar IntroStage. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
                 // Ensure a canonical end if the step fails.
-                controlService.SkipPregame("step_failed");
+                controlService.SkipIntroStage("step_failed");
             }
         }
 
@@ -236,8 +239,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            DebugUtility.LogVerbose<PregameCoordinator>(
-                "[Pregame] Solicitando RequestStart após conclusão explícita do Pregame.",
+            DebugUtility.LogVerbose<IntroStageCoordinator>(
+                "[IntroStage] Solicitando RequestStart após conclusão explícita da IntroStage.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestStart();
@@ -252,15 +255,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             if (gateService == null)
             {
-                DebugUtility.LogWarning<PregameCoordinator>(
-                    "[Pregame] ISimulationGateService indisponível; simulação gameplay pode não ser bloqueada durante Pregame.");
+                DebugUtility.LogWarning<IntroStageCoordinator>(
+                    "[IntroStage] ISimulationGateService indisponível; simulação gameplay pode não ser bloqueada durante IntroStage.");
                 return false;
             }
 
             gateService.Acquire(SimulationGateToken);
 
-            DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] GameplaySimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStage] GameplaySimulationBlocked token='{SimulationGateToken}' signature='{signature}' " +
                 $"profile='{profile}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
@@ -280,42 +283,42 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             gateService.Release(SimulationGateToken);
 
-            DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] GameplaySimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStage] GameplaySimulationUnblocked token='{SimulationGateToken}' signature='{signature}' " +
                 $"profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void LogCompletion(string signature, string targetScene, string profile, PregameRunResult result)
+        private static void LogCompletion(string signature, string targetScene, string profile, IntroStageRunResult result)
         {
-            DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameCompleted signature='{signature}' result='{FormatResult(result)}' profile='{profile}' target='{targetScene}'.",
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStage] IntroStageCompleted signature='{signature}' result='{FormatResult(result)}' profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void LogCompletionWithReason(string signature, string targetScene, string profile, string reason)
         {
-            DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameCompleted signature='{signature}' result='completed' reason='{NormalizeReason(reason)}' " +
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStage] IntroStageCompleted signature='{signature}' result='completed' reason='{NormalizeReason(reason)}' " +
                 $"profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void LogSkipped(string reason, PregameContext context, string sceneName)
+        private static void LogSkipped(string reason, IntroStageContext context, string sceneName)
         {
-            DebugUtility.Log<PregameCoordinator>(
-                $"[OBS][Pregame] PregameSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' " +
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStage] IntroStageSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' " +
                 $"profile='{context.ProfileId.Value}' target='{NormalizeValue(context.TargetScene)}' scene='{NormalizeValue(sceneName)}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static string FormatResult(PregameRunResult result)
+        private static string FormatResult(IntroStageRunResult result)
         {
             return result switch
             {
-                PregameRunResult.Completed => "completed",
-                PregameRunResult.Skipped => "skipped",
-                PregameRunResult.Failed => "failed",
+                IntroStageRunResult.Completed => "completed",
+                IntroStageRunResult.Skipped => "skipped",
+                IntroStageRunResult.Failed => "failed",
                 _ => "unknown"
             };
         }
@@ -329,11 +332,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private static string NormalizeValue(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
 
-        private enum PregameRunResult
+        private enum IntroStageRunResult
         {
             Completed,
             Skipped,
             Failed
         }
+    }
+
+    [Obsolete("Use IntroStageCoordinator. Será removido após a migração para IntroStage.")]
+    public sealed class PregameCoordinator : IPregameCoordinator
+    {
+        private readonly IntroStageCoordinator _inner = new();
+
+        public Task RunPregameAsync(PregameContext context)
+            => _inner.RunIntroStageAsync(context.ToIntroStageContext());
     }
 }
