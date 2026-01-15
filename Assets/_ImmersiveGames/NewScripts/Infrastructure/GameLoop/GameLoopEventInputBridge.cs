@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
                 return;
 
             DebugUtility.Log<GameLoopEventInputBridge>(
-                "[GameLoop] RestartRequested -> RequestReset (expect Boot cycle).",
+                $"[GameLoop] RestartRequested -> RequestReset (expect Boot cycle). reason='{evt?.Reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
             loop.RequestReset();
         }

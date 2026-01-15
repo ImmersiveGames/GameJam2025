@@ -13,13 +13,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
      * - GameRunEndRequestedEvent(GameRunOutcome outcome, string reason) -> IGameRunEndRequestService.RequestEnd(...)
      *   (publica EventBus<GameRunEndRequestedEvent> dentro do serviço).
      * - GameRunEndedEvent(GameRunOutcome outcome, string reason) -> publicado pelo GameRunOutcomeService via EventBus<GameRunEndedEvent>.
-     * - GameResetRequestedEvent() -> EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent()).
+     * - GameResetRequestedEvent(reason) -> EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(reason)).
      * - GameExitToMenuRequestedEvent(reason) -> EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(reason)).
      */
     public sealed class GameCommands : IGameCommands
     {
         private readonly IGameRunEndRequestService _runEndRequestService;
         private const string DefaultExitToMenuReason = "GameCommands/ExitToMenu";
+        private const string DefaultRestartReason = "GameCommands/Restart";
 
         public GameCommands(IGameRunEndRequestService runEndRequestService)
         {
@@ -64,10 +65,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 
         public void RequestRestart(string reason)
         {
-            DebugUtility.Log(typeof(GameCommands),
-                $"[GameCommands] RequestRestart reason='{FormatReason(reason)}'");
+            var normalizedReason = NormalizeOptionalReason(reason, DefaultRestartReason);
 
-            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+            DebugUtility.Log(typeof(GameCommands),
+                $"[GameCommands] RequestRestart reason='{normalizedReason}'");
+
+            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(normalizedReason));
         }
 
         public void RequestExitToMenu(string reason)

@@ -127,5 +127,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return string.IsNullOrWhiteSpace(reason) ? "ExitToMenu/Unspecified" : reason.Trim();
         }
     }
-    public sealed class GameResetRequestedEvent : IEvent { }
+    /// <summary>
+    /// REQUEST (intenção): "reiniciar a run" (Restart).
+    /// </summary>
+    public sealed class GameResetRequestedEvent : IEvent
+    {
+        public GameResetRequestedEvent(string reason = null)
+        {
+            Reason = NormalizeReason(reason);
+        }
+
+        public string Reason { get; }
+
+        private static string NormalizeReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? "Restart/Unspecified" : reason.Trim();
+        }
+    }
 }

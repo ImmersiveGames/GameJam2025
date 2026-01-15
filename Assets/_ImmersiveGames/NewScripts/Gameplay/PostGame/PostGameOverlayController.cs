@@ -20,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostGameOverlayController : MonoBehaviour
     {
+        private const string RestartReason = "PostGame/Restart";
         private const string ExitToMenuReason = "PostGame/ExitToMenu";
         private const string PostGameGateToken = "state.postgame";
 
@@ -106,10 +107,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             // Caminho único: publicar intenção e deixar a bridge global navegar/resetar.
             // NÃO publicamos GameResumeRequestedEvent aqui: o PostGame usa gate próprio (state.postgame),
             // e publicar resume gerava "release ignorado" no GamePauseGateBridge quando não havia ownership.
-            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(RestartReason));
 
             DebugUtility.Log<PostGameOverlayController>(
-                "[PostGame] Restart solicitado via overlay.");
+                $"[PostGame] Restart solicitado via overlay. reason='{RestartReason}'.");
         }
 
         /// <summary>
