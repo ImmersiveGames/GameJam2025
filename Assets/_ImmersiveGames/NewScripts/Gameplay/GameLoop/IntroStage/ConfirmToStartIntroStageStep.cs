@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var actions = new List<InputAction>();
 
             void CompleteFromInput(InputAction.CallbackContext _)
-                => controlService.CompleteIntroStage("confirm");
+                => controlService.CompleteIntroStage("IntroStage/UIConfirm");
 
             TryBindUiActions(actions, CompleteFromInput);
 

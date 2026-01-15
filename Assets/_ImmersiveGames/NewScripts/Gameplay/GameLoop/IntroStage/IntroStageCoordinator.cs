@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var reason = NormalizeReason(context.Reason);
             var targetScene = NormalizeValue(context.TargetScene);
 
-            var step = ResolveStep(out var fromDi);
+            var step = ResolveStep();
             var simulationGate = ResolveSimulationGateService();
             var simulationGateAcquired = false;
 
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
                 if (step == null || !step.HasContent)
                 {
-                    controlService.SkipIntroStage(fromDi ? "no_content" : "no_step");
+                    controlService.SkipIntroStage("IntroStage/NoContent");
                 }
                 else
                 {
@@ -142,12 +142,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
 
-        private static IIntroStageStep ResolveStep(out bool fromDi)
+        private static IIntroStageStep ResolveStep()
         {
-            fromDi = false;
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageStep>(out var step) && step != null)
             {
-                fromDi = true;
                 return step;
             }
 
