@@ -21,33 +21,36 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             await _innerGate.AwaitBeforeFadeOutAsync(context);
 
-            IPregamePolicyResolver policyResolver = null;
-            if (DependencyManager.HasInstance)
-            {
-                DependencyManager.Provider.TryGetGlobal<IPregamePolicyResolver>(out policyResolver);
-            }
-
             IPregameCoordinator coordinator = null;
             if (DependencyManager.HasInstance)
             {
+                DependencyManager.Provider.TryGetGlobal<IPregamePolicyResolver>(out var policyResolver);
                 DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out coordinator);
-            }
 
-            var policy = policyResolver?.Resolve(context.TransitionProfileId, context.TargetActiveScene, "SceneFlow/Pregame");
-            if (coordinator == null)
-            {
+                var policy = policyResolver?.Resolve(
+                    context.TransitionProfileId,
+                    context.TargetActiveScene,
+                    "SceneFlow/Pregame") ?? PregamePolicy.Manual;
+
                 if (policy == PregamePolicy.Disabled)
                 {
                     DebugUtility.LogVerbose<PregameSceneTransitionCompletionGate>(
                         "[SceneFlowGate] Pregame policy disabled; gate ignorado.",
                         DebugUtility.Colors.Info);
+                    return;
                 }
-                else
+
+                if (coordinator == null)
                 {
                     DebugUtility.LogWarning<PregameSceneTransitionCompletionGate>(
                         "[SceneFlowGate] IPregameCoordinator indisponível; gate ignorado.");
+                    return;
                 }
-
+            }
+            if (coordinator == null)
+            {
+                DebugUtility.LogWarning<PregameSceneTransitionCompletionGate>(
+                    "[SceneFlowGate] DependencyManager indisponível; gate ignorado.");
                 return;
             }
 
