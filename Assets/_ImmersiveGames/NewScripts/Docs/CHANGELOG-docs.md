@@ -1,5 +1,10 @@
 # Changelog (Docs)
 
+## [2026-01-14]
+### Changed
+- ADR-0016 atualizado para renomear semanticamente **Pregame** como **IntroStage (PostReveal)**, mantendo o termo legado em nota de compatibilidade e explicitando que ocorre após `FadeOut` e `SceneTransitionCompleted` (fora do Completion Gate).
+- ADR-0017 referenciado para refletir a nova nomenclatura (IntroStage/Pregame legado).
+
 ## [2026-01-13]
 ### Added
 - Registro incremental de evidências do **Baseline 2.0** (cenários 1 e 2) a partir do log fornecido nesta conversa.

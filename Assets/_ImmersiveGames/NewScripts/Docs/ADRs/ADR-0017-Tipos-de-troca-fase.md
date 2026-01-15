@@ -116,5 +116,5 @@ sequenceDiagram
 
 ## Referências
 
-- ADR-0016 — Phases + modos de avanço + Pregame opcional
+- ADR-0016 — Phases + modos de avanço + IntroStage (Pregame legado) opcional
 - WorldLifecycle/SceneFlow — ordem de eventos e reset determinístico
