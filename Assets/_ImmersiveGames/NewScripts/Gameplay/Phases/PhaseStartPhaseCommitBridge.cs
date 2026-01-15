@@ -79,6 +79,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return string.Equals(_pendingSignature, verifiableSig, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Indica se existe qualquer pipeline pendente, independentemente de assinatura verificável.
+        /// </summary>
+        public bool HasAnyPending()
+        {
+            return !_disposed && _pendingRequest != null;
+        }
+
         private async void OnPhaseCommitted(PhaseCommittedEvent evt)
         {
             if (_disposed)

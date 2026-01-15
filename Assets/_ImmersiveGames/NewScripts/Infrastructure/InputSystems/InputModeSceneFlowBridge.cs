@@ -104,13 +104,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     // - PhaseStartPhaseCommitBridge agenda IntroStage após TransitionCompleted quando uma PhaseCommitted ocorre durante SceneTransition.
                     // - Este bridge dispara IntroStage em SceneFlow/Completed para o caso "entrada no gameplay" sem pipeline pendente.
                     if (DependencyManager.Provider.TryGetGlobal<PhaseStartPhaseCommitBridge>(out var phaseBridge)
-                        && phaseBridge != null
-                        && phaseBridge.HasPendingFor(signature))
+                        && phaseBridge != null)
                     {
-                        DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                            $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (PhaseStart pipeline pendente). signature='{signature}'.",
-                            DebugUtility.Colors.Info);
-                        return;
+                        if (phaseBridge.HasAnyPending())
+                        {
+                            DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                                $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (PhaseStart pipeline pendente - assinatura não verificável ou mismatch). signature='{signature}'.",
+                                DebugUtility.Colors.Info);
+                            return;
+                        }
+
+                        if (phaseBridge.HasPendingFor(signature))
+                        {
+                            DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                                $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (PhaseStart pipeline pendente). signature='{signature}'.",
+                                DebugUtility.Colors.Info);
+                            return;
+                        }
                     }
 
                     var coordinator = ResolveIntroStageCoordinator();
