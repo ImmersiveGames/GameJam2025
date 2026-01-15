@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageRuntimeDebugGui : MonoBehaviour
     {
+        private static IntroStageRuntimeDebugGui _instance;
         private const string RuntimeGuiObjectName = "IntroStageRuntimeDebugGui";
         private const string CompleteReason = "IntroStage/UIConfirm";
         private const float GuiWidth = 280f;
@@ -31,6 +32,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
+            if (_instance != null)
+            {
+                _installed = true;
+                return;
+            }
+
             if (FindObjectOfType<IntroStageRuntimeDebugGui>(true) != null || FindExistingRuntimeGuiObject() != null)
             {
                 _installed = true;
@@ -46,6 +53,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void Awake()
         {
+            if (_instance != null && _instance != this)
+            {
+                if (!_duplicateDestroyedLogged)
+                {
+                    _duplicateDestroyedLogged = true;
+                    DebugUtility.LogWarning<IntroStageRuntimeDebugGui>(
+                        "[IntroStage][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata.");
+                }
+
+                Destroy(gameObject);
+                return;
+            }
             var existing = FindExistingRuntimeGuiObject();
             if (existing != null && existing != gameObject)
             {
@@ -58,6 +77,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
                 Destroy(gameObject);
                 return;
+            }
+
+            _instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (_instance == this)
+            {
+                _instance = null;
             }
         }
 
