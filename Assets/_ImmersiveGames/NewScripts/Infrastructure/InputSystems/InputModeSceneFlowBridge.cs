@@ -20,11 +20,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     public sealed class InputModeSceneFlowBridge : IDisposable
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
+        private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
         private static string _lastProcessedSignature;
 
         public InputModeSceneFlowBridge()
         {
+            _startedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
             _completedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
+            EventBus<SceneTransitionStartedEvent>.Register(_startedBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
 
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
@@ -38,7 +41,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
         public void Dispose()
         {
+            EventBus<SceneTransitionStartedEvent>.Unregister(_startedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_completedBinding);
+        }
+
+        private void OnTransitionStarted(SceneTransitionStartedEvent evt)
+        {
+            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            _lastProcessedSignature = string.Empty;
+
+            DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                $"[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='{signature}'.",
+                DebugUtility.Colors.Info);
         }
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
