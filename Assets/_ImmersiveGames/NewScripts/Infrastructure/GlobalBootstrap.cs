@@ -570,15 +570,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             var loaderAdapter = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
             var fadeAdapter = NewScriptsSceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
 
-            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir (e pregame opcional).
+            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
             {
                 var resetGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                completionGate = new PregameSceneTransitionCompletionGate(resetGate);
+                completionGate = resetGate;
                 DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (PregameSceneTransitionCompletionGate).",
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
                     DebugUtility.Colors.Info);
             }
 
