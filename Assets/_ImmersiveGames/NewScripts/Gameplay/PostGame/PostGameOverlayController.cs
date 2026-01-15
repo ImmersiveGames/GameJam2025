@@ -20,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostGameOverlayController : MonoBehaviour
     {
+        private const string ExitToMenuReason = "PostGame/ExitToMenu";
         private const string PostGameGateToken = "state.postgame";
 
         [Header("Overlay")]
@@ -120,9 +121,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             HideImmediate();
 
             // Caminho único: publicar intenção e deixar a bridge global navegar.
-            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent());
+            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
             DebugUtility.Log<PostGameOverlayController>(
-                "[PostGame] ExitToMenu solicitado via overlay.");
+                $"[PostGame] ExitToMenu solicitado via overlay. reason='{ExitToMenuReason}'.");
         }
 
         private void RegisterBindings()

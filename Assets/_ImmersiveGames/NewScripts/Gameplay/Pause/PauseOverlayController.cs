@@ -38,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
     [DisallowMultipleComponent]
     public sealed class PauseOverlayController : MonoBehaviour
     {
+        private const string ExitToMenuReason = "PauseOverlay/ExitToMenu";
         [Header("Overlay")]
         [SerializeField] private GameObject overlayRoot;
         [SerializeField] private string showReason = "PauseOverlay/Show";
@@ -188,9 +189,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             // Fecha o overlay (idempotente). Não publica resume aqui; quem coordena é o fluxo de saída.
             TrySetOverlayActive(false);
 
-            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent());
+            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
             DebugUtility.LogVerbose(typeof(PauseOverlayController),
-                "[PauseOverlay] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado.",
+                $"[PauseOverlay] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado. reason='{ExitToMenuReason}'.",
                 DebugUtility.Colors.Info);
 
             if (_inputModeService != null)

@@ -133,11 +133,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             var context = SceneTransitionSignatureUtil.BuildContext(request);
+            var signature = SceneTransitionSignatureUtil.Compute(context);
 
             try
             {
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] Iniciando transição: {context}",
+                    $"[SceneFlow] TransitionStarted signature='{signature}' profile='{context.TransitionProfileName}' {context}",
                     DebugUtility.Colors.Info);
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
@@ -156,6 +157,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 // 1) Momento em que "cenas estão prontas" (load/unload/active done).
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
+                DebugUtility.Log<SceneTransitionService>(
+                    $"[SceneFlow] ScenesReady signature='{signature}' profile='{context.TransitionProfileName}'.",
+                    DebugUtility.Colors.Info);
+
                 // 2) Aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
                 await AwaitCompletionGateAsync(context);
 
@@ -166,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
 
                 DebugUtility.Log<SceneTransitionService>(
-                    "[SceneFlow] Transição concluída com sucesso.",
+                    $"[SceneFlow] TransitionCompleted signature='{signature}' profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)

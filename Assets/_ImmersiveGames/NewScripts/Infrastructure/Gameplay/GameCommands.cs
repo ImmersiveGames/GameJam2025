@@ -14,11 +14,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
      *   (publica EventBus<GameRunEndRequestedEvent> dentro do serviço).
      * - GameRunEndedEvent(GameRunOutcome outcome, string reason) -> publicado pelo GameRunOutcomeService via EventBus<GameRunEndedEvent>.
      * - GameResetRequestedEvent() -> EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent()).
-     * - GameExitToMenuRequestedEvent() -> EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent()).
+     * - GameExitToMenuRequestedEvent(reason) -> EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(reason)).
      */
     public sealed class GameCommands : IGameCommands
     {
         private readonly IGameRunEndRequestService _runEndRequestService;
+        private const string DefaultExitToMenuReason = "GameCommands/ExitToMenu";
 
         public GameCommands(IGameRunEndRequestService runEndRequestService)
         {
@@ -71,10 +72,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 
         public void RequestExitToMenu(string reason)
         {
-            DebugUtility.Log(typeof(GameCommands),
-                $"[GameCommands] RequestExitToMenu reason='{FormatReason(reason)}'");
+            var normalizedReason = NormalizeOptionalReason(reason, DefaultExitToMenuReason);
 
-            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent());
+            DebugUtility.Log(typeof(GameCommands),
+                $"[GameCommands] RequestExitToMenu reason='{normalizedReason}'");
+
+            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(normalizedReason));
         }
 
         private void RequestRunEnd(GameRunOutcome outcome, string reason)
@@ -99,6 +102,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
         private static string NormalizeRequiredReason(string reason)
         {
             return string.IsNullOrWhiteSpace(reason) ? "Unspecified" : reason.Trim();
+        }
+
+        private static string NormalizeOptionalReason(string reason, string fallback)
+        {
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                return reason.Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(fallback) ? "Unspecified" : fallback.Trim();
         }
     }
 }

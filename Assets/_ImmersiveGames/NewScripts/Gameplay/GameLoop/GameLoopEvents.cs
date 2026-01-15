@@ -113,6 +113,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// <summary>
     /// REQUEST (intenção): "quero sair do gameplay e voltar ao frontend/menu".
     /// </summary>
-    public sealed class GameExitToMenuRequestedEvent : IEvent { }
+    public sealed class GameExitToMenuRequestedEvent : IEvent
+    {
+        public GameExitToMenuRequestedEvent(string reason)
+        {
+            Reason = NormalizeReason(reason);
+        }
+
+        public string Reason { get; }
+
+        private static string NormalizeReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? "ExitToMenu/Unspecified" : reason.Trim();
+        }
+    }
     public sealed class GameResetRequestedEvent : IEvent { }
 }

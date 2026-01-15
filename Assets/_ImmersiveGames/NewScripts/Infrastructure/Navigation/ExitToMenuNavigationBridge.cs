@@ -45,11 +45,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 return;
             }
 
+            var reason = evt?.Reason ?? "ExitToMenu/Unspecified";
+
             DebugUtility.Log<ExitToMenuNavigationBridge>(
-                "[Navigation] ExitToMenu recebido -> RequestMenuAsync.",
+                $"[Navigation] ExitToMenu recebido -> RequestMenuAsync. routeId='{GameNavigationCatalog.Routes.ToMenu}', reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            _ = navigation.RequestMenuAsync("ExitToMenu/Event");
+            _ = navigation.RequestMenuAsync(reason);
         }
     }
 }

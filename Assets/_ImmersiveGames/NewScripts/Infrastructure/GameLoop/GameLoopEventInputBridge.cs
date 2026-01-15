@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
                 return;
 
             DebugUtility.LogVerbose<GameLoopEventInputBridge>(
-                "[GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing).");
+                $"[GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing). reason='{evt?.Reason ?? "<null>"}'.");
             loop.RequestReady();
         }
 
