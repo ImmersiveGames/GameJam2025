@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     /// <summary>
     /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
     /// Também sincroniza o GameLoop com a intenção do profile:
-    /// - Gameplay: aplica InputMode e dispara o Pregame (o início real ocorre após conclusão explícita do Pregame).
+    /// - Gameplay: aplica InputMode de UI e dispara o Pregame/IntroStage (o início real ocorre após conclusão explícita).
     /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
     /// </summary>
     public sealed class InputModeSceneFlowBridge : IDisposable
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             // ===== Gameplay =====
             if (string.Equals(profile, SceneFlowProfileNames.Gameplay, StringComparison.OrdinalIgnoreCase))
             {
-                inputModeService.SetGameplay("SceneFlow/Completed:Gameplay");
+                inputModeService.SetFrontendMenu("SceneFlow/Completed:Gameplay/IntroStage");
 
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 }
 
                 DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                    "[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop.",
+                    "[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> iniciando IntroStage (PostReveal).",
                     DebugUtility.Colors.Info);
 
                 // Se veio de um PauseOverlay por qualquer motivo, prefira Resume.
@@ -111,6 +111,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                             profileId: evt.Context.TransitionProfileId,
                             targetScene: evt.Context.TargetActiveScene,
                             reason: "SceneFlow/Completed");
+
+                        DebugUtility.Log<InputModeSceneFlowBridge>(
+                            $"[OBS][IntroStage] IntroStageRequested phase='PostReveal' signature='{signature}' " +
+                            $"scene='{evt.Context.TargetActiveScene}' profile='{evt.Context.TransitionProfileName}'.",
+                            DebugUtility.Colors.Info);
 
                         _ = coordinator.RunPregameAsync(pregameContext);
                     }

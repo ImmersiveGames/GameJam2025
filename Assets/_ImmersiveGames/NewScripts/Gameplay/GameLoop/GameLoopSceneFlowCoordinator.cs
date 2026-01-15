@@ -263,8 +263,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (profileId.IsGameplay)
             {
                 DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                    $"[GameLoopSceneFlow] Profile gameplay detectado (profileId='{profileId.Value}'). Chamando RequestStart() no GameLoop.");
-                gameLoop.RequestStart();
+                    $"[GameLoopSceneFlow] Profile gameplay detectado (profileId='{profileId.Value}'). " +
+                    "Chamando RequestReady() no GameLoop (IntroStage/PostReveal assume o Start).",
+                    DebugUtility.Colors.Info);
+                gameLoop.RequestReady();
             }
             else
             {
