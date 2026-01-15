@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
 
             DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                "[PhaseStart] Bridge registrado (PhaseCommittedEvent -> Pregame pipeline).",
+                "[PhaseStart] Bridge registrado (PhaseCommittedEvent -> IntroStage pipeline).",
                 DebugUtility.Colors.Info);
         }
 
@@ -55,6 +55,28 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             _pendingRequest = null;
             _pendingSignature = string.Empty;
+        }
+
+
+        /// <summary>
+        /// Indica se existe um pipeline pendente para esta assinatura de transição.
+        /// Usado para evitar disparo duplicado de IntroStage (SceneFlow/Completed + PhaseCommitted/pendente).
+        /// </summary>
+        public bool HasPendingFor(string contextSignature)
+        {
+            if (_disposed || _pendingRequest == null)
+            {
+                return false;
+            }
+
+            var verifiableSig = NormalizeVerifiableSignature(contextSignature);
+
+            if (verifiableSig.Length == 0 || _pendingSignature.Length == 0)
+            {
+                return false;
+            }
+
+            return string.Equals(_pendingSignature, verifiableSig, StringComparison.Ordinal);
         }
 
         private async void OnPhaseCommitted(PhaseCommittedEvent evt)

@@ -7,18 +7,18 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Serviço global que controla o término do Pregame via comando explícito.
+    /// Serviço global que controla o término da IntroStage via comando explícito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PregameControlService : IPregameControlService
+    public sealed class IntroStageControlService : IIntroStageControlService
     {
         private readonly object _sync = new();
-        private TaskCompletionSource<PregameCompletionResult> _completionSource =
+        private TaskCompletionSource<IntroStageCompletionResult> _completionSource =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _isActive;
-        private PregameContext _activeContext;
+        private IntroStageContext _activeContext;
 
-        public bool IsPregameActive
+        public bool IsIntroStageActive
         {
             get
             {
@@ -29,26 +29,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
 
-        public void BeginPregame(PregameContext context)
+        public void BeginIntroStage(IntroStageContext context)
         {
             lock (_sync)
             {
                 if (_isActive)
                 {
-                    DebugUtility.LogWarning<PregameControlService>(
-                        "[Pregame] BeginPregame chamado enquanto outro pregame ainda está ativo. Reiniciando gate de conclusão.");
+                    DebugUtility.LogWarning<IntroStageControlService>(
+                        "[IntroStage] BeginIntroStage chamado enquanto outra IntroStage ainda está ativa. Reiniciando gate de conclusão.");
                 }
 
                 _isActive = true;
                 _activeContext = context;
-                _completionSource = new TaskCompletionSource<PregameCompletionResult>(
+                _completionSource = new TaskCompletionSource<IntroStageCompletionResult>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
 
-        public Task<PregameCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken)
+        public Task<IntroStageCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken)
         {
-            TaskCompletionSource<PregameCompletionResult> source;
+            TaskCompletionSource<IntroStageCompletionResult> source;
             lock (_sync)
             {
                 source = _completionSource;
@@ -62,20 +62,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return AwaitWithCancellationAsync(source.Task, cancellationToken);
         }
 
-        public void CompletePregame(string reason)
+        public void CompleteIntroStage(string reason)
         {
-            FinishPregame(reason, wasSkipped: false);
+            FinishIntroStage(reason, wasSkipped: false);
         }
 
-        public void SkipPregame(string reason)
+        public void SkipIntroStage(string reason)
         {
-            FinishPregame(reason, wasSkipped: true);
+            FinishIntroStage(reason, wasSkipped: true);
         }
 
-        private void FinishPregame(string reason, bool wasSkipped)
+        private void FinishIntroStage(string reason, bool wasSkipped)
         {
-            TaskCompletionSource<PregameCompletionResult> source;
-            PregameContext context;
+            TaskCompletionSource<IntroStageCompletionResult> source;
+            IntroStageContext context;
             lock (_sync)
             {
                 if (!_isActive)
@@ -89,8 +89,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             var normalizedReason = NormalizeValue(reason);
-            DebugUtility.Log<PregameControlService>(
-                $"[OBS][Pregame] CompletePregame received reason='{normalizedReason}' " +
+            DebugUtility.Log<IntroStageControlService>(
+                $"[OBS][IntroStage] CompleteIntroStage received reason='{normalizedReason}' " +
                 $"skip={wasSkipped.ToString().ToLowerInvariant()} " +
                 $"signature='{NormalizeValue(context.ContextSignature)}' " +
                 $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.",
@@ -98,16 +98,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
             {
-                DebugUtility.LogWarning<PregameControlService>(
-                    $"[OBS][Pregame] PregameTimedOut signature='{NormalizeValue(context.ContextSignature)}' " +
+                DebugUtility.LogWarning<IntroStageControlService>(
+                    $"[OBS][IntroStage] IntroStageTimedOut signature='{NormalizeValue(context.ContextSignature)}' " +
                     $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.");
             }
 
-            source.TrySetResult(new PregameCompletionResult(normalizedReason, wasSkipped));
+            source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
         }
 
-        private static async Task<PregameCompletionResult> AwaitWithCancellationAsync(
-            Task<PregameCompletionResult> task,
+        private static async Task<IntroStageCompletionResult> AwaitWithCancellationAsync(
+            Task<IntroStageCompletionResult> task,
             CancellationToken cancellationToken)
         {
             if (task.IsCompleted)
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return await task.ConfigureAwait(false);
             }
 
-            return new PregameCompletionResult("cancelled", wasSkipped: true);
+            return new IntroStageCompletionResult("cancelled", wasSkipped: true);
         }
 
         private static string NormalizeValue(string value)

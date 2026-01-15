@@ -7,9 +7,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         Boot,
         Ready,
         /// <summary>
-        /// Fase opcional antes do gameplay jogável (pré-jogo).
+        /// Fase opcional antes do gameplay jogável (IntroStage/PostReveal).
         /// </summary>
-        Pregame,
+        IntroStage,
         Playing,
         Paused,
         /// <summary>
@@ -26,8 +26,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         bool ReadyRequested { get; }
         bool ResetRequested { get; }
         bool EndRequested { get; set; }
-        bool PregameRequested { get; }
-        bool PregameCompleted { get; }
+        bool IntroStageRequested { get; }
+        bool IntroStageCompleted { get; }
     }
 
     public interface IGameLoopStateObserver
@@ -47,8 +47,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void RequestReady();
         void RequestReset();
         void RequestEnd();
-        void RequestPregameStart();
-        void RequestPregameComplete();
+        void RequestIntroStageStart();
+        void RequestIntroStageComplete();
         string CurrentStateIdName { get; }
     }
 

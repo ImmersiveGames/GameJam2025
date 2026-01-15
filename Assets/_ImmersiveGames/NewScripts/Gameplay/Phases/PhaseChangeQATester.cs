@@ -40,26 +40,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
         private async void QA_InPlace_Phase3()
             => await RequestInPlaceAsync(Phase3Id, "QA/Phase/InPlace");
 
-        [ContextMenu("QA/Phase/InPlace -> Phase2 (Expect Pregame + gate fechado até complete)")]
-        private async void QA_InPlace_Phase2_ExpectPregame()
+        [ContextMenu("QA/Phase/InPlace -> Phase2 (Expect IntroStage + gate fechado até complete)")]
+        private async void QA_InPlace_Phase2_ExpectIntroStage()
         {
             DebugUtility.Log<PhaseChangeQATester>(
-                "[OBS][QA][Phase] InPlace -> Phase2 solicitado. Expectativa: Pregame + gate fechado até Complete.",
+                "[OBS][QA][Phase] InPlace -> Phase2 solicitado. Expectativa: IntroStage + gate fechado até Complete.",
                 DebugUtility.Colors.Info);
-            await RequestInPlaceAsync(Phase2Id, "QA/Phase/InPlaceExpectPregame");
+            await RequestInPlaceAsync(Phase2Id, "QA/Phase/InPlaceExpectIntroStage");
         }
 
-        [ContextMenu("QA/Phase/Advance In-Place -> Expect Pregame (gate fechado)")]
-        private async void QA_AdvanceInPlace_ExpectPregame()
+        [ContextMenu("QA/Phase/Advance In-Place -> Expect IntroStage (gate fechado)")]
+        private async void QA_AdvanceInPlace_ExpectIntroStage()
         {
             DebugUtility.Log<PhaseChangeQATester>(
-                "[OBS][QA][Phase] Advance In-Place solicitado. Expectativa: Pregame + gate fechado até Complete.",
+                "[OBS][QA][Phase] Advance In-Place solicitado. Expectativa: IntroStage + gate fechado até Complete.",
                 DebugUtility.Colors.Info);
-            await RequestInPlaceAsync(Phase2Id, "QA/Phase/InPlaceExpectPregame");
+            await RequestInPlaceAsync(Phase2Id, "QA/Phase/InPlaceExpectIntroStage");
         }
 
-        [ContextMenu("QA/Phase/Restart Current Phase -> Expect Pregame (gate fechado)")]
-        private async void QA_RestartCurrentPhase_ExpectPregame()
+        [ContextMenu("QA/Phase/Restart Current Phase -> Expect IntroStage (gate fechado)")]
+        private async void QA_RestartCurrentPhase_ExpectIntroStage()
         {
             var phaseContext = ResolvePhaseContextService();
             if (phaseContext == null)
@@ -79,17 +79,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
 
             DebugUtility.Log<PhaseChangeQATester>(
                 $"[OBS][QA][Phase] Restart Current Phase solicitado. phaseId='{current.PhaseId}'. " +
-                "Expectativa: Pregame + gate fechado até Complete.",
+                "Expectativa: IntroStage + gate fechado até Complete.",
                 DebugUtility.Colors.Info);
 
             await RequestInPlaceAsync(current.PhaseId, "QA/Phase/RestartCurrent");
         }
 
-        [ContextMenu("QA/Phase/Restart Current Phase (Expect Pregame + gate fechado)")]
-        private async void QA_RestartCurrentPhase_ExpectPregame_Label()
+        [ContextMenu("QA/Phase/Restart Current Phase (Expect IntroStage + gate fechado)")]
+        private async void QA_RestartCurrentPhase_ExpectIntroStage_Label()
         {
             DebugUtility.Log<PhaseChangeQATester>(
-                "[OBS][QA][Phase] Restart Current Phase solicitado (label alternativo). Expectativa: Pregame + gate fechado.",
+                "[OBS][QA][Phase] Restart Current Phase solicitado (label alternativo). Expectativa: IntroStage + gate fechado.",
                 DebugUtility.Colors.Info);
             await RequestInPlaceAsync(ResolveCurrentPhaseId(), "QA/Phase/RestartCurrent");
         }

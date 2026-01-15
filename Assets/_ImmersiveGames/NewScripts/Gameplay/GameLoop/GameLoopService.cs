@@ -40,8 +40,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void RequestReady() => _signals.MarkReady();
         public void RequestReset() => _signals.MarkReset();
         public void RequestEnd() => _signals.MarkEnd();
-        public void RequestPregameStart() => _signals.MarkPregameStart();
-        public void RequestPregameComplete() => _signals.MarkPregameComplete();
+        public void RequestIntroStageStart() => _signals.MarkIntroStageStart();
+        public void RequestIntroStageComplete() => _signals.MarkIntroStageComplete();
 
         public void Initialize()
         {
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _runStartedEmittedThisRun = false;
 
             _signals.ClearStartPending();
-            _signals.ClearPregameFlags();
+            _signals.ClearIntroStageFlags();
             _signals.ResetTransientSignals();
         }
 
@@ -98,21 +98,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             // - Em Resume (Paused -> Playing), NÃO publicamos de novo.
             if (stateId == GameLoopStateId.Boot ||
                 stateId == GameLoopStateId.Ready ||
-                stateId == GameLoopStateId.Pregame ||
+                stateId == GameLoopStateId.IntroStage ||
                 stateId == GameLoopStateId.PostPlay)
             {
                 _runStartedEmittedThisRun = false;
             }
 
-            if (stateId == GameLoopStateId.Pregame)
+            if (stateId == GameLoopStateId.IntroStage)
             {
-                _signals.ClearPregamePending();
+                _signals.ClearIntroStagePending();
             }
             else if (stateId == GameLoopStateId.Boot ||
                      stateId == GameLoopStateId.Ready ||
                      stateId == GameLoopStateId.PostPlay)
             {
-                _signals.ClearPregameFlags();
+                _signals.ClearIntroStageFlags();
             }
 
             if (stateId == GameLoopStateId.PostPlay)
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             {
                 // Garantia: StartPending nunca deve ficar “colado” após entrar em Playing.
                 _signals.ClearStartPending();
-                _signals.ClearPregameFlags();
+                _signals.ClearIntroStageFlags();
 
                 ApplyGameplayInputMode();
 
@@ -192,13 +192,35 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             NotifyPostPlayOwnerExited(info, nextState, reason);
         }
 
-        private static string ResolvePostPlayExitReason(GameLoopStateId nextState)
+        private string ResolvePostPlayExitReason(GameLoopStateId nextState)
         {
+            // Esta decisão precisa ser determinística e legível no log.
+            // Como os sinais são limpos no fim do Tick, aqui ainda conseguimos
+            // observar a intenção que causou a saída do PostPlay.
+
+            // Prioridade: Reset/Reinício explícito.
+            if (_signals.ResetRequested)
+            {
+                return "Restart";
+            }
+
+            // Ready é usado como estado-alvo “não ativo” durante navegações.
+            // Em PostPlay, ReadyRequested normalmente vem de ExitToMenu.
+            if (_signals.ReadyRequested)
+            {
+                return "ExitToMenu";
+            }
+
+            if (_signals.StartRequested)
+            {
+                return "RunStarted";
+            }
+
             return nextState switch
             {
                 GameLoopStateId.Playing => "RunStarted",
-                GameLoopStateId.Ready => IsGameplayScene() ? "RunStarted" : "ExitToMenu",
-                GameLoopStateId.Boot => "Restart",
+                GameLoopStateId.Ready => "Ready",
+                GameLoopStateId.Boot => "Boot",
                 _ => "Unknown"
             };
         }
@@ -316,7 +338,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             public SignatureInfo(string signature, string sceneName, string profile, int frame)
             {
-                Signature = signature;
+                Signature = string.IsNullOrWhiteSpace(signature) ? "<none>" : signature.Trim();
                 SceneName = string.IsNullOrWhiteSpace(sceneName) ? "<none>" : sceneName.Trim();
                 Profile = string.IsNullOrWhiteSpace(profile) ? "<none>" : profile.Trim();
                 Frame = frame;
@@ -326,8 +348,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
             private bool _startPending;
-            private bool _pregamePending;
-            private bool _pregameCompleted;
+            private bool _introStagePending;
+            private bool _introStageCompleted;
 
             public bool StartRequested => _startPending;
             public bool PauseRequested { get; private set; }
@@ -335,8 +357,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             public bool ReadyRequested { get; private set; }
             public bool ResetRequested { get; private set; }
             public bool EndRequested { get; private set; }
-            public bool PregameRequested => _pregamePending;
-            public bool PregameCompleted => _pregameCompleted;
+            public bool IntroStageRequested => _introStagePending;
+            public bool IntroStageCompleted => _introStageCompleted;
 
             bool IGameLoopSignals.EndRequested
             {
@@ -351,13 +373,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             public void MarkReset() => ResetRequested = true;
             public void MarkEnd() => EndRequested = true;
             public void ClearStartPending() => _startPending = false;
-            public void MarkPregameStart() => _pregamePending = true;
-            public void MarkPregameComplete() => _pregameCompleted = true;
-            public void ClearPregamePending() => _pregamePending = false;
-            public void ClearPregameFlags()
+            public void MarkIntroStageStart() => _introStagePending = true;
+            public void MarkIntroStageComplete() => _introStageCompleted = true;
+            public void ClearIntroStagePending() => _introStagePending = false;
+            public void ClearIntroStageFlags()
             {
-                _pregamePending = false;
-                _pregameCompleted = false;
+                _introStagePending = false;
+                _introStageCompleted = false;
             }
 
             public void ResetTransientSignals()

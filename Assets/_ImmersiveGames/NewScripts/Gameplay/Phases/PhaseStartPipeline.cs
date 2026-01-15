@@ -34,11 +34,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             await EnsureLoopReadyAsync(gameLoop, request);
 
-            var coordinator = ResolvePregameCoordinator();
+            var coordinator = ResolveIntroStageCoordinator();
             if (coordinator == null)
             {
                 DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    "[PhaseStart] IPregameCoordinator indisponível; pregame não será executado.");
+                    "[PhaseStart] IIntroStageCoordinator indisponível; IntroStage não será executada.");
                 return;
             }
 
@@ -47,11 +47,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 : request.TargetScene.Trim();
 
             DebugUtility.Log(typeof(PhaseStartPipeline),
-                $"[OBS][Phase] PhaseStartPipeline -> Pregame. phaseId='{request.PhaseId}' signature='{request.ContextSignature}' " +
+                $"[OBS][Phase] PhaseStartPipeline -> IntroStage. phaseId='{request.PhaseId}' signature='{request.ContextSignature}' " +
                 $"scene='{targetScene}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            var pregameContext = new PregameContext(
+            var introStageContext = new IntroStageContext(
                 contextSignature: request.ContextSignature,
                 profileId: SceneFlowProfileId.Gameplay,
                 targetScene: targetScene,
@@ -59,12 +59,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             try
             {
-                await coordinator.RunPregameAsync(pregameContext);
+                await coordinator.RunIntroStageAsync(introStageContext);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] Falha ao executar Pregame. phaseId='{request.PhaseId}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[PhaseStart] Falha ao executar IntroStage. phaseId='{request.PhaseId}', ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (ShouldRequestReady(state))
             {
                 DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] RequestReady antes do Pregame. state='{state}' phaseId='{request.PhaseId}'.");
+                    $"[PhaseStart] RequestReady antes da IntroStage. state='{state}' phaseId='{request.PhaseId}'.");
                 gameLoop.RequestReady();
             }
 
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         {
             return string.Equals(state, nameof(GameLoopStateId.Ready), StringComparison.Ordinal)
                 || string.Equals(state, nameof(GameLoopStateId.Boot), StringComparison.Ordinal)
-                || string.Equals(state, nameof(GameLoopStateId.Pregame), StringComparison.Ordinal);
+                || string.Equals(state, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal);
         }
 
         private static IGameLoopService? ResolveGameLoopService()
@@ -118,9 +118,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 : null;
         }
 
-        private static IPregameCoordinator? ResolvePregameCoordinator()
+        private static IIntroStageCoordinator? ResolveIntroStageCoordinator()
         {
-            return DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var service)
+            return DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var service)
                 ? service
                 : null;
         }

@@ -275,7 +275,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                 nameof(GameLoopStateId.Paused) => ServiceState.Paused,
                 nameof(GameLoopStateId.Ready) => ServiceState.Ready,
                 nameof(GameLoopStateId.Boot) => ServiceState.Ready,
-                nameof(GameLoopStateId.Pregame) => ServiceState.Ready,
+                nameof(GameLoopStateId.IntroStage) => ServiceState.Ready,
                 _ => null
             };
         }

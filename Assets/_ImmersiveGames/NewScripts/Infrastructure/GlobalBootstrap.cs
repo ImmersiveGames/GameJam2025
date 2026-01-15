@@ -44,7 +44,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.QA.Pregame;
+using _ImmersiveGames.NewScripts.QA.IntroStage;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -137,11 +137,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterPauseBridge(gateService);
 
             RegisterGameLoop();
-            RegisterPregameCoordinator();
-            RegisterPregameControlService();
+            RegisterIntroStageCoordinator();
+            RegisterIntroStageControlService();
             RegisterGameplaySceneClassifier();
-            RegisterPregamePolicyResolver();
-            RegisterDefaultPregameStep();
+            RegisterIntroStagePolicyResolver();
+            RegisterDefaultIntroStageStep();
 
             // Resolve IGameLoopService UMA vez para serviços dependentes.
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // ADR-0016: PhaseContext precisa existir no DI global.
             RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
 
-            RegisterPregameQaInstaller();
+            RegisterIntroStageQaInstaller();
 
             // Baseline 3B: Pending NÃO pode atravessar transição.
             RegisterPhaseContextSceneFlowBridge();
@@ -450,50 +450,50 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterPregameCoordinator()
+        private static void RegisterIntroStageCoordinator()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPregameCoordinator>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregameCoordinator já registrado no DI global.",
+                    "[IntroStage] IIntroStageCoordinator já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal<IPregameCoordinator>(
-                new PregameCoordinator(),
+            DependencyManager.Provider.RegisterGlobal<IIntroStageCoordinator>(
+                new IntroStageCoordinator(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] PregameCoordinator registrado no DI global.",
+                "[IntroStage] IntroStageCoordinator registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterPregameControlService()
+        private static void RegisterIntroStageControlService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPregameControlService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregameControlService já registrado no DI global.",
+                    "[IntroStage] IIntroStageControlService já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal<IPregameControlService>(
-                new PregameControlService(),
+            DependencyManager.Provider.RegisterGlobal<IIntroStageControlService>(
+                new IntroStageControlService(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] PregameControlService registrado no DI global.",
+                "[IntroStage] IntroStageControlService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterPregamePolicyResolver()
+        private static void RegisterIntroStagePolicyResolver()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPregamePolicyResolver>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStagePolicyResolver>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregamePolicyResolver já registrado no DI global.",
+                    "[IntroStage] IIntroStagePolicyResolver já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -502,12 +502,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 ? resolved
                 : new DefaultGameplaySceneClassifier();
 
-            DependencyManager.Provider.RegisterGlobal<IPregamePolicyResolver>(
-                new DefaultPregamePolicyResolver(classifier),
+            DependencyManager.Provider.RegisterGlobal<IIntroStagePolicyResolver>(
+                new DefaultIntroStagePolicyResolver(classifier),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] DefaultPregamePolicyResolver registrado no DI global.",
+                "[IntroStage] DefaultIntroStagePolicyResolver registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -530,22 +530,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterDefaultPregameStep()
+        private static void RegisterDefaultIntroStageStep()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPregameStep>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageStep>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pregame] IPregameStep já registrado no DI global.",
+                    "[IntroStage] IIntroStageStep já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal<IPregameStep>(
-                new ConfirmToStartPregameStep(),
+            DependencyManager.Provider.RegisterGlobal<IIntroStageStep>(
+                new ConfirmToStartIntroStageStep(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pregame] ConfirmToStartPregameStep registrado no DI global.",
+                "[IntroStage] ConfirmToStartIntroStageStep registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -570,17 +570,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             var loaderAdapter = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
             var fadeAdapter = NewScriptsSceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
 
-            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir (e pregame opcional).
+            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir (e IntroStage opcional).
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
             {
                 var resetGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                completionGate = new PregameSceneTransitionCompletionGate(resetGate);
+                completionGate = resetGate;
                 DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (PregameSceneTransitionCompletionGate).",
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
                     DebugUtility.Colors.Info);
-            }
+}
 
             var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
@@ -730,7 +730,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> Pregame).",
+                "[PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> IntroStage).",
                 DebugUtility.Colors.Info);
         }
 
@@ -756,16 +756,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterPregameQaInstaller()
+        private static void RegisterIntroStageQaInstaller()
         {
             try
             {
-                PregameQaInstaller.EnsureInstalled();
+                IntroStageQaInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[QA][Pregame] Falha ao instalar PregameQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStage] Falha ao instalar IntroStageQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

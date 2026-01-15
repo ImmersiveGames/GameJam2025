@@ -164,11 +164,11 @@ Mesma lógica do GameOver: escolha entre A (Frozen) e B (Scaled). Para sua inten
 
 Mesmo que você não os tenha hoje, são estados “profissionais” que evitam gambiarras:
 
-### 8) PreGameplay (Ready / Countdown / Briefing dentro da gameplay scene)
+### 8) IntroStage (Ready / Countdown / Briefing dentro da gameplay scene)
 
 **Objetivo:** gameplay scene já carregada, mas você não quer iniciar simulação ainda (pode ter UI/briefing).
 
-* Gate Tokens: `{ PreGameplay }` (ou reutilizar Cinematic)
+* Gate Tokens: `{ IntroStage }` (ou reutilizar Cinematic)
 * Time Policy: `Scaled`
 * Action Policy:
 
@@ -402,7 +402,7 @@ Resultado: spawns tardios não escapam do gate.
     * adquire token `SoftReset` (continua blocked)
     * reseta por fases
     * libera token `SoftReset`
-5. FSM volta para `PreGameplay` ou direto `Playing` (dependendo do design).
+5. FSM volta para `IntroStage` ou direto `Playing` (dependendo do design).
 
 ## Fluxo: Pause tradicional
 
@@ -431,4 +431,4 @@ Resultado: spawns tardios não escapam do gate.
 
 ---
 
-Se você quiser, me diga quais **estados adicionais** você já usa no seu projeto (por exemplo: `BriefingRoom`, `Shopping`, `UIControls`, “TransitionToGameplay”, etc.). Eu atualizo a tabela de ExecutionProfile com eles já classificados (tokens/time policy/action policy) e incluo um diagrama textual das transições mais comuns (ex.: Menu → Loading → Cinematic → Playing → GameOver → SoftReset → PreGameplay → Playing).
+Se você quiser, me diga quais **estados adicionais** você já usa no seu projeto (por exemplo: `BriefingRoom`, `Shopping`, `UIControls`, “TransitionToGameplay”, etc.). Eu atualizo a tabela de ExecutionProfile com eles já classificados (tokens/time policy/action policy) e incluo um diagrama textual das transições mais comuns (ex.: Menu → Loading → Cinematic → Playing → GameOver → SoftReset → IntroStage → Playing).

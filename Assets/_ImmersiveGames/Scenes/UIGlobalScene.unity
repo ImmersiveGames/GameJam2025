@@ -309,8 +309,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dea8860070304bd2a4e708df368e7ed0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  qaSignature: qa.pregame
-  qaReason: QA/PregameOptional
+  qaSignature: qa.introstage
+  qaReason: QA/IntroStageOptional
 --- !u!1 &128670549
 GameObject:
   m_ObjectHideFlags: 0

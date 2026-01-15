@@ -7,31 +7,31 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Resolver padrão de política do Pregame (preparado para produção).
+    /// Resolver padrão de política da IntroStage (preparado para produção).
     /// </summary>
-    public sealed class DefaultPregamePolicyResolver : IPregamePolicyResolver
+    public sealed class DefaultIntroStagePolicyResolver : IIntroStagePolicyResolver
     {
         private const string FallbackGameplaySceneName = "GameplayScene";
         private readonly IGameplaySceneClassifier _sceneClassifier;
 
-        public DefaultPregamePolicyResolver(IGameplaySceneClassifier sceneClassifier)
+        public DefaultIntroStagePolicyResolver(IGameplaySceneClassifier sceneClassifier)
         {
             _sceneClassifier = sceneClassifier ?? new DefaultGameplaySceneClassifier();
         }
 
-        public PregamePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason)
+        public IntroStagePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason)
         {
             if (!profile.IsGameplay)
             {
-                return PregamePolicy.Disabled;
+                return IntroStagePolicy.Disabled;
             }
 
             if (!IsGameplayTargetScene(targetScene))
             {
-                return PregamePolicy.Disabled;
+                return IntroStagePolicy.Disabled;
             }
 
-            return PregamePolicy.Manual;
+            return IntroStagePolicy.Manual;
         }
 
         private bool IsGameplayTargetScene(string targetScene)
