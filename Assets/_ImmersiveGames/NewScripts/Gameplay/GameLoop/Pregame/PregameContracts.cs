@@ -25,6 +25,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
+    /// Política de execução do Pregame.
+    /// </summary>
+    public enum PregamePolicy
+    {
+        Disabled,
+        Manual,
+        AutoComplete
+    }
+
+    /// <summary>
+    /// Resolve a política de execução do Pregame para um contexto.
+    /// </summary>
+    public interface IPregamePolicyResolver
+    {
+        PregamePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason);
+    }
+
+    /// <summary>
     /// Passo de pregame (opcional). Deve concluir sem bloquear o fluxo.
     /// </summary>
     public interface IPregameStep
