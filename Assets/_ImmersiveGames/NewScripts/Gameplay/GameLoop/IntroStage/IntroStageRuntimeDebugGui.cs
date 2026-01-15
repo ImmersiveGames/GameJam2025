@@ -123,6 +123,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return _controlService;
             }
 
+            if (!DependencyManager.HasInstance)
+            {
+                return null;
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service) || service == null)
             {
                 return null;

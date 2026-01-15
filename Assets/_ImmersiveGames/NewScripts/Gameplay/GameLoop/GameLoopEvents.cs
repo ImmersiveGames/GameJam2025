@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// </summary>
     public sealed class GameExitToMenuRequestedEvent : IEvent
     {
-        public GameExitToMenuRequestedEvent(string reason)
+        public GameExitToMenuRequestedEvent(string reason = null)
         {
             Reason = NormalizeReason(reason);
         }
