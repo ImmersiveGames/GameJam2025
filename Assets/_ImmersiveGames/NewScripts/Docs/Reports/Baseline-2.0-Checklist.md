@@ -6,7 +6,7 @@
 
 ## Resumo
 - Validação manual devido à instabilidade do parser (`Baseline2SmokeLastRunTool`).
-- O log cobre: **Startup → Menu → Gameplay → IntroStage → Pause/Resume → Victory → Restart → Defeat → ExitToMenu → Menu**.
+- O log cobre: **Startup → Menu → Gameplay → Pause/Resume → Victory → Restart → Defeat → ExitToMenu → Menu**.
 - Evidência hard foi extraída do `Baseline-2.0-Smoke-LastRun.log` usando assinaturas/strings **exatas**.
 
 ## Checklist por cenário (A–E)
@@ -15,7 +15,7 @@
 |---|---|---|---|
 | A | Boot → Menu (startup) | `SceneTransitionStarted ... profile='startup'`; `Reset SKIPPED (startup/frontend)` com `reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'`; `SceneTransitionCompleted ... profile='startup'`; `GameLoop: Boot → Ready` | PASS |
 | B | Menu → Gameplay (gameplay) | `NavigateAsync ... routeId='to-gameplay' ... profile='gameplay'`; `WorldLifecycle Reset REQUESTED reason='ScenesReady/GameplayScene'`; spawn `Player + Eater`; `Emitting WorldLifecycleResetCompletedEvent ... reason='ScenesReady/GameplayScene'`; `Completion gate concluído ... Prosseguindo para FadeOut` | PASS |
-| C | IntroStage / PreGame (opcional) | `IntroStageStarted ... reason='SceneFlow/Completed'`; `Acquire token='sim.gameplay'`; `CompleteIntroStage ... reason='IntroStage/UIConfirm'` **ou** `IntroStage/NoContent`; `GameLoop: IntroStage → Playing`; `InputMode Apply mode='Gameplay' ... reason='GameLoop/Playing'` | PASS |
+| C | IntroStage / PreGame (opcional) | **Sem evidência no log atual.** | NOT COVERED / PENDING (needs new smoke log) |
 | D | Pause → Resume | `Acquire token='state.pause'` + `GameLoop: Playing → Paused`; `Release token='state.pause'` + `GameLoop: Paused → Playing` | PASS |
 | E | PostGame (Victory/Defeat) + Restart + ExitToMenu | `GameRunEndedEvent Outcome=Victory/Defeat`; `Restart -> NavigateAsync routeId='to-gameplay' ... profile='gameplay'` (Boot cycle determinístico); `ExitToMenu -> NavigateAsync routeId='to-menu' ... profile='frontend'`; `Reset SKIPPED ... reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'` | PASS |
 
@@ -33,36 +33,9 @@
 - `TransitionStarted` → `FadeIn` (alpha=1) → `LoadingHUD.Show` → Load/Unload → `ScenesReady` → `ResetCompleted` (ou SKIP) → `LoadingHUD.Hide` (BeforeFadeOut) → `FadeOut` (alpha=0) → `Completed` (safety hide).
 
 ## Evidências hard (log — strings exatas)
-- **Boot → Menu (startup)**
-  - `[SceneFlow] TransitionStarted ... profile='startup'`
-  - `[WorldLifecycle] Reset SKIPPED (startup/frontend) ... reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'`
-  - `[SceneFlow] TransitionCompleted ... profile='startup'`
-  - `GameLoop: Boot → Ready`
-- **Menu → Gameplay (gameplay)**
-  - `[Navigation] NavigateAsync ... routeId='to-gameplay' ... profile='gameplay'`
-  - `[WorldLifecycle] Reset REQUESTED reason='ScenesReady/GameplayScene'`
-  - `Spawn: Player + Eater`
-  - `[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent ... reason='ScenesReady/GameplayScene'`
-  - `[SceneFlow] Completion gate concluído -> FadeOut -> Completed`
-- **IntroStage / PreGame**
-  - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
-  - `Acquire token='sim.gameplay'`
-  - `CompleteIntroStage received reason='IntroStage/UIConfirm'`
-  - `GameLoop: IntroStage → Playing`
-  - `[InputMode] Apply mode='Gameplay' ... reason='GameLoop/Playing'`
-- **IntroStage / NoContent (auto-skip)**
-  - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
-  - `[OBS][IntroStage] IntroStageSkipped ... reason='IntroStage/NoContent'`
-- **Pause → Resume**
-  - `Acquire token='state.pause'` → `GameLoop: Playing → Paused`
-  - `Release token='state.pause'` → `GameLoop: Paused → Playing`
-- **PostGame (Victory) → ExitToMenu**
-  - `GameRunEndedEvent Outcome=Victory`
-  - `[Navigation] NavigateAsync -> routeId='to-menu' ... profile='frontend'`
-  - `[WorldLifecycle] Reset SKIPPED ... reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'`
-- **PostGame (Defeat) → Restart**
-  - `GameRunEndedEvent Outcome=Defeat`
-  - `Restart -> NavigateAsync routeId='to-gameplay' ... profile='gameplay'`
+
+As evidências hard (strings **exatas** do log) já estão consolidadas na tabela **A–E** acima.
+Para evitar drift, esta seção não duplica as mesmas strings.
 
 ## Dívida aceita
 - `Baseline2SmokeLastRunTool` permanece **não-bloqueante**; o log é a evidência oficial até o tool estabilizar.

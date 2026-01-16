@@ -9,10 +9,10 @@
 Com o **Baseline 2.0** estabelecido, o projeto já possui:
 
 - **WorldLifecycle determinístico**, com reset canônico em `SceneTransitionScenesReadyEvent` (quando o profile exige reset).
-- **SceneFlow** com ordem estável de eventos (**FadeIn → ScenesReady → Reset → FadeOut → Completed**).
+- **SceneFlow** com ordem estável de eventos (**FadeIn → ScenesReady → Reset/Skip → FadeOut → Completed**).
 - **GameReadiness/SimulationGate** controlando o gate durante transições (token `flow.scene_transition`), fechando o gameplay durante o pipeline e liberando ao concluir.
 - **PhaseContext** com `Pending` e `Current`, além de **intent registry** para transições de cena.
-- **GameLoop** com integração ao SceneFlow (entrada no gameplay após o pipeline de cenas estar concluído).
+- **GameLoop** integrado ao SceneFlow (sincronização via eventos e bridges globais).
 
 Durante a evolução do gameplay, surgiram requisitos adicionais:
 
@@ -21,7 +21,7 @@ Durante a evolução do gameplay, surgiram requisitos adicionais:
     - dados distintos,
     - comportamento distinto.
 
-2. Necessidade de **dois modos explícitos de “nova fase”**:
+2. Necessidade de **dois modos explícitos** de “nova fase”:
     - **In-Place** (troca dentro da mesma cena de gameplay).
     - **Com transição completa** (troca que usa SceneFlow, podendo envolver unload/load de cenas).
 
@@ -32,154 +32,126 @@ Durante a evolução do gameplay, surgiram requisitos adicionais:
     - “press any button”,
     - ou qualquer preparação de entrada do gameplay.
 
-O ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversível**; ela deve ter um mecanismo canônico de conclusão (para produção) e um mecanismo equivalente via QA (para testes determinísticos).
+Ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversível**; ela deve ter um mecanismo canônico de conclusão (produção) e mecanismos equivalentes de mitigação em dev/QA (para testes determinísticos).
 
 ## Decisão
 
-### 1) Nomenclatura e contratos (sem flags obscuras)
+### 1) Nomenclatura e contratos (APIs reais do código)
 
-O sistema define duas operações públicas e rastreáveis (nomes reais do código):
+O sistema define dois modos explícitos de troca de fase, com overloads públicos e rastreáveis.
 
-- **In-Place**: `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
-- **Com transição**: `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, PhaseChangeOptions options, string reason)`
+#### PhaseChange/In-Place
+
+- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason)`
+- `PhaseChangeService.RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)`
+- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)`
+
+#### PhaseChange/Com Transição (SceneFlow)
+
+- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)`
+- `PhaseChangeService.RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)`
+- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)`
 
 Onde:
 
-- `PhasePlan` descreve **qual fase** e **qual conteúdo** (`PhaseId`, `ContentSignature`).
-- `PhaseChangeOptions` controla execução:
-    - `UseFade` (permitido no In-Place como “mini transição” opcional),
-    - `UseLoadingHud` (in-Place ignora; transição completa depende do profile),
-    - `TimeoutMs`.
+- `PhasePlan` descreve **qual fase** e a assinatura rastreável do conteúdo:
+    - `PhaseId`
+    - `ContentSignature`
+- `SceneTransitionRequest` descreve a transição de cenas (load/unload/active/profile etc.)
+- `PhaseChangeOptions` (quando presente) controla execução:
+    - `UseFade`: **aplicável no In-Place** (mini transição local)
+    - `UseLoadingHud`: **ignorado** no In-Place (por design) e não governa o WithTransition (HUD é parte do SceneFlow/profile)
+    - `TimeoutMs`: usado para timeout do gate/espera
 
-### 2) IntroStage é uma fase opcional do GameLoop, **PostReveal**, disparada após o SceneFlow (Completed)
+### 2) IntroStage é uma fase opcional do GameLoop, disparada após o SceneFlow (Completed)
 
-**Intenção oficial (estado atual do código + evidência em logs):**
+**Intenção operacional**
 
-- A IntroStage existe para exibir conteúdo **com a cena já revelada** (**PostReveal**, após o `FadeOut`), antes de liberar o início do gameplay.
-- O disparo ocorre **após** `SceneTransitionCompletedEvent`, via bridge de SceneFlow:
-    - `InputModeSceneFlowBridge` identifica `profile=gameplay` e solicita início da IntroStage (API canônica: IntroStage).
-- **A IntroStage não faz parte do Completion Gate da transição de cenas**; ela acontece **depois** de `SceneTransitionCompletedEvent` e é uma fase do **GameLoop/gameplay**.
-- Enquanto a IntroStage está ativa, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`) e o InputMode fica em UI.
-- A IntroStage termina por um sinal canônico:
-    - `IIntroStageControlService.CompleteIntroStage(string reason)` (conclui, ex.: `IntroStage/UIConfirm`)
-    - `IIntroStageControlService.SkipIntroStage(string reason)` (pula/cancela, ex.: `IntroStage/NoContent`)
+- A IntroStage existe para exibir conteúdo **com a cena já revelada** (pós-`FadeOut`), antes de liberar o início do gameplay.
+- O disparo ocorre **após** `SceneTransitionCompletedEvent`, via bridge global:
+    - `InputModeSceneFlowBridge` identifica `profile=gameplay`, aplica InputMode e solicita início da IntroStage.
+- Durante a IntroStage, a simulação de gameplay fica bloqueada via gate (token `sim.gameplay`) e o InputMode fica em UI.
 
-**Nota operacional (ordem observada):**
-- A IntroStage inicia **após** `SceneTransitionCompletedEvent` e **não** segura o `flow.scene_transition`. O bloqueio de gameplay ocorre apenas via `sim.gameplay` até a conclusão explícita da IntroStage.
+**Contrato de conclusão**
 
-**Regra de não-bloqueio:** se não houver conteúdo, a IntroStage deve “auto-skip”:
-- `IIntroStageStep.HasContent == false` → o coordenador solicita `SkipIntroStage(...)` automaticamente.
+- O encerramento deve ocorrer por um sinal canônico via `IIntroStageControlService`:
+    - `CompleteIntroStage(string reason)`
+    - `SkipIntroStage(string reason)`
+
+**Regra de não-bloqueio**
+
+- Se o step não existir ou não tiver conteúdo (`IIntroStageStep == null` ou `HasContent == false`), o coordenador faz auto-skip:
+    - `SkipIntroStage("IntroStage/NoContent")`
+- Se a policy estiver desabilitada, o coordenador faz skip imediato:
+    - `SkipIntroStage("policy_disabled")`
+- Se a policy estiver em auto-complete, o coordenador faz complete imediato:
+    - `CompleteIntroStage("policy_autocomplete")`
+- Fail-safe: se a IntroStage ficar ativa por muito tempo, há um timeout (atual: ~20s):
+    - `CompleteIntroStage("IntroStage/Timeout")`
+
+**Nota sobre sincronização GameLoop (estado atual do código)**
+
+Hoje, além do bridge acima, existe o `GameLoopSceneFlowCoordinator` que pode solicitar `RequestStart()` em `profile=gameplay` quando executa um `StartPlan` após `WorldLifecycleResetCompletedEvent`.
+
+Isso pode levar o GameLoop a entrar em `Playing` **antes** do bridge iniciar a IntroStage (o bridge detecta `state=Playing` e não inicia IntroStage). Quando a intenção é tornar a IntroStage determinística na entrada do gameplay, o start do gameplay deve ocorrer **após** a conclusão explícita da IntroStage.
 
 ## Detalhamento operacional
 
 ### Sequência de SceneFlow + WorldLifecycle (profile gameplay)
 
-**Ordem canônica do pipeline (com IntroStage/PostReveal):**
+Ordem canônica do pipeline (com IntroStage pós-revelação):
 
-`FadeIn → Load/Unload → ScenesReady → Reset (ou skip) → FadeOut → SceneTransitionCompleted → IntroStage (PostReveal) → RequestStart → Playing (liberar gameplay)`
+`FadeIn → Load/Unload → ScenesReady → Reset (ou skip) → FadeOut → SceneTransitionCompleted → IntroStage → Playing`
 
 1. SceneFlow inicia transição (FadeIn) e o gate fecha (`flow.scene_transition`).
 2. Load/Unload de cenas conforme profile.
-3. `SceneTransitionScenesReadyEvent`
-4. WorldLifecycle executa reset determinístico (quando aplicável).
+3. `SceneTransitionScenesReadyEvent`.
+4. WorldLifecycle executa reset determinístico (quando aplicável) e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
 5. SceneFlow executa FadeOut.
 6. `SceneTransitionCompletedEvent` (cena revelada; fluxo visual concluído).
-7. Bridge solicita IntroStage.
-8. Ao terminar a IntroStage, o GameLoop solicita `RequestStart`.
-9. GameLoop entra em `Playing` (gameplay liberado) e o InputMode volta para `Gameplay`.
+7. Bridge solicita IntroStage e bloqueia gameplay (`sim.gameplay`).
+8. Ao concluir a IntroStage, o coordenador notifica `IntroStageCompleted`, libera `sim.gameplay` e o GameLoop avança para `Playing`.
 
-### IntroStage — composição e contrato de conclusão
+### IntroStage — composição e contrato
 
-A IntroStage é coordenada por:
+- `IntroStageCoordinator`: orquestra execução, logs de observabilidade e bloqueio da simulação.
+- `IIntroStageStep`: conteúdo real (cutscene/splash/tutorial/press button).
+- `IIntroStageControlService`: canal canônico para encerrar IntroStage (produção/QA/dev).
 
-- `IntroStageCoordinator` (orquestra execução, logs de observabilidade e bloqueio da simulação).
-- `IIntroStageStep` (conteúdo real: cutscene/splash/tutorial/press button).
-- `IIntroStageControlService` (canal canônico para **encerrar** a IntroStage).
+## Como testar (QA/Dev)
 
-Contrato:
+### 1) Runtime Debug GUI (Editor/Dev)
 
-- O step (produção) deve chamar **exatamente um** dos comandos:
-    - `CompleteIntroStage(...)` (conteúdo concluído) **ou**
-    - `SkipIntroStage(...)` (pulo/cancelamento).
-- O coordenador aguarda `WaitForCompletionAsync(...)` e, ao concluir:
-    - libera o token `sim.gameplay`,
-    - emite eventos/logs de observabilidade (`IntroStageCompleted|IntroStageSkipped`),
-    - solicita a progressão do GameLoop (ex.: `RequestStart`) para atingir `Playing` e reabilita o InputMode de gameplay.
+- `IntroStageRuntimeDebugGui` é instalado no bootstrap em **Editor/Development Build**.
+- Quando `IIntroStageControlService.IsIntroStageActive == true`, o GUI aparece e permite concluir com:
+    - `CompleteIntroStage("IntroStage/UIConfirm")`
 
-### Gates e invariantes
+### 2) Context Menu (Play Mode)
 
-- **Durante IntroStage**: token `sim.gameplay` fechado (gameplay bloqueado; UI/menu pode continuar operando conforme política do `IStateDependentService`).
-- **Durante SceneFlow**: token `flow.scene_transition` fecha o gate, garantindo que ações de gameplay fiquem bloqueadas durante load/unload/fade.
-- **In-Place Phase Change**:
-    - token `flow.phase_inplace` para serialização e rastreabilidade.
-    - Por padrão, **sem HUD**; `UseFade` opcional (mini transição).
-- **Phase Change com transição**:
-    - executa via SceneFlow; o bloqueio de simulação é governado pelo token `flow.scene_transition` (como qualquer transição de cena).
-    - o commit de fase ocorre após o reset em `ScenesReady` (via intent + `PhaseContext`).
+- Componente: `IntroStageQaContextMenu` (namespace `_ImmersiveGames.NewScripts.QA.IntroStage`).
+- Ações:
+    - `QA/IntroStage/Complete (Force)` → `CompleteIntroStage("QA/IntroStage/Complete")`
+    - `QA/IntroStage/Skip (Force)` → `SkipIntroStage("QA/IntroStage/Skip")`
+- O `IntroStageQaInstaller` garante que o GameObject de QA exista em Editor/Dev.
 
-## Como testar (QA)
+### 3) MenuItem (Editor)
 
-### IntroStage
-
-Há duas formas canônicas de encerrar a IntroStage em QA (ambas chamam `IIntroStageControlService`):
-
-1. **Context Menu (Play Mode)**
-    - Componente: `IntroStageQaContextMenu` (namespace `_ImmersiveGames.NewScripts.QA.IntroStage`)
-    - Ações:
-    - `QA/IntroStage/Complete (Force)` → `CompleteIntroStage("QA/...")`
-    - `QA/IntroStage/Skip (Force)` → `SkipIntroStage("QA/...")`
-    - Uso: adicionar o componente a um GameObject ativo (ex.: em `GameplayScene`) e executar via Inspector.
-
-2. **MenuItem (Editor)**
-    - `Tools/NewScripts/QA/IntroStage/Complete (Force)`
-    - `Tools/NewScripts/QA/IntroStage/Skip (Force)`
-    - Requer Play Mode e `IIntroStageControlService` disponível no DI global.
-
-### Phase Change
-
-- `QA/Phase/Advance In-Place (TestCase: PhaseInPlace)`
-- `QA/Phase/Advance With Transition (TestCase: PhaseWithTransition)`
-
-> Observação: o In-Place permite `UseFade=true` se necessário para esconder reconstrução do reset; `UseLoadingHud=true` é ignorado no In-Place por design.
-
-### Evidência esperada (observability)
-
-- IntroStage:
-    - `[OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'`
-    - `[OBS][IntroStage] GameplaySimulationBlocked token='sim.gameplay' ...`
-    - `InputMode` aplicado em UI durante a IntroStage
-    - `CompleteIntroStage received reason='IntroStage/UIConfirm'` **ou** `IntroStageSkipped ... reason='IntroStage/NoContent'`
-    - `[OBS][IntroStage] IntroStageCompleted|IntroStageSkipped ...`
-    - `[OBS][IntroStage] GameplaySimulationUnblocked token='sim.gameplay' ...`
-    - `GameLoop ENTER: Playing` após a conclusão explícita da IntroStage
-    - `InputMode` aplicado em `Gameplay` no `GameLoop/Playing`
-- Phase:
-    - logs de `PhaseContext` (Pending/Commit)
-    - logs de `WorldLifecycle` em reset + commit após reset (quando aplicável)
+- `Tools/NewScripts/QA/IntroStage/Complete (Force)`
+- `Tools/NewScripts/QA/IntroStage/Skip (Force)`
 
 ## Consequências
 
 ### Benefícios
 
-- IntroStage fica explícita como etapa opcional, com disparo determinístico e contrato de conclusão.
-- QA consegue encerrar IntroStage sem depender de conteúdo in-game (cutscene etc.).
-- Dois modos de troca de fase ficam claros (e sem ambiguidade de “reset global” vs “troca de cena”).
+- Dois modos de troca de fase ficam explícitos e rastreáveis (in-place vs com transição).
+- IntroStage tem contrato de conclusão claro e mitigação em QA/dev, reduzindo risco de bloqueio.
 
 ### Trade-offs
 
-- IntroStage depende do hook `SceneTransitionCompletedEvent` (pós-FadeOut).
-- Se o step padrão tiver conteúdo e não disparar `Complete/Skip`, o gameplay ficará bloqueado (por design). Em QA, isso é resolvido via menu/context menu.
-
-## Alternativas consideradas
-
-1. **IntroStage antes do FadeOut (durante loading):** rejeitada. Isso aumenta a percepção de loading e conflita com a intenção de conteúdo pós-revelação.
-2. **IntroStage no Completion Gate do SceneFlow:** rejeitada. O gate deve esperar apenas etapas estruturais (ScenesReady + Reset/Skip); a IntroStage acontece **depois** do `SceneTransitionCompletedEvent`.
-
-## Changelog
-
-- **2026-01-14** — IntroStage consolidada como etapa PostReveal no discurso arquitetural.
+- Se a IntroStage estiver ativa e nenhum caminho chamar `Complete/Skip`, o gameplay ficará bloqueado (por design).
+- Se o fluxo solicitar `RequestStart()` antes do início da IntroStage, a IntroStage pode ser suprimida (drift de implementação descrito acima).
 
 ## Referências
 
 - ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
-- WorldLifecycle/SceneFlow: pipeline de eventos e reset determinístico
+- WorldLifecycle/SceneFlow — pipeline de eventos e reset determinístico
