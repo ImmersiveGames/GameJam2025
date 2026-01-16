@@ -370,8 +370,8 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline21
     [InitializeOnLoad]
     public static class Baseline21SmokeLastRunTool
     {
-        private const string MenuPathStart = "Tools/NewScripts/Baseline2.1/Smoke Last Run Start";
-        private const string MenuPathStop = "Tools/NewScripts/Baseline2.1/Smoke Last Run Stop";
+        private const string MenuPathStart = "Tools/NewScripts/QA/Baseline/Legacy/Baseline21/Smoke Last Run Start";
+        private const string MenuPathStop = "Tools/NewScripts/QA/Baseline/Legacy/Baseline21/Smoke Last Run Stop";
         private const string PrefTimestamped = "Baseline21.Smoke.WriteTimestamped";
 
         static Baseline21SmokeLastRunTool()

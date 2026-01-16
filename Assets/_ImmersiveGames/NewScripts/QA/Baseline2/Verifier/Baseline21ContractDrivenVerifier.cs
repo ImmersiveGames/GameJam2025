@@ -304,14 +304,24 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2.Verifier
             sb.AppendLine($"- Output: `{OutputMdAbs}`");
             sb.AppendLine();
 
+            sb.AppendLine("## Diagnostics");
+            sb.AppendLine();
             if (result.Diagnostics.Count > 0)
             {
-                sb.AppendLine("## Diagnostics");
-                sb.AppendLine();
                 foreach (var diag in result.Diagnostics)
                     sb.AppendLine($"- {diag}");
-                sb.AppendLine();
             }
+            else
+            {
+                sb.AppendLine("- None.");
+            }
+            sb.AppendLine();
+
+            sb.AppendLine("## Domain Status");
+            sb.AppendLine();
+            foreach (var domain in result.Domains)
+                sb.AppendLine($"- {domain.Name}: **{domain.Status.ToString().ToUpperInvariant()}**");
+            sb.AppendLine();
 
             sb.AppendLine("## Domain Results");
             sb.AppendLine();
