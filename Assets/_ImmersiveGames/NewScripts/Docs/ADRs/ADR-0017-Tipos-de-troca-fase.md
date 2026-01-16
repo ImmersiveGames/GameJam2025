@@ -130,13 +130,15 @@ sequenceDiagram
 
 ## Consequências
 
-### Benefícios
+As consequências estão detalhadas nas seções de benefícios e trade-offs.
+
+## Benefícios
 
 - Nomenclatura elimina ambiguidade de “troca de fase”.
 - In-Place atende casos de “próxima fase no mesmo gameplay” sem custo de trocar cenas.
 - SceneTransition atende casos de “nova fase exige troca de conteúdo pesado” com feedback visual e reset canônico.
 
-### Trade-offs
+## Trade-offs
 
 - In-Place não deve depender de loading HUD; quando precisar de experiência completa de loading, usar SceneTransition.
 - Permitir `UseFade` no In-Place adiciona flexibilidade, mas exige disciplina de uso (para não virar “transição completa disfarçada”).

@@ -2,7 +2,7 @@
 
 > ⚠️ **Histórico / pode estar desatualizado:** o baseline é log-driven e a fonte de verdade é o `Reports/Baseline-2.0-Smoke-LastRun.log`.
 
-Este documento é a **fonte da verdade** do Baseline 2.0 para o projeto NewScripts.
+Este documento é **histórico** e serve como referência do Baseline 2.0 para o projeto NewScripts.
 
 > Nota explícita: **soft não afeta FAIL** e **hard afeta FAIL**.
 
@@ -22,9 +22,9 @@ O Baseline 2.0 valida o “contrato mínimo” do pipeline NewScripts em produç
 |---:|---|---|---|
 | A | Boot → Menu | Garantir boot + transição inicial com reset SKIP e gate fechado/aberto corretamente | `startup` |
 | B | Menu → Gameplay | Garantir reset hard + spawn mínimo e chegada em gameplay | `gameplay` |
-| C | Pause → Resume | Garantir coerência do token `state.pause` | n/a |
-| D | PostGame (Defeat) → Restart | Garantir derrota + restart com nova transição gameplay e reset completo | `gameplay` |
-| E | PostGame (Victory) → ExitToMenu | Garantir vitória + retorno ao menu com reset SKIP (frontend) | `frontend` |
+| C | IntroStage (fora do baseline — Opção B) | Manter como etapa opcional, validada em smoke separado quando promovido | n/a |
+| D | Pause → Resume | Garantir coerência do token `state.pause` | n/a |
+| E | PostGame (Victory/Defeat) + Restart + ExitToMenu | Garantir pós-game + restart e saída ao menu com perfis esperados | `gameplay` / `frontend` |
 
 ---
 
@@ -101,56 +101,48 @@ O Baseline 2.0 valida o “contrato mínimo” do pipeline NewScripts em produç
 
 ---
 
-### Cenário C — Pause → Resume (token state.pause)
+### Cenário C — IntroStage (fora do baseline na Opção B)
+
+**Objetivo (histórico):** manter a IntroStage como etapa opcional e validar em smoke separado quando o fluxo for promovido.
+
+- **Status:** fora do baseline (Opção B).
+- **Evidências:** n/a (sem evidência no smoke log atual).
+
+---
+
+### Cenário D — Pause → Resume (token state.pause)
 
 **Objetivo:** token `state.pause` fecha no pause e libera no resume.
 
 #### Evidências HARD (PASS/FAIL)
-- `C.PauseAcquire` :: `Acquire token='state\.pause'`
-- `C.PauseRelease` :: `Release token='state\.pause'`
+- `D.PauseAcquire` :: `Acquire token='state\.pause'`
+- `D.PauseRelease` :: `Release token='state\.pause'`
 
 #### Evidências SOFT (diagnóstico)
-- `C.GameLoopPaused` :: `ENTER: Paused` 
-- `C.GameLoopPlaying` :: `ENTER: Playing`
+- `D.GameLoopPaused` :: `ENTER: Paused` 
+- `D.GameLoopPlaying` :: `ENTER: Playing`
 
 #### Regras de Ordem (diagnóstico)
-- `C.Order.AcquireBeforeRelease` :: `Acquire token='state\.pause'` => `Release token='state\.pause'`
+- `D.Order.AcquireBeforeRelease` :: `Acquire token='state\.pause'` => `Release token='state\.pause'`
 
 ---
 
-### Cenário D — PostGame (Defeat) → Restart → Gameplay
+### Cenário E — PostGame (Victory/Defeat) + Restart + ExitToMenu
 
-**Objetivo:** derrota registrada e restart com transição gameplay e reset completo.
-
-#### Evidências HARD (PASS/FAIL)
-- `D.DefeatDetected` :: `Outcome=Defeat`
-- `D.RestartToGameplay` :: `NavigateAsync -> routeId='to-gameplay'.*reason='PostGame/Restart'.*Profile='gameplay'`
-- `D.ResetCompletedGameplayAgain` :: `Emitting WorldLifecycleResetCompletedEvent.*profile='gameplay'.*ScenesReady/GameplayScene`
-
-#### Evidências SOFT (diagnóstico)
-- `D.PostGameGateAcquire` :: `Acquire token='state\.postgame'`
-- `D.PostGameGateRelease` :: `Release token='state\.postgame'`
-- `D.SpawnCount` :: `ActorRegistry count at 'After Spawn': 2`
-
----
-
-### Cenário E — PostGame (Victory) → ExitToMenu (profile=frontend, SKIP reset)
-
-**Objetivo:** vitória registrada, ExitToMenu com perfil frontend e reset SKIP.
+**Objetivo:** pós-game com outcome, restart e saída ao menu com perfis esperados.
 
 #### Evidências HARD (PASS/FAIL)
 - `E.VictoryDetected` :: `Outcome=Victory`
+- `E.DefeatDetected` :: `Outcome=Defeat`
+- `E.RestartToGameplay` :: `NavigateAsync -> routeId='to-gameplay'.*reason='PostGame/Restart'.*Profile='gameplay'`
 - `E.ExitToMenuRequest` :: `ExitToMenu recebido -> RequestMenuAsync`
 - `E.NavigateToMenuFrontend` :: `NavigateAsync -> routeId='to-menu'.*Profile='frontend'`
 - `E.ResetSkippedFrontend` :: `Reset SKIPPED \(startup/frontend\).*profile='frontend'`
-- `E.ResetCompletedFrontend` :: `Emitting WorldLifecycleResetCompletedEvent.*profile='frontend'.*Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene`
 
 #### Evidências SOFT (diagnóstico)
-- `E.PauseGateRelease` :: `ExitToMenu recebido -> liberando gate Pause`
+- `E.PostGameGateAcquire` :: `Acquire token='state\.postgame'`
+- `E.PostGameGateRelease` :: `Release token='state\.postgame'`
 - `E.GameLoopReady` :: `ENTER: Ready \(active=False\)`
-
-#### Regras de Ordem (diagnóstico)
-- `E.Order.NavigateBeforeResetCompleted` :: `NavigateAsync -> routeId='to-menu'.*Profile='frontend'` => `WorldLifecycleResetCompletedEvent.*profile='frontend'`
 
 ---
 
@@ -169,8 +161,8 @@ Notes:
 - <observações relevantes>
 ```
 
-## Saídas do runner
-O `Baseline2Smoke` deve escrever:
+## Referência histórica (runner)
+Historicamente, o `Baseline2Smoke` escrevia:
 - `Docs/Reports/Baseline-2.0-Smoke-LastRun.md`
 - `Docs/Reports/Baseline-2.0-Smoke-LastRun.log`
 

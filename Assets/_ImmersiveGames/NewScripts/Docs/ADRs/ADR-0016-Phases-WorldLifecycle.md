@@ -94,11 +94,11 @@ Onde:
 - Fail-safe: se a IntroStage ficar ativa por muito tempo, há um timeout (atual: ~20s):
     - `CompleteIntroStage("IntroStage/Timeout")`
 
-**Nota sobre sincronização GameLoop (estado atual do código)**
+**Nota sobre sincronização GameLoop (observação condicional)**
 
-Hoje, além do bridge acima, existe o `GameLoopSceneFlowCoordinator` que pode solicitar `RequestStart()` em `profile=gameplay` quando executa um `StartPlan` após `WorldLifecycleResetCompletedEvent`.
+Hoje, além do bridge acima, existe o `GameLoopSceneFlowCoordinator`, que pode solicitar `RequestStart()` em `profile=gameplay` quando executa um `StartPlan` após `WorldLifecycleResetCompletedEvent`.
 
-Isso pode levar o GameLoop a entrar em `Playing` **antes** do bridge iniciar a IntroStage (o bridge detecta `state=Playing` e não inicia IntroStage). Quando a intenção é tornar a IntroStage determinística na entrada do gameplay, o start do gameplay deve ocorrer **após** a conclusão explícita da IntroStage.
+Se o fluxo solicitar `RequestStart()` antes da IntroStage iniciar, **pode** ocorrer de a IntroStage não ser disparada (por exemplo, se o bridge encontrar o `state=Playing`). Quando a intenção é tornar a IntroStage determinística na entrada do gameplay, o start do gameplay deve ocorrer **após** a conclusão explícita da IntroStage.
 
 ## Detalhamento operacional
 
