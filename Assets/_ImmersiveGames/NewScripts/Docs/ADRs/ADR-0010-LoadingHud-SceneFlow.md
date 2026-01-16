@@ -143,8 +143,10 @@ Essa integração garante que:
 
 ## Evidências
 
-- [SceneFlow-Production-EndToEnd-Validation](../Reports/SceneFlow-Production-EndToEnd-Validation.md) — valida ordenação Fade/Loading HUD no fluxo Menu → Gameplay → Menu.
-- [Baseline-2.0-Smoke-LastRun](../Reports/Baseline-2.0-Smoke-LastRun.md) — evidência do comportamento do Loading HUD no pipeline canônico (UseFade=true).
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

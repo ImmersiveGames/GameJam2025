@@ -2,7 +2,7 @@
 
 ## Status
 - Estado: Proposto
-- Data: 2025-12-24
+- Data: 2025-12-28
 - Escopo: `GameLoop` (NewScripts), `WorldLifecycle`, SceneFlow, `UIGlobalScene` (overlays de UI)
 
 ## Contexto
@@ -246,102 +246,19 @@ Regras:
 
 ### 7. Plano de implementação incremental
 
-1. **Consolidar o contrato de observabilidade (documental)**
-
-    1. Apontar para o contrato canônico em `Docs/Reports/Observability-Contract.md` para strings/reasons/signatures.
-    2. Garantir que o fluxo pós-gameplay use `reason` com prefixo `PostGame/...` e não variantes locais.
-
-2. **GameLoop (estado PostGame)**
+1. **GameLoop**
 
     1. Extender `GameLoopStateId` para incluir `PostGame` (ou nome equivalente).
-    2. Atualizar a máquina de estados para suportar `Playing → PostGame` ao observar `GameRunEndedEvent`.
-    3. Definir semântica de `PostGame` (não-ativo) e a política de input (UI-only).
-
-3. **Contrato de fim de run (idempotência)**
-
-    1. Garantir o caminho canônico: `GameRunEndRequestedEvent` → `GameRunOutcomeService` → `GameRunEndedEvent`.
-    2. Tornar explícito (log + regra) que `GameRunEndedEvent` ocorre no máximo uma vez por run.
-
-4. **Overlay pós-gameplay (UIGlobalScene)**
-
-    1. Garantir abertura do overlay em `GameRunEndedEvent`.
-    2. Garantir fechamento no início de uma nova run (`GameRunStartedEvent`) e em transições para Menu/Restart.
-    3. Validar que o modo de input aplicado durante o overlay é consistente com o `InputModeService`.
-
-5. **Navegação pós-gameplay**
-
-    1. Restart: `PostGame/RestartButton` → `RestartNavigationBridge` → `IGameNavigationService` (route `to-gameplay`, `profile='gameplay'`).
-    2. Menu: reusar `GameExitToMenuRequestedEvent` → `ExitToMenuNavigationBridge`.
-
-6. **QA / Evidência mínima (Critérios de aceite)**
-
-    1. Prover ações QA (Context Menu) para:
-
-        * Forçar `Victory` e `Defeat` (emitindo `GameRunEndRequestedEvent`).
-        * Acionar `Restart` e `ExitToMenu` a partir do estado `PostGame`.
-    2. Capturar evidências de log que comprovem o fluxo end-to-end (ver seção “Critérios de aceite”).
-
-## Critérios de aceite
-
-Para promover este ADR a **Aceito**, deve existir evidência objetiva (log) cobrindo, no mínimo:
-
-1. **Encerramento de run**
-
-    * `GameRunEndRequestedEvent` observado, com `reason` canônico (ex.: `PostGame/QA/Victory`).
-    * `GameRunEndedEvent` emitido exatamente uma vez por run (idempotente).
-
-2. **Transição do GameLoop**
-
-    * `GameLoop` transita de `Playing` para `PostGame` ao receber `GameRunEndedEvent`.
-
-3. **UI / InputMode**
-
-    * `PostGameOverlay` abre no `GameRunEndedEvent`.
-    * `InputModeService` aplica modo UI durante o overlay (reason com prefixo `PostGame/...`).
-
-4. **Restart e ExitToMenu**
-
-    * Restart dispara navegação via `IGameNavigationService` com `profile='gameplay'` e `reason` canônico.
-    * ExitToMenu dispara navegação via `IGameNavigationService` (reuso do evento já canônico de menu).
-
-5. **Invariantes de pipeline**
-
-    * Restart passa por SceneFlow (`Started → ScenesReady → Completed`) e por WorldLifecycle (`ResetRequested → ResetCompleted`).
-    * `WorldLifecycleResetCompletedEvent` é emitido também em cenários de *skip*/*fail* (contrato já definido no Observability-Contract).
-
-## Estado de implementação (até 2025-12-24)
-
-Este ADR descreve um fluxo alvo. Parte da infraestrutura já existe, mas **faltam evidências completas** do end-to-end do pós-gameplay.
-
-### Já existente (observado em logs recentes)
-
-* `PostGameOverlayController` registra bindings para `GameRunEnded`/`GameRunStarted`.
-* `GameRunStatusService` observa `GameRunStartedEvent` em `Playing`.
-* `GameRunOutcomeService` está integrado ao EventBus (observa `GameRunStartedEvent` e `GameRunEndedEvent`).
-* `RestartNavigationBridge` e `ExitToMenuNavigationBridge` já estão registrados no DI global.
-
-### Ainda pendente (para aceite)
-
-* Evidência de `GameRunEndedEvent` (Victory/Defeat) sendo disparado em produção/QA.
-* Evidência de transição `Playing → PostGame` no `GameLoop`.
-* Evidência de Restart/Menu a partir do overlay pós-gameplay.
+    2. Atualizar `GameLoopStateMachine` para suportar transição `Playing → PostGame` ao receber o evento de fim de run.
+    3. Atualizar `GameLoop.md` com o novo estado e a máquina de estados estendida.
 
 ## Evidências
 
-### Evidências parciais (infra já presente)
-
-Trechos de log que indicam wiring existente (não cobrem o fluxo completo):
-
-* `PostGameOverlayController` com bindings registrados para eventos de run.
-* `GameRunStatusService` e `GameRunOutcomeService` observando `GameRunStartedEvent`.
-
-### Evidência necessária para promover a Aceito
-
-Ver “Critérios de aceite”. Recomenda-se registrar um bloco de log por cenário (Victory, Defeat, Restart, ExitToMenu) e anexar a este ADR.
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 
-* `Docs/Reports/Observability-Contract.md` — fonte de verdade de reasons/signatures/invariantes.
-* `Docs/ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md` — estados e macro-fluxo do jogo.
-* `Docs/ADRs/ADR-0010-LoadingHud-SceneFlow.md` — ordem de Loading/HUD no SceneFlow.
-* `Docs/ADRs/ADR-0009-FadeSceneFlow.md` — ordem de Fade no SceneFlow.
+- (não informado)

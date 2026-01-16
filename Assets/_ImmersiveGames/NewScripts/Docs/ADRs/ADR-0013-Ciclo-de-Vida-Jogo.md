@@ -2,7 +2,7 @@
 
 ## Status
 - Estado: Implementado
-- Data: (não informado)
+- Data: 2025-12-24
 - Escopo: GameLoop + SceneFlow + WorldLifecycle (NewScripts)
 
 ## Contexto
@@ -58,31 +58,10 @@ O NewScripts precisava de um ciclo de vida de jogo consistente, que:
 
 ## Evidências
 
-- `Reports/Archive/2025/Report-SceneFlow-Production-Log-2025-12-31.md` (recortes do log: Boot → Ready em startup; Ready → Playing em gameplay; Paused em pós-gameplay; sincronização via SceneFlow/WorldLifecycle).
-
-### Validação (PASS) — Item 7 (Reset fora de transição)
-**Data:** 2026-01-16
-
-**Objetivo:** confirmar que o reset “fora de SceneFlow” (produção/dev/QA) é observável e conclui via
-`WorldLifecycleResetCompletedEvent`, com `contextSignature` sintético e `reason` canônico.
-
-**Evidência observada (log):**
-- **Caso A — Reset disparado em `MenuScene` (sem `WorldLifecycleController`)**
-    - `Reset REQUESTED ... scene='MenuScene' reason='ProductionTrigger/qa_marco0_reset'`
-    - Falha esperada: `WorldLifecycleController não encontrado na cena 'MenuScene'. Reset abortado.`
-    - **Mesmo assim:** `Emitting WorldLifecycleResetCompletedEvent ... reason='Failed_NoController:MenuScene'`
-
-- **Caso B — Reset disparado em `GameplayScene` (com `WorldLifecycleController`)**
-    - `Reset REQUESTED ... scene='GameplayScene' reason='ProductionTrigger/Gameplay/HotkeyR'`
-    - Pipeline completo (determinístico): `World Reset Started` → despawn → spawn (Player + Eater) → `World Reset Completed`
-    - **Conclusão:** `Emitting WorldLifecycleResetCompletedEvent ... reason='ProductionTrigger/Gameplay/HotkeyR'`
-
-- **Caso C — QA `qa_marco0_reset` em `GameplayScene`**
-    - `Reset REQUESTED ... scene='GameplayScene' reason='ProductionTrigger/qa_marco0_reset'`
-    - Pipeline completo + `WorldLifecycleResetCompletedEvent` emitido com reason canônico.
-
-**Conclusão:** o contrato “ResetCompleted sempre emitido” está preservado em falha (frontend) e sucesso (gameplay),
-e o ciclo de vida mantém rastreabilidade e determinismo conforme a decisão desta ADR.
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

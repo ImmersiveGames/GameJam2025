@@ -2,7 +2,7 @@
 
 ## Status
 - Estado: Implementado
-- Data: (não informado)
+- Data: 2025-12-24
 - Escopo: SceneFlow + Fade + Loading HUD (NewScripts)
 
 ## Contexto
@@ -59,7 +59,10 @@ Evidências observadas:
 
 ## Evidências
 
-- [Report-SceneFlow-Production-Log-2025-12-31](../Reports/Archive/2025/Report-SceneFlow-Production-Log-2025-12-31.md) — recortes do log (ProfileResolver + FadeController + sequência com LoadingHUD).
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

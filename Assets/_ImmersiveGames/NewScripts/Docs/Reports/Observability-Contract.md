@@ -149,10 +149,9 @@ Para um índice/glossário (com possíveis aliases), ver: [Reason-Map.md](./Reas
 
 As evidências abaixo são extraídas de:
 
-- `Docs/Reports/Baseline-2.0-Smoke-LastRun.log`
-- `Docs/WORLD_LIFECYCLE.md`
-- `Docs/ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md`
-- `Docs/Reports/QA-IntroStage-Smoke.md`
+- `Docs/Reports/Evidence/LATEST.md`
+- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md`
+- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-Smoke-LastRun.log`
 
 ### Skipped startup/frontend
 
@@ -187,4 +186,4 @@ Exemplo de `IntroStage/UIConfirm` (validação manual):
 
 Exemplo de `IntroStage/NoContent` (documentado em QA):
 
-- Ver `Docs/Reports/QA-IntroStage-Smoke.md`.
+- Ver `Docs/Reports/Evidence/LATEST.md` (seção IntroStage).

@@ -64,8 +64,10 @@ No baseline atual, os targets são:
 
 ## Evidências
 
-- [QA-GameplayReset-RequestMatrix.md](../Reports/QA-GameplayReset-RequestMatrix.md): valida `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`, `ByActorKind`.
-- [QA-GameplayResetKind.md](../Reports/QA-GameplayResetKind.md): valida `ByActorKind` e EaterOnly com probes.
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

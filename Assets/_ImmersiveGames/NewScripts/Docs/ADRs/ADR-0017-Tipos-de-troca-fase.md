@@ -2,7 +2,7 @@
 
 ## Status
 - Estado: Aceito
-- Data: (não informado)
+- Data: 2025-12-24
 - Escopo: PhaseChange + SceneFlow (NewScripts)
 
 ## Contexto
@@ -150,8 +150,10 @@ sequenceDiagram
 
 ## Evidências
 
-- [QA — Smoke: PhaseChange](../Reports/QA-PhaseChange-Smoke.md) — validação mínima dos contratos (in-place vs with-transition).
-- [Checklist-phase.md](Checklist-phase.md) — checklist de observabilidade (events, pending, commit).
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

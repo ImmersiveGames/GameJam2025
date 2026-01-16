@@ -119,15 +119,15 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
             };
         }
 
-        internal static StateData CreateIdleState(string logPath)
+        internal static StateData CreateIdleState(string logPath, string captureId = "", string captureStartUtc = "")
         {
             return new StateData
             {
                 Armed = false,
                 Capturing = false,
                 LogPath = logPath,
-                CaptureId = string.Empty,
-                CaptureStartUtc = string.Empty
+                CaptureId = captureId,
+                CaptureStartUtc = captureStartUtc
             };
         }
     }
@@ -204,7 +204,10 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
             Interlocked.Exchange(ref _enqueuedSinceFlush, 0);
 
             Baseline21SmokeLastRunShared.SaveState(
-                Baseline21SmokeLastRunShared.CreateIdleState(string.IsNullOrEmpty(state.LogPath) ? Baseline21SmokeLastRunShared.LastRunLogAbs : state.LogPath)
+                Baseline21SmokeLastRunShared.CreateIdleState(
+                    string.IsNullOrEmpty(state.LogPath) ? Baseline21SmokeLastRunShared.LastRunLogAbs : state.LogPath,
+                    state.CaptureId,
+                    state.CaptureStartUtc)
             );
 
             return true;
@@ -414,7 +417,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             return true;
         }
 
-        internal static void ArmCapture()
+        internal static void ArmCapture(bool logInstructions = true)
         {
             Baseline21SmokeLastRunShared.SaveState(
                 Baseline21SmokeLastRunShared.CreateArmedState(Baseline21SmokeLastRunShared.LastRunLogAbs)
@@ -424,11 +427,13 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             if (!EditorApplication.isPlaying)
             {
-                Debug.Log("[Baseline21Smoke] Capture ARMADO. Agora pressione Play para iniciar a captura desde o startup.");
+                if (logInstructions)
+                    Debug.Log("[Baseline21Smoke] Capture ARMADO. Agora pressione Play para iniciar a captura desde o startup.");
                 return;
             }
 
-            Debug.Log("[Baseline21Smoke] Capture ARMADO durante Play Mode. Iniciando captura agora.");
+            if (logInstructions)
+                Debug.Log("[Baseline21Smoke] Capture ARMADO durante Play Mode. Iniciando captura agora.");
             _ImmersiveGames.NewScripts.QA.Baseline2.Baseline21SmokeLastRunRuntime.TryStartCaptureFromEditor();
         }
 
@@ -464,10 +469,6 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         {
             _ImmersiveGames.NewScripts.QA.Baseline2.Baseline21SmokeLastRunRuntime.StopCapture(reason);
 
-            Baseline21SmokeLastRunShared.SaveState(
-                Baseline21SmokeLastRunShared.CreateIdleState(Baseline21SmokeLastRunShared.LastRunLogAbs)
-            );
-
             if (!TryGenerateReportNow())
                 EditorPrefs.SetBool(PrefReportPending, true);
             else
@@ -493,9 +494,6 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 var logPath = Baseline21SmokeLastRunShared.LastRunLogAbs;
                 var reportPath = Baseline21SmokeLastRunShared.LastRunMdAbs;
 
-                if (File.Exists(reportPath))
-                    return true;
-
                 if (!File.Exists(logPath))
                 {
                     Debug.LogWarning($"[Baseline21Smoke] Relatório ignorado: log não encontrado -> {logPath}");
@@ -512,7 +510,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 if (!EditorApplication.isPlayingOrWillChangePlaymode)
                     AssetDatabase.Refresh();
 
-                Debug.Log($"[Baseline21Smoke] Relatório gerado -> {Baseline21SmokeLastRunShared.LastRunMdAbs}");
+                Debug.Log($"Smoke MD written: {Baseline21SmokeLastRunShared.LastRunMdAbs}");
                 return true;
             }
             catch (Exception ex)
@@ -544,18 +542,11 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             sb.AppendLine($"- utcEnd: `{endUtc:O}`");
             sb.AppendLine($"- durationSeconds: `{duration.TotalSeconds:F2}`");
             sb.AppendLine($"- captureId: `{(string.IsNullOrEmpty(captureId) ? "n/a" : captureId)}`");
-            sb.AppendLine();
-            sb.AppendLine("- Fonte de verdade: [Observability-Contract.md](./Observability-Contract.md)");
-            sb.AppendLine("- Nota: o log é evidência.");
-            sb.AppendLine();
-            sb.AppendLine("## Log");
-            sb.AppendLine();
-            sb.AppendLine($"- Path: `{sourcePath}`");
             sb.AppendLine($"- Lines: `{lineCount}`");
             sb.AppendLine();
-            sb.AppendLine("## Contrato");
-            sb.AppendLine();
+            sb.AppendLine($"- Log path: `{sourcePath}`");
             sb.AppendLine($"- Contract path: `{Baseline21SmokeLastRunShared.ObservabilityContractAbs}`");
+            sb.AppendLine("- Observability contract: [Observability-Contract.md](./Observability-Contract.md)");
             return sb.ToString();
         }
 

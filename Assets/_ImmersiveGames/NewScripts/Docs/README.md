@@ -13,46 +13,28 @@ Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o es
   - [ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart](ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md)
   - [ADR-0013-Ciclo-de-Vida-Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
   - [ADR-0014-GameplayReset-Targets-Grupos](ADRs/ADR-0014-GameplayReset-Targets-Grupos.md)
-- Baseline 2.0:
-  - [Baseline 2.0 — Spec (frozen)](Reports/Baseline-2.0-Spec.md)
-  - [Baseline 2.0 — Checklist (operacional)](Reports/Baseline-2.0-Checklist.md)
+- Baseline / evidências:
+  - [Reports](Reports/README.md) — índice dos artefatos mantidos.
+  - [Observability Contract](Reports/Observability-Contract.md) — fonte de verdade.
+  - [Evidência vigente (LATEST)](Reports/Evidence/LATEST.md) — ponte para o snapshot atual.
 - [CHANGELOG-docs.md](CHANGELOG-docs.md) — histórico de alterações desta documentação.
 
-## Baseline 2.0 (contrato de regressão)
-O Baseline 2.0 é a referência congelada para validar o pipeline **SceneFlow + Fade/Loading + WorldLifecycle + GameLoop + Gate**. A fonte de verdade é o smoke log (`Reports/Baseline-2.0-Smoke-LastRun.log`) e a **spec** é documento histórico; o **checklist** registra o último smoke aceito.
+## Baseline e evidências (metodologia)
 
-## Baseline 2.0 (Status)
-- **Status:** **FECHADO / OPERACIONAL** (2026-01-05).
-- **ADR de fechamento:** [ADR-0016-Baseline-2.0-Fechamento](ADRs/ADR-0016-Baseline-2.0-Fechamento.md).
-- **Spec frozen:** [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md).
-- **Evidência checklist-driven (Pass):** [Baseline 2.0 — ChecklistVerification Last Run](Reports/Baseline-2.0-ChecklistVerification-LastRun.md)
-  - Status **Pass**, Blocks **5**, Pass **5**, Fail **0**, LogLines **804**, Evidence **20** (todos os blocos passaram).
+A estratégia atual é tratar **evidência** como um *snapshot datado* derivado do **último log de execução**, que suporta o fechamento de um ou mais ADRs.
 
-### Como revalidar no Unity Editor
-- Menu: **Tools/NewScripts/Baseline2/Verify Last Run**.
-- Output: `Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md`.
+- O **contrato canônico** permanece em: [Reports/Observability-Contract.md](Reports/Observability-Contract.md)
+- O **snapshot vigente** é referenciado por: [Reports/Evidence/LATEST.md](Reports/Evidence/LATEST.md)
+- Quando um ADR é aceito, o snapshot deve ser **carimbado** (pasta com data) e o ADR deve apontar para aquela evidência.
 
-## Reports e evidências
-Status: evidências atualizadas em **2026-01-05**.
+Snapshot atual (datado): **2026-01-16**
 
-### Report master (produção)
-- [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
-- [SceneFlow-Assets-Checklist](Reports/SceneFlow-Assets-Checklist.md)
-
-### Baseline audit (matriz atual)
-- [Baseline-Audit-2026-01-03](Reports/Baseline-Audit-2026-01-03.md)
-
-### Reports históricos (Archive)
-- [Archive/2025](Reports/Archive/2025)
-
-### Outros reports
-- [GameLoop](Reports/GameLoop.md)
-- [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md)
-- [QA-GameplayResetKind](Reports/QA-GameplayResetKind.md)
-- [WorldLifecycle-Reset-Analysis](Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md)
-- [WorldLifecycle-Spawn-Analysis](Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md)
+- Evidência consolidada: [Baseline-2.1-ContractEvidence-2026-01-16](Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Log base: [Baseline-2.1-Smoke-LastRun.log](Reports/Evidence/2026-01-16/Baseline-2.1-Smoke-LastRun.log)
+- Verificação (contract-driven): [Baseline-2.1-ContractVerification-LastRun](Reports/Evidence/2026-01-16/Baseline-2.1-ContractVerification-LastRun.md)
 
 ## Status atual (resumo)
+
 - Added: **Gameplay Reset module** ([Gameplay/Reset/](../Gameplay/Reset/)) com contratos e semântica estável:
     - `GameplayResetPhase` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet/ByActorKind).
     - `GameplayResetRequest` + `GameplayResetContext`.
@@ -60,7 +42,7 @@ Status: evidências atualizadas em **2026-01-05**.
     - `IGameplayResetOrchestrator` + `IGameplayResetTargetClassifier` (serviços por cena).
 - Added: **QA isolado para validar reset por grupos** (sem depender de Spawn 100%):
     - `GameplayResetRequestQaDriver` + `GameplayResetKindQaSpawner` exercitam targets/actorKind/ids.
-    - [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) confirma resolução de targets e fases.
+    - Evidência datada: [Baseline 2.1 — Contract Evidence (2026-01-16)](Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md) (inclui reset/targets/reasons, conforme contrato).
 - Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
 
@@ -153,7 +135,7 @@ Este fluxo **não define** como vitória/derrota é detectada em produção (tim
 ## Como ler (ordem sugerida)
 1. [ARCHITECTURE.md](ARCHITECTURE.md)
 2. [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)
-3. [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md)
-4. [Baseline 2.0 — Checklist](Reports/Baseline-2.0-Checklist.md)
+3. [Observability-Contract.md](Reports/Observability-Contract.md)
+4. [Evidence/LATEST.md](Reports/Evidence/LATEST.md)
 5. ADRs relevantes (lista acima)
 6. [CHANGELOG-docs.md](CHANGELOG-docs.md)

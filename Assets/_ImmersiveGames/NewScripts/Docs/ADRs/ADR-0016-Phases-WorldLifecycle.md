@@ -2,7 +2,7 @@
 
 ## Status
 - Estado: Aceito
-- Data: (não informado)
+- Data: 2025-12-24
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
 
 ## Contexto
@@ -163,9 +163,10 @@ Ordem canônica do pipeline (com IntroStage pós-revelação):
 
 ## Evidências
 
-- [QA — Smoke: IntroStage](../Reports/QA-IntroStage-Smoke.md) — validação mínima de não-bloqueio e saídas canônicas.
-- [QA — Smoke: PhaseChange](../Reports/QA-PhaseChange-Smoke.md) — evidência suplementar dos dois modos (In-Place vs WithTransition).
-- [Reason Map (NewScripts)](../Reports/Reason-Map.md) — formatos/prefixos de `reason` usados no pipeline.
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

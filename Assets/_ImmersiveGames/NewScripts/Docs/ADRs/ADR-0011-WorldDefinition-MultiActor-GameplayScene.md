@@ -53,18 +53,10 @@ Durante o bootstrap da cena:
 
 ## Evidências
 
-Logs observados em produção durante Menu → Gameplay:
-
-- [Baseline-2.0-Smoke-LastRun](../Reports/Baseline-2.0-Smoke-LastRun.md) — contém evidências de WorldDefinition + registro de spawn services + ActorRegistry.
-- [SceneFlow-Production-EndToEnd-Validation](../Reports/SceneFlow-Production-EndToEnd-Validation.md) — valida fluxo de produção e readiness antes do FadeOut.
-
-- `WorldDefinition entries count: 2`
-- `Spawn entry #0: Kind=Player ...`
-- `Spawn entry #1: Kind=Eater ...`
-- `Spawn service registrado: PlayerSpawnService (ordem 1)`
-- `Spawn service registrado: EaterSpawnService (ordem 2)`
-- `Actor spawned: ... Player ...`
-- `Actor spawned: ... Eater ...`
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

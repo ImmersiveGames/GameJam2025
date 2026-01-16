@@ -14,8 +14,8 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         {
             if (!EditorApplication.isPlaying)
             {
-                Baseline21SmokeLastRunTool.ArmCapture();
-                Debug.Log("[Baseline21Guided] Smoke 2.1 armado. Pressione Play para iniciar a captura.");
+                Baseline21SmokeLastRunTool.ArmCapture(logInstructions: false);
+                Debug.Log("Pressione Play para iniciar a captura.");
                 return;
             }
 
@@ -23,21 +23,25 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             if (_ImmersiveGames.NewScripts.QA.Baseline2.Baseline21SmokeLastRunRuntime.IsCapturing || state.Capturing)
             {
                 Baseline21SmokeLastRunTool.StopCaptureAndGenerateReport("GuidedStop");
-                Baseline21ContractDrivenVerifier.VerifyLastRunAndWriteReport();
-                Debug.Log("[Baseline21Guided] Smoke 2.1 finalizado e verificação contract-driven gerada.");
+                Debug.Log("Smoke 2.1 STOPPED");
+
+                var verification = Baseline21ContractDrivenVerifier.VerifyLastRunAndWriteReport();
+                Debug.Log($"Verification written: {Baseline21ContractDrivenVerifier.OutputMdAbs}");
+                if (verification.Status == Baseline21ContractDrivenVerifier.VerificationStatus.Fail)
+                    Debug.LogWarning("Veja Diagnostics no relatório 2.1.");
                 return;
             }
 
             if (state.Armed)
             {
                 _ImmersiveGames.NewScripts.QA.Baseline2.Baseline21SmokeLastRunRuntime.TryStartCaptureFromEditor();
-                Debug.Log("[Baseline21Guided] Smoke 2.1 iniciado.");
+                Debug.Log("Smoke 2.1 STARTED");
                 return;
             }
 
-            Baseline21SmokeLastRunTool.ArmCapture();
+            Baseline21SmokeLastRunTool.ArmCapture(logInstructions: false);
             _ImmersiveGames.NewScripts.QA.Baseline2.Baseline21SmokeLastRunRuntime.TryStartCaptureFromEditor();
-            Debug.Log("[Baseline21Guided] Smoke 2.1 armado e iniciado.");
+            Debug.Log("Smoke 2.1 STARTED");
         }
     }
 }

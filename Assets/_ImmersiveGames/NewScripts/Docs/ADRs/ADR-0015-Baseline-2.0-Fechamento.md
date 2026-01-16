@@ -45,15 +45,13 @@ invariantes deverá gerar nova versão (ex.: Baseline 2.1) com atualização exp
 
 ### Evidências (fechamento)
 
-- **Spec frozen**: `Docs/Reports/Baseline-2.0-Spec.md`.
-- **Checklist operacional** (seção A–E): `Docs/Reports/Baseline-2.0-Checklist.md`.
-- **Checklist-driven verification (Pass)**:
-  `Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md`.
-  - Status: **Pass**
-  - Blocks: 5 | Pass: 5 | Fail: 0
-  - Log lines: 804 | Evidence: 20
-  - Todos os blocos estão **Pass** (A–E).
-- **Log canônico**: `Docs/Reports/Baseline-2.0-Smoke-LastRun.log`.
+O fechamento do Baseline 2.0 foi validado via **snapshot datado** (evidência canônica para ADRs aceitos).
+
+- Snapshot (2026-01-16): [`Baseline 2.1 — Contract Evidence`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Log (snapshot): [`Baseline-2.1-Smoke-LastRun.log`](../Reports/Evidence/2026-01-16/Baseline-2.1-Smoke-LastRun.log)
+- Verificação (snapshot): [`Baseline-2.1-ContractVerification-LastRun.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractVerification-LastRun.md)
+
+Observação: artefatos antigos do Baseline 2.0 (spec/checklist/smoke) foram removidos de `Reports/` para reduzir ruído; o snapshot datado permanece como evidência histórica.
 
 ### Escopo do “fechado” (A–E, checklist-driven)
 
@@ -62,7 +60,7 @@ O fechamento cobre:
   postgame defeat → restart).
 - **Invariantes HARD** do pipeline (ordem de eventos, reset antes de FadeOut, tokens balanceados,
   razões canônicas de reset/skip).
-- **Assinaturas-chave** e motivos (`reason`) descritos na spec congelada.
+- **Assinaturas-chave** e motivos (`reason`) conforme contrato de observabilidade, validados pelo snapshot datado.
 
 ### Próximos passos pós-fechamento (fora do baseline)
 
@@ -72,10 +70,10 @@ O fechamento cobre:
 
 ## Evidências
 
-- `Docs/Reports/Baseline-2.0-Spec.md` (spec congelada)
-- `Docs/Reports/Baseline-2.0-Checklist.md` (checklist A–E)
-- `Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md` (evidência Pass)
-- `Docs/Reports/Baseline-2.0-Smoke-LastRun.log` (log canônico)
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 

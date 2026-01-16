@@ -1,25 +1,13 @@
 # Changelog (Docs)
 
 ## [2026-01-16]
-### Item 8 — Contrato canônico de Observability (docs)
 
-- Added: `Reports/Observability-Contract.md` como **fonte de verdade** do contrato de observabilidade (SceneFlow, WorldLifecycle, GameLoop, InputMode, PhaseChange) com mapa de reasons + invariantes + exemplos.
-- Updated: `Reports/README.md` para apontar `Observability-Contract.md` como canônico e reclassificar `Reason-Map.md` como índice/glossário.
-- Updated: `Reports/Reason-Map.md` para remeter ao contrato canônico e alinhar prefixes de `PhaseChange` com ADR-0017.
-- Updated: `WORLD_LIFECYCLE.md` com seção “Contrato de observabilidade” apontando para `Observability-Contract.md`.
-- Updated: ADRs principais (Fade/Loading/Ciclo de Vida/Phases/Tipos de troca de fase) para remeter ao contrato quando mencionarem reasons e invariantes.
+### Alterado
 
-### Changed
-- Padronização dos ADRs (layout e headings), com links atualizados e nomenclatura consistente.
-- Limpeza de Reports com arquivamento de históricos em `Reports/Archive/2025` e atualização de referências.
-- README e índices ajustados para refletir reports canônicos e arquivo histórico.
-- `WORLD_LIFECYCLE.md`: registrado PASS do reset manual (produção/dev/QA) com evidência de log (MenuScene sem controller => fail esperado; GameplayScene => pipeline completo + reset completed).
+- Consolidado snapshot datado de evidências em `Docs/Reports/Evidence/2026-01-16/` e atualizado `Docs/Reports/Evidence/LATEST.md`.
+- Restaurado `Docs/Reports/Observability-Contract.md` como fonte de verdade.
+- Atualizados links de evidência em ADRs e READMEs para apontar para `Docs/Reports/Evidence/`.
 
-### Removed
-- Pasta de QA em docs removida após atualização de referências.
-
-### Notes
-- Sem alterações no contrato do Baseline 2.0; apenas organização e links.
 
 ## [2026-01-15]
 ### Changed
@@ -216,3 +204,11 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: `ARCHITECTURE.md` reorganizado para diferenciar "Visão" e "Operacional".
 - Updated: `GLOSSARY.md` com termos do pipeline (SceneFlow, Gate, Reset, etc.).
 - Added: `EXAMPLES_BEST_PRACTICES.md` com exemplos mínimos (hooks, spawn, gating) e padrões recomendados.
+
+## 2026-01-16 (Evidence methodology)
+
+### Added
+
+- `Docs/Reports/Evidence/README.md` — metodologia e estrutura para evidências (snapshots datados).
+- `Docs/Reports/Evidence/LATEST.md` — ponteiro para o snapshot canônico mais recente.
+- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md` — evidência consolidada (Baseline 2.1) arquivada.
