@@ -6,7 +6,7 @@ Este report contém **recortes** do log usados como evidência para o estado ope
 - `WORLD_LIFECYCLE.md`
 - ADR-0009 / ADR-0012 / ADR-0013
 
-> Observação: este arquivo deve viver em `Assets/_ImmersiveGames/NewScripts/Docs/Reports/`.
+> Observação: este arquivo foi arquivado em `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Archive/2025/`.
 
 ## Cenário validado
 

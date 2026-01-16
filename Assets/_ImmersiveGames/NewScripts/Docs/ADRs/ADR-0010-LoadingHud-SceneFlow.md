@@ -1,30 +1,61 @@
 # ADR-0010 — Loading HUD + SceneFlow (NewScripts)
 
-**Data:** 2025-12-25
-**Status:** Implementado
+## Status
+- Estado: Implementado
+- Data: 2025-12-25
+- Escopo: SceneFlow + Loading HUD (NewScripts)
 
 ## Contexto
 
-O Scene Flow do NewScripts já possui Fade (ADR-0009), porém o HUD de loading precisa ser um módulo separado,
+O SceneFlow do NewScripts já possui Fade (ADR-0009), porém o HUD de loading precisa ser um módulo separado,
 sem depender de legados e sem acoplar ao Fade. Além disso, a transição pode aguardar o completion gate
 (WorldLifecycle reset), o que exige manter o HUD visível até o momento correto, mesmo quando o HUD nasce tarde.
 
 ## Decisão
 
-Implementar um módulo de Loading HUD separado do Fade, com as regras:
-
-1) O `SceneFlowLoadingService` deve chamar `INewScriptsLoadingHudService.EnsureLoadedAsync()` no `SceneTransitionStartedEvent`.
+1. O `SceneFlowLoadingService` deve chamar `INewScriptsLoadingHudService.EnsureLoadedAsync()` no `SceneTransitionStartedEvent`.
     - Se `UseFade=false`, a HUD pode ser exibida imediatamente (mantém comportamento antigo).
     - Se `UseFade=true`, **não** exibir no Started: aguardar o `SceneTransitionFadeInCompletedEvent`.
 
-2) Quando `UseFade=true`, o `SceneFlowLoadingService` deve exibir a HUD apenas após o `SceneTransitionFadeInCompletedEvent`
+2. Quando `UseFade=true`, o `SceneFlowLoadingService` deve exibir a HUD apenas após o `SceneTransitionFadeInCompletedEvent`
    (tela já escura), mantendo-a visível durante `Load/Unload/ActiveScene` e durante o gate do `WorldLifecycle`.
 
-3) Em `SceneTransitionScenesReadyEvent`, a HUD pode atualizar a fase/status (idempotente), sem esconder.
+3. Em `SceneTransitionScenesReadyEvent`, a HUD pode atualizar a fase/status (idempotente), sem esconder.
 
-4) Em `SceneTransitionBeforeFadeOutEvent`, a HUD deve ser escondida.
+4. Em `SceneTransitionBeforeFadeOutEvent`, a HUD deve ser escondida.
 
-5) Em `SceneTransitionCompletedEvent`, executar um “safety hide” (idempotente).
+5. Em `SceneTransitionCompletedEvent`, executar um “safety hide” (idempotente).
+
+## Fora de escopo
+
+Evolução futura de Addressables e tarefas agregadas (sem implementação atual):
+
+Diretriz para evolução (sem código por enquanto): tratar o loading como **tarefas agregadas**,
+para que o HUD reflita o estado de cada etapa.
+
+Exemplo **PSEUDOCÓDIGO / FUTURO** de vocabulário (nomes de tarefas):
+- `SceneLoadTask` (load/unload additive e active scene)
+- `WorldResetTask` (reset + spawn/preparação do mundo)
+- `AddressablesWarmupTask` (warmup/preload de assets)
+
+O HUD poderia exibir fases agregadas (“Carregando…”, “Preparando…”, “Aquecendo assets…”)
+com base na conclusão dessas tarefas. As implementações reais ainda **não existem** e devem
+seguir as regras já descritas para SceneFlow/WorldLifecycle.
+
+## Consequências
+
+### Benefícios
+
+- Fade e Loading permanecem responsabilidades separadas.
+- O HUD pode existir sem exigir QA ou legados.
+- A experiência mantém consistência mesmo quando o HUD nasce após o `Started` (no-fade) ou após o `FadeInCompleted` (com fade).
+- O LoadingHUD é carregado como cena additive `LoadingHudScene` via `INewScriptsLoadingHudService`.
+
+### Trade-offs / Riscos
+
+- (não informado)
+
+## Notas de implementação
 
 **Ordem observada (UseFade=true):**
 - `SceneTransitionStarted` → `FadeIn` (alpha=1)
@@ -35,19 +66,12 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - `FadeOut` (alpha=0)
 - `SceneTransitionCompletedEvent` → safety hide
 
-## Consequências
-
-- Fade e Loading permanecem responsabilidades separadas.
-- O HUD pode existir sem exigir QA ou legados.
-- A experiência mantém consistência mesmo quando o HUD nasce após o `Started` (no-fade) ou após o `FadeInCompleted` (com fade).
-- O LoadingHUD é carregado como cena additive `LoadingHudScene` via `INewScriptsLoadingHudService`.
-
 - `Show` acontece após o `FadeInCompleted` (overlay opaco) e antes da carga pesada (load/unload/active).
 - `SceneFlow` aguarda o `WorldLifecycleResetCompletionGate` após `ScenesReady`.
 - `Hide` ocorre em `BeforeFadeOut`, ou seja, **após** o gate liberar e **antes** do FadeOut.
-- Mesmo que o HUD falhe em inicializar, o Scene Flow não deve quebrar (logs + fallback silencioso).
+- Mesmo que o HUD falhe em inicializar, o SceneFlow não deve quebrar (logs + fallback silencioso).
 
-## Fases do LoadingHUD (integração com SceneFlow)
+### Fases do LoadingHUD (integração com SceneFlow)
 - **Started:** `EnsureLoadedAsync` apenas (sem `Show` quando `UseFade=true`).
 - **AfterFadeIn/ScenesReady:** `Show`/update idempotente.
 - **BeforeFadeOut:** `Hide`.
@@ -104,33 +128,23 @@ Essa integração garante que:
     - o mundo foi resetado/spawnado,
     - e o GameLoop está em `Playing`.
 
-## Evolução futura: Addressables
+### Atualizações
 
-Diretriz para evolução (sem código por enquanto): tratar o loading como **tarefas agregadas**,
-para que o HUD reflita o estado de cada etapa.
-
-Exemplo **PSEUDOCÓDIGO / FUTURO** de vocabulário (nomes de tarefas):
-- `SceneLoadTask` (load/unload additive e active scene)
-- `WorldResetTask` (reset + spawn/preparação do mundo)
-- `AddressablesWarmupTask` (warmup/preload de assets)
-
-O HUD poderia exibir fases agregadas (“Carregando…”, “Preparando…”, “Aquecendo assets…”)
-com base na conclusão dessas tarefas. As implementações reais ainda **não existem** e devem
-seguir as regras já descritas para SceneFlow/WorldLifecycle.
-
-## Referências
-
-- [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
-
-## Atualização (2025-12-27)
-
+**2025-12-27**
 - O pipeline atual mantém o gate de completion antes do `FadeOut`, garantindo janela segura para o HUD
   permanecer visível até a conclusão do reset (quando aplicável).
 
-## Atualização (2025-12-28)
-
+**2025-12-28**
 - Documentada a integração de loading com GameLoop/InputMode, explicitando que:
     - bootstrap/startup é orquestrado pelo `GameLoopSceneFlowCoordinator` (Boot → Ready);
     - Menu → Gameplay em produção usa `InputModeSceneFlowBridge` em `SceneTransitionCompleted(Profile=gameplay)`
       para iniciar a IntroStage (PostReveal) e só então avançar para `GameLoop.RequestStart()` após `UIConfirm`/`NoContent`;
     - `IGameNavigationService` **não** emite `RequestStart()` diretamente; ele apenas dispara transições de cena.
+
+## Evidências
+
+- (não informado)
+
+## Referências
+
+- [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)

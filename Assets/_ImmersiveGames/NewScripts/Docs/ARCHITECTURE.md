@@ -120,7 +120,7 @@ Diagrama simplificado:
     - `GameLoopSceneFlowCoordinator` chama `GameLoop.RequestStart()` apenas após `TransitionCompleted + ResetCompleted`.
 
 ## Baseline 2.0 (contrato)
-A **spec** do Baseline 2.0 é a fonte de verdade para invariantes e assinaturas de log:
+A fonte de verdade do Baseline 2.0 é o smoke log, e a spec é documento histórico:
 - [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md)
 - [Baseline 2.0 — Checklist](Reports/Baseline-2.0-Checklist.md)
 

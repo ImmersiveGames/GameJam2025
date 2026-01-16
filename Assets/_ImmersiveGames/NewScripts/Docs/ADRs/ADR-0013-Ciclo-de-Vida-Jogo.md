@@ -1,7 +1,9 @@
 # ADR-0013 — Ciclo de vida do jogo (NewScripts)
 
 ## Status
-Aceito e implementado (baseline operacional validada em log).
+- Estado: Implementado
+- Data: (não informado)
+- Escopo: GameLoop + SceneFlow + WorldLifecycle (NewScripts)
 
 ## Contexto
 
@@ -37,13 +39,28 @@ O NewScripts precisava de um ciclo de vida de jogo consistente, que:
   - estado do GameLoop
   - pausa
 
+## Fora de escopo
+
+- (não informado)
+
 ## Consequências
+
+### Benefícios
 
 - O fluxo de produção fica determinístico:
   - Start → Menu (`startup`) → Play → Gameplay (`gameplay`) → pós-gameplay → Restart/Exit.
 - O WorldLifecycle executa reset somente quando apropriado (ex.: gameplay) e sempre sinaliza conclusão.
 - O SceneFlow não conclui a transição antes do reset completar (completion gate).
 
-## Evidência
+### Trade-offs / Riscos
 
-- `Docs/Reports/Report-SceneFlow-Production-Log-2025-12-31.md` (recortes do log: Boot → Ready em startup; Ready → Playing em gameplay; Paused em pós-gameplay; sincronização via SceneFlow/WorldLifecycle).
+- (não informado)
+
+## Evidências
+
+- `Reports/Archive/2025/Report-SceneFlow-Production-Log-2025-12-31.md` (recortes do log: Boot → Ready em startup; Ready → Playing em gameplay; Paused em pós-gameplay; sincronização via SceneFlow/WorldLifecycle).
+
+## Referências
+
+- [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
+- [ARCHITECTURE.md](../ARCHITECTURE.md)

@@ -69,7 +69,7 @@ SceneFlow + Fade + WorldLifecycle + Gate + GameLoop.
 
 ## Arquivos alterados/criados
 - Atualizado:
-  - `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Legacy-Cleanup-Report.md`
+  - `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Archive/2025/Legacy-Cleanup-Report.md`
 
 ## Mini changelog
 - docs(reports): atualizar varredura e registrar ausência de legado em NewScripts
