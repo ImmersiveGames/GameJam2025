@@ -1,5 +1,7 @@
 # Baseline 2.0 — Spec (Frozen)
 
+> ⚠️ **Histórico / pode estar desatualizado:** o baseline é log-driven e a fonte de verdade é o `Reports/Baseline-2.0-Smoke-LastRun.log`.
+
 Este documento é a **fonte da verdade** do Baseline 2.0 para o projeto NewScripts.
 
 > Nota explícita: **soft não afeta FAIL** e **hard afeta FAIL**.

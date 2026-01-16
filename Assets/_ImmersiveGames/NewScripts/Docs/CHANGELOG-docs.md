@@ -1,5 +1,9 @@
 # Changelog (Docs)
 
+## [2026-01-16]
+### Changed
+- Baseline 2.0 selado (Opção B) e log-driven: checklist, ADRs e spec marcados com escopo e fonte de verdade no smoke log.
+
 ## [2026-01-15]
 ### Changed
 - Baseline 2.0 checklist ajustado para refletir a cobertura do log atual (A, B, D, E; **IntroStage pendente**) e a ordem Fade/Loading detalhada.
@@ -116,8 +120,6 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - `ADR-0010-LoadingHud-SceneFlow.md`: ordem correta do LoadingHUD com gate de reset e FadeOut.
 - `GameLoop-StateFlow-QA.md`: passos/evidências de startup → menu → gameplay → pause/resume (bootstrap, navigation, input mode).
 - `GameplayReset-QA.md`: reset em `ScenesReady` com gate durante o hard reset e conclusão antes do FadeOut.
-
-### Updated
 - `WORLD_LIFECYCLE.md`: alinhado ao fluxo de produção observado em log (startup→menu com SKIP + gameplay hard reset pós `ScenesReady`).
 - `GameLoop-StateFlow-QA.md`: atualizado para o fluxo real (startup termina em Ready; gameplay termina em Playing; pause/resume com gate).
 - `GameplayReset-QA.md`: QA do reset em gameplay (baseline Player+Eater) e targets parciais (PlayersOnly/EaterOnly).

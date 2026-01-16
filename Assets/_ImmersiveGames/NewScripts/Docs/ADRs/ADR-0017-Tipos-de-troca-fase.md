@@ -13,6 +13,11 @@ O sistema de fases precisa suportar dois tipos de troca com objetivos distintos:
 
 A meta é eliminar ambiguidades (ex.: “troca de fase” significar tanto reset in-place quanto scene transition), mantendo rastreabilidade por `contextSignature/reason` e evitando regressões do baseline.
 
+### Baseline 2.0 (Opção B) / Escopo
+
+- **IntroStage não é exigido pelo baseline** atual, pois não há evidência no smoke log vigente.
+- A validação de IntroStage será feita em smoke separado (Baseline 2.1 ou “IntroStage smoke”) quando o fluxo estiver promovido.
+
 ## Decisão
 
 Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distintos (nomes reais do código):

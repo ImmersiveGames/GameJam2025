@@ -1,13 +1,19 @@
 ﻿# Baseline 2.0 — Checklist (Operacional)
 
 **Data da última validação:** 2026-01-05  
-**Fonte de verdade:** `Reports/Baseline-2.0-Smoke-LastRun.log` (validação manual)  
-**Spec canônica:** [Baseline 2.0 — Spec](Baseline-2.0-Spec.md)
+**Fonte de verdade:** `Reports/Baseline-2.0-Smoke-LastRun.log` (baseline log-driven)  
+**Spec canônica (histórico):** [Baseline 2.0 — Spec](Baseline-2.0-Spec.md)
 
 ## Resumo
 - Validação manual devido à instabilidade do parser (`Baseline2SmokeLastRunTool`).
 - O log cobre: **Startup → Menu → Gameplay → Pause/Resume → Victory → Restart → Defeat → ExitToMenu → Menu**.
 - Evidência hard foi extraída do `Baseline-2.0-Smoke-LastRun.log` usando assinaturas/strings **exatas**.
+- Restart volta para Boot no fluxo atual (após `PostGame/Restart`): `NavigateAsync -> routeId='to-gameplay', reason='PostGame/Restart'` seguido de `EXIT: Playing` e `ENTER: Boot (active=False)` no mesmo momento do reset do GameLoop.
+
+## Scope do Baseline 2.0 (Opção B)
+- **IntroStage é opcional e está fora do baseline** atual.
+- O baseline 2.0 fica oficialmente fechado para os cenários A–E cobertos pelo smoke log.
+- A validação de IntroStage será feita em smoke separado (Baseline 2.1 ou “IntroStage smoke”) quando o fluxo estiver promovido.
 
 ## Checklist por cenário (A–E)
 

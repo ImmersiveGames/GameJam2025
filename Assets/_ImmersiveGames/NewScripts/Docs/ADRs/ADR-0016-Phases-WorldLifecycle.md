@@ -34,6 +34,11 @@ Durante a evolução do gameplay, surgiram requisitos adicionais:
 
 Ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversível**; ela deve ter um mecanismo canônico de conclusão (produção) e mecanismos equivalentes de mitigação em dev/QA (para testes determinísticos).
 
+### Baseline 2.0 (Opção B) / Escopo
+
+- **IntroStage não é exigido pelo baseline** atual, pois não há evidência no smoke log vigente.
+- A validação de IntroStage será feita em smoke separado (Baseline 2.1 ou “IntroStage smoke”) quando o fluxo estiver promovido.
+
 ## Decisão
 
 ### 1) Nomenclatura e contratos (APIs reais do código)
