@@ -2,43 +2,57 @@
 
 Relatório curto com inventário e classificação do QA atual, sem alterações de comportamento.
 
+## Classificação (resumo)
+
+- **Baseline2.0**: tooling + checklist/spec/logs do Baseline 2.0.
+- **Baseline2.1**: tooling novo e artefatos 2.1.
+- **IntroStage**: QA específico de IntroStage (menus/installer/context).
+- **Outros QA**: QA de GameplayReset/WorldLifecycle e utilitários gerais.
+- **Docs/Reports**: documentos e relatórios de apoio/consulta/auditoria.
+
 ## Tabela de referência (QA e Baseline)
 
 | Arquivo | Responsabilidade | Versão | Status |
 |---|---|---|---|
-| `Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Baseline2SmokeLastRunTool.cs` | Captura do log smoke + geração do relatório Markdown do Baseline 2.0. | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDrivenVerifier.cs` | Validação checklist-driven do Baseline 2.0 a partir do log. | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDrivenVerifierMenu.cs` | Menus do editor para verificar e gerar relatório checklist-driven. | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Checklist.md` | Checklist operacional (evidências hard) do Baseline 2.0. | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Spec.md` | Spec congelada (histórica) usada pelo relatório do Baseline 2.0. | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Smoke-LastRun.log` | Log canônico do smoke 2.0 (fonte de verdade). | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Smoke-LastRun.md` | Relatório Markdown gerado a partir do log smoke 2.0. | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md` | Resultado do verificador checklist-driven do Baseline 2.0. | 2.0 | ativo |
-| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Observability-Contract.md` | Contrato de observabilidade (fonte de verdade) para validar Baseline 2.x. | 2.x | ativo |
-| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.1-Smoke-LastRun.log` | Log de smoke 2.1 já existente (sem tooling dedicado no código atual). | 2.1 | desconhecido |
-| `Assets/_ImmersiveGames/NewScripts/QA/IntroStage/IntroStageQaContextMenu.cs` | Context menu de QA do IntroStage (execução em runtime). | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/IntroStage/IntroStageQaInstaller.cs` | Installer do QA IntroStage (setup/registro). | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/IntroStage/Editor/IntroStageQaMenuItems.cs` | Menus QA do IntroStage (Complete/Skip). | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/Editor/IntroStageQaTools.cs` | Menu QA utilitário para selecionar QA_IntroStage. | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaDummyActor.cs` | Dummy actor para QA de reset. | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaProbe.cs` | Probe de QA para reset (instrumentação). | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaSpawner.cs` | Spawner de QA para reset. | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetKindQaEaterActor.cs` | Actor de QA para validar reset por tipo. | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs` | Driver de QA para requests de reset. | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/WorldLifecycle/Marco0QaToolsContextMenu.cs` | Context menu QA relacionado a WorldLifecycle/Marco0. | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/WorldLifecycle/Marco0PhaseObservabilityQaRunner.cs` | Runner de QA para observabilidade de fases. | n/a | ativo |
-| `Assets/_ImmersiveGames/NewScripts/QA/WorldLifecycle/WorldLifecycleMultiActorSpawnQa.cs` | QA de spawn multi-actor no WorldLifecycle. | n/a | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Baseline2SmokeLastRunTool.cs` | Captura do log smoke + geração do relatório Markdown do Baseline 2.0. | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDrivenVerifier.cs` | Validação checklist-driven do Baseline 2.0 a partir do log. | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDrivenVerifierMenu.cs` | Menus do editor para verificar e gerar relatório checklist-driven. | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Checklist.md` | Checklist operacional (evidências hard) do Baseline 2.0. | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Spec.md` | Spec congelada (histórica) usada pelo relatório do Baseline 2.0. | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Smoke-LastRun.log` | Log canônico do smoke 2.0 (fonte de verdade). | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Smoke-LastRun.md` | Relatório Markdown gerado a partir do log smoke 2.0. | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md` | Resultado do verificador checklist-driven do Baseline 2.0. | Baseline2.0 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Observability-Contract.md` | Contrato de observabilidade (fonte de verdade) para validar Baseline 2.x. | Docs/Reports | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/Baseline21/Baseline21SmokeLastRunPaths.cs` | Centraliza paths e nomes do Baseline 2.1. | Baseline2.1 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/Baseline21/Baseline21SmokeLastRunTool.cs` | Captura do log smoke 2.1 + menu Start/Stop no editor. | Baseline2.1 | ativo |
+| `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.1-Smoke-LastRun.log` | Log de smoke 2.1 já existente. | Baseline2.1 | desconhecido |
+| `Assets/_ImmersiveGames/NewScripts/QA/IntroStage/IntroStageQaContextMenu.cs` | Context menu de QA do IntroStage (execução em runtime). | IntroStage | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/IntroStage/IntroStageQaInstaller.cs` | Installer do QA IntroStage (setup/registro). | IntroStage | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/IntroStage/Editor/IntroStageQaMenuItems.cs` | Menus QA do IntroStage (Complete/Skip). | IntroStage | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/Editor/IntroStageQaTools.cs` | Menu QA utilitário para selecionar QA_IntroStage. | IntroStage | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaDummyActor.cs` | Dummy actor para QA de reset. | Outros QA | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaProbe.cs` | Probe de QA para reset (instrumentação). | Outros QA | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaSpawner.cs` | Spawner de QA para reset. | Outros QA | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetKindQaEaterActor.cs` | Actor de QA para validar reset por tipo. | Outros QA | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs` | Driver de QA para requests de reset. | Outros QA | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/WorldLifecycle/Marco0QaToolsContextMenu.cs` | Context menu QA relacionado a WorldLifecycle/Marco0. | Outros QA | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/WorldLifecycle/Marco0PhaseObservabilityQaRunner.cs` | Runner de QA para observabilidade de fases. | Outros QA | ativo |
+| `Assets/_ImmersiveGames/NewScripts/QA/WorldLifecycle/WorldLifecycleMultiActorSpawnQa.cs` | QA de spawn multi-actor no WorldLifecycle. | Outros QA | ativo |
+
+## Artefatos 2.1 já presentes
+
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.1-Smoke-LastRun.log`
 
 ## Candidatos a obsoleto (revisão sugerida)
 
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Archive/2025/*` (reports arquivados). 
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audit-Docs-Inventory.md` (audit pontual). 
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audit-Reports-Cleanup.md` (audit pontual). 
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audit-ResetTrigger-Production.md` (audit pontual). 
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-Audit-2026-01-03.md` (audit datado). 
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/ResetWorld-Audit-2026-01-05.md` (audit datado). 
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Archive/2025/*` (reports arquivados).
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audit-Docs-Inventory.md` (audit pontual).
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audit-Reports-Cleanup.md` (audit pontual).
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audit-ResetTrigger-Production.md` (audit pontual).
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-Audit-2026-01-03.md` (audit datado).
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/ResetWorld-Audit-2026-01-05.md` (audit datado).
 
-## Paths encontrados
+## Inventário completo de paths
 
 ### Assets/_ImmersiveGames/NewScripts/QA/**
 
@@ -53,6 +67,8 @@ Assets/_ImmersiveGames/NewScripts/QA/IntroStage/IntroStageQaInstaller.cs.meta
 Assets/_ImmersiveGames/NewScripts/QA/IntroStage/IntroStageQaInstaller.cs
 Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaDummyActor.cs
 Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaProbe.cs.meta
+Assets/_ImmersiveGames/NewScripts/QA/Baseline21/Baseline21SmokeLastRunTool.cs
+Assets/_ImmersiveGames/NewScripts/QA/Baseline21/Baseline21SmokeLastRunPaths.cs
 Assets/_ImmersiveGames/NewScripts/QA/Baseline2.meta
 Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaProbe.cs
 Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetKindQaEaterActor.cs.meta
@@ -72,6 +88,7 @@ Assets/_ImmersiveGames/NewScripts/QA/Editor/IntroStageQaTools.cs.meta
 Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaSpawner.cs
 Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaDummyActor.cs.meta
 Assets/_ImmersiveGames/NewScripts/QA/GameplayResetKindQaSpawner.cs.meta
+Assets/_ImmersiveGames/NewScripts/QA/GameplayReset.meta
 Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDrivenVerifier.cs.meta
 Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDrivenVerifierMenu.cs.meta
 Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDrivenVerifierMenu.cs
@@ -79,7 +96,6 @@ Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier/Baseline2ChecklistDriven
 Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Baseline2SmokeLastRunTool.cs
 Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Baseline2SmokeLastRunTool.cs.meta
 Assets/_ImmersiveGames/NewScripts/QA/Baseline2/Verifier.meta
-Assets/_ImmersiveGames/NewScripts/QA/GameplayReset.meta
 ```
 
 ### Assets/_ImmersiveGames/NewScripts/Docs/Reports/**
@@ -111,6 +127,7 @@ Assets/_ImmersiveGames/NewScripts/Docs/Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md
 Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md
 Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Production-EndToEnd-Validation.md.meta
 Assets/_ImmersiveGames/NewScripts/Docs/Reports/Observability-Contract.md
+Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.1-Audit.md
 Assets/_ImmersiveGames/NewScripts/Docs/Reports/QA-PhaseChange-Smoke.md.meta
 Assets/_ImmersiveGames/NewScripts/Docs/Reports/QA-GameplayResetKind.md.meta
 Assets/_ImmersiveGames/NewScripts/Docs/Reports/GameLoop.md
