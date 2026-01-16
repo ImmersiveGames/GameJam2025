@@ -8,8 +8,8 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2.Verifier
 {
     internal static class Baseline2ChecklistDrivenVerifierMenu
     {
-        private const string MenuPathVerify = "Tools/NewScripts/Baseline2/Verify Last Run (Checklist-driven)";
-        private const string MenuPathVerifyAndWrite = "Tools/NewScripts/Baseline2/Verify Last Run (Checklist-driven) + Write MD Report";
+        private const string MenuPathVerify = "Tools/NewScripts/QA/Baseline/Legacy/Baseline2/Verify Last Run (Checklist-driven)";
+        private const string MenuPathVerifyAndWrite = "Tools/NewScripts/QA/Baseline/Legacy/Baseline2/Verify Last Run (Checklist-driven) + Write MD Report";
 
         [MenuItem(MenuPathVerify)]
         private static void RunVerification()
