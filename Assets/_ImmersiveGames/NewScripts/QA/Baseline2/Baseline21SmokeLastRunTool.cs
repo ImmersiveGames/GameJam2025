@@ -195,7 +195,6 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
 
             FlushQueueToDisk();
             SafeCloseWriter();
-            TryWriteMarkdownReport(endUtc, duration);
 
             _capturing = false;
             _captureId = string.Empty;
@@ -266,6 +265,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
             WriteLine($"StartedUtc: {startUtc:O}");
             WriteLine($"CaptureId: {captureId}");
             WriteLine($"Output: {logPath}");
+            WriteLine($"[Baseline21Smoke] CAPTURE STARTED. utc={startUtc:O} captureId={captureId}");
             WriteLine("============================================================");
         }
 
@@ -344,66 +344,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
             }
         }
 
-        private static bool TryWriteMarkdownReport(DateTime endUtc, TimeSpan duration)
-        {
-            try
-            {
-                var logPath = Baseline21SmokeLastRunShared.LastRunLogAbs;
-                if (!File.Exists(logPath))
-                    return false;
-
-                int lineCount;
-                try
-                {
-                    lineCount = File.ReadAllLines(logPath).Length;
-                }
-                catch
-                {
-                    lineCount = 0;
-                }
-
-                var report = BuildMarkdownReport(logPath, lineCount, _captureStartUtc, endUtc, duration, _captureId);
-                Directory.CreateDirectory(Baseline21SmokeLastRunShared.ReportsDirAbs);
-                File.WriteAllText(Baseline21SmokeLastRunShared.LastRunMdAbs, report, new UTF8Encoding(false));
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static string BuildMarkdownReport(
-            string logPath,
-            int lineCount,
-            DateTime startUtc,
-            DateTime endUtc,
-            TimeSpan duration,
-            string captureId)
-        {
-            var sb = new StringBuilder(8 * 1024);
-
-            sb.AppendLine("# Baseline 2.1 — Smoke Last Run");
-            sb.AppendLine();
-            sb.AppendLine($"- utcStart: `{startUtc:O}`");
-            sb.AppendLine($"- utcEnd: `{endUtc:O}`");
-            sb.AppendLine($"- durationSeconds: `{duration.TotalSeconds:F2}`");
-            sb.AppendLine($"- captureId: `{captureId}`");
-            sb.AppendLine();
-            sb.AppendLine("- Fonte de verdade: [Observability-Contract.md](./Observability-Contract.md)");
-            sb.AppendLine("- Nota: o log é evidência.");
-            sb.AppendLine();
-            sb.AppendLine("## Log");
-            sb.AppendLine();
-            sb.AppendLine($"- Path: `{logPath}`");
-            sb.AppendLine($"- Lines: `{lineCount}`");
-            sb.AppendLine();
-            sb.AppendLine("## Contrato");
-            sb.AppendLine();
-            sb.AppendLine($"- Contract path: `{Baseline21SmokeLastRunShared.ObservabilityContractAbs}`");
-
-            return sb.ToString();
-        }
+        // Relatório .md é gerado pelo tool do editor para evitar leitura concorrente do log.
     }
 }
 
@@ -428,7 +369,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             ReportPending
         }
 
-        private const string MenuPath = "Tools/NewScripts/Baseline2/Smoke 2.1 (Start/Stop)";
+        private const string MenuPath = "Tools/NewScripts/QA/Baseline/Advanced/Smoke 2.1 (Start/Stop)";
         private const string PrefReportPending = "Baseline21.Smoke.ReportPending";
 
         static Baseline21SmokeLastRunTool()
@@ -472,7 +413,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             return true;
         }
 
-        private static void ArmCapture()
+        internal static void ArmCapture()
         {
             Baseline21SmokeLastRunShared.SaveState(
                 Baseline21SmokeLastRunShared.CreateArmedState(Baseline21SmokeLastRunShared.LastRunLogAbs)
@@ -518,7 +459,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             TryGenerateReportIfPending();
         }
 
-        private static void StopCaptureAndGenerateReport(string reason)
+        internal static void StopCaptureAndGenerateReport(string reason)
         {
             _ImmersiveGames.NewScripts.QA.Baseline2.Baseline21SmokeLastRunRuntime.StopCapture(reason);
 
@@ -561,7 +502,8 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 }
 
                 var lines = File.ReadAllLines(logPath);
-                var report = GenerateMarkdownReport(lines, logPath);
+                var lineCount = TryReadLineCountWithRetry(logPath);
+                var report = GenerateMarkdownReport(lines, logPath, lineCount);
 
                 Directory.CreateDirectory(Baseline21SmokeLastRunShared.ReportsDirAbs);
                 File.WriteAllText(reportPath, report, new UTF8Encoding(false));
@@ -579,22 +521,25 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             }
         }
 
-        private static string GenerateMarkdownReport(string[] lines, string sourcePath)
+        private static string GenerateMarkdownReport(string[] lines, string sourcePath, string lineCount)
         {
-            var generatedAtUtc = DateTime.UtcNow;
-            var lineCount = lines?.Length ?? 0;
-            var endUtc = generatedAtUtc;
-            var startUtc = DateTime.MinValue;
-            var captureId = string.Empty;
+            var endUtc = DateTime.UtcNow;
+            var state = Baseline21SmokeLastRunShared.LoadState();
+            var resolvedStartUtc = TryParseStateUtc(state.CaptureStartUtc, out var parsedStartUtc)
+                ? parsedStartUtc
+                : DateTime.MinValue;
+            var captureId = string.IsNullOrEmpty(state.CaptureId) ? "n/a" : state.CaptureId;
 
-            TryExtractHeaderInfo(lines, out startUtc, out captureId);
-            var duration = startUtc == DateTime.MinValue ? TimeSpan.Zero : endUtc - startUtc;
+            if (captureId == "n/a" || resolvedStartUtc == DateTime.MinValue)
+                TryExtractHeaderInfo(lines, out resolvedStartUtc, out captureId);
+
+            var duration = resolvedStartUtc == DateTime.MinValue ? TimeSpan.Zero : endUtc - resolvedStartUtc;
 
             var sb = new StringBuilder(8 * 1024);
 
             sb.AppendLine("# Baseline 2.1 — Smoke Last Run");
             sb.AppendLine();
-            sb.AppendLine($"- utcStart: `{(startUtc == DateTime.MinValue ? \"n/a\" : startUtc.ToString(\"O\"))}`");
+            sb.AppendLine($"- utcStart: `{(resolvedStartUtc == DateTime.MinValue ? \"n/a\" : resolvedStartUtc.ToString(\"O\"))}`");
             sb.AppendLine($"- utcEnd: `{endUtc:O}`");
             sb.AppendLine($"- durationSeconds: `{duration.TotalSeconds:F2}`");
             sb.AppendLine($"- captureId: `{(string.IsNullOrEmpty(captureId) ? \"n/a\" : captureId)}`");
@@ -616,7 +561,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         private static void TryExtractHeaderInfo(string[] lines, out DateTime startUtc, out string captureId)
         {
             startUtc = DateTime.MinValue;
-            captureId = string.Empty;
+            captureId = "n/a";
 
             if (lines == null || lines.Length == 0)
                 return;
@@ -631,11 +576,81 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 }
 
                 if (line.StartsWith("CaptureId:", StringComparison.OrdinalIgnoreCase))
-                    captureId = line.Substring("CaptureId:".Length).Trim();
+                {
+                    var value = line.Substring("CaptureId:".Length).Trim();
+                    captureId = string.IsNullOrEmpty(value) ? "n/a" : value;
+                }
 
-                if (startUtc != DateTime.MinValue && !string.IsNullOrEmpty(captureId))
+                if (TryExtractFromCaptureLine(line, out var parsedUtc, out var parsedId))
+                {
+                    startUtc = parsedUtc;
+                    captureId = parsedId;
+                }
+
+                if (startUtc != DateTime.MinValue && captureId != "n/a")
                     break;
             }
+
+            if (string.IsNullOrEmpty(captureId))
+                captureId = "n/a";
+        }
+
+        private static bool TryExtractFromCaptureLine(string line, out DateTime utcStart, out string captureId)
+        {
+            utcStart = DateTime.MinValue;
+            captureId = "n/a";
+
+            const string prefix = "[Baseline21Smoke] CAPTURE STARTED. utc=";
+            if (!line.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var parts = line.Substring(prefix.Length).Split(new[] { "captureId=" }, StringSplitOptions.None);
+            if (parts.Length != 2)
+                return false;
+
+            if (!DateTime.TryParse(parts[0].Trim(), out var parsedUtc))
+                return false;
+
+            utcStart = parsedUtc.ToUniversalTime();
+            captureId = parts[1].Trim();
+            return true;
+        }
+
+        private static bool TryParseStateUtc(string value, out DateTime utc)
+        {
+            if (DateTime.TryParse(value, out var parsed))
+            {
+                utc = parsed.ToUniversalTime();
+                return true;
+            }
+
+            utc = DateTime.MinValue;
+            return false;
+        }
+
+        private static string TryReadLineCountWithRetry(string logPath)
+        {
+            const int attempts = 5;
+            for (int i = 0; i < attempts; i++)
+            {
+                try
+                {
+                    using (var stream = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var reader = new StreamReader(stream, Encoding.UTF8))
+                    {
+                        int count = 0;
+                        while (reader.ReadLine() != null)
+                            count++;
+                        return count.ToString();
+                    }
+                }
+                catch
+                {
+                    System.Threading.Thread.Sleep(50);
+                }
+            }
+
+            return "n/a";
         }
 
         private static CaptureState GetState()

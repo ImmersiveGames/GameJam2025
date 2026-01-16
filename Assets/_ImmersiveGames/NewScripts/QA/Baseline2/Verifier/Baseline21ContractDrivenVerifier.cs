@@ -116,6 +116,9 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2.Verifier
                 if (status == VerificationStatus.Fail)
                     anyFail = true;
 
+                foreach (var token in missing)
+                    AddMissingEvidenceDiagnostic(diagnostics, logLines, domain.Name, token);
+
                 domainResults.Add(new DomainResult
                 {
                     Name = domain.Name,
@@ -126,6 +129,11 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2.Verifier
             }
 
             var invariants = EvaluateInvariants(logLines);
+            foreach (var invariant in invariants)
+            {
+                if (invariant.Status != VerificationStatus.Pass)
+                    diagnostics.Add($"Invariant {invariant.Name}: {invariant.Details}");
+            }
             if (invariants.Any(i => i.Status == VerificationStatus.Fail))
                 anyFail = true;
 
@@ -209,6 +217,49 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2.Verifier
             }
 
             return -1;
+        }
+
+        private static void AddMissingEvidenceDiagnostic(
+            List<string> diagnostics,
+            string[] logLines,
+            string domainName,
+            string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return;
+
+            var snippet = FindClosestLineSnippet(logLines, token);
+            if (string.IsNullOrEmpty(snippet))
+                diagnostics.Add($"Missing evidence `{token}` (domain {domainName}). No close match found.");
+            else
+                diagnostics.Add($"Missing evidence `{token}` (domain {domainName}). Closest match: {snippet}");
+        }
+
+        private static string FindClosestLineSnippet(string[] logLines, string token)
+        {
+            if (logLines == null || logLines.Length == 0)
+                return string.Empty;
+
+            var hint = ExtractTokenHint(token);
+            var index = IndexOfContains(logLines, hint);
+            if (index < 0)
+                return string.Empty;
+
+            var line = logLines[index];
+            return $"line {index + 1}: {line}";
+        }
+
+        private static string ExtractTokenHint(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+                return string.Empty;
+
+            var separators = new[] { '/', ':', ' ' };
+            var split = token.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+            if (split.Length == 0)
+                return token;
+
+            return split[0].Length < 3 ? token : split[0];
         }
 
         private static string BuildSummary(VerificationResult result, string note)

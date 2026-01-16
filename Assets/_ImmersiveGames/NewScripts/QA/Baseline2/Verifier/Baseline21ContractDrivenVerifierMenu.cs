@@ -6,8 +6,8 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2.Verifier
 {
     internal static class Baseline21ContractDrivenVerifierMenu
     {
-        private const string MenuPathVerify = "Tools/NewScripts/Baseline2/Verify 2.1 (Contract-driven)";
-        private const string MenuPathVerifyAndWrite = "Tools/NewScripts/Baseline2/Verify 2.1 (Contract-driven) + Write MD";
+        private const string MenuPathVerify = "Tools/NewScripts/QA/Baseline/Advanced/Verify 2.1 (Contract-driven)";
+        private const string MenuPathVerifyAndWrite = "Tools/NewScripts/QA/Baseline/Advanced/Verify 2.1 (Contract-driven) + Write MD";
 
         [MenuItem(MenuPathVerify)]
         private static void RunVerification()

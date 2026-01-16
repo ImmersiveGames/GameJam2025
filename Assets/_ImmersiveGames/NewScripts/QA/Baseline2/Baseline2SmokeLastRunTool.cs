@@ -364,7 +364,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             ReportPending
         }
 
-        private const string MenuPath = "Tools/NewScripts/Baseline2/Smoke Last Run (Start/Stop)";
+        private const string MenuPath = "Tools/NewScripts/QA/Baseline/Legacy/Baseline2/Smoke Last Run (Start/Stop)";
         private const string PrefReportPending = "Baseline2.Smoke.ReportPending";
 
         static Baseline2SmokeLastRunTool()
