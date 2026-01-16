@@ -20,11 +20,13 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
         internal const string RelativeReportsDir = "_ImmersiveGames/NewScripts/Docs/Reports";
         internal const string LastRunLogFile = "Baseline-2.1-Smoke-LastRun.log";
         internal const string LastRunMdFile = "Baseline-2.1-Smoke-LastRun.md";
+        internal const string ObservabilityContractFile = "Observability-Contract.md";
         private const string StateFileName = "Baseline-2.1-Smoke-LastRun.state";
 
         internal static string ReportsDirAbs => Path.Combine(Application.dataPath, RelativeReportsDir);
         internal static string LastRunLogAbs => Path.Combine(ReportsDirAbs, LastRunLogFile);
         internal static string LastRunMdAbs => Path.Combine(ReportsDirAbs, LastRunMdFile);
+        internal static string ObservabilityContractAbs => Path.Combine(ReportsDirAbs, ObservabilityContractFile);
 
         internal static string StateFilePath
         {
@@ -193,6 +195,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
 
             FlushQueueToDisk();
             SafeCloseWriter();
+            TryWriteMarkdownReport(endUtc, duration);
 
             _capturing = false;
             _captureId = string.Empty;
@@ -249,17 +252,17 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
             updated.CaptureStartUtc = _captureStartUtc.ToString("O");
             Baseline21SmokeLastRunShared.SaveState(updated);
 
-            WriteHeader(_captureStartUtc, _captureId, _logPath, append);
+            if (!append)
+                WriteHeader(_captureStartUtc, _captureId, _logPath);
 
             Debug.Log($"[Baseline21Smoke] CAPTURE STARTED -> {_logPath}");
         }
 
-        private static void WriteHeader(DateTime startUtc, string captureId, string logPath, bool append)
+        private static void WriteHeader(DateTime startUtc, string captureId, string logPath)
         {
-            var mode = append ? "RESUMED" : "STARTED";
             WriteLine("============================================================");
             WriteLine("Baseline 2.1 — Smoke Last Run Log");
-            WriteLine($"Status: {mode}");
+            WriteLine("Status: STARTED");
             WriteLine($"StartedUtc: {startUtc:O}");
             WriteLine($"CaptureId: {captureId}");
             WriteLine($"Output: {logPath}");
@@ -339,6 +342,67 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline2
             {
                 // Ignorado por segurança.
             }
+        }
+
+        private static bool TryWriteMarkdownReport(DateTime endUtc, TimeSpan duration)
+        {
+            try
+            {
+                var logPath = Baseline21SmokeLastRunShared.LastRunLogAbs;
+                if (!File.Exists(logPath))
+                    return false;
+
+                int lineCount;
+                try
+                {
+                    lineCount = File.ReadAllLines(logPath).Length;
+                }
+                catch
+                {
+                    lineCount = 0;
+                }
+
+                var report = BuildMarkdownReport(logPath, lineCount, _captureStartUtc, endUtc, duration, _captureId);
+                Directory.CreateDirectory(Baseline21SmokeLastRunShared.ReportsDirAbs);
+                File.WriteAllText(Baseline21SmokeLastRunShared.LastRunMdAbs, report, new UTF8Encoding(false));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string BuildMarkdownReport(
+            string logPath,
+            int lineCount,
+            DateTime startUtc,
+            DateTime endUtc,
+            TimeSpan duration,
+            string captureId)
+        {
+            var sb = new StringBuilder(8 * 1024);
+
+            sb.AppendLine("# Baseline 2.1 — Smoke Last Run");
+            sb.AppendLine();
+            sb.AppendLine($"- utcStart: `{startUtc:O}`");
+            sb.AppendLine($"- utcEnd: `{endUtc:O}`");
+            sb.AppendLine($"- durationSeconds: `{duration.TotalSeconds:F2}`");
+            sb.AppendLine($"- captureId: `{captureId}`");
+            sb.AppendLine();
+            sb.AppendLine("- Fonte de verdade: [Observability-Contract.md](./Observability-Contract.md)");
+            sb.AppendLine("- Nota: o log é evidência.");
+            sb.AppendLine();
+            sb.AppendLine("## Log");
+            sb.AppendLine();
+            sb.AppendLine($"- Path: `{logPath}`");
+            sb.AppendLine($"- Lines: `{lineCount}`");
+            sb.AppendLine();
+            sb.AppendLine("## Contrato");
+            sb.AppendLine();
+            sb.AppendLine($"- Contract path: `{Baseline21SmokeLastRunShared.ObservabilityContractAbs}`");
+
+            return sb.ToString();
         }
     }
 }
@@ -485,6 +549,10 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             try
             {
                 var logPath = Baseline21SmokeLastRunShared.LastRunLogAbs;
+                var reportPath = Baseline21SmokeLastRunShared.LastRunMdAbs;
+
+                if (File.Exists(reportPath))
+                    return true;
 
                 if (!File.Exists(logPath))
                 {
@@ -496,7 +564,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 var report = GenerateMarkdownReport(lines, logPath);
 
                 Directory.CreateDirectory(Baseline21SmokeLastRunShared.ReportsDirAbs);
-                File.WriteAllText(Baseline21SmokeLastRunShared.LastRunMdAbs, report, new UTF8Encoding(false));
+                File.WriteAllText(reportPath, report, new UTF8Encoding(false));
 
                 if (!EditorApplication.isPlayingOrWillChangePlaymode)
                     AssetDatabase.Refresh();
@@ -515,37 +583,59 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         {
             var generatedAtUtc = DateTime.UtcNow;
             var lineCount = lines?.Length ?? 0;
+            var endUtc = generatedAtUtc;
+            var startUtc = DateTime.MinValue;
+            var captureId = string.Empty;
+
+            TryExtractHeaderInfo(lines, out startUtc, out captureId);
+            var duration = startUtc == DateTime.MinValue ? TimeSpan.Zero : endUtc - startUtc;
 
             var sb = new StringBuilder(8 * 1024);
 
-            sb.AppendLine("# Baseline 2.1 — Last Run Report");
+            sb.AppendLine("# Baseline 2.1 — Smoke Last Run");
             sb.AppendLine();
-            sb.AppendLine($"- GeneratedAt: `{generatedAtUtc:yyyy-MM-dd HH:mm:ss}Z`");
-            sb.AppendLine($"- Source: `{sourcePath}`");
+            sb.AppendLine($"- utcStart: `{(startUtc == DateTime.MinValue ? \"n/a\" : startUtc.ToString(\"O\"))}`");
+            sb.AppendLine($"- utcEnd: `{endUtc:O}`");
+            sb.AppendLine($"- durationSeconds: `{duration.TotalSeconds:F2}`");
+            sb.AppendLine($"- captureId: `{(string.IsNullOrEmpty(captureId) ? \"n/a\" : captureId)}`");
+            sb.AppendLine();
+            sb.AppendLine("- Fonte de verdade: [Observability-Contract.md](./Observability-Contract.md)");
+            sb.AppendLine("- Nota: o log é evidência.");
+            sb.AppendLine();
+            sb.AppendLine("## Log");
+            sb.AppendLine();
+            sb.AppendLine($"- Path: `{sourcePath}`");
             sb.AppendLine($"- Lines: `{lineCount}`");
             sb.AppendLine();
-
-            if (lines != null && lines.Length > 0)
-            {
-                sb.AppendLine("## Preview (first/last 10 lines)");
-                sb.AppendLine();
-                sb.AppendLine("```text");
-
-                int headCount = Math.Min(10, lines.Length);
-                for (int i = 0; i < headCount; i++)
-                    sb.AppendLine(lines[i]);
-
-                if (lines.Length > 20)
-                    sb.AppendLine("...");
-
-                int tailStart = Math.Max(headCount, lines.Length - 10);
-                for (int i = tailStart; i < lines.Length; i++)
-                    sb.AppendLine(lines[i]);
-
-                sb.AppendLine("```");
-            }
-
+            sb.AppendLine("## Contrato");
+            sb.AppendLine();
+            sb.AppendLine($"- Contract path: `{Baseline21SmokeLastRunShared.ObservabilityContractAbs}`");
             return sb.ToString();
+        }
+
+        private static void TryExtractHeaderInfo(string[] lines, out DateTime startUtc, out string captureId)
+        {
+            startUtc = DateTime.MinValue;
+            captureId = string.Empty;
+
+            if (lines == null || lines.Length == 0)
+                return;
+
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("StartedUtc:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var value = line.Substring("StartedUtc:".Length).Trim();
+                    if (DateTime.TryParse(value, out var parsed))
+                        startUtc = parsed.ToUniversalTime();
+                }
+
+                if (line.StartsWith("CaptureId:", StringComparison.OrdinalIgnoreCase))
+                    captureId = line.Substring("CaptureId:".Length).Trim();
+
+                if (startUtc != DateTime.MinValue && !string.IsNullOrEmpty(captureId))
+                    break;
+            }
         }
 
         private static CaptureState GetState()
