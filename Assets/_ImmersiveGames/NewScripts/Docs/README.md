@@ -19,7 +19,7 @@ Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o es
 - [CHANGELOG-docs.md](CHANGELOG-docs.md) — histórico de alterações desta documentação.
 
 ## Baseline 2.0 (contrato de regressão)
-O Baseline 2.0 é a referência congelada para validar o pipeline **SceneFlow + Fade/Loading + WorldLifecycle + GameLoop + Gate**. A **spec** é a fonte de verdade e o **checklist** registra o último smoke log aceito.
+O Baseline 2.0 é a referência congelada para validar o pipeline **SceneFlow + Fade/Loading + WorldLifecycle + GameLoop + Gate**. A fonte de verdade é o smoke log (`Reports/Baseline-2.0-Smoke-LastRun.log`) e a **spec** é documento histórico; o **checklist** registra o último smoke aceito.
 
 ## Baseline 2.0 (Status)
 - **Status:** **FECHADO / OPERACIONAL** (2026-01-05).
@@ -42,15 +42,13 @@ Status: evidências atualizadas em **2026-01-05**.
 ### Baseline audit (matriz atual)
 - [Baseline-Audit-2026-01-03](Reports/Baseline-Audit-2026-01-03.md)
 
-### Reports históricos (SceneFlow)
-- [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
-- [SceneFlow-Gameplay-To-Menu-Report](Reports/SceneFlow-Gameplay-To-Menu-Report.md)
+### Reports históricos (Archive)
+- [Archive/2025](Reports/Archive/2025)
 
 ### Outros reports
 - [GameLoop](Reports/GameLoop.md)
-- [QA-Audit-2025-12-27](Reports/QA-Audit-2025-12-27.md)
 - [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md)
-- [Legacy-Cleanup-Report](Reports/Legacy-Cleanup-Report.md)
+- [QA-GameplayResetKind](Reports/QA-GameplayResetKind.md)
 - [WorldLifecycle-Reset-Analysis](Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md)
 - [WorldLifecycle-Spawn-Analysis](Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md)
 

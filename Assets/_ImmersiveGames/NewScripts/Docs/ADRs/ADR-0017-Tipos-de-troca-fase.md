@@ -1,8 +1,9 @@
 # ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
 
 ## Status
-
-**Aceito / Ativo**
+- Estado: Aceito
+- Data: (não informado)
+- Escopo: PhaseChange + SceneFlow (NewScripts)
 
 ## Contexto
 
@@ -12,6 +13,11 @@ O sistema de fases precisa suportar dois tipos de troca com objetivos distintos:
 - **Troca com transição completa** (ex.: nova fase exige troca de cenas, unload de conteúdos atuais, loading e fade).
 
 A meta é eliminar ambiguidades (ex.: “troca de fase” significar tanto reset in-place quanto scene transition), mantendo rastreabilidade por `contextSignature/reason` e evitando regressões do baseline.
+
+### Baseline 2.0 (Opção B) / Escopo
+
+- **IntroStage não é exigido pelo baseline** atual, pois não há evidência no smoke log vigente.
+- A validação de IntroStage será feita em smoke separado (Baseline 2.1 ou “IntroStage smoke”) quando o fluxo estiver promovido.
 
 ## Decisão
 
@@ -53,7 +59,26 @@ Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distin
 - Fade/HUD são controlados pelo **profile do `SceneTransitionRequest`** (não por `PhaseChangeOptions`).
 - Timeout: `options.TimeoutMs`.
 
-## Termos e tipos (nomes reais do código)
+## Fora de escopo
+
+- (não informado)
+
+## Consequências
+
+### Benefícios
+
+- Nomenclatura elimina ambiguidade de “troca de fase”.
+- In-Place atende casos de “próxima fase no mesmo gameplay” sem custo de trocar cenas.
+- SceneTransition atende casos de “nova fase exige troca de conteúdo pesado” com feedback visual e reset canônico.
+
+### Trade-offs / Riscos
+
+- In-Place não deve depender de loading HUD; quando precisar de experiência completa de loading, usar SceneTransition.
+- Permitir `UseFade` no In-Place adiciona flexibilidade, mas exige disciplina de uso (para não virar “transição completa disfarçada”).
+
+## Notas de implementação
+
+### Termos e tipos (nomes reais do código)
 
 - `PhasePlan`
   - `PhaseId` (identificador lógico da fase)
@@ -68,9 +93,9 @@ Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distin
 - `SceneTransitionRequest`
   - representa a solicitação do SceneFlow (load/unload/active/profile/useFade/contextSignature)
 
-## Diagramas (sequência)
+### Diagramas (sequência)
 
-### In-Place
+#### In-Place
 
 ```mermaid
 sequenceDiagram
@@ -92,7 +117,7 @@ sequenceDiagram
     Note over PhaseChange: Sem SceneFlow (não há unload/load de cenas)
 ```
 
-### SceneTransition
+#### SceneTransition
 
 ```mermaid
 sequenceDiagram
@@ -123,25 +148,13 @@ sequenceDiagram
     Note over SceneFlow: Fade/Loading HUD são controlados pelo profile do SceneFlow
 ```
 
-## Consequências
+## Evidências
 
-### Benefícios
-
-- Nomenclatura elimina ambiguidade de “troca de fase”.
-- In-Place atende casos de “próxima fase no mesmo gameplay” sem custo de trocar cenas.
-- SceneTransition atende casos de “nova fase exige troca de conteúdo pesado” com feedback visual e reset canônico.
-
-### Trade-offs
-
-- In-Place não deve depender de loading HUD; quando precisar de experiência completa de loading, usar SceneTransition.
-- Permitir `UseFade` no In-Place adiciona flexibilidade, mas exige disciplina de uso (para não virar “transição completa disfarçada”).
-
-## Como testar (QA)
-
-- `QA/Phase/Advance In-Place (TestCase: PhaseInPlace)`
-- `QA/Phase/Advance With Transition (TestCase: PhaseWithTransition)`
+- [QA — Smoke: PhaseChange](../Reports/QA-PhaseChange-Smoke.md) — validação mínima dos contratos (in-place vs with-transition).
+- [Checklist-phase.md](Checklist-phase.md) — checklist de observabilidade (events, pending, commit).
 
 ## Referências
 
-- ADR-0016 — Phases + modos de avanço + IntroStage opcional
-- WorldLifecycle/SceneFlow — ordem de eventos e reset determinístico
+- [ADR-0016 — Phases + modos de avanço + IntroStage opcional](ADR-0016-Phases-WorldLifecycle.md)
+- [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
+- [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes

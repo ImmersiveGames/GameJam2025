@@ -1,8 +1,9 @@
 # ADR-0016 — Phases + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow)
 
 ## Status
-
-**Aceito / Ativo**
+- Estado: Aceito
+- Data: (não informado)
+- Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
 
 ## Contexto
 
@@ -33,6 +34,11 @@ Durante a evolução do gameplay, surgiram requisitos adicionais:
     - ou qualquer preparação de entrada do gameplay.
 
 Ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversível**; ela deve ter um mecanismo canônico de conclusão (produção) e mecanismos equivalentes de mitigação em dev/QA (para testes determinísticos).
+
+### Baseline 2.0 (Opção B) / Escopo
+
+- **IntroStage não é exigido pelo baseline** atual, pois não há evidência no smoke log vigente.
+- A validação de IntroStage será feita em smoke separado (Baseline 2.1 ou “IntroStage smoke”) quando o fluxo estiver promovido.
 
 ## Decisão
 
@@ -89,13 +95,29 @@ Onde:
 - Fail-safe: se a IntroStage ficar ativa por muito tempo, há um timeout (atual: ~20s):
     - `CompleteIntroStage("IntroStage/Timeout")`
 
-**Nota sobre sincronização GameLoop (estado atual do código)**
+## Fora de escopo
 
-Hoje, além do bridge acima, existe o `GameLoopSceneFlowCoordinator` que pode solicitar `RequestStart()` em `profile=gameplay` quando executa um `StartPlan` após `WorldLifecycleResetCompletedEvent`.
+- (não informado)
 
-Isso pode levar o GameLoop a entrar em `Playing` **antes** do bridge iniciar a IntroStage (o bridge detecta `state=Playing` e não inicia IntroStage). Quando a intenção é tornar a IntroStage determinística na entrada do gameplay, o start do gameplay deve ocorrer **após** a conclusão explícita da IntroStage.
+## Consequências
 
-## Detalhamento operacional
+### Benefícios
+
+- Dois modos de troca de fase ficam explícitos e rastreáveis (in-place vs com transição).
+- IntroStage tem contrato de conclusão claro e mitigação em QA/dev, reduzindo risco de bloqueio.
+
+### Trade-offs / Riscos
+
+- Se a IntroStage estiver ativa e nenhum caminho chamar `Complete/Skip`, o gameplay ficará bloqueado (por design).
+- Se o fluxo solicitar `RequestStart()` antes do início da IntroStage, a IntroStage pode ser suprimida (drift de implementação descrito acima).
+
+## Notas de implementação
+
+**Nota sobre sincronização GameLoop (observação condicional)**
+
+Hoje, além do bridge acima, existe o `GameLoopSceneFlowCoordinator`, que pode solicitar `RequestStart()` em `profile=gameplay` quando executa um `StartPlan` após `WorldLifecycleResetCompletedEvent`.
+
+Se o fluxo solicitar `RequestStart()` antes da IntroStage iniciar, **pode** ocorrer de a IntroStage não ser disparada (por exemplo, se o bridge encontrar o `state=Playing`). Quando a intenção é tornar a IntroStage determinística na entrada do gameplay, o start do gameplay deve ocorrer **após** a conclusão explícita da IntroStage.
 
 ### Sequência de SceneFlow + WorldLifecycle (profile gameplay)
 
@@ -118,15 +140,15 @@ Ordem canônica do pipeline (com IntroStage pós-revelação):
 - `IIntroStageStep`: conteúdo real (cutscene/splash/tutorial/press button).
 - `IIntroStageControlService`: canal canônico para encerrar IntroStage (produção/QA/dev).
 
-## Como testar (QA/Dev)
+### Como testar (QA/Dev)
 
-### 1) Runtime Debug GUI (Editor/Dev)
+**Runtime Debug GUI (Editor/Dev)**
 
 - `IntroStageRuntimeDebugGui` é instalado no bootstrap em **Editor/Development Build**.
 - Quando `IIntroStageControlService.IsIntroStageActive == true`, o GUI aparece e permite concluir com:
     - `CompleteIntroStage("IntroStage/UIConfirm")`
 
-### 2) Context Menu (Play Mode)
+**Context Menu (Play Mode)**
 
 - Componente: `IntroStageQaContextMenu` (namespace `_ImmersiveGames.NewScripts.QA.IntroStage`).
 - Ações:
@@ -134,24 +156,19 @@ Ordem canônica do pipeline (com IntroStage pós-revelação):
     - `QA/IntroStage/Skip (Force)` → `SkipIntroStage("QA/IntroStage/Skip")`
 - O `IntroStageQaInstaller` garante que o GameObject de QA exista em Editor/Dev.
 
-### 3) MenuItem (Editor)
+**MenuItem (Editor)**
 
 - `Tools/NewScripts/QA/IntroStage/Complete (Force)`
 - `Tools/NewScripts/QA/IntroStage/Skip (Force)`
 
-## Consequências
+## Evidências
 
-### Benefícios
-
-- Dois modos de troca de fase ficam explícitos e rastreáveis (in-place vs com transição).
-- IntroStage tem contrato de conclusão claro e mitigação em QA/dev, reduzindo risco de bloqueio.
-
-### Trade-offs
-
-- Se a IntroStage estiver ativa e nenhum caminho chamar `Complete/Skip`, o gameplay ficará bloqueado (por design).
-- Se o fluxo solicitar `RequestStart()` antes do início da IntroStage, a IntroStage pode ser suprimida (drift de implementação descrito acima).
+- [QA — Smoke: IntroStage](../Reports/QA-IntroStage-Smoke.md) — validação mínima de não-bloqueio e saídas canônicas.
+- [QA — Smoke: PhaseChange](../Reports/QA-PhaseChange-Smoke.md) — evidência suplementar dos dois modos (In-Place vs WithTransition).
+- [Reason Map (NewScripts)](../Reports/Reason-Map.md) — formatos/prefixos de `reason` usados no pipeline.
 
 ## Referências
 
-- ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
-- WorldLifecycle/SceneFlow — pipeline de eventos e reset determinístico
+- [ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)](ADR-0017-Tipos-de-troca-fase.md)
+- [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
+- [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes

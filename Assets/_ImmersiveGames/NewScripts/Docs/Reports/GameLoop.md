@@ -1,4 +1,4 @@
-﻿> Moved from `Gameplay/GameLoop/Docs/GameLoop.md` on 2025-12-29.
+> Moved from `Gameplay/GameLoop/Docs/GameLoop.md` on 2025-12-29.
 
 # GameLoop (NewScripts)
 

@@ -1,12 +1,11 @@
-# ADR-0014 – Gameplay Reset: Targets e Grupos
+# ADR-0014 — Gameplay Reset: Targets e Grupos
 
-**Status:** Implementado (baseline + QA em reports)
-**Data:** 2025-12-28
-**Escopo:** `GameplayReset` (NewScripts), `WorldLifecycle`, spawn services (Player/Eater)
+## Status
+- Estado: Implementado
+- Data: 2025-12-28
+- Escopo: `GameplayReset` (NewScripts), WorldLifecycle, spawn services (Player/Eater)
 
----
-
-## 1. Contexto
+## Contexto
 
 Durante o desenvolvimento foi necessário suportar resets parciais e previsíveis em gameplay, sem:
 
@@ -14,12 +13,10 @@ Durante o desenvolvimento foi necessário suportar resets parciais e previsívei
 - depender de objetos legados;
 - introduzir resets implícitos “por acaso”.
 
-Além do reset “hard” por `WorldLifecycle`, há casos de QA e debug onde precisamos resetar apenas
+Além do reset “hard” por WorldLifecycle, há casos de QA e debug onde precisamos resetar apenas
 um subconjunto dos atores (ex.: somente Player).
 
----
-
-## 2. Decisão
+## Decisão
 
 Introduzir um classificador de alvo de reset (`IGameplayResetTargetClassifier`) que define **targets** suportados.
 
@@ -35,9 +32,24 @@ No baseline atual, os targets são:
 
 > Nota: nomes devem refletir exatamente os existentes no projeto (enum `GameplayResetTarget`).
 
----
+## Fora de escopo
 
-## 3. Regras de classificação (baseline)
+- (não informado)
+
+## Consequências
+
+### Benefícios
+- Resets parciais com semântica explícita.
+- Facilita QA (validar despawn/spawn por grupo).
+- Base para evoluções: waves, checkpoints, respawn por morte, etc.
+
+### Trade-offs / Riscos
+- Se a classificação estiver incorreta, o reset pode deixar atores “órfãos” no mundo.
+- Novos tipos de ator exigem atualização no classificador e/ou nos spawn services.
+
+## Notas de implementação
+
+### Regras de classificação (baseline)
 
 - A classificação é feita preferencialmente pelo **`ActorRegistry`** (determinística e rápida).
 - Se não houver dados no registry, o orchestrator faz **fallback por scan de cena** (`IActor`).
@@ -45,30 +57,16 @@ No baseline atual, os targets são:
 - Para `ActorIdSet`, a fonte de verdade é a lista `ActorIds` do request.
 - Para `EaterOnly`, aplica-se `ActorKind.Eater` com fallback string-based (`EaterActor`) quando necessário.
 
----
-
-## 4. Integração com WorldLifecycle
+### Integração com WorldLifecycle
 
 - O hard reset acionado em runtime (ScenesReady) equivale semanticamente a `AllActorsInScene`.
 - Targets parciais são usados principalmente para QA/debug e para futuras features (ex.: respawn individual).
 
----
-
-## 5. Consequências
-
-### Benefícios
-- Resets parciais com semântica explícita.
-- Facilita QA (validar despawn/spawn por grupo).
-- Base para evoluções: waves, checkpoints, respawn por morte, etc.
-
-### Riscos
-- Se a classificação estiver incorreta, o reset pode deixar atores “órfãos” no mundo.
-- Novos tipos de ator exigem atualização no classificador e/ou nos spawn services.
-
----
-
-## 6. Evidência e validação
+## Evidências
 
 - [QA-GameplayReset-RequestMatrix.md](../Reports/QA-GameplayReset-RequestMatrix.md): valida `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`, `ByActorKind`.
 - [QA-GameplayResetKind.md](../Reports/QA-GameplayResetKind.md): valida `ByActorKind` e EaterOnly com probes.
-- [QA/GameplayReset-QA.md](../QA/GameplayReset-QA.md): passos mínimos para reset completo e parcial em gameplay.
+
+## Referências
+
+- [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)

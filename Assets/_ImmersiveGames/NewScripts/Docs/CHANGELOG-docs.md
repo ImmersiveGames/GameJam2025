@@ -1,5 +1,26 @@
 # Changelog (Docs)
 
+## [2026-01-16]
+### Item 8 — Contrato canônico de Observability (docs)
+
+- Added: `Reports/Observability-Contract.md` como **fonte de verdade** do contrato de observabilidade (SceneFlow, WorldLifecycle, GameLoop, InputMode, PhaseChange) com mapa de reasons + invariantes + exemplos.
+- Updated: `Reports/README.md` para apontar `Observability-Contract.md` como canônico e reclassificar `Reason-Map.md` como índice/glossário.
+- Updated: `Reports/Reason-Map.md` para remeter ao contrato canônico e alinhar prefixes de `PhaseChange` com ADR-0017.
+- Updated: `WORLD_LIFECYCLE.md` com seção “Contrato de observabilidade” apontando para `Observability-Contract.md`.
+- Updated: ADRs principais (Fade/Loading/Ciclo de Vida/Phases/Tipos de troca de fase) para remeter ao contrato quando mencionarem reasons e invariantes.
+
+### Changed
+- Padronização dos ADRs (layout e headings), com links atualizados e nomenclatura consistente.
+- Limpeza de Reports com arquivamento de históricos em `Reports/Archive/2025` e atualização de referências.
+- README e índices ajustados para refletir reports canônicos e arquivo histórico.
+- `WORLD_LIFECYCLE.md`: registrado PASS do reset manual (produção/dev/QA) com evidência de log (MenuScene sem controller => fail esperado; GameplayScene => pipeline completo + reset completed).
+
+### Removed
+- Pasta de QA em docs removida após atualização de referências.
+
+### Notes
+- Sem alterações no contrato do Baseline 2.0; apenas organização e links.
+
 ## [2026-01-15]
 ### Changed
 - Baseline 2.0 checklist ajustado para refletir a cobertura do log atual (A, B, D, E; **IntroStage pendente**) e a ordem Fade/Loading detalhada.
@@ -116,8 +137,6 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - `ADR-0010-LoadingHud-SceneFlow.md`: ordem correta do LoadingHUD com gate de reset e FadeOut.
 - `GameLoop-StateFlow-QA.md`: passos/evidências de startup → menu → gameplay → pause/resume (bootstrap, navigation, input mode).
 - `GameplayReset-QA.md`: reset em `ScenesReady` com gate durante o hard reset e conclusão antes do FadeOut.
-
-### Updated
 - `WORLD_LIFECYCLE.md`: alinhado ao fluxo de produção observado em log (startup→menu com SKIP + gameplay hard reset pós `ScenesReady`).
 - `GameLoop-StateFlow-QA.md`: atualizado para o fluxo real (startup termina em Ready; gameplay termina em Playing; pause/resume com gate).
 - `GameplayReset-QA.md`: QA do reset em gameplay (baseline Player+Eater) e targets parciais (PlayersOnly/EaterOnly).
@@ -134,7 +153,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Fixed: removida data futura no README e alinhado vocabulário de fade ao master.
 - Updated: `README.md` com links canônicos (master) e seção de reports históricos de SceneFlow.
 - Updated: reports históricos de SceneFlow marcados como **HISTÓRICO** e linkados ao master.
-- Updated: `Reports/SceneFlow-Gameplay-Blockers-Report.md` com referência ao master.
+- Updated: `Reports/Archive/2025/SceneFlow-Gameplay-Blockers-Report.md` com referência ao master.
 - Added: normalização de docs do NewScripts (migrando reports para `Docs/Reports`, consolidando `Docs/ADRs` e atualizando links).
 - Added: ADR-0014 (`GameplayReset Targets/Grupos`) com targets canônicos, determinismo e integração com WorldLifecycle.
 - Removed: pasta `Docs/ADR/` e o arquivo `Docs/ADR.meta` após consolidação de ADRs.
@@ -154,9 +173,9 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Added: bridge `GameResetRequestedEvent` → `RestartNavigationBridge` → reset oficial via SceneFlow/WorldLifecycle.
 - Updated: `Reports/GameLoop.md` e `WORLD_LIFECYCLE.md` com o fluxo de pós-game (Restart/Menu).
 - Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
-- Updated: `Reports/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
+- Updated: `Reports/Archive/2025/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
 - Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.
-- Updated: `Docs/QA/GameplayReset-QA.md` com notas sobre DI do classifier e `verboseLogs`.
+- Updated: documentação de QA de GameplayReset com notas sobre DI do classifier e `verboseLogs`.
 - Added: QA Eater (`GameplayResetKindQaEaterActor`) e spawn opcional no `GameplayResetKindQaSpawner` para validar `EaterOnly`.
 - Added: `Reports/QA-GameplayReset-RequestMatrix.md` com evidências da validação da matriz GameplayResetRequest.
 - Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com nota sobre classificação Kind-first e fallback string-based em `EaterOnly`.
@@ -169,9 +188,9 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: docs para reforçar `GameLoopSceneFlowCoordinator` como fonte única de `RequestStart()` e que navigation não emite start.
 - Updated: debug tools/QA triggers marcados como dev-only na documentação e relatório de validação do SceneFlow.
 - Added: `Reports/SceneFlow-Production-Validation-2025-12-28.md` com checklist do fluxo de produção e evidência mínima de logs.
-- Added: `Reports/SceneFlow-Gameplay-To-Menu-Report.md` com checklist e logs esperados do retorno Gameplay → Menu.
+- Added: `Reports/Archive/2025/SceneFlow-Gameplay-To-Menu-Report.md` com checklist e logs esperados do retorno Gameplay → Menu.
 - Updated: `Infrastructure/Navigation/ExitToMenuNavigationBridge.cs`, `Infrastructure/GlobalBootstrap.cs` e `Gameplay/Navigation/GameplayExitToMenuDebugTrigger.cs` para suportar ExitToMenu em produção/dev.
-- Added: `Reports/SceneFlow-Gameplay-Blockers-Report.md` com os 3 blockers do fluxo Menu → Gameplay (erros, causa raiz, correções e evidências).
+- Added: `Reports/Archive/2025/SceneFlow-Gameplay-Blockers-Report.md` com os 3 blockers do fluxo Menu → Gameplay (erros, causa raiz, correções e evidências).
 - Updated: `Gameplay/GameLoop/GameLoopSceneFlowCoordinator.cs` e `Infrastructure/WorldLifecycle/Spawn/PlayerSpawnService.cs` (fixes de blockers do fluxo).
 - Updated: `README.md` e `WORLD_LIFECYCLE.md` com explicação simples do pipeline, definição de “loading real”
   e critério para remover o SKIP (decisão registrada).
@@ -181,9 +200,9 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Fixed: remoção de artefatos de truncation/scan (‘...’) em docs (sem mudança de comportamento).
 
 ## [2025-12-27]
-- Added: `Reports/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
-- Added: `Reports/SceneFlow-Smoke-Result.md` com resultado do smoke test do SceneFlow (startup/menu → gameplay) incluindo logs essenciais.
-- Added: `Reports/QA-Audit-2025-12-27.md` com auditoria dos QAs ativos/removidos e recomendações de baseline.
+- Added: `Reports/Archive/2025/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
+- Added: `Reports/Archive/2025/SceneFlow-Smoke-Result.md` com resultado do smoke test do SceneFlow (startup/menu → gameplay) incluindo logs essenciais.
+- Added: `Reports/Archive/2025/QA-Audit-2025-12-27.md` com auditoria dos QAs ativos/removidos e recomendações de baseline.
 
 - Updated: docs: convert navigation references to Markdown links + cleanup placeholders.
 - Updated: `ADRs/ADR-0009-FadeSceneFlow.md` (Opção A) — Fade via cena aditiva (`FadeScene`) integrada ao SceneFlow.

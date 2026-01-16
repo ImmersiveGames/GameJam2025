@@ -1,7 +1,9 @@
 # ADR-0009 — Fade + SceneFlow (NewScripts)
 
 ## Status
-Aceito e implementado (baseline operacional validada em log).
+- Estado: Implementado
+- Data: (não informado)
+- Escopo: SceneFlow + Fade + Loading HUD (NewScripts)
 
 ## Contexto
 
@@ -22,7 +24,13 @@ O pipeline NewScripts precisava:
 5. Integrar o pipeline de transição com `SceneFlowLoadingService` (LoadingHUD) para manter o ordering
    após o `FadeIn` e antes do `FadeOut`.
 
+## Fora de escopo
+
+- Compatibilidade com fade legado.
+
 ## Consequências
+
+### Benefícios
 
 - O SceneFlow se torna independente do fade legado.
 - A duração do fade é declarativa por profile (sem strings espalhadas além do ponto de resolução).
@@ -33,7 +41,11 @@ O pipeline NewScripts precisava:
 - Fade e Loading HUD ficam integrados ao `SceneTransitionService` por adapters dedicados
   (`NewScriptsSceneFlowFadeAdapter` + `SceneFlowLoadingService`), mantendo responsabilidades separadas.
 
-## Notas de implementação (baseline validada)
+### Trade-offs / Riscos
+
+- (não informado)
+
+## Notas de implementação
 
 Evidências observadas:
 
@@ -45,6 +57,12 @@ Evidências observadas:
 - O fade carrega a `FadeScene` additive quando necessário e encontra `NewScriptsFadeController`.
 - O canvas de fade opera com sorting alto (ex.: `sortingOrder=11000`) para sobrepor UI durante transição.
 
-## Evidência
+## Evidências
 
-- `Docs/Reports/Report-SceneFlow-Production-Log-2025-12-31.md` (recortes do log: ProfileResolver + FadeController + sequência com LoadingHUD).
+- [Report-SceneFlow-Production-Log-2025-12-31](../Reports/Archive/2025/Report-SceneFlow-Production-Log-2025-12-31.md) — recortes do log (ProfileResolver + FadeController + sequência com LoadingHUD).
+
+## Referências
+
+- [ADR-0010 — Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)
+- [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
+- [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes

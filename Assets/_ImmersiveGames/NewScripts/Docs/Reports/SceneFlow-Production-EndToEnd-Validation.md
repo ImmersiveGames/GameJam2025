@@ -6,7 +6,7 @@ Este report é o **master** para evidência mínima do fluxo de produção.
 
 ## Referências rápidas
 - [SceneFlow-Assets-Checklist.md](SceneFlow-Assets-Checklist.md)
-- [SceneFlow-Gameplay-Blockers-Report.md](SceneFlow-Gameplay-Blockers-Report.md)
+- [SceneFlow-Gameplay-Blockers-Report.md](Archive/2025/SceneFlow-Gameplay-Blockers-Report.md)
 
 ## Pré-requisitos
 - **Build Settings** inclui as cenas abaixo (com estes nomes exatos):

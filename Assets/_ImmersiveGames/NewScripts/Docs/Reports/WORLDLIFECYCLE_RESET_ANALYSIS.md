@@ -1,4 +1,4 @@
-﻿> Moved from `Infrastructure/WorldLifecycle/WORLDLIFECYCLE_RESET_ANALYSIS.md` on 2025-12-29.
+> Moved from `Infrastructure/WorldLifecycle/WORLDLIFECYCLE_RESET_ANALYSIS.md` on 2025-12-29.
 
 # WorldLifecycle + Gameplay Reset — Análise consolidada (do chat)
 

@@ -208,14 +208,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
         }
 
+
         public Task RequestResetAsync(string source)
         {
             var activeSceneName = SceneManager.GetActiveScene().name;
             var reason = WorldLifecycleResetReason.ProductionTrigger(source);
             var safeSource = string.IsNullOrWhiteSpace(source) ? "<unspecified>" : source.Trim();
 
+            // Assinatura sintética para correlação fora do SceneFlow (não existe SceneTransitionContext).
+            var directSignature = WorldLifecycleDirectResetSignatureUtil.Compute(activeSceneName, safeSource);
+
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
-                $"[WorldLifecycle] Reset REQUESTED. reason='{reason}', source='{safeSource}', scene='{activeSceneName}'.",
+                $"[WorldLifecycle] Reset REQUESTED. signature='{directSignature}', reason='{reason}', source='{safeSource}', scene='{activeSceneName}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
@@ -240,10 +244,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return Task.CompletedTask;
             }
 
-            return RunDirectResetAsync(activeSceneName, reason, safeSource);
+            return RunDirectResetAsync(activeSceneName, reason, safeSource, directSignature);
         }
 
-        private async Task RunDirectResetAsync(string activeSceneName, string reason, string safeSource)
+        private async Task RunDirectResetAsync(string activeSceneName, string reason, string safeSource, string directSignature)
         {
             try
             {
@@ -252,6 +256,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
                         $"[WorldLifecycle] WorldLifecycleController não encontrado na cena '{activeSceneName}'. Reset abortado.");
+
+                    EmitDirectResetCompleted(directSignature, WorldLifecycleResetReason.FailedNoController(activeSceneName));
                     return;
                 }
 
@@ -259,14 +265,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
                 // Commit seguro também para reset manual/in-place (após reset bem-sucedido).
                 TryCommitPendingPhase(safeSource, reason);
+
+                EmitDirectResetCompleted(directSignature, reason);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
                     $"[WorldLifecycle] Exceção ao executar reset manual: {ex.Message}");
+
+                EmitDirectResetCompleted(directSignature, WorldLifecycleResetReason.FailedReset(ex.GetType().Name));
             }
         }
 
+        private static void EmitDirectResetCompleted(string signature, string reason)
+        {
+            var safeSignature = string.IsNullOrWhiteSpace(signature) ? "<directReset>" : signature;
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
+                $"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='<none>', signature='{safeSignature}', reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<WorldLifecycleResetCompletedEvent>.Raise(
+                new WorldLifecycleResetCompletedEvent(safeSignature, reason));
+        }
         private static bool IsSceneTransitionGateActive()
         {
             if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) || gateService == null)
