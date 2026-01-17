@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void TryResolveController()
         {
-            _controller = UnityEngine.Object.FindAnyObjectByType<NewScriptsLoadingHudController>();
+            _controller = Object.FindAnyObjectByType<NewScriptsLoadingHudController>();
         }
 
         private static bool IsControllerValid(NewScriptsLoadingHudController controller)
@@ -139,12 +139,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 return false;
             }
 
-            if (controller is Object unityObject && unityObject == null)
-            {
-                return false;
-            }
+            return controller is not Object unityObject || unityObject != null;
 
-            return true;
         }
     }
 }

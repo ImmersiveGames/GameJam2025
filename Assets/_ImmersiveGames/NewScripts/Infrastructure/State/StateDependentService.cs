@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
     /// - Logs de "Move bloqueado/liberado" são emitidos SOMENTE quando a situação muda
     ///   E apenas após o primeiro consumo de CanExecuteAction(Move) (clean option).
     /// </summary>
-    public sealed class NewScriptsStateDependentService : IStateDependentService
+    public sealed class StateDependentService : IStateDependentService
     {
         private enum ServiceState
         {
@@ -56,14 +56,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private bool _hasReadinessSnapshot;
         private bool _gameplayReady;
 
-        // Move logging (only on transitions; clean option arms on first Move query)
+        // Move logging (only on transitions; clean option arms on the first Move query)
         private bool _moveLoggingArmed;
         private bool _hasMoveDecision;
         private MoveDecision _lastMoveDecision = MoveDecision.Allowed;
         private ServiceState _lastResolvedState = ServiceState.Ready;
         private string _lastLoopStateName = string.Empty;
 
-        public NewScriptsStateDependentService(ISimulationGateService gateService = null)
+        public StateDependentService(ISimulationGateService gateService = null)
         {
             _gateService = gateService;
 
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         }
 
         /// <summary>
-        /// Pausa "pura" significa: Pause está ativo e é o ÚNICO token ativo.
+        /// Pausa "pura" significa: pause está ativo e é o ÚNICO token ativo.
         /// Isso permite classificar pause como "Paused" e não como "GateClosed" genérico.
         /// </summary>
         private bool IsPausedOnlyByGate()
@@ -413,7 +413,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             bool pausedOnly = IsPausedOnlyByGate();
             bool gameplayReady = !_hasReadinessSnapshot || _gameplayReady;
 
-            DebugUtility.LogVerbose<NewScriptsStateDependentService>(
+            DebugUtility.LogVerbose<StateDependentService>(
                 decision == MoveDecision.Allowed
                     ? $"[StateDependent] Action 'Move' liberada (gateOpen={gateIsOpen}, gameplayReady={gameplayReady}, paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens})."
                     : $"[StateDependent] Action 'Move' bloqueada: {decision} (gateOpen={gateIsOpen}, gameplayReady={gameplayReady}, paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens}).");

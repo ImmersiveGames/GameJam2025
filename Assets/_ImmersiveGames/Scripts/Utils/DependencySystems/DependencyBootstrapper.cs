@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             try
             {
                 EnsureGlobal<ICameraResolver>(() => new CameraResolverService());
-                EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
+                EnsureGlobal<IOldUniqueIdFactory>(() => new OldUniqueIdFactory());
 
                 // Gate global: bloqueio/liberação de simulação sem depender de timeScale.
                 EnsureGlobal<ISimulationGateService>(() => new SimulationGateService());
@@ -205,7 +205,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 return;
             }
 
-            EnsureGlobal<IStateDependentService>(() => new StateDependentService(stateMachine));
+            EnsureGlobal<IStateDependentService>(() => new StateDependentServiceOld(stateMachine));
         }
     }
 }

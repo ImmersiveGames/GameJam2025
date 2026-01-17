@@ -15,11 +15,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneFlowLoadingService
     {
-        private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
-        private readonly EventBinding<SceneTransitionFadeInCompletedEvent> _transitionFadeInCompletedBinding;
-        private readonly EventBinding<SceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
-        private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _transitionBeforeFadeOutBinding;
-        private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
 
         private INewScriptsLoadingHudService _hudService;
 
@@ -31,17 +26,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         public SceneFlowLoadingService()
         {
-            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
-            _transitionFadeInCompletedBinding = new EventBinding<SceneTransitionFadeInCompletedEvent>(OnTransitionFadeInCompleted);
-            _transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnTransitionScenesReady);
-            _transitionBeforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnTransitionBeforeFadeOut);
-            _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
+            var transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
+            var transitionFadeInCompletedBinding = new EventBinding<SceneTransitionFadeInCompletedEvent>(OnTransitionFadeInCompleted);
+            var transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnTransitionScenesReady);
+            var transitionBeforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnTransitionBeforeFadeOut);
+            var transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
 
-            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
-            EventBus<SceneTransitionFadeInCompletedEvent>.Register(_transitionFadeInCompletedBinding);
-            EventBus<SceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
-            EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_transitionBeforeFadeOutBinding);
-            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+            EventBus<SceneTransitionStartedEvent>.Register(transitionStartedBinding);
+            EventBus<SceneTransitionFadeInCompletedEvent>.Register(transitionFadeInCompletedBinding);
+            EventBus<SceneTransitionScenesReadyEvent>.Register(transitionScenesReadyBinding);
+            EventBus<SceneTransitionBeforeFadeOutEvent>.Register(transitionBeforeFadeOutBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(transitionCompletedBinding);
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 "[Loading] SceneFlowLoadingService registrado nos eventos de Scene Flow.");
@@ -49,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             ResetWarnings();
 
@@ -64,16 +59,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _pendingPhase = LoadingHudPhases.Started;
             _pendingUseFade = evt.Context.UseFade;
 
-            if (_pendingUseFade)
-            {
-                DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                    $"[Loading] Started → Ensure only (Show após FadeIn). signature='{signature}'.");
-            }
-            else
-            {
-                DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                    $"[Loading] Started → Ensure + Show (no-fade). signature='{signature}'.");
-            }
+            DebugUtility.LogVerbose<SceneFlowLoadingService>(
+                _pendingUseFade ? $"[Loading] Started → Ensure only (Show após FadeIn). signature='{signature}'." : $"[Loading] Started → Ensure + Show (no-fade). signature='{signature}'.");
 
             _ = EnsureLoadedAsync(signature);
 
@@ -86,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void OnTransitionFadeInCompleted(SceneTransitionFadeInCompletedEvent evt)
         {
-            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             if (!EnsureActiveSignature(signature))
             {
@@ -104,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void OnTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             if (IsSignatureMismatch(signature))
             {
@@ -125,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void OnTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
-            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             if (!EnsureActiveSignature(signature))
             {
@@ -142,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             if (!EnsureActiveSignature(signature, allowEmptyActive: true))
             {
@@ -232,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             // (FadeInCompleted/ScenesReady).
             if (_pendingUseFade)
             {
-                var phase = ResolvePendingPhase(signature, LoadingHudPhases.Started);
+                string phase = ResolvePendingPhase(signature, LoadingHudPhases.Started);
                 if (!string.Equals(phase, LoadingHudPhases.Started))
                 {
                     TryShow(signature, phase, "ensure_loaded_after_fade");

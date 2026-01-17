@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             var dedupeKey = $"{profile}|{signature}";
 
             // ===== Gameplay =====
-            if (string.Equals(profile, SceneFlowProfileNames.Gameplay, StringComparison.OrdinalIgnoreCase))
+            if (evt.Context.TransitionProfileId == SceneFlowProfileId.Gameplay)
             {
                 inputModeService.SetGameplay("SceneFlow/Completed:Gameplay");
 
@@ -179,8 +179,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             }
 
             // ===== Frontend/Startup =====
-            if (string.Equals(profile, SceneFlowProfileNames.Startup, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(profile, SceneFlowProfileNames.Frontend, StringComparison.OrdinalIgnoreCase))
+            if (evt.Context.TransitionProfileId.IsStartupOrFrontend)
             {
                 if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))

@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
         private readonly NewScriptsSceneTransitionProfileResolver _profileResolver;
 
         private static readonly NewScriptsFadeConfig DefaultConfig =
-            new NewScriptsFadeConfig(
+            new(
                 fadeInDuration: 0.5f,
                 fadeOutDuration: 0.5f,
                 fadeInCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 
         public void ConfigureFromProfile(SceneFlowProfileId profileId)
         {
-            var profile = _profileResolver.Resolve(profileId, out var resolvedPath);
+            var profile = _profileResolver.Resolve(profileId, out string resolvedPath);
 
             if (profile == null)
             {
@@ -150,15 +150,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
             }
 
             // O value do ID já é normalizado (trim + lower) em SceneFlowProfileId.
-            var key = profileId.Value;
+            string key = profileId.Value;
             if (_cache.TryGetValue(key, out var cached) && cached != null)
             {
                 resolvedPath = "<cache>";
                 return cached;
             }
 
-            var pathA = SceneFlowProfilePaths.For(profileId);
-            var pathB = key;
+            string pathA = SceneFlowProfilePaths.For(profileId);
+            string pathB = key;
 
             // 1) Tentativa principal (tipo correto).
             var resolved = !string.IsNullOrEmpty(pathA)

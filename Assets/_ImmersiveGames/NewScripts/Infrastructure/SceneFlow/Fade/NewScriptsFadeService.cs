@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
 
         // Defaults mínimos (ciclo mínimo).
         private static readonly NewScriptsFadeConfig DefaultConfig =
-            new NewScriptsFadeConfig(
+            new(
                 fadeInDuration: 0.5f,
                 fadeOutDuration: 0.5f,
                 fadeInCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),

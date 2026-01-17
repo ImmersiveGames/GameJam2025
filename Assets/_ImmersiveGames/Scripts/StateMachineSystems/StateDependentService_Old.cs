@@ -4,13 +4,13 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
-    public class StateDependentService : IStateDependentService
+    public class StateDependentServiceOld : IStateDependentService
     {
         private bool _isGameActive;
         private readonly GameManagerStateMachine _stateMachine;
         private readonly EventBinding<StateChangedEvent> _stateChangedEvent;
 
-        public StateDependentService(GameManagerStateMachine stateMachine)
+        public StateDependentServiceOld(GameManagerStateMachine stateMachine)
         {
             _stateMachine = stateMachine;
             _isGameActive = stateMachine.CurrentState?.IsGameActive() ?? false;

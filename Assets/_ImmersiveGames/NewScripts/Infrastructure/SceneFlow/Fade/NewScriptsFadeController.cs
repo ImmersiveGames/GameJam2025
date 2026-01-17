@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
             // Observação:
             // - Em Canvas raiz (sem parent Canvas), o Unity pode manter overrideSorting=false por design.
             // - Ainda assim, sortingOrder funciona normalmente para Canvas raiz.
-            var isRoot = canvas.isRootCanvas;
+            bool isRoot = canvas.isRootCanvas;
 
             if (!isRoot)
             {
@@ -100,10 +100,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
                 return;
             }
 
-            var currentAlpha = canvasGroup.alpha;
-            var isFadeIn = targetAlpha > currentAlpha;
+            float currentAlpha = canvasGroup.alpha;
+            bool isFadeIn = targetAlpha > currentAlpha;
 
-            var duration = isFadeIn ? _fadeInDuration : _fadeOutDuration;
+            float duration = isFadeIn ? _fadeInDuration : _fadeOutDuration;
             var curve = isFadeIn ? _fadeInCurve : _fadeOutCurve;
 
             // Bloqueia input enquanto escurece.

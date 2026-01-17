@@ -21,16 +21,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
             Value = Normalize(value);
         }
 
-        public static SceneFlowProfileId FromName(string name) => new SceneFlowProfileId(name);
+        public static SceneFlowProfileId FromName(string name) => new(name);
 
         public static string Normalize(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToLowerInvariant();
 
-            return value.Trim().ToLowerInvariant();
         }
 
         public override string ToString() => Value ?? string.Empty;
@@ -49,9 +45,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
         public static SceneFlowProfileId None => default;
 
         // Profiles oficiais (evidence-based) atualmente usados no projeto.
-        public static SceneFlowProfileId Startup => new SceneFlowProfileId("startup");
-        public static SceneFlowProfileId Frontend => new SceneFlowProfileId("frontend");
-        public static SceneFlowProfileId Gameplay => new SceneFlowProfileId("gameplay");
+        public static SceneFlowProfileId Startup => new("startup");
+        public static SceneFlowProfileId Frontend => new("frontend");
+        public static SceneFlowProfileId Gameplay => new("gameplay");
 
         public bool IsStartupOrFrontend => this == Startup || this == Frontend;
         public bool IsGameplay => this == Gameplay;

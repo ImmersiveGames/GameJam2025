@@ -3,7 +3,7 @@
  * - Registrado IPhaseContextService (PhaseContextService) no DI global (ADR-0016).
  * - Adicionado PhaseContextSceneFlowBridge para limpar Pending no SceneTransitionStarted (Baseline 3B).
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
- * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
+ * - StateDependentService agora usa apenas StateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
  * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow
  *   (GameStartRequestedEvent -> Transition -> ScenesReady -> RequestStart/Ready).
@@ -801,31 +801,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         {
             if (DependencyManager.Provider.TryGetGlobal<IStateDependentService>(out var existing) && existing != null)
             {
-                if (existing is NewScriptsStateDependentService)
+                if (existing is StateDependentService)
                 {
                     DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                        "[StateDependent] NewScriptsStateDependentService já registrado no DI global.",
+                        "[StateDependent] StateDependentService já registrado no DI global.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[StateDependent] Serviço registrado ({existing.GetType().Name}) não usa gate; substituindo por NewScriptsStateDependentService.");
+                    $"[StateDependent] Serviço registrado ({existing.GetType().Name}) não usa gate; substituindo por StateDependentService.");
 
                 DependencyManager.Provider.RegisterGlobal<IStateDependentService>(
-                    new NewScriptsStateDependentService(),
+                    new StateDependentService(),
                     allowOverride: true);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService.",
+                    "[StateDependent] Registrado StateDependentService (gate-aware) como IStateDependentService.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            RegisterIfMissing<IStateDependentService>(() => new NewScriptsStateDependentService());
+            RegisterIfMissing<IStateDependentService>(() => new StateDependentService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService.",
+                "[StateDependent] Registrado StateDependentService (gate-aware) como IStateDependentService.",
                 DebugUtility.Colors.Info);
         }
 

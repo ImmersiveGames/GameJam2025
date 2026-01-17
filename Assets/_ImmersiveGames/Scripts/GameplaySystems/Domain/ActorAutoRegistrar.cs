@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
                     $"ActorId ainda vazio em Start para '{_actor.ActorName}'. " +
-                    $"Verifique se o ActorMaster está gerando ActorId no Awake e se o UniqueIdFactory está disponível.",
+                    $"Verifique se o ActorMaster está gerando ActorId no Awake e se o OldUniqueIdFactory está disponível.",
                     this);
                 return;
             }
