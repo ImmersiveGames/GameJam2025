@@ -9,10 +9,10 @@ namespace _ImmersiveGames.NewScripts.UI
     /// <summary>
     /// Base comum para binders de botões do Frontend.
     /// - Não registra listeners via código: use OnClick() no Inspector.
-    /// - Fornece click-guard (anti auto-submit), opcionalmente limpa seleção do EventSystem,
+    /// - Fornece click-guard (anti auto submit), opcionalmente limpa seleção do EventSystem,
     ///   e (opcional) desabilita o botão durante a ação.
     ///
-    /// Sem corrotinas: qualquer "fallback" deve ser resolvido por evento real (quando aplicável)
+    /// Sem coroutines: qualquer "fallback" deve ser resolvido por evento real (quando aplicável)
     /// ou simplesmente não desabilitando o botão (recomendado).
     /// </summary>
     public abstract class FrontendButtonBinderBase : MonoBehaviour
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.UI
 
         [Tooltip("Quando true, desabilita o botão ao iniciar a ação. " +
                  "Se a ação falhar para iniciar (ex.: serviço indisponível), o botão é reabilitado automaticamente.")]
-        [SerializeField] private bool disableButtonDuringAction = false;
+        [SerializeField] private bool disableButtonDuringAction;
 
         private float _ignoreClicksUntilUnscaledTime;
         private bool _clickGuardArmedThisEnable;
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.UI
                 SetButtonInteractable(false, "ActionStarted");
             }
 
-            var started = false;
+            bool started;
 
             try
             {
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.UI
                 started = false;
             }
 
-            // Sem corrotinas: se não iniciou, reabilita imediatamente para não travar UI.
+            // Sem coroutines: se não iniciou, reabilita imediatamente para não travar UI.
             if (disableButtonDuringAction && !started)
             {
                 SetButtonInteractable(true, "ActionNotStarted");
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.UI
         /// </summary>
         protected abstract bool OnClickCore(string actionReason);
 
-        protected void ArmClickGuard(float seconds, string label)
+        private void ArmClickGuard(float seconds, string label)
         {
             if (seconds <= 0f)
             {
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.UI
             ArmClickGuard(seconds, label);
         }
 
-        protected void TryClearEventSystemSelection()
+        private void TryClearEventSystemSelection()
         {
             var es = EventSystem.current;
             if (es == null)
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.UI
             }
         }
 
-        protected void SetButtonInteractable(bool value, string reasonLabel)
+        private void SetButtonInteractable(bool value, string reasonLabel)
         {
             if (button == null)
             {

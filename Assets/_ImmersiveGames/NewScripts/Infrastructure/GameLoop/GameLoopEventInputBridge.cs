@@ -42,7 +42,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         public void Dispose()
         {
             if (_disposed)
+            {
                 return;
+            }
 
             _disposed = true;
 
@@ -61,18 +63,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         private void OnGamePause(GamePauseCommandEvent evt)
         {
             if (!TryResolveLoop(out var loop))
+            {
                 return;
+            }
 
             if (evt != null && evt.IsPaused)
+            {
                 loop.RequestPause();
+            }
             else
+            {
                 loop.RequestResume();
+            }
         }
 
         private void OnGameResumeRequested(GameResumeRequestedEvent evt)
         {
             if (!TryResolveLoop(out var loop))
+            {
                 return;
+            }
 
             loop.RequestResume();
         }
@@ -80,7 +90,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         private void OnExitToMenuRequested(GameExitToMenuRequestedEvent evt)
         {
             if (!TryResolveLoop(out var loop))
+            {
                 return;
+            }
 
             DebugUtility.LogVerbose<GameLoopEventInputBridge>(
                 $"[GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing). reason='{evt?.Reason ?? "<null>"}'.");
@@ -90,7 +102,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         private void OnGameResetRequested(GameResetRequestedEvent evt)
         {
             if (!TryResolveLoop(out var loop))
+            {
                 return;
+            }
 
             DebugUtility.Log<GameLoopEventInputBridge>(
                 $"[GameLoop] RestartRequested -> RequestReset (expect Boot cycle). reason='{evt?.Reason ?? "<null>"}'.",

@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks
     /// <summary>
     /// Registry explícito de lifecycle hooks para o escopo de cena.
     /// </summary>
-    public sealed class WorldLifecycleHookRegistry
+    public sealed class WorldLifecycleHookRegistry : IDisposable
     {
         private readonly List<IWorldLifecycleHook> _hooks = new();
 
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks
 
             if (_hooks.Contains(hook))
             {
-                throw new InvalidOperationException("Hook already registered.");
+                throw new InvalidOperationException($"Hook of type {hook.GetType().Name} already registered.");
             }
 
             _hooks.Add(hook);
@@ -39,6 +39,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks
         public void Clear()
         {
             _hooks.Clear();
+        }
+
+        public void Dispose()
+        {
+            Clear();
         }
     }
 }

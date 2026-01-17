@@ -57,7 +57,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         public void Dispose()
         {
             if (_disposed)
+            {
                 return;
+            }
 
             _disposed = true;
 
@@ -192,11 +194,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         private bool EnsureGateResolved()
         {
             if (_gateService != null)
+            {
                 return true;
+            }
 
             var provider = DependencyManager.Provider;
             if (provider == null)
+            {
                 return false;
+            }
 
             if (provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
             {
@@ -215,7 +221,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         private void LogGateUnavailable()
         {
             if (_loggedMissingGate)
+            {
                 return;
+            }
 
             DebugUtility.LogWarning<GamePauseGateBridge>(
                 "[PauseBridge] ISimulationGateService indisponível; não é possível refletir pause/resume no gate.");

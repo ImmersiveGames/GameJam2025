@@ -1,5 +1,3 @@
-// Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs
-
 /*
  * ChangeLog
  * - Registrado IPhaseContextService (PhaseContextService) no DI global (ADR-0016).
@@ -28,7 +26,6 @@ using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.Phases;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.Baseline;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -87,7 +84,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             return;
 #else
             if (_initialized)
+            {
                 return;
+            }
 
             _initialized = true;
 
@@ -111,7 +110,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static void EnsureDependencyProvider()
         {
             if (DependencyManager.HasInstance)
+            {
                 return;
+            }
 
             _ = DependencyManager.Provider;
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), "DependencyManager created for global scope.");
@@ -184,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterPhaseTransitionIntentRegistry();
 
-            // PhaseChange depende de PhaseContext + SceneFlow/WorldReset (para "in place" vs "transition").
+            // PhaseChange depende de PhaseContext + SceneFlow/WorldReset (para "in place" vs. "transition").
             RegisterPhaseChangeService();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
@@ -282,7 +283,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             if (gateService == null)
             {
-                if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out gateService) || gateService == null)
+                if (!DependencyManager.Provider.TryGetGlobal(out gateService) || gateService == null)
                 {
                     DebugUtility.LogError(typeof(GlobalBootstrap),
                         "[Pause] ISimulationGateService indisponível; GamePauseGateBridge não pôde ser inicializado.");
@@ -303,7 +304,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (gateService == null)
             {
                 // fallback: tenta resolver aqui (best-effort)
-                if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out gateService) || gateService == null)
+                if (!DependencyManager.Provider.TryGetGlobal(out gateService) || gateService == null)
                 {
                     DebugUtility.LogError(typeof(GlobalBootstrap),
                         "[Readiness] ISimulationGateService indisponível. Scene Flow readiness ficará sem proteção de gate.");
@@ -591,7 +592,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 }
 
                 completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                DependencyManager.Provider.RegisterGlobal<ISceneTransitionCompletionGate>(completionGate, allowOverride: true);
+                DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: true);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                     "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",

@@ -13,9 +13,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
         IReadOnlyList<IWorldSpawnService> Services { get; }
 
         void Register(IWorldSpawnService service);
+
+        /// <summary>
+        /// Limpa todos os serviços registrados.
+        /// </summary>
+        void Clear();
     }
 
-    public sealed class WorldSpawnServiceRegistry : IWorldSpawnServiceRegistry
+    public sealed class WorldSpawnServiceRegistry : IWorldSpawnServiceRegistry, IDisposable
     {
         private readonly List<IWorldSpawnService> _services = new();
 
@@ -50,6 +55,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 
             DebugUtility.LogVerbose(typeof(WorldSpawnServiceRegistry),
                 $"Spawn service registrado: {nameSafe} (ordem {_services.Count}).");
+        }
+
+        public void Clear()
+        {
+            _services.Clear();
+        }
+
+        public void Dispose()
+        {
+            Clear();
         }
     }
 }

@@ -98,27 +98,42 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         #region Log estático por Type
         public static void Log(Type type, string message, string color = null, Object context = null)
         {
-            if (!ShouldLog(type, null, DebugLevel.Logs)) return;
+            if (!ShouldLog(type, null, DebugLevel.Logs))
+            {
+                return;
+            }
             Debug.Log(ApplyColor(BuildLogMessage("INFO", type, message), color), context);
         }
 
         public static void LogWarning(Type type, string message, Object context = null)
         {
-            if (!ShouldLog(type, null, DebugLevel.Warning)) return;
+            if (!ShouldLog(type, null, DebugLevel.Warning))
+            {
+                return;
+            }
             Debug.LogWarning(BuildLogMessage("WARNING", type, message), context);
         }
 
         public static void LogError(Type type, string message, Object context = null)
         {
-            if (!ShouldLog(type, null, DebugLevel.Error)) return;
+            if (!ShouldLog(type, null, DebugLevel.Error))
+            {
+                return;
+            }
             Debug.LogError(BuildLogMessage("ERROR", type, message), context);
         }
 
         public static void LogVerbose(Type type, string message, string color = null, Object context = null, bool isFallback = false, bool deduplicate = false)
         {
-            if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose)) return;
+            if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose))
+            {
+                return;
+            }
 
-            if (!TrackCall(type, message, context, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate))
+            {
+                return;
+            }
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -127,30 +142,45 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         public static void Log<T>(string message, string color = null, Object context = null, T instance = null) where T : class
         {
             var type = typeof(T);
-            if (!ShouldLog(type, instance, DebugLevel.Logs)) return;
+            if (!ShouldLog(type, instance, DebugLevel.Logs))
+            {
+                return;
+            }
             Debug.Log(ApplyColor(BuildLogMessage("INFO", type, message), color), context);
         }
 
         public static void LogWarning<T>(string message, Object context = null, T instance = null) where T : class
         {
             var type = typeof(T);
-            if (!ShouldLog(type, instance, DebugLevel.Warning)) return;
+            if (!ShouldLog(type, instance, DebugLevel.Warning))
+            {
+                return;
+            }
             Debug.LogWarning(BuildLogMessage("WARNING", type, message), context);
         }
 
         public static void LogError<T>(string message, Object context = null, T instance = null) where T : class
         {
             var type = typeof(T);
-            if (!ShouldLog(type, instance, DebugLevel.Error)) return;
+            if (!ShouldLog(type, instance, DebugLevel.Error))
+            {
+                return;
+            }
             Debug.LogError(BuildLogMessage("ERROR", type, message), context);
         }
 
         public static void LogVerbose<T>(string message, string color = null, Object context = null, T instance = null, bool isFallback = false, bool deduplicate = false) where T : class
         {
             var type = typeof(T);
-            if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose)) return;
+            if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose))
+            {
+                return;
+            }
 
-            if (!TrackCall(type, message, context, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate))
+            {
+                return;
+            }
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -158,18 +188,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         #region Helpers Internos
         private static bool ShouldLog(Type type, object instance, DebugLevel messageLevel)
         {
-            if (!_globalDebugEnabled) return false;
+            if (!_globalDebugEnabled)
+            {
+                return false;
+            }
 
             if (instance != null && _localLevels.TryGetValue(instance, out var localLevel))
+            {
                 return (int)localLevel >= (int)messageLevel;
+            }
 
-            if (type == null) return (int)_defaultDebugLevel >= (int)messageLevel;
+            if (type == null)
+            {
+                return (int)_defaultDebugLevel >= (int)messageLevel;
+            }
 
             if (_scriptDebugLevels.TryGetValue(type, out var scriptLevel))
+            {
                 return (int)scriptLevel >= (int)messageLevel;
+            }
 
             if (_attributeLevels.TryGetValue(type, out var attributeLevel))
+            {
                 return (int)attributeLevel >= (int)messageLevel;
+            }
 
             attributeLevel = Attribute.GetCustomAttribute(type, typeof(DebugLevelAttribute)) is DebugLevelAttribute attr
                 ? attr.Level
@@ -194,7 +236,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
                 _stringBuilder.Clear();
                 _stringBuilder.Append("[VERBOSE] [").Append(type.Name).Append("] ").Append(message);
                 if (isFallback)
+                {
                     _stringBuilder.Append(" (fallback)");
+                }
                 baseMessage = _stringBuilder.ToString();
                 _messagePool[key] = baseMessage;
             }
@@ -212,7 +256,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
 
         private static void LogInternal(string message, Object context = null)
         {
-            if (!ShouldLog(null, null, DebugLevel.Logs)) return;
+            if (!ShouldLog(null, null, DebugLevel.Logs))
+            {
+                return;
+            }
             Debug.Log(ApplyColor(BuildLogMessage("INFO", typeof(DebugUtility), message), null), context);
         }
 
@@ -253,9 +300,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
 
         private static void LogRepeatedCallVerbose(Type type, string message, int frame)
         {
-            if (!_verboseLoggingEnabled || !_repeatedCallVerboseEnabled) return;
-            if (type != null && _disabledVerboseTypes.Contains(type)) return;
-            if (!ShouldLog(type, null, DebugLevel.Verbose)) return;
+            if (!_verboseLoggingEnabled || !_repeatedCallVerboseEnabled)
+            {
+                return;
+            }
+            if (type != null && _disabledVerboseTypes.Contains(type))
+            {
+                return;
+            }
+            if (!ShouldLog(type, null, DebugLevel.Verbose))
+            {
+                return;
+            }
 
             _stringBuilder.Clear();
             _stringBuilder.Append("[DebugUtility] ")

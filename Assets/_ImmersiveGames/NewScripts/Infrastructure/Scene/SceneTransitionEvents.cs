@@ -63,11 +63,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             // Formato estável, sem depender de ToString().
             // Nota: não fazemos escaping; nomes de cenas/profiles no projeto não contêm '|'.
-            var load = JoinList(scenesToLoad);
-            var unload = JoinList(scenesToUnload);
-            var active = (targetActiveScene ?? string.Empty).Trim();
-            var profile = transitionProfileId.Value ?? string.Empty;
-            var fade = useFade ? "1" : "0";
+            string load = JoinList(scenesToLoad);
+            string unload = JoinList(scenesToUnload);
+            string active = (targetActiveScene ?? string.Empty).Trim();
+            string profile = transitionProfileId.Value ?? string.Empty;
+            string fade = useFade ? "1" : "0";
 
             return $"p:{profile}|a:{active}|f:{fade}|l:{load}|u:{unload}";
         }
@@ -75,20 +75,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         private static string JoinList(IReadOnlyList<string> list)
         {
             if (list == null || list.Count == 0)
+            {
                 return string.Empty;
+            }
 
             // Evita LINQ para reduzir alocações em runtime.
-            var result = string.Empty;
-            for (var i = 0; i < list.Count; i++)
+            string result = string.Empty;
+            for (int i = 0; i < list.Count; i++)
             {
-                var entry = (list[i] ?? string.Empty).Trim();
+                string entry = (list[i] ?? string.Empty).Trim();
                 if (entry.Length == 0)
+                {
                     continue;
+                }
 
                 if (result.Length == 0)
+                {
                     result = entry;
+                }
                 else
+                {
                     result += "|" + entry;
+                }
             }
 
             return result;
@@ -118,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             unchecked
             {
-                var hashCode = ScenesToLoad != null ? ScenesToLoad.GetHashCode() : 0;
+                int hashCode = ScenesToLoad != null ? ScenesToLoad.GetHashCode() : 0;
                 hashCode = (hashCode * 397) ^ (ScenesToUnload != null ? ScenesToUnload.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (TargetActiveScene != null ? TargetActiveScene.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ UseFade.GetHashCode();

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -59,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.UI
 
             if (forceInitialOnAwake)
             {
-                var id = string.IsNullOrWhiteSpace(initialPanelId) ? DetectActiveOrFallback() : initialPanelId;
+                string id = string.IsNullOrWhiteSpace(initialPanelId) ? DetectActiveOrFallback() : initialPanelId;
                 Show(id, "Awake/Initial");
                 return;
             }
@@ -133,15 +134,14 @@ namespace _ImmersiveGames.NewScripts.UI
             // Importante: iterar pela LISTA (fonte de verdade) garante que:
             // - roots duplicados (panelId repetido) também sejam desligados/ligados corretamente
             // - entries fora do _map (por erro de dados) não fiquem "sobrando" ativos
-            for (int i = 0; i < panels.Count; i++)
+            foreach (var entry in panels)
             {
-                var entry = panels[i];
                 if (entry?.root == null)
                 {
                     continue;
                 }
 
-                var isTarget = string.Equals(entry.panelId, panelId, StringComparison.OrdinalIgnoreCase);
+                bool isTarget = string.Equals(entry.panelId, panelId, StringComparison.OrdinalIgnoreCase);
                 entry.root.SetActive(isTarget);
             }
 
@@ -166,25 +166,8 @@ namespace _ImmersiveGames.NewScripts.UI
             }
 
             // Escolha determinística: primeira entrada da LISTA que bater com o panelId e tiver selectOnShow.
-            for (int i = 0; i < panels.Count; i++)
+            foreach (var target in from entry in panels where entry != null where string.Equals(entry.panelId, panelId, StringComparison.OrdinalIgnoreCase) select entry.selectOnShow into target where target != null select target)
             {
-                var entry = panels[i];
-                if (entry == null)
-                {
-                    continue;
-                }
-
-                if (!string.Equals(entry.panelId, panelId, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var target = entry.selectOnShow;
-                if (target == null)
-                {
-                    continue;
-                }
-
                 es.SetSelectedGameObject(target);
 
                 DebugUtility.LogVerbose<FrontendPanelsController>(
@@ -204,23 +187,15 @@ namespace _ImmersiveGames.NewScripts.UI
             }
 
             // 2) detecta o primeiro painel (pela LISTA) cujo root esteja ativo
-            for (int i = 0; i < panels.Count; i++)
+            foreach (var entry in panels.Where(entry => entry?.root != null && entry.root.activeSelf && !string.IsNullOrWhiteSpace(entry.panelId)))
             {
-                var entry = panels[i];
-                if (entry?.root != null && entry.root.activeSelf && !string.IsNullOrWhiteSpace(entry.panelId))
-                {
-                    return entry.panelId;
-                }
+                return entry.panelId;
             }
 
             // 3) fallback: primeiro item válido da lista
-            for (int i = 0; i < panels.Count; i++)
+            foreach (var entry in panels.Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.panelId)))
             {
-                var entry = panels[i];
-                if (entry != null && !string.IsNullOrWhiteSpace(entry.panelId))
-                {
-                    return entry.panelId;
-                }
+                return entry.panelId;
             }
 
             return "main";

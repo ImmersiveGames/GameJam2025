@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -175,19 +176,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             int skippedDisabledCount = 0;
             int failedCreateCount = 0;
 
-            var entries = worldDefinition.Entries;
-            var totalEntries = entries?.Count ?? 0;
+            IReadOnlyList<WorldDefinition.SpawnEntry> entries = worldDefinition.Entries;
+            int totalEntries = entries?.Count ?? 0;
 
             DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
                 $"WorldDefinition entries count: {totalEntries}");
 
             if (entries != null)
             {
-                for (var index = 0; index < entries.Count; index++)
+                for (int index = 0; index < entries.Count; index++)
                 {
                     var entry = entries[index];
-                    var entryKind = entry.Kind.ToString();
-                    var entryPrefabName = entry.Prefab != null ? entry.Prefab.name : "<null>";
+                    string entryKind = entry.Kind.ToString();
+                    string entryPrefabName = entry.Prefab != null ? entry.Prefab.name : "<null>";
 
                     DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
                         $"Spawn entry #{index}: Enabled={entry.Enabled}, Kind={entryKind}, Prefab={entryPrefabName}");
@@ -231,65 +232,57 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private Transform EnsureWorldRoot(UnityEngine.SceneManagement.Scene scene)
         {
+            var targetScene = scene.IsValid() ? scene : SceneManager.GetActiveScene();
             if (!scene.IsValid())
             {
-                // Isso não deveria acontecer no fluxo normal; mantemos WARNING.
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
                     $"EnsureWorldRoot recebeu uma cena inválida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
-
-                scene = SceneManager.GetActiveScene();
             }
 
-            var rootObjects = scene.GetRootGameObjects();
-            GameObject selectedRoot = null;
-            var foundCount = 0;
+            GameObject[] rootObjects = targetScene.GetRootGameObjects();
+            var worldRoots = rootObjects.Where(r => r != null && r.name == "WorldRoot").ToList();
 
-            foreach (var root in rootObjects)
+            if (worldRoots.Count == 0)
             {
-                if (root == null || root.name != "WorldRoot")
+                return CreateWorldRoot(targetScene);
+            }
+
+            var selectedRoot = worldRoots[0];
+            if (worldRoots.Count > 1)
+            {
+                LogMultipleWorldRoots(targetScene, rootObjects, worldRoots.Count, selectedRoot);
+            }
+            if (selectedRoot.scene != targetScene)
+            {
+                SceneManager.MoveGameObjectToScene(selectedRoot, targetScene);
+            }
+
+            return selectedRoot.transform;
+        }
+
+        private Transform CreateWorldRoot(UnityEngine.SceneManagement.Scene scene)
+        {
+            var worldRootGo = new GameObject("WorldRoot");
+            SceneManager.MoveGameObjectToScene(worldRootGo, scene);
+            return worldRootGo.transform;
+        }
+
+        private void LogMultipleWorldRoots(UnityEngine.SceneManagement.Scene scene, GameObject[] allRoots, int foundCount, GameObject selectedRoot)
+        {
+            DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                $"Multiple WorldRoot objects found in scene '{scene.name}': {foundCount}");
+
+            foreach (var root in allRoots)
+            {
+                if (root != null && root.name == "WorldRoot")
                 {
-                    continue;
-                }
-
-                foundCount++;
-                if (selectedRoot == null)
-                {
-                    selectedRoot = root;
+                    DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                        $"WorldRoot candidate: {BuildTransformPath(root.transform)}");
                 }
             }
 
-            if (foundCount == 0)
-            {
-                var worldRootGo = new GameObject("WorldRoot");
-                SceneManager.MoveGameObjectToScene(worldRootGo, scene);
-                return worldRootGo.transform;
-            }
-
-            if (foundCount > 1)
-            {
-                // Situação anômala; mantém WARNING.
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
-                    $"Multiple WorldRoot objects found in scene '{scene.name}': {foundCount}");
-
-                foreach (var root in rootObjects)
-                {
-                    if (root != null && root.name == "WorldRoot")
-                    {
-                        DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
-                            $"WorldRoot candidate: {BuildTransformPath(root.transform)}");
-                    }
-                }
-
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
-                    $"WorldRoot selected: {BuildTransformPath(selectedRoot?.transform)}");
-            }
-
-            if (selectedRoot != null && selectedRoot.scene != scene)
-            {
-                SceneManager.MoveGameObjectToScene(selectedRoot, scene);
-            }
-
-            return selectedRoot?.transform;
+            DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                $"WorldRoot selected: {BuildTransformPath(selectedRoot?.transform)}");
         }
 
         private void RegisterSceneLifecycleHooks(
@@ -312,7 +305,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            var hookA = EnsureHookComponent<SceneLifecycleHookLoggerA>(worldRoot);
+            /* Aqui é ume exemplo de hook no ciclo do mundo.*/
+             var hookA = EnsureHookComponent<SceneLifecycleHookLoggerA>(worldRoot);
 
             RegisterHookIfMissing(hookRegistry, hookA);
         }

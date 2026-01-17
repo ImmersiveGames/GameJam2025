@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return true;
             }
 
-            return DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out _resetRequestService) &&
+            return DependencyManager.Provider.TryGetGlobal(out _resetRequestService) &&
                    _resetRequestService != null;
         }
 

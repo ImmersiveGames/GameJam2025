@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         [Header("Lifecycle")]
         [Tooltip("Quando true, o controller executa ResetWorldAsync automaticamente no Start(). " +
                  "Para testes automatizados, um runner deve desligar isto antes do Start().")]
-        [SerializeField] private bool autoInitializeOnStart = false;
+        [SerializeField] private bool autoInitializeOnStart;
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogs = true;
@@ -100,6 +100,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
                 _processingQueue = false;
             }
+
+            // Limpa hooks registrados para evitar vazamento de referências na cena.
+            if (_hookRegistry != null)
+            {
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"Limpando WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
+                }
+                _hookRegistry.Clear();
+            }
+
+            // Limpa serviços de spawn para evitar retenção de instâncias.
+            if (_spawnRegistry != null)
+            {
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
+                }
+                _spawnRegistry.Clear();
+            }
         }
 
         /// <summary>
@@ -131,7 +153,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private Task EnqueueReset(string label, Func<Task> runner)
         {
-            if (runner == null) throw new ArgumentNullException(nameof(runner));
+            if (runner == null)
+            {
+                throw new ArgumentNullException(nameof(runner));
+            }
 
             ResetRequest request;
             int position;
@@ -157,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     $"Reset queue backlog detectado (count={position}). Possível tempestade de resets. lastLabel='{label}', scene='{_sceneName}'.");
             }
 
-            var queuedBehindActiveReset = !willStartProcessing;
+            bool queuedBehindActiveReset = !willStartProcessing;
             if (queuedBehindActiveReset)
             {
                 if (position > 1)
@@ -373,7 +398,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private bool HasCriticalDependencies()
         {
-            var valid = true;
+            bool valid = true;
 
             if (_spawnRegistry == null)
             {

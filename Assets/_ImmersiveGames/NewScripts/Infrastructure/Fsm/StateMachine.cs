@@ -55,7 +55,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
         private void ChangeState(IState state)
         {
             if (_currentNode != null && state == _currentNode.State)
+            {
                 return;
+            }
 
             var nextNode = GetNodeOrThrow(state.GetType());
             var previousState = _currentNode?.State;
@@ -70,18 +72,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
         private Transition GetTransition()
         {
             if (_currentNode == null)
+            {
                 return null;
+            }
 
             foreach (var transition in _anyTransitions)
             {
                 if (transition.Evaluate())
+                {
                     return transition;
+                }
             }
 
             foreach (var transition in _currentNode.Transitions)
             {
                 if (transition.Evaluate())
+                {
                     return transition;
+                }
             }
 
             return null;
@@ -102,7 +110,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
         private StateNode GetNodeOrThrow(Type stateType)
         {
             if (!_nodes.TryGetValue(stateType, out var node))
+            {
                 throw new InvalidOperationException($"Estado {stateType.Name} não foi registrado na StateMachine.");
+            }
 
             return node;
         }

@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             lock (_pending)
             {
                 // Cancela awaiters pendentes (defensivo).
-                foreach (var kv in _pending)
+                foreach (KeyValuePair<string, TaskCompletionSource<string>> kv in _pending)
                 {
                     kv.Value.TrySetCanceled();
                 }
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
-            var signature = SceneTransitionSignatureUtil.Compute(context);
+            string signature = SceneTransitionSignatureUtil.Compute(context);
 
             if (string.IsNullOrEmpty(signature))
             {
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             {
                 lock (_pending)
                 {
-                    if (_pending.TryGetValue(signature, out var current) && ReferenceEquals(current, tcs))
+                    if (_pending.TryGetValue(signature, out TaskCompletionSource<string> current) && ReferenceEquals(current, tcs))
                     {
                         _pending.Remove(signature);
                     }
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return;
             }
 
-            var reason = await tcs.Task;
+            string reason = await tcs.Task;
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
                 $"[SceneFlowGate] Concluído. signature='{signature}', reason='{reason ?? "<null>"}'.");
@@ -107,8 +107,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private void OnCompleted(WorldLifecycleResetCompletedEvent evt)
         {
-            var signature = evt.ContextSignature ?? string.Empty;
-            var reason = evt.Reason;
+            string signature = evt.ContextSignature ?? string.Empty;
+            string reason = evt.Reason;
 
             if (string.IsNullOrEmpty(signature))
             {

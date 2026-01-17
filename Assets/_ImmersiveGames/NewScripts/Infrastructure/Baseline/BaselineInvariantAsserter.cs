@@ -78,7 +78,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
             {
                 var provider = DependencyManager.Provider;
                 if (provider == null)
+                {
                     return false;
+                }
 
                 if (provider.TryGetGlobal<BaselineInvariantAsserter>(out var existing) && existing != null)
                 {
@@ -133,7 +135,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
         private void EnsureActive()
         {
             if (_disposed)
+            {
                 return;
+            }
 
             EnsureGateResolved();
 
@@ -177,7 +181,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
         public void Dispose()
         {
             if (_disposed)
+            {
                 return;
+            }
 
             _disposed = true;
 
@@ -472,7 +478,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
         private void CheckPauseTokenReleased(string reason)
         {
             if (!EnsureGateResolved())
+            {
                 return;
+            }
 
             if (_gate.IsTokenActive(PauseToken))
             {
@@ -491,7 +499,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
             signature ??= string.Empty;
 
             if (_statesBySignature.TryGetValue(signature, out var state))
+            {
                 return state;
+            }
 
             state = new TransitionState();
             _statesBySignature[signature] = state;
@@ -501,13 +511,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
         private bool EnsureGateResolved()
         {
             if (_gate != null)
+            {
                 return true;
+            }
 
             try
             {
                 var provider = DependencyManager.Provider;
                 if (provider == null)
+                {
                     return false;
+                }
 
                 if (provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
                 {

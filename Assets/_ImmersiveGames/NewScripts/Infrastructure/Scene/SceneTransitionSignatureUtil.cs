@@ -25,8 +25,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var loadList = NormalizeList(request.ScenesToLoad);
-            var unloadList = NormalizeList(request.ScenesToUnload);
+            IReadOnlyList<string> loadList = NormalizeList(request.ScenesToLoad);
+            IReadOnlyList<string> unloadList = NormalizeList(request.ScenesToUnload);
             return new SceneTransitionContext(loadList, unloadList, request.TargetActiveScene, request.UseFade,
                 request.TransitionProfileId, request.ContextSignature);
         }

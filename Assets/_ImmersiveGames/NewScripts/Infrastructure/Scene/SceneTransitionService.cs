@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             var context = SceneTransitionSignatureUtil.BuildContext(request);
-            var signature = SceneTransitionSignatureUtil.Compute(context);
+            string signature = SceneTransitionSignatureUtil.Compute(context);
 
             try
             {
@@ -242,8 +242,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private async Task RunSceneOperationsAsync(SceneTransitionContext context)
         {
-            var reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
-            var loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
+            IReadOnlyList<string> reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
+            IReadOnlyList<string> loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
             await LoadScenesAsync(loadScenes);
 
             if (reloadScenes.Count > 0)
@@ -253,7 +253,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             await SetActiveSceneAsync(context.TargetActiveScene);
 
-            var unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
+            IReadOnlyList<string> unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
             await UnloadScenesAsync(unloadScenes, context.TargetActiveScene);
         }
 
@@ -264,7 +264,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            foreach (var sceneName in scenesToLoad)
+            foreach (string sceneName in scenesToLoad)
             {
                 if (!forceLoad && _loaderAdapter.IsSceneLoaded(sceneName))
                 {
@@ -288,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            var success = await _loaderAdapter.TrySetActiveSceneAsync(targetActiveScene);
+            bool success = await _loaderAdapter.TrySetActiveSceneAsync(targetActiveScene);
             if (!success)
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
@@ -308,7 +308,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            foreach (var sceneName in scenesToUnload)
+            foreach (string sceneName in scenesToUnload)
             {
                 if (string.Equals(sceneName, targetActiveScene, StringComparison.Ordinal))
                 {
@@ -333,7 +333,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private async Task HandleReloadScenesAsync(SceneTransitionContext context, IReadOnlyList<string> reloadScenes)
         {
-            var tempActive = ResolveTempActiveScene(reloadScenes);
+            string tempActive = ResolveTempActiveScene(reloadScenes);
             if (!string.IsNullOrWhiteSpace(tempActive) &&
                 !string.Equals(tempActive, _loaderAdapter.GetActiveSceneName(), StringComparison.Ordinal))
             {
@@ -351,7 +351,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private async Task UnloadScenesForReloadAsync(IReadOnlyList<string> reloadScenes)
         {
-            foreach (var sceneName in reloadScenes)
+            foreach (string sceneName in reloadScenes)
             {
                 if (!_loaderAdapter.IsSceneLoaded(sceneName))
                 {
@@ -379,14 +379,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             var unloadSet = new HashSet<string>(scenesToUnload, StringComparer.Ordinal);
             var reload = new List<string>();
 
-            foreach (var sceneName in scenesToLoad)
+            foreach (string sceneName in scenesToLoad)
             {
                 if (string.IsNullOrWhiteSpace(sceneName))
                 {
                     continue;
                 }
 
-                var trimmed = sceneName.Trim();
+                string trimmed = sceneName.Trim();
                 if (trimmed.Length == 0)
                 {
                     continue;
@@ -418,14 +418,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             var excludeSet = new HashSet<string>(excludedScenes, StringComparer.Ordinal);
             var filtered = new List<string>();
 
-            foreach (var sceneName in scenes)
+            foreach (string sceneName in scenes)
             {
                 if (string.IsNullOrWhiteSpace(sceneName))
                 {
                     continue;
                 }
 
-                var trimmed = sceneName.Trim();
+                string trimmed = sceneName.Trim();
                 if (trimmed.Length == 0)
                 {
                     continue;
@@ -450,14 +450,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return UiGlobalSceneName;
             }
 
-            var currentActive = _loaderAdapter.GetActiveSceneName();
+            string currentActive = _loaderAdapter.GetActiveSceneName();
             if (!string.IsNullOrWhiteSpace(currentActive) && !reloadSet.Contains(currentActive))
             {
                 return currentActive;
             }
 
-            var sceneCount = SceneManager.sceneCount;
-            for (var i = 0; i < sceneCount; i++)
+            int sceneCount = SceneManager.sceneCount;
+            for (int i = 0; i < sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
                 if (!scene.IsValid() || !scene.isLoaded)
@@ -465,7 +465,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     continue;
                 }
 
-                var name = scene.name;
+                string name = scene.name;
                 if (!string.IsNullOrWhiteSpace(name) && !reloadSet.Contains(name))
                 {
                     return name;

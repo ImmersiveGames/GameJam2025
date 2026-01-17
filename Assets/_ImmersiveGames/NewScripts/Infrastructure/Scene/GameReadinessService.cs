@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
-using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 {

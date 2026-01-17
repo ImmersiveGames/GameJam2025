@@ -25,10 +25,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         /// </summary>
         public static string Compute(string activeSceneName, string source)
         {
-            var scene = NormalizeToken(activeSceneName, fallback: "<unknown>");
-            var src = NormalizeToken(source, fallback: "<unspecified>");
+            string scene = NormalizeToken(activeSceneName, fallback: "<unknown>");
+            string src = NormalizeToken(source, fallback: "<unspecified>");
 
-            var n = Interlocked.Increment(ref _seq);
+            long n = Interlocked.Increment(ref _seq);
 
             return $"directReset:scene={scene};src={src};seq={n};salt={SessionSalt}";
         }
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         private static string CreateSessionSalt()
         {
             // 8 chars from a GUID is enough (evita colisões entre play sessions no Editor).
-            var guid = Guid.NewGuid().ToString("N");
+            string guid = Guid.NewGuid().ToString("N");
             return guid.Length >= 8 ? guid.Substring(0, 8) : guid;
         }
 
@@ -47,19 +47,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return fallback;
             }
 
-            var trimmed = value.Trim();
+            string trimmed = value.Trim();
 
             // Mantém a string amigável para log/grep: remove whitespace e caracteres problemáticos.
             // Não é um sanitizador genérico — é apenas um normalizador defensivo.
             const int cap = 64;
-            var limit = Math.Min(trimmed.Length, cap);
+            int limit = Math.Min(trimmed.Length, cap);
 
             Span<char> buffer = stackalloc char[limit];
-            var written = 0;
+            int written = 0;
 
-            for (var i = 0; i < trimmed.Length && written < buffer.Length; i++)
+            for (int i = 0; i < trimmed.Length && written < buffer.Length; i++)
             {
-                var c = trimmed[i];
+                char c = trimmed[i];
 
                 if (char.IsWhiteSpace(c))
                 {
