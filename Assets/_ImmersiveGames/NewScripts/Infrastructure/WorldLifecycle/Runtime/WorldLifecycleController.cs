@@ -43,12 +43,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private string _sceneName = string.Empty;
 
-        public bool AutoInitializeOnStart
-        {
-            get => autoInitializeOnStart;
-            set => autoInitializeOnStart = value;
-        }
-
         private void Awake()
         {
             _sceneName = gameObject.scene.name;
@@ -113,15 +107,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
 
             // Limpa serviços de spawn para evitar retenção de instâncias.
-            if (_spawnRegistry != null)
+            if (_spawnRegistry == null)
             {
-                if (verboseLogs)
-                {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
-                        $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
-                }
-                _spawnRegistry.Clear();
+                return;
             }
+            if (verboseLogs)
+            {
+                DebugUtility.Log(typeof(WorldLifecycleController),
+                    $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
+            }
+            _spawnRegistry.Clear();
         }
 
         /// <summary>
@@ -183,18 +178,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
 
             bool queuedBehindActiveReset = !willStartProcessing;
-            if (queuedBehindActiveReset)
+            if (!queuedBehindActiveReset)
             {
-                if (position > 1)
-                {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                        $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
-                }
-                else if (verboseLogs)
-                {
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleController),
-                        $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
-                }
+                return request.Task;
+            }
+            if (position > 1)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
+            }
+            else if (verboseLogs)
+            {
+                DebugUtility.LogVerbose(typeof(WorldLifecycleController),
+                    $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
             }
 
             return request.Task;
@@ -407,14 +403,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 valid = false;
             }
 
-            if (_actorRegistry == null)
+            if (_actorRegistry != null)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
-                valid = false;
+                return valid;
             }
+            DebugUtility.LogError(typeof(WorldLifecycleController),
+                $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
 
-            return valid;
+            return false;
         }
 
         private readonly struct ResetRequest

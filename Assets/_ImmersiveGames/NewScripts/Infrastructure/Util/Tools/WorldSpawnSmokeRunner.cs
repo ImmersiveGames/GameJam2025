@@ -20,10 +20,10 @@ namespace _ImmersiveGames.Tools
         [Tooltip("Transform used as world root for instantiated prefabs")]
         public Transform worldRoot;
 
-        private WorldSpawnServiceFactory _factory = new WorldSpawnServiceFactory();
+        private readonly WorldSpawnServiceFactory _factory = new();
         private IDependencyProvider _provider;
         private IActorRegistry _actorRegistry;
-        private List<IWorldSpawnService> _services = new List<IWorldSpawnService>();
+        private readonly List<IWorldSpawnService> _services = new();
 
         private void Awake()
         {
@@ -67,7 +67,10 @@ namespace _ImmersiveGames.Tools
             // create services
             foreach (var entry in worldDefinition.Entries)
             {
-                if (!entry.Enabled) continue;
+                if (!entry.Enabled)
+                {
+                    continue;
+                }
 
                 var service = _factory.Create(entry, _provider, _actorRegistry, new WorldSpawnContext(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, worldRoot));
                 if (service != null)
@@ -114,18 +117,21 @@ namespace _ImmersiveGames.Tools
         // Minimal in-file test implementations to avoid coupling to project DI.
         private class TestDependencyProvider : IDependencyProvider
         {
-            private readonly Dictionary<System.Type, object> _globals = new Dictionary<System.Type, object>();
+            private readonly Dictionary<System.Type, object> _globals = new();
 
             public void RegisterGlobal<T>(T service, bool allowOverride = false) where T : class
             {
                 var t = typeof(T);
-                if (!allowOverride && _globals.ContainsKey(t)) return;
+                if (!allowOverride && _globals.ContainsKey(t))
+                {
+                    return;
+                }
                 _globals[t] = service;
             }
 
             public bool TryGetGlobal<T>(out T service) where T : class
             {
-                if (_globals.TryGetValue(typeof(T), out var o) && o is T t)
+                if (_globals.TryGetValue(typeof(T), out object o) && o is T t)
                 {
                     service = t;
                     return true;
@@ -156,7 +162,7 @@ namespace _ImmersiveGames.Tools
         // Very small UniqueIdFactory for testing
         private class SimpleUniqueIdFactory : IUniqueIdFactory
         {
-            private readonly Dictionary<string, int> _counts = new Dictionary<string, int>(System.StringComparer.Ordinal);
+            private readonly Dictionary<string, int> _counts = new(System.StringComparer.Ordinal);
             private int _counter;
 
             public string GenerateId(GameObject owner, string prefix = null)
@@ -164,19 +170,21 @@ namespace _ImmersiveGames.Tools
                 _counter++;
                 string baseName = owner != null ? owner.name : "NullOwner";
 
-                if (!_counts.TryGetValue(baseName, out var c)) c = 0;
+                int c = _counts.GetValueOrDefault(baseName, 0);
                 c++;
                 _counts[baseName] = c;
 
                 string id = $"test-A_{_counter}_{baseName}_{c}";
-                if (!string.IsNullOrWhiteSpace(prefix)) id = $"{id}_{prefix}";
+                if (!string.IsNullOrWhiteSpace(prefix))
+                {
+                    id = $"{id}_{prefix}";
+                }
                 return id;
             }
 
             public int GetInstanceCount(string actorName)
             {
-                if (string.IsNullOrEmpty(actorName)) return 0;
-                return _counts.TryGetValue(actorName, out var c) ? c : 0;
+                return string.IsNullOrEmpty(actorName) ? 0 : _counts.GetValueOrDefault(actorName, 0);
             }
         }
 

@@ -157,7 +157,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
             RegisterSceneFlowSignatureCache();
-            RegisterWorldResetRequestService();
+
+            RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
+            RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
+
 
             RegisterGameNavigationService();
             RegisterExitToMenuNavigationBridge();
@@ -561,9 +564,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterSceneFlowNative()
         {
-            // Runtime coordinator precisa estar vivo quando o completion gate estiver ativo.
-            RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
-
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -636,14 +636,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<WorldLifecycleRuntimeCoordinator>(out var coordinator) || coordinator == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var resetService) || resetService == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[WorldLifecycle] WorldLifecycleRuntimeCoordinator indisponível. IWorldResetRequestService não será registrado.");
+                    "[WorldLifecycle] IWorldResetRequestService não disponível após registrar WorldLifecycleRuntimeCoordinator.");
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal<IWorldResetRequestService>(coordinator, allowOverride: false);
+            DependencyManager.Provider.RegisterGlobal(resetService, allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[WorldLifecycle] IWorldResetRequestService registrado no DI global (via WorldLifecycleRuntimeCoordinator).",

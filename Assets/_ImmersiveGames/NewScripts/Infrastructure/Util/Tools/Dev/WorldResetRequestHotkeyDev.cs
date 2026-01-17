@@ -1,12 +1,13 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_DEV
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_DEV
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
+namespace _ImmersiveGames.Tools.Dev
 {
     [DisallowMultipleComponent]
     public sealed class WorldResetRequestHotkeyBridge : MonoBehaviour
@@ -83,8 +84,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return;
             }
 
-            var go = new GameObject(HotkeyObjectName);
-            go.hideFlags = HideFlags.DontSave;
+            var go = new GameObject(HotkeyObjectName)
+            {
+                hideFlags = HideFlags.DontSave
+            };
             Object.DontDestroyOnLoad(go);
             go.AddComponent<WorldResetRequestHotkeyBridge>();
 

@@ -1,0 +1,1651 @@
+﻿
+[INFO] [DebugUtility] DebugUtility inicializado antes de todos os sistemas.
+
+[INFO] [AnimationBootstrapper] NEWSCRIPTS_MODE ativo: AnimationBootstrapper ignorado.
+
+NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.
+
+[INFO] [DependencyBootstrapper] NEWSCRIPTS_MODE ativo: ResetStatics ignorado.
+
+[VERBOSE] [GlobalBootstrap] NewScripts logging configured. (@ 3,64s)
+
+<color=#00BCD4>[VERBOSE] [SceneServiceCleaner] SceneServiceCleaner inicializado. (@ 3,64s)</color>
+
+<color=#00BCD4>[VERBOSE] [DependencyManager] DependencyManager inicializado (DontDestroyOnLoad). (@ 3,64s)</color>
+
+[VERBOSE] [GlobalBootstrap] DependencyManager created for global scope. (@ 3,64s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle). (@ 3,65s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IUniqueIdFactory registrado no escopo global. (@ 3,66s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IUniqueIdFactory. (@ 3,66s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService registrado no escopo global. (@ 3,66s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: ISimulationGateService. (@ 3,66s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 3,66s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço INewScriptsFadeService registrado no escopo global. (@ 3,66s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: INewScriptsFadeService. (@ 3,66s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Fade] INewScriptsFadeService registrado no DI global (ADR-0009). (@ 3,66s)</color>
+
+[VERBOSE] [GamePauseGateBridge] [PauseBridge] Registrado nos eventos GamePauseCommandEvent/GameResumeRequestedEvent/GameExitToMenuRequestedEvent → SimulationGate. (@ 3,67s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço GamePauseGateBridge registrado no escopo global. (@ 3,67s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Pause] GamePauseGateBridge registrado (EventBus → SimulationGate). (@ 3,67s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService registrado no escopo global. (@ 3,67s)</color>
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: Boot (active=False) (@ 3,67s)
+
+[VERBOSE] [GameLoopService] [GameLoop] Initialized. (@ 3,67s)
+
+[VERBOSE] [GameLoopEventInputBridge] [GameLoop] Bridge de entrada registrado no EventBus (pause/resume/reset). (@ 3,67s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço GameLoopEventInputBridge registrado no escopo global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 3,67s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [GameLoop] GameLoopBootstrap.EnsureRegistered() executado (serviço + bridge no escopo global). (@ 3,67s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator registrado no escopo global. (@ 3,67s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [IntroStage] IntroStageCoordinator registrado no DI global. (@ 3,67s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageControlService registrado no escopo global. (@ 3,67s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [IntroStage] IntroStageControlService registrado no DI global. (@ 3,67s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier registrado no escopo global. (@ 3,67s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Gameplay] IGameplaySceneClassifier registrado no DI global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 3,67s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStagePolicyResolver registrado no escopo global. (@ 3,67s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [IntroStage] DefaultIntroStagePolicyResolver registrado no DI global. (@ 3,67s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageStep registrado no escopo global. (@ 3,67s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [IntroStage] ConfirmToStartIntroStageStep registrado no DI global. (@ 3,67s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunEndRequestService registrado no escopo global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IGameRunEndRequestService. (@ 3,67s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [GameLoop] GameRunEndRequestService registrado no DI global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunEndRequestService encontrado no escopo global (tipo registrado: IGameRunEndRequestService). (@ 3,67s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IGameCommands registrado no escopo global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IGameCommands. (@ 3,67s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [GameCommands] GameCommands registrado no DI global. (@ 3,67s)</color>
+
+[VERBOSE] [GameRunStatusService] [GameLoop] GameRunStatusService registrado no EventBus<GameRunEndedEvent> e EventBus<GameRunStartedEvent>. (@ 3,67s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunStatusService registrado no escopo global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IGameRunStatusService. (@ 3,67s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [GameLoop] GameRunStatusService registrado no DI global. (@ 3,67s)</color>
+
+[VERBOSE] [GameRunOutcomeService] [GameLoop] GameRunOutcomeService registrado no EventBus<GameRunStartedEvent> e observando EventBus<GameRunEndedEvent>. (@ 3,67s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunOutcomeService registrado no escopo global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IGameRunOutcomeService. (@ 3,67s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [GameLoop] GameRunOutcomeService registrado no DI global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunOutcomeService encontrado no escopo global (tipo registrado: IGameRunOutcomeService). (@ 3,67s)
+
+[VERBOSE] [GameRunOutcomeEventInputBridge] GameRunOutcomeEventInputBridge registered. (@ 3,67s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço GameRunOutcomeEventInputBridge registrado no escopo global. (@ 3,67s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: GameRunOutcomeEventInputBridge. (@ 3,67s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [GameLoop] GameRunOutcomeEventInputBridge registrado no DI global. (@ 3,67s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPostPlayOwnershipService registrado no escopo global. (@ 3,67s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PostPlay] PostPlayOwnershipService registrado no DI global. (@ 3,67s)</color>
+
+[VERBOSE] [NewScriptsSceneFlowAdapters] [SceneFlow] Usando SceneManagerLoaderAdapter (loader nativo). (@ 3,68s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço INewScriptsFadeService encontrado no escopo global (tipo registrado: INewScriptsFadeService). (@ 3,68s)
+
+[VERBOSE] [NewScriptsSceneFlowAdapters] [SceneFlow] Usando INewScriptsFadeService via adapter (NewScripts). (@ 3,68s)
+
+<color=#A8DEED>[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletionGate registrado. timeoutMs=20000. (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ISceneTransitionCompletionGate registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate). (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ISceneTransitionService registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [SceneFlow] SceneTransitionService nativo registrado (Loader=SceneManagerLoaderAdapter, FadeAdapter=NewScriptsSceneFlowFadeAdapter, Gate=WorldLifecycleResetCompletionGate). (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ISceneFlowSignatureCache registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [SceneFlow] SceneFlowSignatureCache registrado no DI global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] Driver registrado: SceneFlow ScenesReady -> ResetWorld -> ResetCompleted. reason='SceneFlow/ScenesReady'. (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço WorldLifecycleSceneFlowResetDriver registrado no escopo global. (@ 3,68s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: WorldLifecycleSceneFlowResetDriver. (@ 3,68s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IWorldResetRequestService registrado no escopo global. (@ 3,68s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IWorldResetRequestService. (@ 3,68s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISceneTransitionService encontrado no escopo global (tipo registrado: ISceneTransitionService). (@ 3,68s)
+
+<color=#A8DEED>[VERBOSE] [GameNavigationService] [Navigation] GameNavigationService inicializado. Rotas: to-menu, to-gameplay (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IGameNavigationService registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Navigation] GameNavigationService registrado no DI global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [ExitToMenuNavigationBridge] [Navigation] ExitToMenuNavigationBridge registrado (GameExitToMenuRequestedEvent -> RequestMenuAsync). (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ExitToMenuNavigationBridge registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Navigation] ExitToMenuNavigationBridge registrado no DI global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [RestartNavigationBridge] [Navigation] RestartNavigationBridge registrado (GameResetRequestedEvent -> RequestGameplayAsync). (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço RestartNavigationBridge registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Navigation] RestartNavigationBridge registrado no DI global. (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço INewScriptsLoadingHudService registrado no escopo global. (@ 3,68s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: INewScriptsLoadingHudService. (@ 3,68s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Loading] INewScriptsLoadingHudService registrado no DI global. (@ 3,68s)</color>
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] SceneFlowLoadingService registrado nos eventos de Scene Flow. (@ 3,68s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço SceneFlowLoadingService registrado no escopo global. (@ 3,68s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: SceneFlowLoadingService. (@ 3,68s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Loading] SceneFlowLoadingService registrado no DI global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputMode] InputModeSceneFlowBridge registrado nos eventos de SceneTransitionStartedEvent e SceneTransitionCompletedEvent. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] Bridge registrado para SceneTransitionCompletedEvent (Frontend/GamePlay -> GameLoop sync). (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço InputModeSceneFlowBridge registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [InputMode] InputModeSceneFlowBridge registrado no DI global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [PhaseStartPhaseCommitBridge] [PhaseStart] Bridge registrado (PhaseCommittedEvent -> IntroStage pipeline). (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge registrado no escopo global. (@ 3,68s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> IntroStage). (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IStateDependentService registrado no escopo global. (@ 3,68s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IStateDependentService. (@ 3,68s)
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [StateDependent] Registrado StateDependentService (gate-aware) como IStateDependentService. (@ 3,68s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ICameraResolver registrado no escopo global. (@ 3,69s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: ICameraResolver. (@ 3,69s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService registrado no escopo global. (@ 3,69s)</color>
+
+[VERBOSE] [GlobalBootstrap] Registered global service: IPhaseContextService. (@ 3,69s)
+
+<color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] IntroStageQaContextMenu instalado (DontDestroyOnLoad).</color>
+
+<color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] IntroStageQaContextMenu ausente; componente adicionado.</color>
+
+<color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] Para acessar o ContextMenu, selecione o GameObject 'QA_IntroStage' no Hierarchy (DontDestroyOnLoad).</color>
+
+<color=#A8DEED>[VERBOSE] [PhaseContextSceneFlowBridge] [PhaseContext] PhaseContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending). (@ 3,69s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço PhaseContextSceneFlowBridge registrado no escopo global. (@ 3,69s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseContext] PhaseContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending). (@ 3,69s)</color>
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry registrado no escopo global. (@ 3,69s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseIntent] PhaseTransitionIntentRegistry registrado no DI global. (@ 3,69s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 3,69s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IWorldResetRequestService encontrado no escopo global (tipo registrado: IWorldResetRequestService). (@ 3,69s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 3,69s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseChangeService registrado no escopo global. (@ 3,69s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseChange] PhaseChangeService registrado no DI global. (@ 3,69s)</color>
+
+[VERBOSE] [GameReadinessService] [Readiness] GameReadinessService registrado nos eventos de Scene Flow. (@ 3,69s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=True, activeTokens=0, reason='bootstrap'. (@ 3,69s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço GameReadinessService registrado no escopo global. (@ 3,69s)</color>
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [Readiness] GameReadinessService inicializado e registrado no DI global (Scene Flow → SimulationGate). (@ 3,69s)</color>
+
+[INFO] [GameLoopSceneFlowCoordinator] [GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'.
+
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [GameLoopSceneFlow] Coordinator registrado (startPlan production, profile='startup'). (@ 3,70s)</color>
+
+<color=#4CAF50>[INFO] [GlobalBootstrap] ✅ NewScripts global infrastructure initialized (Commit 1 minimal).</color>
+
+[INFO] [CompassRuntimeService] NEWSCRIPTS_MODE ativo: CompassRuntimeService ignorado.
+
+[INFO] [DependencyBootstrapper] NEWSCRIPTS_MODE ativo: DependencyBootstrapper ignorado.
+
+NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ICameraResolver encontrado no escopo global (tipo registrado: ICameraResolver). (@ 3,74s)
+
+<color=#A8DEED>[VERBOSE] [NewGameplayCameraBinder] ICameraResolver resolved in Awake. (@ 3,74s)</color>
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Camera registered for playerId=0: Camera. (@ 3,75s)</color>
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Default camera updated to Camera (playerId=0). (@ 3,75s)</color>
+
+<color=#A8DEED>[INFO] [NewGameplayCameraBinder] Gameplay camera registrada (playerId=0): Camera.</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço INewSceneScopeMarker registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnContext registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+[INFO] [NewSceneBootstrapper] WorldRoot ready: NewBootstrap/WorldRoot
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IActorRegistry registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnServiceRegistry registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetTargetClassifier registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetTargetClassifier registrado para a cena 'NewBootstrap'. (@ 3,75s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetOrchestrator registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetOrchestrator registrado para a cena 'NewBootstrap'. (@ 3,75s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço WorldLifecycleHookRegistry registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] WorldLifecycleHookRegistry registrado para a cena 'NewBootstrap'. (@ 3,75s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IResetScopeParticipant registrado para a cena NewBootstrap. (@ 3,75s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] PlayersResetParticipant registrado para a cena 'NewBootstrap'. (@ 3,75s)
+
+[VERBOSE] [NewSceneBootstrapper] Hook de cena registrado: SceneLifecycleHookLoggerA (@ 3,75s)
+
+[INFO] [NewSceneBootstrapper] WorldDefinition loaded: WorldDefinitionDummy
+
+[VERBOSE] [NewSceneBootstrapper] WorldDefinition entries count: 1 (@ 3,75s)
+
+[VERBOSE] [NewSceneBootstrapper] Spawn entry #0: Enabled=True, Kind=DummyActor, Prefab=DummyActor (@ 3,75s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IUniqueIdFactory encontrado no escopo global (tipo registrado: IUniqueIdFactory). (@ 3,75s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IStateDependentService encontrado no escopo global (tipo registrado: IStateDependentService). (@ 3,75s)
+
+[VERBOSE] [WorldSpawnServiceRegistry] Spawn service registrado: DummyActorSpawnService (ordem 1). (@ 3,75s)
+
+[VERBOSE] [NewSceneBootstrapper] Spawn entry #0 REGISTERED: DummyActorSpawnService (Kind=DummyActor, Prefab=DummyActor) (@ 3,75s)
+
+[INFO] [NewSceneBootstrapper] Spawn services registered from definition: 1
+
+[VERBOSE] [NewSceneBootstrapper] Spawn services summary => Total=1, Enabled=1, Disabled=0, Created=1, FailedCreate=0 (@ 3,75s)
+
+[INFO] [NewSceneBootstrapper] Scene scope created: NewBootstrap
+
+<color=#A8DEED>[VERBOSE] [WorldResetRequestHotkeyDevBootstrap] [WorldLifecycle] Hotkey DEV instalado (Shift+R) para RequestResetAsync. (@ 4,03s)</color>
+
+[INFO] [AudioSystemBootstrap] NEWSCRIPTS_MODE ativo: AudioSystemBootstrap ignorado.
+
+<color=#A8DEED>[INFO] [GameStartRequestProductionBootstrapper] [Production][StartRequest] Start solicitado (GameStartRequestedEvent).</color>
+
+[INFO] [GameLoopSceneFlowCoordinator] [GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup' Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'</color>
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 4,08s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço INewScriptsLoadingHudService encontrado no escopo global (tipo registrado: INewScriptsLoadingHudService). (@ 4,08s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Carregando cena 'LoadingHudScene' (Additive)... (@ 4,08s)
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 4,08s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 4,08s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 4,08s)
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.scene_transition'. Active=1. IsOpen=False (@ 4,08s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SimulationGate adquirido com token='flow.scene_transition'. Active=1. IsOpen=False (@ 4,08s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context=Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup' (@ 4,08s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_started'. (@ 4,08s)
+
+[VERBOSE] [GameLoopSceneFlowCoordinator] [GameLoopSceneFlow] TransitionStarted recebido. expectedSignature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 4,08s)
+
+[VERBOSE] [NewScriptsSceneTransitionProfileResolver] [SceneFlow] Profile resolvido: name='startup', path='SceneFlow/Profiles/startup', type='_ImmersiveGames.NewScripts.Infrastructure.SceneFlow.NewScriptsSceneTransitionProfile'. (@ 4,14s)
+
+[VERBOSE] [NewScriptsSceneFlowFadeAdapter] [SceneFlow] Profile 'startup' aplicado (path='SceneFlow/Profiles/startup'): fadeIn=0,5, fadeOut=0,5. (@ 4,14s)
+
+[VERBOSE] [NewScriptsFadeService] [Fade] Carregando FadeScene 'FadeScene' (Additive)... (@ 4,14s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageControlService encontrado no escopo global (tipo registrado: IIntroStageControlService). (@ 4,15s)
+
+[VERBOSE] [NewScriptsLoadingHudController] [LoadingHUD] Controller inicializado (CanvasGroup pronto). (@ 5,41s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] NewScriptsLoadingHudController localizado com sucesso. (@ 5,47s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Awake - CanvasGroup: OK (@ 5,49s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Canvas sorting configurado. isRootCanvas=True, overrideSorting=False, sortingOrder=11000 (@ 5,49s)
+
+[VERBOSE] [NewScriptsFadeService] [Fade] NewScriptsFadeController localizado com sucesso. (@ 5,50s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=1 (dur=0,5) (@ 5,50s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=1 (@ 5,99s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] FadeInCompleted → Show. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 5,99s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', phase='AfterFadeIn'. (@ 5,99s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Carregando cena 'MenuScene' (Additive)... (@ 6,00s)
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='Quit_Btn', btn='Quit_Btn'). (@ 6,06s)</color>
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='HowToPlay_Btn', btn='HowToPlay_Btn'). (@ 6,06s)</color>
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='Options_Btn', btn='Options_Btn'). (@ 6,06s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameNavigationService encontrado no escopo global (tipo registrado: IGameNavigationService). (@ 6,06s)
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='Play_Btn', btn='Play_Btn'). (@ 6,06s)</color>
+
+<color=#A8DEED>[VERBOSE] [FrontendPanelsController] [FrontendPanels] Panel='main' (reason='Awake/Initial'). (@ 6,06s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço INewSceneScopeMarker registrado para a cena MenuScene. (@ 6,07s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnContext registrado para a cena MenuScene. (@ 6,07s)</color>
+
+[INFO] [NewSceneBootstrapper] WorldRoot ready: MenuScene/WorldRoot
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IActorRegistry registrado para a cena MenuScene. (@ 6,07s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnServiceRegistry registrado para a cena MenuScene. (@ 6,07s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetTargetClassifier registrado para a cena MenuScene. (@ 6,07s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetTargetClassifier registrado para a cena 'MenuScene'. (@ 6,07s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetOrchestrator registrado para a cena MenuScene. (@ 6,07s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetOrchestrator registrado para a cena 'MenuScene'. (@ 6,07s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço WorldLifecycleHookRegistry registrado para a cena MenuScene. (@ 6,07s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] WorldLifecycleHookRegistry registrado para a cena 'MenuScene'. (@ 6,07s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IResetScopeParticipant registrado para a cena MenuScene. (@ 6,07s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] PlayersResetParticipant registrado para a cena 'MenuScene'. (@ 6,07s)
+
+[VERBOSE] [NewSceneBootstrapper] Hook de cena registrado: SceneLifecycleHookLoggerA (@ 6,07s)
+
+[VERBOSE] [NewSceneBootstrapper] WorldDefinition não atribuída (scene='MenuScene'). Isto é permitido em cenas sem spawn (ex.: Ready). Serviços de spawn não serão registrados. (@ 6,07s)
+
+[INFO] [NewSceneBootstrapper] Spawn services registered from definition: 0
+
+[INFO] [NewSceneBootstrapper] Scene scope created: MenuScene
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Carregando cena 'UIGlobalScene' (Additive)... (@ 6,07s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService registrado no escopo global. (@ 6,14s)</color>
+
+<color=#4CAF50>[INFO] [InputModeBootstrap] [InputMode] IInputModeService registrado no DI global.</color>
+
+<color=#A8DEED>[VERBOSE] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata. (@ 6,14s)</color>
+
+<color=#A8DEED>[VERBOSE] [PostGameOverlayController] [PostGame] Bindings de GameRunEnded/GameRunStarted registrados. (@ 6,15s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService encontrado no escopo global (tipo registrado: IInputModeService). (@ 6,15s)
+
+[VERBOSE] [DependencyInjector] Injetando IInputModeService do escopo global para PauseOverlayController. (@ 6,15s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: IInputModeService -> PauseOverlayController (implementação: InputModeService) (@ 6,15s)
+
+<color=#A8DEED>[VERBOSE] [PauseOverlayController] [PauseOverlay] Overlay desativado. (@ 6,16s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunStatusService encontrado no escopo global (tipo registrado: IGameRunStatusService). (@ 6,16s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena ativa definida para 'MenuScene'. (@ 6,22s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Descarregando cena 'NewBootstrap'... (@ 6,22s)
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Camera unregistered for playerId=0: Camera. (@ 6,23s)</color>
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Default camera updated to null (playerId=0). (@ 6,23s)</color>
+
+[VERBOSE] [ServiceRegistry] Dicionário retornado ao pool. Tamanho do pool: 1. (@ 6,23s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Removidos 8 serviços para a cena NewBootstrap. (@ 6,23s)</color>
+
+[INFO] [NewSceneBootstrapper] Scene scope cleared: NewBootstrap
+
+<color=#4CAF50>[VERBOSE] [SceneServiceCleaner] Cena NewBootstrap descarregada, serviços limpos. (@ 6,24s)</color>
+
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ScenesReady ignorado (profile != gameplay). signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', profile='startup'. (@ 6,24s)</color>
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', reason='SceneFlow/ScenesReady'. (@ 6,24s)
+
+[VERBOSE] [GameLoopSceneFlowCoordinator] [GameLoopSceneFlow] WorldLifecycle reset concluído (ou skip). reason='SceneFlow/ScenesReady'. (@ 6,24s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] ScenesReady → Update pending. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 6,24s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', phase='ScenesReady'. (@ 6,24s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context=Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup' (@ 6,24s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_scenes_ready'. (@ 6,24s)
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] ScenesReady signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.</color>
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Aguardando completion gate antes do FadeOut. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 6,24s)
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] Já concluído (cached). signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 6,24s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 6,24s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', phase='BeforeFadeOut'. (@ 6,24s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] BeforeFadeOut → Hide. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 6,24s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=0 (dur=0,5) (@ 6,24s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=0 (@ 6,72s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', phase='Completed'. (@ 6,72s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Completed → Safety hide. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 6,72s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService encontrado no escopo global (tipo registrado: IInputModeService). (@ 6,72s)
+
+<color=#A8DEED>[INFO] [InputModeService] [InputMode] Modo alterado para 'FrontendMenu' (SceneFlow/Completed:Frontend).</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Nenhum PlayerInput ativo encontrado ao aplicar modo 'FrontendMenu'. Isto é esperado em Menu/Frontend. Em Gameplay, verifique se o Player foi spawnado. (@ 6,72s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 6,72s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=True, activeTokens=0, reason='gate_opened'. (@ 6,72s)
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='flow.scene_transition'. Active=0. IsOpen=True (@ 6,72s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. gameplayReady=False. Context=Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup' (@ 6,72s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=True, activeTokens=0, reason='scene_transition_completed'. (@ 6,72s)
+
+[VERBOSE] [GameLoopSceneFlowCoordinator] [GameLoopSceneFlow] TransitionCompleted recebido. expectedSignature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 6,72s)
+
+<color=#A8DEED>[VERBOSE] [GameLoopSceneFlowCoordinator] [GameLoopSceneFlow] Profile não-gameplay (profileId='startup'). Chamando RequestReady() no GameLoop. (@ 6,72s)</color>
+
+<color=#4CAF50>[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.</color>
+
+[VERBOSE] [GameLoopService] [GameLoop] EXIT: Boot (@ 6,73s)
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: Ready (active=False) (@ 6,73s)
+
+<color=#A8DEED>[VERBOSE] [MenuPlayButtonBinder] [Navigation] Play solicitado. reason='Menu/PlayButton'. (@ 7,57s)</color>
+
+<color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-gameplay', reason='Menu/PlayButton', Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'.</color>
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'</color>
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 7,57s)
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 7,57s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 7,57s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 7,57s)
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.scene_transition'. Active=1. IsOpen=False (@ 7,57s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SimulationGate adquirido com token='flow.scene_transition'. Active=1. IsOpen=False (@ 7,57s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay' (@ 7,57s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_started'. (@ 7,57s)
+
+[VERBOSE] [NewScriptsSceneTransitionProfileResolver] [SceneFlow] Profile resolvido: name='gameplay', path='SceneFlow/Profiles/gameplay', type='_ImmersiveGames.NewScripts.Infrastructure.SceneFlow.NewScriptsSceneTransitionProfile'. (@ 7,57s)
+
+[VERBOSE] [NewScriptsSceneFlowFadeAdapter] [SceneFlow] Profile 'gameplay' aplicado (path='SceneFlow/Profiles/gameplay'): fadeIn=0,5, fadeOut=0,5. (@ 7,57s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=1 (dur=0,5) (@ 7,58s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=1 (@ 8,06s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] FadeInCompleted → Show. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,06s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='AfterFadeIn'. (@ 8,06s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Carregando cena 'GameplayScene' (Additive)... (@ 8,06s)
+
+<color=#A8DEED>[VERBOSE] [GameplayEndConditionsController] [GameplayEndConditionsController] State reset. reason='OnEnable', startTime=2,792. (@ 8,08s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunEndRequestService encontrado no escopo global (tipo registrado: IGameRunEndRequestService). (@ 8,08s)
+
+[VERBOSE] [ServiceRegistry] Dicionário obtido do pool para serviços. (@ 8,08s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço INewSceneScopeMarker registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnContext registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+[INFO] [NewSceneBootstrapper] WorldRoot ready: GameplayScene/WorldRoot
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IActorRegistry registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnServiceRegistry registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetTargetClassifier registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetTargetClassifier registrado para a cena 'GameplayScene'. (@ 8,08s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetOrchestrator registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetOrchestrator registrado para a cena 'GameplayScene'. (@ 8,08s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço WorldLifecycleHookRegistry registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] WorldLifecycleHookRegistry registrado para a cena 'GameplayScene'. (@ 8,08s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IResetScopeParticipant registrado para a cena GameplayScene. (@ 8,08s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] PlayersResetParticipant registrado para a cena 'GameplayScene'. (@ 8,08s)
+
+[VERBOSE] [NewSceneBootstrapper] Hook de cena registrado: SceneLifecycleHookLoggerA (@ 8,08s)
+
+[INFO] [NewSceneBootstrapper] WorldDefinition loaded: WorldDefinition
+
+[VERBOSE] [NewSceneBootstrapper] WorldDefinition entries count: 2 (@ 8,08s)
+
+[VERBOSE] [NewSceneBootstrapper] Spawn entry #0: Enabled=True, Kind=Player, Prefab=Player_NewScripts (@ 8,08s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IUniqueIdFactory encontrado no escopo global (tipo registrado: IUniqueIdFactory). (@ 8,08s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IStateDependentService encontrado no escopo global (tipo registrado: IStateDependentService). (@ 8,08s)
+
+[VERBOSE] [WorldSpawnServiceRegistry] Spawn service registrado: PlayerSpawnService (ordem 1). (@ 8,08s)
+
+[VERBOSE] [NewSceneBootstrapper] Spawn entry #0 REGISTERED: PlayerSpawnService (Kind=Player, Prefab=Player_NewScripts) (@ 8,08s)
+
+[VERBOSE] [NewSceneBootstrapper] Spawn entry #1: Enabled=True, Kind=Eater, Prefab=Eater_NewScripts (@ 8,08s)
+
+[VERBOSE] [WorldSpawnServiceRegistry] Spawn service registrado: EaterSpawnService (ordem 2). (@ 8,08s)
+
+[VERBOSE] [NewSceneBootstrapper] Spawn entry #1 REGISTERED: EaterSpawnService (Kind=Eater, Prefab=Eater_NewScripts) (@ 8,08s)
+
+[INFO] [NewSceneBootstrapper] Spawn services registered from definition: 2
+
+[VERBOSE] [NewSceneBootstrapper] Spawn services summary => Total=2, Enabled=2, Disabled=0, Created=2, FailedCreate=0 (@ 8,08s)
+
+[INFO] [NewSceneBootstrapper] Scene scope created: GameplayScene
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ICameraResolver encontrado no escopo global (tipo registrado: ICameraResolver). (@ 8,09s)
+
+<color=#A8DEED>[VERBOSE] [NewGameplayCameraBinder] ICameraResolver resolved in Awake. (@ 8,09s)</color>
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Camera registered for playerId=0: Main Camera. (@ 8,09s)</color>
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Default camera updated to Main Camera (playerId=0). (@ 8,09s)</color>
+
+<color=#A8DEED>[INFO] [NewGameplayCameraBinder] Gameplay camera registrada (playerId=0): Main Camera.</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injetando ISimulationGateService do escopo global para WorldLifecycleController. (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: ISimulationGateService -> WorldLifecycleController (implementação: SimulationGateService) (@ 8,09s)
+
+[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnServiceRegistry encontrado para a cena GameplayScene (tipo registrado: IWorldSpawnServiceRegistry). (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injetando IWorldSpawnServiceRegistry do escopo cena 'GameplayScene' para WorldLifecycleController. (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: IWorldSpawnServiceRegistry -> WorldLifecycleController (implementação: WorldSpawnServiceRegistry) (@ 8,09s)
+
+[VERBOSE] [SceneServiceRegistry] Serviço IActorRegistry encontrado para a cena GameplayScene (tipo registrado: IActorRegistry). (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injetando IActorRegistry do escopo cena 'GameplayScene' para WorldLifecycleController. (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: IActorRegistry -> WorldLifecycleController (implementação: ActorRegistry) (@ 8,09s)
+
+[VERBOSE] [SceneServiceRegistry] Serviço WorldLifecycleHookRegistry encontrado para a cena GameplayScene (tipo registrado: WorldLifecycleHookRegistry). (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injetando WorldLifecycleHookRegistry do escopo cena 'GameplayScene' para WorldLifecycleController. (@ 8,09s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: WorldLifecycleHookRegistry -> WorldLifecycleController (implementação: WorldLifecycleHookRegistry) (@ 8,09s)
+
+[INFO] [WorldLifecycleController] AutoInitializeOnStart desabilitado — aguardando acionamento externo (scene='GameplayScene').
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena 'UIGlobalScene' já está carregada. Pulando load. (@ 8,09s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena ativa definida para 'GameplayScene'. (@ 8,15s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Descarregando cena 'MenuScene'... (@ 8,15s)
+
+[VERBOSE] [ServiceRegistry] Dicionário retornado ao pool. Tamanho do pool: 1. (@ 8,17s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Removidos 8 serviços para a cena MenuScene. (@ 8,17s)</color>
+
+[INFO] [NewSceneBootstrapper] Scene scope cleared: MenuScene
+
+<color=#4CAF50>[VERBOSE] [SceneServiceCleaner] Cena MenuScene descarregada, serviços limpos. (@ 8,17s)</color>
+
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] Disparando ResetWorld para 1 controller(s). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', targetScene='GameplayScene'. (@ 8,17s)</color>
+
+[INFO] [WorldLifecycleController] Processando reset. label='WorldReset(reason='SceneFlow/ScenesReady')', scene='GameplayScene'.
+
+[INFO] [WorldLifecycleController] Reset iniciado. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
+
+[INFO] [WorldLifecycleController] Spawn services coletados para a cena 'GameplayScene': 2 (registry total: 2).
+
+[INFO] [WorldLifecycleController] ActorRegistry count antes de orquestrar: 0
+
+[INFO] [WorldLifecycleOrchestrator] World Reset Started
+
+[INFO] [WorldLifecycleOrchestrator] ActorRegistry count at 'Reset start': 0
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='WorldLifecycle.WorldReset'. Active=2. IsOpen=False (@ 8,18s)
+
+[INFO] [WorldLifecycleOrchestrator] Gate Acquired (WorldLifecycle.WorldReset)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn phase started (hooks=1) (@ 8,18s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn started: SceneLifecycleHookLoggerA (@ 8,19s)
+
+[INFO] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnBeforeDespawnAsync
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn duration: SceneLifecycleHookLoggerA => 0ms (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn completed: SceneLifecycleHookLoggerA (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn phase duration: 7ms (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn phase completed (@ 8,19s)
+
+[INFO] [WorldLifecycleOrchestrator] Despawn started
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service started: PlayerSpawnService
+
+[VERBOSE] [PlayerSpawnService] DespawnAsync iniciado (scene=GameplayScene). (@ 8,19s)
+
+<color=cyan>[VERBOSE] [PlayerSpawnService] Despawn ignorado (no actor). (@ 8,19s)</color>
+
+[VERBOSE] [WorldLifecycleOrchestrator] Despawn service duration: PlayerSpawnService => 0ms (@ 8,19s)
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service completed: PlayerSpawnService
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service started: EaterSpawnService
+
+[VERBOSE] [EaterSpawnService] DespawnAsync iniciado (scene=GameplayScene). (@ 8,19s)
+
+<color=cyan>[VERBOSE] [EaterSpawnService] Despawn ignorado (no actor). (@ 8,19s)</color>
+
+[VERBOSE] [WorldLifecycleOrchestrator] Despawn service duration: EaterSpawnService => 0ms (@ 8,19s)
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service completed: EaterSpawnService
+
+[VERBOSE] [WorldLifecycleOrchestrator] Despawn duration: 0ms (@ 8,19s)
+
+[INFO] [WorldLifecycleOrchestrator] ActorRegistry count at 'After Despawn': 0
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn phase started (hooks=1) (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn started: SceneLifecycleHookLoggerA (@ 8,19s)
+
+[VERBOSE] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnAfterDespawnAsync (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn duration: SceneLifecycleHookLoggerA => 0ms (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn completed: SceneLifecycleHookLoggerA (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn phase duration: 0ms (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn phase completed (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn phase started (hooks=1) (@ 8,19s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 8,20s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn started: SceneLifecycleHookLoggerA (@ 8,20s)
+
+[VERBOSE] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnBeforeSpawnAsync (@ 8,20s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn duration: SceneLifecycleHookLoggerA => 0ms (@ 8,20s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn completed: SceneLifecycleHookLoggerA (@ 8,20s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn phase duration: 0ms (@ 8,20s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn phase completed (@ 8,20s)
+
+[INFO] [WorldLifecycleOrchestrator] Spawn started
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service started: PlayerSpawnService
+
+[VERBOSE] [PlayerSpawnService] SpawnAsync iniciado (scene=GameplayScene). (@ 8,20s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IUniqueIdFactory encontrado no escopo global (tipo registrado: IUniqueIdFactory). (@ 8,21s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 8,22s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IStateDependentService encontrado no escopo global (tipo registrado: IStateDependentService). (@ 8,22s)
+
+[VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=False, scene='GameplayScene', actor='A_41edb28e_1_Player_NewScriptsClone'. (@ 8,22s)
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Ready', activeTokens=2). (@ 8,22s)
+
+[VERBOSE] [ActorRegistry] Ator registrado: A_41edb28e_1_Player_NewScriptsClone. (@ 8,22s)
+
+[INFO] [PlayerSpawnService] Actor spawned: A_41edb28e_1_Player_NewScriptsClone (prefab=Player_NewScripts, instance=Player_NewScripts, root=WorldRoot, scene=GameplayScene)
+
+[INFO] [PlayerSpawnService] Registry count: 1
+
+[VERBOSE] [WorldLifecycleOrchestrator] Spawn service duration: PlayerSpawnService => 23ms (@ 8,22s)
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service completed: PlayerSpawnService
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service started: EaterSpawnService
+
+[VERBOSE] [EaterSpawnService] SpawnAsync iniciado (scene=GameplayScene). (@ 8,22s)
+
+[VERBOSE] [ActorRegistry] Ator registrado: A_41edb28e_2_Eater_NewScriptsClone. (@ 8,22s)
+
+[INFO] [EaterSpawnService] Actor spawned: A_41edb28e_2_Eater_NewScriptsClone (prefab=Eater_NewScripts, instance=Eater_NewScripts, root=WorldRoot, scene=GameplayScene)
+
+[INFO] [EaterSpawnService] Registry count: 2
+
+[VERBOSE] [WorldLifecycleOrchestrator] Spawn service duration: EaterSpawnService => 1ms (@ 8,22s)
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service completed: EaterSpawnService
+
+[VERBOSE] [WorldLifecycleOrchestrator] Spawn duration: 24ms (@ 8,22s)
+
+[INFO] [WorldLifecycleOrchestrator] ActorRegistry count at 'After Spawn': 2
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor hooks phase started (actors=2) (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor started: A_41edb28e_1_Player_NewScriptsClone (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor duration: A_41edb28e_1_Player_NewScriptsClone => 0ms (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor completed: A_41edb28e_1_Player_NewScriptsClone (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor started: A_41edb28e_2_Eater_NewScriptsClone (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor duration: A_41edb28e_2_Eater_NewScriptsClone => 0ms (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor completed: A_41edb28e_2_Eater_NewScriptsClone (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor hooks phase duration: 1ms (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn phase started (hooks=1) (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn started: SceneLifecycleHookLoggerA (@ 8,22s)
+
+[INFO] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnAfterSpawnAsync
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn duration: SceneLifecycleHookLoggerA => 0ms (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn completed: SceneLifecycleHookLoggerA (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn phase duration: 0ms (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn phase completed (@ 8,22s)
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='WorldLifecycle.WorldReset'. Active=1. IsOpen=False (@ 8,22s)
+
+[INFO] [WorldLifecycleOrchestrator] Gate Released
+
+[INFO] [WorldLifecycleOrchestrator] World Reset Completed
+
+[VERBOSE] [WorldLifecycleOrchestrator] Reset duration: 44ms (@ 8,22s)
+
+[INFO] [WorldLifecycleController] Reset concluído. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
+
+<color=#4CAF50>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ResetWorld concluído (ScenesReady). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', targetScene='GameplayScene'. (@ 8,22s)</color>
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='SceneFlow/ScenesReady'. (@ 8,22s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] ScenesReady → Update pending. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,22s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='ScenesReady'. (@ 8,22s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay' (@ 8,22s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_scenes_ready'. (@ 8,22s)
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] ScenesReady signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.</color>
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Aguardando completion gate antes do FadeOut. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,22s)
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] Já concluído (cached). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,22s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,22s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='BeforeFadeOut'. (@ 8,22s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] BeforeFadeOut → Hide. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,22s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=0 (dur=0,5) (@ 8,22s)
+
+[VERBOSE] [NewEaterRandomMovementController] [EaterMovement] Movement blocked by IStateDependentService. (@ 8,24s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=0 (@ 8,66s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='Completed'. (@ 8,66s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Completed → Safety hide. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,66s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService encontrado no escopo global (tipo registrado: IInputModeService). (@ 8,66s)
+
+<color=#A8DEED>[INFO] [InputModeService] [InputMode] Modo alterado para 'Gameplay' (SceneFlow/Completed:Gameplay).</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Applied map 'Player' em 1/1 PlayerInput(s) (SceneFlow/Completed:Gameplay). (@ 8,66s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 8,66s)
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop. (@ 8,66s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 8,66s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge encontrado no escopo global (tipo registrado: PhaseStartPhaseCommitBridge). (@ 8,66s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator encontrado no escopo global (tipo registrado: IIntroStageCoordinator). (@ 8,66s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStagePolicyResolver encontrado no escopo global (tipo registrado: IIntroStagePolicyResolver). (@ 8,66s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageStep encontrado no escopo global (tipo registrado: IIntroStageStep). (@ 8,66s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 8,66s)
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] IntroStageStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/Completed'.</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageControlService encontrado no escopo global (tipo registrado: IIntroStageControlService). (@ 8,66s)
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='sim.gameplay'. Active=2. IsOpen=False (@ 8,66s)
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] GameplaySimulationBlocked token='sim.gameplay' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/Completed'.</color>
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [IntroStage] IntroStage ativa: simulação gameplay bloqueada; aguardando confirmação (UI).</color>
+
+<color=#A8DEED>[VERBOSE] [IntroStageCoordinator] [QA][IntroStage] ContextMenu/MenuItem disponíveis para Complete/Skip em Editor/Dev. (@ 8,66s)</color>
+
+<color=#A8DEED>[INFO] [ConfirmToStartIntroStageStep] [OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='IntroStage' reason='IntroStage/ConfirmToStart' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' scene='GameplayScene' profile='gameplay'.</color>
+
+<color=#A8DEED>[INFO] [InputModeService] [InputMode] Modo alterado para 'FrontendMenu' (IntroStage/ConfirmToStart).</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Applied map 'UI' em 1/1 PlayerInput(s) (IntroStage/ConfirmToStart). (@ 8,67s)</color>
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='flow.scene_transition'. Active=1. IsOpen=False (@ 8,67s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. gameplayReady=True. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay' (@ 8,67s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=True, gateOpen=False, activeTokens=1, reason='scene_transition_completed'. (@ 8,67s)
+
+<color=#4CAF50>[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.</color>
+
+[VERBOSE] [GameLoopService] [GameLoop] EXIT: Ready (@ 8,68s)
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: IntroStage (active=False) (@ 8,68s)
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] GUI exibido.
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=True, paused=False, serviceState=Ready, gameLoopState='IntroStage', activeTokens=1). (@ 8,68s)
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] Botão Concluir IntroStage clicado.
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] Solicitando CompleteIntroStage reason='IntroStage/UIConfirm'.
+
+<color=#A8DEED>[INFO] [IntroStageControlService] [OBS][IntroStage] CompleteIntroStage received reason='IntroStage/UIConfirm' skip=false signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene'.</color>
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] GUI oculto.
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] IntroStageCompleted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' result='completed' profile='gameplay' target='GameplayScene'.</color>
+
+<color=#A8DEED>[VERBOSE] [IntroStageCoordinator] [IntroStage] Solicitando RequestStart após conclusão explícita da IntroStage. (@ 9,90s)</color>
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: NotPlaying (gateOpen=True, gameplayReady=True, paused=False, serviceState=Ready, gameLoopState='IntroStage', activeTokens=0). (@ 9,90s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=True, gateOpen=True, activeTokens=0, reason='gate_opened'. (@ 9,90s)
+
+[VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=True, scene='GameplayScene', actor='A_41edb28e_1_Player_NewScriptsClone'. (@ 9,90s)
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='sim.gameplay'. Active=0. IsOpen=True (@ 9,90s)
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] GameplaySimulationUnblocked token='sim.gameplay' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene'.</color>
+
+[VERBOSE] [NewPlayerMovementController] [Movement][StateDependent] Movimento bloqueado por IStateDependentService. (@ 9,91s)
+
+[VERBOSE] [GameLoopService] [GameLoop] EXIT: IntroStage (@ 9,91s)
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: Playing (active=True) (@ 9,91s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService encontrado no escopo global (tipo registrado: IInputModeService). (@ 9,91s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISceneFlowSignatureCache encontrado no escopo global (tipo registrado: ISceneFlowSignatureCache). (@ 9,91s)
+
+<color=#A8DEED>[INFO] [GameLoopService] [OBS][InputMode] Apply mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' scene='GameplayScene' profile='gameplay' frame=796.</color>
+
+<color=#A8DEED>[INFO] [InputModeService] [InputMode] Modo alterado para 'Gameplay' (GameLoop/Playing).</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Applied map 'Player' em 1/1 PlayerInput(s) (GameLoop/Playing). (@ 9,91s)</color>
+
+[VERBOSE] [GameRunStatusService] [GameLoop] GameRunStartedEvent inicial observado (state=Playing). (@ 9,91s)
+
+[VERBOSE] [GameRunOutcomeService] [GameLoop] GameRunStartedEvent observado -> rearmando GameRunOutcomeService. state=Playing (@ 9,91s)
+
+<color=#A8DEED>[VERBOSE] [PostGameOverlayController] [PostGame] GameRunStartedEvent recebido. Ocultando overlay. (@ 9,91s)</color>
+
+[VERBOSE] [DependencyInjector] Injetando IInputModeService do escopo global para PostGameOverlayController. (@ 9,91s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: IInputModeService -> PostGameOverlayController (implementação: InputModeService) (@ 9,91s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 9,91s)
+
+[VERBOSE] [DependencyInjector] Injetando ISimulationGateService do escopo global para PostGameOverlayController. (@ 9,91s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: ISimulationGateService -> PostGameOverlayController (implementação: SimulationGateService) (@ 9,91s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IPostPlayOwnershipService encontrado no escopo global (tipo registrado: IPostPlayOwnershipService). (@ 9,91s)
+
+[VERBOSE] [DependencyInjector] Injetando IPostPlayOwnershipService do escopo global para PostGameOverlayController. (@ 9,91s)
+
+[VERBOSE] [DependencyInjector] Injeção bem-sucedida: IPostPlayOwnershipService -> PostGameOverlayController (implementação: PostPlayOwnershipService) (@ 9,91s)
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Modo 'Gameplay' ja ativo. Reaplicando (PostGame/RunStarted). (@ 9,91s)</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Applied map 'Player' em 1/1 PlayerInput(s) (PostGame/RunStarted). (@ 9,91s)</color>
+
+<color=#A8DEED>[VERBOSE] [GameplayEndConditionsController] [GameplayEndConditionsController] State reset. reason='GameRunStartedEvent', startTime=4,622. (@ 9,91s)</color>
+
+<color=#A8DEED>[VERBOSE] [GameplayEndConditionsController] [GameplayEndConditionsController] Rearmed on GameRunStartedEvent. (@ 9,91s)</color>
+
+[VERBOSE] [GameLoopService] [GameLoop] Activity: True (@ 9,91s)
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' liberada (gateOpen=True, gameplayReady=True, paused=False, serviceState=Playing, gameLoopState='Playing', activeTokens=0). (@ 9,91s)
+
+[VERBOSE] [NewEaterRandomMovementController] [EaterMovement] New direction: (0.96, 0.00, 0.28) (scene='GameplayScene'). (@ 9,91s)
+
+[VERBOSE] [GameRunEndRequestService] RequestEnd(Victory, reason='Gameplay/DevManualVictory') (@ 11,41s)
+
+[INFO] [GameRunOutcomeService] [GameLoop] Publicando GameRunEndedEvent. Outcome=Victory, Reason='Gameplay/DevManualVictory'.
+
+[INFO] [GameRunStatusService] [GameLoop] GameRunStatus atualizado. Outcome=Victory, Reason='Gameplay/DevManualVictory'.
+
+[VERBOSE] [GameRunStatusService] [GameLoop] GameRunEndedEvent (Outcome=Victory) -> PostGame sem PauseOverlay (pausa suprimida). (@ 11,41s)
+
+<color=#A8DEED>[VERBOSE] [PostGameOverlayController] [PostGame] GameRunEndedEvent recebido. Exibindo overlay. (@ 11,41s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunStatusService encontrado no escopo global (tipo registrado: IGameRunStatusService). (@ 11,41s)
+
+[VERBOSE] [NewEaterRandomMovementController] [EaterMovement] New direction: (0.56, 0.00, 0.83) (scene='GameplayScene'). (@ 11,91s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 12,55s)
+
+<color=#A8DEED>[INFO] [GameLoopEventInputBridge] [GameLoop] RestartRequested -> RequestReset (expect Boot cycle). reason='PostGame/Restart'.</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameNavigationService encontrado no escopo global (tipo registrado: IGameNavigationService). (@ 12,55s)
+
+<color=#A8DEED>[INFO] [RestartNavigationBridge] [Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync. reason='PostGame/Restart'.</color>
+
+<color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-gameplay', reason='PostGame/Restart', Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'.</color>
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'</color>
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 12,55s)
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 12,55s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 12,55s)
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=1). (@ 12,55s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 12,55s)
+
+[VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=False, scene='GameplayScene', actor='A_41edb28e_1_Player_NewScriptsClone'. (@ 12,55s)
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.scene_transition'. Active=1. IsOpen=False (@ 12,55s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SimulationGate adquirido com token='flow.scene_transition'. Active=1. IsOpen=False (@ 12,55s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay' (@ 12,55s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_started'. (@ 12,55s)
+
+[VERBOSE] [NewScriptsSceneFlowFadeAdapter] [SceneFlow] Profile 'gameplay' aplicado (path='<cache>'): fadeIn=0,5, fadeOut=0,5. (@ 12,55s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=1 (dur=0,5) (@ 12,55s)
+
+[INFO] [PostGameOverlayController] [PostGame] Restart solicitado via overlay. reason='PostGame/Restart'.
+
+[VERBOSE] [GameLoopService] [GameLoop] EXIT: Playing (@ 12,55s)
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: Boot (active=False) (@ 12,55s)
+
+<color=#A8DEED>[INFO] [GameLoopService] [GameLoop] Restart->Boot confirmado (reinício determinístico).</color>
+
+[VERBOSE] [GameLoopService] [GameLoop] Activity: False (@ 12,55s)
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Boot', activeTokens=1). (@ 12,55s)
+
+[VERBOSE] [NewEaterRandomMovementController] [EaterMovement] Movement blocked by IStateDependentService. (@ 12,55s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=1 (@ 13,04s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] FadeInCompleted → Show. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 13,04s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='AfterFadeIn'. (@ 13,04s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena 'GameplayScene' já está carregada. Pulando load. (@ 13,05s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena 'UIGlobalScene' já está carregada. Pulando load. (@ 13,05s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena ativa definida para 'GameplayScene'. (@ 13,05s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena 'MenuScene' já está descarregada. Pulando unload. (@ 13,05s)
+
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] Disparando ResetWorld para 1 controller(s). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', targetScene='GameplayScene'. (@ 13,05s)</color>
+
+[INFO] [WorldLifecycleController] Processando reset. label='WorldReset(reason='SceneFlow/ScenesReady')', scene='GameplayScene'.
+
+[INFO] [WorldLifecycleController] Reset iniciado. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
+
+[INFO] [WorldLifecycleController] Spawn services coletados para a cena 'GameplayScene': 2 (registry total: 2).
+
+[INFO] [WorldLifecycleController] ActorRegistry count antes de orquestrar: 2
+
+[INFO] [WorldLifecycleOrchestrator] World Reset Started
+
+[INFO] [WorldLifecycleOrchestrator] ActorRegistry count at 'Reset start': 2
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='WorldLifecycle.WorldReset'. Active=2. IsOpen=False (@ 13,05s)
+
+[INFO] [WorldLifecycleOrchestrator] Gate Acquired (WorldLifecycle.WorldReset)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn phase started (hooks=1) (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn started: SceneLifecycleHookLoggerA (@ 13,05s)
+
+[INFO] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnBeforeDespawnAsync
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn duration: SceneLifecycleHookLoggerA => 0ms (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn completed: SceneLifecycleHookLoggerA (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn phase duration: 0ms (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeDespawn phase completed (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor hooks phase started (actors=2) (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor started: A_41edb28e_1_Player_NewScriptsClone (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor duration: A_41edb28e_1_Player_NewScriptsClone => 0ms (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor completed: A_41edb28e_1_Player_NewScriptsClone (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor started: A_41edb28e_2_Eater_NewScriptsClone (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor duration: A_41edb28e_2_Eater_NewScriptsClone => 0ms (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor completed: A_41edb28e_2_Eater_NewScriptsClone (@ 13,05s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeActorDespawn actor hooks phase duration: 0ms (@ 13,05s)
+
+[INFO] [WorldLifecycleOrchestrator] Despawn started
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service started: PlayerSpawnService
+
+[VERBOSE] [PlayerSpawnService] DespawnAsync iniciado (scene=GameplayScene). (@ 13,05s)
+
+[VERBOSE] [ActorRegistry] Ator removido: A_41edb28e_1_Player_NewScriptsClone. (@ 13,05s)
+
+[INFO] [PlayerSpawnService] Actor despawned: A_41edb28e_1_Player_NewScriptsClone (root=WorldRoot, scene=GameplayScene)
+
+[INFO] [PlayerSpawnService] Registry count: 1
+
+[VERBOSE] [WorldLifecycleOrchestrator] Despawn service duration: PlayerSpawnService => 5ms (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service completed: PlayerSpawnService
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service started: EaterSpawnService
+
+[VERBOSE] [EaterSpawnService] DespawnAsync iniciado (scene=GameplayScene). (@ 13,06s)
+
+[VERBOSE] [ActorRegistry] Ator removido: A_41edb28e_2_Eater_NewScriptsClone. (@ 13,06s)
+
+[INFO] [EaterSpawnService] Actor despawned: A_41edb28e_2_Eater_NewScriptsClone (root=WorldRoot, scene=GameplayScene)
+
+[INFO] [EaterSpawnService] Registry count: 0
+
+[VERBOSE] [WorldLifecycleOrchestrator] Despawn service duration: EaterSpawnService => 0ms (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] Despawn service completed: EaterSpawnService
+
+[VERBOSE] [WorldLifecycleOrchestrator] Despawn duration: 5ms (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] ActorRegistry count at 'After Despawn': 0
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn phase started (hooks=1) (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn started: SceneLifecycleHookLoggerA (@ 13,06s)
+
+[VERBOSE] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnAfterDespawnAsync (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn duration: SceneLifecycleHookLoggerA => 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn completed: SceneLifecycleHookLoggerA (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn phase duration: 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterDespawn phase completed (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn phase started (hooks=1) (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn started: SceneLifecycleHookLoggerA (@ 13,06s)
+
+[VERBOSE] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnBeforeSpawnAsync (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn duration: SceneLifecycleHookLoggerA => 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn completed: SceneLifecycleHookLoggerA (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn phase duration: 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnBeforeSpawn phase completed (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] Spawn started
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service started: PlayerSpawnService
+
+[VERBOSE] [PlayerSpawnService] SpawnAsync iniciado (scene=GameplayScene). (@ 13,06s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IUniqueIdFactory encontrado no escopo global (tipo registrado: IUniqueIdFactory). (@ 13,06s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 13,06s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IStateDependentService encontrado no escopo global (tipo registrado: IStateDependentService). (@ 13,06s)
+
+[VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=False, scene='GameplayScene', actor='A_41edb28e_3_Player_NewScriptsClone'. (@ 13,06s)
+
+[VERBOSE] [ActorRegistry] Ator registrado: A_41edb28e_3_Player_NewScriptsClone. (@ 13,06s)
+
+[INFO] [PlayerSpawnService] Actor spawned: A_41edb28e_3_Player_NewScriptsClone (prefab=Player_NewScripts, instance=Player_NewScripts, root=WorldRoot, scene=GameplayScene)
+
+[INFO] [PlayerSpawnService] Registry count: 1
+
+[VERBOSE] [WorldLifecycleOrchestrator] Spawn service duration: PlayerSpawnService => 2ms (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service completed: PlayerSpawnService
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service started: EaterSpawnService
+
+[VERBOSE] [EaterSpawnService] SpawnAsync iniciado (scene=GameplayScene). (@ 13,06s)
+
+[VERBOSE] [ActorRegistry] Ator registrado: A_41edb28e_4_Eater_NewScriptsClone. (@ 13,06s)
+
+[INFO] [EaterSpawnService] Actor spawned: A_41edb28e_4_Eater_NewScriptsClone (prefab=Eater_NewScripts, instance=Eater_NewScripts, root=WorldRoot, scene=GameplayScene)
+
+[INFO] [EaterSpawnService] Registry count: 2
+
+[VERBOSE] [WorldLifecycleOrchestrator] Spawn service duration: EaterSpawnService => 0ms (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] Spawn service completed: EaterSpawnService
+
+[VERBOSE] [WorldLifecycleOrchestrator] Spawn duration: 2ms (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] ActorRegistry count at 'After Spawn': 2
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor hooks phase started (actors=2) (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor started: A_41edb28e_3_Player_NewScriptsClone (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor duration: A_41edb28e_3_Player_NewScriptsClone => 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor completed: A_41edb28e_3_Player_NewScriptsClone (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor started: A_41edb28e_4_Eater_NewScriptsClone (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor duration: A_41edb28e_4_Eater_NewScriptsClone => 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor completed: A_41edb28e_4_Eater_NewScriptsClone (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterActorSpawn actor hooks phase duration: 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn phase started (hooks=1) (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn execution order: SceneLifecycleHookLoggerA(order=10000) (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn started: SceneLifecycleHookLoggerA (@ 13,06s)
+
+[INFO] [SceneLifecycleHookLoggerA] [QA] SceneLifecycleHookLoggerA -> OnAfterSpawnAsync
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn duration: SceneLifecycleHookLoggerA => 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn completed: SceneLifecycleHookLoggerA (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn phase duration: 0ms (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleOrchestrator] OnAfterSpawn phase completed (@ 13,06s)
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='WorldLifecycle.WorldReset'. Active=1. IsOpen=False (@ 13,06s)
+
+[INFO] [WorldLifecycleOrchestrator] Gate Released
+
+[INFO] [WorldLifecycleOrchestrator] World Reset Completed
+
+[VERBOSE] [WorldLifecycleOrchestrator] Reset duration: 10ms (@ 13,06s)
+
+[INFO] [WorldLifecycleController] Reset concluído. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
+
+<color=#4CAF50>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ResetWorld concluído (ScenesReady). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', targetScene='GameplayScene'. (@ 13,06s)</color>
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='SceneFlow/ScenesReady'. (@ 13,06s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] ScenesReady → Update pending. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 13,06s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='ScenesReady'. (@ 13,06s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay' (@ 13,06s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_scenes_ready'. (@ 13,06s)
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] ScenesReady signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.</color>
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Aguardando completion gate antes do FadeOut. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 13,06s)
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] Já concluído (cached). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 13,06s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 13,06s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='BeforeFadeOut'. (@ 13,06s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] BeforeFadeOut → Hide. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 13,06s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=0 (dur=0,5) (@ 13,06s)
+
+[VERBOSE] [NewEaterRandomMovementController] [EaterMovement] Movement blocked by IStateDependentService. (@ 13,07s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=0 (@ 13,55s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', phase='Completed'. (@ 13,55s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Completed → Safety hide. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 13,55s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService encontrado no escopo global (tipo registrado: IInputModeService). (@ 13,55s)
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Modo 'Gameplay' ja ativo. Reaplicando (SceneFlow/Completed:Gameplay). (@ 13,55s)</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Applied map 'Player' em 1/1 PlayerInput(s) (SceneFlow/Completed:Gameplay). (@ 13,55s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 13,55s)
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> bypass dedupe (Restart/Boot cycle). (@ 13,55s)</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop. (@ 13,55s)</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStage (Restart/Boot cycle). (@ 13,55s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 13,55s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge encontrado no escopo global (tipo registrado: PhaseStartPhaseCommitBridge). (@ 13,55s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator encontrado no escopo global (tipo registrado: IIntroStageCoordinator). (@ 13,55s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStagePolicyResolver encontrado no escopo global (tipo registrado: IIntroStagePolicyResolver). (@ 13,55s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageStep encontrado no escopo global (tipo registrado: IIntroStageStep). (@ 13,55s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 13,55s)
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] IntroStageStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/Completed'.</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageControlService encontrado no escopo global (tipo registrado: IIntroStageControlService). (@ 13,55s)
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='sim.gameplay'. Active=2. IsOpen=False (@ 13,55s)
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] GameplaySimulationBlocked token='sim.gameplay' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/Completed'.</color>
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [IntroStage] IntroStage ativa: simulação gameplay bloqueada; aguardando confirmação (UI).</color>
+
+<color=#A8DEED>[VERBOSE] [IntroStageCoordinator] [QA][IntroStage] ContextMenu/MenuItem disponíveis para Complete/Skip em Editor/Dev. (@ 13,55s)</color>
+
+<color=#A8DEED>[INFO] [ConfirmToStartIntroStageStep] [OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='IntroStage' reason='IntroStage/ConfirmToStart' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' scene='GameplayScene' profile='gameplay'.</color>
+
+<color=#A8DEED>[INFO] [InputModeService] [InputMode] Modo alterado para 'FrontendMenu' (IntroStage/ConfirmToStart).</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Applied map 'UI' em 1/1 PlayerInput(s) (IntroStage/ConfirmToStart). (@ 13,55s)</color>
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='flow.scene_transition'. Active=1. IsOpen=False (@ 13,55s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. gameplayReady=True. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay' (@ 13,55s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=True, gateOpen=False, activeTokens=1, reason='scene_transition_completed'. (@ 13,55s)
+
+<color=#4CAF50>[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.</color>
+
+[VERBOSE] [GameLoopService] [GameLoop] EXIT: Boot (@ 13,56s)
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: Ready (active=False) (@ 13,56s)
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] GUI exibido.
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=True, paused=False, serviceState=Ready, gameLoopState='Ready', activeTokens=1). (@ 13,56s)
+
+[VERBOSE] [GameLoopService] [GameLoop] EXIT: Ready (@ 13,56s)
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: IntroStage (active=False) (@ 13,56s)
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=True, paused=False, serviceState=Ready, gameLoopState='IntroStage', activeTokens=1). (@ 13,56s)
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] Botão Concluir IntroStage clicado.
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] Solicitando CompleteIntroStage reason='IntroStage/UIConfirm'.
+
+<color=#A8DEED>[INFO] [IntroStageControlService] [OBS][IntroStage] CompleteIntroStage received reason='IntroStage/UIConfirm' skip=false signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene'.</color>
+
+[INFO] [IntroStageRuntimeDebugGui] [IntroStage][RuntimeDebugGui] GUI oculto.
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] IntroStageCompleted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' result='completed' profile='gameplay' target='GameplayScene'.</color>
+
+<color=#A8DEED>[VERBOSE] [IntroStageCoordinator] [IntroStage] Solicitando RequestStart após conclusão explícita da IntroStage. (@ 14,64s)</color>
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: NotPlaying (gateOpen=True, gameplayReady=True, paused=False, serviceState=Ready, gameLoopState='IntroStage', activeTokens=0). (@ 14,64s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=True, gateOpen=True, activeTokens=0, reason='gate_opened'. (@ 14,64s)
+
+[VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=True, scene='GameplayScene', actor='A_41edb28e_3_Player_NewScriptsClone'. (@ 14,64s)
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='sim.gameplay'. Active=0. IsOpen=True (@ 14,64s)
+
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] GameplaySimulationUnblocked token='sim.gameplay' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene'.</color>
+
+[VERBOSE] [NewPlayerMovementController] [Movement][StateDependent] Movimento bloqueado por IStateDependentService. (@ 14,65s)
+
+[VERBOSE] [GameLoopService] [GameLoop] EXIT: IntroStage (@ 14,65s)
+
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: Playing (active=True) (@ 14,65s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService encontrado no escopo global (tipo registrado: IInputModeService). (@ 14,65s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISceneFlowSignatureCache encontrado no escopo global (tipo registrado: ISceneFlowSignatureCache). (@ 14,65s)
+
+<color=#A8DEED>[INFO] [GameLoopService] [OBS][InputMode] Apply mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' scene='GameplayScene' profile='gameplay' frame=1802.</color>
+
+<color=#A8DEED>[INFO] [InputModeService] [InputMode] Modo alterado para 'Gameplay' (GameLoop/Playing).</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Applied map 'Player' em 1/1 PlayerInput(s) (GameLoop/Playing). (@ 14,65s)</color>
+
+[VERBOSE] [GameRunStatusService] [GameLoop] GameRunStatusService.Clear() chamado. Resultado resetado para Unknown. (@ 14,65s)
+
+[VERBOSE] [GameRunStatusService] [GameLoop] GameRunStatusService: nova run iniciada (state=Playing). Resultado anterior resetado. (@ 14,65s)
+
+[VERBOSE] [GameRunOutcomeService] [GameLoop] GameRunStartedEvent observado -> rearmando GameRunOutcomeService. state=Playing (@ 14,65s)
+
+<color=#A8DEED>[VERBOSE] [PostGameOverlayController] [PostGame] GameRunStartedEvent recebido. Ocultando overlay. (@ 14,65s)</color>
+
+<color=#A8DEED>[VERBOSE] [GameplayEndConditionsController] [GameplayEndConditionsController] State reset. reason='GameRunStartedEvent', startTime=9,360. (@ 14,65s)</color>
+
+<color=#A8DEED>[VERBOSE] [GameplayEndConditionsController] [GameplayEndConditionsController] Rearmed on GameRunStartedEvent. (@ 14,65s)</color>
+
+[VERBOSE] [GameLoopService] [GameLoop] Activity: True (@ 14,65s)
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' liberada (gateOpen=True, gameplayReady=True, paused=False, serviceState=Playing, gameLoopState='Playing', activeTokens=0). (@ 14,65s)
+
+[VERBOSE] [NewEaterRandomMovementController] [EaterMovement] New direction: (0.12, 0.00, 0.99) (scene='GameplayScene'). (@ 14,65s)
+
+[VERBOSE] [GameRunEndRequestService] RequestEnd(Defeat, reason='Gameplay/DevManualDefeat') (@ 15,59s)
+
+[INFO] [GameRunOutcomeService] [GameLoop] Publicando GameRunEndedEvent. Outcome=Defeat, Reason='Gameplay/DevManualDefeat'.
+
+[INFO] [GameRunStatusService] [GameLoop] GameRunStatus atualizado. Outcome=Defeat, Reason='Gameplay/DevManualDefeat'.
+
+[VERBOSE] [GameRunStatusService] [GameLoop] GameRunEndedEvent (Outcome=Defeat) -> PostGame sem PauseOverlay (pausa suprimida). (@ 15,59s)
+
+<color=#A8DEED>[VERBOSE] [PostGameOverlayController] [PostGame] GameRunEndedEvent recebido. Exibindo overlay. (@ 15,59s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameRunStatusService encontrado no escopo global (tipo registrado: IGameRunStatusService). (@ 15,59s)
+
+[VERBOSE] [GamePauseGateBridge] [PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge). reason='PostGame/ExitToMenu'. (@ 16,38s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 16,38s)
+
+[VERBOSE] [GameLoopEventInputBridge] [GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing). reason='PostGame/ExitToMenu'. (@ 16,38s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameNavigationService encontrado no escopo global (tipo registrado: IGameNavigationService). (@ 16,38s)
+
+<color=#A8DEED>[INFO] [ExitToMenuNavigationBridge] [Navigation] ExitToMenu recebido -> RequestMenuAsync. routeId='to-menu', reason='PostGame/ExitToMenu'.</color>
+
+<color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-menu', reason='PostGame/ExitToMenu', Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend'.</color>
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' profile='frontend' Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend'</color>
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,38s)
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,38s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 16,38s)
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=1). (@ 16,38s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 16,38s)
+
+[VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=False, scene='GameplayScene', actor='A_41edb28e_3_Player_NewScriptsClone'. (@ 16,38s)
+
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.scene_transition'. Active=1. IsOpen=False (@ 16,38s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SimulationGate adquirido com token='flow.scene_transition'. Active=1. IsOpen=False (@ 16,38s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context=Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend' (@ 16,38s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_started'. (@ 16,38s)
+
+[VERBOSE] [NewScriptsSceneTransitionProfileResolver] [SceneFlow] Profile resolvido: name='frontend', path='SceneFlow/Profiles/frontend', type='_ImmersiveGames.NewScripts.Infrastructure.SceneFlow.NewScriptsSceneTransitionProfile'. (@ 16,38s)
+
+[VERBOSE] [NewScriptsSceneFlowFadeAdapter] [SceneFlow] Profile 'frontend' aplicado (path='SceneFlow/Profiles/frontend'): fadeIn=0,5, fadeOut=0,5. (@ 16,38s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=1 (dur=0,5) (@ 16,38s)
+
+[INFO] [PostGameOverlayController] [PostGame] ExitToMenu solicitado via overlay. reason='PostGame/ExitToMenu'.
+
+[VERBOSE] [NewEaterRandomMovementController] [EaterMovement] Movement blocked by IStateDependentService. (@ 16,38s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=1 (@ 16,87s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] FadeInCompleted → Show. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,87s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', phase='AfterFadeIn'. (@ 16,87s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Carregando cena 'MenuScene' (Additive)... (@ 16,87s)
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='Quit_Btn', btn='Quit_Btn'). (@ 16,89s)</color>
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='HowToPlay_Btn', btn='HowToPlay_Btn'). (@ 16,89s)</color>
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='Options_Btn', btn='Options_Btn'). (@ 16,89s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameNavigationService encontrado no escopo global (tipo registrado: IGameNavigationService). (@ 16,89s)
+
+<color=#A8DEED>[VERBOSE] [FrontendButtonBinderBase] [FrontendButton] Click-guard armado por 0,250s (label='OnEnable/Guard', go='Play_Btn', btn='Play_Btn'). (@ 16,89s)</color>
+
+<color=#A8DEED>[VERBOSE] [FrontendPanelsController] [FrontendPanels] Panel='main' (reason='Awake/Initial'). (@ 16,89s)</color>
+
+<color=#A8DEED>[VERBOSE] [FrontendPanelsController] [FrontendPanels] EventSystem selected='Play_Btn' (panel='main'). (@ 16,89s)</color>
+
+[VERBOSE] [ServiceRegistry] Dicionário obtido do pool para serviços. (@ 16,89s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço INewSceneScopeMarker registrado para a cena MenuScene. (@ 16,89s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnContext registrado para a cena MenuScene. (@ 16,89s)</color>
+
+[INFO] [NewSceneBootstrapper] WorldRoot ready: MenuScene/WorldRoot
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IActorRegistry registrado para a cena MenuScene. (@ 16,89s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IWorldSpawnServiceRegistry registrado para a cena MenuScene. (@ 16,89s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetTargetClassifier registrado para a cena MenuScene. (@ 16,89s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetTargetClassifier registrado para a cena 'MenuScene'. (@ 16,89s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IGameplayResetOrchestrator registrado para a cena MenuScene. (@ 16,89s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] IGameplayResetOrchestrator registrado para a cena 'MenuScene'. (@ 16,89s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço WorldLifecycleHookRegistry registrado para a cena MenuScene. (@ 16,89s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] WorldLifecycleHookRegistry registrado para a cena 'MenuScene'. (@ 16,89s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Serviço IResetScopeParticipant registrado para a cena MenuScene. (@ 16,89s)</color>
+
+[VERBOSE] [NewSceneBootstrapper] PlayersResetParticipant registrado para a cena 'MenuScene'. (@ 16,89s)
+
+[VERBOSE] [NewSceneBootstrapper] Hook de cena registrado: SceneLifecycleHookLoggerA (@ 16,89s)
+
+[VERBOSE] [NewSceneBootstrapper] WorldDefinition não atribuída (scene='MenuScene'). Isto é permitido em cenas sem spawn (ex.: Ready). Serviços de spawn não serão registrados. (@ 16,89s)
+
+[INFO] [NewSceneBootstrapper] Spawn services registered from definition: 0
+
+[INFO] [NewSceneBootstrapper] Scene scope created: MenuScene
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena 'UIGlobalScene' já está carregada. Pulando load. (@ 16,89s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Cena ativa definida para 'MenuScene'. (@ 16,92s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Descarregando cena 'GameplayScene'... (@ 16,92s)
+
+[VERBOSE] [ServiceRegistry] Dicionário retornado ao pool. Tamanho do pool: 1. (@ 16,93s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Removidos 8 serviços para a cena GameplayScene. (@ 16,93s)</color>
+
+[INFO] [NewSceneBootstrapper] Scene scope cleared: GameplayScene
+
+[INFO] [WorldLifecycleController] Limpando WorldLifecycleHookRegistry na destruição do controller. scene='GameplayScene', hooksCount='0'
+
+[INFO] [WorldLifecycleController] Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='GameplayScene', servicesCount='0'
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Camera unregistered for playerId=0: Main Camera. (@ 16,93s)</color>
+
+<color=#A8DEED>[VERBOSE] [CameraResolverService] Default camera updated to null (playerId=0). (@ 16,93s)</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceCleaner] Cena GameplayScene descarregada, serviços limpos. (@ 16,94s)</color>
+
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ScenesReady ignorado (profile != gameplay). signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', profile='frontend'. (@ 16,94s)</color>
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', reason='SceneFlow/ScenesReady'. (@ 16,94s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] ScenesReady → Update pending. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,94s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Show aplicado. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', phase='ScenesReady'. (@ 16,94s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context=Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend' (@ 16,94s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='scene_transition_scenes_ready'. (@ 16,94s)
+
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] ScenesReady signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' profile='frontend'.</color>
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Aguardando completion gate antes do FadeOut. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,94s)
+
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] Já concluído (cached). signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,94s)
+
+[VERBOSE] [SceneTransitionService] [SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,94s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', phase='BeforeFadeOut'. (@ 16,94s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] BeforeFadeOut → Hide. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 16,94s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Iniciando Fade para alpha=0 (dur=0,5) (@ 16,94s)
+
+[VERBOSE] [NewScriptsFadeController] [Fade] Fade concluído para alpha=0 (@ 17,43s)
+
+[VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Hide aplicado. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', phase='Completed'. (@ 17,43s)
+
+[VERBOSE] [SceneFlowLoadingService] [Loading] Completed → Safety hide. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 17,43s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IInputModeService encontrado no escopo global (tipo registrado: IInputModeService). (@ 17,43s)
+
+<color=#A8DEED>[INFO] [InputModeService] [InputMode] Modo alterado para 'FrontendMenu' (SceneFlow/Completed:Frontend).</color>
+
+<color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Nenhum PlayerInput ativo encontrado ao aplicar modo 'FrontendMenu'. Isto é esperado em Menu/Frontend. Em Gameplay, verifique se o Player foi spawnado. (@ 17,43s)</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 17,43s)
+
+<color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] Frontend completed com estado ativo ('Playing'). Solicitando RequestReady() para garantir menu inativo. (@ 17,43s)</color>
+
+[VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GameplayNotReady (gateOpen=True, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=0). (@ 17,43s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=True, activeTokens=0, reason='gate_opened'. (@ 17,43s)
+
+[VERBOSE] [SimulationGateService] [Gate] Release token='flow.scene_transition'. Active=0. IsOpen=True (@ 17,43s)
+
+[VERBOSE] [GameReadinessService] [Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. gameplayReady=False. Context=Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend' (@ 17,43s)
+
+[VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=True, activeTokens=0, reason='scene_transition_completed'. (@ 17,43s)
+
+<color=#4CAF50>[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' profile='frontend'.</color>
+
+<color=#4CAF50>[VERBOSE] [SceneServiceCleaner] SceneServiceCleaner finalizado. (@ 18,58s)</color>
+
+<color=#4CAF50>[VERBOSE] [ObjectServiceRegistry] Removidos 0 serviços de todos os objetos. (@ 18,58s)</color>
+
+[VERBOSE] [ServiceRegistry] Dicionário retornado ao pool. Tamanho do pool: 2. (@ 18,58s)
+
+<color=#4CAF50>[VERBOSE] [SceneServiceRegistry] Removidos 8 serviços de todas as cenas. (@ 18,58s)</color>
+
+[VERBOSE] [GamePauseGateBridge] [PauseBridge] Release ignorado (Dispose) — sem handle ativo (ownership inexistente). IsOpen=True Active=0 (@ 18,58s)
+
+[VERBOSE] [GameRunOutcomeEventInputBridge] GameRunOutcomeEventInputBridge disposed. (@ 18,58s)
+
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Removidos 37 serviços do escopo global. (@ 18,58s)</color>
+
+<color=#4CAF50>[VERBOSE] [DependencyManager] Serviços limpos no fechamento do jogo. (@ 18,58s)</color>
+
+[INFO] [NewSceneBootstrapper] Scene scope cleared: MenuScene
+
+<color=#A8DEED>[VERBOSE] [PostGameOverlayController] [PostGame] Bindings de GameRunEnded/GameRunStarted removidos. (@ 0,01s)</color>
+
