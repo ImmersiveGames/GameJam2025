@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop

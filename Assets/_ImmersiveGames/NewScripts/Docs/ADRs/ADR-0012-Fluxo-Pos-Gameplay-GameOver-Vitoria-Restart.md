@@ -14,7 +14,7 @@ O fluxo de produção atual está estável para:
 * Startup → Menu → Gameplay, com:
 
     * `SceneTransitionService` + Fade + LoadingHUD.
-    * `WorldLifecycleRuntimeCoordinator` disparando hard reset em perfis `gameplay` após `SceneTransitionScenesReadyEvent`.
+    * `WorldLifecycleSceneFlowResetDriver` disparando hard reset em perfis `gameplay` após `SceneTransitionScenesReadyEvent`.
     * `GameReadinessService` + `SimulationGateService` controlando `GameplayReady` + gate.
     * `InputModeService` trocando entre `FrontendMenu`, `Gameplay`, `PauseOverlay`.
     * `GameLoopService` com estados principais: `Boot`, `Ready`, `Playing`, `Paused`.
@@ -58,7 +58,7 @@ Sem um desenho explícito para GameOver/Vitória/Restart:
 
 2. Garantir que **Restart** use o mesmo pipeline de produção do `profile='gameplay'`:
 
-    * `SceneTransitionService` → `WorldLifecycleRuntimeCoordinator` → `WorldLifecycleOrchestrator`.
+    * `SceneTransitionService` → `WorldLifecycleSceneFlowResetDriver` → `WorldLifecycleOrchestrator`.
 
 3. Reutilizar infra existente sempre que possível:
 
@@ -207,7 +207,7 @@ Fluxo canônico de Restart:
 
     * `SceneTransitionService` inicia a transição (`GameplayScene` + `UIGlobalScene`, unload do que for necessário).
     * Fade + LoadingHUD operam normalmente.
-    * `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` com `profile='gameplay'` e dispara hard reset:
+    * `WorldLifecycleSceneFlowResetDriver` recebe `SceneTransitionScenesReadyEvent` com `profile='gameplay'` e dispara hard reset:
 
         * `WorldLifecycleController` → `WorldLifecycleOrchestrator` → despawn + spawn determinístico.
     * Gate + `GameReadinessService` consolidam o estado `GameplayReady`.
@@ -232,7 +232,7 @@ Para voltar ao Menu, reusa-se o fluxo já existente:
 
 Invariantes:
 
-* O **único responsável** por resetar o mundo é o pipeline `SceneTransitionScenesReadyEvent` + `WorldLifecycleRuntimeCoordinator` + `WorldLifecycleController` + `WorldLifecycleOrchestrator`.
+* O **único responsável** por resetar o mundo é o pipeline `SceneTransitionScenesReadyEvent` + `WorldLifecycleSceneFlowResetDriver` + `WorldLifecycleController` + `WorldLifecycleOrchestrator`.
 * O fluxo pós-gameplay **não** introduz resets manuais adicionais dentro de atores ou serviços de gameplay.
 
 Regras:
@@ -256,7 +256,7 @@ Regras:
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências

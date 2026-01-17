@@ -7,15 +7,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
     /// Usado para liberar start do GameLoop após ScenesReady + Reset.
     ///
     /// Ownership (canônico):
-    /// - Publisher (produção): WorldLifecycleSceneFlowResetDriver (ScenesReady → Reset → Publish).
+    /// - Publisher (produção): driver de integração WorldLifecycle/SceneFlow (ex.: WorldLifecycleSceneFlowResetDriver).
     /// - Consumidores (produção): WorldLifecycleResetCompletionGate (SceneFlow) e GameLoopSceneFlowCoordinator (GameLoop).
     /// </summary>
     public readonly struct WorldLifecycleResetCompletedEvent : IEvent
     {
         public WorldLifecycleResetCompletedEvent(string contextSignature, string reason)
         {
-            ContextSignature = contextSignature;
-            Reason = reason;
+            ContextSignature = contextSignature ?? string.Empty;
+            Reason = reason ?? string.Empty;
         }
 
         public string ContextSignature { get; }
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         public override string ToString()
         {
-            return $"WorldLifecycleResetCompleted(ContextSignature='{ContextSignature ?? "<null>"}', Reason='{Reason ?? "<null>"}')";
+            return $"WorldLifecycleResetCompleted(ContextSignature='{ContextSignature}', Reason='{Reason}')";
         }
     }
 }

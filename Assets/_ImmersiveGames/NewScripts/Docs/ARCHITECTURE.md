@@ -54,7 +54,7 @@ Durante a transição:
 - **Gameplay Reset (gameplay)**: módulo em `Gameplay/Reset/` que define **alvos** (`GameplayResetTarget`) e **fases** (`GameplayResetPhase`) para resets de componentes (`IGameplayResettable`). Pode ser acionado via QA (direto) ou via bridges (ex.: `PlayersResetParticipant`).
 
 - Executa reset determinístico por escopos e fases (despawn/spawn/hook).
-- Integrado ao Scene Flow via `WorldLifecycleRuntimeCoordinator`:
+- Integrado ao Scene Flow via `WorldLifecycleSceneFlowResetDriver`:
     - reage ao `SceneTransitionScenesReadyEvent`,
     - executa reset (ou SKIP em Menu/Startup),
     - emite `WorldLifecycleResetCompletedEvent` para destravar o Coordinator.
@@ -70,7 +70,7 @@ Detalhes em: [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md).
 3. `LoadingHUD.Show`.
 4. Load/Unload/Active.
 5. `SceneTransitionScenesReady`.
-6. `WorldLifecycleRuntimeCoordinator` executa **reset** (gameplay) ou **SKIP** (startup/frontend).
+6. `WorldLifecycleSceneFlowResetDriver` executa **reset** (gameplay) ou **SKIP** (startup/frontend).
 7. `WorldLifecycleResetCompletedEvent` libera o completion gate.
 8. `LoadingHUD.Hide`.
 9. `FadeOut`.
@@ -96,7 +96,7 @@ Diagrama simplificado:
 4. Readiness fecha gate durante transição
 5. Fade executa (FadeScene)
 6. Scenes carregadas → `SceneTransitionScenesReadyEvent`
-7. WorldLifecycleRuntimeCoordinator: SKIP (startup/menu) e emite `WorldLifecycleResetCompletedEvent`
+7. WorldLifecycleSceneFlowResetDriver: SKIP (startup/menu) e emite `WorldLifecycleResetCompletedEvent`
 8. Completion gate libera → FadeOut → `SceneTransitionCompletedEvent`
 9. Gate reabre → Coordinator chama `GameLoop.RequestStart()`
 
@@ -110,7 +110,7 @@ Diagrama simplificado:
     - `LoadingHUD.Hide` → `FadeOut` → `SceneTransitionCompleted`.
 3. **WorldLifecycle**
     - Em `gameplay`, executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
-    - Em `startup/frontend`, SKIP com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
+    - Em `startup/frontend`, SKIP (profile != gameplay) e emite `WorldLifecycleResetCompletedEvent` com reason `SceneFlow/ScenesReady` (log explicita "ScenesReady ignorado").
 4. **Pause / Resume / ExitToMenu**
     - `PauseOverlayController.Show()` publica `GamePauseCommandEvent` e alterna `InputMode` para `PauseOverlay`.
     - `PauseOverlayController.Hide()` publica `GameResumeRequestedEvent` e volta para `Gameplay`.
@@ -145,9 +145,9 @@ A fonte de verdade do Baseline 2.0 é o smoke log, e a spec é documento histór
 
 ## Evidências (log)
 - `GlobalBootstrap` registra `ISceneTransitionService`, `INewScriptsFadeService`, `IGameNavigationService`,
-  `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleRuntimeCoordinator`.
+  `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleSceneFlowResetDriver`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
-  `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>)`.
+  `WorldLifecycleResetCompletedEvent(reason=SceneFlow/ScenesReady)` (com log de *ignored* em profile não-gameplay).
 - `MenuPlayButtonBinder` desativa botão e dispara `RequestGameplayAsync`.
 - Transição para `gameplay` executa reset e `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` antes do `FadeOut`.

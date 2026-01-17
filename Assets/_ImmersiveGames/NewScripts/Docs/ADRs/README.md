@@ -26,4 +26,4 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 
 - Contrato canônico: [Observability-Contract.md](../Reports/Observability-Contract.md)
 - Evidência vigente (ponte): [LATEST](../Reports/Evidence/LATEST.md)
-- Snapshot (2026-01-16): [Contract Evidence](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Snapshot (2026-01-17): [Evidência consolidada](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)

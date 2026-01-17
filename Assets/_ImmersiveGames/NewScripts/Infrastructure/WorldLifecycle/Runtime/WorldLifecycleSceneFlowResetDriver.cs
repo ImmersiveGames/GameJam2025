@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
@@ -27,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         private bool _disposed;
 
         // Reason canônico para evidência/contrato.
-        private const string ReasonScenesReady = "SceneFlow/ScenesReady";
+        private const string ReasonScenesReady = WorldLifecycleReasons.SceneFlowScenesReady;
 
         public WorldLifecycleSceneFlowResetDriver()
         {
@@ -99,21 +98,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             try
             {
+				// Determinismo e robustez:
+				// - remove nulls
+				// - ordena por InstanceID (ordem consistente entre frames)
+				// Observação: evitar LINQ aqui reduz alocações em um caminho quente (ScenesReady).
+				var filteredControllers = new List<WorldLifecycleController>(controllers.Count);
+				for (int i = 0; i < controllers.Count; i++)
+				{
+					var controller = controllers[i];
+					if (controller != null)
+					{
+						filteredControllers.Add(controller);
+					}
+				}
+
+				filteredControllers.Sort(static (a, b) => a.GetInstanceID().CompareTo(b.GetInstanceID()));
+
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] Disparando ResetWorld para {controllers.Count} controller(s). signature='{signature}', targetScene='{targetScene}'.",
+					$"[WorldLifecycle] Disparando ResetWorld para {filteredControllers.Count} controller(s). signature='{signature}', targetScene='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
-                var tasks = new List<Task>(controllers.Count);
-                for (int i = 0; i < controllers.Count; i++)
-                {
-                    var controller = controllers[i];
-                    if (controller == null)
-                    {
-                        continue;
-                    }
-
-                    tasks.Add(controller.ResetWorldAsync(ReasonScenesReady));
-                }
+				var tasks = new List<Task>(filteredControllers.Count);
+				for (int i = 0; i < filteredControllers.Count; i++)
+				{
+					tasks.Add(filteredControllers[i].ResetWorldAsync(ReasonScenesReady));
+				}
 
                 await Task.WhenAll(tasks);
 
@@ -151,57 +160,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 new WorldLifecycleResetCompletedEvent(signature ?? string.Empty, reason));
         }
 
-        /// <summary>
-        /// Centraliza a política de localização de controllers para reduzir duplicidade.
-        /// </summary>
-        private static class WorldLifecycleControllerLocator
-        {
-            public static List<WorldLifecycleController> FindControllersForScene(string sceneName)
-            {
-                var all = UnityEngine.Object.FindObjectsOfType<WorldLifecycleController>(includeInactive: true);
-                var result = new List<WorldLifecycleController>();
-
-                if (all == null || all.Length == 0)
-                {
-                    return result;
-                }
-
-                string target = (sceneName ?? string.Empty).Trim();
-                if (target.Length == 0)
-                {
-                    // Sem target: devolve todos (último recurso).
-                    result.AddRange(all);
-                    return result;
-                }
-
-                for (int i = 0; i < all.Length; i++)
-                {
-                    var c = all[i];
-                    if (c == null)
-                    {
-                        continue;
-                    }
-
-                    var scene = c.gameObject.scene;
-                    if (!scene.IsValid() || !scene.isLoaded)
-                    {
-                        continue;
-                    }
-
-                    if (string.Equals(scene.name, target, StringComparison.Ordinal))
-                    {
-                        result.Add(c);
-                    }
-                }
-
-                // Fallback: se não achou no target, mas existe um único controller no mundo, usa ele.
-                if (result.Count == 0 && all.Length == 1 && all[0] != null)
-                {
-                    result.Add(all[0]);
-                }
-
-                return result;
-            }
-        }
     }
 }

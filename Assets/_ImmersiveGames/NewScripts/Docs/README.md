@@ -27,11 +27,11 @@ A estratégia atual é tratar **evidência** como um *snapshot datado* derivado 
 - O **snapshot vigente** é referenciado por: [Reports/Evidence/LATEST.md](Reports/Evidence/LATEST.md)
 - Quando um ADR é aceito, o snapshot deve ser **carimbado** (pasta com data) e o ADR deve apontar para aquela evidência.
 
-Snapshot atual (datado): **2026-01-16**
+Snapshot atual (datado): **2026-01-17**
 
-- Evidência consolidada: [Baseline-2.1-ContractEvidence-2026-01-16](Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
-- Log base: [Baseline-2.1-Smoke-LastRun.log](Reports/Evidence/2026-01-16/Baseline-2.1-Smoke-LastRun.log)
-- Verificação (contract-driven): [Baseline-2.1-ContractVerification-LastRun](Reports/Evidence/2026-01-16/Baseline-2.1-ContractVerification-LastRun.md)
+- Evidência consolidada: [Baseline-2.1-Evidence-2026-01-17](Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
+- Log base: [Logs/Baseline-2.1-Smoke-2026-01-17.log](Reports/Evidence/2026-01-17/Logs/Baseline-2.1-Smoke-2026-01-17.log)
+- Verificação (contract-driven): [Baseline-2.1-Evidence-2026-01-17](Reports/Evidence/2026-01-17/Verifications/Baseline-2.1-Evidence-2026-01-17.md)
 
 ## Status atual (resumo)
 
@@ -42,7 +42,7 @@ Snapshot atual (datado): **2026-01-16**
     - `IGameplayResetOrchestrator` + `IGameplayResetTargetClassifier` (serviços por cena).
 - Added: **QA isolado para validar reset por grupos** (sem depender de Spawn 100%):
     - `GameplayResetRequestQaDriver` + `GameplayResetKindQaSpawner` exercitam targets/actorKind/ids.
-    - Evidência datada: [Baseline 2.1 — Contract Evidence (2026-01-16)](Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md) (inclui reset/targets/reasons, conforme contrato).
+    - Evidência datada: [Baseline 2.1 — Evidência (2026-01-17)](Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md) (inclui reset/targets/reasons, conforme contrato).
 - Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
 
@@ -53,7 +53,7 @@ Snapshot atual (datado): **2026-01-16**
 3. `LoadingHUD.Show`.
 4. Load/Unload/Active das cenas.
 5. `SceneTransitionScenesReadyEvent`.
-6. `WorldLifecycleRuntimeCoordinator` executa **reset** (gameplay) ou **SKIP** (startup/frontend).
+6. `WorldLifecycleSceneFlowResetDriver` executa **reset** (gameplay) ou **SKIP** (startup/frontend).
 7. `WorldLifecycleResetCompletedEvent` libera o completion gate.
 8. `LoadingHUD.Hide`.
 9. `FadeOut`.
@@ -113,9 +113,9 @@ Este fluxo **não define** como vitória/derrota é detectada em produção (tim
     - Aguarda completion gate (`WorldLifecycleResetCompletionGate`).
     - `LoadingHUD.Hide` → `FadeOut` → `SceneTransitionCompletedEvent`.
 3. **WorldLifecycle**
-    - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
+    - `WorldLifecycleSceneFlowResetDriver` escuta `ScenesReady`:
         - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
-        - **Startup/Frontend**: SKIP e emite `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
+        - **Startup/Frontend**: SKIP (profile != gameplay) e emite `WorldLifecycleResetCompletedEvent` com reason `SceneFlow/ScenesReady` (o log explicita "ScenesReady ignorado").
 4. **GameLoop**
     - `GameLoopSceneFlowCoordinator` aguarda `TransitionCompleted` + `ResetCompleted` antes de chamar `GameLoop.RequestStart()`.
 5. **Pause / Resume / ExitToMenu**

@@ -1,60 +1,42 @@
-﻿# WorldLifecycle Module - Reorganização e Estrutura
+# WorldLifecycle Module - Runtime
 
 ## Visão Geral
 
-A pasta `Runtime/` foi reorganizada para separar claramente a infraestrutura core do lifecycle do mundo dos drivers/integrações runtime.
+Este diretório contém a implementação **determinística** do ciclo do mundo (reset + spawn + hooks) e a integração **mínima** com o SceneFlow necessária para cumprir o contrato do Baseline.
+
+Pontos-chave:
+
+- O reset do mundo é orquestrado por um **controller de cena** (`WorldLifecycleController`) + um **orchestrator puro** (`WorldLifecycleOrchestrator`).
+- A integração com SceneFlow ocorre via **driver** (`WorldLifecycleSceneFlowResetDriver`), que dispara reset em `ScenesReady` (apenas em `profile=gameplay`) e publica `WorldLifecycleResetCompletedEvent` para liberar o completion gate.
+- Não existe mais `WorldLifecycleRuntimeCoordinator` (removido por obsolescência).
 
 ## Estrutura
 
-### `/Runtime` (este diretório)
-Contém interfaces, tipos de eventos e utilitários **core** que implementam o ciclo de vida do mundo de forma determinística e independente de plataforma.
+### Core (Runtime)
 
-**Arquivos:**
-- `IWorldResetRequestService.cs` - Interface pública para solicitar resets
-- `WorldLifecycleController.cs` - MonoBehaviour de cena que orquestra pedidos de reset
-- `WorldLifecycleOrchestrator.cs` - Implementação determinística do fluxo de reset (Acquire Gate → Hooks → Despawn → Spawn → Release Gate)
-- `WorldLifecycleResetCompletedEvent.cs` - Evento emitido quando um reset conclui
-- `WorldLifecycleResetReason.cs` - Strings padronizadas para reasons de reset
-- `WorldLifecycleDirectResetSignatureUtil.cs` - Utilitário para signatures de resets diretos (fora do SceneFlow)
-- `WorldLifecycleResetCompletionGate.cs` - Gate que aguarda evento de reset para liberar SceneFlow
+- `IWorldResetRequestService.cs` — Interface pública para solicitar reset (via DI global).
+- `WorldResetRequestService.cs` — Implementação canônica de `IWorldResetRequestService`.
+- `WorldLifecycleController.cs` — MonoBehaviour de cena que enfileira e executa resets de forma sequencial.
+- `WorldLifecycleOrchestrator.cs` — Fluxo determinístico do reset (Gate → Hooks → Despawn → ScopedReset → Spawn → Hooks → Release).
+- `WorldLifecycleResetCompletedEvent.cs` — Evento emitido ao final do reset (usado pelo completion gate do SceneFlow).
+- `WorldLifecycleResetCompletionGate.cs` — Gate que aguarda `WorldLifecycleResetCompletedEvent` antes de liberar `FadeOut/Completed`.
+- `WorldLifecycleTokens.cs` — Tokens canônicos do WorldLifecycle usados com `SimulationGate`.
 
-### `/Runtime/Drivers` (nova pasta)
-Contém drivers e integrações que conectam a infraestrutura core com SceneFlow, GameLoop ou outras subsistemas runtime.
+### Integração com SceneFlow (Runtime)
 
-**Arquivos:**
-- `WorldLifecycleRuntimeCoordinator.cs` - Driver que observa SceneFlow events e dispara resets via WorldLifecycleController
+- `WorldLifecycleSceneFlowResetDriver.cs` — Driver canônico SceneFlow → WorldLifecycle:
+  - Observa `SceneTransitionScenesReadyEvent`.
+  - Em `profile=gameplay`, localiza `WorldLifecycleController` na cena alvo e dispara `ResetWorldAsync(reason)`.
+  - Publica `WorldLifecycleResetCompletedEvent(signature, reason)` **sempre** (best-effort), evitando timeout do gate.
 
-## Namespace Changes
+## Namespaces
 
-- **Core files** permanecem em: `_ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime`
-- **Driver files** estão agora em: `_ImmersiveGames.NewScripts.Runtime.Drivers.WorldLifecycle`
+Todos os arquivos deste diretório permanecem em:
 
-## Migração (se aplicável)
+- `_ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime`
 
-Se você tem código que importa `WorldLifecycleRuntimeCoordinator` do namespace antigo:
+## Notas de manutenção
 
-```csharp
-// ANTIGO (deprecado):
-using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
-```
-
-**Atualize para:**
-
-```csharp
-// NOVO:
-using _ImmersiveGames.NewScripts.Runtime.Drivers.WorldLifecycle;
-```
-
-## Próximos Passos Recomendados
-
-1. **Consolidação de Signature Utils**: Compare `WorldLifecycleDirectResetSignatureUtil` com `SceneTransitionSignatureUtil` para eliminar duplicação de lógica de normalização.
-2. **Testes**: Adicionar testes que validem:
-   - Que RuntimeCoordinator emite `WorldLifecycleResetCompletedEvent` quando ScenesReady
-   - Que `WorldLifecycleResetCompletionGate` aguarda e libera corretamente
-3. **Cleanup**: Remover os arquivos deprecados após validação completa.
-
-## Referências
-
-- **Core Interface**: `IWorldResetRequestService` - implementado por `WorldLifecycleRuntimeCoordinator`
-- **Gate Integration**: `WorldLifecycleResetCompletionGate` registra-se em `EventBus<WorldLifecycleResetCompletedEvent>`
-- **SceneFlow Bridge**: `WorldLifecycleRuntimeCoordinator` observa `EventBus<SceneTransitionScenesReadyEvent>`
+- **Não** mover lógica de reset para o driver. O driver deve permanecer fino e best-effort.
+- O `WorldLifecycleOrchestrator` é o ponto de verdade para **ordem** e **determinismo**. Mudanças aqui exigem revisão de ADRs/evidências.
+- Sempre que alterar strings de `reason`/`signature`, atualizar evidências e regras de matching.

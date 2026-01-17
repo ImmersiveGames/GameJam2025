@@ -165,7 +165,7 @@ Ordem canônica do pipeline (com IntroStage pós-revelação):
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências

@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Scene

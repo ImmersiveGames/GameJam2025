@@ -1,5 +1,17 @@
 # Changelog (Docs)
 
+## [2026-01-17]
+
+### Alterado
+
+- Atualizado snapshot vigente de evidência para **2026-01-17** (LATEST aponta para o novo pacote).
+- Atualizados links de evidência em READMEs/ADRs/Reports para apontar para:
+  - `Docs/Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md`
+  - `Docs/Reports/Evidence/2026-01-17/Logs/Baseline-2.1-Smoke-2026-01-17.log`
+- Contrato de reasons do WorldLifecycle revisado para refletir o comportamento observado: **`SceneFlow/ScenesReady`** como reason canônico para gameplay e para startup/frontend (SKIP por profile).
+- Adicionado `Docs/Reports/Reason-Map.md` (glossário de reasons + aliases legados).
+- Documentação ajustada para remoção do `WorldLifecycleRuntimeCoordinator` (referências migradas para `WorldLifecycleSceneFlowResetDriver`).
+
 ## [2026-01-16]
 
 ### Alterado
@@ -28,16 +40,16 @@
 
 ### Evidência (log) usada como fonte de verdade
 - **Teste 1 — Startup → Menu (profile=`startup`)**
-    - `WorldLifecycleRuntimeCoordinator` solicitou reset e **SKIPOU** por perfil não-gameplay: `Reset SKIPPED (startup/frontend). why='profile'` e emitiu `WorldLifecycleResetCompletedEvent(signature, reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene')`.
+    - `WorldLifecycleSceneFlowResetDriver` solicitou reset e **SKIPOU** por perfil não-gameplay: `Reset SKIPPED (startup/frontend). why='profile'` e emitiu `WorldLifecycleResetCompletedEvent(signature, reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene')`.
     - `WorldLifecycleResetCompletionGate` recebeu o `WorldLifecycleResetCompletedEvent(...)` e liberou o `SceneTransitionService` **antes do FadeOut** (gate cached + “Completion gate concluído. Prosseguindo para FadeOut.”).
 
 - **Teste 2 — Menu → Gameplay (profile=`gameplay`)**
     - `SceneTransitionScenesReady` observado antes de `SceneTransitionCompleted` (ordem preservada).
-    - `WorldLifecycleRuntimeCoordinator` executou **hard reset após ScenesReady**: `Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene'`.
+    - `WorldLifecycleSceneFlowResetDriver` executou **hard reset após ScenesReady**: `Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene'`.
     - `WorldLifecycleController/Orchestrator` completou o pipeline determinístico:
         - Hooks: `OnBeforeDespawn` → `Despawn` → `OnAfterDespawn` → `OnBeforeSpawn` → `Spawn` → `OnAfterActorSpawn` → `OnAfterSpawn`.
         - Spawns OK: `Spawn services registered from definition: 2` (Player + Eater) e `ActorRegistry count at 'After Spawn': 2`.
-    - `WorldLifecycleRuntimeCoordinator` emitiu `WorldLifecycleResetCompletedEvent(signature, reason='ScenesReady/GameplayScene')` e o `WorldLifecycleResetCompletionGate` liberou a continuação do SceneFlow.
+    - `WorldLifecycleSceneFlowResetDriver` emitiu `WorldLifecycleResetCompletedEvent(signature, reason='ScenesReady/GameplayScene')` e o `WorldLifecycleResetCompletionGate` liberou a continuação do SceneFlow.
     - Após `SceneTransitionCompleted`: `InputMode` mudou para `Gameplay` e o `GameLoop` entrou em `Playing` (`ENTER: Playing (active=True)`).
 
 - **Teste 2 — PostGame → ExitToMenu (profile=`frontend`)**
@@ -81,7 +93,7 @@
 - Assinaturas-chave observadas:
     - `SceneTransitionStarted` adquire gate com token **`flow.scene_transition`** e publica snapshot `gateOpen=False`.
     - `SceneTransitionScenesReady` ocorre **antes** de `SceneTransitionCompleted` (ordem preservada).
-    - `WorldLifecycleRuntimeCoordinator`:
+    - `WorldLifecycleSceneFlowResetDriver`:
         - **profile=startup/frontend:** `Reset SKIPPED (...)` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
         - **profile=gameplay:** `Disparando hard reset após ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason='ScenesReady/GameplayScene')`.
     - `WorldLifecycleResetCompletionGate` recebe o evento e libera a continuação do SceneFlow **antes do FadeOut**.
@@ -148,7 +160,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Fixed: substituição dos placeholders ADR-00XX em `DECISIONS.md` por referências ao ADR-0013.
 - Fixed: datas futuras ajustadas no changelog de documentação.
 - Updated: documentação integrada de SceneFlow + WorldLifecycle + GameLoop alinhada ao fluxo de produção (startup → Menu → Gameplay → Menu → Gameplay), incluindo:
-    - registro operacional do `WorldLifecycleRuntimeCoordinator` e `WorldLifecycleResetCompletionGate` (skip vs hard reset),
+    - registro operacional do `WorldLifecycleSceneFlowResetDriver` e `WorldLifecycleResetCompletionGate` (skip vs hard reset),
     - revisão do `Reports/GameLoop.md` para alinhar `GameLoopSceneFlowCoordinator` e `InputModeSceneFlowBridge`,
     - atualização do ADR de Fade/Loading (ADR-0009) com orquestração entre `SceneTransitionService`, `INewScriptsFadeService` e `SceneFlowLoadingService`,
     - atualização do QA `GameLoop-StateFlow-QA` com cenário end-to-end (defeat/victory forçados via hotkeys).
@@ -211,4 +223,15 @@ All notable documentation changes to **NewScripts** are documented in this file.
 
 - `Docs/Reports/Evidence/README.md` — metodologia e estrutura para evidências (snapshots datados).
 - `Docs/Reports/Evidence/LATEST.md` — ponteiro para o snapshot canônico mais recente.
-- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md` — evidência consolidada (Baseline 2.1) arquivada.
+- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-Evidence-2026-01-16.md` — evidência consolidada (Baseline 2.1) arquivada.
+
+## 2026-01-17 (Evidence update)
+
+### Added
+
+- `Docs/Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md` — evidência consolidada (Baseline 2.1) arquivada.
+
+### Updated
+
+- `Docs/Reports/Evidence/LATEST.md` — corrigido o link do snapshot mais recente para apontar para `Baseline-2.1-Evidence-2026-01-17.md`.
+- `Docs/Reports/Evidence/README.md` — formalizada a regra: **log do Console é a fonte de verdade**; arquivos `.log` são apenas espelho estático.

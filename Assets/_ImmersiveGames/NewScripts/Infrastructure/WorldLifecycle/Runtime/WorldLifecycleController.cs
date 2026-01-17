@@ -33,6 +33,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
         private bool _dependenciesInjected;
+        private bool _destroyed;
 
         // Fila simples: garante execução sequencial de resets (World/Players/etc).
         private readonly object _queueLock = new();
@@ -84,6 +85,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private void OnDestroy()
         {
+            if (_destroyed)
+            {
+                // Idempotência: Unity pode chamar OnDestroy mais de uma vez em cenários de domínio/assemblies.
+                return;
+            }
+            _destroyed = true;
+
             // Evita que awaits fiquem pendurados em unload/destruição do controller.
             lock (_queueLock)
             {
@@ -98,25 +106,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             // Limpa hooks registrados para evitar vazamento de referências na cena.
             if (_hookRegistry != null)
             {
-                if (verboseLogs)
+                try
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
-                        $"Limpando WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
+                    if (verboseLogs)
+                    {
+                        DebugUtility.Log(typeof(WorldLifecycleController),
+                            $"Limpando WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
+                    }
+                    _hookRegistry.Clear();
                 }
-                _hookRegistry.Clear();
+                catch (Exception ex)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                        $"Falha ao limpar WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
+                }
             }
 
             // Limpa serviços de spawn para evitar retenção de instâncias.
-            if (_spawnRegistry == null)
+            if (_spawnRegistry != null)
             {
-                return;
+                try
+                {
+                    if (verboseLogs)
+                    {
+                        DebugUtility.Log(typeof(WorldLifecycleController),
+                            $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
+                    }
+                    _spawnRegistry.Clear();
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                        $"Falha ao limpar IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
+                }
             }
-            if (verboseLogs)
-            {
-                DebugUtility.Log(typeof(WorldLifecycleController),
-                    $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
-            }
-            _spawnRegistry.Clear();
         }
 
         /// <summary>
@@ -239,40 +262,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private async Task RunWorldResetAsync(string reason)
         {
-            try
-            {
-                EnsureDependenciesInjected();
-                if (!HasCriticalDependencies())
-                {
-                    return;
-                }
-
-                if (verboseLogs)
-                {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
-                        $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.");
-                }
-
-                BuildSpawnServices();
-                _orchestrator = CreateOrchestrator();
-
-                await _orchestrator.ResetWorldAsync();
-
-                if (verboseLogs)
-                {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
-                        $"Reset concluído. reason='{reason}', scene='{_sceneName}'.");
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): {ex}",
-                    this);
-            }
+            await RunResetInternalAsync(
+                reason: reason,
+                startLog: $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.",
+                endLog: $"Reset concluído. reason='{reason}', scene='{_sceneName}'.",
+                exceptionLog: $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): ",
+                execute: o => o.ResetWorldAsync());
         }
 
         private async Task RunPlayersResetAsync(string reason)
+        {
+            await RunResetInternalAsync(
+                reason: reason,
+                startLog: $"Soft reset (Players) iniciado. reason='{reason}', scene='{_sceneName}'.",
+                endLog: $"Soft reset (Players) concluído. reason='{reason}', scene='{_sceneName}'.",
+                exceptionLog: $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): ",
+                execute: o => o.ResetScopesAsync(new List<ResetScope> { ResetScope.Players }, reason));
+        }
+
+        private async Task RunResetInternalAsync(
+            string reason,
+            string startLog,
+            string endLog,
+            string exceptionLog,
+            Func<WorldLifecycleOrchestrator, Task> execute)
         {
             try
             {
@@ -284,27 +297,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
                 if (verboseLogs)
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
-                        $"Soft reset (Players) iniciado. reason='{reason}', scene='{_sceneName}'.");
+                    DebugUtility.Log(typeof(WorldLifecycleController), startLog);
                 }
 
                 BuildSpawnServices();
                 _orchestrator = CreateOrchestrator();
 
-                await _orchestrator.ResetScopesAsync(
-                    new List<ResetScope> { ResetScope.Players },
-                    reason);
+                await execute(_orchestrator);
 
                 if (verboseLogs)
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
-                        $"Soft reset (Players) concluído. reason='{reason}', scene='{_sceneName}'.");
+                    DebugUtility.Log(typeof(WorldLifecycleController), endLog);
                 }
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): {ex}",
+                    $"{exceptionLog}{ex}",
                     this);
             }
         }

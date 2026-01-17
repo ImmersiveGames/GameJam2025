@@ -114,6 +114,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleResetCompletionGate),
                     $"[SceneFlowGate] WorldLifecycleResetCompletedEvent recebido com ContextSignature vazia. reason='{reason ?? "<null>"}'.");
+
+                // Não faz cache nem tenta completar awaiters sem assinatura correlacionável.
+                return;
             }
 
             TaskCompletionSource<string> tcs = null;

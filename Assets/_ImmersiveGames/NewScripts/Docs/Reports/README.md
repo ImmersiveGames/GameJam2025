@@ -13,4 +13,4 @@ Esta pasta contém:
 
 - Metodologia: [`Evidence/README.md`](./Evidence/README.md)
 - Ponte para o snapshot vigente: [`Evidence/LATEST.md`](./Evidence/LATEST.md)
-- Snapshot atual (datado): [`Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md`](./Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Snapshot atual (datado): [`Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md`](./Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)

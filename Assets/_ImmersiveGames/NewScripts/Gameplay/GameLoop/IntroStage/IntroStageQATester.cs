@@ -1,7 +1,6 @@
 #nullable enable
 using System;
 using System.Collections;
-using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;

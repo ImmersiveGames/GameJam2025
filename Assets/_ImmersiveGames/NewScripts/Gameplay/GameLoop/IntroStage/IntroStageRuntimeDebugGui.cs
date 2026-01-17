@@ -4,8 +4,7 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
+namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 {
     /// <summary>
     /// GUI temporário (runtime) para concluir a IntroStage sem depender de QA.
@@ -13,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageRuntimeDebugGui : MonoBehaviour
     {
-        private static IntroStageRuntimeDebugGui _instance;
+        private static IntroStageRuntimeDebugGui? _instance;
         private const string RuntimeGuiObjectName = "IntroStageRuntimeDebugGui";
         private const string CompleteReason = "IntroStage/UIConfirm";
         private const float GuiWidth = 280f;
@@ -32,20 +31,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            if (_instance != null)
+            if (_instance != null || FindAnyObjectByType<IntroStageRuntimeDebugGui>() != null || FindExistingRuntimeGuiObject() != null)
             {
                 _installed = true;
                 return;
             }
 
-            if (FindObjectOfType<IntroStageRuntimeDebugGui>(true) != null || FindExistingRuntimeGuiObject() != null)
+            var go = new GameObject(RuntimeGuiObjectName)
             {
-                _installed = true;
-                return;
-            }
-
-            var go = new GameObject(RuntimeGuiObjectName);
-            go.hideFlags = HideFlags.DontSave;
+                hideFlags = HideFlags.DontSave
+            };
             DontDestroyOnLoad(go);
             go.AddComponent<IntroStageRuntimeDebugGui>();
             _installed = true;

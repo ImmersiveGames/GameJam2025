@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Actions;
-using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {

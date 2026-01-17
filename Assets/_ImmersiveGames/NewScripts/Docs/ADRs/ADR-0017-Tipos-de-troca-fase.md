@@ -54,7 +54,7 @@ Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distin
 **Contrato operacional:**
 
 - Registra intent (`PhaseTransitionIntentRegistry`) e inicia **SceneFlow** via `ISceneTransitionService.TransitionAsync(transition)`.
-- O `WorldLifecycleRuntimeCoordinator` consome o intent em `SceneTransitionScenesReadyEvent`, seta `Pending`, executa reset e faz commit da fase após o reset.
+- O `WorldLifecycleSceneFlowResetDriver` consome o intent em `SceneTransitionScenesReadyEvent`, seta `Pending`, executa reset e faz commit da fase após o reset.
 - Gate de simulação durante a transição é governado pelo token padrão do SceneFlow (`flow.scene_transition`).
 - Fade/HUD são controlados pelo **profile do `SceneTransitionRequest`** (não por `PhaseChangeOptions`).
 - Timeout: `options.TimeoutMs`.
@@ -101,7 +101,7 @@ Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distin
 sequenceDiagram
     participant Caller as Caller
     participant PhaseChange as PhaseChangeService
-    participant WL as WorldLifecycleRuntimeCoordinator
+    participant WL as WorldLifecycleSceneFlowResetDriver
     participant WLC as WorldLifecycleController
     participant PhaseCtx as PhaseContextService
 
@@ -126,7 +126,7 @@ sequenceDiagram
     participant Intent as PhaseTransitionIntentRegistry
     participant SceneFlow as SceneTransitionService
     participant Readiness as GameReadinessService
-    participant WL as WorldLifecycleRuntimeCoordinator
+    participant WL as WorldLifecycleSceneFlowResetDriver
     participant PhaseCtx as PhaseContextService
     participant WLC as WorldLifecycleController
 
@@ -152,7 +152,7 @@ sequenceDiagram
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot arquivado (2026-01-16): [`Baseline-2.1-ContractEvidence-2026-01-16.md`](../Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md)
+- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências

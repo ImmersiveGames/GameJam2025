@@ -603,6 +603,81 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             public List<(string Label, IActorLifecycleHook Hook)> Hooks { get; }
         }
+
+        private void WarnIfNoSpawnServices()
+        {
+            if (_spawnServices != null && _spawnServices.Count > 0)
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                $"Nenhum spawn service disponível para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirá apenas com hooks.");
+        }
+
+        private IDisposable TryAcquireGate(string gateToken, out bool gateAcquired)
+        {
+            gateAcquired = false;
+
+            if (_gateService == null || string.IsNullOrWhiteSpace(gateToken))
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                    "ISimulationGateService ausente: reset seguirá sem gate.");
+                return null;
+            }
+
+            var gateHandle = _gateService.Acquire(gateToken);
+            gateAcquired = true;
+            DebugUtility.Log(typeof(WorldLifecycleOrchestrator), $"Gate Acquired ({gateToken})");
+            return gateHandle;
+        }
+
+        private static void ReleaseGate(IDisposable gateHandle, bool gateAcquired)
+        {
+            if (gateHandle != null)
+            {
+                try
+                {
+                    gateHandle.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        $"Failed to release gate handle: {ex}");
+                }
+            }
+
+            if (gateAcquired)
+            {
+                DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "Gate Released");
+            }
+        }
+
+        private async Task RunResetPipelineAsync(ResetContext? context)
+        {
+            // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
+            // hooks pós-despawn/pré-spawn → (scoped participants) → hooks pré-spawn → spawn → hooks de atores → hooks finais.
+            await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
+            await RunActorHooksBeforeDespawnAsync();
+
+            await RunPhaseAsync("Despawn", service => service.DespawnAsync());
+            LogActorRegistryCount("After Despawn");
+
+            await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
+
+            if (context != null)
+            {
+                await RunScopedParticipantsResetAsync(context.Value);
+            }
+
+            await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
+
+            await RunPhaseAsync("Spawn", service => service.SpawnAsync());
+            LogActorRegistryCount("After Spawn");
+
+            await RunActorHooksAfterSpawnAsync();
+            await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
+        }
         private async Task ResetInternalAsync(
             ResetContext? context,
             string gateToken,
@@ -623,45 +698,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             {
                 LogActorRegistryCount("Reset start");
 
-                if (_spawnServices == null || _spawnServices.Count == 0)
-                {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                        $"Nenhum spawn service disponível para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirá apenas com hooks.");
-                }
+                WarnIfNoSpawnServices();
+                gateHandle = TryAcquireGate(gateToken, out gateAcquired);
 
-                if (_gateService != null && !string.IsNullOrWhiteSpace(gateToken))
-                {
-                    gateHandle = _gateService.Acquire(gateToken);
-                    gateAcquired = true;
-                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), $"Gate Acquired ({gateToken})");
-                }
-                else
-                {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                        "ISimulationGateService ausente: reset seguirá sem gate.");
-                }
-
-                // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
-                // hooks pós-despawn/pré-spawn → spawn → hooks de atores → hooks finais.
-                await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
-                await RunActorHooksBeforeDespawnAsync();
-
-                await RunPhaseAsync("Despawn", service => service.DespawnAsync());
-                LogActorRegistryCount("After Despawn");
-
-                await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
-
-                if (context != null)
-                {
-                    await RunScopedParticipantsResetAsync(context.Value);
-                }
-                await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
-
-                await RunPhaseAsync("Spawn", service => service.SpawnAsync());
-                LogActorRegistryCount("After Spawn");
-
-                await RunActorHooksAfterSpawnAsync();
-                await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
+                await RunResetPipelineAsync(context);
 
                 completed = true;
             }
@@ -676,23 +716,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
                 ClearActorHookCacheForCycle();
 
-                if (gateHandle != null)
-                {
-                    try
-                    {
-                        gateHandle.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                            $"Failed to release gate handle: {ex}");
-                    }
-                }
-
-                if (gateAcquired)
-                {
-                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "Gate Released");
-                }
+                ReleaseGate(gateHandle, gateAcquired);
 
                 if (completed)
                 {
@@ -953,10 +977,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return RuntimeHelpers.GetHashCode(obj);
             }
         }
-    }
-
-    public static class WorldLifecycleTokens
-    {
-        public const string WorldResetToken = "WorldLifecycle.WorldReset";
     }
 }
