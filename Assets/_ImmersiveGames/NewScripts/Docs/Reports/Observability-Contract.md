@@ -1,4 +1,4 @@
-# Observability Contract — SceneFlow, WorldLifecycle, GameLoop, InputMode, PhaseChange
+﻿# Observability Contract — SceneFlow, WorldLifecycle, GameLoop, InputMode, PhaseChange
 
 > **Fonte de verdade** do contrato de observabilidade do pipeline NewScripts.
 >
@@ -68,11 +68,10 @@ Eventos observáveis (mínimo):
 
 Reasons canônicos de WorldLifecycle:
 
-- `SceneFlow/ScenesReady`
+- `ScenesReady/<scene>`
 - `ProductionTrigger/<source>`
+- `Skipped_StartupOrFrontend:profile=<profile>;scene=<scene>`
 - `Failed_NoController:<scene>`
-
-Observação: no snapshot vigente, `startup/frontend` também usa `SceneFlow/ScenesReady`, com log explícito de *ScenesReady ignorado (profile != gameplay)*.
 
 ### GameLoop
 
@@ -129,8 +128,9 @@ Reasons canônicos:
 Este mapa reúne os principais reasons citados como critérios de aceite do Item 8:
 
 - WorldLifecycle
-    - `SceneFlow/ScenesReady` (trigger canônico do SceneFlow; válido para `startup/frontend/gameplay`, diferenciado por `profile` na signature)
-    - `ProductionTrigger/<source>` (triggers explícitos de produção/QA)
+    - `ScenesReady/<scene>`
+    - `ProductionTrigger/<source>`
+    - `Skipped_StartupOrFrontend:profile=<...>;scene=<...>`
     - `Failed_NoController:<scene>`
 - IntroStage
     - `IntroStage/UIConfirm`
@@ -150,23 +150,20 @@ Para um índice/glossário (com possíveis aliases), ver: [Reason-Map.md](./Reas
 As evidências abaixo são extraídas de:
 
 - `Docs/Reports/Evidence/LATEST.md`
-- `Docs/Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md`
-- `Docs/Reports/Evidence/2026-01-17/Logs/Baseline-2.1-Smoke-2026-01-17.log`
+- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-ContractEvidence-2026-01-16.md`
+- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-Smoke-LastRun.log`
 
-### SceneFlow/ScenesReady em startup/frontend (sem reset de gameplay)
+### Skipped startup/frontend
 
-Exemplo (Baseline):
+Exemplo de `Skipped_StartupOrFrontend:profile=...;scene=...` (Baseline):
 
-- `<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ScenesReady ignorado (profile != gameplay). signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', profile='startup'. (@ 5,90s)</color>`
-- `[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='SceneFlow/ScenesReady'. (@ 9,47s)`
+- `[WorldLifecycle] Reset SKIPPED (startup/frontend). why='profile', profile='startup', activeScene='MenuScene', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.`
 
-### Reset em SceneFlow/ScenesReady (gameplay)
+### Reset em ScenesReady (gameplay)
 
-Exemplo (Baseline):
+Exemplo de `ScenesReady/<scene>` (Baseline):
 
-- `<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] Disparando ResetWorld para 1 controller(s). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', targetScene='GameplayScene'. (@ 9,43s)</color>`
-- `[INFO] [WorldLifecycleController] Reset concluído. reason='SceneFlow/ScenesReady', scene='GameplayScene'.`
-- `[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='SceneFlow/ScenesReady'. (@ 9,47s)`
+- `[WorldLifecycle] Reset REQUESTED. reason='ScenesReady/GameplayScene', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', profile='gameplay'.`
 
 ### Reset trigger de produção
 

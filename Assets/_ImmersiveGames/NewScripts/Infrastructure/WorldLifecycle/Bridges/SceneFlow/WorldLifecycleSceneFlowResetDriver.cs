@@ -1,12 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine.SceneManagement;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow
 {
     /// <summary>
     /// Driver canônico (produção) para integrar SceneFlow → WorldLifecycle.

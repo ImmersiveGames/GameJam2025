@@ -1,9 +1,15 @@
 # ADR-0012 — Fluxo pós-gameplay: GameOver, Vitória e Restart
 
 ## Status
-- Estado: Proposto
+- Estado: Implementado
 - Data: 2025-12-28
+- Fechado em: 2026-01-18
 - Escopo: `GameLoop` (NewScripts), `WorldLifecycle`, SceneFlow, `UIGlobalScene` (overlays de UI)
+
+## Evidência
+
+- Snapshot canônico: `Docs/Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md`
+- Ponte para regressão contínua: `Docs/Reports/Evidence/LATEST.md`
 
 ## Contexto
 
@@ -14,7 +20,7 @@ O fluxo de produção atual está estável para:
 * Startup → Menu → Gameplay, com:
 
     * `SceneTransitionService` + Fade + LoadingHUD.
-    * `WorldLifecycleSceneFlowResetDriver` disparando hard reset em perfis `gameplay` após `SceneTransitionScenesReadyEvent`.
+    * `WorldLifecycleRuntimeCoordinator` disparando hard reset em perfis `gameplay` após `SceneTransitionScenesReadyEvent`.
     * `GameReadinessService` + `SimulationGateService` controlando `GameplayReady` + gate.
     * `InputModeService` trocando entre `FrontendMenu`, `Gameplay`, `PauseOverlay`.
     * `GameLoopService` com estados principais: `Boot`, `Ready`, `Playing`, `Paused`.
@@ -58,7 +64,7 @@ Sem um desenho explícito para GameOver/Vitória/Restart:
 
 2. Garantir que **Restart** use o mesmo pipeline de produção do `profile='gameplay'`:
 
-    * `SceneTransitionService` → `WorldLifecycleSceneFlowResetDriver` → `WorldLifecycleOrchestrator`.
+    * `SceneTransitionService` → `WorldLifecycleRuntimeCoordinator` → `WorldLifecycleOrchestrator`.
 
 3. Reutilizar infra existente sempre que possível:
 
@@ -207,7 +213,7 @@ Fluxo canônico de Restart:
 
     * `SceneTransitionService` inicia a transição (`GameplayScene` + `UIGlobalScene`, unload do que for necessário).
     * Fade + LoadingHUD operam normalmente.
-    * `WorldLifecycleSceneFlowResetDriver` recebe `SceneTransitionScenesReadyEvent` com `profile='gameplay'` e dispara hard reset:
+    * `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` com `profile='gameplay'` e dispara hard reset:
 
         * `WorldLifecycleController` → `WorldLifecycleOrchestrator` → despawn + spawn determinístico.
     * Gate + `GameReadinessService` consolidam o estado `GameplayReady`.
@@ -232,7 +238,7 @@ Para voltar ao Menu, reusa-se o fluxo já existente:
 
 Invariantes:
 
-* O **único responsável** por resetar o mundo é o pipeline `SceneTransitionScenesReadyEvent` + `WorldLifecycleSceneFlowResetDriver` + `WorldLifecycleController` + `WorldLifecycleOrchestrator`.
+* O **único responsável** por resetar o mundo é o pipeline `SceneTransitionScenesReadyEvent` + `WorldLifecycleRuntimeCoordinator` + `WorldLifecycleController` + `WorldLifecycleOrchestrator`.
 * O fluxo pós-gameplay **não** introduz resets manuais adicionais dentro de atores ou serviços de gameplay.
 
 Regras:
@@ -256,9 +262,30 @@ Regras:
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
+- Snapshot arquivado (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 
 - (não informado)
+
+## Implementação final (baseline)
+
+### Caminho canônico (produção)
+
+- **Fim de run**: `GameRunOutcomeService` publica `GameRunEndedEvent` e `GameRunStatusService` mantém `Outcome` + `Reason`.
+- **UI pós-game**: `PostGameOverlayController` observa `GameRunEndedEvent`, exibe overlay e:
+  - `Restart` → publica `GameResetRequestedEvent` (`reason='PostGame/Restart'`)
+  - `ExitToMenu` → publica `GameExitToMenuRequestedEvent` (`reason='PostGame/ExitToMenu'`)
+- **Navegação**:
+  - `RestartNavigationBridge` → `IGameNavigationService.RequestGameplayAsync` (`profile='gameplay'`)
+  - `ExitToMenuNavigationBridge` → `IGameNavigationService.RequestMenuAsync` (`profile='frontend'`)
+- **Reset determinístico**:
+  - `WorldLifecycleSceneFlowResetDriver` dispara `ResetWorld` no `ScenesReady` apenas para `profile='gameplay'`.
+  - `WorldLifecycleResetCompletionGate` fecha o ciclo de transição (completion gate) antes do FadeOut.
+
+### Desvios intencionais do texto original
+
+- O baseline atual não depende de um estado explícito `PostGame` no `GameLoop` para operar corretamente.
+  O pós-game é representado via evento (`GameRunEndedEvent`) + overlay + intents de navegação (evento/bridge).
+

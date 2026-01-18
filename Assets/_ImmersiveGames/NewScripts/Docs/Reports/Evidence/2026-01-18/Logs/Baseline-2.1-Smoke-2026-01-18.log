@@ -1,0 +1,70 @@
+# Baseline 2.1 Smoke (excerpt) — 2026-01-18
+# Fonte: Unity Console (copiado manualmente). Este arquivo é um recorte contendo apenas os trechos usados como evidência.
+
+NEWSCRIPTS_MODE ativo: EventBusUtil.InitializeEditor ignorado.
+
+NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.
+
+[INFO] [DebugUtility] DebugUtility inicializado antes de todos os sistemas.
+
+[VERBOSE] [GlobalBootstrap] NewScripts logging configured. (@ 3,45s)
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] Driver registrado: SceneFlow ScenesReady -> ResetWorld -> ResetCompleted. reason='SceneFlow/ScenesReady'. (@ 3,48s)</color>
+<color=#A8DEED>[INFO] [GameStartRequestProductionBootstrapper] [Production][StartRequest] Start solicitado (GameStartRequestedEvent).</color>
+
+# --- Startup profile (startup) → Menu
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup' Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'</color>
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] ScenesReady signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.</color>
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ScenesReady ignorado (profile != gameplay). signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', profile='startup'. (@ 5,78s)</color>
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', reason='SceneFlow/ScenesReady'. (@ 5,79s)
+<color=#4CAF50>[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.</color>
+
+# --- Menu → Gameplay (profile=gameplay) com reset + spawn
+<color=#A8DEED>[VERBOSE] [MenuPlayButtonBinder] [Navigation] Play solicitado. reason='Menu/PlayButton'. (@ 7,39s)</color>
+<color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-gameplay', reason='Menu/PlayButton', Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'.</color>
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'</color>
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] ScenesReady signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.</color>
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] Disparando ResetWorld para 1 controller(s). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', targetScene='GameplayScene'. (@ 7,98s)</color>
+[INFO] [WorldLifecycleController] Reset iniciado. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
+[INFO] [WorldLifecycleController] Spawn services coletados para a cena 'GameplayScene': 2 (registry total: 2).
+[INFO] [WorldLifecycleOrchestrator] World Reset Started
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='WorldLifecycle.WorldReset'. Active=2. IsOpen=False (@ 7,99s)
+[INFO] [WorldLifecycleOrchestrator] Despawn started
+[INFO] [WorldLifecycleOrchestrator] Spawn started
+[INFO] [PlayerSpawnService] Actor spawned: A_729123c1_1_Player_NewScriptsClone (prefab=Player_NewScripts, instance=Player_NewScripts, root=WorldRoot, scene=GameplayScene)
+[INFO] [EaterSpawnService] Actor spawned: A_729123c1_2_Eater_NewScriptsClone (prefab=Eater_NewScripts, instance=Eater_NewScripts, root=WorldRoot, scene=GameplayScene)
+[VERBOSE] [SimulationGateService] [Gate] Release token='WorldLifecycle.WorldReset'. Active=1. IsOpen=False (@ 8,03s)
+[INFO] [WorldLifecycleOrchestrator] World Reset Completed
+[INFO] [WorldLifecycleController] Reset concluído. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
+<color=#4CAF50>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ResetWorld concluído (ScenesReady). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', targetScene='GameplayScene'. (@ 8,03s)</color>
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='SceneFlow/ScenesReady'. (@ 8,03s)
+<color=#4CAF50>[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.</color>
+
+# --- IntroStage + bloqueio de simulação
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] IntroStageStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/Completed'.</color>
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='sim.gameplay'. Active=2. IsOpen=False (@ 8,48s)
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] GameplaySimulationBlocked token='sim.gameplay' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/Completed'.</color>
+<color=#A8DEED>[INFO] [IntroStageControlService] [OBS][IntroStage] CompleteIntroStage received reason='IntroStage/UIConfirm' skip=false signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene'.</color>
+<color=#A8DEED>[INFO] [IntroStageCoordinator] [OBS][IntroStage] GameplaySimulationUnblocked token='sim.gameplay' signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene'.</color>
+
+# --- Paused/Resume (gate token state.pause)
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='state.pause'. Active=1. IsOpen=False (@ 11,62s)
+[VERBOSE] [SimulationGateService] [Gate] Release token='state.pause'. Active=0. IsOpen=True (@ 14,99s)
+
+# --- Reset in place (hotkey)
+<color=#A8DEED>[VERBOSE] [WorldResetRequestService] [WorldLifecycle] RequestResetAsync → ResetWorldAsync. source='Gameplay/HotkeyR', scene='GameplayScene'. (@ 16,64s)</color>
+[INFO] [WorldLifecycleController] Reset iniciado. reason='Gameplay/HotkeyR', scene='GameplayScene'.
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='WorldLifecycle.WorldReset'. Active=1. IsOpen=False (@ 16,64s)
+[INFO] [PlayerSpawnService] Actor despawned: A_729123c1_1_Player_NewScriptsClone (root=WorldRoot, scene=GameplayScene)
+[INFO] [EaterSpawnService] Actor despawned: A_729123c1_2_Eater_NewScriptsClone (root=WorldRoot, scene=GameplayScene)
+[INFO] [PlayerSpawnService] Actor spawned: A_729123c1_3_Player_NewScriptsClone (prefab=Player_NewScripts, instance=Player_NewScripts, root=WorldRoot, scene=GameplayScene)
+[INFO] [EaterSpawnService] Actor spawned: A_729123c1_4_Eater_NewScriptsClone (prefab=Eater_NewScripts, instance=Eater_NewScripts, root=WorldRoot, scene=GameplayScene)
+[VERBOSE] [SimulationGateService] [Gate] Release token='WorldLifecycle.WorldReset'. Active=0. IsOpen=True (@ 16,65s)
+[INFO] [WorldLifecycleController] Reset concluído. reason='Gameplay/HotkeyR', scene='GameplayScene'.
+
+# --- Gameplay → Menu (profile=frontend) com skip de reset
+<color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-menu', reason='PauseOverlay/ExitToMenu', Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend'.</color>
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' profile='frontend' Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend'</color>
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] ScenesReady signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' profile='frontend'.</color>
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ScenesReady ignorado (profile != gameplay). signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', profile='frontend'. (@ 22,63s)</color>
+[VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', reason='SceneFlow/ScenesReady'. (@ 22,63s)
+<color=#4CAF50>[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' profile='frontend'.</color>

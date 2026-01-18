@@ -4,8 +4,9 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleResetCompletionGate : ISceneTransitionCompletionGate, IDisposable

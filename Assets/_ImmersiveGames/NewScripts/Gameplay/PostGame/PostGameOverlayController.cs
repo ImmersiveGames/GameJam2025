@@ -384,5 +384,88 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             if (exitToMenuButton == null)
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] exitToMenuButton não configurado no Inspector.");
         }
+
+        // --------------------------------------------------------------------
+        // QA / Context Menu (Editor + DevBuild)
+        // --------------------------------------------------------------------
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [ContextMenu("QA/PostGame/Force Restart x2 (same frame)")]
+        private void QaForceRestartDoubleSameFrame()
+        {
+            if (!Application.isPlaying)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    "[QA][PostGame] Force Restart x2 ignorado: Application.isPlaying=false.");
+                return;
+            }
+
+            DebugUtility.Log<PostGameOverlayController>(
+                "[QA][PostGame] Forçando Restart x2 (same frame).");
+
+            // Intencional: simula duplo clique/duplo input sem depender de timing humano.
+            OnClickRestart();
+            OnClickRestart();
+        }
+
+        [ContextMenu("QA/PostGame/Force ExitToMenu x2 (same frame)")]
+        private void QaForceExitToMenuDoubleSameFrame()
+        {
+            if (!Application.isPlaying)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    "[QA][PostGame] Force ExitToMenu x2 ignorado: Application.isPlaying=false.");
+                return;
+            }
+
+            DebugUtility.Log<PostGameOverlayController>(
+                "[QA][PostGame] Forçando ExitToMenu x2 (same frame).");
+
+            OnClickExitToMenu();
+            OnClickExitToMenu();
+        }
+
+        [ContextMenu("QA/PostGame/Force Restart x2 (delay 0.05s)")]
+        private void QaForceRestartDoubleWithDelay()
+        {
+            if (!Application.isPlaying)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    "[QA][PostGame] Force Restart x2 (delay) ignorado: Application.isPlaying=false.");
+                return;
+            }
+
+            DebugUtility.Log<PostGameOverlayController>(
+                "[QA][PostGame] Forçando Restart x2 (delay 0.05s).");
+
+            StartCoroutine(QaCoroutineDouble(() => OnClickRestart(), 0.05f));
+        }
+
+        [ContextMenu("QA/PostGame/Force ExitToMenu x2 (delay 0.05s)")]
+        private void QaForceExitToMenuDoubleWithDelay()
+        {
+            if (!Application.isPlaying)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    "[QA][PostGame] Force ExitToMenu x2 (delay) ignorado: Application.isPlaying=false.");
+                return;
+            }
+
+            DebugUtility.Log<PostGameOverlayController>(
+                "[QA][PostGame] Forçando ExitToMenu x2 (delay 0.05s).");
+
+            StartCoroutine(QaCoroutineDouble(() => OnClickExitToMenu(), 0.05f));
+        }
+
+        private System.Collections.IEnumerator QaCoroutineDouble(Action action, float delaySeconds)
+        {
+            // 1a chamada imediata
+            action?.Invoke();
+
+            // 2a chamada após um pequeno delay (simula double click humano)
+            yield return new WaitForSeconds(delaySeconds);
+
+            action?.Invoke();
+        }
+#endif
     }
 }

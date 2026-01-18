@@ -82,7 +82,7 @@
 
 ## Artefatos
 
-* Log bruto: `../Logs/Baseline-2.1-Smoke-2026-01-17.log` (captura do console arquivada no snapshot).
+* Log bruto: **fornecido via chat** (recomendado arquivar como `Reports/Logs/Baseline-2.1-Smoke-2026-01-17.log` e manter este arquivo como ponte canônica).
 * Fonte de verdade: linhas acima (âncoras de evidência).
 
 ---
