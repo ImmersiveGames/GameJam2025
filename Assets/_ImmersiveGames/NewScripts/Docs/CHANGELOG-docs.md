@@ -3,6 +3,7 @@
 ## 2026-01-18
 - Reports/Evidence: novo snapshot 2026-01-18 (Baseline 2.1) com logs mesclados (Restart e ExitToMenu).
 - ADR-0012: referência de evidência atualizada para o snapshot 2026-01-18.
+- ADR-0015: referência de evidência atualizada para o snapshot 2026-01-18.
 
 ## [2026-01-16]
 

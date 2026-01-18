@@ -1,7 +1,7 @@
 # ADR-0015 — Baseline 2.0: Fechamento Operacional
 
 ## Status
-- Estado: Aceito
+- Estado: Implementado
 - Data: 2026-01-05
 - Escopo: NewScripts / Baseline 2.0
 
@@ -47,9 +47,9 @@ invariantes deverá gerar nova versão (ex.: Baseline 2.1) com atualização exp
 
 O fechamento do Baseline 2.0 foi validado via **snapshot datado** (evidência canônica para ADRs aceitos).
 
-- Snapshot (2026-01-17): [`Baseline 2.1 — Evidência consolidada`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
-- Log (snapshot): [`Logs/Baseline-2.1-Smoke-2026-01-17.log`](../Reports/Evidence/2026-01-17/Logs/Baseline-2.1-Smoke-2026-01-17.log)
-- Verificação (snapshot): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Verifications/Baseline-2.1-Evidence-2026-01-17.md)
+- Snapshot (2026-01-18): [`Baseline 2.1 — Evidência consolidada`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- Log (snapshot): [`Logs/Baseline-2.1-Smoke-2026-01-18.log`](../Reports/Evidence/2026-01-18/Logs/Baseline-2.1-Smoke-2026-01-18.log)
+- Verificação (snapshot): [`Baseline-2.1-ContractVerification-2026-01-18.md`](../Reports/Evidence/2026-01-18/Verifications/Baseline-2.1-ContractVerification-2026-01-18.md)
 
 Observação: artefatos antigos do Baseline 2.0 (spec/checklist/smoke) foram removidos de `Reports/` para reduzir ruído; o snapshot datado permanece como evidência histórica.
 
@@ -72,7 +72,7 @@ O fechamento cobre:
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
+- Snapshot (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
