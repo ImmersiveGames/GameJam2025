@@ -108,13 +108,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             var signature = contextSignature.Trim();
 
             return RegisterIntent(new PhaseTransitionIntent(
-                plan: plan,
-                mode: PhaseChangeMode.SceneTransition,
-                reason: reason ?? string.Empty,
-                sourceSignature: signature,
-                transitionProfile: string.Empty,
-                targetScene: string.Empty,
-                timestampUtc: timestampUtc ?? DateTime.UtcNow));
+                plan,
+                PhaseChangeMode.SceneTransition,
+                reason ?? string.Empty,
+                signature,
+                string.Empty,
+                string.Empty,
+                timestampUtc ?? DateTime.UtcNow));
         }
 
         public bool TryConsume(string contextSignature, out PhaseTransitionIntent intent)

@@ -31,8 +31,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
             _handlerDelegate = (Action<SceneTransitionStartedEvent>)OnSceneTransitionStarted;
 
             _registered =
-                TryRegisterDirect(busGenericType: typeof(EventBus<SceneTransitionStartedEvent>), handler: _handlerDelegate) ||
-                TryRegisterWithEventBinding(busGenericType: typeof(EventBus<SceneTransitionStartedEvent>), handler: _handlerDelegate, out _bindingInstance);
+                TryRegisterDirect(typeof(EventBus<SceneTransitionStartedEvent>), _handlerDelegate) ||
+                TryRegisterWithEventBinding(typeof(EventBus<SceneTransitionStartedEvent>), _handlerDelegate, out _bindingInstance);
 
             if (_registered)
             {
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
                 .GetAssemblies()
                 .Select(a =>
                 {
-                    try { return a.GetType("_ImmersiveGames.NewScripts.Infrastructure.Events.EventBinding`1", throwOnError: false); }
+                    try { return a.GetType("_ImmersiveGames.NewScripts.Infrastructure.Events.EventBinding`1", false); }
                     catch { return null; }
                 })
                 .FirstOrDefault(t => t != null);

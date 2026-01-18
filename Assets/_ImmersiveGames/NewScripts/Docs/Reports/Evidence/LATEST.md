@@ -9,3 +9,6 @@ Uso:
 
 - ADRs em **Proposto/Em andamento** referenciam este arquivo.
 - ADRs em **Aceito/Implementado** referenciam o snapshot datado e podem manter este arquivo como evidência de regressão contínua.
+
+## ADRs (adicionados no snapshot 2026-01-18)
+- ADR-0017: [ADR-0017-Evidence-2026-01-18.md](./2026-01-18/ADR-0017-Evidence-2026-01-18.md)

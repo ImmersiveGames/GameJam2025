@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
     {
         private const int ReadyWaitTimeoutMs = 2000;
         private const int ReadyWaitStepMs = 50;
+        private const int ReadyWaitGraceMs = 250;
 
         public static async Task RunAsync(PhaseStartRequest request)
         {
@@ -52,10 +53,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 DebugUtility.Colors.Info);
 
             var introStageContext = new IntroStageContext(
-                contextSignature: request.ContextSignature,
-                profileId: SceneFlowProfileId.Gameplay,
-                targetScene: targetScene,
-                reason: request.Reason);
+                request.ContextSignature,
+                SceneFlowProfileId.Gameplay,
+                targetScene,
+                request.Reason);
 
             try
             {
@@ -70,11 +71,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         private static async Task EnsureLoopReadyAsync(IGameLoopService gameLoop, PhaseStartRequest request)
         {
-            var state = gameLoop.CurrentStateIdName ?? string.Empty;
-            if (ShouldRequestReady(state))
+            var stateBefore = gameLoop.CurrentStateIdName ?? string.Empty;
+            if (ShouldRequestReady(stateBefore))
             {
                 DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] RequestReady antes da IntroStage. state='{state}' phaseId='{request.PhaseId}'.");
+                    $"[PhaseStart] RequestReady antes da IntroStage. state='{stateBefore}' phaseId='{request.PhaseId}'.");
                 gameLoop.RequestReady();
             }
 
@@ -83,6 +84,28 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return;
             }
 
+            // Observação: para troca de fase, o GameLoop pode permanecer em 'Playing' sem transitar para 'Ready'.
+            // A IntroStage já bloqueia a simulação via gate próprio, então não faz sentido aguardar longamente.
+            // Aguardamos apenas uma janela curta para permitir transições assíncronas, e então prosseguimos.
+            var graceStart = Environment.TickCount;
+            while (Environment.TickCount - graceStart < ReadyWaitGraceMs)
+            {
+                await Task.Delay(ReadyWaitStepMs);
+                if (IsReadyState(gameLoop.CurrentStateIdName))
+                {
+                    return;
+                }
+            }
+
+            var stateAfterGrace = gameLoop.CurrentStateIdName ?? string.Empty;
+            if (ShouldRequestReady(stateBefore) && ShouldRequestReady(stateAfterGrace))
+            {
+                DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
+                    $"[PhaseStart] Prosseguindo sem aguardar Ready (estado='{stateAfterGrace}'). phaseId='{request.PhaseId}'.");
+                return;
+            }
+
+            // Fallback: em casos inesperados (ex.: estados intermediários), mantém o comportamento de espera total.
             var start = Environment.TickCount;
             while (Environment.TickCount - start < ReadyWaitTimeoutMs)
             {

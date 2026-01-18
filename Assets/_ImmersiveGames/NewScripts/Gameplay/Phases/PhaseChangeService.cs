@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         public Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason)
         {
-            return RequestPhaseInPlaceAsync(plan, reason, options: null);
+            return RequestPhaseInPlaceAsync(plan, reason, null);
         }
 
         public Task RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)
@@ -107,6 +107,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     normalizedOptions.TimeoutMs,
                     "RequestResetAsync");
 
+                // ADR-0016: Commit da fase deve ocorrer após o reset determinístico concluir.
+                if (!_phaseContext.TryCommitPending(reason ?? "PhaseChange/InPlace", out _))
+                {
+                    DebugUtility.LogWarning<PhaseChangeService>(
+                        $"[PhaseChange] Reset concluído, mas TryCommitPending falhou. signature='{signature}', plan='{plan}', reason='{Sanitize(reason)}'.");
+                }
+
                 if (normalizedOptions.UseFade)
                 {
                     await TryFadeOutAsync(normalizedOptions, signature);
@@ -147,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         public Task RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)
         {
-            return RequestPhaseWithTransitionAsync(plan, transition, reason, options: null);
+            return RequestPhaseWithTransitionAsync(plan, transition, reason, null);
         }
 
         public Task RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)
@@ -198,13 +205,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 var signature = SceneTransitionSignatureUtil.Compute(context);
 
                 var intent = new PhaseTransitionIntent(
-                    plan: plan,
-                    mode: PhaseChangeMode.SceneTransition,
-                    reason: reason,
-                    sourceSignature: signature,
-                    transitionProfile: normalizedRequest.TransitionProfileName,
-                    targetScene: normalizedRequest.TargetActiveScene,
-                    timestampUtc: DateTime.UtcNow);
+                    plan,
+                    PhaseChangeMode.SceneTransition,
+                    reason,
+                    signature,
+                    normalizedRequest.TransitionProfileName,
+                    normalizedRequest.TargetActiveScene,
+                    DateTime.UtcNow);
 
                 if (!_intentRegistry.RegisterIntent(intent))
                 {
@@ -390,12 +397,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             var signature = SceneTransitionSignatureUtil.Compute(context);
 
             return new SceneTransitionRequest(
-                scenesToLoad: request.ScenesToLoad,
-                scenesToUnload: request.ScenesToUnload,
-                targetActiveScene: request.TargetActiveScene,
-                useFade: request.UseFade,
-                transitionProfileId: request.TransitionProfileId,
-                contextSignature: signature);
+                request.ScenesToLoad,
+                request.ScenesToUnload,
+                request.TargetActiveScene,
+                request.UseFade,
+                request.TransitionProfileId,
+                signature);
         }
     }
 }

@@ -1,8 +1,9 @@
 # ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
 
 ## Status
-- Estado: Aceito
+- Estado: Implementado
 - Data: 2025-12-24
+- Implementado em: 2026-01-18
 - Escopo: PhaseChange + SceneFlow (NewScripts)
 
 ## Contexto
@@ -54,7 +55,7 @@ Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distin
 **Contrato operacional:**
 
 - Registra intent (`PhaseTransitionIntentRegistry`) e inicia **SceneFlow** via `ISceneTransitionService.TransitionAsync(transition)`.
-- O `WorldLifecycleSceneFlowResetDriver` consome o intent em `SceneTransitionScenesReadyEvent`, seta `Pending`, executa reset e faz commit da fase após o reset.
+- O `WorldLifecycleSceneFlowResetDriver` dispara o reset em `SceneTransitionScenesReadyEvent` (profile gameplay). O consumo do intent e o commit da fase ocorrem após `WorldLifecycleResetCompletedEvent` via `PhaseTransitionIntentWorldLifecycleBridge`.
 - Gate de simulação durante a transição é governado pelo token padrão do SceneFlow (`flow.scene_transition`).
 - Fade/HUD são controlados pelo **profile do `SceneTransitionRequest`** (não por `PhaseChangeOptions`).
 - Timeout: `options.TimeoutMs`.
@@ -136,11 +137,11 @@ sequenceDiagram
     SceneFlow-->>Readiness: SceneTransitionStarted
     Readiness->>Readiness: Acquire gate token 'flow.scene_transition'
     SceneFlow-->>WL: SceneTransitionScenesReadyEvent(signature)
-    WL->>Intent: TryConsume(signature)
-    WL->>PhaseCtx: SetPending(plan, reason+signature)
     WL->>WLC: Reset pipeline
-    WLC-->>WL: ResetCompleted
-    WL->>PhaseCtx: TryCommitPendingPhase(...)
+    WLC-->>WL: WorldLifecycleResetCompletedEvent
+    WL->>Intent: (bridge) TryConsume(signature)
+    WL->>PhaseCtx: (bridge) SetPending(plan, reason+signature)
+    WL->>PhaseCtx: (bridge) TryCommitPendingPhase(...)
     PhaseCtx-->>WL: Pending committed (Current=plan)
     SceneFlow-->>Readiness: SceneTransitionCompleted
     Readiness->>Readiness: Release gate token 'flow.scene_transition'
@@ -152,7 +153,8 @@ sequenceDiagram
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
+- Snapshot (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- ADR-0017 Evidence (2026-01-18): [`ADR-0017-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/ADR-0017-Evidence-2026-01-18.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências

@@ -129,10 +129,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             }
 
             var request = new PhaseStartRequest(
-                contextSignature: signature,
-                phaseId: evt.Current.PhaseId,
-                targetScene: targetScene,
-                reason: phaseStartReason);
+                signature,
+                evt.Current.PhaseId,
+                targetScene,
+                phaseStartReason);
 
             if (IsSceneTransitionGateActive())
             {

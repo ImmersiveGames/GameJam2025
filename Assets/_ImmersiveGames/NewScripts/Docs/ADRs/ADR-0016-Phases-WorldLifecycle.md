@@ -1,9 +1,12 @@
 # ADR-0016 — Phases + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow)
 
 ## Status
-- Estado: Aceito
-- Data: 2025-12-24
+- Estado: Implementado
+- Data (decisão): 2025-12-24
+- Data (implementação): 2026-01-18
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
+- Evidência (snapshot): `Reports/Evidence/2026-01-18/ADR-0016-Evidence-2026-01-18.md`
+- Evidência (canônica): `Reports/Evidence/LATEST.md`
 
 ## Contexto
 
@@ -165,7 +168,8 @@ Ordem canônica do pipeline (com IntroStage pós-revelação):
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
+- Snapshot (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- ADR-0016 Evidence (2026-01-18): [`ADR-0016-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/ADR-0016-Evidence-2026-01-18.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências

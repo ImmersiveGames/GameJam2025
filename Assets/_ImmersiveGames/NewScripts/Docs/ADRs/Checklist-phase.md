@@ -1,142 +1,108 @@
-# ADR-Checklist — Sistema de Fases (Phase) + WorldLifecycle/SceneFlow
+# Checklist de QA — ADR-0016 (Phases + WorldLifecycle)
 
-## Status
-- Estado: Proposto
-- Data: (não informado)
-- Escopo: PhaseChange + WorldLifecycle + SceneFlow (NewScripts)
+> **Data (evidência canônica):** 2026-01-18  \
+> **Fonte de verdade:** log do Console (Editor/Dev) — execução dos ContextMenus de Phase QA.
 
-## Contexto
+## Objetivo
 
-**Objetivo:** registrar **o que já está confirmado por evidência** e **o que falta** para avançar com segurança na implementação de fases.
+Validar que o sistema suporta **duas modalidades** de “nova fase” conforme ADR-0016:
 
-### Escopo deste checklist (Nível B)
+1. **InPlace**: reset determinístico **na mesma cena** (sem SceneFlow / sem Fade / sem Loading HUD).
+2. **WithTransition**: fase com **transição (SceneFlow)**, respeitando Fade/Loading HUD + gate + reset + commit via intent.
 
-Nível B cobre:
-- Contrato de **PhaseContext** (Pending/Current + commit canônico).
-- Contrato de **PhaseChange** com os dois tipos (In-Place e SceneTransition).
-- Integração com **WorldLifecycle** (reset determinístico) e **SceneFlow** (apenas no modo SceneTransition).
-- Evidências observáveis (logs/eventos) para evitar regressões.
+## Pré-condições
 
-## Decisão
+- Projeto iniciado em **NEWSCRIPTS_MODE**.
+- Serviços globais registrados (EventBus, SimulationGate, Fade, SceneFlow, GameLoop etc.).
+- Aplicação entrou em **GameplayScene** (profile='gameplay') e **IntroStage** foi concluída ao menos uma vez.
 
-- (não informado)
+**Evidências típicas de pré-condição (exemplos):**
 
-## Fora de escopo
+- `✅ NewScripts global infrastructure initialized`.
+- `TransitionStarted ... profile='gameplay'`.
+- `WorldLifecycleSceneFlowResetDriver ... Disparando ResetWorld`.
+- `ResetWorld concluído (ScenesReady)`.
+- `IntroStageCompleted ... result='completed'`.
+- `ENTER: Playing (active=True)`.
 
-- (não informado)
+## Caso 1 — InPlace (sem visuais)
 
-## Consequências
+### Ação
 
-### Benefícios
+No objeto **[QA] PhaseQA** (DontDestroyOnLoad), executar o ContextMenu:
 
-- (não informado)
+- `QA/Phase/TC-ADR0016-INPLACE` (ou equivalente), usando:
+  - `phaseId='phase.2'`
+  - `reason='QA/Phases/InPlace/NoVisuals'`
 
-### Trade-offs / Riscos
+### Expected
 
-- (não informado)
+1. Um `PhaseChangeRequested` com `mode=InPlace`.
+2. Gate token específico de fase in-place adquirido e liberado (`flow.phase_inplace`).
+3. `PhasePendingSet` e `PhaseCommitted` com o mesmo `phaseId` e `reason`.
+4. `WorldResetRequestService` dispara `RequestResetAsync` com source canônico `phase.inplace:<phaseId>`.
+5. `WorldLifecycleController` executa reset completo (Despawn -> Spawn) sem SceneFlow.
+6. Ao final, gameplay volta a liberar inputs (gate aberto, tokens 0) e pode reentrar no pipeline de fase.
 
-## Notas de implementação
+### Evidência (strings mínimas)
 
-### 1) Confirmado por evidência (logs)
+- `[QA][Phase] TC-ADR0016-INPLACE start phaseId='phase.2' reason='QA/Phases/InPlace/NoVisuals'.`
+- `[OBS][Phase] PhaseChangeRequested ... mode=InPlace phaseId='phase.2' reason='QA/Phases/InPlace/NoVisuals'`
+- `Acquire token='flow.phase_inplace'`
+- `PhasePendingSet plan='phase.2' reason='QA/Phases/InPlace/NoVisuals'`
+- `RequestResetAsync → ResetWorldAsync. source='phase.inplace:phase.2'`
+- `World Reset Completed`
+- `PhaseCommitted ... current='phase.2' reason='QA/Phases/InPlace/NoVisuals'`
+- `Release token='flow.phase_inplace'`
+- `[QA][Phase] TC-ADR0016-INPLACE done phaseId='phase.2'.`
 
-#### 1.1 Infra / DI (pré-condição)
-- `IPhaseContextService` registrado no DI global.
-- `IPhaseTransitionIntentRegistry` registrado no DI global.
-- `IPhaseChangeService` registrado no DI global.
-- `PhaseContextSceneFlowBridge` registrado e observando `SceneTransitionStartedEvent → ClearPending`.
-  Observação: o bridge existir está confirmado em log; a execução de auto-clear só é relevante quando houver Pending armada *antes* do start da transição.
+## Caso 2 — WithTransition (SceneFlow)
 
-**Evidência:** no log há `Serviço IPhaseContextService registrado`, `Serviço IPhaseTransitionIntentRegistry registrado`, `Serviço IPhaseChangeService registrado`, e `PhaseContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending).`
+### Ação
 
-#### 1.2 PhaseChange/In-Place (funcional)
-- `PhaseChangeRequested (mode=InPlace)` observado.
-- Gate token `phase.inplace` adquirido durante a operação.
-- `PhasePendingSet plan='Phase2'` observado.
-- Reset solicitado com `sourceSignature='phase.inplace:Phase2'`.
-- Reset executado (despawn/spawn) e `ResetCompleted` observado.
-- `PhaseCommitted prev='<none>' current='Phase2'` observado.
-- Gate token `phase.inplace` liberado após conclusão.
+No objeto **[QA] PhaseQA** (DontDestroyOnLoad), executar o ContextMenu:
 
-**Status:** **PASS (funcional)**.
+- `QA/Phase/TC-ADR0016-TRANSITION` (ou equivalente), usando:
+  - `phaseId='phase.2'`
+  - `reason='QA/Phases/WithTransition/Gameplay'`
+  - `profile='gameplay'`
 
-**Atenção (UX/Contrato):** no log houve Fade/Loading HUD no In-Place porque o QA habilitou opções visuais. Pelo ADR-0017, o contrato de produto é: **In-Place sem Fade e sem Loading HUD**. Isso entra como item pendente de correção de código/QA (ver seção 2).
+### Expected
 
-#### 1.3 PhaseChange/SceneTransition (funcional)
-- Intent registrado:
-    - `PhaseIntent Registered sig='<signature>' plan='Phase2' mode='SceneTransition'`
-- `PhaseChangeRequested (mode=SceneTransition)` observado com assinatura do SceneFlow.
-- SceneFlow executou reload (`Unload=[GameplayScene]` + load novamente).
-- Em `ScenesReady`:
-    - intent foi consumido (`PhaseIntent Consumed ...`)
-    - `PhasePendingSet` foi armado com reason enriquecido contendo `sig=...`
-- Reset canônico executado e `ResetCompleted` observado.
-- `PhaseCommitted` observado.
-- Gate token `flow.scene_transition` adquirido/liberado conforme SceneFlow.
+1. Um `PhaseChangeRequested` com `mode=SceneTransition`.
+2. Gate token de fase com transição adquirido e liberado (`flow.phase_transition`).
+3. `PhaseTransitionIntentRegistry.Registered` grava uma intent associada à signature gerada.
+4. SceneFlow inicia (`TransitionStarted`) e adquire `flow.scene_transition`.
+5. `WorldLifecycleSceneFlowResetDriver` dispara ResetWorld em `ScenesReady`.
+6. `ResetCompleted` consome a intent (`Consumed`) e aplica commit da fase via bridge.
+7. `PhasePendingSet` + `PhaseCommitted` com `reason='QA/Phases/WithTransition/Gameplay'`.
+8. SceneFlow conclui (`TransitionCompleted`) e libera `flow.scene_transition`.
+9. Ao final, tokens ativos retornam a 0 e o sistema pode reentrar na IntroStage/pipeline.
 
-**Status:** **PASS (funcional)**.
+### Evidência (strings mínimas)
 
-### 2) Pendente (para fechar Nível B corretamente)
+- `[QA][Phase] TC-ADR0016-TRANSITION start phaseId='phase.2' reason='QA/Phases/WithTransition/Gameplay' ...`
+- `Acquire token='flow.phase_transition'`
+- `[PhaseIntent] Registered ... plan='phase.2' mode='SceneTransition' reason='QA/Phases/WithTransition/Gameplay'`
+- `[SceneFlow] TransitionStarted ... profile='gameplay'`
+- `Acquire token='flow.scene_transition'`
+- `[WorldLifecycle] Disparando ResetWorld ... reason='SceneFlow/ScenesReady'`
+- `[PhaseIntent] Consumed ... plan='phase.2' mode='SceneTransition'`
+- `[PhaseIntentBridge] ResetCompleted -> consumindo intent e aplicando fase ... reason='QA/Phases/WithTransition/Gameplay'`
+- `PhaseCommitted ... current='phase.2' reason='QA/Phases/WithTransition/Gameplay'`
+- `[SceneFlow] TransitionCompleted ... profile='gameplay'`
+- `Release token='flow.scene_transition'`
+- `Release token='flow.phase_transition'`
 
-#### 2.1 Contrato visual do In-Place (obrigatório)
-**Requisito (ADR-0017):** In-Place deve ocorrer sem interrupção visual:
-- não chamar Fade,
-- não exibir Loading HUD,
-- não usar SceneFlow.
+## Critérios de aprovação
 
-**O que fazer:**
-- No `PhaseChangeService.RequestPhaseInPlaceAsync(...)`:
-    - forçar `UseFade=false` e `UseLoadingHud=false` (ignorar opções externas), ou
-    - remover opções visuais do caminho In-Place e deixar isso explícito por API.
-- No QA (`PhaseChangeQATester`):
-    - parar de habilitar `UseFade=true`/`UseLoadingHud=true` no teste de In-Place,
-    - manter opções visuais apenas no teste de SceneTransition.
+- Ambos os casos (InPlace / WithTransition) geram **commit de fase** e **reset determinístico** (com ordem e hooks). 
+- Tokens de gate (`flow.phase_inplace` / `flow.phase_transition` / `flow.scene_transition`) **não ficam presos** (Active volta a 0).
+- O commit via intent ocorre **após ResetCompleted** no caminho WithTransition.
 
-**Evidência esperada após correção:**
-- Ausência de logs `[Fade]` e `[LoadingHUD]` entre “Solicitando Change InPlace” e “PhaseCommitted”.
+## Observações (para revisão futura)
 
-#### 2.2 Auto-clear de Pending ao iniciar SceneTransition (somente se o design exigir)
-O bridge `PhaseContextSceneFlowBridge` limpa `Pending` em `SceneTransitionStartedEvent`.
-Isso é útil para não carregar “Pending velha” para uma transição de cena.
-
-**Status:** bridge registrado (OK).
-**Falta evidência do caso:** Pending já existente *antes* de iniciar SceneFlow.
-
-Se quisermos fechar isso como PASS em Nível B, precisamos de um teste:
-1) Setar Pending manualmente (sem commit).
-2) Iniciar uma transição SceneFlow.
-3) Ver `PhasePendingClearedEvent` com reason `SceneFlow/TransitionStarted...`.
-
-Se isso não for requisito de produto agora, pode ser adiado para Nível C.
-
-### 3) Ordem mínima de teste (apenas o que falta)
-
-Após corrigir o In-Place (2.1), executar somente:
-
-1) **TC-B-01 — In-Place sem visuals**
-    - Trigger PhaseChange/In-Place.
-    - Ver PendingSet → Reset → Commit.
-    - Confirmar **zero** logs de Fade/LoadingHUD no trecho.
-
-2) (Opcional) **TC-B-02 — Auto-clear Pending em SceneTransitionStarted**
-    - Apenas se 2.2 for considerado requisito agora.
-
-### 4) Gate tokens / invariantes relevantes
-
-- SceneTransition: token `flow.scene_transition` deve bloquear simulação até `SceneTransitionCompleted`.
-- In-Place: token `phase.inplace` deve bloquear simulação apenas durante o reset/commit.
-- Commit canônico: `PhaseCommitted` deve ocorrer após `WorldLifecycleResetCompletedEvent` (não antes).
-
-### 5) Resultado do Nível B (no estado atual)
-
-- Funcionalmente, os dois modos foram exercitados com evidência.
-- O **único blocker** para considerar Nível B “fechado” é o **contrato visual do In-Place** (2.1).
-
-Quando 2.1 estiver corrigido e revalidado, podemos avançar para a próxima etapa de implementação com risco controlado.
-
-## Evidências
-
-- (não informado)
-
-## Referências
-
-- [ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)](ADR-0017-Tipos-de-troca-fase.md)
+- No caso WithTransition, a signature pode ter `Load=[]` e `Unload=[]` (no-op transition) — ainda assim o fluxo deve:
+  - manter Fade/Loading,
+  - disparar Reset em `ScenesReady`,
+  - e consumir intent para aplicar a fase.

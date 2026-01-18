@@ -943,6 +943,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 new PhaseChangeService(phaseContext, worldReset, sceneFlow, intentRegistry),
                 allowOverride: false);
 
+            // ADR-0016: quando a troca de fase usa SceneFlow, o commit ocorre no ponto seguro
+            // (WorldLifecycleResetCompletedEvent). O bridge abaixo consome o intent e aplica o commit.
+            RegisterIfMissing(() => new PhaseTransitionIntentWorldLifecycleBridge(intentRegistry, phaseContext));
+
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[PhaseChange] PhaseChangeService registrado no DI global.",
                 DebugUtility.Colors.Info);

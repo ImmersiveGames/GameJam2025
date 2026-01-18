@@ -1,0 +1,35 @@
+# ADR-0016 - Evidence Log (2026-01-18)
+# Purpose: demonstrate both PhaseChange modes described in ADR-0016.
+# Notes:
+# - Excerpted to the minimal lines needed to support the ADR status.
+# - Tags used: [QA] = test harness; [OBS] = observable/invariant.
+
+## TC-ADR0016-INPLACE (GameplayScene)
+<color=#A8DEED>[INFO] [PhaseQaContextMenu] [QA][Phase] TC-ADR0016-INPLACE start phaseId='phase.2' reason='QA/Phases/InPlace/NoVisuals'.</color>
+<color=#A8DEED>[INFO] [PhaseChangeService] [OBS][Phase] PhaseChangeRequested event=phase_change_inplace mode=InPlace phaseId='phase.2' reason='QA/Phases/InPlace/NoVisuals'</color>
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.phase_inplace'. Active=1. IsOpen=False (@ 40,55s)
+[INFO] [PhaseContextService] [PhaseContext] PhasePendingSet plan='phase.2' reason='QA/Phases/InPlace/NoVisuals'
+<color=#A8DEED>[INFO] [PhaseChangeService] [PhaseChange] InPlace -> pending set. Disparando WorldReset. PhaseChange/InPlace plan='phase.2' reason='QA/Phases/InPlace/NoVisuals'</color>
+<color=#A8DEED>[VERBOSE] [WorldResetRequestService] [WorldLifecycle] RequestResetAsync → ResetWorldAsync. source='phase.inplace:phase.2', scene='GameplayScene'. (@ 40,55s)</color>
+[INFO] [WorldLifecycleController] Reset iniciado. reason='phase.inplace:phase.2', scene='GameplayScene'.
+[INFO] [WorldLifecycleController] Reset concluído. reason='phase.inplace:phase.2', scene='GameplayScene'.
+[INFO] [PhaseContextService] [PhaseContext] PhaseCommitted prev='phase.2' current='phase.2' reason='QA/Phases/InPlace/NoVisuals'
+[VERBOSE] [PhaseStartPipeline] [PhaseStart] RequestReady antes da IntroStage. state='Playing' phaseId='phase.2'. (@ 40,56s)
+[VERBOSE] [SimulationGateService] [Gate] Release token='flow.phase_inplace'. Active=0. IsOpen=True (@ 40,56s)
+<color=#4CAF50>[INFO] [PhaseQaContextMenu] [QA][Phase] TC-ADR0016-INPLACE done phaseId='phase.2'.</color>
+
+## TC-ADR0016-TRANSITION (GameplayScene)
+<color=#A8DEED>[INFO] [PhaseQaContextMenu] [QA][Phase] TC-ADR0016-TRANSITION start phaseId='phase.2' reason='QA/Phases/WithTransition/Gameplay' profile='gameplay' active='GameplayScene' target='GameplayScene' loadCount='0' unloadCount='0' fade='True'.</color>
+[VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.phase_transition'. Active=1. IsOpen=False (@ 47,40s)
+[INFO] [PhaseTransitionIntentRegistry] [PhaseIntent] Registered sig='p:gameplay|a:GameplayScene|f:1|l:|u:' plan='phase.2' mode='SceneTransition' reason='QA/Phases/WithTransition/Gameplay'
+<color=#A8DEED>[INFO] [PhaseChangeService] [OBS][Phase] PhaseChangeRequested event=phase_change_transition mode=SceneTransition phaseId='phase.2' reason='QA/Phases/WithTransition/Gameplay' signature='p:gameplay|a:GameplayScene|f:1|l:|u:' profile='gameplay'</color>
+<color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:gameplay|a:GameplayScene|f:1|l:|u:' profile='gameplay' Load=[], Unload=[], Active='GameplayScene', UseFade=True, Profile='gameplay'</color>
+<color=#A8DEED>[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] Disparando ResetWorld para 1 controller(s). signature='p:gameplay|a:GameplayScene|f:1|l:|u:', targetScene='GameplayScene'. (@ 47,46s)</color>
+[INFO] [WorldLifecycleController] Reset concluído. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
+[INFO] [PhaseTransitionIntentRegistry] [PhaseIntent] Consumed sig='p:gameplay|a:GameplayScene|f:1|l:|u:' plan='phase.2' mode='SceneTransition'
+<color=#A8DEED>[INFO] [PhaseTransitionIntentWorldLifecycleBridge] [PhaseIntentBridge] ResetCompleted -> consumindo intent e aplicando fase. signature='p:gameplay|a:GameplayScene|f:1|l:|u:', phaseId='phase.2', reason='QA/Phases/WithTransition/Gameplay'.</color>
+[INFO] [PhaseContextService] [PhaseContext] PhaseCommitted prev='phase.2' current='phase.2' reason='QA/Phases/WithTransition/Gameplay'
+<color=#A8DEED>[VERBOSE] [PhaseStartPhaseCommitBridge] [PhaseStart] SceneTransition ativo; pipeline pendente até TransitionCompleted. signature='p:gameplay|a:GameplayScene|f:1|l:|u:'. (@ 47,46s)</color>
+<color=#A8DEED>[VERBOSE] [PhaseStartPhaseCommitBridge] [PhaseStart] TransitionCompleted observado; executando pipeline pendente. signature='p:gameplay|a:GameplayScene|f:1|l:|u:'. (@ 47,95s)</color>
+[VERBOSE] [SimulationGateService] [Gate] Release token='flow.phase_transition'. Active=0. IsOpen=True (@ 47,95s)
+<color=#4CAF50>[INFO] [PhaseQaContextMenu] [QA][Phase] TC-ADR0016-TRANSITION requested phaseId='phase.2'. Commit ocorrerá via intent/bridge após ResetCompleted.</color>
