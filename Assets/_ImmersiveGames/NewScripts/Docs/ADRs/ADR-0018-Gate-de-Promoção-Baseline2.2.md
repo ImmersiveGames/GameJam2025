@@ -1,4 +1,4 @@
-# ADR-0018 — ContentSwap (Phase) — Contrato e Observability
+# ADR-0018 — ContentSwap (Phase) — Contrato, Observability e Compatibilidade
 
 ## Status
 - Estado: Aceito
@@ -7,11 +7,11 @@
 
 ## Contexto
 
-Na arquitetura atual, o termo **Phase** foi usado para representar **troca de conteúdo** (swap) dentro do runtime, com dois modos canônicos (In-Place e SceneTransition). Essa semântica ficou ambígua com a evolução do Baseline 2.2, que introduz o conceito de **Level/Nível** como progressão do jogo.
+O termo **Phase** foi usado para representar **troca de conteúdo** no runtime, com dois modos canônicos (In-Place e SceneTransition). A evolução do Baseline 2.2 introduz **Level/Nível** como progressão do jogo, criando ambiguidade entre “fase” (conteúdo) e “nível” (progressão).
 
-Para evitar confusão entre **conteúdo** (o que está carregado) e **progressão** (qual nível está ativo), este ADR redefine *Phase* como **ContentSwap**. O código permanece compatível: contratos públicos e eventos atuais continuam válidos, e a nomenclatura “Phase” segue existindo por compatibilidade.
+Para eliminar essa ambiguidade, este ADR redefine **Phase** como **ContentSwap** (troca de conteúdo). A nomenclatura de código permanece por compatibilidade: APIs e eventos atuais continuam válidos. A progressão de nível passa a ser orquestrada pelo **Level Manager** (ADR-0019).
 
-> **Nota:** IntroStage não é responsabilidade do ContentSwap. IntroStage é orquestrada pelo Level Manager (ver ADR-0019).
+> **Nota crítica:** ContentSwap **não** é responsável por IntroStage. IntroStage é responsabilidade do Level Manager.
 
 ## Decisão
 
@@ -28,7 +28,7 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 - `IPhaseContextService`
 - `IPhaseTransitionIntentRegistry`
 
-Se houver renomeação futura para ContentSwap no código, **devem existir aliases/bridges** compatíveis para não quebrar build nem chamadas existentes.
+> Se houver renomeação futura para ContentSwap no código, **devem existir aliases/bridges** compatíveis para não quebrar build nem chamadas existentes.
 
 ### 3) Modos canônicos (referência)
 - Os **modos de ContentSwap** são definidos no ADR-0017 (“modes”).
@@ -41,16 +41,20 @@ Se houver renomeação futura para ContentSwap no código, **devem existir alias
     - `QA/ContentSwap/WithTransition/<case>`
     - `ContentSwap/InPlace/<source>`
     - `ContentSwap/WithTransition/<source>`
-- **Legacy aceito (compatibilidade)**: `QA/Phases/InPlace/...` e `QA/Phases/WithTransition/...` continuam válidos enquanto houver evidências anteriores.
-- **Logs canônicos** seguem os eventos existentes:
-    - `[OBS][Phase] PhaseChangeRequested ... mode=InPlace ...`
-    - `[OBS][Phase] PhaseChangeRequested ... mode=SceneTransition ...`
+- **Legacy aceito (compatibilidade)**:
+    - `QA/Phases/InPlace/<...>`
+    - `QA/Phases/WithTransition/<...>`
+
+- **Logs canônicos** seguem os eventos existentes e **incluem alias explícito**:
+    - `[OBS][Phase] PhaseChangeRequested ...`
+    - `[OBS][ContentSwap] ContentSwapRequested ...`
     - `[PhaseContext] PhasePendingSet ...`
     - `[PhaseContext] PhaseCommitted ...`
 
-### 5) Responsabilidade explícita (não escopo)
+### 5) IntroStage fora do escopo
 - **IntroStage não é responsabilidade do ContentSwap**.
-- IntroStage deve ser orquestrada por **Level Manager** (ADR-0019), que decide a política de execução por nível.
+- Para evitar ambiguidade de QA, ContentSwap **não** deve forçar IntroStage.
+- O Level Manager (ADR-0019) é quem decide política e execução de IntroStage.
 
 ## Consequências
 
@@ -69,5 +73,6 @@ Se houver renomeação futura para ContentSwap no código, **devem existir alias
 
 ## Referências
 - ADR-0017 — Tipos de troca de fase (modos In-Place vs SceneTransition)
+- ADR-0019 — Level Manager (progressão) + gates Baseline 2.2
 - ADR-0016 — Phases + IntroStage opcional (histórico do contrato)
 - Observability Contract — `Docs/Reports/Observability-Contract.md`

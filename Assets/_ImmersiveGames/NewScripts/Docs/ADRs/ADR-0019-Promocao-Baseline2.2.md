@@ -7,7 +7,7 @@
 
 ## Contexto
 
-O Baseline 2.2 separa claramente **ContentSwap (Phase)** de **Level/Nível**. ContentSwap é troca de conteúdo; Level é progressão do jogo. Essa separação evita ambiguidade e permite evolução da arquitetura sem quebrar contratos atuais.
+O Baseline 2.2 separa **ContentSwap (Phase)** de **Level/Nível**. ContentSwap é troca de conteúdo; Level é progressão do jogo. Essa separação elimina ambiguidade e preserva compatibilidade com contratos atuais.
 
 O **Level Manager** passa a ser o orquestrador da progressão de níveis, decidindo quando executar ContentSwap e **IntroStage**, com política explícita e evidência de QA.
 
@@ -22,27 +22,32 @@ O **Level Manager** passa a ser o orquestrador da progressão de níveis, decidi
 - **Toda mudança de nível executa IntroStage** (policy default).
 - Exceções devem ser declaradas explicitamente por configuração (não neste baseline).
 
-### 3) Dependências explícitas (runtime atual)
-O runtime já contém pontos de integração relevantes que o Level Manager deverá respeitar:
+### 3) Contratos públicos mínimos (API)
+- `ILevelManager` (método principal: `GoToLevelAsync(LevelPlan plan, string reason, LevelChangeOptions? options = null)`)
+- `LevelPlan` (levelId + phaseId + contentSignature)
+- `LevelChangeOptions` (mode + SceneTransitionRequest + PhaseChangeOptions)
+
+### 4) Dependências explícitas (runtime atual)
+O runtime já contém pontos de integração relevantes que o Level Manager deve respeitar:
 - `PhaseStartPipeline` e `PhaseStartPhaseCommitBridge` (IntroStage acionada em `PhaseCommitted` e coordenada com SceneTransition).
+- `InputModeSceneFlowBridge` (IntroStage na entrada gameplay via SceneFlow/Completed).
 - `PhaseTransitionIntentWorldLifecycleBridge` (commit após reset).
 
-Essas dependências **não mudam neste baseline**, mas passam a ser orquestradas pelo Level Manager.
+Essas dependências **não mudam neste baseline**.
 
-### 4) Gates de promoção do Baseline 2.2
+### 5) Gates de promoção do Baseline 2.2
 A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PASS**, com QA objetivo e evidência em snapshot datado.
 
 #### G-01 — ContentSwap formalizado (contrato + observability)
 **Critério verificável**
 - ADR-0018 atualizado e sem conflito com ADR-0017.
-- Logs canônicos de ContentSwap (PhaseChangeRequested / PhasePendingSet / PhaseCommitted) permanecem válidos.
+- Logs canônicos de ContentSwap mantidos com alias `[OBS][ContentSwap]`.
 
 **QA mínimo (ContextMenu)**
-- `QA/ContentSwap/InPlace/Commit (NoVisuals)`
-- `QA/ContentSwap/WithTransition/Commit (Gameplay Minimal)`
+- `QA/ContentSwap/G01-InPlace (NoVisuals)`
 
 **Evidência**
-- Snapshot datado com logs e verificação curada das duas rotas.
+- Snapshot datado com logs + verificação curada do In-Place (sem Fade/HUD).
 
 #### G-02 — Level Manager mínimo funcional
 **Critério verificável**
@@ -50,7 +55,8 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 - IntroStage executa exatamente uma vez por mudança de nível.
 
 **QA mínimo (ContextMenu)**
-- `QA/Level/Advance/IntroStage (Default)`
+- `QA/Level/G02-GoToLevel (InPlace + IntroStage)`
+- `QA/Level/G03-GoToLevel (WithTransition + IntroStage)`
 
 **Evidência**
 - Snapshot datado com logs mostrando ContentSwap + IntroStage no mesmo ciclo.

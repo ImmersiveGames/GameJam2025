@@ -24,6 +24,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Gameplay.Levels;
 using _ImmersiveGames.NewScripts.Gameplay.Phases;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
@@ -43,8 +44,8 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.QA.Baseline22;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
-using _ImmersiveGames.NewScripts.QA.Phases;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -181,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
-            RegisterPhaseQaInstaller();
+            RegisterBaseline22QaInstaller();
 #endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageRuntimeDebugGui();
@@ -194,6 +195,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             // PhaseChange depende de PhaseContext + SceneFlow/WorldReset (para "in place" vs. "transition").
             RegisterPhaseChangeService();
+            RegisterLevelManager();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
@@ -790,16 +792,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
         }
 
-        private static void RegisterPhaseQaInstaller()
+        private static void RegisterBaseline22QaInstaller()
         {
             try
             {
-                PhaseQaInstaller.EnsureInstalled();
+                Baseline22QaInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[QA][Phase] Falha ao instalar PhaseQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][Baseline22] Falha ao instalar Baseline22QaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -964,6 +966,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[PhaseChange] PhaseChangeService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLevelManager()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ILevelManager>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Level] ILevelManager já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseChangeService>(out var phaseChangeService) || phaseChangeService == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[Level] IPhaseChangeService indisponível. ILevelManager não será registrado.");
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<ILevelManager>(
+                new LevelManager(phaseChangeService),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Level] LevelManager registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

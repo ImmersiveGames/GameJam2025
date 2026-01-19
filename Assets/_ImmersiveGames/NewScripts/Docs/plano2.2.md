@@ -17,14 +17,13 @@
 
 **Entregas**
 - ADR-0018 reescrito com semântica ContentSwap + contratos públicos + reasons canônicos.
-- Referências atualizadas em índices/READMEs.
+- Logs com alias `[OBS][ContentSwap]` mantidos para compatibilidade.
 
 **QA mínimo (ContextMenu)**
-- `QA/ContentSwap/InPlace/Commit (NoVisuals)`
-- `QA/ContentSwap/WithTransition/Commit (Gameplay Minimal)`
+- `QA/ContentSwap/G01-InPlace (NoVisuals)` (GameObject `QA_Baseline22`).
 
 **Evidência**
-- Snapshot datado com logs + verificação curada dos dois modos (In-Place e WithTransition).
+- Snapshot datado com logs + verificação curada do In-Place (sem Fade/HUD).
 
 ---
 
@@ -34,11 +33,12 @@
 - Orquestrar progressão de níveis, acionando ContentSwap + IntroStage.
 
 **Entregas**
-- Level Manager mínimo funcional (sem quebrar APIs atuais).
+- `ILevelManager` + `LevelPlan` + `LevelChangeOptions` (API mínima).
 - Política default: toda mudança de nível executa IntroStage.
 
 **QA mínimo (ContextMenu)**
-- `QA/Level/Advance/IntroStage (Default)`
+- `QA/Level/G02-GoToLevel (InPlace + IntroStage)`
+- `QA/Level/G03-GoToLevel (WithTransition + IntroStage)`
 
 **Evidência**
 - Logs mostrando ContentSwap + IntroStage no mesmo ciclo de mudança de nível.

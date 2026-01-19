@@ -35,10 +35,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             await EnsureLoopReadyAsync(gameLoop, request);
 
-            // Baseline 2.2: para PhaseChange In-Place (sem transição de cenas) o objetivo é trocar o conteúdo
-            // sem reentrar na IntroStage (que bloquearia gameplay e exigiria confirmação/UI).
-            // A IntroStage permanece válida para entradas via SceneFlow/Completed (entrada do gameplay) e
-            // para outros fluxos que explicitamente desejem conteúdo antes de começar.
+            // Baseline 2.2: ContentSwap (Phase) não é responsável por IntroStage.
+            // A decisão de executar IntroStage é do LevelManager; aqui suprimimos
+            // explicitamente quando o reason indica ContentSwap/QA.
             if (ShouldSuppressIntroStageForRequest(request))
             {
                 DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
@@ -82,17 +81,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         private static bool ShouldSuppressIntroStageForRequest(PhaseStartRequest request)
         {
-            // Heurística mínima e determinística: apenas suprime para QA explícito de In-Place.
-            // Isso evita alterar comportamento de produção e mantém a evidência rastreável via reason.
             if (string.IsNullOrWhiteSpace(request.Reason))
             {
                 return false;
             }
 
-            // O reason do pipeline é formado como: "PhaseStart/Committed|phaseId=...|reason=<commitReason>".
-            // Para o TC-G01-INPLACE, o commitReason começa com "QA/Phases/InPlace/".
-            return request.Reason.Contains("|reason=QA/Phases/InPlace/", StringComparison.Ordinal)
-                || request.Reason.StartsWith("QA/Phases/InPlace/", StringComparison.Ordinal);
+            var reason = request.Reason;
+            return ContainsSuppressionReason(reason, "QA/ContentSwap/InPlace/")
+                || ContainsSuppressionReason(reason, "QA/ContentSwap/WithTransition/")
+                || ContainsSuppressionReason(reason, "ContentSwap/InPlace/")
+                || ContainsSuppressionReason(reason, "ContentSwap/WithTransition/")
+                || ContainsSuppressionReason(reason, "QA/Phases/InPlace/")
+                || ContainsSuppressionReason(reason, "QA/Phases/WithTransition/");
+        }
+
+        private static bool ContainsSuppressionReason(string reason, string token)
+        {
+            return reason.Contains(token, StringComparison.Ordinal)
+                || reason.StartsWith(token, StringComparison.Ordinal);
         }
 
         private static async Task EnsureLoopReadyAsync(IGameLoopService gameLoop, PhaseStartRequest request)

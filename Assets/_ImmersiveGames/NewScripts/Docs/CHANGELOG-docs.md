@@ -1,5 +1,11 @@
 # Changelog (Docs)
 
+## 2026-01-20
+- ContentSwap formalizado com alias de observability `[OBS][ContentSwap]` e reasons canônicos para QA.
+- Level Manager documentado com API mínima, política default de IntroStage e gates verificáveis do Baseline 2.2.
+- Plano 2.2 reordenado com QA mínimo via `QA_Baseline22` (ContextMenu) para evidência.
+- Observability-Contract atualizado para ContentSwap + Level.
+
 ## 2026-01-19
 - ADR-0018 reestruturado para definir ContentSwap (Phase) e observability, separando de Level/Nível.
 - ADR-0019 reescrito para Level Manager (progressão) e gates verificáveis do Baseline 2.2.
@@ -204,31 +210,3 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: docs: convert navigation references to Markdown links + cleanup placeholders.
 - Updated: `ADRs/ADR-0009-FadeSceneFlow.md` (Opção A) — Fade via cena aditiva (`FadeScene`) integrada ao SceneFlow.
 - Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` (Opção A) — HUD de loading via cena aditiva (`LoadingHudScene`) integrada ao SceneFlow.
-- Updated: `ARCHITECTURE_TECHNICAL.md` — consolidado o pipeline operacional (Fade + LoadingHUD) e os pontos de integração com SceneFlow/WorldLifecycle.
-- Updated: `DECISIONS.md` — corrigida a referência de ADR-0010 (agora Loading HUD) e promovida a decisão de GameLoop events como “decisão” (não ADR).
-
-## [2025-12-26]
-- Updated: `WORLD_LIFECYCLE.md` com semântica de Reset-in-Place clarificada.
-- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status do progresso e pendências.
-- Updated: `ARCHITECTURE.md` reorganizado para diferenciar "Visão" e "Operacional".
-- Updated: `GLOSSARY.md` com termos do pipeline (SceneFlow, Gate, Reset, etc.).
-- Added: `EXAMPLES_BEST_PRACTICES.md` com exemplos mínimos (hooks, spawn, gating) e padrões recomendados.
-
-## 2026-01-16 (Evidence methodology)
-
-### Added
-
-- `Docs/Reports/Evidence/README.md` — metodologia e estrutura para evidências (snapshots datados).
-- `Docs/Reports/Evidence/LATEST.md` — ponteiro para o snapshot canônico mais recente.
-- `Docs/Reports/Evidence/2026-01-16/Baseline-2.1-Evidence-2026-01-16.md` — evidência consolidada (Baseline 2.1) arquivada.
-
-## 2026-01-17 (Evidence update)
-
-### Added
-
-- `Docs/Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md` — evidência consolidada (Baseline 2.1) arquivada.
-
-### Updated
-
-- `Docs/Reports/Evidence/LATEST.md` — corrigido o link do snapshot mais recente para apontar para `Baseline-2.1-Evidence-2026-01-17.md`.
-- `Docs/Reports/Evidence/README.md` — formalizada a regra: **log do Console é a fonte de verdade**; arquivos `.log` são apenas espelho estático.
