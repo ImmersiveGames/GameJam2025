@@ -1,64 +1,92 @@
-﻿# ADR-0019 — Promoção do Baseline 2.2 (declaração, snapshot e ponte LATEST)
+# ADR-0019 — Level Manager (progressão de níveis) e Promoção do Baseline 2.2
 
 ## Status
 - Estado: Proposto
 - Data: 2026-01-18
-- Escopo: Docs/Reports/Evidence + checklist + declaração operacional do 2.2
+- Escopo: Level Manager + Promoção Baseline 2.2 (Docs/Reports/Evidence)
 
 ## Contexto
 
-O Baseline 2.1 está fechado e evidenciado via snapshot datado. A evolução para o Baseline 2.2 introduz um conjunto de mudanças *config-driven* (WorldCycle) e correções/gates de consistência (Phases/Observability/Docs).
+O Baseline 2.2 separa claramente **ContentSwap (Phase)** de **Level/Nível**. ContentSwap é troca de conteúdo; Level é progressão do jogo. Essa separação evita ambiguidade e permite evolução da arquitetura sem quebrar contratos atuais.
 
-Para evitar regressões silenciosas, precisamos de um procedimento objetivo para:
-- declarar “Baseline 2.2 promovido”; e
-- manter regressão contínua via `Evidence/LATEST.md`.
+O **Level Manager** passa a ser o orquestrador da progressão de níveis, decidindo quando executar ContentSwap e **IntroStage**, com política explícita e evidência de QA.
 
 ## Decisão
 
-A promoção do Baseline 2.2 ocorre quando:
+### 1) Escopo do Level Manager
+- **Orquestra ContentSwap + IntroStage**.
+- **ContentSwap** segue o contrato do ADR-0018 (modos no ADR-0017).
+- **IntroStage** é responsabilidade do Level Manager, não do ContentSwap.
 
-1) **Gates do ADR-0018 estão PASS**
-- PASS obrigatório: **G-01, G-02, G-03**.
-- **G-04** somente se aplicável ao escopo do 2.2.
+### 2) Política padrão (Baseline 2.2)
+- **Toda mudança de nível executa IntroStage** (policy default).
+- Exceções devem ser declaradas explicitamente por configuração (não neste baseline).
 
-2) Existe **snapshot datado** em `Docs/Reports/Evidence/<YYYY-MM-DD>/` contendo:
-- log bruto (Console) usado como fonte de verdade;
-- verificação curada (anchors) demonstrando:
-    - invariantes do pipeline SceneFlow/WorldLifecycle;
-    - evidências dos gates (ex.: In-Place sem Fade/HUD, reasons canônicos, docs sem drift);
-- (opcional) pacote zip de evidência, se o repositório adotar essa prática.
+### 3) Dependências explícitas (runtime atual)
+O runtime já contém pontos de integração relevantes que o Level Manager deverá respeitar:
+- `PhaseStartPipeline` e `PhaseStartPhaseCommitBridge` (IntroStage acionada em `PhaseCommitted` e coordenada com SceneTransition).
+- `PhaseTransitionIntentWorldLifecycleBridge` (commit após reset).
 
-3) `Docs/Reports/Evidence/LATEST.md` aponta para o snapshot datado mais recente.
+Essas dependências **não mudam neste baseline**, mas passam a ser orquestradas pelo Level Manager.
 
-4) `Docs/CHANGELOG-docs.md` registra:
-- quais gates foram fechados;
-- links para o snapshot datado;
-- notas de compatibilidade (o que mudou/foi padronizado em reasons/assinaturas).
+### 4) Gates de promoção do Baseline 2.2
+A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PASS**, com QA objetivo e evidência em snapshot datado.
 
-## Fora de escopo
-- Definir o conteúdo do WorldCycle (o feature set do 2.2 é definido pelo plano e ADRs específicos).
-- Substituir navegação por data-driven completo.
+#### G-01 — ContentSwap formalizado (contrato + observability)
+**Critério verificável**
+- ADR-0018 atualizado e sem conflito com ADR-0017.
+- Logs canônicos de ContentSwap (PhaseChangeRequested / PhasePendingSet / PhaseCommitted) permanecem válidos.
+
+**QA mínimo (ContextMenu)**
+- `QA/ContentSwap/InPlace/Commit (NoVisuals)`
+- `QA/ContentSwap/WithTransition/Commit (Gameplay Minimal)`
+
+**Evidência**
+- Snapshot datado com logs e verificação curada das duas rotas.
+
+#### G-02 — Level Manager mínimo funcional
+**Critério verificável**
+- Mudança de nível aciona ContentSwap + IntroStage, de acordo com política default.
+- IntroStage executa exatamente uma vez por mudança de nível.
+
+**QA mínimo (ContextMenu)**
+- `QA/Level/Advance/IntroStage (Default)`
+
+**Evidência**
+- Snapshot datado com logs mostrando ContentSwap + IntroStage no mesmo ciclo.
+
+#### G-03 — Configuração centralizada (assets/definitions)
+**Critério verificável**
+- Configuração de níveis e conteúdo migra de scripts para assets/definitions.
+- Nenhum script de runtime mantém “hardcode” de lista de níveis.
+
+**QA mínimo (ContextMenu)**
+- `QA/Level/Resolve/Definitions` (apenas logs de catálogo/resolução).
+
+**Evidência**
+- Logs mostrando resolução por catálogo + assinatura de conteúdo.
+
+#### G-04 — QA + Evidências + Gate de promoção
+**Critério verificável**
+- Evidências consolidadas em snapshot datado (`Docs/Reports/Evidence/<YYYY-MM-DD>/`).
+- `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot.
+- `Docs/CHANGELOG-docs.md` atualizado com os gates fechados.
 
 ## Consequências
 
 ### Benefícios
-- Processo de promoção repetível e auditável.
-- Reduz atrito em QA: a “fonte de verdade” fica explícita e versionada.
+- Clarifica responsabilidades: Level Manager (progressão) vs ContentSwap (troca de conteúdo).
+- Mantém compatibilidade com APIs atuais.
+- Promoção com critérios objetivos e verificáveis.
 
 ### Trade-offs / Riscos
-- Requer manutenção disciplinada do snapshot e verificação curada.
-
-## Notas de implementação
-
-- Ao concluir o snapshot:
-    - atualizar `Checklist-phase.md` (se houver itens fechados);
-    - garantir que o contrato (`Observability-Contract.md`) não aponta para artefatos ausentes;
-    - manter as âncoras curadas minimalistas (apenas as strings necessárias).
+- Exige disciplina de QA e evidência para avançar o baseline.
 
 ## Evidências
 - Metodologia: `Docs/Reports/Evidence/README.md`
 - Ponte canônica: `Docs/Reports/Evidence/LATEST.md`
 
 ## Referências
-- ADR-0018 — Gate de Promoção do Baseline 2.2
-- Plano 2.2 — Evolução do WorldLifecycle para WorldCycle Config-Driven
+- ADR-0018 — ContentSwap (Phase) — Contrato e Observability
+- ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
+- Plano 2.2 — Execução (plano2.2.md)

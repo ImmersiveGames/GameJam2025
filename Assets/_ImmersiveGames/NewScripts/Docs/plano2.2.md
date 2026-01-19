@@ -1,100 +1,79 @@
-﻿# Plano 2.2 — Execução (implementação + QA objetivo)
+# Plano 2.2 — Execução (Baseline 2.2)
 
-## Progresso (atualizado em 2026-01-18)
+> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap) e ADR-0019 (Level Manager).
 
-- **A1 / G-01**: PASS (log mostra PhaseChangeRequested inplace + pending + reset + commit; sem [Fade] e sem [LoadingHUD]).
-- **A2 / G-02**: Docs atualizados (Observability Contract vira fonte de verdade; Reason-Map deprecated).
-- **A3 / G-03**: Docs atualizados (README/índice ADRs e atalhos para snapshot 2026-01-18).
+## Pré-condição
+- Baseline 2.1 fechado via snapshot datado e `Docs/Reports/Evidence/LATEST.md` válido.
 
-Próximo passo de implementação: **Linha B / B1 (Catálogo + Resolver)**.
+## Meta
+- Evoluir para Baseline 2.2 com critérios objetivos, sem regressões em observability e pipeline.
 
 ---
 
-﻿# Plano 2.2 — Execução (implementação + QA objetivo)
+## Linha A — Formalizar ContentSwap (semântica + observability)
 
-> Este arquivo complementa `plano2.2.md`: aqui a ênfase é **execução** (ordem, entregáveis e QA mínimo para evidência), sem discutir arquitetura novamente.
+**Objetivo**
+- Separar “Phase” (ContentSwap) de “Level/Nível” e consolidar o contrato de logs/reasons.
 
-## Pré-condição
-- Baseline 2.1 fechado via snapshot datado (2026-01-18) e ponte `LATEST.md` válida.
+**Entregas**
+- ADR-0018 reescrito com semântica ContentSwap + contratos públicos + reasons canônicos.
+- Referências atualizadas em índices/READMEs.
 
-## Meta
-- Implementar a evolução 2.2 de forma incremental, mantendo regressão controlada.
-
-## Linha de trabalho A — Fechar gates (ADR-0018)
-
-### A1) G-01 — In-Place “sem visuais” como padrão de evidência
-**Código**
-- Garantir que In-Place ignore Loading HUD (mesmo se options.UseLoadingHud=true).
-- QA de In-Place deve chamar `RequestPhaseInPlaceAsync(..., options: null)`.
-
-**QA (Context Menu, Play Mode)**
-- `QA/Phases/InPlace/Commit (NoVisuals)`
+**QA mínimo (ContextMenu)**
+- `QA/ContentSwap/InPlace/Commit (NoVisuals)`
+- `QA/ContentSwap/WithTransition/Commit (Gameplay Minimal)`
 
 **Evidência**
-- Console log contendo:
-    - `PhaseChangeRequested ... inplace`
-    - `PhasePendingSet` (ou equivalente)
-    - reset solicitado/concluído
-    - `PhaseCommitted`
-    - ausência de `[Fade]` e `[LoadingHUD]` no intervalo.
+- Snapshot datado com logs + verificação curada dos dois modos (In-Place e WithTransition).
 
-### A2) G-02 — Observability (reasons + links)
-**Docs**
-- Definir regra oficial (1 fonte de verdade) para reason:
-    - driver/controller;
-    - `WorldLifecycleResetCompletedEvent`.
-- Remover/corrigir referência a `Reason-Map.md` se não existir, ou criar o arquivo.
+---
 
-**QA**
-- Regerar snapshot datado e validar anchors.
+## Linha B — Implementar Level Manager (mínimo funcional)
 
-### A3) G-03 — Docs sem drift
-**Docs**
-- Corrigir links em `ARCHITECTURE.md` e `README.md`.
+**Objetivo**
+- Orquestrar progressão de níveis, acionando ContentSwap + IntroStage.
 
-## Linha de trabalho B — WorldCycle (config-driven) incremental
-
-> Executar apenas após G-01..G-03 (reduz risco de regressões “por ambiguidade”).
-
-### B1) Marco 1 — Catálogo + Resolver (sem Apply)
 **Entregas**
-- ScriptableObjects:
-    - `WorldCycleDefinition`
-    - `PhaseDefinition`
-- Serviços (interfaces + implementação mínima):
-    - `IWorldCycleCatalog`
-    - `IPhaseDefinitionResolver`
+- Level Manager mínimo funcional (sem quebrar APIs atuais).
+- Política default: toda mudança de nível executa IntroStage.
 
-**QA objetivo**
-- Logs/anchors mostrando `phaseId` + `contentSignature` vindo do resolver.
+**QA mínimo (ContextMenu)**
+- `QA/Level/Advance/IntroStage (Default)`
 
-### B2) Marco 2 — Commit canônico
+**Evidência**
+- Logs mostrando ContentSwap + IntroStage no mesmo ciclo de mudança de nível.
+
+---
+
+## Linha C — Centralizar configuração (assets/definitions)
+
+**Objetivo**
+- Retirar configuração de nível/conteúdo de scripts e mover para assets/definitions.
+
 **Entregas**
-- WithTransition: consumir intent → pending → reset → commit em `ScenesReady`.
-- In-Place: commit após reset (garantia).
+- Catálogo + resolver de definitions (assets) para níveis e conteúdo.
+- Remoção de hardcode de lista de níveis em scripts de runtime.
 
-**QA objetivo**
-- Ações de Context Menu:
-    - `QA/Phases/InPlace/Commit (NoVisuals)`
-    - `QA/Phases/WithTransition/Commit (Gameplay Minimal)`
+**QA mínimo (ContextMenu)**
+- `QA/Level/Resolve/Definitions`
 
-### B3) Marco 3 — Apply de WorldDefinition por fase
+**Evidência**
+- Logs com resolução por catálogo + assinatura de conteúdo.
+
+---
+
+## Linha D — QA + Evidências + Gate de promoção (Baseline 2.2)
+
+**Objetivo**
+- Consolidar evidências e fechar gates de promoção.
+
 **Entregas**
-- `IPhaseWorldConfigurationApplier` reconstruindo spawn registry antes do reset.
-- Fallback seguro quando `worldDefinition == null`.
+- Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/`.
+- `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot.
+- Atualização do `Docs/CHANGELOG-docs.md` com gates fechados.
 
-**QA objetivo**
-- Anchor demonstrando spawn consistente com a fase.
+**QA mínimo (ContextMenu)**
+- Reutilizar os ContextMenus das linhas A–C (apenas os necessários para evidência).
 
-### B4) Marco 4 — IntroStage config-driven
-**Entregas**
-- `IIntroStagePolicyResolver` baseado em `PhaseDefinition.introStagePolicy`.
-
-**QA objetivo**
-- Anchor mostrando policy aplicada e não-bloqueio preservado.
-
-## Checklist de saída (para promoção)
-- Gates do ADR-0018 PASS.
-- Snapshot datado gerado e verificação curada atualizada.
-- `LATEST.md` apontando para o snapshot.
-- `CHANGELOG-docs.md` registrando a promoção.
+**Gate de promoção**
+- Gates do ADR-0019 em PASS.

@@ -1,98 +1,73 @@
-﻿# ADR-0018 — Gate de Promoção do Baseline 2.2 (WorldCycle Config-Driven)
+# ADR-0018 — ContentSwap (Phase) — Contrato e Observability
 
 ## Status
 - Estado: Aceito
 - Data: 2026-01-18
-- Escopo: Baseline 2.1 → 2.2 (Docs + Phases + Observability)
+- Escopo: ContentSwap (Phase) + Observability (NewScripts)
 
 ## Contexto
 
-O Baseline 2.1 foi estabilizado e validado via snapshot datado (evidência canônica). A evolução planejada para o Baseline 2.2 introduz uma camada **config-driven** (WorldCycle) para controlar a evolução do jogo (fases/níveis) sem regressões no pipeline canônico já validado:
+Na arquitetura atual, o termo **Phase** foi usado para representar **troca de conteúdo** (swap) dentro do runtime, com dois modos canônicos (In-Place e SceneTransition). Essa semântica ficou ambígua com a evolução do Baseline 2.2, que introduz o conceito de **Level/Nível** como progressão do jogo.
 
-`SceneFlow → ScenesReady → WorldLifecycleResetCompleted → Completion Gate → FadeOut/Completed`
+Para evitar confusão entre **conteúdo** (o que está carregado) e **progressão** (qual nível está ativo), este ADR redefine *Phase* como **ContentSwap**. O código permanece compatível: contratos públicos e eventos atuais continuam válidos, e a nomenclatura “Phase” segue existindo por compatibilidade.
 
-O risco principal do 2.2 não é “adicionar feature”, e sim **criar ambiguidade** (ex.: In-Place parecendo SceneFlow; reasons conflitantes; docs drift). Para evitar regressões silenciosas, definimos um conjunto de **gates objetivos** (checáveis por evidência) que precisam estar PASS antes de declarar “Baseline 2.2 promovido”.
+> **Nota:** IntroStage não é responsabilidade do ContentSwap. IntroStage é orquestrada pelo Level Manager (ver ADR-0019).
 
 ## Decisão
 
-Adotar os gates abaixo como critério de entrada para promoção do Baseline 2.2.
+### 1) Semântica canônica
+- **Phase == ContentSwap**: troca de conteúdo do runtime (mesmo contexto ou via SceneFlow).
+- **Level/Nível**: progressão do jogo, orquestra ContentSwap + IntroStage.
 
-### G-01 — Phases (Nível B) “fechado”: contrato visual do In-Place
+### 2) Contratos públicos (mantidos)
+Os contratos abaixo **permanecem válidos** e são o ponto de integração pública:
+- `IPhaseChangeService`
+- `PhasePlan`
+- `PhaseChangeMode` (`InPlace`, `SceneTransition`)
+- `PhaseChangeOptions`
+- `IPhaseContextService`
+- `IPhaseTransitionIntentRegistry`
 
-**Aceite**
-- `PhaseChange/In-Place`:
-    - não usa SceneFlow;
-    - não exibe Loading HUD;
-    - e o teste padrão de evidência ocorre **sem Fade/HUD** (sem ruído visual).
-- QA de In-Place não pode habilitar opções visuais que violem este contrato.
+Se houver renomeação futura para ContentSwap no código, **devem existir aliases/bridges** compatíveis para não quebrar build nem chamadas existentes.
 
-**Evidência exigida (snapshot datado)**
-- Log bruto (Console) + verificação curada com âncoras que provem:
-    - ausência de logs de Fade/HUD entre “solicitação” e “PhaseCommitted”; e
-    - ordem: `PhasePendingSet → Reset → PhaseCommitted`.
-- Atualização do `Checklist-phase.md` marcando o item 2.1 como PASS com referência ao snapshot.
+### 3) Modos canônicos (referência)
+- Os **modos de ContentSwap** são definidos no ADR-0017 (“modes”).
+- **In-Place**: troca de conteúdo sem SceneFlow.
+- **WithTransition** (SceneTransition): troca de conteúdo com SceneFlow + intent registry.
 
-### G-02 — Observability: coerência de reasons e links do contrato
+### 4) Reasons e logs canônicos
+- **Reasons canônicos (recomendado)**:
+    - `QA/ContentSwap/InPlace/<case>`
+    - `QA/ContentSwap/WithTransition/<case>`
+    - `ContentSwap/InPlace/<source>`
+    - `ContentSwap/WithTransition/<source>`
+- **Legacy aceito (compatibilidade)**: `QA/Phases/InPlace/...` e `QA/Phases/WithTransition/...` continuam válidos enquanto houver evidências anteriores.
+- **Logs canônicos** seguem os eventos existentes:
+    - `[OBS][Phase] PhaseChangeRequested ... mode=InPlace ...`
+    - `[OBS][Phase] PhaseChangeRequested ... mode=SceneTransition ...`
+    - `[PhaseContext] PhasePendingSet ...`
+    - `[PhaseContext] PhaseCommitted ...`
 
-**Aceite**
-1) **Link válido**: `Observability-Contract.md` não pode referenciar arquivos inexistentes.
-- Opção A: criar `Docs/Reports/Reason-Map.md` (índice/glossário), ou
-- Opção B: remover/ajustar a referência para apontar apenas para artefatos canônicos existentes.
-
-2) **Rule-of-truth para reasons** (WorldLifecycle/Reset)
-- Deve existir **regra oficial** (documentada) para:
-    - `reason` do `WorldLifecycleResetCompletedEvent`, e
-    - `reason` usado nos logs do driver/controller.
-- Se driver e evento usam reasons diferentes, isso deve estar explicitamente documentado.
-
-**Evidência exigida (snapshot datado)**
-- Âncoras mostrando:
-    - `WorldLifecycleResetCompletedEvent(signature, reason)` no formato considerado canônico; e
-    - invariantes do pipeline preservados.
-
-### G-03 — Docs sem drift (links corretos e IDs consistentes)
-
-**Aceite**
-- `Docs/ARCHITECTURE.md`:
-    - referências corretas ao fechamento do Baseline 2.0 (`ADR-0015`);
-    - nenhum link quebrado para relatórios removidos/obsoletos (restaurar ou ajustar).
-- `Docs/README.md`:
-    - descrições alinhadas com a integração runtime vigente (sem afirmar “componente principal” quando já foi substituído por driver/bridge atual).
-
-**Evidência exigida**
-- Commit/PR documental (sem mudança de runtime) com links corrigidos e referência para `Evidence/LATEST.md`.
-
-### G-04 — Trigger de ResetWorld em produção (condicional)
-
-**Só é obrigatório** se o Baseline 2.2 depender de resets fora do SceneFlow.
-
-**Aceite**
-- Existe caminho de produção para disparar reset direto com reason canônico `ProductionTrigger/<source>`.
-- É best-effort: não trava o fluxo e sempre emite `WorldLifecycleResetCompletedEvent`.
-
-**Evidência exigida (snapshot datado)**
-- Âncora mostrando `ProductionTrigger/<source>` e o `ResetCompleted` correspondente.
-
-## Fora de escopo
-- Declarar a promoção em si (isso é coberto no ADR-0019).
-- Implementação do WorldCycle (2.2). Este ADR define o *gate*, não o *feature set*.
+### 5) Responsabilidade explícita (não escopo)
+- **IntroStage não é responsabilidade do ContentSwap**.
+- IntroStage deve ser orquestrada por **Level Manager** (ADR-0019), que decide a política de execução por nível.
 
 ## Consequências
 
 ### Benefícios
-- Promoção baseada em critério verificável, reduzindo regressões por interpretação.
-- Evita drift documental e divergência de reasons antes de adicionar a camada WorldCycle.
+- Elimina ambiguidade entre “fases” de conteúdo e “níveis” de progressão.
+- Mantém compatibilidade com APIs atuais.
+- Observability continua baseada nas mesmas assinaturas/logs já evidenciadas.
 
 ### Trade-offs / Riscos
-- Exige disciplina de evidência (snapshot datado + verificação curada) antes de “avançar”.
+- Exige disciplina documental para não reintroduzir “Phase” como progressão de nível.
 
 ## Evidências
 - Metodologia: `Docs/Reports/Evidence/README.md`
 - Ponte canônica: `Docs/Reports/Evidence/LATEST.md`
-- Snapshot vigente (2.1): `Docs/Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md`
+- Snapshot vigente: `Docs/Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md`
 
 ## Referências
-- ADR-0015 — Baseline 2.0: Fechamento Operacional
-- ADR-0016 — Phases + modos de avanço + IntroStage opcional
-- ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
-- Checklist-phase.md
+- ADR-0017 — Tipos de troca de fase (modos In-Place vs SceneTransition)
+- ADR-0016 — Phases + IntroStage opcional (histórico do contrato)
+- Observability Contract — `Docs/Reports/Observability-Contract.md`

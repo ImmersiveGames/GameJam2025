@@ -1,5 +1,11 @@
 # Changelog (Docs)
 
+## 2026-01-19
+- ADR-0018 reestruturado para definir ContentSwap (Phase) e observability, separando de Level/Nível.
+- ADR-0019 reescrito para Level Manager (progressão) e gates verificáveis do Baseline 2.2.
+- Plano 2.2 reordenado (ContentSwap → Level Manager → Configuração → QA/Evidências/Gate).
+- Índice de ADRs atualizado para refletir os novos escopos.
+
 ## 2026-01-18
 - Reports/Evidence: novo snapshot 2026-01-18 (Baseline 2.1) com logs mesclados (Restart e ExitToMenu).
 - ADR-0012: referência de evidência atualizada para o snapshot 2026-01-18.

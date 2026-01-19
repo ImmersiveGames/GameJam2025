@@ -20,8 +20,8 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 | [ADR-0015](./ADR-0015-Baseline-2.0-Fechamento.md) | Baseline 2.0: Fechamento Operacional | Implementado | NewScripts / Baseline 2.0 |
 | [ADR-0016](./ADR-0016-Phases-WorldLifecycle.md) | Phases + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow) | Implementado | WorldLifecycle + SceneFlow + GameLoop (NewScripts) |
 | [ADR-0017](./ADR-0017-Tipos-de-troca-fase.md) | Tipos de troca de fase (In-Place vs SceneTransition) | Implementado | PhaseChange + SceneFlow (NewScripts) |
-| [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md) | Gate de promoção Baseline 2.2 | Aceito | Baseline 2.2 |
-| [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md) | Promoção Baseline 2.2 | Proposto | Baseline 2.2 |
+| [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md) | ContentSwap (Phase) — Contrato e Observability | Aceito | ContentSwap + Observability |
+| [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md) | Level Manager (progressão de níveis) e Promoção do Baseline 2.2 | Proposto | Level Manager + Baseline 2.2 |
 
 
 ## Atalhos
