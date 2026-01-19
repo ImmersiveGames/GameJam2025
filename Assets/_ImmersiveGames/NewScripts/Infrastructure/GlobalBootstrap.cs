@@ -44,6 +44,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
+using _ImmersiveGames.NewScripts.QA.Phases;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -180,6 +181,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
+            RegisterPhaseQaInstaller();
 #endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageRuntimeDebugGui();
@@ -785,6 +787,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
                     $"[QA][IntroStage] Falha ao instalar IntroStageQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
+        }
+
+        private static void RegisterPhaseQaInstaller()
+        {
+            try
+            {
+                PhaseQaInstaller.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    $"[QA][Phase] Falha ao instalar PhaseQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

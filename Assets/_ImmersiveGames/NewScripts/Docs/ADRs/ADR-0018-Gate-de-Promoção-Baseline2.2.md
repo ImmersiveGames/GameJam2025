@@ -1,188 +1,98 @@
-﻿# Gate de Promoção — Baseline 2.2 (WorldCycle Config-Driven)
+﻿# ADR-0018 — Gate de Promoção do Baseline 2.2 (WorldCycle Config-Driven)
 
 ## Status
+- Estado: Aceito
+- Data: 2026-01-18
+- Escopo: Baseline 2.1 → 2.2 (Docs + Phases + Observability)
 
-* Estado: **Rascunho**
-* Data: **2026-01-17**
-* Referências canônicas:
+## Contexto
 
-    * Contrato: `Docs/Reports/Observability-Contract.md`
-    * Evidência vigente: `Docs/Reports/Evidence/LATEST.md`
-    * ADRs: `Docs/ADRs/ADR-0015`, `ADR-0016`, `ADR-0017`
-    * Checklist de fases: `Docs/ADRs/Checklist-phase.md`
-    * Visão arquitetural: `Docs/ARCHITECTURE.md`
+O Baseline 2.1 foi estabilizado e validado via snapshot datado (evidência canônica). A evolução planejada para o Baseline 2.2 introduz uma camada **config-driven** (WorldCycle) para controlar a evolução do jogo (fases/níveis) sem regressões no pipeline canônico já validado:
 
----
+`SceneFlow → ScenesReady → WorldLifecycleResetCompleted → Completion Gate → FadeOut/Completed`
 
-## Objetivo
+O risco principal do 2.2 não é “adicionar feature”, e sim **criar ambiguidade** (ex.: In-Place parecendo SceneFlow; reasons conflitantes; docs drift). Para evitar regressões silenciosas, definimos um conjunto de **gates objetivos** (checáveis por evidência) que precisam estar PASS antes de declarar “Baseline 2.2 promovido”.
 
-Definir **critérios objetivos (gates)** para declarar o repositório “pronto para subir” do **Baseline 2.1** para o **Baseline 2.2**, onde o foco do 2.2 é iniciar a centralização da evolução do jogo via configuração (WorldCycle) **sem regressões** no pipeline canônico:
+## Decisão
 
-`SceneFlow → ScenesReady → WorldLifecycleResetCompleted → Gate → FadeOut/Completed`
+Adotar os gates abaixo como critério de entrada para promoção do Baseline 2.2.
 
----
+### G-01 — Phases (Nível B) “fechado”: contrato visual do In-Place
 
-## O que o Baseline 2.2 NÃO é (para reduzir escopo)
+**Aceite**
+- `PhaseChange/In-Place`:
+    - não usa SceneFlow;
+    - não exibe Loading HUD;
+    - e o teste padrão de evidência ocorre **sem Fade/HUD** (sem ruído visual).
+- QA de In-Place não pode habilitar opções visuais que violem este contrato.
 
-Para evitar “escopo invisível”, o 2.2 **não exige** (a menos que explicitado nos gates abaixo):
+**Evidência exigida (snapshot datado)**
+- Log bruto (Console) + verificação curada com âncoras que provem:
+    - ausência de logs de Fade/HUD entre “solicitação” e “PhaseCommitted”; e
+    - ordem: `PhasePendingSet → Reset → PhaseCommitted`.
+- Atualização do `Checklist-phase.md` marcando o item 2.1 como PASS com referência ao snapshot.
 
-* Navegação 100% data-driven substituindo `GameNavigationCatalog`
-* Scene recipes completos por fase (load/unload/active) como fonte única de verdade
-* Refatoração grande de GameLoop/PostGame além do que já está estável em evidência 2.1
+### G-02 — Observability: coerência de reasons e links do contrato
 
----
+**Aceite**
+1) **Link válido**: `Observability-Contract.md` não pode referenciar arquivos inexistentes.
+- Opção A: criar `Docs/Reports/Reason-Map.md` (índice/glossário), ou
+- Opção B: remover/ajustar a referência para apontar apenas para artefatos canônicos existentes.
 
-## Gates (obrigatórios)
+2) **Rule-of-truth para reasons** (WorldLifecycle/Reset)
+- Deve existir **regra oficial** (documentada) para:
+    - `reason` do `WorldLifecycleResetCompletedEvent`, e
+    - `reason` usado nos logs do driver/controller.
+- Se driver e evento usam reasons diferentes, isso deve estar explicitamente documentado.
 
-### G-01 — Nível B de Phases “fechado” (contrato visual do In-Place)
+**Evidência exigida (snapshot datado)**
+- Âncoras mostrando:
+    - `WorldLifecycleResetCompletedEvent(signature, reason)` no formato considerado canônico; e
+    - invariantes do pipeline preservados.
 
-**Motivação**
-O `Checklist-phase.md` declara que o sistema funciona, mas há um **blocker** para fechar o Nível B corretamente: o **In-Place não pode virar “transição completa disfarçada”**.
+### G-03 — Docs sem drift (links corretos e IDs consistentes)
 
-**Critério de aceite**
-
-* O caminho **PhaseChange/In-Place**:
-
-    * **não usa SceneFlow**;
-    * **não exibe Loading HUD** (conforme ADR-0017);
-    * e, para o “contrato de produto” do checklist, o **teste padrão** de In-Place deve ocorrer **sem Fade/HUD** (sem ruído visual).
-* O QA de In-Place não pode habilitar opções visuais que violem o contrato do checklist.
-
-**Evidência exigida**
-
-* Novo snapshot datado em `Docs/Reports/Evidence/<data>/` contendo:
-
-    * log bruto (Console)
-    * verificação curada com âncoras:
-
-        * trecho do In-Place com **ausência** de logs `[Fade]` e `[LoadingHUD]` entre “solicitação” e “PhaseCommitted”
-        * `PhasePendingSet → Reset → PhaseCommitted` na ordem correta
-* Atualizar `Docs/ADRs/Checklist-phase.md`:
-
-    * mover o item **2.1** para “PASS” com referência ao snapshot datado.
-
----
-
-### G-02 — Coerência do contrato de observabilidade (reasons, links, fonte de verdade)
-
-**Motivação**
-`Observability-Contract.md` é a **fonte de verdade**. Qualquer ambiguidade aqui vira regressão “por interpretação”.
-
-**Critério de aceite**
-
-1. **Link válido para o índice de reasons**
-
-    * `Observability-Contract.md` referencia `Reason-Map.md` (hoje inexistente no snapshot).
-    * Para fechar o gate, escolher **uma** opção:
-
-        * **(A)** criar `Docs/Reports/Reason-Map.md` (índice/glossário), ou
-        * **(B)** remover/ajustar a referência no contrato para apontar somente para o que existe e é canônico.
-2. **Reasons canônicos alinhados com a evidência**
-
-    * O contrato de WorldLifecycle lista reasons como `ScenesReady/<scene>` e `ProductionTrigger/<source>`.
-    * A evidência 2.1 mostra `ResetWorldAsync(reason='SceneFlow/ScenesReady')` (driver) e existe também `WorldLifecycleResetReason` definindo `ScenesReady/<scene>`.
-    * Para fechar o gate, deve haver **uma regra oficial** (documentada e validada em evidência) para:
-
-        * o `reason` do `WorldLifecycleResetCompletedEvent`, e
-        * o `reason` usado nos logs do controller/driver (se forem diferentes, isso precisa estar explicitado).
+**Aceite**
+- `Docs/ARCHITECTURE.md`:
+    - referências corretas ao fechamento do Baseline 2.0 (`ADR-0015`);
+    - nenhum link quebrado para relatórios removidos/obsoletos (restaurar ou ajustar).
+- `Docs/README.md`:
+    - descrições alinhadas com a integração runtime vigente (sem afirmar “componente principal” quando já foi substituído por driver/bridge atual).
 
 **Evidência exigida**
+- Commit/PR documental (sem mudança de runtime) com links corrigidos e referência para `Evidence/LATEST.md`.
 
-* Atualização do snapshot datado (pode ser o mesmo do G-01) com âncoras que mostrem:
+### G-04 — Trigger de ResetWorld em produção (condicional)
 
-    * `WorldLifecycleResetCompletedEvent(signature, reason)` com reason no formato considerado canônico
-    * invariantes do contrato preservados (Started → ScenesReady → ResetCompleted → Completed)
+**Só é obrigatório** se o Baseline 2.2 depender de resets fora do SceneFlow.
 
----
+**Aceite**
+- Existe caminho de produção para disparar reset direto com reason canônico `ProductionTrigger/<source>`.
+- É best-effort: não trava o fluxo e sempre emite `WorldLifecycleResetCompletedEvent`.
 
-### G-03 — Docs de arquitetura e índice sem drift (sem links quebrados / IDs incorretos)
+**Evidência exigida (snapshot datado)**
+- Âncora mostrando `ProductionTrigger/<source>` e o `ResetCompleted` correspondente.
 
-**Motivação**
-O 2.2 vai introduzir “camada por cima” (WorldCycle). Se a documentação base já estiver inconsistente, o 2.2 vira uma sequência de correções reativas.
+## Fora de escopo
+- Declarar a promoção em si (isso é coberto no ADR-0019).
+- Implementação do WorldCycle (2.2). Este ADR define o *gate*, não o *feature set*.
 
-**Critério de aceite**
+## Consequências
 
-1. `Docs/ARCHITECTURE.md`
+### Benefícios
+- Promoção baseada em critério verificável, reduzindo regressões por interpretação.
+- Evita drift documental e divergência de reasons antes de adicionar a camada WorldCycle.
 
-    * Corrigir referência incorreta ao ADR de fechamento do Baseline 2.0:
+### Trade-offs / Riscos
+- Exige disciplina de evidência (snapshot datado + verificação curada) antes de “avançar”.
 
-        * o fechamento está em `ADR-0015 — Baseline 2.0: Fechamento Operacional`
-    * Remover ou corrigir links para relatórios inexistentes em `Docs/Reports/` (ex.: `Reports/GameLoop.md`, `Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md`, `Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md`), escolhendo:
+## Evidências
+- Metodologia: `Docs/Reports/Evidence/README.md`
+- Ponte canônica: `Docs/Reports/Evidence/LATEST.md`
+- Snapshot vigente (2.1): `Docs/Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md`
 
-        * **(A)** restaurar os arquivos, ou
-        * **(B)** ajustar o documento para apontar apenas para `Reports/README.md`, `Reports/Observability-Contract.md` e `Reports/Evidence/*`.
-2. `Docs/README.md`
-
-    * Revisar menções a componentes “obsoletos”/não utilizados (ex.: texto citando `WorldLifecycleRuntimeCoordinator` como integração principal, quando há driver canônico em runtime).
-    * O objetivo aqui é **alinhamento documental**, não refatoração.
-
-**Evidência exigida**
-
-* PR/commit documental (sem código) com:
-
-    * links corrigidos
-    * referências atualizadas para evidências vigentes (`Evidence/LATEST.md`)
-
----
-
-## Gates condicionais (obrigatórios só se o 2.2 depender deles)
-
-### G-04 — ResetWorld trigger de produção operacionalizado (ADR-0015)
-
-**Motivação**
-O ADR-0015 lista como “próximo passo” operacionalizar o trigger de produção. Isso só vira gate obrigatório se o 2.2 for depender de resets fora do SceneFlow (ex.: reconfiguração por fase com reset direto em produção).
-
-**Critério de aceite (se aplicável)**
-
-* Existe caminho de produção para disparar reset direto com reason canônico `ProductionTrigger/<source>`.
-* É best-effort: **não trava fluxo** e sempre emite `WorldLifecycleResetCompletedEvent`.
-
-**Evidência exigida**
-
-* Âncora no snapshot datado mostrando `ProductionTrigger/<source>` no log e o `ResetCompleted` correspondente.
-
----
-
-## Gate de “declaração” (o que precisa existir para dizer “Baseline 2.2 pronto”)
-
-O Baseline 2.2 pode ser declarado promovido quando:
-
-1. **G-01, G-02, G-03** estiverem PASS (e G-04 se aplicável).
-2. Existe um snapshot datado em `Docs/Reports/Evidence/<data>/` contendo:
-
-    * log bruto
-    * verificação curada (âncoras/invariantes)
-3. `Docs/Reports/Evidence/LATEST.md` aponta para o snapshot mais recente.
-4. `Docs/CHANGELOG-docs.md` registra:
-
-    * o fechamento do gate (o que foi corrigido e por quê)
-    * o snapshot datado que fundamenta a promoção.
-
----
-
-## Artefatos que devem ser atualizados quando o gate fechar
-
-* `Docs/ADRs/Checklist-phase.md` (Nível B fechado)
-* `Docs/Reports/Observability-Contract.md` (links e reasons coerentes)
-* `Docs/ARCHITECTURE.md` e `Docs/README.md` (sem drift)
-* `Docs/Reports/Evidence/LATEST.md` (ponte para o snapshot vigente)
-* `Docs/CHANGELOG-docs.md` (registro do fechamento)
-
----
-
-## Resultado esperado
-
-Ao final deste gate, o repositório estará em um ponto onde:
-
-* o **contrato de logs/reasons** é realmente canônico e verificável,
-* o **PhaseChange/In-Place** não gera ruído visual nem cria ambiguidade com SceneFlow,
-* a documentação aponta corretamente para a evidência vigente,
-* e o caminho está livre para implementar o **WorldCycleDefinition** (2.2) sem retrabalho por inconsistência.
-
----
-
-Se você quiser manter o padrão da pasta, eu sugiro salvar esse arquivo como:
-
-* `Docs/Reports/Gate-Baseline-2.2.md`
-
-(ou criar `Docs/Reports/Gates/` se você preferir separar por versão).
+## Referências
+- ADR-0015 — Baseline 2.0: Fechamento Operacional
+- ADR-0016 — Phases + modos de avanço + IntroStage opcional
+- ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
+- Checklist-phase.md

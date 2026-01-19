@@ -1,185 +1,226 @@
-﻿// Assets/_ImmersiveGames/NewScripts/QA/Phases/PhaseQaContextMenu.cs
+// Assets/_ImmersiveGames/NewScripts/QA/Phases/PhaseQaContextMenu.cs
+// QA de Phases (Baseline 2.2): ações objetivas para gerar evidência de completude.
+// Comentários PT; código EN.
+
 #nullable enable
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.Phases;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace _ImmersiveGames.NewScripts.QA.Phases
 {
-    /// <summary>
-    /// QA objetivo para evidência do ADR-0016:
-    /// - In-Place (sem visuais por padrão): RequestPhaseInPlaceAsync(...)
-    /// - WithTransition (SceneFlow profile=gameplay): RequestPhaseWithTransitionAsync(...)
-    ///
-    /// Observações:
-    /// - NÃO assume nomes de cenas além da ActiveScene atual (fallback seguro).
-    /// - NÃO força reload da ActiveScene (pode falhar se não houver cena temporária ativa).
-    /// - Mantém ações mínimas para gerar evidências, evitando QA "genérico".
-    /// </summary>
-    [DisallowMultipleComponent]
     public sealed class PhaseQaContextMenu : MonoBehaviour
     {
-        [Header("Phase QA")]
-        [SerializeField] private string phaseId = "phase.2";
-        [SerializeField] private string inPlaceReason = "QA/Phases/InPlace/NoVisuals";
+        // Paleta do projeto
+        private const string ColorInfo = "#A8DEED";
+        private const string ColorOk = "#4CAF50";
+        private const string ColorWarn = "#FFC107";
+        private const string ColorErr = "#F44336";
 
-        [Header("WithTransition QA (SceneFlow)")]
-        [SerializeField] private string withTransitionReason = "QA/Phases/WithTransition/Gameplay";
-        [SerializeField] private bool withTransitionUseFade = true;
+        [Header("Default PhaseIds")]
+        [SerializeField] private string inPlacePhaseId = "phase.2";
+        [SerializeField] private string withTransitionPhaseId = "phase.2";
 
-        // Mantemos default gameplay para disparar WorldLifecycle reset via ScenesReady.
-        [SerializeField] private string withTransitionProfileName = "gameplay";
+        [Header("WithTransition SceneFlow Request")]
+        [SerializeField] private string profileId = "gameplay";
+        [SerializeField] private string targetActiveScene = "GameplayScene";
+        [SerializeField] private string[] scenesToLoad = { "GameplayScene", "UIGlobalScene" };
+        [SerializeField] private string[] scenesToUnload = Array.Empty<string>();
+        [SerializeField] private bool useFade = true;
 
-        // Se vazio, usa a ActiveScene atual.
-        [SerializeField] private string targetActiveSceneOverride = "";
+        // Gate default (mantém a disciplina do ADR-0018: G-01 “sem visuais”)
+        private const string ReasonG01 = "QA/Phases/InPlace/NoVisuals";
+        private const string ReasonG03 = "QA/Phases/WithTransition/SceneFlow";
 
-        // Por padrão VAZIO (transição "minimal safe"): ainda gera eventos e reset.
-        [SerializeField] private List<string> scenesToLoad = new();
-        [SerializeField] private List<string> scenesToUnload = new();
+        // Recomendado: rastreável no log/observability
+        private const string RequestedBy = "QA/Phases/PhaseQaContextMenu";
 
-        [ContextMenu("QA/Phases/InPlace/Commit (NoVisuals) (TC: ADR-0016/InPlace)")]
-        private async void QA_Phase_InPlace_Commit_NoVisuals()
+        // ----------------------------
+        // Public QA Actions (ContextMenu)
+        // ----------------------------
+
+        [ContextMenu("QA/Phases/G01 - InPlace (NoVisuals)")]
+        private void Qa_G01_InPlace_NoVisuals()
         {
-            var service = ResolvePhaseChangeService();
-            if (service == null)
+            _ = RunG01InPlaceAsync(useFadeOpt: false, useLoadingHudOpt: false, reason: ReasonG01);
+        }
+
+        [ContextMenu("QA/Phases/DEV - InPlace (WithFade+HUD)")]
+        private void Qa_DEV_InPlace_WithFade()
+        {
+            _ = RunG01InPlaceAsync(useFadeOpt: true, useLoadingHudOpt: true, reason: "QA/Phases/InPlace/DevVisuals");
+        }
+
+        [ContextMenu("QA/Phases/G03 - WithTransition (SingleClick)")]
+        private void Qa_G03_WithTransition_SingleClick()
+        {
+            _ = RunG03WithTransitionAsync(withTransitionPhaseId, ReasonG03);
+        }
+
+        [ContextMenu("QA/Phases/Dump - PhaseContext Snapshot")]
+        private void Qa_Dump_PhaseContext()
+        {
+            DumpPhaseContext();
+        }
+
+        // ----------------------------
+        // Editor convenience (MenuItem)
+        // ----------------------------
+#if UNITY_EDITOR
+        [MenuItem("Tools/NewScripts/QA/Phases/Select QA_Phase Object", priority = 10)]
+        private static void SelectQaObject()
+        {
+            var obj = GameObject.Find("QA_Phase");
+            if (obj != null)
             {
-                DebugUtility.LogWarning<PhaseQaContextMenu>(
-                    "[QA][Phase] IPhaseChangeService não encontrado no DI global. Ação ignorada.");
+                Selection.activeObject = obj;
+            }
+            else
+            {
+                DebugUtility.Log(typeof(PhaseQaContextMenu), "[QA][Phase] QA_Phase não encontrado no Hierarchy (Play Mode).", ColorWarn);
+            }
+        }
+#endif
+
+        // ----------------------------
+        // Implementations
+        // ----------------------------
+
+        private async Task RunG01InPlaceAsync(bool useFadeOpt, bool useLoadingHudOpt, string reason)
+        {
+            var svc = ResolveGlobal<IPhaseChangeService>();
+            if (svc == null)
+            {
                 return;
             }
 
-            var effectivePhaseId = NormalizeId(phaseId, fallback: "phase.2");
-            var reason = NormalizeReason(inPlaceReason, fallback: "QA/Phases/InPlace/NoVisuals");
+            var phaseId = string.IsNullOrWhiteSpace(inPlacePhaseId) ? "phase.2" : inPlacePhaseId.Trim();
 
-            DebugUtility.Log<PhaseQaContextMenu>(
-                $"[QA][Phase] TC-ADR0016-INPLACE start phaseId='{effectivePhaseId}' reason='{reason}'.",
-                DebugUtility.Colors.Info);
+            DebugUtility.Log(typeof(PhaseQaContextMenu),
+                $"[QA][Phase] TC-G01-INPLACE start phaseId='{phaseId}' reason='{reason}' (fade={useFadeOpt}, hud={useLoadingHudOpt}).",
+                ColorInfo);
 
             try
             {
-                // options=null => Default (UseFade=false, UseLoadingHud=false, Timeout default)
-                await service.RequestPhaseInPlaceAsync(effectivePhaseId, reason, options: null);
+                var options = new PhaseChangeOptions
+                {
+                    UseFade = useFadeOpt,
+                    UseLoadingHud = useLoadingHudOpt,
+                    TimeoutMs = 20000
+                };
 
-                DebugUtility.Log<PhaseQaContextMenu>(
-                    $"[QA][Phase] TC-ADR0016-INPLACE done phaseId='{effectivePhaseId}'.",
-                    DebugUtility.Colors.Success);
+                await svc.RequestPhaseInPlaceAsync(phaseId, reason, options);
+
+                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                    $"[QA][Phase] TC-G01-INPLACE done phaseId='{phaseId}'.",
+                    ColorOk);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<PhaseQaContextMenu>(
-                    $"[QA][Phase] TC-ADR0016-INPLACE failed ex='{ex.GetType().Name}: {ex.Message}'.");
+                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                    $"[QA][Phase] TC-G01-INPLACE failed phaseId='{phaseId}' ex='{ex.GetType().Name}: {ex.Message}'.",
+                    ColorErr);
             }
         }
 
-        [ContextMenu("QA/Phases/WithTransition/Commit (Gameplay Minimal) (TC: ADR-0016/WithTransition)")]
-        private async void QA_Phase_WithTransition_Commit_GameplayMinimal()
+        private async Task RunG03WithTransitionAsync(string phaseIdRaw, string reason)
         {
-            var service = ResolvePhaseChangeService();
-            if (service == null)
+            var phaseSvc = ResolveGlobal<IPhaseChangeService>();
+            if (phaseSvc == null)
             {
-                DebugUtility.LogWarning<PhaseQaContextMenu>(
-                    "[QA][Phase] IPhaseChangeService não encontrado no DI global. Ação ignorada.");
                 return;
             }
 
-            var effectivePhaseId = NormalizeId(phaseId, fallback: "phase.2");
-            var reason = NormalizeReason(withTransitionReason, fallback: "QA/Phases/WithTransition/Gameplay");
+            var phaseId = string.IsNullOrWhiteSpace(phaseIdRaw) ? "phase.2" : phaseIdRaw.Trim();
 
-            string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
-            string targetActive = !string.IsNullOrWhiteSpace(targetActiveSceneOverride)
-                ? targetActiveSceneOverride.Trim()
-                : activeScene;
+            DebugUtility.Log(typeof(PhaseQaContextMenu),
+                $"[QA][Phase] TC-G03-WITHTRANSITION start phaseId='{phaseId}' reason='{reason}'.",
+                ColorInfo);
 
-            var profileId = SceneFlowProfileId.FromName(NormalizeId(withTransitionProfileName, fallback: "gameplay"));
+            try
+            {
+                var request = BuildTransitionRequest();
 
-            // IMPORTANTE:
-            // - Por default, usamos listas vazias => SceneFlow ainda emite Started/ScenesReady/Completed.
-            // - WorldLifecycle reset ocorre se profile=gameplay (driver observa ScenesReady).
-            // - Evita reload da ActiveScene (que pode requerer uma cena temporária ativa).
-            var request = new SceneTransitionRequest(
-                scenesToLoad: NormalizeSceneList(scenesToLoad),
-                scenesToUnload: NormalizeSceneList(scenesToUnload),
-                targetActiveScene: targetActive,
-                useFade: withTransitionUseFade,
-                transitionProfileId: profileId,
-                contextSignature: null // deixa o pipeline computar uma assinatura estável baseada nos campos.
+                // IMPORTANTE:
+                // - SingleClick deve chamar APENAS o PhaseChangeService.
+                // - O PhaseChangeService já registra intent e dispara SceneFlow internamente.
+                await phaseSvc.RequestPhaseWithTransitionAsync(phaseId, request, reason);
+
+                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                    $"[QA][Phase] TC-G03-WITHTRANSITION done phaseId='{phaseId}'.",
+                    ColorOk);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                    $"[QA][Phase] TC-G03-WITHTRANSITION failed phaseId='{phaseId}' ex='{ex.GetType().Name}: {ex.Message}'.",
+                    ColorErr);
+            }
+        }
+
+        private SceneTransitionRequest BuildTransitionRequest()
+        {
+            // Construção baseada no contrato existente do projeto (SceneFlowProfileId + request imutável).
+            var pid = new SceneFlowProfileId(profileId);
+
+            // Observação:
+            // - contextSignature null: PhaseChangeService pode preencher/normalizar.
+            // - requestedBy: rastreável para diagnósticos.
+            return new SceneTransitionRequest(
+                scenesToLoad: scenesToLoad ?? Array.Empty<string>(),
+                scenesToUnload: scenesToUnload ?? Array.Empty<string>(),
+                targetActiveScene: string.IsNullOrWhiteSpace(targetActiveScene) ? "GameplayScene" : targetActiveScene.Trim(),
+                useFade: useFade,
+                transitionProfileId: pid,
+                contextSignature: null,
+                requestedBy: RequestedBy
             );
-
-            DebugUtility.Log<PhaseQaContextMenu>(
-                $"[QA][Phase] TC-ADR0016-TRANSITION start phaseId='{effectivePhaseId}' reason='{reason}' " +
-                $"profile='{profileId.Value}' active='{activeScene}' target='{targetActive}' " +
-                $"loadCount='{request.ScenesToLoad.Count}' unloadCount='{request.ScenesToUnload.Count}' fade='{request.UseFade}'.",
-                DebugUtility.Colors.Info);
-
-            try
-            {
-                await service.RequestPhaseWithTransitionAsync(effectivePhaseId, request, reason, options: null);
-
-                DebugUtility.Log<PhaseQaContextMenu>(
-                    $"[QA][Phase] TC-ADR0016-TRANSITION requested phaseId='{effectivePhaseId}'. " +
-                    "Commit ocorrerá via intent/bridge após ResetCompleted.",
-                    DebugUtility.Colors.Success);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PhaseQaContextMenu>(
-                    $"[QA][Phase] TC-ADR0016-TRANSITION failed ex='{ex.GetType().Name}: {ex.Message}'.");
-            }
         }
 
-        private static IPhaseChangeService? ResolvePhaseChangeService()
+        private void DumpPhaseContext()
         {
-            if (!DependencyManager.HasInstance)
+            var ctx = ResolveGlobal<IPhaseContextService>();
+            if (ctx == null)
             {
+                return;
+            }
+
+            var current = ctx.Current;
+            var pending = ctx.Pending;
+
+            DebugUtility.Log(typeof(PhaseQaContextMenu),
+                $"[QA][Phase] PhaseContext snapshot current='{current.PhaseId}' pending='{pending.PhaseId}'.",
+                ColorInfo);
+        }
+
+        private static T? ResolveGlobal<T>() where T : class
+        {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                    "[QA][Phase] DependencyManager.Provider é null (infra global não inicializada?).",
+                    ColorErr);
                 return null;
             }
 
-            return DependencyManager.Provider.TryGetGlobal<IPhaseChangeService>(out var service)
-                ? service
-                : null;
-        }
-
-        private static string NormalizeId(string? value, string fallback)
-        {
-            var s = value ?? string.Empty;
-            s = s.Trim();
-            return s.Length == 0 ? fallback : s;
-        }
-
-        private static string NormalizeReason(string? value, string fallback)
-        {
-            var s = value ?? string.Empty;
-            s = s.Replace("\n", " ").Replace("\r", " ").Trim();
-            return s.Length == 0 ? fallback : s;
-        }
-
-        private static IReadOnlyList<string> NormalizeSceneList(List<string> list)
-        {
-            if (list == null || list.Count == 0)
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
             {
-                return Array.Empty<string>();
+                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                    $"[QA][Phase] Serviço global ausente: {typeof(T).Name}.",
+                    ColorErr);
+                return null;
             }
 
-            var result = new List<string>(list.Count);
-            for (int i = 0; i < list.Count; i++)
-            {
-                var entry = (list[i] ?? string.Empty).Trim();
-                if (entry.Length == 0)
-                {
-                    continue;
-                }
-
-                result.Add(entry);
-            }
-
-            return result.Count == 0 ? Array.Empty<string>() : result;
+            return service;
         }
     }
 }

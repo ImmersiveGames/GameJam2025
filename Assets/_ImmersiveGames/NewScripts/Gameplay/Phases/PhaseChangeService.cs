@@ -1,4 +1,4 @@
-﻿﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/Phases/PhaseChangeService.cs
+﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/Phases/PhaseChangeService.cs
 #nullable enable
 using System;
 using System.Threading;
@@ -67,11 +67,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var normalizedOptions = NormalizeOptions(options);
 
-            // ADR-0016: In-Place não deve ter interrupções visuais por padrão.
-            // Se o caller solicitar, permitimos apenas mini-transição (Fade curto) sem HUD de loading.
             if (normalizedOptions.UseLoadingHud)
             {
-                UnityEngine.Debug.LogWarning("[PhaseChangeService] In-Place ignora Loading HUD. Use SceneTransition para loading completo.");
+                DebugUtility.LogWarning<PhaseChangeService>("[PhaseChange] In-Place ignora LoadingHUD. Use WithTransition/SceneFlow para loading completo.");
                 normalizedOptions.UseLoadingHud = false;
             }
 
@@ -107,7 +105,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     normalizedOptions.TimeoutMs,
                     "RequestResetAsync");
 
-                // ADR-0016: Commit da fase deve ocorrer após o reset determinístico concluir.
                 if (!_phaseContext.TryCommitPending(reason ?? "PhaseChange/InPlace", out _))
                 {
                     DebugUtility.LogWarning<PhaseChangeService>(
@@ -265,8 +262,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         private static PhaseChangeOptions NormalizeOptions(PhaseChangeOptions? options)
         {
-            // IMPORTANT: nunca use diretamente PhaseChangeOptions.Default se ele for instância compartilhada.
-            // Sempre clone para evitar mutação global acidental.
             var normalized = options?.Clone() ?? PhaseChangeOptions.Default.Clone();
 
             if (normalized.TimeoutMs <= 0)
@@ -396,13 +391,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             var context = SceneTransitionSignatureUtil.BuildContext(request);
             var signature = SceneTransitionSignatureUtil.Compute(context);
 
+            // IMPORTANT: preservar RequestedBy ao clonar.
             return new SceneTransitionRequest(
                 request.ScenesToLoad,
                 request.ScenesToUnload,
                 request.TargetActiveScene,
                 request.UseFade,
                 request.TransitionProfileId,
-                signature);
+                signature,
+                request.RequestedBy);
         }
     }
 }

@@ -23,7 +23,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         // Compatibilidade: logging / debug pode exibir o texto do profile.
         public string TransitionProfileName => TransitionProfileId.Value;
+
+        /// <summary>
+        /// Assinatura/correlation id para observabilidade do contexto.
+        /// Em geral é preenchida por SceneTransitionSignatureUtil.Compute(BuildContext(request)).
+        /// </summary>
         public string ContextSignature { get; }
+
+        /// <summary>
+        /// (Opcional) Origem do pedido para diagnóstico (ex.: "QA/Phases/WithTransition/G03", "Navigation/MenuPlayButton").
+        /// </summary>
+        public string RequestedBy { get; }
 
         public SceneTransitionRequest(
             IReadOnlyList<string> scenesToLoad,
@@ -31,7 +41,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             string targetActiveScene,
             bool useFade = true,
             SceneFlowProfileId transitionProfileId = default,
-            string contextSignature = null)
+            string contextSignature = null,
+            string requestedBy = null)
         {
             ScenesToLoad = scenesToLoad;
             ScenesToUnload = scenesToUnload;
@@ -39,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             UseFade = useFade;
             TransitionProfileId = transitionProfileId;
             ContextSignature = contextSignature;
+            RequestedBy = requestedBy;
         }
     }
 
@@ -93,12 +105,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneTransitionService : ISceneTransitionService
     {
+        // Dedupe: bloqueia reentrância por assinatura idêntica numa janela curta.
+        // Ajuste conforme necessário. 750ms tem sido suficiente para capturar "double start" acidental.
+        private const int DuplicateSignatureWindowMs = 750;
+
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
         private readonly ISceneTransitionCompletionGate _completionGate;
 
         private readonly SemaphoreSlim _transitionGate = new(1, 1);
         private int _transitionInProgress;
+
+        private long _transitionIdSeq;
+
+        private string _lastStartedSignature = string.Empty;
+        private int _lastStartedTick;
+
+        private string _lastCompletedSignature = string.Empty;
+        private int _lastCompletedTick;
 
         public SceneTransitionService(
             ISceneFlowLoaderAdapter loaderAdapter,
@@ -117,28 +141,46 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 throw new ArgumentNullException(nameof(request));
             }
 
-            if (Interlocked.CompareExchange(ref _transitionInProgress, 1, 0) == 1)
+            var context = SceneTransitionSignatureUtil.BuildContext(request);
+            string signature = SceneTransitionSignatureUtil.Compute(context);
+
+            // Dedupe por assinatura: evita "double start" no mesmo contexto em janela curta.
+            // Isto não substitui correção do caller, mas impede o pior: reentrância/interleaving.
+            if (ShouldDedupe(signature))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    "[SceneFlow] Uma transição já está em andamento (_transitionInProgress ativo). Ignorando solicitação concorrente.");
+                    $"[SceneFlow] Dedupe: TransitionAsync ignorado (signature repetida em janela curta). " +
+                    $"signature='{signature}', requestedBy='{Sanitize(request.RequestedBy)}'.");
                 return;
             }
 
+            // Pre-checagem concorrente (rápida).
+            if (Interlocked.CompareExchange(ref _transitionInProgress, 1, 0) == 1)
+            {
+                DebugUtility.LogWarning<SceneTransitionService>(
+                    $"[SceneFlow] Uma transição já está em andamento (_transitionInProgress ativo). Ignorando solicitação concorrente. " +
+                    $"signature='{signature}', requestedBy='{Sanitize(request.RequestedBy)}'.");
+                return;
+            }
+
+            // Garante exclusão mútua (não bloqueante).
             if (!_transitionGate.Wait(0))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    "[SceneFlow] Uma transição já está em andamento. Ignorando solicitação concorrente.");
+                    $"[SceneFlow] Uma transição já está em andamento. Ignorando solicitação concorrente. " +
+                    $"signature='{signature}', requestedBy='{Sanitize(request.RequestedBy)}'.");
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 return;
             }
 
-            var context = SceneTransitionSignatureUtil.BuildContext(request);
-            string signature = SceneTransitionSignatureUtil.Compute(context);
+            var transitionId = Interlocked.Increment(ref _transitionIdSeq);
 
             try
             {
+                MarkStarted(signature);
+
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionStarted signature='{signature}' profile='{context.TransitionProfileName}' {context}",
+                    $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}' requestedBy='{Sanitize(request.RequestedBy)}' {context}",
                     DebugUtility.Colors.Info);
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
@@ -158,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] ScenesReady signature='{signature}' profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Info);
 
                 // 2) Aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
@@ -170,8 +212,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
 
+                MarkCompleted(signature);
+
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionCompleted signature='{signature}' profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] TransitionCompleted id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)
@@ -185,6 +229,50 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 _transitionGate.Release();
             }
+        }
+
+        private bool ShouldDedupe(string signature)
+        {
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return false;
+            }
+
+            var now = Environment.TickCount;
+
+            // Caso 1: repetição imediatamente após Start anterior (start-start).
+            if (string.Equals(signature, _lastStartedSignature, StringComparison.Ordinal))
+            {
+                var dt = unchecked(now - _lastStartedTick);
+                if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
+                {
+                    return true;
+                }
+            }
+
+            // Caso 2: repetição logo após Completed (completed-start).
+            if (string.Equals(signature, _lastCompletedSignature, StringComparison.Ordinal))
+            {
+                var dt = unchecked(now - _lastCompletedTick);
+                if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void MarkStarted(string signature)
+        {
+            _lastStartedSignature = signature ?? string.Empty;
+            _lastStartedTick = Environment.TickCount;
+        }
+
+        private void MarkCompleted(string signature)
+        {
+            _lastCompletedSignature = signature ?? string.Empty;
+            _lastCompletedTick = Environment.TickCount;
         }
 
         private async Task AwaitCompletionGateAsync(SceneTransitionContext context)
@@ -474,6 +562,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             return string.Empty;
         }
+
+        private static string Sanitize(string s)
+            => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 
     /// <summary>

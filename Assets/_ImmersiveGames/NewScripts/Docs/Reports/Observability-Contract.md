@@ -20,7 +20,8 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 
 - **Log como evidência**: o pipeline é considerado correto quando as assinaturas canônicas aparecem no log, na ordem e com os campos mínimos.
 - **Strings canônicas são contrato**: `reason` e `signature` são tratadas como API pública. Mudanças devem ser explicitadas em docs e/ou changelog.
-- **Não duplicar fonte de verdade**: documentos que citam reasons devem apontar para a seção "Mapa de reasons" abaixo.
+- **Não duplicar fonte de verdade**: documentos que citam reasons devem apontar para este contrato (a seção "Catálogo de reasons" abaixo).
+    - `Reason-Map.md` fica **DEPRECATED** e deve conter apenas um redirect para este arquivo.
 
 ## Convenções
 
@@ -36,6 +37,13 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 
 - `reason` deve ser estável e legível. Mudanças de nomenclatura são consideradas breaking change para QA.
 - `signature` deve ser estável dentro de uma transição e reaparecer de forma consistente nos eventos correlatos.
+
+### Regra oficial de `reason` (autoria e propagação)
+
+- **O `reason` é autoria de quem inicia a ação** (caller). Ex.: QA, UI, GameLoop, PhaseChange.
+- **Sistemas downstream não devem ‘renomear’ o reason**; se precisarem de contexto adicional, usem campos próprios (`sourceSignature`, `label`, `event=...`) ou incluam informação no log, mas preservem o `reason`.
+- **Exceção controlada**: quando o gatilho é do próprio pipeline (sem um caller externo), usar reasons canônicos do domínio (ex.: `SceneFlow/ScenesReady`).
+- **`WorldLifecycleResetCompletedEvent.reason` deve refletir o reason do reset que acabou de finalizar** (reset real, skip ou fail), garantindo correlação 1:1 com `ResetStarted/ResetCompleted`.
 
 ## Contrato por domínio
 
@@ -68,8 +76,9 @@ Eventos observáveis (mínimo):
 
 Reasons canônicos de WorldLifecycle:
 
-- `ScenesReady/<scene>`
+- `SceneFlow/ScenesReady`
 - `ProductionTrigger/<source>`
+- `phase.inplace:<phaseId>`
 - `Skipped_StartupOrFrontend:profile=<profile>;scene=<scene>`
 - `Failed_NoController:<scene>`
 
@@ -104,17 +113,24 @@ Reasons canônicos (prefixos) para InputMode:
 
 O contrato para PhaseChange é definido em ADR-0017 (Tipos de troca de fase).
 
-Tipos (canônicos):
+**Tipos (canônicos)**
 
-- `PhaseChange/In-Place` (troca no mesmo gameplay, sem trocar cenas)
-- `PhaseChange/SceneTransition` (troca com transição completa de cenas, Fade e Loading)
+- `InPlace` — troca dentro da mesma cena de gameplay. Pode usar mini-fade opcional, mas **não** deve usar LoadingHUD.
+- `SceneTransition` — troca com transição completa via SceneFlow (Fade/Loading fazem parte do profile/pipeline).
 
-Reasons canônicos (prefixos):
+**Eventos/anchors mínimos**
 
-- `PhaseChange/In-Place/<phaseId>`
-- `PhaseChange/SceneTransition/<phaseId>`
+- `[OBS][Phase] PhaseChangeRequested event=phase_change_inplace mode=InPlace phaseId='...' reason='...'`
+- `[OBS][Phase] PhaseChangeRequested event=phase_change_transition mode=SceneTransition phaseId='...' reason='...' signature='...' profile='...'`
+- `[PhaseContext] PhasePendingSet plan='...' reason='...'`
+- `[PhaseContext] PhaseCommitted prev='...' current='...' reason='...'`
 
-Observação: detalhes de `phaseId` (formato, numeração, nomes) pertencem à decisão do domínio de gameplay, mas o prefixo deve permanecer estável.
+**Regra do `reason`**
+
+- O `reason` da troca de fase é **fornecido pelo caller** (produção/QA).
+- Recomendações para QA (prefixos estáveis):
+    - `QA/Phases/InPlace/<...>`
+    - `QA/Phases/WithTransition/<...>`
 
 ### IntroStage
 
@@ -123,20 +139,25 @@ Reasons canônicos:
 - `IntroStage/UIConfirm`
 - `IntroStage/NoContent`
 
-## Mapa de reasons canônicos
+## Catálogo de reasons canônicos
 
-Este mapa reúne os principais reasons citados como critérios de aceite do Item 8:
+Este catálogo reúne os principais reasons citados como critérios de aceite, garantindo que documentos e QA usem o mesmo vocabulário.
 
+- SceneFlow
+    - `SceneFlow/Started`
+    - `SceneFlow/ScenesReady`
+    - `SceneFlow/Completed`
 - WorldLifecycle
-    - `ScenesReady/<scene>`
+    - `SceneFlow/ScenesReady`
     - `ProductionTrigger/<source>`
+    - `phase.inplace:<phaseId>`
     - `Skipped_StartupOrFrontend:profile=<...>;scene=<...>`
     - `Failed_NoController:<scene>`
 - IntroStage
     - `IntroStage/UIConfirm`
     - `IntroStage/NoContent`
 
-Para um índice/glossário (com possíveis aliases), ver: [Reason-Map.md](./Reason-Map.md).
+Observação: `Reason-Map.md` é mantido apenas como redirect histórico para este contrato (não deve conter lista paralela).
 
 ## Invariantes
 
@@ -161,9 +182,9 @@ Exemplo de `Skipped_StartupOrFrontend:profile=...;scene=...` (Baseline):
 
 ### Reset em ScenesReady (gameplay)
 
-Exemplo de `ScenesReady/<scene>` (Baseline):
+Exemplo de `SceneFlow/ScenesReady` (Baseline):
 
-- `[WorldLifecycle] Reset REQUESTED. reason='ScenesReady/GameplayScene', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', profile='gameplay'.`
+- `[WorldLifecycle] Reset REQUESTED. reason='SceneFlow/ScenesReady', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', profile='gameplay'.`
 
 ### Reset trigger de produção
 

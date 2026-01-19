@@ -57,7 +57,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             _pendingSignature = string.Empty;
         }
 
-
         /// <summary>
         /// Indica se existe um pipeline pendente para esta assinatura de transição.
         /// Usado para evitar disparo duplicado de IntroStage (SceneFlow/Completed + PhaseCommitted/pendente).
@@ -160,6 +159,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         {
             if (_disposed || _pendingRequest == null)
             {
+                return;
+            }
+
+            // Se já existe outro SceneTransition ativo no momento do Completed, significa reentrância.
+            // Não executamos o pipeline agora para evitar interleaving (IntroStage durante fade/loading do novo start).
+            if (IsSceneTransitionGateActive())
+            {
+                var completedSignatureNow = SceneTransitionSignatureUtil.Compute(evt.Context);
+
+                DebugUtility.LogWarning<PhaseStartPhaseCommitBridge>(
+                    $"[PhaseStart] TransitionCompleted observado, mas SceneTransition token ainda está ativo (reentrância detectada). " +
+                    $"Mantendo pipeline pendente. completedSig='{completedSignatureNow}'.");
                 return;
             }
 
