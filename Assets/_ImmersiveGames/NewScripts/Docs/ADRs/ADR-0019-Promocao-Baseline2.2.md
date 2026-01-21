@@ -1,4 +1,4 @@
-# ADR-0019 — Promoção do Baseline 2.2 (ContentSwap + Level/Phase Manager + Config)
+# ADR-0019 — Promoção do Baseline 2.2 (ContentSwap + LevelManager + Config)
 
 ## Status
 - Estado: Proposto
@@ -7,7 +7,7 @@
 
 ## Contexto
 
-O Baseline 2.2 consolida a mudança de semântica **Phase => ContentSwap** (ADR-0018) e introduz um **Level/Phase Manager** configurável para progressão de níveis. Além disso, o baseline precisa centralizar a configuração de gameplay (cenas, níveis, spawns, conteúdo e transições) para reduzir hardcode e garantir consistência de evidências.
+O Baseline 2.2 consolida a mudança de semântica **Phase => ContentSwap** (ADR-0018) e introduz um **LevelManager** configurável para progressão de níveis. Além disso, o baseline precisa centralizar a configuração de gameplay (cenas, níveis, spawns, conteúdo e transições) para reduzir hardcode e garantir consistência de evidências.
 
 Para evitar regressões silenciosas, a promoção deve ser baseada em **gates verificáveis** e evidência canônica, respeitando o contrato de observability.
 
@@ -15,7 +15,7 @@ Para evitar regressões silenciosas, a promoção deve ser baseada em **gates ve
 
 ### Entra
 - Semântica oficial: **Phase == ContentSwap** (executor técnico).
-- **Level/Phase Manager** como orquestrador de progressão (usa ContentSwap + IntroStage).
+- **LevelManager** como orquestrador de progressão (usa ContentSwap + IntroStage).
 - Centralização/configuração de gameplay (ex.: cenas, níveis, spawns, conteúdo, transições).
 - QA mínimo com ContextMenus e logs canônicos para ContentSwap e Level.
 
@@ -40,7 +40,7 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 **Evidência**
 - Snapshot datado com logs demonstrando os dois modos.
 
-### G-02 — Level/Phase Manager integrado
+### G-02 — LevelManager integrado
 **Critério verificável**
 - Mudança de nível aciona ContentSwap + IntroStage no mesmo ciclo.
 - IntroStage ocorre **uma vez por mudança de nível** (política default).
@@ -88,6 +88,6 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 - Ponte canônica (ADR aberto): `Docs/Reports/Evidence/LATEST.md`
 
 ## Referências
-- ADR-0018 — Mudança de semântica: Phase => ContentSwap + Level/Phase Manager
+- ADR-0018 — Mudança de semântica: Phase => ContentSwap + LevelManager
 - ADR-0017 — Tipos de troca de fase (ContentSwap: In-Place vs SceneTransition)
 - Plano 2.2 — Execução (plano2.2.md)

@@ -14,7 +14,7 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 - **WorldLifecycle** (ResetRequested / ResetCompleted / Skipped / Failed)
 - **GameLoop** (Ready / IntroStage / Playing / PostGame)
 - **InputMode** (aplicações e `reason`)
-- **ContentSwap (PhaseChange)** (in-place vs scene transition)
+- **ContentSwap** (in-place vs scene transition)
 - **Level** (progressão: orquestra ContentSwap + IntroStage)
 
 ## Princípios
@@ -41,7 +41,7 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 
 ### Regra oficial de `reason` (autoria e propagação)
 
-- **O `reason` é autoria de quem inicia a ação** (caller). Ex.: QA, UI, GameLoop, PhaseChange.
+- **O `reason` é autoria de quem inicia a ação** (caller). Ex.: QA, UI, GameLoop, ContentSwap.
 - **Sistemas downstream não devem ‘renomear’ o reason**; se precisarem de contexto adicional, usem campos próprios (`sourceSignature`, `label`, `event=...`) ou incluam informação no log, mas preservem o `reason`.
 - **Exceção controlada**: quando o gatilho é do próprio pipeline (sem um caller externo), usar reasons canônicos do domínio (ex.: `SceneFlow/ScenesReady`).
 - **`WorldLifecycleResetCompletedEvent.reason` deve refletir o reason do reset que acabou de finalizar** (reset real, skip ou fail), garantindo correlação 1:1 com `ResetStarted/ResetCompleted`.
@@ -110,9 +110,9 @@ Reasons canônicos (prefixos) para InputMode:
 - `GameLoop/Playing`
 - `PostGame/RunStarted`
 
-### ContentSwap (PhaseChange)
+### ContentSwap
 
-O contrato para ContentSwap (PhaseChange) é definido em ADR-0017 (Tipos de troca de fase).
+O contrato para ContentSwap é definido em ADR-0017 (Tipos de troca de fase).
 
 **Tipos (canônicos)**
 
@@ -121,12 +121,11 @@ O contrato para ContentSwap (PhaseChange) é definido em ADR-0017 (Tipos de troc
 
 **Eventos/anchors mínimos**
 
-- `[OBS][Phase] PhaseChangeRequested event=phase_change_inplace mode=InPlace phaseId='...' reason='...'`
-- `[OBS][Phase] PhaseChangeRequested event=phase_change_transition mode=SceneTransition phaseId='...' reason='...' signature='...' profile='...'`
 - `[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode=InPlace phaseId='...' reason='...'`
 - `[OBS][ContentSwap] ContentSwapRequested event=content_swap_transition mode=SceneTransition phaseId='...' reason='...' signature='...' profile='...'`
-- `[PhaseContext] PhasePendingSet plan='...' reason='...'`
-- `[PhaseContext] PhaseCommitted prev='...' current='...' reason='...'`
+- `[OBS][Phase] PhaseChangeRequested ...` (legado; alias do ContentSwap)
+- `[PhaseContext] PhasePendingSet plan='...' reason='...'` (legado; contexto de ContentSwap)
+- `[PhaseContext] PhaseCommitted prev='...' current='...' reason='...'` (legado; contexto de ContentSwap)
 
 **Regra do `reason`**
 

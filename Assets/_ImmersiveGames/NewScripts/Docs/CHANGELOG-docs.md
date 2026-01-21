@@ -1,10 +1,10 @@
 # Changelog (Docs)
 
 ## 2026-01-21
-- ADR-0018 reescrito para formalizar a mudança semântica Phase => ContentSwap e delimitar o Level/Phase Manager.
+- ADR-0018 reescrito para formalizar a mudança semântica Phase => ContentSwap e delimitar o LevelManager.
 - ADR-0019 atualizado para descrever promoção do Baseline 2.2 com escopo, gates e metodologia de evidência por data.
 - Plano 2.2 reorganizado por marcos (ADR-0017 → ADR-0018 → ADR-0019 → execução do baseline).
-- ARCHITECTURE.md e READMEs ajustados para terminologia consistente (ContentSwap vs Level/Phase Manager).
+- ARCHITECTURE.md e READMEs ajustados para terminologia consistente (ContentSwap vs LevelManager).
 - Arquivos alterados: `Docs/ADRs/ADR-0018-Gate-de-Promoção-Baseline2.2.md`, `Docs/ADRs/ADR-0019-Promocao-Baseline2.2.md`, `Docs/plano2.2.md`, `Docs/ARCHITECTURE.md`, `Docs/README.md`, `Docs/ADRs/README.md`, `README.md`.
 
 ## 2026-01-20

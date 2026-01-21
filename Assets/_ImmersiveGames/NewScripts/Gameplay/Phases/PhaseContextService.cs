@@ -5,7 +5,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 {
     /// <summary>
-    /// Implementação simples e segura para armazenar fase atual e fase pending.
+    /// Implementação simples e segura para armazenar o ContentSwap atual e pending.
     /// Publica eventos para auditoria e permite logs padronizados.
     /// </summary>
     public sealed class PhaseContextService : IPhaseContextService

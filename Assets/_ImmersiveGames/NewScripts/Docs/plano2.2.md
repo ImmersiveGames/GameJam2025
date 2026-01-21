@@ -1,6 +1,6 @@
 # Plano 2.2 — Execução (Baseline 2.2)
 
-> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap + Level/Phase Manager) e ADR-0019 (Promoção Baseline 2.2).
+> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap + LevelManager) e ADR-0019 (Promoção Baseline 2.2).
 
 ## Pré-condições
 - Baseline 2.1 fechado via snapshot datado e `Docs/Reports/Evidence/LATEST.md` válido.
@@ -13,7 +13,7 @@
 
 ## Linha 0 — Sequência de marcos (dependências)
 1. **ADR-0017** (modos de ContentSwap) — já implementado.
-2. **ADR-0018** (semântica: Phase => ContentSwap + Level/Phase Manager).
+2. **ADR-0018** (semântica: Phase => ContentSwap + LevelManager).
 3. **ADR-0019** (promoção: config centralizada + gates + evidências).
 4. **Execução Baseline 2.2** (QA + evidências + gate final).
 
@@ -22,7 +22,7 @@
 ## Linha A — Documentação e semântica (ADR-0018)
 
 **Objetivo**
-- Formalizar ContentSwap como executor técnico e separar Level/Phase Manager (progressão).
+- Formalizar ContentSwap como executor técnico e separar LevelManager (progressão).
 
 **Entregáveis (docs)**
 - ADR-0018 atualizado com termos formais, boundaries e relação com ADR-0017.
@@ -37,7 +37,7 @@
 ## Linha B — Promoção Baseline 2.2 (ADR-0019)
 
 **Objetivo**
-- Definir o baseline com configuração centralizada + Level/Phase Manager.
+- Definir o baseline com configuração centralizada + LevelManager.
 
 **Entregáveis (docs/roadmap)**
 - ADR-0019 com escopo, gates verificáveis e metodologia de evidência por data.
@@ -77,7 +77,7 @@
 - ContentSwap:
   - `QA/ContentSwap/G01 - InPlace (NoVisuals)`
   - `QA/ContentSwap/G02 - WithTransition (SingleClick)`
-- Level/Phase Manager:
+- LevelManager:
   - `QA/Levels/L01-GoToLevel (InPlace + IntroStage)`
   - `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)`
 - Configuração:

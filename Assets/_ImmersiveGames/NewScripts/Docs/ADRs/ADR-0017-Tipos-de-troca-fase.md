@@ -4,7 +4,7 @@
 - Estado: Implementado
 - Data: 2025-12-24
 - Implementado em: 2026-01-18
-- Escopo: ContentSwap (PhaseChange) + SceneFlow (NewScripts)
+- Escopo: ContentSwap (PhaseChangeService) + SceneFlow (NewScripts)
 
 ## Contexto
 
@@ -81,6 +81,7 @@ Existem **dois tipos explícitos** de ContentSwap, com APIs e contratos distinto
 
 ### Termos e tipos (nomes reais do código)
 
+- `PhaseChangeService` (serviço de ContentSwap, nome legado preservado)
 - `PhasePlan`
   - `PhaseId` (identificador lógico da fase)
   - `ContentSignature` (assinatura rastreável do “conteúdo montado”)

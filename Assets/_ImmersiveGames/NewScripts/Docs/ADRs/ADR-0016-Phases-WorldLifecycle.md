@@ -47,6 +47,8 @@ Ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversível
 
 ### 1) Nomenclatura e contratos (APIs reais do código)
 
+Nota: **PhaseChange** é a nomenclatura legada do **ContentSwap** (mantida por compatibilidade).
+
 O sistema define dois modos explícitos de troca de fase, com overloads públicos e rastreáveis.
 
 #### PhaseChange/In-Place

@@ -938,7 +938,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IPhaseChangeService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[PhaseChange] IPhaseChangeService já registrado no DI global.",
+                    "[ContentSwap] IPhaseChangeService já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -946,28 +946,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.Provider.TryGetGlobal<IPhaseContextService>(out var phaseContext) || phaseContext == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[PhaseChange] IPhaseContextService indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] IPhaseContextService indisponível. IPhaseChangeService não será registrado.");
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var worldReset) || worldReset == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[PhaseChange] IWorldResetRequestService indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] IWorldResetRequestService indisponível. IPhaseChangeService não será registrado.");
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[PhaseChange] ISceneTransitionService indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] ISceneTransitionService indisponível. IPhaseChangeService não será registrado.");
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IPhaseTransitionIntentRegistry>(out var intentRegistry) || intentRegistry == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[PhaseChange] IPhaseTransitionIntentRegistry indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] IPhaseTransitionIntentRegistry indisponível. IPhaseChangeService não será registrado.");
                 return;
             }
 
@@ -980,7 +980,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing(() => new PhaseTransitionIntentWorldLifecycleBridge(intentRegistry, phaseContext));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[PhaseChange] PhaseChangeService registrado no DI global.",
+                "[ContentSwap] PhaseChangeService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

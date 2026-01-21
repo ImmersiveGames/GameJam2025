@@ -1,9 +1,9 @@
-# ADR-0018 — Mudança de semântica: Phase => ContentSwap + Level/Phase Manager
+# ADR-0018 — Mudança de semântica: Phase => ContentSwap + LevelManager
 
 ## Status
 - Estado: Aceito
 - Data: 2026-01-18
-- Escopo: ContentSwap (Phase) + Level/Phase Manager (NewScripts)
+- Escopo: ContentSwap (Phase) + LevelManager (NewScripts)
 
 ## Contexto
 
@@ -25,7 +25,7 @@ Essa ambiguidade gera problemas práticos:
 - **ContentSwap** = módulo **exclusivo** para trocar conteúdo no runtime.
   - Executa o reset e o commit de conteúdo (in-place ou com SceneFlow).
   - É a camada técnica (executor) e continua exposta via `IPhaseChangeService`.
-- **Level/Phase Manager** = **orquestrador** da progressão de níveis/fases do jogo.
+- **LevelManager** = **orquestrador** da progressão de níveis/fases do jogo.
   - Decide quando avançar/retroceder de nível.
   - Usa ContentSwap por baixo.
   - É responsável por **sempre disparar IntroStage** ao entrar em um nível (neste ciclo).
@@ -44,13 +44,13 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 
 > Se houver renomeação futura para ContentSwap no código, **devem existir aliases/bridges** compatíveis para não quebrar build nem chamadas existentes.
 
-### 3) Contratos públicos (novo Level/Phase Manager)
+### 3) Contratos públicos (novo LevelManager)
 
 - `ILevelManager`
 - `LevelPlan`
 - `LevelChangeOptions`
 
-O Level/Phase Manager reutiliza o ContentSwap existente e **sempre** executa IntroStage após mudança de nível neste ciclo.
+O LevelManager reutiliza o ContentSwap existente e **sempre** executa IntroStage após mudança de nível neste ciclo.
 
 ### 4) Relação com ADR-0017 (modos)
 
@@ -64,7 +64,7 @@ O Level/Phase Manager reutiliza o ContentSwap existente e **sempre** executa Int
 ### Benefícios
 - Elimina ambiguidade entre “fase” (conteúdo) e “nível” (progressão).
 - Mantém compatibilidade com APIs atuais (`PhaseChangeService`).
-- Isola responsabilidades (ContentSwap vs Level/Phase Manager), alinhando ao princípio de responsabilidade única (SRP).
+- Isola responsabilidades (ContentSwap vs LevelManager), alinhando ao princípio de responsabilidade única (SRP).
 
 ### Trade-offs / Riscos
 - Exige disciplina documental para não reintroduzir “Phase” como sinônimo de nível.
