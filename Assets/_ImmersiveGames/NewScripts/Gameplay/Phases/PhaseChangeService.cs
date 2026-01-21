@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] Já existe uma troca de fase em progresso. Ignorando (InPlace).");
+                    "[PhaseChange] Já existe uma troca de conteúdo em progresso. Ignorando (InPlace).");
                 return;
             }
 
@@ -189,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] Já existe uma troca de fase em progresso. Ignorando (WithTransition).");
+                    "[PhaseChange] Já existe uma troca de conteúdo em progresso. Ignorando (WithTransition).");
                 return;
             }
 
@@ -289,7 +289,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return null;
             }
 
-            return gate.Acquire(SimulationGateTokens.PhaseInPlace);
+            return gate.Acquire(SimulationGateTokens.ContentSwapInPlace);
         }
 
         private static IDisposable AcquirePhaseTransitionGateHandle()
@@ -301,7 +301,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return null;
             }
 
-            return gate.Acquire(SimulationGateTokens.PhaseTransition);
+            return gate.Acquire(SimulationGateTokens.ContentSwapTransition);
         }
 
         private static async Task<bool> AwaitWithTimeoutAsync(Task task, int timeoutMs, string label)
