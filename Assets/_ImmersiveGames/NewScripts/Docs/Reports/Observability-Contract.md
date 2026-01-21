@@ -139,7 +139,7 @@ O contrato para ContentSwap (PhaseChange) é definido em ADR-0017 (Tipos de troc
 
 ### Level
 
-O contrato para Level Manager é definido em ADR-0019.
+O contrato para Level Manager é definido em ADR-0018/ADR-0019.
 
 **Eventos/anchors mínimos**
 
@@ -151,8 +151,8 @@ O contrato para Level Manager é definido em ADR-0019.
 
 - O `reason` da mudança de nível é **fornecido pelo caller** (produção/QA).
 - Recomendações para QA (prefixos estáveis):
-    - `QA/Level/InPlace/<...>`
-    - `QA/Level/WithTransition/<...>`
+    - `QA/Levels/InPlace/<...>`
+    - `QA/Levels/WithTransition/<...>`
 
 ### IntroStage
 
@@ -182,9 +182,9 @@ Este catálogo reúne os principais reasons citados como critérios de aceite, g
     - `ContentSwap/InPlace/<source>`
     - `ContentSwap/WithTransition/<source>`
 - Level
-    - `Level/GoTo`
-    - `QA/Level/InPlace/<...>`
-    - `QA/Level/WithTransition/<...>`
+    - `LevelChange/<source>`
+    - `QA/Levels/InPlace/<...>`
+    - `QA/Levels/WithTransition/<...>`
 
 Observação: `Reason-Map.md` é mantido apenas como redirect histórico para este contrato (não deve conter lista paralela).
 

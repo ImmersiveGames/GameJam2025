@@ -11,6 +11,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LevelManager : ILevelManager
     {
+        private const string LevelChangePrefix = "LevelChange/";
+        private const string QaLevelPrefix = "QA/Levels/";
+
         private readonly IPhaseChangeService _phaseChangeService;
         private int _inProgress;
 
@@ -19,68 +22,48 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             _phaseChangeService = phaseChangeService ?? throw new ArgumentNullException(nameof(phaseChangeService));
         }
 
-        public async Task GoToLevelAsync(LevelPlan plan, string reason, LevelChangeOptions? options = null)
+        public async Task RequestLevelInPlaceAsync(LevelPlan plan, string reason, LevelChangeOptions? options = null)
         {
             if (!plan.IsValid)
             {
                 DebugUtility.LogWarning<LevelManager>(
-                    "[Level] Ignorando GoToLevelAsync com LevelPlan inválido.");
+                    "[Level] Ignorando RequestLevelInPlaceAsync com LevelPlan inválido.");
                 return;
             }
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<LevelManager>(
-                    "[Level] Já existe mudança de nível em progresso. Ignorando GoToLevelAsync.");
+                    "[Level] Já existe mudança de nível em progresso. Ignorando RequestLevelInPlaceAsync.");
                 return;
             }
 
             var normalizedReason = NormalizeReason(reason);
             var normalizedOptions = NormalizeOptions(options);
-            var mode = ResolveMode(normalizedOptions);
 
             DebugUtility.Log<LevelManager>(
-                $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='{mode}' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
+                $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='InPlace' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
                 DebugUtility.Colors.Info);
 
             try
             {
                 DebugUtility.Log<LevelManager>(
-                    $"[OBS][Level] LevelChangeStarted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='{mode}' reason='{normalizedReason}'.",
+                    $"[OBS][Level] LevelChangeStarted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='InPlace' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
 
-                if (mode == PhaseChangeMode.SceneTransition)
-                {
-                    var transition = normalizedOptions.TransitionRequest;
-                    if (transition == null)
-                    {
-                        DebugUtility.LogWarning<LevelManager>(
-                            "[Level] TransitionRequest ausente para SceneTransition. GoToLevelAsync ignorado.");
-                        return;
-                    }
-
-                    await _phaseChangeService.RequestPhaseWithTransitionAsync(
-                        plan.ToPhasePlan(),
-                        transition,
-                        normalizedReason,
-                        normalizedOptions.PhaseOptions);
-                }
-                else
-                {
-                    await _phaseChangeService.RequestPhaseInPlaceAsync(
-                        plan.ToPhasePlan(),
-                        normalizedReason,
-                        normalizedOptions.PhaseOptions);
-                }
+                await _phaseChangeService.RequestPhaseInPlaceAsync(
+                    plan.ToPhasePlan(),
+                    normalizedReason,
+                    normalizedOptions.PhaseOptions);
 
                 DebugUtility.Log<LevelManager>(
-                    $"[OBS][Level] LevelChangeCompleted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='{mode}' reason='{normalizedReason}'.",
+                    $"[OBS][Level] LevelChangeCompleted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='InPlace' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<LevelManager>(
-                    $"[Level] Falha ao mudar nível. levelId='{plan.LevelId}' ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[Level] Falha ao mudar nível (InPlace). levelId='{plan.LevelId}' ex='{ex.GetType().Name}: {ex.Message}'.");
             }
             finally
             {
@@ -88,45 +71,83 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             }
         }
 
-        public Task AdvanceAsync(string reason, LevelChangeOptions? options = null)
+        public async Task RequestLevelWithTransitionAsync(LevelPlan plan, SceneTransitionRequest transition, string reason, LevelChangeOptions? options = null)
         {
-            DebugUtility.LogWarning<LevelManager>(
-                "[Level] AdvanceAsync não está configurado (sequência de níveis ausente). Use GoToLevelAsync explicitamente.");
-            return Task.CompletedTask;
-        }
+            if (!plan.IsValid)
+            {
+                DebugUtility.LogWarning<LevelManager>(
+                    "[Level] Ignorando RequestLevelWithTransitionAsync com LevelPlan inválido.");
+                return;
+            }
 
-        public Task BackAsync(string reason, LevelChangeOptions? options = null)
-        {
-            DebugUtility.LogWarning<LevelManager>(
-                "[Level] BackAsync não está configurado (sequência de níveis ausente). Use GoToLevelAsync explicitamente.");
-            return Task.CompletedTask;
-        }
+            if (transition == null)
+            {
+                DebugUtility.LogWarning<LevelManager>(
+                    "[Level] Transition request nulo. RequestLevelWithTransitionAsync ignorado.");
+                return;
+            }
 
-        public Task RestartLevelAsync(string reason, LevelChangeOptions? options = null)
-        {
-            DebugUtility.LogWarning<LevelManager>(
-                "[Level] RestartLevelAsync não está configurado (nível atual desconhecido). Use GoToLevelAsync explicitamente.");
-            return Task.CompletedTask;
+            if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
+            {
+                DebugUtility.LogWarning<LevelManager>(
+                    "[Level] Já existe mudança de nível em progresso. Ignorando RequestLevelWithTransitionAsync.");
+                return;
+            }
+
+            var normalizedReason = NormalizeReason(reason);
+            var normalizedOptions = NormalizeOptions(options);
+
+            DebugUtility.Log<LevelManager>(
+                $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='SceneTransition' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
+                DebugUtility.Colors.Info);
+
+            try
+            {
+                DebugUtility.Log<LevelManager>(
+                    $"[OBS][Level] LevelChangeStarted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='SceneTransition' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
+
+                await _phaseChangeService.RequestPhaseWithTransitionAsync(
+                    plan.ToPhasePlan(),
+                    transition,
+                    normalizedReason,
+                    normalizedOptions.PhaseOptions);
+
+                DebugUtility.Log<LevelManager>(
+                    $"[OBS][Level] LevelChangeCompleted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='SceneTransition' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning<LevelManager>(
+                    $"[Level] Falha ao mudar nível (SceneTransition). levelId='{plan.LevelId}' ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _inProgress, 0);
+            }
         }
 
         private static string NormalizeReason(string reason)
         {
-            return string.IsNullOrWhiteSpace(reason) ? "Level/GoTo" : reason.Trim();
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return "LevelChange/GoTo";
+            }
+
+            var trimmed = reason.Trim();
+            if (trimmed.StartsWith(LevelChangePrefix, StringComparison.Ordinal)
+                || trimmed.StartsWith(QaLevelPrefix, StringComparison.Ordinal))
+            {
+                return trimmed;
+            }
+
+            return $"{LevelChangePrefix}{trimmed}";
         }
 
         private static LevelChangeOptions NormalizeOptions(LevelChangeOptions? options)
         {
             return options?.Clone() ?? LevelChangeOptions.Default.Clone();
-        }
-
-        private static PhaseChangeMode ResolveMode(LevelChangeOptions options)
-        {
-            if (options.TransitionRequest != null)
-            {
-                return PhaseChangeMode.SceneTransition;
-            }
-
-            return options.Mode;
         }
     }
 }

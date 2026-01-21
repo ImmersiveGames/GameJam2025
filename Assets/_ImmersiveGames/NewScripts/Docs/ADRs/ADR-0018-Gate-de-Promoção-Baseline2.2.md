@@ -1,17 +1,17 @@
-# ADR-0018 — ContentSwap (Phase) — Contrato, Observability e Compatibilidade
+# ADR-0018 — Mudança de semântica: Phase => ContentSwap + introdução do LevelManager
 
 ## Status
 - Estado: Aceito
 - Data: 2026-01-18
-- Escopo: ContentSwap (Phase) + Observability (NewScripts)
+- Escopo: ContentSwap (Phase) + LevelManager (NewScripts)
 
 ## Contexto
 
 O termo **Phase** foi usado para representar **troca de conteúdo** no runtime, com dois modos canônicos (In-Place e SceneTransition). A evolução do Baseline 2.2 introduz **Level/Nível** como progressão do jogo, criando ambiguidade entre “fase” (conteúdo) e “nível” (progressão).
 
-Para eliminar essa ambiguidade, este ADR redefine **Phase** como **ContentSwap** (troca de conteúdo). A nomenclatura de código permanece por compatibilidade: APIs e eventos atuais continuam válidos. A progressão de nível passa a ser orquestrada pelo **Level Manager** (ADR-0019).
+Este ADR formaliza a **mudança de semântica**: Phase passa a significar **ContentSwap** e a progressão de nível passa a ser orquestrada pelo **LevelManager**.
 
-> **Nota crítica:** ContentSwap **não** é responsável por IntroStage. IntroStage é responsabilidade do Level Manager.
+> **Nota crítica:** ContentSwap **não** é responsável por IntroStage. IntroStage é responsabilidade do LevelManager.
 
 ## Decisão
 
@@ -20,7 +20,7 @@ Para eliminar essa ambiguidade, este ADR redefine **Phase** como **ContentSwap**
 - **Level/Nível**: progressão do jogo, orquestra ContentSwap + IntroStage.
 
 ### 2) Contratos públicos (mantidos)
-Os contratos abaixo **permanecem válidos** e são o ponto de integração pública:
+Os contratos abaixo **permanecem válidos** e são o ponto de integração pública do ContentSwap:
 - `IPhaseChangeService`
 - `PhasePlan`
 - `PhaseChangeMode` (`InPlace`, `SceneTransition`)
@@ -30,17 +30,27 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 
 > Se houver renomeação futura para ContentSwap no código, **devem existir aliases/bridges** compatíveis para não quebrar build nem chamadas existentes.
 
-### 3) Modos canônicos (referência)
+### 3) Contratos públicos (novo LevelManager)
+- `ILevelManager`
+- `LevelPlan`
+- `LevelChangeOptions`
+
+O LevelManager reutiliza o ContentSwap existente e **sempre** executa IntroStage após mudança de nível neste ciclo.
+
+### 4) Modos canônicos (referência)
 - Os **modos de ContentSwap** são definidos no ADR-0017 (“modes”).
 - **In-Place**: troca de conteúdo sem SceneFlow.
 - **WithTransition** (SceneTransition): troca de conteúdo com SceneFlow + intent registry.
 
-### 4) Reasons e logs canônicos
+### 5) Reasons e logs canônicos
 - **Reasons canônicos (recomendado)**:
     - `QA/ContentSwap/InPlace/<case>`
     - `QA/ContentSwap/WithTransition/<case>`
     - `ContentSwap/InPlace/<source>`
     - `ContentSwap/WithTransition/<source>`
+    - `LevelChange/<source>`
+    - `QA/Levels/InPlace/<case>`
+    - `QA/Levels/WithTransition/<case>`
 - **Legacy aceito (compatibilidade)**:
     - `QA/Phases/InPlace/<...>`
     - `QA/Phases/WithTransition/<...>`
@@ -48,13 +58,15 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 - **Logs canônicos** seguem os eventos existentes e **incluem alias explícito**:
     - `[OBS][Phase] PhaseChangeRequested ...`
     - `[OBS][ContentSwap] ContentSwapRequested ...`
+    - `[OBS][Level] LevelChangeRequested ...`
+    - `[OBS][Level] LevelChangeStarted ...`
+    - `[OBS][Level] LevelChangeCompleted ...`
     - `[PhaseContext] PhasePendingSet ...`
     - `[PhaseContext] PhaseCommitted ...`
 
-### 5) IntroStage fora do escopo
+### 6) IntroStage fora do escopo do ContentSwap
 - **IntroStage não é responsabilidade do ContentSwap**.
-- Para evitar ambiguidade de QA, ContentSwap **não** deve forçar IntroStage.
-- O Level Manager (ADR-0019) é quem decide política e execução de IntroStage.
+- O LevelManager é quem decide política e execução de IntroStage.
 
 ## Consequências
 
@@ -73,6 +85,6 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 
 ## Referências
 - ADR-0017 — Tipos de troca de fase (modos In-Place vs SceneTransition)
-- ADR-0019 — Level Manager (progressão) + gates Baseline 2.2
+- ADR-0019 — Promoção/fechamento do Baseline 2.2
 - ADR-0016 — Phases + IntroStage opcional (histórico do contrato)
 - Observability Contract — `Docs/Reports/Observability-Contract.md`

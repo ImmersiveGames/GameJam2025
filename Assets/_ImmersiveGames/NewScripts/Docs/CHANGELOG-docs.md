@@ -1,10 +1,10 @@
 # Changelog (Docs)
 
 ## 2026-01-20
-- ContentSwap formalizado com alias de observability `[OBS][ContentSwap]` e reasons canônicos para QA.
-- Level Manager documentado com API mínima, política default de IntroStage e gates verificáveis do Baseline 2.2.
-- Plano 2.2 reordenado com QA mínimo via `QA_Baseline22` (ContextMenu) para evidência.
-- Observability-Contract atualizado para ContentSwap + Level.
+- ADR-0018/ADR-0019 reescritos para formalizar Phase => ContentSwap e LevelManager.
+- ADR-0017 atualizado para explicitar ContentSwap como termo canônico.
+- Plano 2.2 reordenado com QA separado para ContentSwap (QA_ContentSwap) e Level (QA_Level).
+- Observability-Contract atualizado para ContentSwap + Level (reasons e anchors).
 
 ## 2026-01-19
 - ADR-0018 reestruturado para definir ContentSwap (Phase) e observability, separando de Level/Nível.

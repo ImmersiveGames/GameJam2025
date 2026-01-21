@@ -44,8 +44,9 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.QA.Baseline22;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
+using _ImmersiveGames.NewScripts.QA.Levels;
+using _ImmersiveGames.NewScripts.QA.Phases;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -182,7 +183,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
-            RegisterBaseline22QaInstaller();
+            RegisterPhaseQaInstaller();
+            RegisterLevelQaInstaller();
 #endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageRuntimeDebugGui();
@@ -792,16 +794,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
         }
 
-        private static void RegisterBaseline22QaInstaller()
+        private static void RegisterPhaseQaInstaller()
         {
             try
             {
-                Baseline22QaInstaller.EnsureInstalled();
+                PhaseQaInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[QA][Baseline22] Falha ao instalar Baseline22QaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][ContentSwap] Falha ao instalar PhaseQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
+        }
+
+        private static void RegisterLevelQaInstaller()
+        {
+            try
+            {
+                LevelQaInstaller.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    $"[QA][Level] Falha ao instalar LevelQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

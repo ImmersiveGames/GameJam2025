@@ -35,16 +35,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             await EnsureLoopReadyAsync(gameLoop, request);
 
-            // Baseline 2.2: ContentSwap (Phase) não é responsável por IntroStage.
-            // A decisão de executar IntroStage é do LevelManager; aqui suprimimos
-            // explicitamente quando o reason indica ContentSwap/QA.
-            if (ShouldSuppressIntroStageForRequest(request))
-            {
-                DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] IntroStage suprimida. phaseId='{request.PhaseId}' reason='{request.Reason}'.");
-                return;
-            }
-
             var coordinator = ResolveIntroStageCoordinator();
             if (coordinator == null)
             {
@@ -77,28 +67,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 DebugUtility.LogWarning(typeof(PhaseStartPipeline),
                     $"[PhaseStart] Falha ao executar IntroStage. phaseId='{request.PhaseId}', ex='{ex.GetType().Name}: {ex.Message}'.");
             }
-        }
-
-        private static bool ShouldSuppressIntroStageForRequest(PhaseStartRequest request)
-        {
-            if (string.IsNullOrWhiteSpace(request.Reason))
-            {
-                return false;
-            }
-
-            var reason = request.Reason;
-            return ContainsSuppressionReason(reason, "QA/ContentSwap/InPlace/")
-                || ContainsSuppressionReason(reason, "QA/ContentSwap/WithTransition/")
-                || ContainsSuppressionReason(reason, "ContentSwap/InPlace/")
-                || ContainsSuppressionReason(reason, "ContentSwap/WithTransition/")
-                || ContainsSuppressionReason(reason, "QA/Phases/InPlace/")
-                || ContainsSuppressionReason(reason, "QA/Phases/WithTransition/");
-        }
-
-        private static bool ContainsSuppressionReason(string reason, string token)
-        {
-            return reason.Contains(token, StringComparison.Ordinal)
-                || reason.StartsWith(token, StringComparison.Ordinal);
         }
 
         private static async Task EnsureLoopReadyAsync(IGameLoopService gameLoop, PhaseStartRequest request)

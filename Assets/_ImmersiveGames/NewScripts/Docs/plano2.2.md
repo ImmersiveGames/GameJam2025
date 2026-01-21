@@ -1,6 +1,6 @@
 # Plano 2.2 — Execução (Baseline 2.2)
 
-> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap) e ADR-0019 (Level Manager).
+> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap + LevelManager) e ADR-0019 (Promoção Baseline 2.2).
 
 ## Pré-condição
 - Baseline 2.1 fechado via snapshot datado e `Docs/Reports/Evidence/LATEST.md` válido.
@@ -10,24 +10,25 @@
 
 ---
 
-## Linha A — Formalizar ContentSwap (semântica + observability)
+## Linha A — ContentSwap (executor de troca de conteúdo)
 
 **Objetivo**
-- Separar “Phase” (ContentSwap) de “Level/Nível” e consolidar o contrato de logs/reasons.
+- Formalizar ContentSwap como executor, mantendo compatibilidade com PhaseChange.
 
 **Entregas**
-- ADR-0018 reescrito com semântica ContentSwap + contratos públicos + reasons canônicos.
-- Logs com alias `[OBS][ContentSwap]` mantidos para compatibilidade.
+- ADR-0018 atualizado (Phase => ContentSwap + LevelManager).
+- Logs com alias `[OBS][ContentSwap]` mantidos.
 
 **QA mínimo (ContextMenu)**
-- `QA/ContentSwap/G01-InPlace (NoVisuals)` (GameObject `QA_Baseline22`).
+- `QA/ContentSwap/G01 - InPlace (NoVisuals)` (GameObject `QA_ContentSwap`).
+- `QA/ContentSwap/G02 - WithTransition (SingleClick)` (GameObject `QA_ContentSwap`).
 
 **Evidência**
-- Snapshot datado com logs + verificação curada do In-Place (sem Fade/HUD).
+- Snapshot datado com logs + verificação curada dos dois modos.
 
 ---
 
-## Linha B — Implementar Level Manager (mínimo funcional)
+## Linha B — LevelManager (orquestrador de progressão)
 
 **Objetivo**
 - Orquestrar progressão de níveis, acionando ContentSwap + IntroStage.
@@ -37,8 +38,8 @@
 - Política default: toda mudança de nível executa IntroStage.
 
 **QA mínimo (ContextMenu)**
-- `QA/Level/G02-GoToLevel (InPlace + IntroStage)`
-- `QA/Level/G03-GoToLevel (WithTransition + IntroStage)`
+- `QA/Levels/L01-GoToLevel (InPlace + IntroStage)` (GameObject `QA_Level`).
+- `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)` (GameObject `QA_Level`).
 
 **Evidência**
 - Logs mostrando ContentSwap + IntroStage no mesmo ciclo de mudança de nível.
@@ -55,7 +56,7 @@
 - Remoção de hardcode de lista de níveis em scripts de runtime.
 
 **QA mínimo (ContextMenu)**
-- `QA/Level/Resolve/Definitions`
+- `QA/Levels/Resolve/Definitions`
 
 **Evidência**
 - Logs com resolução por catálogo + assinatura de conteúdo.
