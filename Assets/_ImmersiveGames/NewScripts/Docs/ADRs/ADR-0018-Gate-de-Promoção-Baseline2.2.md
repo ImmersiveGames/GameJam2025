@@ -1,26 +1,40 @@
-# ADR-0018 — Mudança de semântica: Phase => ContentSwap + introdução do LevelManager
+# ADR-0018 — Mudança de semântica: Phase => ContentSwap + Level/Phase Manager
 
 ## Status
 - Estado: Aceito
 - Data: 2026-01-18
-- Escopo: ContentSwap (Phase) + LevelManager (NewScripts)
+- Escopo: ContentSwap (Phase) + Level/Phase Manager (NewScripts)
 
 ## Contexto
 
-O termo **Phase** foi usado para representar **troca de conteúdo** no runtime, com dois modos canônicos (In-Place e SceneTransition). A evolução do Baseline 2.2 introduz **Level/Nível** como progressão do jogo, criando ambiguidade entre “fase” (conteúdo) e “nível” (progressão).
+Historicamente, o termo **Phase** foi usado para dois significados diferentes:
 
-Este ADR formaliza a **mudança de semântica**: Phase passa a significar **ContentSwap** e a progressão de nível passa a ser orquestrada pelo **LevelManager**.
+- **Troca de conteúdo** do runtime (troca de fase dentro da mesma cena ou via SceneFlow).
+- **Progressão de nível/fase do jogo** (o “capítulo” ou estágio de gameplay).
 
-> **Nota crítica:** ContentSwap **não** é responsável por IntroStage. IntroStage é responsabilidade do LevelManager.
+Essa ambiguidade gera problemas práticos:
+
+- Documentação e QA ficam inconsistentes ("phase" pode significar troca de conteúdo ou progresso de nível).
+- `reason`/logs perdem precisão semântica, enfraquecendo evidências e diagnósticos.
+- Roadmap confunde *executor técnico* (troca de conteúdo) com *orquestração de progressão*.
 
 ## Decisão
 
-### 1) Semântica canônica
-- **Phase == ContentSwap**: troca de conteúdo do runtime (mesmo contexto ou via SceneFlow).
-- **Level/Nível**: progressão do jogo, orquestra ContentSwap + IntroStage.
+### 1) Termos formais e boundaries
+
+- **ContentSwap** = módulo **exclusivo** para trocar conteúdo no runtime.
+  - Executa o reset e o commit de conteúdo (in-place ou com SceneFlow).
+  - É a camada técnica (executor) e continua exposta via `IPhaseChangeService`.
+- **Level/Phase Manager** = **orquestrador** da progressão de níveis/fases do jogo.
+  - Decide quando avançar/retroceder de nível.
+  - Usa ContentSwap por baixo.
+  - É responsável por **sempre disparar IntroStage** ao entrar em um nível (neste ciclo).
+- **Phase** passa a ser termo técnico associado ao ContentSwap (compatível com contratos existentes).
 
 ### 2) Contratos públicos (mantidos)
+
 Os contratos abaixo **permanecem válidos** e são o ponto de integração pública do ContentSwap:
+
 - `IPhaseChangeService`
 - `PhasePlan`
 - `PhaseChangeMode` (`InPlace`, `SceneTransition`)
@@ -30,61 +44,38 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 
 > Se houver renomeação futura para ContentSwap no código, **devem existir aliases/bridges** compatíveis para não quebrar build nem chamadas existentes.
 
-### 3) Contratos públicos (novo LevelManager)
+### 3) Contratos públicos (novo Level/Phase Manager)
+
 - `ILevelManager`
 - `LevelPlan`
 - `LevelChangeOptions`
 
-O LevelManager reutiliza o ContentSwap existente e **sempre** executa IntroStage após mudança de nível neste ciclo.
+O Level/Phase Manager reutiliza o ContentSwap existente e **sempre** executa IntroStage após mudança de nível neste ciclo.
 
-### 4) Modos canônicos (referência)
-- Os **modos de ContentSwap** são definidos no ADR-0017 (“modes”).
-- **In-Place**: troca de conteúdo sem SceneFlow.
-- **WithTransition** (SceneTransition): troca de conteúdo com SceneFlow + intent registry.
+### 4) Relação com ADR-0017 (modos)
 
-### 5) Reasons e logs canônicos
-- **Reasons canônicos (recomendado)**:
-    - `QA/ContentSwap/InPlace/<case>`
-    - `QA/ContentSwap/WithTransition/<case>`
-    - `ContentSwap/InPlace/<source>`
-    - `ContentSwap/WithTransition/<source>`
-    - `LevelChange/<source>`
-    - `QA/Levels/InPlace/<case>`
-    - `QA/Levels/WithTransition/<case>`
-- **Legacy aceito (compatibilidade)**:
-    - `QA/Phases/InPlace/<...>`
-    - `QA/Phases/WithTransition/<...>`
-
-- **Logs canônicos** seguem os eventos existentes e **incluem alias explícito**:
-    - `[OBS][Phase] PhaseChangeRequested ...`
-    - `[OBS][ContentSwap] ContentSwapRequested ...`
-    - `[OBS][Level] LevelChangeRequested ...`
-    - `[OBS][Level] LevelChangeStarted ...`
-    - `[OBS][Level] LevelChangeCompleted ...`
-    - `[PhaseContext] PhasePendingSet ...`
-    - `[PhaseContext] PhaseCommitted ...`
-
-### 6) IntroStage fora do escopo do ContentSwap
-- **IntroStage não é responsabilidade do ContentSwap**.
-- O LevelManager é quem decide política e execução de IntroStage.
+- ADR-0017 define os **modos canônicos** de ContentSwap:
+  - **In-Place**: troca de conteúdo sem SceneFlow.
+  - **SceneTransition**: troca com SceneFlow + intent registry.
+- ADR-0018 **não altera** o escopo do ADR-0017; apenas reposiciona a semântica de “Phase”.
 
 ## Consequências
 
 ### Benefícios
-- Elimina ambiguidade entre “fases” de conteúdo e “níveis” de progressão.
-- Mantém compatibilidade com APIs atuais.
-- Observability continua baseada nas mesmas assinaturas/logs já evidenciadas.
+- Elimina ambiguidade entre “fase” (conteúdo) e “nível” (progressão).
+- Mantém compatibilidade com APIs atuais (`PhaseChangeService`).
+- Isola responsabilidades (ContentSwap vs Level/Phase Manager), alinhando ao princípio de responsabilidade única (SRP).
 
 ### Trade-offs / Riscos
-- Exige disciplina documental para não reintroduzir “Phase” como progressão de nível.
+- Exige disciplina documental para não reintroduzir “Phase” como sinônimo de nível.
+- A mudança é **semântica**: não exige refactor imediato de código além do necessário para o Baseline 2.2.
 
 ## Evidências
 - Metodologia: `Docs/Reports/Evidence/README.md`
 - Ponte canônica: `Docs/Reports/Evidence/LATEST.md`
-- Snapshot vigente: `Docs/Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md`
 
 ## Referências
-- ADR-0017 — Tipos de troca de fase (modos In-Place vs SceneTransition)
+- ADR-0017 — Tipos de troca de fase (ContentSwap: In-Place vs SceneTransition)
 - ADR-0019 — Promoção/fechamento do Baseline 2.2
 - ADR-0016 — Phases + IntroStage opcional (histórico do contrato)
 - Observability Contract — `Docs/Reports/Observability-Contract.md`

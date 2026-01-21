@@ -1,80 +1,87 @@
 # Plano 2.2 — Execução (Baseline 2.2)
 
-> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap + LevelManager) e ADR-0019 (Promoção Baseline 2.2).
+> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap + Level/Phase Manager) e ADR-0019 (Promoção Baseline 2.2).
 
-## Pré-condição
+## Pré-condições
 - Baseline 2.1 fechado via snapshot datado e `Docs/Reports/Evidence/LATEST.md` válido.
+- ADR-0017 já implementado (modos canônicos de ContentSwap).
 
 ## Meta
 - Evoluir para Baseline 2.2 com critérios objetivos, sem regressões em observability e pipeline.
 
 ---
 
-## Linha A — ContentSwap (executor de troca de conteúdo)
-
-**Objetivo**
-- Formalizar ContentSwap como executor, mantendo compatibilidade com PhaseChange.
-
-**Entregas**
-- ADR-0018 atualizado (Phase => ContentSwap + LevelManager).
-- Logs com alias `[OBS][ContentSwap]` mantidos.
-
-**QA mínimo (ContextMenu)**
-- `QA/ContentSwap/G01 - InPlace (NoVisuals)` (GameObject `QA_ContentSwap`).
-- `QA/ContentSwap/G02 - WithTransition (SingleClick)` (GameObject `QA_ContentSwap`).
-
-**Evidência**
-- Snapshot datado com logs + verificação curada dos dois modos.
+## Linha 0 — Sequência de marcos (dependências)
+1. **ADR-0017** (modos de ContentSwap) — já implementado.
+2. **ADR-0018** (semântica: Phase => ContentSwap + Level/Phase Manager).
+3. **ADR-0019** (promoção: config centralizada + gates + evidências).
+4. **Execução Baseline 2.2** (QA + evidências + gate final).
 
 ---
 
-## Linha B — LevelManager (orquestrador de progressão)
+## Linha A — Documentação e semântica (ADR-0018)
 
 **Objetivo**
-- Orquestrar progressão de níveis, acionando ContentSwap + IntroStage.
+- Formalizar ContentSwap como executor técnico e separar Level/Phase Manager (progressão).
 
-**Entregas**
-- `ILevelManager` + `LevelPlan` + `LevelChangeOptions` (API mínima).
-- Política default: toda mudança de nível executa IntroStage.
+**Entregáveis (docs)**
+- ADR-0018 atualizado com termos formais, boundaries e relação com ADR-0017.
+- Terminologia consistente em docs de topo (ARCHITECTURE/README).
 
-**QA mínimo (ContextMenu)**
-- `QA/Levels/L01-GoToLevel (InPlace + IntroStage)` (GameObject `QA_Level`).
-- `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)` (GameObject `QA_Level`).
-
-**Evidência**
-- Logs mostrando ContentSwap + IntroStage no mesmo ciclo de mudança de nível.
+**Critérios de aceite**
+- Não há uso ambíguo de “Phase” como nível sem explicação.
+- ADR-0018 referenciado por ADR-0019 e pelo plano.
 
 ---
 
-## Linha C — Centralizar configuração (assets/definitions)
+## Linha B — Promoção Baseline 2.2 (ADR-0019)
 
 **Objetivo**
-- Retirar configuração de nível/conteúdo de scripts e mover para assets/definitions.
+- Definir o baseline com configuração centralizada + Level/Phase Manager.
 
-**Entregas**
+**Entregáveis (docs/roadmap)**
+- ADR-0019 com escopo, gates verificáveis e metodologia de evidência por data.
+
+**Critérios de aceite**
+- Gates de promoção descritos com QA mínimo e logs/contrato.
+- Evidência de ADR aberto aponta para `Evidence/LATEST`.
+
+---
+
+## Linha C — Arquitetura/configuração (baseline 2.2)
+
+**Objetivo**
+- Centralizar configuração (cenas, níveis, spawns, conteúdo, transições).
+
+**Entregáveis (arquitetura/config)**
 - Catálogo + resolver de definitions (assets) para níveis e conteúdo.
-- Remoção de hardcode de lista de níveis em scripts de runtime.
+- Remoção de hardcode de listas de níveis/cenas em scripts de runtime.
 
-**QA mínimo (ContextMenu)**
-- `QA/Levels/Resolve/Definitions`
-
-**Evidência**
-- Logs com resolução por catálogo + assinatura de conteúdo.
+**Critérios de aceite**
+- Logs mostrando resolução por catálogo + assinatura de conteúdo.
+- QA mínimo `QA/Levels/Resolve/Definitions` produzido.
 
 ---
 
-## Linha D — QA + Evidências + Gate de promoção (Baseline 2.2)
+## Linha D — Execução de QA e evidências (baseline 2.2)
 
 **Objetivo**
 - Consolidar evidências e fechar gates de promoção.
 
-**Entregas**
+**Entregáveis**
 - Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/`.
 - `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot.
 - Atualização do `Docs/CHANGELOG-docs.md` com gates fechados.
 
 **QA mínimo (ContextMenu)**
-- Reutilizar os ContextMenus das linhas A–C (apenas os necessários para evidência).
+- ContentSwap:
+  - `QA/ContentSwap/G01 - InPlace (NoVisuals)`
+  - `QA/ContentSwap/G02 - WithTransition (SingleClick)`
+- Level/Phase Manager:
+  - `QA/Levels/L01-GoToLevel (InPlace + IntroStage)`
+  - `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)`
+- Configuração:
+  - `QA/Levels/Resolve/Definitions`
 
 **Gate de promoção**
 - Gates do ADR-0019 em PASS.
