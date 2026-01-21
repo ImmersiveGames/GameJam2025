@@ -35,17 +35,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             await EnsureLoopReadyAsync(gameLoop, request);
 
-            // Baseline 2.2: para PhaseChange In-Place (sem transição de cenas) o objetivo é trocar o conteúdo
-            // sem reentrar na IntroStage (que bloquearia gameplay e exigiria confirmação/UI).
-            // A IntroStage permanece válida para entradas via SceneFlow/Completed (entrada do gameplay) e
-            // para outros fluxos que explicitamente desejem conteúdo antes de começar.
-            if (ShouldSuppressIntroStageForRequest(request))
-            {
-                DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] IntroStage suprimida. phaseId='{request.PhaseId}' reason='{request.Reason}'.");
-                return;
-            }
-
             var coordinator = ResolveIntroStageCoordinator();
             if (coordinator == null)
             {
@@ -78,21 +67,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 DebugUtility.LogWarning(typeof(PhaseStartPipeline),
                     $"[PhaseStart] Falha ao executar IntroStage. phaseId='{request.PhaseId}', ex='{ex.GetType().Name}: {ex.Message}'.");
             }
-        }
-
-        private static bool ShouldSuppressIntroStageForRequest(PhaseStartRequest request)
-        {
-            // Heurística mínima e determinística: apenas suprime para QA explícito de In-Place.
-            // Isso evita alterar comportamento de produção e mantém a evidência rastreável via reason.
-            if (string.IsNullOrWhiteSpace(request.Reason))
-            {
-                return false;
-            }
-
-            // O reason do pipeline é formado como: "PhaseStart/Committed|phaseId=...|reason=<commitReason>".
-            // Para o TC-G01-INPLACE, o commitReason começa com "QA/Phases/InPlace/".
-            return request.Reason.Contains("|reason=QA/Phases/InPlace/", StringComparison.Ordinal)
-                || request.Reason.StartsWith("QA/Phases/InPlace/", StringComparison.Ordinal);
         }
 
         private static async Task EnsureLoopReadyAsync(IGameLoopService gameLoop, PhaseStartRequest request)

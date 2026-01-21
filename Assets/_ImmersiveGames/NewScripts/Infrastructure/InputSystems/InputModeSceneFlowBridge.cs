@@ -157,6 +157,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                         return;
                     }
 
+                    if (DependencyManager.Provider.TryGetGlobal<PhaseStartPhaseCommitBridge>(out var contentSwapBridge)
+                        && contentSwapBridge != null
+                        && contentSwapBridge.IsContentSwapSignature(signature))
+                    {
+                        DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                            $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (ContentSwap). signature='{signature}'.",
+                            DebugUtility.Colors.Info);
+                        return;
+                    }
+
                     var coordinator = ResolveIntroStageCoordinator();
                     if (coordinator == null)
                     {

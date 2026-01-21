@@ -1,6 +1,6 @@
 # NewScripts — Documentação
 
-Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o estado atual do pipeline de **Scene Flow + Fade/Loading** e do **World Lifecycle** (reset determinístico por escopos).
+Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o estado atual do pipeline de **Scene Flow + Fade/Loading** e do **World Lifecycle** (reset determinístico por escopos), além da semântica **ContentSwap** (executor de troca de conteúdo) e do **Level/Phase Manager** (progressão de níveis).
 
 ## Mapa de navegação (docs canônicos)
 - [README.md](README.md) — índice e orientação rápida.

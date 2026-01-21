@@ -58,6 +58,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 $"[OBS][Phase] PhaseChangeRequested event=phase_change_inplace mode={PhaseChangeMode.InPlace} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}'",
                 DebugUtility.Colors.Info);
 
+            DebugUtility.Log<PhaseChangeService>(
+                $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode={PhaseChangeMode.InPlace} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}'",
+                DebugUtility.Colors.Info);
+
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
@@ -219,6 +223,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
                 DebugUtility.Log<PhaseChangeService>(
                     $"[OBS][Phase] PhaseChangeRequested event=phase_change_transition mode={PhaseChangeMode.SceneTransition} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}' signature='{signature}' profile='{normalizedRequest.TransitionProfileName}'",
+                    DebugUtility.Colors.Info);
+
+                DebugUtility.Log<PhaseChangeService>(
+                    $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_transition mode={PhaseChangeMode.SceneTransition} phaseId='{plan.PhaseId}' reason='{Sanitize(reason)}' signature='{signature}' profile='{normalizedRequest.TransitionProfileName}'",
                     DebugUtility.Colors.Info);
 
                 DebugUtility.Log<PhaseChangeService>(
