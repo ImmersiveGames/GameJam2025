@@ -1,64 +1,93 @@
-﻿# ADR-0019 — Promoção do Baseline 2.2 (declaração, snapshot e ponte LATEST)
+# ADR-0019 — Promoção do Baseline 2.2 (ContentSwap + Level/Phase Manager + Config)
 
 ## Status
 - Estado: Proposto
 - Data: 2026-01-18
-- Escopo: Docs/Reports/Evidence + checklist + declaração operacional do 2.2
+- Escopo: Promoção Baseline 2.2 (Docs/Reports/Evidence)
 
 ## Contexto
 
-O Baseline 2.1 está fechado e evidenciado via snapshot datado. A evolução para o Baseline 2.2 introduz um conjunto de mudanças *config-driven* (WorldCycle) e correções/gates de consistência (Phases/Observability/Docs).
+O Baseline 2.2 consolida a mudança de semântica **Phase => ContentSwap** (ADR-0018) e introduz um **Level/Phase Manager** configurável para progressão de níveis. Além disso, o baseline precisa centralizar a configuração de gameplay (cenas, níveis, spawns, conteúdo e transições) para reduzir hardcode e garantir consistência de evidências.
 
-Para evitar regressões silenciosas, precisamos de um procedimento objetivo para:
-- declarar “Baseline 2.2 promovido”; e
-- manter regressão contínua via `Evidence/LATEST.md`.
+Para evitar regressões silenciosas, a promoção deve ser baseada em **gates verificáveis** e evidência canônica, respeitando o contrato de observability.
+
+## Escopo do Baseline 2.2
+
+### Entra
+- Semântica oficial: **Phase == ContentSwap** (executor técnico).
+- **Level/Phase Manager** como orquestrador de progressão (usa ContentSwap + IntroStage).
+- Centralização/configuração de gameplay (ex.: cenas, níveis, spawns, conteúdo, transições).
+- QA mínimo com ContextMenus e logs canônicos para ContentSwap e Level.
+
+### Fica fora (neste ciclo)
+- Refactor total de nomenclatura nos códigos existentes.
+- Tornar IntroStage opcional (ficará configurável no futuro, mas **sempre executa** neste ciclo).
+- Substituição completa de assets/definitions antigos (apenas migração necessária para cumprir o baseline).
 
 ## Decisão
 
-A promoção do Baseline 2.2 ocorre quando:
+A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PASS**, com QA objetivo e evidência em snapshot datado.
 
-1) **Gates do ADR-0018 estão PASS**
-- PASS obrigatório: **G-01, G-02, G-03**.
-- **G-04** somente se aplicável ao escopo do 2.2.
+### G-01 — Semântica e contrato de ContentSwap
+**Critério verificável**
+- ADR-0018 atualizado e coerente com ADR-0017.
+- Observability mantém o contrato de ContentSwap (logs e reasons canônicos).
 
-2) Existe **snapshot datado** em `Docs/Reports/Evidence/<YYYY-MM-DD>/` contendo:
-- log bruto (Console) usado como fonte de verdade;
-- verificação curada (anchors) demonstrando:
-    - invariantes do pipeline SceneFlow/WorldLifecycle;
-    - evidências dos gates (ex.: In-Place sem Fade/HUD, reasons canônicos, docs sem drift);
-- (opcional) pacote zip de evidência, se o repositório adotar essa prática.
+**QA mínimo (ContextMenu)**
+- `QA/ContentSwap/G01 - InPlace (NoVisuals)`
+- `QA/ContentSwap/G02 - WithTransition (SingleClick)`
 
-3) `Docs/Reports/Evidence/LATEST.md` aponta para o snapshot datado mais recente.
+**Evidência**
+- Snapshot datado com logs demonstrando os dois modos.
 
-4) `Docs/CHANGELOG-docs.md` registra:
-- quais gates foram fechados;
-- links para o snapshot datado;
-- notas de compatibilidade (o que mudou/foi padronizado em reasons/assinaturas).
+### G-02 — Level/Phase Manager integrado
+**Critério verificável**
+- Mudança de nível aciona ContentSwap + IntroStage no mesmo ciclo.
+- IntroStage ocorre **uma vez por mudança de nível** (política default).
 
-## Fora de escopo
-- Definir o conteúdo do WorldCycle (o feature set do 2.2 é definido pelo plano e ADRs específicos).
-- Substituir navegação por data-driven completo.
+**QA mínimo (ContextMenu)**
+- `QA/Levels/L01-GoToLevel (InPlace + IntroStage)`
+- `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)`
+
+**Evidência**
+- Snapshot datado com logs mostrando ContentSwap + IntroStage no mesmo fluxo de Level.
+
+### G-03 — Configuração centralizada
+**Critério verificável**
+- Configuração de gameplay (cenas, níveis, spawns, conteúdo, transições) migrada para assets/definitions.
+- Nenhum script de runtime mantém listas hardcoded de níveis/cenas.
+
+**QA mínimo (ContextMenu)**
+- `QA/Levels/Resolve/Definitions` (apenas logs de catálogo/resolução).
+
+**Evidência**
+- Logs mostrando resolução por catálogo + assinatura de conteúdo.
+
+### G-04 — QA + Evidências + Gate final
+**Critério verificável**
+- Evidências consolidadas em snapshot datado (`Docs/Reports/Evidence/<YYYY-MM-DD>/`).
+- `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot do baseline fechado.
+- `Docs/CHANGELOG-docs.md` atualizado com gates fechados.
+
+## Metodologia de evidência (por data)
+
+- **ADR aberto**: referencia `Docs/Reports/Evidence/LATEST.md`.
+- **ADR concluído**: deve referenciar evidência com data **<= data de conclusão** do ADR.
 
 ## Consequências
 
 ### Benefícios
-- Processo de promoção repetível e auditável.
-- Reduz atrito em QA: a “fonte de verdade” fica explícita e versionada.
+- Promoção baseada em critérios objetivos e verificáveis.
+- Evidência rastreável e alinhada ao contrato de observability.
 
 ### Trade-offs / Riscos
-- Requer manutenção disciplinada do snapshot e verificação curada.
-
-## Notas de implementação
-
-- Ao concluir o snapshot:
-    - atualizar `Checklist-phase.md` (se houver itens fechados);
-    - garantir que o contrato (`Observability-Contract.md`) não aponta para artefatos ausentes;
-    - manter as âncoras curadas minimalistas (apenas as strings necessárias).
+- Exige disciplina de QA e curadoria de evidências para avançar o baseline.
 
 ## Evidências
 - Metodologia: `Docs/Reports/Evidence/README.md`
-- Ponte canônica: `Docs/Reports/Evidence/LATEST.md`
+- Ponte canônica (ADR aberto): `Docs/Reports/Evidence/LATEST.md`
 
 ## Referências
-- ADR-0018 — Gate de Promoção do Baseline 2.2
-- Plano 2.2 — Evolução do WorldLifecycle para WorldCycle Config-Driven
+- ADR-0018 — Mudança de semântica: Phase => ContentSwap + Level/Phase Manager
+- ADR-0017 — Tipos de troca de fase (ContentSwap: In-Place vs SceneTransition)
+- Plano 2.2 — Execução (plano2.2.md)

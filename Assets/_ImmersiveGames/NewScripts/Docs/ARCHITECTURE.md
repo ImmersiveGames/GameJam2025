@@ -25,12 +25,25 @@ Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Pla
 - pedidos de navegação/transição (quando a camada de navigation estiver ativa),
 - e controle de “atividade” (isActive).
 
-### 3) Navigation (produção)
+### 3) ContentSwap vs Level/Phase Manager
+
+- **ContentSwap (PhaseChange)** é o executor técnico de troca de conteúdo em runtime:
+  - troca **in-place** (sem SceneFlow) ou **scene transition** (com SceneFlow).
+  - usa os contratos `IPhaseChangeService`, `PhasePlan`, `PhaseChangeOptions` e `IPhaseContextService`.
+  - representa o antigo “Phase” como **troca de conteúdo**, não como progresso de nível.
+- **Level/Phase Manager** é o orquestrador de **progressão**:
+  - decide quando avançar/retroceder de nível,
+  - delega a troca de conteúdo para o ContentSwap,
+  - **sempre dispara IntroStage** ao entrar em um nível (política deste ciclo).
+
+> Referências: ADR-0017 (modos de ContentSwap) e ADR-0018 (mudança semântica Phase => ContentSwap + Level/Phase Manager).
+
+### 4) Navigation (produção)
 - `IGameNavigationService` é a entrada de produção para ir **Menu ↔ Gameplay**.
 - `GameNavigationService` encapsula `SceneTransitionRequest` e executa `SceneTransitionService.TransitionAsync(...)`.
 - `GameNavigationService` **não** chama `GameLoop.RequestStart()`; o start é responsabilidade exclusiva do `GameLoopSceneFlowCoordinator`.
 
-### 4) Scene Flow (SceneTransitionService)
+### 5) Scene Flow (SceneTransitionService)
 Orquestra a transição de cenas (load/unload/active) com:
 - evento `SceneTransitionStarted`
 - evento `SceneTransitionScenesReady`
@@ -40,14 +53,14 @@ Durante a transição:
 - `GameReadinessService` adquire o gate (`flow.scene_transition`) para bloquear gameplay.
 - O Fade e o Loading HUD (NewScripts) são executados antes/depois do carregamento.
 
-### 5) Fade + Loading HUD ([ADR-0009](ADRs/ADR-0009-FadeSceneFlow.md), [ADR-0010](ADRs/ADR-0010-LoadingHud-SceneFlow.md))
+### 6) Fade + Loading HUD ([ADR-0009](ADRs/ADR-0009-FadeSceneFlow.md), [ADR-0010](ADRs/ADR-0010-LoadingHud-SceneFlow.md))
 - `INewScriptsFadeService` controla `FadeScene` (Additive) e o `NewScriptsFadeController` (CanvasGroup).
 - `INewScriptsLoadingHudService` controla o `LoadingHudScene` (Additive).
 - `NewScriptsSceneTransitionProfile` define parâmetros (durations/curves) por **profileName**.
 - Resolução por Resources:
     - `Resources/SceneFlow/Profiles/<profileName>`
 
-### 6) World Lifecycle
+### 7) World Lifecycle
 #### Reset por escopos vs Reset de gameplay
 
 - **WorldLifecycle (infra)**: reset determinístico do mundo (gate + hooks + spawn/despawn) e **soft reset por escopos** via `ResetScope` e `IResetScopeParticipant`.

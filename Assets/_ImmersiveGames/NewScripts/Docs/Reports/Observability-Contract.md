@@ -1,4 +1,4 @@
-﻿# Observability Contract — SceneFlow, WorldLifecycle, GameLoop, InputMode, PhaseChange
+﻿# Observability Contract — SceneFlow, WorldLifecycle, GameLoop, InputMode, ContentSwap, Level
 
 > **Fonte de verdade** do contrato de observabilidade do pipeline NewScripts.
 >
@@ -14,7 +14,8 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 - **WorldLifecycle** (ResetRequested / ResetCompleted / Skipped / Failed)
 - **GameLoop** (Ready / IntroStage / Playing / PostGame)
 - **InputMode** (aplicações e `reason`)
-- **PhaseChange** (in-place vs scene transition)
+- **ContentSwap (PhaseChange)** (in-place vs scene transition)
+- **Level** (progressão: orquestra ContentSwap + IntroStage)
 
 ## Princípios
 
@@ -109,9 +110,9 @@ Reasons canônicos (prefixos) para InputMode:
 - `GameLoop/Playing`
 - `PostGame/RunStarted`
 
-### PhaseChange
+### ContentSwap (PhaseChange)
 
-O contrato para PhaseChange é definido em ADR-0017 (Tipos de troca de fase).
+O contrato para ContentSwap (PhaseChange) é definido em ADR-0017 (Tipos de troca de fase).
 
 **Tipos (canônicos)**
 
@@ -122,15 +123,36 @@ O contrato para PhaseChange é definido em ADR-0017 (Tipos de troca de fase).
 
 - `[OBS][Phase] PhaseChangeRequested event=phase_change_inplace mode=InPlace phaseId='...' reason='...'`
 - `[OBS][Phase] PhaseChangeRequested event=phase_change_transition mode=SceneTransition phaseId='...' reason='...' signature='...' profile='...'`
+- `[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode=InPlace phaseId='...' reason='...'`
+- `[OBS][ContentSwap] ContentSwapRequested event=content_swap_transition mode=SceneTransition phaseId='...' reason='...' signature='...' profile='...'`
 - `[PhaseContext] PhasePendingSet plan='...' reason='...'`
 - `[PhaseContext] PhaseCommitted prev='...' current='...' reason='...'`
 
 **Regra do `reason`**
 
-- O `reason` da troca de fase é **fornecido pelo caller** (produção/QA).
+- O `reason` da troca de conteúdo é **fornecido pelo caller** (produção/QA).
 - Recomendações para QA (prefixos estáveis):
-    - `QA/Phases/InPlace/<...>`
-    - `QA/Phases/WithTransition/<...>`
+    - `QA/ContentSwap/InPlace/<...>`
+    - `QA/ContentSwap/WithTransition/<...>`
+    - `QA/Phases/InPlace/<...>` (legado)
+    - `QA/Phases/WithTransition/<...>` (legado)
+
+### Level
+
+O contrato para Level Manager é definido em ADR-0018/ADR-0019.
+
+**Eventos/anchors mínimos**
+
+- `[OBS][Level] LevelChangeRequested levelId='...' phaseId='...' mode='<InPlace|SceneTransition>' reason='...' contentSig='...'`
+- `[OBS][Level] LevelChangeStarted levelId='...' phaseId='...' mode='...' reason='...'`
+- `[OBS][Level] LevelChangeCompleted levelId='...' phaseId='...' mode='...' reason='...'`
+
+**Regra do `reason`**
+
+- O `reason` da mudança de nível é **fornecido pelo caller** (produção/QA).
+- Recomendações para QA (prefixos estáveis):
+    - `QA/Levels/InPlace/<...>`
+    - `QA/Levels/WithTransition/<...>`
 
 ### IntroStage
 
@@ -156,6 +178,13 @@ Este catálogo reúne os principais reasons citados como critérios de aceite, g
 - IntroStage
     - `IntroStage/UIConfirm`
     - `IntroStage/NoContent`
+- ContentSwap
+    - `ContentSwap/InPlace/<source>`
+    - `ContentSwap/WithTransition/<source>`
+- Level
+    - `LevelChange/<source>`
+    - `QA/Levels/InPlace/<...>`
+    - `QA/Levels/WithTransition/<...>`
 
 Observação: `Reason-Map.md` é mantido apenas como redirect histórico para este contrato (não deve conter lista paralela).
 

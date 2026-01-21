@@ -15,6 +15,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
     public sealed class PhaseStartPhaseCommitBridge : IDisposable
     {
         private const string UnknownSignature = "<none>";
+        private const string LevelChangePrefix = "LevelChange/";
+        private const string QaLevelPrefix = "QA/Levels/";
 
         private readonly EventBinding<PhaseCommittedEvent> _committedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
@@ -25,6 +27,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         // _pendingSignature deve conter SOMENTE assinatura verificável.
         // Se a assinatura for desconhecida ("<none>"), mantemos vazio para não descartar por mismatch.
         private string _pendingSignature = string.Empty;
+        private string _lastCommitSignature = string.Empty;
+        private string _lastCommitReason = string.Empty;
 
         private bool _disposed;
 
@@ -102,6 +106,31 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return string.Equals(_pendingSignature, verifiableSig, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// Indica se a assinatura concluída pertence a um ContentSwap (não-Levels).
+        /// Usado para evitar IntroStage no fluxo de ContentSwap com SceneFlow.
+        /// </summary>
+        public bool IsContentSwapSignature(string completedSignature)
+        {
+            if (_disposed)
+            {
+                return false;
+            }
+
+            var verifiableSig = NormalizeVerifiableSignature(completedSignature);
+            if (verifiableSig.Length == 0 || _lastCommitSignature.Length == 0)
+            {
+                return false;
+            }
+
+            if (!string.Equals(_lastCommitSignature, verifiableSig, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return IsContentSwapReason(_lastCommitReason);
+        }
+
         private async void OnPhaseCommitted(PhaseCommittedEvent evt)
         {
             if (_disposed)
@@ -118,6 +147,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             var reason = string.IsNullOrWhiteSpace(evt.Reason) ? "PhaseCommitted" : evt.Reason.Trim();
             var signature = ResolveContextSignature(out var targetScene);
+            CacheLastCommit(signature, reason);
+
+            if (!ShouldHandleLevelChange(reason))
+            {
+                DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
+                    $"[PhaseStart] PhaseCommittedEvent ignorado (não é LevelChange). reason='{reason}'.");
+                return;
+            }
+
             var phaseStartReason = $"PhaseStart/Committed|phaseId={evt.Current.PhaseId}|reason={reason}";
 
             if (!IsGameplaySceneOrTarget(targetScene))
@@ -205,6 +243,30 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             await PhaseStartPipeline.RunAsync(request);
         }
 
+        private static bool ShouldHandleLevelChange(string reason)
+        {
+            return reason.StartsWith(LevelChangePrefix, StringComparison.Ordinal)
+                   || reason.Contains($"|reason={LevelChangePrefix}", StringComparison.Ordinal)
+                   || reason.StartsWith(QaLevelPrefix, StringComparison.Ordinal)
+                   || reason.Contains($"|reason={QaLevelPrefix}", StringComparison.Ordinal);
+        }
+
+        private static bool IsContentSwapReason(string reason)
+        {
+            return reason.StartsWith("ContentSwap/", StringComparison.Ordinal)
+                   || reason.StartsWith("QA/ContentSwap/", StringComparison.Ordinal)
+                   || reason.StartsWith("QA/Phases/", StringComparison.Ordinal)
+                   || reason.Contains("|reason=ContentSwap/", StringComparison.Ordinal)
+                   || reason.Contains("|reason=QA/ContentSwap/", StringComparison.Ordinal)
+                   || reason.Contains("|reason=QA/Phases/", StringComparison.Ordinal);
+        }
+
+        private void CacheLastCommit(string signature, string reason)
+        {
+            _lastCommitSignature = NormalizeVerifiableSignature(signature);
+            _lastCommitReason = reason ?? string.Empty;
+        }
+
         private static string ResolveContextSignature(out string targetScene)
         {
             targetScene = SceneManager.GetActiveScene().name;
@@ -242,48 +304,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return classifier.IsGameplayScene();
             }
 
-            return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", StringComparison.Ordinal);
+            return SceneManager.GetActiveScene().name == "GameplayScene";
         }
 
         private static bool IsGameplaySceneOrTarget(string targetScene)
         {
+            // Nota: IGameplaySceneClassifier só consegue classificar a cena ATIVA (marker em runtime).
+            // Para cenas-alvo ainda não carregadas, usamos fallback por nome.
             if (IsGameplayScene())
             {
                 return true;
             }
 
-            if (string.IsNullOrWhiteSpace(targetScene))
-            {
-                return false;
-            }
-
-            return string.Equals(targetScene.Trim(), GameNavigationCatalog.SceneGameplay, StringComparison.Ordinal);
-        }
-
-        private static bool HasVerifiableSignature(string? signature)
-        {
-            if (string.IsNullOrWhiteSpace(signature))
-            {
-                return false;
-            }
-
-            return !string.Equals(signature.Trim(), UnknownSignature, StringComparison.Ordinal);
+            return targetScene == "GameplayScene";
         }
 
         private static string NormalizeVerifiableSignature(string signature)
         {
-            if (string.IsNullOrWhiteSpace(signature))
+            if (string.IsNullOrWhiteSpace(signature) || signature == UnknownSignature)
             {
                 return string.Empty;
             }
 
-            var trimmed = signature.Trim();
-            if (string.Equals(trimmed, UnknownSignature, StringComparison.Ordinal))
-            {
-                return string.Empty;
-            }
+            return signature.Trim();
+        }
 
-            return trimmed;
+        private static bool HasVerifiableSignature(string signature)
+        {
+            return !string.IsNullOrWhiteSpace(signature) && signature != UnknownSignature;
         }
     }
 }

@@ -1,100 +1,87 @@
-﻿# Plano 2.2 — Execução (implementação + QA objetivo)
+# Plano 2.2 — Execução (Baseline 2.2)
 
-## Progresso (atualizado em 2026-01-18)
+> Este plano foca **execução e evidência**. A semântica e os contratos estão em ADR-0018 (ContentSwap + Level/Phase Manager) e ADR-0019 (Promoção Baseline 2.2).
 
-- **A1 / G-01**: PASS (log mostra PhaseChangeRequested inplace + pending + reset + commit; sem [Fade] e sem [LoadingHUD]).
-- **A2 / G-02**: Docs atualizados (Observability Contract vira fonte de verdade; Reason-Map deprecated).
-- **A3 / G-03**: Docs atualizados (README/índice ADRs e atalhos para snapshot 2026-01-18).
+## Pré-condições
+- Baseline 2.1 fechado via snapshot datado e `Docs/Reports/Evidence/LATEST.md` válido.
+- ADR-0017 já implementado (modos canônicos de ContentSwap).
 
-Próximo passo de implementação: **Linha B / B1 (Catálogo + Resolver)**.
+## Meta
+- Evoluir para Baseline 2.2 com critérios objetivos, sem regressões em observability e pipeline.
 
 ---
 
-﻿# Plano 2.2 — Execução (implementação + QA objetivo)
+## Linha 0 — Sequência de marcos (dependências)
+1. **ADR-0017** (modos de ContentSwap) — já implementado.
+2. **ADR-0018** (semântica: Phase => ContentSwap + Level/Phase Manager).
+3. **ADR-0019** (promoção: config centralizada + gates + evidências).
+4. **Execução Baseline 2.2** (QA + evidências + gate final).
 
-> Este arquivo complementa `plano2.2.md`: aqui a ênfase é **execução** (ordem, entregáveis e QA mínimo para evidência), sem discutir arquitetura novamente.
+---
 
-## Pré-condição
-- Baseline 2.1 fechado via snapshot datado (2026-01-18) e ponte `LATEST.md` válida.
+## Linha A — Documentação e semântica (ADR-0018)
 
-## Meta
-- Implementar a evolução 2.2 de forma incremental, mantendo regressão controlada.
+**Objetivo**
+- Formalizar ContentSwap como executor técnico e separar Level/Phase Manager (progressão).
 
-## Linha de trabalho A — Fechar gates (ADR-0018)
+**Entregáveis (docs)**
+- ADR-0018 atualizado com termos formais, boundaries e relação com ADR-0017.
+- Terminologia consistente em docs de topo (ARCHITECTURE/README).
 
-### A1) G-01 — In-Place “sem visuais” como padrão de evidência
-**Código**
-- Garantir que In-Place ignore Loading HUD (mesmo se options.UseLoadingHud=true).
-- QA de In-Place deve chamar `RequestPhaseInPlaceAsync(..., options: null)`.
+**Critérios de aceite**
+- Não há uso ambíguo de “Phase” como nível sem explicação.
+- ADR-0018 referenciado por ADR-0019 e pelo plano.
 
-**QA (Context Menu, Play Mode)**
-- `QA/Phases/InPlace/Commit (NoVisuals)`
+---
 
-**Evidência**
-- Console log contendo:
-    - `PhaseChangeRequested ... inplace`
-    - `PhasePendingSet` (ou equivalente)
-    - reset solicitado/concluído
-    - `PhaseCommitted`
-    - ausência de `[Fade]` e `[LoadingHUD]` no intervalo.
+## Linha B — Promoção Baseline 2.2 (ADR-0019)
 
-### A2) G-02 — Observability (reasons + links)
-**Docs**
-- Definir regra oficial (1 fonte de verdade) para reason:
-    - driver/controller;
-    - `WorldLifecycleResetCompletedEvent`.
-- Remover/corrigir referência a `Reason-Map.md` se não existir, ou criar o arquivo.
+**Objetivo**
+- Definir o baseline com configuração centralizada + Level/Phase Manager.
 
-**QA**
-- Regerar snapshot datado e validar anchors.
+**Entregáveis (docs/roadmap)**
+- ADR-0019 com escopo, gates verificáveis e metodologia de evidência por data.
 
-### A3) G-03 — Docs sem drift
-**Docs**
-- Corrigir links em `ARCHITECTURE.md` e `README.md`.
+**Critérios de aceite**
+- Gates de promoção descritos com QA mínimo e logs/contrato.
+- Evidência de ADR aberto aponta para `Evidence/LATEST`.
 
-## Linha de trabalho B — WorldCycle (config-driven) incremental
+---
 
-> Executar apenas após G-01..G-03 (reduz risco de regressões “por ambiguidade”).
+## Linha C — Arquitetura/configuração (baseline 2.2)
 
-### B1) Marco 1 — Catálogo + Resolver (sem Apply)
-**Entregas**
-- ScriptableObjects:
-    - `WorldCycleDefinition`
-    - `PhaseDefinition`
-- Serviços (interfaces + implementação mínima):
-    - `IWorldCycleCatalog`
-    - `IPhaseDefinitionResolver`
+**Objetivo**
+- Centralizar configuração (cenas, níveis, spawns, conteúdo, transições).
 
-**QA objetivo**
-- Logs/anchors mostrando `phaseId` + `contentSignature` vindo do resolver.
+**Entregáveis (arquitetura/config)**
+- Catálogo + resolver de definitions (assets) para níveis e conteúdo.
+- Remoção de hardcode de listas de níveis/cenas em scripts de runtime.
 
-### B2) Marco 2 — Commit canônico
-**Entregas**
-- WithTransition: consumir intent → pending → reset → commit em `ScenesReady`.
-- In-Place: commit após reset (garantia).
+**Critérios de aceite**
+- Logs mostrando resolução por catálogo + assinatura de conteúdo.
+- QA mínimo `QA/Levels/Resolve/Definitions` produzido.
 
-**QA objetivo**
-- Ações de Context Menu:
-    - `QA/Phases/InPlace/Commit (NoVisuals)`
-    - `QA/Phases/WithTransition/Commit (Gameplay Minimal)`
+---
 
-### B3) Marco 3 — Apply de WorldDefinition por fase
-**Entregas**
-- `IPhaseWorldConfigurationApplier` reconstruindo spawn registry antes do reset.
-- Fallback seguro quando `worldDefinition == null`.
+## Linha D — Execução de QA e evidências (baseline 2.2)
 
-**QA objetivo**
-- Anchor demonstrando spawn consistente com a fase.
+**Objetivo**
+- Consolidar evidências e fechar gates de promoção.
 
-### B4) Marco 4 — IntroStage config-driven
-**Entregas**
-- `IIntroStagePolicyResolver` baseado em `PhaseDefinition.introStagePolicy`.
+**Entregáveis**
+- Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/`.
+- `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot.
+- Atualização do `Docs/CHANGELOG-docs.md` com gates fechados.
 
-**QA objetivo**
-- Anchor mostrando policy aplicada e não-bloqueio preservado.
+**QA mínimo (ContextMenu)**
+- ContentSwap:
+  - `QA/ContentSwap/G01 - InPlace (NoVisuals)`
+  - `QA/ContentSwap/G02 - WithTransition (SingleClick)`
+- Level/Phase Manager:
+  - `QA/Levels/L01-GoToLevel (InPlace + IntroStage)`
+  - `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)`
+- Configuração:
+  - `QA/Levels/Resolve/Definitions`
 
-## Checklist de saída (para promoção)
-- Gates do ADR-0018 PASS.
-- Snapshot datado gerado e verificação curada atualizada.
-- `LATEST.md` apontando para o snapshot.
-- `CHANGELOG-docs.md` registrando a promoção.
+**Gate de promoção**
+- Gates do ADR-0019 em PASS.

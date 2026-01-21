@@ -1,5 +1,5 @@
 // Assets/_ImmersiveGames/NewScripts/QA/Phases/PhaseQaInstaller.cs
-// Instalador do QA de Phases (Baseline 2.2) em Editor/Development.
+// Instalador do QA de ContentSwap (Phase) em Editor/Development.
 // Comentários em português; código em inglês.
 
 #nullable enable
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
     /// </summary>
     public static class PhaseQaInstaller
     {
-        private const string QaObjectName = "QA_Phase";
+        private const string QaObjectName = "QA_ContentSwap";
 
         // Paleta de observabilidade usada no projeto.
         private const string ColorInfo = "#A8DEED";
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
             if (existing != null)
             {
                 EnsureName(existing.gameObject);
-                DebugUtility.Log(typeof(PhaseQaInstaller),"[QA][Phase] PhaseQaContextMenu já instalado (instância existente).", ColorVerbose);
+                DebugUtility.Log(typeof(PhaseQaInstaller), "[QA][ContentSwap] PhaseQaContextMenu já instalado (instância existente).", ColorVerbose);
                 return;
             }
 
@@ -44,22 +44,22 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
             {
                 go = new GameObject(QaObjectName);
                 Object.DontDestroyOnLoad(go);
-                DebugUtility.Log(typeof(PhaseQaInstaller),"[QA][Phase] PhaseQaContextMenu instalado (DontDestroyOnLoad).", ColorInfo);
+                DebugUtility.Log(typeof(PhaseQaInstaller), "[QA][ContentSwap] PhaseQaContextMenu instalado (DontDestroyOnLoad).", ColorInfo);
             }
             else
             {
                 Object.DontDestroyOnLoad(go);
-                DebugUtility.Log(typeof(PhaseQaInstaller),"[QA][Phase] GameObject QA_Phase existente; reaproveitando e marcando DontDestroyOnLoad.", ColorVerbose);
+                DebugUtility.Log(typeof(PhaseQaInstaller), "[QA][ContentSwap] GameObject QA_ContentSwap existente; reaproveitando e marcando DontDestroyOnLoad.", ColorVerbose);
             }
 
             var menu = go.GetComponent<PhaseQaContextMenu>();
             if (menu == null)
             {
                 go.AddComponent<PhaseQaContextMenu>();
-                DebugUtility.Log(typeof(PhaseQaInstaller),"[QA][Phase] PhaseQaContextMenu ausente; componente adicionado.", ColorInfo);
+                DebugUtility.Log(typeof(PhaseQaInstaller), "[QA][ContentSwap] PhaseQaContextMenu ausente; componente adicionado.", ColorInfo);
             }
 
-            DebugUtility.Log(typeof(PhaseQaInstaller),"[QA][Phase] Para acessar o ContextMenu, selecione o GameObject 'QA_Phase' no Hierarchy (DontDestroyOnLoad).", ColorOk);
+            DebugUtility.Log(typeof(PhaseQaInstaller), "[QA][ContentSwap] Para acessar o ContextMenu, selecione o GameObject 'QA_ContentSwap' no Hierarchy (DontDestroyOnLoad).", ColorOk);
         }
 
         private static void EnsureName(GameObject go)

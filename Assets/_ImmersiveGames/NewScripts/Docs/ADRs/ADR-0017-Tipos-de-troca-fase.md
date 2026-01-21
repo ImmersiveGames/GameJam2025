@@ -1,14 +1,14 @@
-# ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)
+# ADR-0017 — Tipos de troca de fase (ContentSwap: In-Place vs SceneTransition)
 
 ## Status
 - Estado: Implementado
 - Data: 2025-12-24
 - Implementado em: 2026-01-18
-- Escopo: PhaseChange + SceneFlow (NewScripts)
+- Escopo: ContentSwap (PhaseChange) + SceneFlow (NewScripts)
 
 ## Contexto
 
-O sistema de fases precisa suportar dois tipos de troca com objetivos distintos:
+O sistema de ContentSwap precisa suportar dois tipos de troca com objetivos distintos:
 
 - **Troca dentro do gameplay** (ex.: “fase 1 concluída, inicia fase 2 na mesma rodada”), sem descarregar a cena base.
 - **Troca com transição completa** (ex.: nova fase exige troca de cenas, unload de conteúdos atuais, loading e fade).
@@ -22,9 +22,9 @@ A meta é eliminar ambiguidades (ex.: “troca de fase” significar tanto reset
 
 ## Decisão
 
-Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distintos (nomes reais do código):
+Existem **dois tipos explícitos** de ContentSwap, com APIs e contratos distintos (nomes reais do código):
 
-### 1) PhaseChange/In-Place
+### 1) ContentSwap/In-Place
 
 **Quando usar:** a fase muda dentro da mesma “rodada”/cena (sem unload/load de cena).
 
@@ -42,7 +42,7 @@ Existem **dois tipos explícitos** de troca de fase, com APIs e contratos distin
 - Gate/serialização: token `flow.phase_inplace`.
 - Timeout: `options.TimeoutMs`.
 
-### 2) PhaseChange/SceneTransition
+### 2) ContentSwap/SceneTransition
 
 **Quando usar:** a nova fase exige transição completa (cenas, recursos pesados, feedback visual de loading, etc.).
 
@@ -160,5 +160,6 @@ sequenceDiagram
 ## Referências
 
 - [ADR-0016 — Phases + modos de avanço + IntroStage opcional](ADR-0016-Phases-WorldLifecycle.md)
+- [ADR-0018 — Mudança de semântica: Phase => ContentSwap + introdução do LevelManager](ADR-0018-Gate-de-Promoção-Baseline2.2.md)
 - [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
 - [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes
