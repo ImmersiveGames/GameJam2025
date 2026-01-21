@@ -26,6 +26,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static readonly Dictionary<Type, DebugLevel> _attributeLevels = new();
         private static readonly HashSet<Type> _disabledVerboseTypes = new();
         private static readonly HashSet<(string key, int frame)> _callTracker = new();
+        private static readonly HashSet<(string key, int frame)> _repeatedCallTracker = new();
         private static readonly StringBuilder _stringBuilder = new(256);
         private static readonly Dictionary<string, string> _messagePool = new();
         private const string RepeatedCallColor = "#FFD54F";
@@ -43,6 +44,10 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()
         {
+#if NEWSCRIPTS_MODE
+            Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.");
+            return;
+#endif
             _globalDebugEnabled = true;
             _verboseLoggingEnabled = Application.isEditor;
             _logFallbacks = Application.isEditor;
@@ -53,6 +58,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             _attributeLevels.Clear();
             _disabledVerboseTypes.Clear();
             _callTracker.Clear();
+            _repeatedCallTracker.Clear();
             _messagePool.Clear();
 
             LogInternal("DebugUtility inicializado antes de todos os sistemas.");
@@ -63,6 +69,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         public static void SetVerboseLogging(bool enabled) => _verboseLoggingEnabled = enabled;
         public static void SetLogFallbacks(bool enabled) => _logFallbacks = enabled;
         public static void SetRepeatedCallVerbose(bool enabled) => _repeatedCallVerboseEnabled = enabled;
+        public static bool GetRepeatedCallVerbose() => _repeatedCallVerboseEnabled;
         public static void DisableVerboseForType(Type type) => _disabledVerboseTypes.Add(type);
         public static void EnableVerboseForType(Type type) => _disabledVerboseTypes.Remove(type);
         public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
@@ -93,7 +100,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         {
             if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose)) return;
 
-            if (!TrackCall(type, message, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate)) return;
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -125,7 +132,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             var type = typeof(T);
             if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose)) return;
 
-            if (!TrackCall(type, message, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate)) return;
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -191,24 +198,32 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             Debug.Log(ApplyColor(BuildLogMessage("INFO", typeof(DebugUtility), message), null), context);
         }
 
-        private static bool TrackCall(Type type, string message, bool deduplicate)
+        private static bool TrackCall(Type type, string message, Object context, bool deduplicate)
         {
-            string key = $"{type.Name}:{message}";
+            int contextId = context != null ? context.GetInstanceID() : 0;
+            string key = $"{type.Name}:{message}:ctx={contextId}";
             int frame = Time.frameCount;
             var trackerKey = (key, frame);
 
             bool isRepeat = _callTracker.Contains(trackerKey);
-    
+
+            _callTracker.RemoveWhere(k => k.frame < frame);
+            _repeatedCallTracker.RemoveWhere(k => k.frame < frame);
+
             if (isRepeat)
             {
                 // ✅ REPETIÇÃO: registra como verbose colorido quando não houver deduplicação
                 if (!deduplicate && _repeatedCallVerboseEnabled)
-                    LogRepeatedCallVerbose(type, message, frame);
+                {
+                    if (_repeatedCallTracker.Add(trackerKey))
+                    {
+                        LogRepeatedCallVerbose(type, message, frame);
+                    }
+                }
                 return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite novo log após registrar verbose
             }
 
             // ✅ PRIMEIRA VEZ: adiciona ao tracker
-            _callTracker.RemoveWhere(k => k.frame < frame); // Limpa antigos
             _callTracker.Add(trackerKey);
             return true;
         }

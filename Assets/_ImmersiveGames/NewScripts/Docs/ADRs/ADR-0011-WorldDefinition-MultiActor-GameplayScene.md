@@ -1,0 +1,63 @@
+# ADR-0011 — WorldDefinition multi-actor para GameplayScene (NewScripts)
+
+## Status
+- Estado: Implementado
+- Data: 2025-12-28
+- Escopo: `GameplayScene`, `NewSceneBootstrapper`, spawn services (Player/Eater), WorldLifecycle
+
+## Contexto
+
+Para suportar gameplay com múltiplos atores, o NewScripts precisava de um mecanismo declarativo para:
+
+- definir quais atores são spawnados em uma cena;
+- manter ordem de spawn consistente;
+- evitar “spawns escondidos” em `Awake/Start` espalhados pelo projeto.
+
+## Decisão
+
+Adotar um asset `WorldDefinition` referenciado pelo `NewSceneBootstrapper` da cena.
+
+Durante o bootstrap da cena:
+
+1. `NewSceneBootstrapper` carrega o `WorldDefinition`.
+2. Para cada entry `Enabled=True`, cria/registra o spawn service correspondente no `IWorldSpawnServiceRegistry` da cena.
+3. O `WorldLifecycleController` coleta os spawn services do registry e executa despawn/spawn de forma determinística via `WorldLifecycleOrchestrator`.
+
+## Fora de escopo
+
+- Adição de novos kinds de ator além de Player/Eater (ver notas de evolução).
+
+## Consequências
+
+### Benefícios
+- Configuração declarativa e inspecionável (asset).
+- Facilita QA e debugging (comparar `WorldDefinition` com serviços registrados).
+- Permite evoluir para outros tipos de ator sem alterar o fluxo base.
+
+### Trade-offs / Riscos
+- Se o `WorldDefinition` estiver ausente na cena, nenhum spawn service será registrado (e o reset não spawnará atores).
+- Requer que as fábricas/registries de spawn sejam mantidas consistentes (mapeamento Kind → Service).
+
+## Notas de implementação
+
+### Regras (baseline)
+
+- Entradas desabilitadas (`Enabled=False`) são ignoradas.
+- A ordem do spawn é definida pelo próprio spawn service (ex.: Player ordem 1, Eater ordem 2).
+- A `GameplayScene` pode ter 0 entries em cenários de menu/ready (isso é permitido).
+
+### Próximos passos
+
+- Adicionar novos kinds de ator conforme o gameplay evoluir (NPCs, objetivos, etc.).
+- Padronizar validações (ex.: warning quando `GameplayScene` tiver 0 entries, se isso for inesperado).
+
+## Evidências
+
+- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
+- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
+- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+
+## Referências
+
+- [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)

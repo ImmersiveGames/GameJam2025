@@ -8,9 +8,9 @@ using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
+using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -26,6 +26,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
+#if NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(DependencyBootstrapper), "NEWSCRIPTS_MODE ativo: DependencyBootstrapper ignorado.");
+            return;
+#endif
             if (_initialized) return;
             _initialized = true;
 
@@ -44,7 +48,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             try
             {
                 EnsureGlobal<ICameraResolver>(() => new CameraResolverService());
-                EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
+                EnsureGlobal<IOldUniqueIdFactory>(() => new OldUniqueIdFactory());
 
                 // Gate global: bloqueio/liberação de simulação sem depender de timeScale.
                 EnsureGlobal<ISimulationGateService>(() => new SimulationGateService());
@@ -97,11 +101,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
                 RegisterEventBuses();
 
-                EnsureGlobal<IStateDependentService>(() =>
-                {
-                    var fsm = GameManagerStateMachine.Instance;
-                    return new StateDependentService(fsm);
-                });
+                RegisterStateDependentService();
 
                 EnsureGlobal(() => new DefenseStateManager());
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
@@ -181,7 +181,31 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
 #if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => _initialized = false;
+        private static void ResetStatics()
+        {
+#if NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(DependencyBootstrapper), "NEWSCRIPTS_MODE ativo: ResetStatics ignorado.");
+            return;
 #endif
+            _initialized = false;
+        }
+#endif
+
+        /// <summary>
+        /// Registro explícito do serviço legado de StateDependent.
+        /// Mantido aqui para evitar dependência cruzada com o bootstrap do NewScripts.
+        /// </summary>
+        private void RegisterStateDependentService()
+        {
+            var stateMachine = GameManagerStateMachine.Instance;
+            if (stateMachine == null)
+            {
+                DebugUtility.LogWarning<DependencyBootstrapper>(
+                    "GameManagerStateMachine não disponível; IStateDependentService não será registrado.");
+                return;
+            }
+
+            EnsureGlobal<IStateDependentService>(() => new StateDependentServiceOld(stateMachine));
+        }
     }
 }

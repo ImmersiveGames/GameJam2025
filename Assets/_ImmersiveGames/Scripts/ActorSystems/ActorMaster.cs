@@ -92,9 +92,9 @@ namespace _ImmersiveGames.Scripts.ActorSystems
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal(out IUniqueIdFactory factory))
+            if (!DependencyManager.Provider.TryGetGlobal(out IOldUniqueIdFactory factory))
             {
-                factory = new UniqueIdFactory();
+                factory = new OldUniqueIdFactory();
                 DependencyManager.Provider.RegisterGlobal(factory);
             }
 

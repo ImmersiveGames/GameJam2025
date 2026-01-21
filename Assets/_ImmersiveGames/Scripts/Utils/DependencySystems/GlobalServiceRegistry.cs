@@ -51,7 +51,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 if (targetType.IsAssignableFrom(kvp.Key))
                 {
                     service = (T)kvp.Value;
-                    DebugUtility.LogVerbose(typeof(GlobalServiceRegistry), $"Serviço {targetType.Name} encontrado no escopo global (tipo registrado: {kvp.Key.Name}).");
+                    DebugUtility.LogVerbose(
+                        typeof(GlobalServiceRegistry),
+                        $"Serviço {targetType.Name} encontrado no escopo global (tipo registrado: {kvp.Key.Name}).",
+                        deduplicate: true);
                     return true;
                 }
             }

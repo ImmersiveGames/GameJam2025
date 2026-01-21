@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         [SerializeField] private AttributeCanvasType attributeCanvasType = AttributeCanvasType.Scene;
         [SerializeField] private bool registerInPipeline = true;
 
-        [Inject] private IUniqueIdFactory _idFactory;
+        [Inject] private IOldUniqueIdFactory _idFactory;
 
         public string CanvasId { get; private set; }
         public AttributeCanvasType Type => attributeCanvasType;

@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 
         [Header("Dependencies")]
         [Inject] protected IRuntimeAttributeOrchestrator orchestrator;
-        [Inject] protected IUniqueIdFactory idFactory;
+        [Inject] protected IOldUniqueIdFactory idFactory;
 
         [Header("Pool & Prefab")]
         [SerializeField] private RuntimeAttributeUISlot slotPrefab;

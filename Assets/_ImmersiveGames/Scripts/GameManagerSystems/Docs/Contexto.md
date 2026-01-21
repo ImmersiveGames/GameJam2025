@@ -133,7 +133,7 @@ Sem ainda aplicar bloqueio em atores; apenas declarar/publicar.
 * `GameStates.cs` (cada estado declara: tokens/time/action)
 
     * estados atuais: Menu, Playing, Paused, Victory, GameOver
-    * adicionar (recomendado): Loading/Transition, Cinematic, Splash/PreGameplay
+    * adicionar (recomendado): Loading/Transition, Cinematic, Splash/IntroStage
 
 ### Serviços dependentes do bool atual
 
@@ -337,7 +337,7 @@ Use isto como “verdade única” na hora de implementar:
 | Menu                                  | {Menu}                    | Scaled               | UI ok / Gameplay no       | Não rodar simulação             |
 | Loading/Transition                    | {Loading} ou {Transition} | Scaled               | normalmente bloqueado     | Permite fade/cutscene           |
 | Cinematic                             | {Cinematic}               | Scaled               | gameplay no / UI opcional | Cutscene sem simulação          |
-| PreGameplay/Briefing                  | {PreGameplay}             | Scaled               | UI ok / gameplay no       | Alternativa a hacks             |
+| IntroStage/Briefing                  | {IntroStage}             | Scaled               | UI ok / gameplay no       | Alternativa a hacks             |
 | Playing                               | {}                        | Scaled               | gameplay ok               | Simulação roda                  |
 | Paused                                | {Pause}                   | Frozen               | UI ok / gameplay no       | Pause tradicional               |
 | GameOver/Victory (Splash)             | {Splash}                  | Scaled (recomendado) | UI ok / gameplay no       | UI anima sem simulação          |
