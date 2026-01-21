@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return;
             }
 
-            var reason = string.IsNullOrWhiteSpace(evt.Reason) ? "PhaseCommitted" : evt.Reason.Trim();
+            var reason = string.IsNullOrWhiteSpace(evt.Reason) ? "ContentSwap/Committed" : evt.Reason.Trim();
             var signature = ResolveContextSignature(out var targetScene);
             CacheLastCommit(signature, reason);
 
@@ -256,9 +256,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return reason.StartsWith("ContentSwap/", StringComparison.Ordinal)
                    || reason.StartsWith("QA/ContentSwap/", StringComparison.Ordinal)
                    || reason.StartsWith("QA/Phases/", StringComparison.Ordinal)
+                   || reason.StartsWith("PhaseChange/", StringComparison.Ordinal)
                    || reason.Contains("|reason=ContentSwap/", StringComparison.Ordinal)
                    || reason.Contains("|reason=QA/ContentSwap/", StringComparison.Ordinal)
-                   || reason.Contains("|reason=QA/Phases/", StringComparison.Ordinal);
+                   || reason.Contains("|reason=QA/Phases/", StringComparison.Ordinal)
+                   || reason.Contains("|reason=PhaseChange/", StringComparison.Ordinal);
         }
 
         private void CacheLastCommit(string signature, string reason)

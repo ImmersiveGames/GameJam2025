@@ -1,11 +1,11 @@
-# Checklist de QA — ADR-0016 (Phases + WorldLifecycle)
+# Checklist de QA — ADR-0016 (ContentSwap + WorldLifecycle)
 
 > **Data (evidência canônica):** 2026-01-18  \
-> **Fonte de verdade:** log do Console (Editor/Dev) — execução dos ContextMenus de Phase QA.
+> **Fonte de verdade:** log do Console (Editor/Dev) — execução dos ContextMenus de QA ContentSwap.
 
 ## Objetivo
 
-Validar que o sistema suporta **duas modalidades** de “nova fase” conforme ADR-0016:
+Validar que o sistema suporta **duas modalidades** de ContentSwap conforme ADR-0016:
 
 1. **InPlace**: reset determinístico **na mesma cena** (sem SceneFlow / sem Fade / sem Loading HUD).
 2. **WithTransition**: fase com **transição (SceneFlow)**, respeitando Fade/Loading HUD + gate + reset + commit via intent.
@@ -33,11 +33,11 @@ No objeto **[QA] PhaseQA** (DontDestroyOnLoad), executar o ContextMenu:
 
 - `QA/Phase/TC-ADR0016-INPLACE` (ou equivalente), usando:
   - `phaseId='phase.2'`
-  - `reason='QA/Phases/InPlace/NoVisuals'`
+  - `reason='QA/ContentSwap/InPlace/NoVisuals'` (ou legado `QA/Phases/InPlace/NoVisuals`)
 
 ### Expected
 
-1. Um `PhaseChangeRequested` com `mode=InPlace`.
+1. Um `ContentSwapRequested` com `mode=InPlace` (ou `PhaseChangeRequested` legado).
 2. Gate token específico de fase in-place adquirido e liberado (`flow.phase_inplace`).
 3. `PhasePendingSet` e `PhaseCommitted` com o mesmo `phaseId` e `reason`.
 4. `WorldResetRequestService` dispara `RequestResetAsync` com source canônico `phase.inplace:<phaseId>`.
@@ -46,15 +46,15 @@ No objeto **[QA] PhaseQA** (DontDestroyOnLoad), executar o ContextMenu:
 
 ### Evidência (strings mínimas)
 
-- `[QA][Phase] TC-ADR0016-INPLACE start phaseId='phase.2' reason='QA/Phases/InPlace/NoVisuals'.`
-- `[OBS][Phase] PhaseChangeRequested ... mode=InPlace phaseId='phase.2' reason='QA/Phases/InPlace/NoVisuals'`
+- `[QA][ContentSwap] TC-ADR0016-INPLACE start phaseId='phase.2' reason='QA/ContentSwap/InPlace/NoVisuals'.`
+- `[OBS][ContentSwap] ContentSwapRequested ... mode=InPlace phaseId='phase.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
 - `Acquire token='flow.phase_inplace'`
-- `PhasePendingSet plan='phase.2' reason='QA/Phases/InPlace/NoVisuals'`
+- `PhasePendingSet plan='phase.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
 - `RequestResetAsync → ResetWorldAsync. source='phase.inplace:phase.2'`
 - `World Reset Completed`
-- `PhaseCommitted ... current='phase.2' reason='QA/Phases/InPlace/NoVisuals'`
+- `PhaseCommitted ... current='phase.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
 - `Release token='flow.phase_inplace'`
-- `[QA][Phase] TC-ADR0016-INPLACE done phaseId='phase.2'.`
+- `[QA][ContentSwap] TC-ADR0016-INPLACE done phaseId='phase.2'.`
 
 ## Caso 2 — WithTransition (SceneFlow)
 
@@ -64,32 +64,32 @@ No objeto **[QA] PhaseQA** (DontDestroyOnLoad), executar o ContextMenu:
 
 - `QA/Phase/TC-ADR0016-TRANSITION` (ou equivalente), usando:
   - `phaseId='phase.2'`
-  - `reason='QA/Phases/WithTransition/Gameplay'`
+  - `reason='QA/ContentSwap/WithTransition/Gameplay'` (ou legado `QA/Phases/WithTransition/Gameplay`)
   - `profile='gameplay'`
 
 ### Expected
 
-1. Um `PhaseChangeRequested` com `mode=SceneTransition`.
+1. Um `ContentSwapRequested` com `mode=SceneTransition` (ou `PhaseChangeRequested` legado).
 2. Gate token de fase com transição adquirido e liberado (`flow.phase_transition`).
 3. `PhaseTransitionIntentRegistry.Registered` grava uma intent associada à signature gerada.
 4. SceneFlow inicia (`TransitionStarted`) e adquire `flow.scene_transition`.
 5. `WorldLifecycleSceneFlowResetDriver` dispara ResetWorld em `ScenesReady`.
 6. `ResetCompleted` consome a intent (`Consumed`) e aplica commit da fase via bridge.
-7. `PhasePendingSet` + `PhaseCommitted` com `reason='QA/Phases/WithTransition/Gameplay'`.
+7. `PhasePendingSet` + `PhaseCommitted` com `reason='QA/ContentSwap/WithTransition/Gameplay'`.
 8. SceneFlow conclui (`TransitionCompleted`) e libera `flow.scene_transition`.
 9. Ao final, tokens ativos retornam a 0 e o sistema pode reentrar na IntroStage/pipeline.
 
 ### Evidência (strings mínimas)
 
-- `[QA][Phase] TC-ADR0016-TRANSITION start phaseId='phase.2' reason='QA/Phases/WithTransition/Gameplay' ...`
+- `[QA][ContentSwap] TC-ADR0016-TRANSITION start phaseId='phase.2' reason='QA/ContentSwap/WithTransition/Gameplay' ...`
 - `Acquire token='flow.phase_transition'`
-- `[PhaseIntent] Registered ... plan='phase.2' mode='SceneTransition' reason='QA/Phases/WithTransition/Gameplay'`
+- `[PhaseIntent] Registered ... plan='phase.2' mode='SceneTransition' reason='QA/ContentSwap/WithTransition/Gameplay'`
 - `[SceneFlow] TransitionStarted ... profile='gameplay'`
 - `Acquire token='flow.scene_transition'`
 - `[WorldLifecycle] Disparando ResetWorld ... reason='SceneFlow/ScenesReady'`
 - `[PhaseIntent] Consumed ... plan='phase.2' mode='SceneTransition'`
-- `[PhaseIntentBridge] ResetCompleted -> consumindo intent e aplicando fase ... reason='QA/Phases/WithTransition/Gameplay'`
-- `PhaseCommitted ... current='phase.2' reason='QA/Phases/WithTransition/Gameplay'`
+- `[PhaseIntentBridge] ResetCompleted -> consumindo intent e aplicando fase ... reason='QA/ContentSwap/WithTransition/Gameplay'`
+- `PhaseCommitted ... current='phase.2' reason='QA/ContentSwap/WithTransition/Gameplay'`
 - `[SceneFlow] TransitionCompleted ... profile='gameplay'`
 - `Release token='flow.scene_transition'`
 - `Release token='flow.phase_transition'`

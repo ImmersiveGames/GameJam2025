@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (!plan.IsValid)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] Ignorando RequestPhaseInPlaceAsync com PhasePlan inválido.");
+                    "[ContentSwap] Ignorando RequestPhaseInPlaceAsync com PhasePlan inválido.");
                 return;
             }
 
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] Já existe uma troca de fase em progresso. Ignorando (InPlace).");
+                    "[ContentSwap] Já existe uma troca de conteúdo em progresso. Ignorando (InPlace).");
                 return;
             }
 
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             if (normalizedOptions.UseLoadingHud)
             {
-                DebugUtility.LogWarning<PhaseChangeService>("[PhaseChange] In-Place ignora LoadingHUD. Use WithTransition/SceneFlow para loading completo.");
+                DebugUtility.LogWarning<PhaseChangeService>("[ContentSwap] In-Place ignora LoadingHUD. Use WithTransition/SceneFlow para loading completo.");
                 normalizedOptions.UseLoadingHud = false;
             }
 
@@ -99,9 +99,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
                 _phaseContext.SetPending(plan, reason);
 
-                var resetReason = $"PhaseChange/InPlace plan='{plan}' reason='{reason ?? "n/a"}'";
+                var resetReason = $"ContentSwap/InPlace plan='{plan}' reason='{reason ?? "n/a"}'";
                 DebugUtility.Log<PhaseChangeService>(
-                    $"[PhaseChange] InPlace -> pending set. Disparando WorldReset. {resetReason}",
+                    $"[ContentSwap] InPlace -> pending set. Disparando WorldReset. {resetReason}",
                     DebugUtility.Colors.Info);
 
                 await AwaitWithTimeoutAsync(
@@ -109,10 +109,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     normalizedOptions.TimeoutMs,
                     "RequestResetAsync");
 
-                if (!_phaseContext.TryCommitPending(reason ?? "PhaseChange/InPlace", out _))
+                if (!_phaseContext.TryCommitPending(reason ?? "ContentSwap/InPlace", out _))
                 {
                     DebugUtility.LogWarning<PhaseChangeService>(
-                        $"[PhaseChange] Reset concluído, mas TryCommitPending falhou. signature='{signature}', plan='{plan}', reason='{Sanitize(reason)}'.");
+                        $"[ContentSwap] Reset concluído, mas TryCommitPending falhou. signature='{signature}', plan='{plan}', reason='{Sanitize(reason)}'.");
                 }
 
                 if (normalizedOptions.UseFade)
@@ -124,9 +124,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             catch (Exception ex)
             {
                 DebugUtility.LogError<PhaseChangeService>(
-                    $"[PhaseChange] Falha no InPlace. Limpando pending por segurança. ex={ex}");
+                    $"[ContentSwap] Falha no InPlace. Limpando pending por segurança. ex={ex}");
 
-                _phaseContext.ClearPending($"PhaseChange/InPlace failed: {ex.GetType().Name}");
+                _phaseContext.ClearPending($"ContentSwap/InPlace failed: {ex.GetType().Name}");
             }
             finally
             {
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     catch (Exception ex)
                     {
                         DebugUtility.LogWarning<PhaseChangeService>(
-                            $"[PhaseChange] Falha ao executar FadeOut final (InPlace). ex={ex.GetType().Name}: {ex.Message}");
+                            $"[ContentSwap] Falha ao executar FadeOut final (InPlace). ex={ex.GetType().Name}: {ex.Message}");
                     }
                 }
             }
@@ -168,28 +168,28 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (!plan.IsValid)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] Ignorando RequestPhaseWithTransitionAsync com PhasePlan inválido.");
+                    "[ContentSwap] Ignorando RequestPhaseWithTransitionAsync com PhasePlan inválido.");
                 return;
             }
 
             if (transition == null)
             {
                 DebugUtility.LogError<PhaseChangeService>(
-                    "[PhaseChange] Transition request nulo. Abortando.");
+                    "[ContentSwap] Transition request nulo. Abortando.");
                 return;
             }
 
             if (transition.ScenesToLoad == null || transition.ScenesToUnload == null)
             {
                 DebugUtility.LogError<PhaseChangeService>(
-                    "[PhaseChange] Transition request inválido (ScenesToLoad/ScenesToUnload nulos). Abortando.");
+                    "[ContentSwap] Transition request inválido (ScenesToLoad/ScenesToUnload nulos). Abortando.");
                 return;
             }
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] Já existe uma troca de fase em progresso. Ignorando (WithTransition).");
+                    "[ContentSwap] Já existe uma troca de conteúdo em progresso. Ignorando (WithTransition).");
                 return;
             }
 
@@ -217,7 +217,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 if (!_intentRegistry.RegisterIntent(intent))
                 {
                     DebugUtility.LogWarning<PhaseChangeService>(
-                        $"[PhaseChange] Falha ao registrar PhaseIntent. Ignorando RequestPhaseWithTransitionAsync. signature='{signature}', plan='{plan}'.");
+                        $"[ContentSwap] Falha ao registrar ContentSwap intent. Ignorando RequestPhaseWithTransitionAsync. signature='{signature}', plan='{plan}'.");
                     return;
                 }
 
@@ -230,12 +230,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                     DebugUtility.Colors.Info);
 
                 DebugUtility.Log<PhaseChangeService>(
-                    $"[PhaseChange] WithTransition -> intent registrado. Iniciando SceneFlow. " +
+                    $"[ContentSwap] WithTransition -> intent registrado. Iniciando SceneFlow. " +
                     $"plan='{plan}', reason='{reason ?? "n/a"}', profile='{normalizedRequest.TransitionProfileName}', active='{normalizedRequest.TargetActiveScene}'.",
                     DebugUtility.Colors.Info);
 
                 DebugUtility.LogVerbose<PhaseChangeService>(
-                    $"[PhaseChange] WithTransition signature='{signature}'.");
+                    $"[ContentSwap] WithTransition signature='{signature}'.");
 
                 var transitionOk = await AwaitWithTimeoutAsync(
                     _sceneFlow.TransitionAsync(normalizedRequest),
@@ -244,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
                 if (!transitionOk)
                 {
-                    _intentRegistry.ClearIntent($"PhaseChange/WithTransition timeout sig='{signature}'");
+                    _intentRegistry.ClearIntent($"ContentSwap/WithTransition timeout sig='{signature}'");
                 }
 
                 // Commit/Apply ocorrerá no WorldLifecycleRuntimeCoordinator (ScenesReady).
@@ -252,9 +252,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             catch (Exception ex)
             {
                 DebugUtility.LogError<PhaseChangeService>(
-                    $"[PhaseChange] Falha no WithTransition. Limpando intent por segurança. ex={ex}");
+                    $"[ContentSwap] Falha no WithTransition. Limpando intent por segurança. ex={ex}");
 
-                _intentRegistry.ClearIntent($"PhaseChange/WithTransition failed: {ex.GetType().Name}");
+                _intentRegistry.ClearIntent($"ContentSwap/WithTransition failed: {ex.GetType().Name}");
             }
             finally
             {
@@ -285,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] ISimulationGateService indisponível. Gate não será adquirido para InPlace.");
+                    "[ContentSwap] ISimulationGateService indisponível. Gate não será adquirido para InPlace.");
                 return null;
             }
 
@@ -297,7 +297,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    "[PhaseChange] ISimulationGateService indisponível. Gate não será adquirido para WithTransition.");
+                    "[ContentSwap] ISimulationGateService indisponível. Gate não será adquirido para WithTransition.");
                 return null;
             }
 
@@ -321,14 +321,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (completed != task)
             {
                 DebugUtility.LogError<PhaseChangeService>(
-                    $"[PhaseChange] Timeout aguardando '{label}'. timeoutMs={timeoutMs}.");
+                    $"[ContentSwap] Timeout aguardando '{label}'. timeoutMs={timeoutMs}.");
 
                 _ = task.ContinueWith(t =>
                 {
                     if (t.Exception != null)
                     {
-                        DebugUtility.LogWarning<PhaseChangeService>(
-                            $"[PhaseChange] '{label}' terminou com erro após timeout. ex={t.Exception.GetBaseException()}");
+                    DebugUtility.LogWarning<PhaseChangeService>(
+                        $"[ContentSwap] '{label}' terminou com erro após timeout. ex={t.Exception.GetBaseException()}");
                     }
                 });
 
@@ -344,7 +344,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (!DependencyManager.Provider.TryGetGlobal<INewScriptsFadeService>(out var fade) || fade == null)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    $"[PhaseChange] Fade solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
+                    $"[ContentSwap] Fade solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
                 return;
             }
 
@@ -356,7 +356,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (!DependencyManager.Provider.TryGetGlobal<INewScriptsFadeService>(out var fade) || fade == null)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    $"[PhaseChange] FadeOut solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
+                    $"[ContentSwap] FadeOut solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
                 return;
             }
 
@@ -368,7 +368,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             if (!DependencyManager.Provider.TryGetGlobal<INewScriptsLoadingHudService>(out var hud) || hud == null)
             {
                 DebugUtility.LogWarning<PhaseChangeService>(
-                    $"[PhaseChange] LoadingHUD solicitado, mas serviço indisponível. signature='{signature}'.");
+                    $"[ContentSwap] LoadingHUD solicitado, mas serviço indisponível. signature='{signature}'.");
                 return;
             }
 
