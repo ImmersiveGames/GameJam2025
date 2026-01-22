@@ -36,7 +36,7 @@ Snapshot atual (datado): **2026-01-17**
 ## Status atual (resumo)
 
 - Added: **Gameplay Reset module** ([Gameplay/Reset/](../Gameplay/Reset/)) com contratos e semântica estável:
-    - `GameplayResetPhase` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet/ByActorKind).
+    - `GameplayResetStep` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet/ByActorKind).
     - `GameplayResetRequest` + `GameplayResetContext`.
     - `IGameplayResettable` (+ `IGameplayResettableSync`), `IGameplayResetOrder`, `IGameplayResetTargetFilter`.
     - `IGameplayResetOrchestrator` + `IGameplayResetTargetClassifier` (serviços por cena).

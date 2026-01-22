@@ -1,6 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.Levels;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -145,21 +145,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 else
                 {
                     // Evita disparo duplicado:
-                    // - PhaseStartPhaseCommitBridge agenda IntroStage após TransitionCompleted quando uma PhaseCommitted ocorre durante SceneTransition.
+                    // - LevelStartCommitBridge agenda IntroStage após TransitionCompleted quando um ContentSwapCommitted ocorre durante SceneTransition
+                    //   (somente para razões LevelChange/*).
                     // - Este bridge dispara IntroStage em SceneFlow/Completed para o caso "entrada no gameplay" sem pipeline pendente.
-                    if (DependencyManager.Provider.TryGetGlobal<PhaseStartPhaseCommitBridge>(out var phaseBridge)
-                        && phaseBridge != null
-                        && phaseBridge.ShouldSuppressIntroStage(signature))
+                    if (DependencyManager.Provider.TryGetGlobal<LevelStartCommitBridge>(out var levelStartBridge)
+                        && levelStartBridge != null
+                        && levelStartBridge.ShouldSuppressIntroStage(signature))
                     {
                         DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                            $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (PhaseStart pipeline pendente). signature='{signature}'.",
+                            $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (LevelStart pipeline pendente). signature='{signature}'.",
                             DebugUtility.Colors.Info);
                         return;
                     }
 
-                    if (DependencyManager.Provider.TryGetGlobal<PhaseStartPhaseCommitBridge>(out var contentSwapBridge)
-                        && contentSwapBridge != null
-                        && contentSwapBridge.IsContentSwapSignature(signature))
+                    if (DependencyManager.Provider.TryGetGlobal<LevelStartCommitBridge>(out var levelStartBridgeSignature)
+                        && levelStartBridgeSignature != null
+                        && levelStartBridgeSignature.IsContentSwapSignature(signature))
                     {
                         DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                             $"[InputModeSceneFlowBridge] [IntroStage] Suprimida (ContentSwap). signature='{signature}'.",

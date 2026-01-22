@@ -7,14 +7,14 @@
 
 ## Contexto
 
-O Baseline 2.2 consolida a mudança de semântica **Phase => ContentSwap** (ADR-0018) e introduz um **LevelManager** configurável para progressão de níveis. Além disso, o baseline precisa centralizar a configuração de gameplay (cenas, níveis, spawns, conteúdo e transições) para reduzir hardcode e garantir consistência de evidências.
+O Baseline 2.2 consolida a mudança de semântica para **ContentSwap + LevelManager** (ADR-0018) e introduz um **LevelManager** configurável para progressão de níveis. Além disso, o baseline precisa centralizar a configuração de gameplay (cenas, níveis, spawns, conteúdo e transições) para reduzir hardcode e garantir consistência de evidências.
 
 Para evitar regressões silenciosas, a promoção deve ser baseada em **gates verificáveis** e evidência canônica, respeitando o contrato de observability.
 
 ## Escopo do Baseline 2.2
 
 ### Entra
-- Semântica oficial: **Phase == ContentSwap** (executor técnico).
+- Semântica oficial: **ContentSwap** como executor técnico.
 - **LevelManager** como orquestrador de progressão (usa ContentSwap + IntroStage).
 - Centralização/configuração de gameplay (ex.: cenas, níveis, spawns, conteúdo, transições).
 - QA mínimo com ContextMenus e logs canônicos para ContentSwap e Level.
@@ -88,6 +88,6 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 - Ponte canônica (ADR aberto): `Docs/Reports/Evidence/LATEST.md`
 
 ## Referências
-- ADR-0018 — Mudança de semântica: Phase => ContentSwap + LevelManager
-- ADR-0017 — Tipos de troca de fase (ContentSwap: In-Place vs SceneTransition)
+- ADR-0018 — Mudança de semântica: ContentSwap + LevelManager
+- ADR-0017 — Tipos de troca de conteúdo (ContentSwap: In-Place vs SceneTransition)
 - Plano 2.2 — Execução (plano2.2.md)

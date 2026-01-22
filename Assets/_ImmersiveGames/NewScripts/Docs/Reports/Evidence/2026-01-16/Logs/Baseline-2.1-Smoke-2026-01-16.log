@@ -100,28 +100,28 @@ NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] Bridge registrado para SceneTransitionCompletedEvent (Frontend/GamePlay -> GameLoop sync). (@ 3,24s)</color>
 <color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço InputModeSceneFlowBridge registrado no escopo global. (@ 3,24s)</color>
 <color=#A8DEED>[VERBOSE] [GlobalBootstrap] [InputMode] InputModeSceneFlowBridge registrado no DI global. (@ 3,24s)</color>
-<color=#A8DEED>[VERBOSE] [PhaseStartPhaseCommitBridge] [PhaseStart] Bridge registrado (PhaseCommittedEvent -> IntroStage pipeline). (@ 3,24s)</color>
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge registrado no escopo global. (@ 3,24s)</color>
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> IntroStage). (@ 3,24s)</color>
+<color=#A8DEED>[VERBOSE] [ContentSwapStartCommitBridge] [ContentSwapStart] Bridge registrado (ContentSwapCommittedEvent -> IntroStage pipeline). (@ 3,24s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapStartCommitBridge registrado no escopo global. (@ 3,24s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwapStart] ContentSwapStartCommitBridge registrado no DI global (ContentSwapCommitted -> IntroStage). (@ 3,24s)</color>
 <color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IStateDependentService registrado no escopo global. (@ 3,24s)</color>
 [VERBOSE] [GlobalBootstrap] Registered global service: IStateDependentService. (@ 3,24s)
 <color=#A8DEED>[VERBOSE] [GlobalBootstrap] [StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService. (@ 3,24s)</color>
 <color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ICameraResolver registrado no escopo global. (@ 3,24s)</color>
 [VERBOSE] [GlobalBootstrap] Registered global service: ICameraResolver. (@ 3,24s)
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService registrado no escopo global. (@ 3,24s)</color>
-[VERBOSE] [GlobalBootstrap] Registered global service: IPhaseContextService. (@ 3,24s)
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService registrado no escopo global. (@ 3,24s)</color>
+[VERBOSE] [GlobalBootstrap] Registered global service: IContentSwapContextService. (@ 3,24s)
 <color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] IntroStageQaContextMenu instalado (DontDestroyOnLoad).</color>
 <color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] IntroStageQaContextMenu ausente; componente adicionado.</color>
 <color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] Para acessar o ContextMenu, selecione o GameObject 'QA_IntroStage' no Hierarchy (DontDestroyOnLoad).</color>
-<color=#A8DEED>[VERBOSE] [PhaseContextSceneFlowBridge] [PhaseContext] PhaseContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending). (@ 3,25s)</color>
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço PhaseContextSceneFlowBridge registrado no escopo global. (@ 3,25s)</color>
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseContext] PhaseContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending). (@ 3,25s)</color>
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry registrado no escopo global. (@ 3,25s)</color>
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseIntent] PhaseTransitionIntentRegistry registrado no DI global. (@ 3,25s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 3,25s)
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 3,25s)
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseChangeService registrado no escopo global. (@ 3,25s)</color>
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseChange] PhaseChangeService registrado no DI global. (@ 3,25s)</color>
+<color=#A8DEED>[VERBOSE] [ContentSwapContextSceneFlowBridge] [ContentSwapContext] ContentSwapContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending). (@ 3,25s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapContextSceneFlowBridge registrado no escopo global. (@ 3,25s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwapContext] ContentSwapContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending). (@ 3,25s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry registrado no escopo global. (@ 3,25s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwapIntent] ContentSwapTransitionIntentRegistry registrado no DI global. (@ 3,25s)</color>
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 3,25s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 3,25s)
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapChangeService registrado no escopo global. (@ 3,25s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwap] ContentSwapChangeService registrado no DI global. (@ 3,25s)</color>
 [VERBOSE] [GameReadinessService] [Readiness] GameReadinessService registrado nos eventos de Scene Flow. (@ 3,25s)
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=True, activeTokens=0, reason='bootstrap'. (@ 3,25s)
 <color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço GameReadinessService registrado no escopo global. (@ 3,25s)</color>
@@ -169,12 +169,12 @@ NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
 <color=#A8DEED>[INFO] [GameStartRequestProductionBootstrapper] [Production][StartRequest] Start solicitado (GameStartRequestedEvent).</color>
 [INFO] [GameLoopSceneFlowCoordinator] [GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...
 <color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup' Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 3,56s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 3,56s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 3,56s)
 [VERBOSE] [GlobalServiceRegistry] Serviço INewScriptsLoadingHudService encontrado no escopo global (tipo registrado: INewScriptsLoadingHudService). (@ 3,56s)
 [VERBOSE] [NewScriptsLoadingHudService] [LoadingHUD] Carregando cena 'LoadingHudScene' (Additive)... (@ 3,57s)
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 3,57s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 3,57s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 3,57s)
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 3,57s)
 [VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.scene_transition'. Active=1. IsOpen=False (@ 3,57s)
 [VERBOSE] [GameReadinessService] [Readiness] SimulationGate adquirido com token='flow.scene_transition'. Active=1. IsOpen=False (@ 3,57s)
@@ -239,8 +239,8 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#4CAF50>[VERBOSE] [SceneServiceCleaner] Cena NewBootstrap descarregada, serviços limpos. (@ 5,44s)</color>
 [INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] ScenesReady signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 5,44s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 5,44s)
-<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][Phase] ResetRequested sourceSignature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene' profile='startup' target='MenuScene'.</color>
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 5,44s)
+<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][ContentSwap] ResetRequested sourceSignature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene' profile='startup' target='MenuScene'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset REQUESTED. reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene', signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', profile='startup'.</color>
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset SKIPPED (startup/frontend). why='profile', profile='startup', activeScene='MenuScene', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'. (@ 5,44s)</color>
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='startup', signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'. (@ 5,44s)</color>
@@ -276,10 +276,10 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#A8DEED>[VERBOSE] [MenuPlayButtonBinder] [Navigation] Play solicitado. reason='Menu/PlayButton'. (@ 9,89s)</color>
 <color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-gameplay', reason='Menu/PlayButton', Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'.</color>
 <color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 9,89s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 9,89s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 9,89s)
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 9,89s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 9,89s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 9,89s)
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 9,89s)
 [VERBOSE] [SimulationGateService] [Gate] Acquire token='flow.scene_transition'. Active=1. IsOpen=False (@ 9,89s)
 [VERBOSE] [GameReadinessService] [Readiness] SimulationGate adquirido com token='flow.scene_transition'. Active=1. IsOpen=False (@ 9,89s)
@@ -349,8 +349,8 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#4CAF50>[VERBOSE] [SceneServiceCleaner] Cena MenuScene descarregada, serviços limpos. (@ 10,48s)</color>
 [INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] ScenesReady signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 10,48s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 10,48s)
-<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][Phase] ResetRequested sourceSignature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' reason='ScenesReady/GameplayScene' profile='gameplay' target='GameplayScene'.</color>
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 10,48s)
+<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][ContentSwap] ResetRequested sourceSignature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' reason='ScenesReady/GameplayScene' profile='gameplay' target='GameplayScene'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset REQUESTED. reason='ScenesReady/GameplayScene', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', profile='gameplay'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene', profile='gameplay'</color>
 [INFO] [WorldLifecycleController] Processando reset. label='WorldReset(reason='ScenesReady/GameplayScene')', scene='GameplayScene'.
@@ -441,7 +441,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [INFO] [WorldLifecycleOrchestrator] World Reset Completed
 [VERBOSE] [WorldLifecycleOrchestrator] Reset duration: 37ms (@ 10,53s)
 [INFO] [WorldLifecycleController] Reset concluído. reason='ScenesReady/GameplayScene', scene='GameplayScene'.
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 10,53s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 10,53s)
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='gameplay', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='ScenesReady/GameplayScene'. (@ 10,53s)</color>
 [VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='ScenesReady/GameplayScene'. (@ 10,53s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] ScenesReady → Update pending. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 10,53s)
@@ -465,7 +465,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [VERBOSE] [GlobalServiceRegistry] Serviço IGameLoopService encontrado no escopo global (tipo registrado: IGameLoopService). (@ 10,98s)
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop. (@ 10,98s)</color>
 [VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 10,98s)
-[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge encontrado no escopo global (tipo registrado: PhaseStartPhaseCommitBridge). (@ 10,98s)
+[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapStartCommitBridge encontrado no escopo global (tipo registrado: ContentSwapStartCommitBridge). (@ 10,98s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator encontrado no escopo global (tipo registrado: IIntroStageCoordinator). (@ 10,98s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStagePolicyResolver encontrado no escopo global (tipo registrado: IIntroStagePolicyResolver). (@ 10,98s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageStep encontrado no escopo global (tipo registrado: IIntroStageStep). (@ 10,98s)
@@ -572,10 +572,10 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#A8DEED>[INFO] [RestartNavigationBridge] [Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync. reason='PostGame/Restart'.</color>
 <color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-gameplay', reason='PostGame/Restart', Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'.</color>
 <color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 21,03s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 21,03s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 21,03s)
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 21,03s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 21,03s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 21,03s)
 [VERBOSE] [NewScriptsStateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=1). (@ 21,03s)
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 21,03s)
 [VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=False, scene='GameplayScene', actor='A_1a8ddc12_1_Player_NewScriptsClone'. (@ 21,03s)
@@ -601,8 +601,8 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [VERBOSE] [SceneTransitionService] [SceneFlow] Cena 'MenuScene' já está descarregada. Pulando unload. (@ 21,53s)
 [INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] ScenesReady signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 21,53s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 21,53s)
-<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][Phase] ResetRequested sourceSignature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' reason='ScenesReady/GameplayScene' profile='gameplay' target='GameplayScene'.</color>
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 21,53s)
+<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][ContentSwap] ResetRequested sourceSignature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' reason='ScenesReady/GameplayScene' profile='gameplay' target='GameplayScene'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset REQUESTED. reason='ScenesReady/GameplayScene', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', profile='gameplay'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene', profile='gameplay'</color>
 [INFO] [WorldLifecycleController] Processando reset. label='WorldReset(reason='ScenesReady/GameplayScene')', scene='GameplayScene'.
@@ -704,7 +704,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [INFO] [WorldLifecycleOrchestrator] World Reset Completed
 [VERBOSE] [WorldLifecycleOrchestrator] Reset duration: 10ms (@ 21,54s)
 [INFO] [WorldLifecycleController] Reset concluído. reason='ScenesReady/GameplayScene', scene='GameplayScene'.
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 21,54s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 21,54s)
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='gameplay', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='ScenesReady/GameplayScene'. (@ 21,54s)</color>
 [VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='ScenesReady/GameplayScene'. (@ 21,54s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] ScenesReady → Update pending. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 21,54s)
@@ -730,7 +730,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop. (@ 22,03s)</color>
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStage (Restart/Boot cycle). (@ 22,03s)</color>
 [VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 22,03s)
-[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge encontrado no escopo global (tipo registrado: PhaseStartPhaseCommitBridge). (@ 22,03s)
+[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapStartCommitBridge encontrado no escopo global (tipo registrado: ContentSwapStartCommitBridge). (@ 22,03s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator encontrado no escopo global (tipo registrado: IIntroStageCoordinator). (@ 22,03s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStagePolicyResolver encontrado no escopo global (tipo registrado: IIntroStagePolicyResolver). (@ 22,03s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageStep encontrado no escopo global (tipo registrado: IIntroStageStep). (@ 22,03s)
@@ -797,10 +797,10 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#A8DEED>[INFO] [RestartNavigationBridge] [Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync. reason='PostGame/Restart'.</color>
 <color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-gameplay', reason='PostGame/Restart', Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'.</color>
 <color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 30,99s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 30,99s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 30,99s)
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 30,99s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 30,99s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 30,99s)
 [VERBOSE] [NewScriptsStateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=1). (@ 30,99s)
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 30,99s)
 [VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=False, scene='GameplayScene', actor='A_1a8ddc12_3_Player_NewScriptsClone'. (@ 30,99s)
@@ -826,8 +826,8 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [VERBOSE] [SceneTransitionService] [SceneFlow] Cena 'MenuScene' já está descarregada. Pulando unload. (@ 31,49s)
 [INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] ScenesReady signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 31,49s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 31,49s)
-<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][Phase] ResetRequested sourceSignature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' reason='ScenesReady/GameplayScene' profile='gameplay' target='GameplayScene'.</color>
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 31,49s)
+<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][ContentSwap] ResetRequested sourceSignature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' reason='ScenesReady/GameplayScene' profile='gameplay' target='GameplayScene'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset REQUESTED. reason='ScenesReady/GameplayScene', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', profile='gameplay'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene', profile='gameplay'</color>
 [INFO] [WorldLifecycleController] Processando reset. label='WorldReset(reason='ScenesReady/GameplayScene')', scene='GameplayScene'.
@@ -929,7 +929,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [INFO] [WorldLifecycleOrchestrator] World Reset Completed
 [VERBOSE] [WorldLifecycleOrchestrator] Reset duration: 6ms (@ 31,50s)
 [INFO] [WorldLifecycleController] Reset concluído. reason='ScenesReady/GameplayScene', scene='GameplayScene'.
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 31,50s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 31,50s)
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='gameplay', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='ScenesReady/GameplayScene'. (@ 31,50s)</color>
 [VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', reason='ScenesReady/GameplayScene'. (@ 31,50s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] ScenesReady → Update pending. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 31,50s)
@@ -955,7 +955,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop. (@ 31,99s)</color>
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStage (Restart/Boot cycle). (@ 31,99s)</color>
 [VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 31,99s)
-[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge encontrado no escopo global (tipo registrado: PhaseStartPhaseCommitBridge). (@ 31,99s)
+[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapStartCommitBridge encontrado no escopo global (tipo registrado: ContentSwapStartCommitBridge). (@ 31,99s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator encontrado no escopo global (tipo registrado: IIntroStageCoordinator). (@ 31,99s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStagePolicyResolver encontrado no escopo global (tipo registrado: IIntroStagePolicyResolver). (@ 31,99s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageStep encontrado no escopo global (tipo registrado: IIntroStageStep). (@ 31,99s)
@@ -982,7 +982,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [VERBOSE] [NewScriptsStateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=True, paused=False, serviceState=Ready, gameLoopState='IntroStage', activeTokens=1). (@ 32,00s)
 [VERBOSE] [GlobalServiceRegistry] Serviço IWorldResetRequestService encontrado no escopo global (tipo registrado: WorldLifecycleRuntimeCoordinator). (@ 33,42s)
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset REQUESTED. signature='directReset:scene=GameplayScene;src=Gameplay/HotkeyR;seq=1;salt=a3c26649', reason='ProductionTrigger/Gameplay/HotkeyR', source='Gameplay/HotkeyR', scene='GameplayScene'.</color>
-<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][Phase] ResetRequested sourceSignature='Gameplay/HotkeyR' reason='ProductionTrigger/Gameplay/HotkeyR' profile='<none>' target='GameplayScene'.</color>
+<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][ContentSwap] ResetRequested sourceSignature='Gameplay/HotkeyR' reason='ProductionTrigger/Gameplay/HotkeyR' profile='<none>' target='GameplayScene'.</color>
 [VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 33,42s)
 [INFO] [WorldLifecycleController] Processando reset. label='WorldReset(reason='ProductionTrigger/Gameplay/HotkeyR')', scene='GameplayScene'.
 [INFO] [WorldLifecycleController] Reset iniciado. reason='ProductionTrigger/Gameplay/HotkeyR', scene='GameplayScene'.
@@ -1082,7 +1082,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [INFO] [WorldLifecycleOrchestrator] World Reset Completed
 [VERBOSE] [WorldLifecycleOrchestrator] Reset duration: 6ms (@ 33,43s)
 [INFO] [WorldLifecycleController] Reset concluído. reason='ProductionTrigger/Gameplay/HotkeyR', scene='GameplayScene'.
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 33,43s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 33,43s)
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='<none>', signature='directReset:scene=GameplayScene;src=Gameplay/HotkeyR;seq=1;salt=a3c26649', reason='ProductionTrigger/Gameplay/HotkeyR'. (@ 33,43s)</color>
 [VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='directReset:scene=GameplayScene;src=Gameplay/HotkeyR;seq=1;salt=a3c26649', reason='ProductionTrigger/Gameplay/HotkeyR'. (@ 33,43s)
 [VERBOSE] [NewEaterRandomMovementController] [EaterMovement] Movement blocked by IStateDependentService. (@ 33,43s)
@@ -1114,7 +1114,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [VERBOSE] [NewScriptsStateDependentService] [StateDependent] Action 'Move' liberada (gateOpen=True, gameplayReady=True, paused=False, serviceState=Playing, gameLoopState='Playing', activeTokens=0). (@ 34,50s)
 [VERBOSE] [NewEaterRandomMovementController] [EaterMovement] New direction: (-0.75, 0.00, -0.66) (scene='GameplayScene'). (@ 34,50s)
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset REQUESTED. signature='directReset:scene=GameplayScene;src=Gameplay/HotkeyR;seq=2;salt=a3c26649', reason='ProductionTrigger/Gameplay/HotkeyR', source='Gameplay/HotkeyR', scene='GameplayScene'.</color>
-<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][Phase] ResetRequested sourceSignature='Gameplay/HotkeyR' reason='ProductionTrigger/Gameplay/HotkeyR' profile='<none>' target='GameplayScene'.</color>
+<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][ContentSwap] ResetRequested sourceSignature='Gameplay/HotkeyR' reason='ProductionTrigger/Gameplay/HotkeyR' profile='<none>' target='GameplayScene'.</color>
 [VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 35,14s)
 [INFO] [WorldLifecycleController] Processando reset. label='WorldReset(reason='ProductionTrigger/Gameplay/HotkeyR')', scene='GameplayScene'.
 [INFO] [WorldLifecycleController] Reset iniciado. reason='ProductionTrigger/Gameplay/HotkeyR', scene='GameplayScene'.
@@ -1220,7 +1220,7 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 [INFO] [WorldLifecycleOrchestrator] World Reset Completed
 [VERBOSE] [WorldLifecycleOrchestrator] Reset duration: 6ms (@ 35,14s)
 [INFO] [WorldLifecycleController] Reset concluído. reason='ProductionTrigger/Gameplay/HotkeyR', scene='GameplayScene'.
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 35,14s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 35,14s)
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='<none>', signature='directReset:scene=GameplayScene;src=Gameplay/HotkeyR;seq=2;salt=a3c26649', reason='ProductionTrigger/Gameplay/HotkeyR'. (@ 35,14s)</color>
 [VERBOSE] [WorldLifecycleResetCompletionGate] [SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='directReset:scene=GameplayScene;src=Gameplay/HotkeyR;seq=2;salt=a3c26649', reason='ProductionTrigger/Gameplay/HotkeyR'. (@ 35,14s)
 [VERBOSE] [NewEaterRandomMovementController] [EaterMovement] New direction: (0.75, 0.00, -0.66) (scene='GameplayScene'). (@ 35,15s)
@@ -1238,10 +1238,10 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#A8DEED>[INFO] [ExitToMenuNavigationBridge] [Navigation] ExitToMenu recebido -> RequestMenuAsync. routeId='to-menu', reason='PostGame/ExitToMenu'.</color>
 <color=#A8DEED>[INFO] [GameNavigationService] [Navigation] NavigateAsync -> routeId='to-menu', reason='PostGame/ExitToMenu', Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend'.</color>
 <color=#A8DEED>[INFO] [SceneTransitionService] [SceneFlow] TransitionStarted signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' profile='frontend' Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend'</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 37,74s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 37,74s)
 [VERBOSE] [SceneFlowLoadingService] [Loading] Started → Ensure only (Show após FadeIn). signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 37,74s)
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 37,74s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 37,74s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 37,74s)
 [VERBOSE] [NewScriptsStateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=1). (@ 37,74s)
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 37,74s)
 [VERBOSE] [NewPlayerMovementController] [Movement][Gate] GateChanged: open=False, scene='GameplayScene', actor='A_1a8ddc12_9_Player_NewScriptsClone'. (@ 37,74s)
@@ -1296,8 +1296,8 @@ IOException: Sharing violation on path C:\Projetos\GameJam2025\Assets\_Immersive
 <color=#4CAF50>[VERBOSE] [SceneServiceCleaner] Cena GameplayScene descarregada, serviços limpos. (@ 38,32s)</color>
 [INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene', UseFade=True, Profile='frontend'
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] ScenesReady signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 38,32s)</color>
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 38,32s)
-<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][Phase] ResetRequested sourceSignature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene' profile='frontend' target='MenuScene'.</color>
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 38,32s)
+<color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [OBS][ContentSwap] ResetRequested sourceSignature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene' reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene' profile='frontend' target='MenuScene'.</color>
 <color=#A8DEED>[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset REQUESTED. reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene', signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', profile='frontend'.</color>
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset SKIPPED (startup/frontend). why='profile', profile='frontend', activeScene='MenuScene', reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'. (@ 38,32s)</color>
 <color=#A8DEED>[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='frontend', signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene', reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'. (@ 38,32s)</color>

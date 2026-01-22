@@ -1,20 +1,20 @@
 # Changelog (Docs)
 
 ## 2026-01-21
-- ADR-0018 reescrito para formalizar a mudança semântica Phase => ContentSwap e delimitar o LevelManager.
+- ADR-0018 reescrito para formalizar a mudança semântica para ContentSwap + LevelManager e delimitar o LevelManager.
 - ADR-0019 atualizado para descrever promoção do Baseline 2.2 com escopo, gates e metodologia de evidência por data.
 - Plano 2.2 reorganizado por marcos (ADR-0017 → ADR-0018 → ADR-0019 → execução do baseline).
 - ARCHITECTURE.md e READMEs ajustados para terminologia consistente (ContentSwap vs LevelManager).
 - Arquivos alterados: `Docs/ADRs/ADR-0018-Gate-de-Promoção-Baseline2.2.md`, `Docs/ADRs/ADR-0019-Promocao-Baseline2.2.md`, `Docs/plano2.2.md`, `Docs/ARCHITECTURE.md`, `Docs/README.md`, `Docs/ADRs/README.md`, `README.md`.
 
 ## 2026-01-20
-- ADR-0018/ADR-0019 reescritos para formalizar Phase => ContentSwap e LevelManager.
+- ADR-0018/ADR-0019 reescritos para formalizar ContentSwap + LevelManager.
 - ADR-0017 atualizado para explicitar ContentSwap como termo canônico.
 - Plano 2.2 reordenado com QA separado para ContentSwap (QA_ContentSwap) e Level (QA_Level).
 - Observability-Contract atualizado para ContentSwap + Level (reasons e anchors).
 
 ## 2026-01-19
-- ADR-0018 reestruturado para definir ContentSwap (Phase) e observability, separando de Level/Nível.
+- ADR-0018 reestruturado para definir ContentSwap e observability, separando de Level/Nível.
 - ADR-0019 reescrito para Level Manager (progressão) e gates verificáveis do Baseline 2.2.
 - Plano 2.2 reordenado (ContentSwap → Level Manager → Configuração → QA/Evidências/Gate).
 - Índice de ADRs atualizado para refletir os novos escopos.
@@ -35,7 +35,7 @@
 ## [2026-01-15]
 ### Changed
 - Baseline 2.0 checklist ajustado para refletir a cobertura do log atual (A, B, D, E; **IntroStage pendente**) e a ordem Fade/Loading detalhada.
-- ADR-0016 e ADR-0017 alinhados às assinaturas reais do `PhaseChangeService` (`RequestPhaseInPlaceAsync` / `RequestPhaseWithTransitionAsync`, overloads e `SceneTransitionRequest`).
+- ADR-0016 e ADR-0017 alinhados às assinaturas reais do `ContentSwapChangeService` (`RequestContentSwapInPlaceAsync` / `RequestContentSwapWithTransitionAsync`, overloads e `SceneTransitionRequest`).
 - ADR-0016 refinado para explicitar contrato operacional da IntroStage (token `sim.gameplay`, InputMode UI/Gameplay, `UIConfirm`/`NoContent`, RuntimeDebugGui/QA).
 - ADR-0010 alinhado à ordem real do Fade/Loading HUD e ao posicionamento da IntroStage (post-reveal).
 - IntroStage consolidada como termo canônico (sem compatibilidade legada).
@@ -183,7 +183,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Added: bridge `GameResetRequestedEvent` → `RestartNavigationBridge` → reset oficial via SceneFlow/WorldLifecycle.
 - Updated: `Reports/GameLoop.md` e `WORLD_LIFECYCLE.md` com o fluxo de pós-game (Restart/Menu).
 - Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
-- Updated: `Reports/Archive/2025/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
+- Updated: `Reports/Archive/2025/QA-Audit-2025-12-27.md` com referência ao `GameplayResetStepLogger`.
 - Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.
 - Updated: documentação de QA de GameplayReset com notas sobre DI do classifier e `verboseLogs`.
 - Added: QA Eater (`GameplayResetKindQaEaterActor`) e spawn opcional no `GameplayResetKindQaSpawner` para validar `EaterOnly`.

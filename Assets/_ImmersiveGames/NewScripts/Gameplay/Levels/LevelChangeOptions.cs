@@ -1,5 +1,5 @@
 #nullable enable
-using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
     /// </summary>
     public sealed class LevelChangeOptions
     {
-        public PhaseChangeOptions? PhaseOptions { get; set; }
+        public ContentSwapOptions? ContentSwapOptions { get; set; }
 
         public static LevelChangeOptions Default => new LevelChangeOptions();
 
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         {
             return new LevelChangeOptions
             {
-                PhaseOptions = PhaseOptions?.Clone()
+                ContentSwapOptions = ContentSwapOptions?.Clone()
             };
         }
     }

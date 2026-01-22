@@ -129,7 +129,7 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 
         #endregion
 
-        #region Reset Phases
+        #region Reset Steps
 
         public Task Reset_CleanupAsync(ResetContext ctx)
         {

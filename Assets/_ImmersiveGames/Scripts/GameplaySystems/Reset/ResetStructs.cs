@@ -55,14 +55,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             this.currentStructs = currentStructs;
         }
 
-        public ResetContext WithPhase(ResetStructs structs)
+        public ResetContext WithStep(ResetStructs structs)
         {
             return new ResetContext(SceneName, Request, RequestSerial, FrameStarted, structs);
         }
 
         public override string ToString()
         {
-            return $"ResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Phase={currentStructs}, {Request})";
+            return $"ResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Step={currentStructs}, {Request})";
         }
     }
 }

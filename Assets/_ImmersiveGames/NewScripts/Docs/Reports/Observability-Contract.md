@@ -79,7 +79,7 @@ Reasons canônicos de WorldLifecycle:
 
 - `SceneFlow/ScenesReady`
 - `ProductionTrigger/<source>`
-- `phase.inplace:<phaseId>`
+- `contentswap.inplace:<contentId>`
 - `Skipped_StartupOrFrontend:profile=<profile>;scene=<scene>`
 - `Failed_NoController:<scene>`
 
@@ -121,11 +121,11 @@ O contrato para ContentSwap é definido em ADR-0017 (Tipos de troca de fase).
 
 **Eventos/anchors mínimos**
 
-- `[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode=InPlace phaseId='...' reason='...'`
-- `[OBS][ContentSwap] ContentSwapRequested event=content_swap_transition mode=SceneTransition phaseId='...' reason='...' signature='...' profile='...'`
-- `[OBS][Phase] PhaseChangeRequested ...` (legado; alias do ContentSwap)
-- `[PhaseContext] PhasePendingSet plan='...' reason='...'` (legado; contexto de ContentSwap)
-- `[PhaseContext] PhaseCommitted prev='...' current='...' reason='...'` (legado; contexto de ContentSwap)
+- `[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode=InPlace contentId='...' reason='...'`
+- `[OBS][ContentSwap] ContentSwapRequested event=content_swap_transition mode=SceneTransition contentId='...' reason='...' signature='...' profile='...'`
+- `[OBS][ContentSwap] ContentSwapRequested ...` (legado; alias do ContentSwap)
+- `[ContentSwapContext] ContentSwapPendingSet plan='...' reason='...'` (legado; contexto de ContentSwap)
+- `[ContentSwapContext] ContentSwapCommitted prev='...' current='...' reason='...'` (legado; contexto de ContentSwap)
 
 **Regra do `reason`**
 
@@ -133,8 +133,8 @@ O contrato para ContentSwap é definido em ADR-0017 (Tipos de troca de fase).
 - Recomendações para QA (prefixos estáveis):
     - `QA/ContentSwap/InPlace/<...>`
     - `QA/ContentSwap/WithTransition/<...>`
-    - `QA/Phases/InPlace/<...>` (legado)
-    - `QA/Phases/WithTransition/<...>` (legado)
+    - `QA/ContentSwap/InPlace/<...>` (legado)
+    - `QA/ContentSwap/WithTransition/<...>` (legado)
 
 ### Level
 
@@ -142,9 +142,9 @@ O contrato para Level Manager é definido em ADR-0018/ADR-0019.
 
 **Eventos/anchors mínimos**
 
-- `[OBS][Level] LevelChangeRequested levelId='...' phaseId='...' mode='<InPlace|SceneTransition>' reason='...' contentSig='...'`
-- `[OBS][Level] LevelChangeStarted levelId='...' phaseId='...' mode='...' reason='...'`
-- `[OBS][Level] LevelChangeCompleted levelId='...' phaseId='...' mode='...' reason='...'`
+- `[OBS][Level] LevelChangeRequested levelId='...' contentId='...' mode='<InPlace|SceneTransition>' reason='...' contentSig='...'`
+- `[OBS][Level] LevelChangeStarted levelId='...' contentId='...' mode='...' reason='...'`
+- `[OBS][Level] LevelChangeCompleted levelId='...' contentId='...' mode='...' reason='...'`
 
 **Regra do `reason`**
 
@@ -171,7 +171,7 @@ Este catálogo reúne os principais reasons citados como critérios de aceite, g
 - WorldLifecycle
     - `SceneFlow/ScenesReady`
     - `ProductionTrigger/<source>`
-    - `phase.inplace:<phaseId>`
+    - `contentswap.inplace:<contentId>`
     - `Skipped_StartupOrFrontend:profile=<...>;scene=<...>`
     - `Failed_NoController:<scene>`
 - IntroStage

@@ -1,13 +1,13 @@
-﻿// Assets/_ImmersiveGames/NewScripts/QA/Phases/PhaseQaDevBootstrapper.cs
-// Boot DEV para instalar o QA de Phases automaticamente ao entrar em Play Mode.
+﻿// Assets/_ImmersiveGames/NewScripts/QA/ContentSwap/ContentSwapQaDevBootstrapper.cs
+// Boot DEV para instalar o QA de ContentSwap automaticamente ao entrar em Play Mode.
 // Comentários PT; código EN.
 
 #nullable enable
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.QA.Phases
+namespace _ImmersiveGames.NewScripts.QA.ContentSwap
 {
-    public static class PhaseQaDevBootstrapper
+    public static class ContentSwapQaDevBootstrapper
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
                 return;
             }
 
-            PhaseQaInstaller.EnsureInstalled();
+            ContentSwapQaInstaller.EnsureInstalled();
         }
 #endif
     }

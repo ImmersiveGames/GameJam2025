@@ -100,7 +100,7 @@ Este doc não lista todas as strings de reason para evitar divergência.
 
 Trechos relevantes:
 
-- `[OBS][Phase] ResetRequested ... reason='ProductionTrigger/Gameplay/HotkeyR' target='GameplayScene'`
+- `[OBS][ContentSwap] ResetRequested ... reason='ProductionTrigger/Gameplay/HotkeyR' target='GameplayScene'`
 - `[WorldLifecycleController] Reset iniciado. reason='ProductionTrigger/Gameplay/HotkeyR', scene='GameplayScene'.`
 - `[WorldLifecycleOrchestrator] World Reset Completed`
 - `Emitting WorldLifecycleResetCompletedEvent ... reason='ProductionTrigger/Gameplay/HotkeyR'`
@@ -113,7 +113,7 @@ Trechos relevantes:
 
 Trechos relevantes:
 
-- `[OBS][Phase] ResetRequested ... reason='ProductionTrigger/qa_marco0_reset' target='GameplayScene'`
+- `[OBS][ContentSwap] ResetRequested ... reason='ProductionTrigger/qa_marco0_reset' target='GameplayScene'`
 - `[WorldLifecycleController] Reset iniciado. reason='ProductionTrigger/qa_marco0_reset', scene='GameplayScene'.`
 - `Emitting WorldLifecycleResetCompletedEvent ... reason='ProductionTrigger/qa_marco0_reset'`
 
@@ -126,8 +126,8 @@ Trechos relevantes:
 ## Referências
 
 - [ADR-0013 — Ciclo de Vida do Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
-- [ADR-0016 — Phases no WorldLifecycle](ADRs/ADR-0016-Phases-WorldLifecycle.md)
-- [ADR-0017 — Tipos de troca de fase](ADRs/ADR-0017-Tipos-de-troca-fase.md)
+- [ADR-0016 — ContentSwap no WorldLifecycle](ADRs/ADR-0016-ContentSwap-WorldLifecycle.md)
+- [ADR-0017 — Tipos de troca de conteúdo](ADRs/ADR-0017-Tipos-de-troca-conteudo.md)
 - [ADR-0010 — Loading HUD + SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
 - [ADR-0009 — Fade + SceneFlow](ADRs/ADR-0009-FadeSceneFlow.md)
 - [Reports/Observability-Contract.md](Reports/Observability-Contract.md)

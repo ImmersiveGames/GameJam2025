@@ -138,7 +138,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             DebugUtility.LogVerbose<PlanetDefenseEventService>(
                 $"[SpawnEvent] Minion spawnado em {spawnedEvent.Planet.ActorName} com role '{spawnedEvent.SpawnContext.TargetRole}' " +
-                $"e label '{spawnedEvent.SpawnContext.TargetLabel}'. EntryStarted={spawnedEvent.EntryPhaseStarted}.");
+                $"e label '{spawnedEvent.SpawnContext.TargetLabel}'. EntryStarted={spawnedEvent.EntryStepStarted}.");
         }
 
         private void ResolveDependenciesFromProvider()

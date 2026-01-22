@@ -2,7 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
@@ -14,12 +14,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         private const string LevelChangePrefix = "LevelChange/";
         private const string QaLevelPrefix = "QA/Levels/";
 
-        private readonly IPhaseChangeService _phaseChangeService;
+        private readonly IContentSwapChangeService _contentSwapChangeService;
         private int _inProgress;
 
-        public LevelManager(IPhaseChangeService phaseChangeService)
+        public LevelManager(IContentSwapChangeService contentSwapChangeService)
         {
-            _phaseChangeService = phaseChangeService ?? throw new ArgumentNullException(nameof(phaseChangeService));
+            _contentSwapChangeService = contentSwapChangeService ?? throw new ArgumentNullException(nameof(contentSwapChangeService));
         }
 
         public async Task RequestLevelInPlaceAsync(LevelPlan plan, string reason, LevelChangeOptions? options = null)
@@ -42,22 +42,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             var normalizedOptions = NormalizeOptions(options);
 
             DebugUtility.Log<LevelManager>(
-                $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='InPlace' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
+                $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' contentId='{plan.ContentId}' mode='InPlace' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
                 DebugUtility.Colors.Info);
 
             try
             {
                 DebugUtility.Log<LevelManager>(
-                    $"[OBS][Level] LevelChangeStarted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='InPlace' reason='{normalizedReason}'.",
+                    $"[OBS][Level] LevelChangeStarted levelId='{plan.LevelId}' contentId='{plan.ContentId}' mode='InPlace' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
 
-                await _phaseChangeService.RequestPhaseInPlaceAsync(
-                    plan.ToPhasePlan(),
+                await _contentSwapChangeService.RequestContentSwapInPlaceAsync(
+                    plan.ToContentSwapPlan(),
                     normalizedReason,
-                    normalizedOptions.PhaseOptions);
+                    normalizedOptions.ContentSwapOptions);
 
                 DebugUtility.Log<LevelManager>(
-                    $"[OBS][Level] LevelChangeCompleted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='InPlace' reason='{normalizedReason}'.",
+                    $"[OBS][Level] LevelChangeCompleted levelId='{plan.LevelId}' contentId='{plan.ContentId}' mode='InPlace' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
@@ -98,23 +98,23 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             var normalizedOptions = NormalizeOptions(options);
 
             DebugUtility.Log<LevelManager>(
-                $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='SceneTransition' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
+                $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' contentId='{plan.ContentId}' mode='SceneTransition' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
                 DebugUtility.Colors.Info);
 
             try
             {
                 DebugUtility.Log<LevelManager>(
-                    $"[OBS][Level] LevelChangeStarted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='SceneTransition' reason='{normalizedReason}'.",
+                    $"[OBS][Level] LevelChangeStarted levelId='{plan.LevelId}' contentId='{plan.ContentId}' mode='SceneTransition' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
 
-                await _phaseChangeService.RequestPhaseWithTransitionAsync(
-                    plan.ToPhasePlan(),
+                await _contentSwapChangeService.RequestContentSwapWithTransitionAsync(
+                    plan.ToContentSwapPlan(),
                     transition,
                     normalizedReason,
-                    normalizedOptions.PhaseOptions);
+                    normalizedOptions.ContentSwapOptions);
 
                 DebugUtility.Log<LevelManager>(
-                    $"[OBS][Level] LevelChangeCompleted levelId='{plan.LevelId}' phaseId='{plan.PhaseId}' mode='SceneTransition' reason='{normalizedReason}'.",
+                    $"[OBS][Level] LevelChangeCompleted levelId='{plan.LevelId}' contentId='{plan.ContentId}' mode='SceneTransition' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)

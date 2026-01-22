@@ -115,18 +115,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public IPoolable SpawnedMinion { get; }
         public MinionSpawnContext SpawnContext { get; }
-        public bool EntryPhaseStarted { get; }
+        public bool EntryStepStarted { get; }
 
         public PlanetDefenseMinionSpawnedEvent(
             PlanetsMaster planet,
             IPoolable spawnedMinion,
             MinionSpawnContext spawnContext,
-            bool entryPhaseStarted)
+            bool entryStepStarted)
         {
             Planet = planet;
             SpawnedMinion = spawnedMinion;
             SpawnContext = spawnContext;
-            EntryPhaseStarted = entryPhaseStarted;
+            EntryStepStarted = entryStepStarted;
         }
     }
 }

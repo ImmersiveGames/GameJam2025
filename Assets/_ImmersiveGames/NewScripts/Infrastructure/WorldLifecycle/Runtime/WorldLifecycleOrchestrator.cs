@@ -86,18 +86,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 completionLog: "Scoped Reset Completed");
         }
 
-        private async Task RunPhaseAsync(string phaseName, Func<IWorldSpawnService, Task> phaseAction)
+        private async Task RunStepAsync(string stepName, Func<IWorldSpawnService, Task> stepAction)
         {
-            var phaseWatch = Stopwatch.StartNew();
-            DebugUtility.Log(typeof(WorldLifecycleOrchestrator), $"{phaseName} started");
+            var stepWatch = Stopwatch.StartNew();
+            DebugUtility.Log(typeof(WorldLifecycleOrchestrator), $"{stepName} started");
 
             if (_spawnServices == null || _spawnServices.Count == 0)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                    $"{phaseName} skipped (no spawn services registered).");
-                phaseWatch.Stop();
+                    $"{stepName} skipped (no spawn services registered).");
+                stepWatch.Stop();
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    $"{phaseName} duration: {phaseWatch.ElapsedMilliseconds}ms");
+                    $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
                 return;
             }
 
@@ -106,56 +106,56 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 if (service == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        $"{phaseName} service é nulo e será ignorado.");
+                        $"{stepName} service é nulo e será ignorado.");
                     continue;
                 }
 
                 if (!ShouldIncludeForScopes(service))
                 {
                     DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                        $"{phaseName} service skipped by scope filter: {service.Name}");
+                        $"{stepName} service skipped by scope filter: {service.Name}");
                     continue;
                 }
 
                 DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
-                    $"{phaseName} service started: {service.Name}");
+                    $"{stepName} service started: {service.Name}");
 
                 var serviceWatch = Stopwatch.StartNew();
                 try
                 {
-                    await phaseAction(service);
+                    await stepAction(service);
                 }
                 finally
                 {
                     serviceWatch.Stop();
                     DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                        $"{phaseName} service duration: {service.Name} => {serviceWatch.ElapsedMilliseconds}ms");
+                        $"{stepName} service duration: {service.Name} => {serviceWatch.ElapsedMilliseconds}ms");
                 }
 
                 DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
-                    $"{phaseName} service completed: {service.Name}");
+                    $"{stepName} service completed: {service.Name}");
             }
 
-            phaseWatch.Stop();
+            stepWatch.Stop();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                $"{phaseName} duration: {phaseWatch.ElapsedMilliseconds}ms");
+                $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
         }
 
-        private async Task RunHookPhaseAsync(string hookName, Func<IWorldLifecycleHook, Task> hookAction)
+        private async Task RunHookStepAsync(string hookName, Func<IWorldLifecycleHook, Task> hookAction)
         {
             List<(string Label, IWorldLifecycleHook Hook)> collectedHooks = CollectHooks();
             if (collectedHooks.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    $"{hookName} phase skipped (hooks=0)");
+                    $"{hookName} step skipped (hooks=0)");
                 return;
             }
 
             int totalHooks = collectedHooks.Count;
 
-            var phaseWatch = Stopwatch.StartNew();
+            var stepWatch = Stopwatch.StartNew();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                $"{hookName} phase started (hooks={totalHooks})");
+                $"{hookName} step started (hooks={totalHooks})");
 
             try
             {
@@ -175,11 +175,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
             finally
             {
-                phaseWatch.Stop();
+                stepWatch.Stop();
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    $"{hookName} phase duration: {phaseWatch.ElapsedMilliseconds}ms");
+                    $"{hookName} step duration: {stepWatch.ElapsedMilliseconds}ms");
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    $"{hookName} phase completed");
+                    $"{hookName} step completed");
             }
         }
 
@@ -210,9 +210,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             List<IActor> actors,
             Func<IActorLifecycleHook, Task> hookAction)
         {
-            var phaseWatch = Stopwatch.StartNew();
+            var stepWatch = Stopwatch.StartNew();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                $"{hookName} actor hooks phase started (actors={actors.Count})");
+                $"{hookName} actor hooks step started (actors={actors.Count})");
 
             foreach (var actor in actors)
             {
@@ -266,9 +266,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
             }
 
-            phaseWatch.Stop();
+            stepWatch.Stop();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                $"{hookName} actor hooks phase duration: {phaseWatch.ElapsedMilliseconds}ms");
+                $"{hookName} actor hooks step duration: {stepWatch.ElapsedMilliseconds}ms");
         }
 
         private static async Task RunActorHookAsync(
@@ -657,26 +657,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         {
             // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
             // hooks pós-despawn/pré-spawn → (scoped participants) → hooks pré-spawn → spawn → hooks de atores → hooks finais.
-            await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
+            await RunHookStepAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
             await RunActorHooksBeforeDespawnAsync();
 
-            await RunPhaseAsync("Despawn", service => service.DespawnAsync());
+            await RunStepAsync("Despawn", service => service.DespawnAsync());
             LogActorRegistryCount("After Despawn");
 
-            await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
+            await RunHookStepAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
 
             if (context != null)
             {
                 await RunScopedParticipantsResetAsync(context.Value);
             }
 
-            await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
+            await RunHookStepAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
 
-            await RunPhaseAsync("Spawn", service => service.SpawnAsync());
+            await RunStepAsync("Spawn", service => service.SpawnAsync());
             LogActorRegistryCount("After Spawn");
 
             await RunActorHooksAfterSpawnAsync();
-            await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
+            await RunHookStepAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
         }
         private async Task ResetInternalAsync(
             ResetContext? context,
@@ -791,7 +791,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             if (participants.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    "Scoped reset participants phase skipped (participants=0)");
+                    "Scoped reset participants step skipped (participants=0)");
                 return;
             }
 
@@ -818,7 +818,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             if (filtered.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    "Scoped reset participants phase skipped (filtered=0)");
+                    "Scoped reset participants step skipped (filtered=0)");
                 return;
             }
 

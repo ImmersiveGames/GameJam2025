@@ -277,9 +277,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 return;
             }
 
-            await RunPhaseAsync(components, GameplayResetPhase.Cleanup, request, serial);
-            await RunPhaseAsync(components, GameplayResetPhase.Restore, request, serial);
-            await RunPhaseAsync(components, GameplayResetPhase.Rebind, request, serial);
+            await RunStepAsync(components, GameplayResetStep.Cleanup, request, serial);
+            await RunStepAsync(components, GameplayResetStep.Restore, request, serial);
+            await RunStepAsync(components, GameplayResetStep.Rebind, request, serial);
         }
 
         private IReadOnlyList<ResetEntry> ResolveResettableComponents(ResetTarget target, GameplayResetRequest request)
@@ -346,33 +346,33 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             return _orderedResets;
         }
 
-        private async Task RunPhaseAsync(IReadOnlyList<ResetEntry> components, GameplayResetPhase phase, GameplayResetRequest request, int serial)
+        private async Task RunStepAsync(IReadOnlyList<ResetEntry> components, GameplayResetStep step, GameplayResetRequest request, int serial)
         {
             var ctx = new GameplayResetContext(
                 GetEffectiveSceneName(),
                 request,
                 serial,
                 Time.frameCount,
-                phase);
+                step);
 
             foreach (var t in components)
             {
-                await InvokePhaseAsync(t.Component, phase, ctx);
+                await InvokeStepAsync(t.Component, step, ctx);
             }
         }
 
-        private static Task InvokePhaseAsync(IGameplayResettable component, GameplayResetPhase phase, GameplayResetContext ctx)
+        private static Task InvokeStepAsync(IGameplayResettable component, GameplayResetStep step, GameplayResetContext ctx)
         {
             if (component == null)
             {
                 return Task.CompletedTask;
             }
 
-            return phase switch
+            return step switch
             {
-                GameplayResetPhase.Cleanup => component.ResetCleanupAsync(ctx),
-                GameplayResetPhase.Restore => component.ResetRestoreAsync(ctx),
-                GameplayResetPhase.Rebind => component.ResetRebindAsync(ctx),
+                GameplayResetStep.Cleanup => component.ResetCleanupAsync(ctx),
+                GameplayResetStep.Restore => component.ResetRestoreAsync(ctx),
+                GameplayResetStep.Rebind => component.ResetRebindAsync(ctx),
                 _ => Task.CompletedTask
             };
         }

@@ -1,10 +1,10 @@
 #nullable enable
-namespace _ImmersiveGames.NewScripts.Gameplay.Phases
+namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 {
     /// <summary>
-    /// Opções de execução para troca de fase (fade, HUD e timeout).
+    /// Opções de execução para troca de conteúdo (fade, HUD e timeout).
     /// </summary>
-    public sealed class PhaseChangeOptions
+    public sealed class ContentSwapOptions
     {
         public const int DefaultTimeoutMs = 20000;
 
@@ -12,11 +12,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         public bool UseLoadingHud { get; set; }
         public int TimeoutMs { get; set; } = DefaultTimeoutMs;
 
-        public static PhaseChangeOptions Default => new PhaseChangeOptions();
+        public static ContentSwapOptions Default => new ContentSwapOptions();
 
-        public PhaseChangeOptions Clone()
+        public ContentSwapOptions Clone()
         {
-            return new PhaseChangeOptions
+            return new ContentSwapOptions
             {
                 UseFade = UseFade,
                 UseLoadingHud = UseLoadingHud,

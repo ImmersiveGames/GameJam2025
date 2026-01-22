@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
 
         [Header("Level Defaults")]
         [SerializeField] private string levelId = "level.1";
-        [SerializeField] private string phaseId = "phase.2";
+        [SerializeField] private string contentId = "content.2";
         [SerializeField] private string contentSignature = "content:level.1";
 
         [Header("WithTransition SceneFlow Request")]
@@ -143,9 +143,9 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         private LevelPlan BuildPlan()
         {
             var id = string.IsNullOrWhiteSpace(levelId) ? "level.1" : levelId.Trim();
-            var phase = string.IsNullOrWhiteSpace(phaseId) ? "phase.2" : phaseId.Trim();
+            var content = string.IsNullOrWhiteSpace(contentId) ? "content.2" : contentId.Trim();
             var signature = string.IsNullOrWhiteSpace(contentSignature) ? string.Empty : contentSignature.Trim();
-            return new LevelPlan(id, phase, signature);
+            return new LevelPlan(id, content, signature);
         }
 
         private SceneTransitionRequest BuildTransitionRequest()

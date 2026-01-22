@@ -27,16 +27,16 @@ Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Pla
 
 ### 3) ContentSwap vs LevelManager
 
-- **ContentSwap (PhaseChange)** é o executor técnico de troca de conteúdo em runtime:
+- **ContentSwap** é o executor técnico de troca de conteúdo em runtime:
   - troca **in-place** (sem SceneFlow) ou **scene transition** (com SceneFlow).
-  - usa os contratos `IPhaseChangeService`, `PhasePlan`, `PhaseChangeOptions` e `IPhaseContextService`.
-  - representa o antigo “Phase” como **troca de conteúdo**, não como progresso de nível.
+  - usa os contratos `IContentSwapChangeService`, `ContentSwapPlan`, `ContentSwapOptions` e `IContentSwapContextService`.
+  - representa a troca de conteúdo como **troca de conteúdo**, não como progresso de nível.
 - **LevelManager** é o orquestrador de **progressão**:
   - decide quando avançar/retroceder de nível,
   - delega a troca de conteúdo para o ContentSwap,
   - **sempre dispara IntroStage** ao entrar em um nível (política deste ciclo).
 
-> Referências: ADR-0017 (modos de ContentSwap) e ADR-0018 (mudança semântica Phase => ContentSwap + LevelManager).
+> Referências: ADR-0017 (modos de ContentSwap) e ADR-0018 (mudança semântica para ContentSwap + LevelManager).
 
 ### 4) Navigation (produção)
 - `IGameNavigationService` é a entrada de produção para ir **Menu ↔ Gameplay**.
@@ -64,9 +64,9 @@ Durante a transição:
 #### Reset por escopos vs Reset de gameplay
 
 - **WorldLifecycle (infra)**: reset determinístico do mundo (gate + hooks + spawn/despawn) e **soft reset por escopos** via `ResetScope` e `IResetScopeParticipant`.
-- **Gameplay Reset (gameplay)**: módulo em `Gameplay/Reset/` que define **alvos** (`GameplayResetTarget`) e **fases** (`GameplayResetPhase`) para resets de componentes (`IGameplayResettable`). Pode ser acionado via QA (direto) ou via bridges (ex.: `PlayersResetParticipant`).
+- **Gameplay Reset (gameplay)**: módulo em `Gameplay/Reset/` que define **alvos** (`GameplayResetTarget`) e **etapas** (`GameplayResetStep`) para resets de componentes (`IGameplayResettable`). Pode ser acionado via QA (direto) ou via bridges (ex.: `PlayersResetParticipant`).
 
-- Executa reset determinístico por escopos e fases (despawn/spawn/hook).
+- Executa reset determinístico por escopos e etapas (despawn/spawn/hook).
 - Integrado ao Scene Flow via `WorldLifecycleSceneFlowResetDriver`:
     - reage ao `SceneTransitionScenesReadyEvent`,
     - executa reset (ou SKIP em Menu/Startup),

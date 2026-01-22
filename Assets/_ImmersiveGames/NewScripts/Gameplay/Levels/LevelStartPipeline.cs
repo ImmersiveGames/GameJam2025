@@ -7,29 +7,29 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine.SceneManagement;
 
-namespace _ImmersiveGames.NewScripts.Gameplay.Phases
+namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public static class PhaseStartPipeline
+    public static class LevelStartPipeline
     {
         private const int ReadyWaitTimeoutMs = 2000;
         private const int ReadyWaitStepMs = 50;
         private const int ReadyWaitGraceMs = 250;
 
-        public static async Task RunAsync(PhaseStartRequest request)
+        public static async Task RunAsync(LevelStartRequest request)
         {
             if (!request.IsValid)
             {
-                DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    "[PhaseStart] Request inválido. Pipeline ignorado.");
+                DebugUtility.LogWarning(typeof(LevelStartPipeline),
+                    "[LevelStart] Request inválido. Pipeline ignorado.");
                 return;
             }
 
             var gameLoop = ResolveGameLoopService();
             if (gameLoop == null)
             {
-                DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    "[PhaseStart] IGameLoopService indisponível; pipeline ignorado.");
+                DebugUtility.LogWarning(typeof(LevelStartPipeline),
+                    "[LevelStart] IGameLoopService indisponível; pipeline ignorado.");
                 return;
             }
 
@@ -38,8 +38,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             var coordinator = ResolveIntroStageCoordinator();
             if (coordinator == null)
             {
-                DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    "[PhaseStart] IIntroStageCoordinator indisponível; IntroStage não será executada.");
+                DebugUtility.LogWarning(typeof(LevelStartPipeline),
+                    "[LevelStart] IIntroStageCoordinator indisponível; IntroStage não será executada.");
                 return;
             }
 
@@ -47,8 +47,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 ? SceneManager.GetActiveScene().name
                 : request.TargetScene.Trim();
 
-            DebugUtility.Log(typeof(PhaseStartPipeline),
-                $"[OBS][Phase] PhaseStartPipeline -> IntroStage. phaseId='{request.PhaseId}' signature='{request.ContextSignature}' " +
+            DebugUtility.Log(typeof(LevelStartPipeline),
+                $"[OBS][ContentSwap] LevelStartPipeline -> IntroStage. contentId='{request.ContentId}' signature='{request.ContextSignature}' " +
                 $"scene='{targetScene}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
@@ -64,18 +64,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] Falha ao executar IntroStage. phaseId='{request.PhaseId}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                DebugUtility.LogWarning(typeof(LevelStartPipeline),
+                    $"[LevelStart] Falha ao executar IntroStage. contentId='{request.ContentId}', ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
-        private static async Task EnsureLoopReadyAsync(IGameLoopService gameLoop, PhaseStartRequest request)
+        private static async Task EnsureLoopReadyAsync(IGameLoopService gameLoop, LevelStartRequest request)
         {
             var stateBefore = gameLoop.CurrentStateIdName ?? string.Empty;
             if (ShouldRequestReady(stateBefore))
             {
-                DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] RequestReady antes da IntroStage. state='{stateBefore}' phaseId='{request.PhaseId}'.");
+                DebugUtility.LogVerbose(typeof(LevelStartPipeline),
+                    $"[LevelStart] RequestReady antes da IntroStage. state='{stateBefore}' contentId='{request.ContentId}'.");
                 gameLoop.RequestReady();
             }
 
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return;
             }
 
-            // Observação: para troca de fase, o GameLoop pode permanecer em 'Playing' sem transitar para 'Ready'.
+            // Observação: para troca de conteúdo, o GameLoop pode permanecer em 'Playing' sem transitar para 'Ready'.
             // A IntroStage já bloqueia a simulação via gate próprio, então não faz sentido aguardar longamente.
             // Aguardamos apenas uma janela curta para permitir transições assíncronas, e então prosseguimos.
             var graceStart = Environment.TickCount;
@@ -100,8 +100,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             var stateAfterGrace = gameLoop.CurrentStateIdName ?? string.Empty;
             if (ShouldRequestReady(stateBefore) && ShouldRequestReady(stateAfterGrace))
             {
-                DebugUtility.LogVerbose(typeof(PhaseStartPipeline),
-                    $"[PhaseStart] Prosseguindo sem aguardar Ready (estado='{stateAfterGrace}'). phaseId='{request.PhaseId}'.");
+                DebugUtility.LogVerbose(typeof(LevelStartPipeline),
+                    $"[LevelStart] Prosseguindo sem aguardar Ready (estado='{stateAfterGrace}'). contentId='{request.ContentId}'.");
                 return;
             }
 
@@ -116,8 +116,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 }
             }
 
-            DebugUtility.LogWarning(typeof(PhaseStartPipeline),
-                $"[PhaseStart] Timeout aguardando GameLoop Ready. state='{gameLoop.CurrentStateIdName}' phaseId='{request.PhaseId}'.");
+            DebugUtility.LogWarning(typeof(LevelStartPipeline),
+                $"[LevelStart] Timeout aguardando GameLoop Ready. state='{gameLoop.CurrentStateIdName}' contentId='{request.ContentId}'.");
         }
 
         private static bool ShouldRequestReady(string state)
@@ -149,19 +149,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         }
     }
 
-    public readonly struct PhaseStartRequest
+    public readonly struct LevelStartRequest
     {
         public string ContextSignature { get; }
-        public string PhaseId { get; }
+        public string ContentId { get; }
         public string TargetScene { get; }
         public string Reason { get; }
 
-        public bool IsValid => !string.IsNullOrWhiteSpace(PhaseId);
+        public bool IsValid => !string.IsNullOrWhiteSpace(ContentId);
 
-        public PhaseStartRequest(string contextSignature, string phaseId, string targetScene, string reason)
+        public LevelStartRequest(string contextSignature, string contentId, string targetScene, string reason)
         {
             ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? "<none>" : contextSignature.Trim();
-            PhaseId = string.IsNullOrWhiteSpace(phaseId) ? string.Empty : phaseId.Trim();
+            ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
             TargetScene = targetScene ?? string.Empty;
             Reason = string.IsNullOrWhiteSpace(reason) ? "n/a" : reason.Trim();
         }

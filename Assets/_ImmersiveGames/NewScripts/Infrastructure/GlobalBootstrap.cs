@@ -1,7 +1,7 @@
 /*
  * ChangeLog
- * - Registrado IPhaseContextService (PhaseContextService) no DI global (ADR-0016).
- * - Adicionado PhaseContextSceneFlowBridge para limpar Pending no SceneTransitionStarted (Baseline 3B).
+ * - Registrado IContentSwapContextService (ContentSwapContextService) no DI global (ADR-0016).
+ * - Adicionado ContentSwapContextSceneFlowBridge para limpar Pending no SceneTransitionStarted (Baseline 3B).
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas StateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
@@ -25,7 +25,7 @@ using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.Levels;
-using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
@@ -46,7 +46,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
 using _ImmersiveGames.NewScripts.QA.Levels;
-using _ImmersiveGames.NewScripts.QA.Phases;
+using _ImmersiveGames.NewScripts.QA.ContentSwap;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -174,16 +174,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterSceneFlowLoadingIfAvailable();
 
             RegisterInputModeSceneFlowBridge();
-            RegisterPhaseStartPhaseCommitBridge();
+            RegisterLevelStartCommitBridge();
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
-            // ADR-0016: PhaseContext precisa existir no DI global.
-            RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
+            // ADR-0016: ContentSwapContext precisa existir no DI global.
+            RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
-            RegisterPhaseQaInstaller();
+            RegisterContentSwapQaInstaller();
             RegisterLevelQaInstaller();
 #endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -191,12 +191,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 #endif
 
             // Baseline 3B: Pending NÃO pode atravessar transição.
-            RegisterPhaseContextSceneFlowBridge();
+            RegisterContentSwapContextSceneFlowBridge();
 
-            RegisterPhaseTransitionIntentRegistry();
+            RegisterContentSwapTransitionIntentRegistry();
 
-            // PhaseChange depende de PhaseContext + SceneFlow/WorldReset (para "in place" vs. "transition").
-            RegisterPhaseChangeService();
+            // ContentSwapChange depende de ContentSwapContext + SceneFlow/WorldReset (para "in place" vs. "transition").
+            RegisterContentSwapChangeService();
             RegisterLevelManager();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
@@ -222,9 +222,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<GameRunStartedEvent>.Clear();
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
-            EventBus<PhaseCommittedEvent>.Clear();
-            EventBus<PhasePendingSetEvent>.Clear();
-            EventBus<PhasePendingClearedEvent>.Clear();
+            EventBus<ContentSwapCommittedEvent>.Clear();
+            EventBus<ContentSwapPendingSetEvent>.Clear();
+            EventBus<ContentSwapPendingClearedEvent>.Clear();
 
             // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
             EventBus<SceneTransitionStartedEvent>.Clear();
@@ -741,43 +741,43 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterPhaseStartPhaseCommitBridge()
+        private static void RegisterLevelStartCommitBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<PhaseStartPhaseCommitBridge>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.LevelStartCommitBridge>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[PhaseStart] PhaseStartPhaseCommitBridge já registrado no DI global.",
+                    "[LevelStart] LevelStartCommitBridge já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            var bridge = new PhaseStartPhaseCommitBridge();
+            var bridge = new _ImmersiveGames.NewScripts.Gameplay.Levels.LevelStartCommitBridge();
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> IntroStage).",
+                "[LevelStart] LevelStartCommitBridge registrado no DI global (ContentSwapCommitted(LevelChange/*) -> IntroStage).",
                 DebugUtility.Colors.Info);
         }
 
         // --------------------------------------------------------------------
-        // PhaseContext (Baseline 3B)
+        // ContentSwapContext (Baseline 3B)
         // --------------------------------------------------------------------
 
-        private static void RegisterPhaseContextSceneFlowBridge()
+        private static void RegisterContentSwapContextSceneFlowBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<PhaseContextSceneFlowBridge>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<ContentSwapContextSceneFlowBridge>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[PhaseContext] PhaseContextSceneFlowBridge já registrado no DI global.",
+                    "[ContentSwapContext] ContentSwapContextSceneFlowBridge já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            var bridge = new PhaseContextSceneFlowBridge();
+            var bridge = new ContentSwapContextSceneFlowBridge();
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[PhaseContext] PhaseContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending).",
+                "[ContentSwapContext] ContentSwapContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending).",
                 DebugUtility.Colors.Info);
         }
 
@@ -794,16 +794,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
         }
 
-        private static void RegisterPhaseQaInstaller()
+        private static void RegisterContentSwapQaInstaller()
         {
             try
             {
-                PhaseQaInstaller.EnsureInstalled();
+                ContentSwapQaInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[QA][ContentSwap] Falha ao instalar PhaseQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][ContentSwap] Falha ao instalar ContentSwapQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -933,54 +933,54 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Registered global service: {typeof(T).Name}.");
         }
-        private static void RegisterPhaseChangeService()
+        private static void RegisterContentSwapChangeService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseChangeService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IContentSwapChangeService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[ContentSwap] IPhaseChangeService já registrado no DI global.",
+                    "[ContentSwap] IContentSwapChangeService já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseContextService>(out var phaseContext) || phaseContext == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapContextService>(out var contentSwapContext) || contentSwapContext == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] IPhaseContextService indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] IContentSwapContextService indisponível. IContentSwapChangeService não será registrado.");
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var worldReset) || worldReset == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] IWorldResetRequestService indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] IWorldResetRequestService indisponível. IContentSwapChangeService não será registrado.");
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] ISceneTransitionService indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] ISceneTransitionService indisponível. IContentSwapChangeService não será registrado.");
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseTransitionIntentRegistry>(out var intentRegistry) || intentRegistry == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapTransitionIntentRegistry>(out var intentRegistry) || intentRegistry == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] IPhaseTransitionIntentRegistry indisponível. IPhaseChangeService não será registrado.");
+                    "[ContentSwap] IContentSwapTransitionIntentRegistry indisponível. IContentSwapChangeService não será registrado.");
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal<IPhaseChangeService>(
-                new PhaseChangeService(phaseContext, worldReset, sceneFlow, intentRegistry),
+            DependencyManager.Provider.RegisterGlobal<IContentSwapChangeService>(
+                new ContentSwapChangeService(contentSwapContext, worldReset, sceneFlow, intentRegistry),
                 allowOverride: false);
 
-            // ADR-0016: quando a troca de fase usa SceneFlow, o commit ocorre no ponto seguro
+            // ADR-0016: quando a troca de conteúdo usa SceneFlow, o commit ocorre no ponto seguro
             // (WorldLifecycleResetCompletedEvent). O bridge abaixo consome o intent e aplica o commit.
-            RegisterIfMissing(() => new PhaseTransitionIntentWorldLifecycleBridge(intentRegistry, phaseContext));
+            RegisterIfMissing(() => new ContentSwapTransitionIntentWorldLifecycleBridge(intentRegistry, contentSwapContext));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[ContentSwap] PhaseChangeService registrado no DI global.",
+                "[ContentSwap] ContentSwapChangeService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -994,15 +994,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseChangeService>(out var phaseChangeService) || phaseChangeService == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapChangeService>(out var contentSwapChangeService) || contentSwapChangeService == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[Level] IPhaseChangeService indisponível. ILevelManager não será registrado.");
+                    "[Level] IContentSwapChangeService indisponível. ILevelManager não será registrado.");
                 return;
             }
 
             DependencyManager.Provider.RegisterGlobal<ILevelManager>(
-                new LevelManager(phaseChangeService),
+                new LevelManager(contentSwapChangeService),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -1010,22 +1010,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterPhaseTransitionIntentRegistry()
+        private static void RegisterContentSwapTransitionIntentRegistry()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseTransitionIntentRegistry>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IContentSwapTransitionIntentRegistry>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[PhaseIntent] IPhaseTransitionIntentRegistry já registrado no DI global.",
+                    "[ContentSwapIntent] IContentSwapTransitionIntentRegistry já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal<IPhaseTransitionIntentRegistry>(
-                new PhaseTransitionIntentRegistry(),
+            DependencyManager.Provider.RegisterGlobal<IContentSwapTransitionIntentRegistry>(
+                new ContentSwapTransitionIntentRegistry(),
                 allowOverride: false);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[PhaseIntent] PhaseTransitionIntentRegistry registrado no DI global.",
+                "[ContentSwapIntent] ContentSwapTransitionIntentRegistry registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

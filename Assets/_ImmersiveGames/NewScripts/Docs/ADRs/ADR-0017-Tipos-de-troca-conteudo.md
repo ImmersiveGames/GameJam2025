@@ -1,17 +1,17 @@
-# ADR-0017 — Tipos de troca de fase (ContentSwap: In-Place vs SceneTransition)
+# ADR-0017 — Tipos de troca de conteúdo (ContentSwap: In-Place vs SceneTransition)
 
 ## Status
 - Estado: Implementado
 - Data: 2025-12-24
 - Implementado em: 2026-01-18
-- Escopo: ContentSwap (PhaseChangeService) + SceneFlow (NewScripts)
+- Escopo: ContentSwap (ContentSwapChangeService) + SceneFlow (NewScripts)
 
 ## Contexto
 
 O sistema de ContentSwap precisa suportar dois tipos de troca com objetivos distintos:
 
-- **Troca dentro do gameplay** (ex.: “fase 1 concluída, inicia fase 2 na mesma rodada”), sem descarregar a cena base.
-- **Troca com transição completa** (ex.: nova fase exige troca de cenas, unload de conteúdos atuais, loading e fade).
+- **Troca dentro do gameplay** (ex.: “conteúdo 1 concluído, inicia conteúdo 2 na mesma rodada”), sem descarregar a cena base.
+- **Troca com transição completa** (ex.: novo conteúdo exige troca de cenas, unload de conteúdos atuais, loading e fade).
 
 A meta é eliminar ambiguidades (ex.: “troca de fase” significar tanto reset in-place quanto scene transition), mantendo rastreabilidade por `contextSignature/reason` e evitando regressões do baseline.
 
@@ -26,38 +26,38 @@ Existem **dois tipos explícitos** de ContentSwap, com APIs e contratos distinto
 
 ### 1) ContentSwap/In-Place
 
-**Quando usar:** a fase muda dentro da mesma “rodada”/cena (sem unload/load de cena).
+**Quando usar:** o conteúdo muda dentro da mesma “rodada”/cena (sem unload/load de cena).
 
 **API (overloads canônicos):**
 
-- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason)`
-- `PhaseChangeService.RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)`
-- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)`
+- `ContentSwapChangeService.RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason)`
+- `ContentSwapChangeService.RequestContentSwapInPlaceAsync(string contentId, string reason, ContentSwapOptions? options = null)`
+- `ContentSwapChangeService.RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason, ContentSwapOptions? options)`
 
 **Contrato operacional:**
 
 - Executa reset determinístico **sem SceneFlow**.
 - **Sem Loading HUD** (mesmo se solicitado via options, o serviço ignora por design).
 - **Fade opcional** (via `options.UseFade=true`) permitido como “mini transição” quando for desejável esconder reconstrução do reset.
-- Gate/serialização: token `flow.phase_inplace`.
+- Gate/serialização: token `flow.contentswap_inplace`.
 - Timeout: `options.TimeoutMs`.
 
 ### 2) ContentSwap/SceneTransition
 
-**Quando usar:** a nova fase exige transição completa (cenas, recursos pesados, feedback visual de loading, etc.).
+**Quando usar:** o novo conteúdo exige transição completa (cenas, recursos pesados, feedback visual de loading, etc.).
 
 **API (overloads canônicos):**
 
-- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)`
-- `PhaseChangeService.RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)`
-- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)`
+- `ContentSwapChangeService.RequestContentSwapWithTransitionAsync(ContentSwapPlan plan, SceneTransitionRequest transition, string reason)`
+- `ContentSwapChangeService.RequestContentSwapWithTransitionAsync(string contentId, SceneTransitionRequest transition, string reason, ContentSwapOptions? options = null)`
+- `ContentSwapChangeService.RequestContentSwapWithTransitionAsync(ContentSwapPlan plan, SceneTransitionRequest transition, string reason, ContentSwapOptions? options)`
 
 **Contrato operacional:**
 
-- Registra intent (`PhaseTransitionIntentRegistry`) e inicia **SceneFlow** via `ISceneTransitionService.TransitionAsync(transition)`.
-- O `WorldLifecycleSceneFlowResetDriver` dispara o reset em `SceneTransitionScenesReadyEvent` (profile gameplay). O consumo do intent e o commit da fase ocorrem após `WorldLifecycleResetCompletedEvent` via `PhaseTransitionIntentWorldLifecycleBridge`.
+- Registra intent (`ContentSwapTransitionIntentRegistry`) e inicia **SceneFlow** via `ISceneTransitionService.TransitionAsync(transition)`.
+- O `WorldLifecycleSceneFlowResetDriver` dispara o reset em `SceneTransitionScenesReadyEvent` (profile gameplay). O consumo do intent e o commit do conteúdo ocorrem após `WorldLifecycleResetCompletedEvent` via `ContentSwapTransitionIntentWorldLifecycleBridge`.
 - Gate de simulação durante a transição é governado pelo token padrão do SceneFlow (`flow.scene_transition`).
-- Fade/HUD são controlados pelo **profile do `SceneTransitionRequest`** (não por `PhaseChangeOptions`).
+- Fade/HUD são controlados pelo **profile do `SceneTransitionRequest`** (não por `ContentSwapOptions`).
 - Timeout: `options.TimeoutMs`.
 
 ## Fora de escopo
@@ -68,9 +68,9 @@ Existem **dois tipos explícitos** de ContentSwap, com APIs e contratos distinto
 
 ### Benefícios
 
-- Nomenclatura elimina ambiguidade de “troca de fase”.
-- In-Place atende casos de “próxima fase no mesmo gameplay” sem custo de trocar cenas.
-- SceneTransition atende casos de “nova fase exige troca de conteúdo pesado” com feedback visual e reset canônico.
+- Nomenclatura elimina ambiguidade de “troca de conteúdo”.
+- In-Place atende casos de “próximo conteúdo no mesmo gameplay” sem custo de trocar cenas.
+- SceneTransition atende casos de “novo conteúdo exige troca de conteúdo pesado” com feedback visual e reset canônico.
 
 ### Trade-offs / Riscos
 
@@ -81,16 +81,16 @@ Existem **dois tipos explícitos** de ContentSwap, com APIs e contratos distinto
 
 ### Termos e tipos (nomes reais do código)
 
-- `PhaseChangeService` (serviço de ContentSwap, nome legado preservado)
-- `PhasePlan`
-  - `PhaseId` (identificador lógico da fase)
+- `ContentSwapChangeService` (serviço de ContentSwap, nome legado preservado)
+- `ContentSwapPlan`
+  - `ContentId` (identificador lógico do conteúdo)
   - `ContentSignature` (assinatura rastreável do “conteúdo montado”)
-- `PhaseContextService`
+- `ContentSwapContextService`
   - `Current` / `Pending`
-  - `TryCommitPendingPhase(...)`
-- `PhaseTransitionIntentRegistry`
+  - `TryCommitPending(...)`
+- `ContentSwapTransitionIntentRegistry`
   - `Register(...)` / `TryConsume(...)`
-- `PhaseChangeOptions`
+- `ContentSwapOptions`
   - `UseFade`, `UseLoadingHud`, `TimeoutMs`
 - `SceneTransitionRequest`
   - representa a solicitação do SceneFlow (load/unload/active/profile/useFade/contextSignature)
@@ -102,21 +102,21 @@ Existem **dois tipos explícitos** de ContentSwap, com APIs e contratos distinto
 ```mermaid
 sequenceDiagram
     participant Caller as Caller
-    participant PhaseChange as PhaseChangeService
+    participant ContentSwap as ContentSwapChangeService
     participant WL as WorldLifecycleSceneFlowResetDriver
     participant WLC as WorldLifecycleController
-    participant PhaseCtx as PhaseContextService
+    participant ContentSwapCtx as ContentSwapContextService
 
-    Caller->>PhaseChange: RequestPhaseInPlaceAsync(plan, reason, options)
-    PhaseChange->>PhaseCtx: SetPending(plan, reason+signature)
-    PhaseChange->>WL: ResetAsync(sourceSignature="phase.inplace:<PhaseId>")
+    Caller->>ContentSwap: RequestContentSwapInPlaceAsync(plan, reason, options)
+    ContentSwap->>ContentSwapCtx: SetPending(plan, reason+signature)
+    ContentSwap->>WL: ResetAsync(sourceSignature="contentswap.inplace:<ContentId>")
     WL->>WLC: Reset pipeline (despawn/spawn/hooks)
     WLC-->>WL: ResetCompleted
-    WL->>PhaseCtx: TryCommitPendingPhase(...)
-    PhaseCtx-->>PhaseChange: Pending committed (Current=plan)
+    WL->>ContentSwapCtx: TryCommitPending(...)
+    ContentSwapCtx-->>ContentSwap: Pending committed (Current=plan)
 
-    Note over PhaseChange: Contrato: sem Loading HUD; Fade opcional (UseFade)
-    Note over PhaseChange: Sem SceneFlow (não há unload/load de cenas)
+    Note over ContentSwap: Contrato: sem Loading HUD; Fade opcional (UseFade)
+    Note over ContentSwap: Sem SceneFlow (não há unload/load de cenas)
 ```
 
 #### SceneTransition
@@ -124,26 +124,26 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Caller as Caller
-    participant PhaseChange as PhaseChangeService
-    participant Intent as PhaseTransitionIntentRegistry
+    participant ContentSwap as ContentSwapChangeService
+    participant Intent as ContentSwapTransitionIntentRegistry
     participant SceneFlow as SceneTransitionService
     participant Readiness as GameReadinessService
     participant WL as WorldLifecycleSceneFlowResetDriver
-    participant PhaseCtx as PhaseContextService
+    participant ContentSwapCtx as ContentSwapContextService
     participant WLC as WorldLifecycleController
 
-    Caller->>PhaseChange: RequestPhaseWithTransitionAsync(plan, transition, reason, options)
-    PhaseChange->>Intent: Register(signature, plan, reason)
-    PhaseChange->>SceneFlow: TransitionAsync(transition)
+    Caller->>ContentSwap: RequestContentSwapWithTransitionAsync(plan, transition, reason, options)
+    ContentSwap->>Intent: Register(signature, plan, reason)
+    ContentSwap->>SceneFlow: TransitionAsync(transition)
     SceneFlow-->>Readiness: SceneTransitionStarted
     Readiness->>Readiness: Acquire gate token 'flow.scene_transition'
     SceneFlow-->>WL: SceneTransitionScenesReadyEvent(signature)
     WL->>WLC: Reset pipeline
     WLC-->>WL: WorldLifecycleResetCompletedEvent
     WL->>Intent: (bridge) TryConsume(signature)
-    WL->>PhaseCtx: (bridge) SetPending(plan, reason+signature)
-    WL->>PhaseCtx: (bridge) TryCommitPendingPhase(...)
-    PhaseCtx-->>WL: Pending committed (Current=plan)
+    WL->>ContentSwapCtx: (bridge) SetPending(plan, reason+signature)
+    WL->>ContentSwapCtx: (bridge) TryCommitPending(...)
+    ContentSwapCtx-->>WL: Pending committed (Current=plan)
     SceneFlow-->>Readiness: SceneTransitionCompleted
     Readiness->>Readiness: Release gate token 'flow.scene_transition'
 
@@ -160,7 +160,7 @@ sequenceDiagram
 
 ## Referências
 
-- [ADR-0016 — Phases + modos de avanço + IntroStage opcional](ADR-0016-Phases-WorldLifecycle.md)
-- [ADR-0018 — Mudança de semântica: Phase => ContentSwap + introdução do LevelManager](ADR-0018-Gate-de-Promoção-Baseline2.2.md)
+- [ADR-0016 — ContentSwap + modos de avanço + IntroStage opcional](ADR-0016-ContentSwap-WorldLifecycle.md)
+- [ADR-0018 — Mudança de semântica: ContentSwap + introdução do LevelManager](ADR-0018-Gate-de-Promoção-Baseline2.2.md)
 - [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
 - [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes
