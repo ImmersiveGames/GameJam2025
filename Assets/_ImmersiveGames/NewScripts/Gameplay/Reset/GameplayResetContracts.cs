@@ -5,9 +5,9 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 {
     /// <summary>
-    /// Fases assíncronas de reset para componentes de gameplay.
+    /// Etapas assíncronas de reset para componentes de gameplay.
     /// </summary>
-    public enum GameplayResetPhase
+    public enum GameplayResetStep
     {
         Cleanup = 0,
         Restore = 1,
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
     }
 
     /// <summary>
-    /// Contexto corrente de reset, compartilhado entre fases e participantes.
+    /// Contexto corrente de reset, compartilhado entre etapas e participantes.
     /// </summary>
     public readonly struct GameplayResetContext
     {
@@ -76,13 +76,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             GameplayResetRequest request,
             int requestSerial,
             int frameStarted,
-            GameplayResetPhase currentPhase)
+            GameplayResetStep currentStep)
         {
             SceneName = sceneName;
             Request = request;
             RequestSerial = requestSerial;
             FrameStarted = frameStarted;
-            CurrentPhase = currentPhase;
+            CurrentStep = currentStep;
         }
 
         public string SceneName { get; }
@@ -93,16 +93,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
         public int FrameStarted { get; }
 
-        public GameplayResetPhase CurrentPhase { get; }
+        public GameplayResetStep CurrentStep { get; }
 
-        public GameplayResetContext WithPhase(GameplayResetPhase phase)
+        public GameplayResetContext WithStep(GameplayResetStep step)
         {
-            return new GameplayResetContext(SceneName, Request, RequestSerial, FrameStarted, phase);
+            return new GameplayResetContext(SceneName, Request, RequestSerial, FrameStarted, step);
         }
 
         public override string ToString()
         {
-            return $"GameplayResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Phase={CurrentPhase}, {Request})";
+            return $"GameplayResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Step={CurrentStep}, {Request})";
         }
     }
 
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
     }
 
     /// <summary>
-    /// Opcional: controla a ordem de execução dentro de cada fase. Menor primeiro.
+    /// Opcional: controla a ordem de execução dentro de cada etapa. Menor primeiro.
     /// </summary>
     public interface IGameplayResetOrder
     {

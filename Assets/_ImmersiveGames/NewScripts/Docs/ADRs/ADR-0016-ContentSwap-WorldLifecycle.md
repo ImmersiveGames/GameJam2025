@@ -1,4 +1,4 @@
-# ADR-0016 — Phases + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow)
+# ADR-0016 — ContentSwap + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow)
 
 ## Status
 - Estado: Implementado
@@ -15,17 +15,17 @@ Com o **Baseline 2.0** estabelecido, o projeto já possui:
 - **WorldLifecycle determinístico**, com reset canônico em `SceneTransitionScenesReadyEvent` (quando o profile exige reset).
 - **SceneFlow** com ordem estável de eventos (**FadeIn → ScenesReady → Reset/Skip → FadeOut → Completed**).
 - **GameReadiness/SimulationGate** controlando o gate durante transições (token `flow.scene_transition`), fechando o gameplay durante o pipeline e liberando ao concluir.
-- **PhaseContext** com `Pending` e `Current`, além de **intent registry** para transições de cena.
+- **ContentSwapContext** com `Pending` e `Current`, além de **intent registry** para transições de cena.
 - **GameLoop** integrado ao SceneFlow (sincronização via eventos e bridges globais).
 
 Durante a evolução do gameplay, surgiram requisitos adicionais:
 
-1. Suporte a **múltiplas fases** (Phase 1, Phase 2, …), com:
+1. Suporte a **múltiplos conteúdos** (Content 1, Content 2, …), com:
     - spawns distintos,
     - dados distintos,
     - comportamento distinto.
 
-2. Necessidade de **dois modos explícitos** de “nova fase”:
+2. Necessidade de **dois modos explícitos** de troca de conteúdo:
     - **In-Place** (troca dentro da mesma cena de gameplay).
     - **Com transição completa** (troca que usa SceneFlow, podendo envolver unload/load de cenas).
 
@@ -47,34 +47,34 @@ Ponto crítico: a IntroStage **não pode bloquear o fluxo de forma irreversível
 
 ### 1) Nomenclatura e contratos (APIs reais do código)
 
-Nota: **PhaseChange** é a nomenclatura legada do **ContentSwap** (mantida por compatibilidade).
+Nota: **ContentSwap** é a nomenclatura atual do executor técnico (contratos legados foram removidos).
 
 O sistema define dois modos explícitos de troca de fase, com overloads públicos e rastreáveis.
 
-#### PhaseChange/In-Place
+#### ContentSwap/In-Place
 
-- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason)`
-- `PhaseChangeService.RequestPhaseInPlaceAsync(string phaseId, string reason, PhaseChangeOptions? options = null)`
-- `PhaseChangeService.RequestPhaseInPlaceAsync(PhasePlan plan, string reason, PhaseChangeOptions? options)`
+- `ContentSwapChangeService.RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason)`
+- `ContentSwapChangeService.RequestContentSwapInPlaceAsync(string contentId, string reason, ContentSwapOptions? options = null)`
+- `ContentSwapChangeService.RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason, ContentSwapOptions? options)`
 
-#### PhaseChange/Com Transição (SceneFlow)
+#### ContentSwap/Com Transição (SceneFlow)
 
-- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason)`
-- `PhaseChangeService.RequestPhaseWithTransitionAsync(string phaseId, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options = null)`
-- `PhaseChangeService.RequestPhaseWithTransitionAsync(PhasePlan plan, SceneTransitionRequest transition, string reason, PhaseChangeOptions? options)`
+- `ContentSwapChangeService.RequestContentSwapWithTransitionAsync(ContentSwapPlan plan, SceneTransitionRequest transition, string reason)`
+- `ContentSwapChangeService.RequestContentSwapWithTransitionAsync(string contentId, SceneTransitionRequest transition, string reason, ContentSwapOptions? options = null)`
+- `ContentSwapChangeService.RequestContentSwapWithTransitionAsync(ContentSwapPlan plan, SceneTransitionRequest transition, string reason, ContentSwapOptions? options)`
 
 Onde:
 
-- `PhasePlan` descreve **qual fase** e a assinatura rastreável do conteúdo:
-    - `PhaseId`
+- `ContentSwapPlan` descreve **qual conteúdo** e a assinatura rastreável do conteúdo:
+    - `ContentId`
     - `ContentSignature`
 - `SceneTransitionRequest` descreve a transição de cenas (load/unload/active/profile etc.)
-- `PhaseChangeOptions` (quando presente) controla execução:
+- `ContentSwapOptions` (quando presente) controla execução:
     - `UseFade`: **aplicável no In-Place** (mini transição local)
     - `UseLoadingHud`: **ignorado** no In-Place (por design) e não governa o WithTransition (HUD é parte do SceneFlow/profile)
     - `TimeoutMs`: usado para timeout do gate/espera
 
-### 2) IntroStage é uma fase opcional do GameLoop, disparada após o SceneFlow (Completed)
+### 2) IntroStage é uma etapa opcional do GameLoop, disparada após o SceneFlow (Completed)
 
 **Intenção operacional**
 
@@ -108,7 +108,7 @@ Onde:
 
 ### Benefícios
 
-- Dois modos de troca de fase ficam explícitos e rastreáveis (in-place vs com transição).
+- Dois modos de troca de conteúdo ficam explícitos e rastreáveis (in-place vs com transição).
 - IntroStage tem contrato de conclusão claro e mitigação em QA/dev, reduzindo risco de bloqueio.
 
 ### Trade-offs / Riscos
@@ -176,6 +176,6 @@ Ordem canônica do pipeline (com IntroStage pós-revelação):
 
 ## Referências
 
-- [ADR-0017 — Tipos de troca de fase (In-Place vs SceneTransition)](ADR-0017-Tipos-de-troca-fase.md)
+- [ADR-0017 — Tipos de troca de conteúdo (In-Place vs SceneTransition)](ADR-0017-Tipos-de-troca-conteudo.md)
 - [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
 - [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes

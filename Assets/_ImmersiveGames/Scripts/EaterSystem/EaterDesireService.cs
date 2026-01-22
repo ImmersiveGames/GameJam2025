@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private readonly StringBuilder _debugBuilder = new();
 
         private CountdownTimer _timer;
-        private DesireCyclePhase _phase = DesireCyclePhase.Inactive;
+        private DesireCycleStep _step = DesireCycleStep.Inactive;
         private float _scheduledResumeDuration;
         private PlanetResources? _currentDesire;
         private bool _currentDesireAvailable;
@@ -51,8 +51,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _resourcePool = (PlanetResources[])Enum.GetValues(typeof(PlanetResources));
         }
 
-        private bool IsActive => _phase != DesireCyclePhase.Inactive;
-        private bool HasActiveDesire => (_phase != DesireCyclePhase.Inactive && _currentDesire.HasValue) || HasLockedDesire;
+        private bool IsActive => _step != DesireCycleStep.Inactive;
+        private bool HasActiveDesire => (_step != DesireCycleStep.Inactive && _currentDesire.HasValue) || HasLockedDesire;
         private bool HasLockedDesire => _lockedSnapshot.HasValue;
 
         public void Update()
@@ -67,18 +67,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            switch (_phase)
+            switch (_step)
             {
-                case DesireCyclePhase.WaitingInitialDelay:
+                case DesireCycleStep.WaitingInitialDelay:
                     HandleWaitingInitialDelay();
                     break;
-                case DesireCyclePhase.WaitingResumeDelay:
+                case DesireCycleStep.WaitingResumeDelay:
                     HandleWaitingResumeDelay();
                     break;
-                case DesireCyclePhase.Active:
-                    HandleActivePhase();
+                case DesireCycleStep.Active:
+                    HandleActiveStep();
                     break;
-                case DesireCyclePhase.Inactive:
+                case DesireCycleStep.Inactive:
                 default:
                     break;
             }
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
                 context: _master,
                 instance: this);
-            _phase = DesireCyclePhase.Active;
+            _step = DesireCycleStep.Active;
             PickNextDesire();
         }
 
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             BeginActiveCycle(resumeDuration);
         }
 
-        private void HandleActivePhase()
+        private void HandleActiveStep()
         {
             if (!HasActiveDesire)
             {
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             EnsureTimerInstance();
 
-            _phase = DesireCyclePhase.Inactive;
+            _step = DesireCycleStep.Inactive;
             _lockedSnapshot = null;
             ClearCurrentDesire();
             _scheduledResumeDuration = 0f;
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             float delay = _config.InitialDesireDelay;
             if (delay > 0f)
             {
-                _phase = DesireCyclePhase.WaitingInitialDelay;
+                _step = DesireCycleStep.WaitingInitialDelay;
                 RestartTimer(delay);
                 DebugUtility.LogVerbose(
                     $"⌛ Iniciando desejos após atraso de {delay:F2}s.",
@@ -153,7 +153,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
             else
             {
-                _phase = DesireCyclePhase.Active;
+                _step = DesireCycleStep.Active;
                 PickNextDesire();
             }
 
@@ -188,7 +188,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 float resumeDelay = _config.InitialDesireDelay;
                 if (resumeDelay > 0f)
                 {
-                    _phase = DesireCyclePhase.WaitingResumeDelay;
+                    _step = DesireCycleStep.WaitingResumeDelay;
                     _scheduledResumeDuration = resumeDuration;
                     RestartTimer(resumeDelay);
 
@@ -217,7 +217,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
-            _phase = DesireCyclePhase.Inactive;
+            _step = DesireCycleStep.Inactive;
             _lockedSnapshot = null;
             ClearCurrentDesire();
             _scheduledResumeDuration = 0f;
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
-            _phase = DesireCyclePhase.Inactive;
+            _step = DesireCycleStep.Inactive;
             _lockedSnapshot = CaptureLockedSnapshot();
             _scheduledResumeDuration = 0f;
 
@@ -278,7 +278,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void BeginActiveCycle(float duration)
         {
             float safeDuration = Mathf.Max(duration, 0.05f);
-            _phase = DesireCyclePhase.Active;
+            _step = DesireCycleStep.Active;
             _currentDuration = safeDuration;
             RestartTimer(safeDuration);
 
@@ -293,7 +293,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void PickNextDesire()
         {
-            if (_phase == DesireCyclePhase.Inactive)
+            if (_step == DesireCycleStep.Inactive)
             {
                 return;
             }
@@ -650,7 +650,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return new EaterDesireInfo(serviceActive, hasDesire, resource, available, availableCount, weight, duration, remaining);
         }
 
-        private enum DesireCyclePhase
+        private enum DesireCycleStep
         {
             Inactive = 0,
             WaitingInitialDelay = 1,

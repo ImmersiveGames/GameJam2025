@@ -41,13 +41,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             Request(GameRunOutcome.Victory, "QA/Test3/ForcePostPlay");
         }
 
-        [ContextMenu("QA/PostGame/Trigger after phase change")]
-        private void QA_PostGame_AfterPhaseChange()
+        [ContextMenu("QA/PostGame/Trigger after content swap")]
+        private void QA_PostGame_AfterContentSwap()
         {
             DebugUtility.Log<GameRunEndRequestTrigger>(
-                "[OBS][QA][PostGame] Trigger after phase change solicitado (expect PostGame rearmed).",
+                "[OBS][QA][PostGame] Trigger after content swap solicitado (expect PostGame rearmed).",
                 DebugUtility.Colors.Info);
-            Request(GameRunOutcome.Victory, "QA/PostGame/AfterPhaseChange");
+            Request(GameRunOutcome.Victory, "QA/PostGame/AfterContentSwap");
         }
 
         public void Request(GameRunOutcome outcome, string reason)

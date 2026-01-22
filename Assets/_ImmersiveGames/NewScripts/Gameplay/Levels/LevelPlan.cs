@@ -1,36 +1,36 @@
 #nullable enable
 using System;
-using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
     /// <summary>
-    /// Plano de nível: progressão do jogo (Level) + conteúdo a ser trocado via ContentSwap (Phase).
+    /// Plano de nível: progressão do jogo (Level) + conteúdo a ser trocado via ContentSwap.
     /// </summary>
     public readonly struct LevelPlan : IEquatable<LevelPlan>
     {
         public string LevelId { get; }
-        public string PhaseId { get; }
+        public string ContentId { get; }
         public string ContentSignature { get; }
 
-        public bool IsValid => !string.IsNullOrWhiteSpace(LevelId) && !string.IsNullOrWhiteSpace(PhaseId);
+        public bool IsValid => !string.IsNullOrWhiteSpace(LevelId) && !string.IsNullOrWhiteSpace(ContentId);
 
-        public LevelPlan(string levelId, string phaseId, string contentSignature)
+        public LevelPlan(string levelId, string contentId, string contentSignature)
         {
             LevelId = string.IsNullOrWhiteSpace(levelId) ? string.Empty : levelId.Trim();
-            PhaseId = string.IsNullOrWhiteSpace(phaseId) ? string.Empty : phaseId.Trim();
+            ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
             ContentSignature = string.IsNullOrWhiteSpace(contentSignature) ? string.Empty : contentSignature.Trim();
         }
 
-        public PhasePlan ToPhasePlan()
+        public ContentSwapPlan ToContentSwapPlan()
         {
-            return new PhasePlan(PhaseId, ContentSignature);
+            return new ContentSwapPlan(ContentId, ContentSignature);
         }
 
         public bool Equals(LevelPlan other)
         {
             return string.Equals(LevelId, other.LevelId, StringComparison.Ordinal)
-                && string.Equals(PhaseId, other.PhaseId, StringComparison.Ordinal)
+                && string.Equals(ContentId, other.ContentId, StringComparison.Ordinal)
                 && string.Equals(ContentSignature, other.ContentSignature, StringComparison.Ordinal);
         }
 
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             => obj is LevelPlan other && Equals(other);
 
         public override int GetHashCode()
-            => HashCode.Combine(LevelId, PhaseId, ContentSignature);
+            => HashCode.Combine(LevelId, ContentId, ContentSignature);
 
         public static bool operator ==(LevelPlan left, LevelPlan right) => left.Equals(right);
         public static bool operator !=(LevelPlan left, LevelPlan right) => !left.Equals(right);
@@ -47,10 +47,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         {
             if (string.IsNullOrWhiteSpace(ContentSignature))
             {
-                return $"{LevelId}:{PhaseId}";
+                return $"{LevelId}:{ContentId}";
             }
 
-            return $"{LevelId}:{PhaseId} | {ContentSignature}";
+            return $"{LevelId}:{ContentId} | {ContentSignature}";
         }
 
         public static LevelPlan None => new(string.Empty, string.Empty, string.Empty);

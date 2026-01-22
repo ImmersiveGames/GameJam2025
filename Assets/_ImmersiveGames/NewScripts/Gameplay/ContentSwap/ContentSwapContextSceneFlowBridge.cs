@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -11,7 +11,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 {
     /// <summary>
-    /// Bridge global: SceneFlow -> PhaseContext.
+    /// Bridge global: SceneFlow -> ContentSwapContext.
     /// Objetivo (Baseline 3B):
     /// - Pending NÃO pode atravessar uma transição de cena.
     /// Estratégia:
@@ -20,13 +20,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
     /// Observação:
     /// - Usa registration "best-effort" via reflection para evitar acoplamento a uma assinatura específica do EventBus.
     /// </summary>
-    public sealed class PhaseContextSceneFlowBridge
+    public sealed class ContentSwapContextSceneFlowBridge
     {
         private readonly Delegate _handlerDelegate;
         private object? _bindingInstance;
         private bool _registered;
 
-        public PhaseContextSceneFlowBridge()
+        public ContentSwapContextSceneFlowBridge()
         {
             _handlerDelegate = (Action<SceneTransitionStartedEvent>)OnSceneTransitionStarted;
 
@@ -37,15 +37,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
             if (_registered)
             {
                 DebugUtility.LogVerbose(
-                    typeof(PhaseContextSceneFlowBridge),
-                    "[PhaseContext] PhaseContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending).",
+                    typeof(ContentSwapContextSceneFlowBridge),
+                    "[ContentSwapContext] ContentSwapContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending).",
                     DebugUtility.Colors.Info);
             }
             else
             {
                 DebugUtility.LogError(
-                    typeof(PhaseContextSceneFlowBridge),
-                    "[PhaseContext] Falha ao registrar PhaseContextSceneFlowBridge no EventBus<SceneTransitionStartedEvent>. Pending pode atravessar transições.");
+                    typeof(ContentSwapContextSceneFlowBridge),
+                    "[ContentSwapContext] Falha ao registrar ContentSwapContextSceneFlowBridge no EventBus<SceneTransitionStartedEvent>. Pending pode atravessar transições.");
             }
         }
 
@@ -54,13 +54,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
             if (!DependencyManager.HasInstance)
                 return;
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseContextService>(out var phase) || phase == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapContextService>(out var context) || context == null)
                 return;
 
             // Limpa apenas o Pending (Current permanece).
             // Reason curto e estável; o serviço faz sanitize.
             var sig = evt.Context.ContextSignature;
-            phase.ClearPending($"SceneFlow/TransitionStarted sig={sig}");
+            context.ClearPending($"SceneFlow/TransitionStarted sig={sig}");
         }
 
         // --------------------------------------------------------------------

@@ -8,13 +8,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 {
     /// <summary>
     /// Instrumentação de QA para tornar o Player observável no GameplayReset.
-    /// Não altera input/movimento; apenas loga as fases executadas.
+    /// Não altera input/movimento; apenas loga as etapas executadas.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class GameplayResetPhaseLogger : MonoBehaviour, IGameplayResettable
+    public sealed class GameplayResetStepLogger : MonoBehaviour, IGameplayResettable
     {
         [SerializeField]
-        [Tooltip("Se true, logs detalhados de cada fase.")]
+        [Tooltip("Se true, logs detalhados de cada etapa.")]
         private bool verboseLogs = true;
 
         private IActor _actor;
@@ -26,23 +26,23 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
         public Task ResetCleanupAsync(GameplayResetContext ctx)
         {
-            LogPhase("Cleanup", ctx);
+            LogStep("Cleanup", ctx);
             return Task.CompletedTask;
         }
 
         public Task ResetRestoreAsync(GameplayResetContext ctx)
         {
-            LogPhase("Restore", ctx);
+            LogStep("Restore", ctx);
             return Task.CompletedTask;
         }
 
         public Task ResetRebindAsync(GameplayResetContext ctx)
         {
-            LogPhase("Rebind", ctx);
+            LogStep("Rebind", ctx);
             return Task.CompletedTask;
         }
 
-        private void LogPhase(string phase, GameplayResetContext ctx)
+        private void LogStep(string step, GameplayResetContext ctx)
         {
             if (!verboseLogs)
             {
@@ -51,8 +51,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
             string name = _actor?.DisplayName ?? (gameObject != null ? gameObject.name : "<null>");
             string actorId = _actor?.ActorId ?? "<unknown>";
-            DebugUtility.Log(typeof(GameplayResetPhaseLogger),
-                $"[GameplayReset][Player] {phase} (actor='{name}', id={actorId}, target={ctx.Request.Target})");
+            DebugUtility.Log(typeof(GameplayResetStepLogger),
+                $"[GameplayReset][Player] {step} (actor='{name}', id={actorId}, target={ctx.Request.Target})");
         }
     }
 }

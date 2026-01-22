@@ -11,16 +11,16 @@ Validar por log (Console) que existem **dois tipos explícitos** de troca de fas
 ## Checklist de aceite (por contrato)
 
 ### In-Place (PASS)
-- PhaseChangeRequested `mode=InPlace`.
-- Gate `flow.phase_inplace` adquirido/liberado.
-- Pending set → Reset solicitado (`source='phase.inplace:<phaseId>'`) → Commit observado.
+- ContentSwapRequested `mode=InPlace`.
+- Gate `flow.contentswap_inplace` adquirido/liberado.
+- Pending set → Reset solicitado (`source='contentswap.inplace:<contentId>'`) → Commit observado.
 
 ### SceneTransition (PASS)
 - Intent registrada com `signature`.
 - TransitionStarted (SceneFlow) com a mesma `signature`.
 - Reset disparado em `SceneFlow/ScenesReady`.
 - Intent consumida + commit observado após ResetCompleted.
-- Gate `flow.phase_transition` adquirido/liberado.
+- Gate `flow.contentswap_transition` adquirido/liberado.
 
 ## Pontos de documentação
 - Ajustar o texto do ADR-0017 para descrever corretamente:

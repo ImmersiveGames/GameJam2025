@@ -95,7 +95,7 @@ L519: <color=#A8DEED>[VERBOSE] [InputModeService] [InputMode] Modo 'Gameplay' ja
 ## Mapa rápido para ADRs
 - **ADR-0013 (Ciclo de vida)**: use seções *WorldLifecycle* + invariantes.
 - **ADR-0010 (Loading/SceneFlow)** e **ADR-0009 (Fade)**: use seções *SceneFlow* + invariantes + snippets de Fade/Loading se necessário.
-- **ADR-0016/0017 (Phases)**: este run não demonstra PhaseChange explicitamente; se precisar, rodar cenário de Phase/InPlace e/ou Phase/WithTransition e regenerar evidências.
+- **ADR-0016/0017 (ContentSwap)**: este run não demonstra ContentSwap explicitamente; se precisar, rodar cenário de ContentSwap/InPlace e/ou ContentSwap/WithTransition e regenerar evidências.
 
 ## Observações
 - Caso o verificador 2.1 esteja marcando FAIL por divergência de tokens genéricos (placeholders), a fonte de verdade para ADR continua sendo o *log bruto* e os *snippets curados* acima.

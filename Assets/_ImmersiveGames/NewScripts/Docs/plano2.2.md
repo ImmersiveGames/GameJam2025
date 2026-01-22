@@ -13,7 +13,7 @@
 
 ## Linha 0 — Sequência de marcos (dependências)
 1. **ADR-0017** (modos de ContentSwap) — já implementado.
-2. **ADR-0018** (semântica: Phase => ContentSwap + LevelManager).
+2. **ADR-0018** (semântica: ContentSwap + LevelManager).
 3. **ADR-0019** (promoção: config centralizada + gates + evidências).
 4. **Execução Baseline 2.2** (QA + evidências + gate final).
 
@@ -29,7 +29,7 @@
 - Terminologia consistente em docs de topo (ARCHITECTURE/README).
 
 **Critérios de aceite**
-- Não há uso ambíguo de “Phase” como nível sem explicação.
+- Não há uso ambíguo de termos legados como sinônimo de nível.
 - ADR-0018 referenciado por ADR-0019 e pelo plano.
 
 ---

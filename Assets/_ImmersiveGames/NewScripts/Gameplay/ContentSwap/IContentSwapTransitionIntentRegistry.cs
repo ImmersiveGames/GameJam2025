@@ -1,37 +1,37 @@
 #nullable enable
 using System;
 
-namespace _ImmersiveGames.NewScripts.Gameplay.Phases
+namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 {
     /// <summary>
-    /// Registry global para intenção de troca de fase durante SceneFlow.
+    /// Registry global para intenção de troca de conteúdo durante SceneFlow.
     /// </summary>
-    public interface IPhaseTransitionIntentRegistry
+    public interface IContentSwapTransitionIntentRegistry
     {
-        bool RegisterIntent(PhaseTransitionIntent intent);
-        bool TryConsumeIntent(out PhaseTransitionIntent intent);
-        bool TryPeekIntent(out PhaseTransitionIntent intent);
+        bool RegisterIntent(ContentSwapTransitionIntent intent);
+        bool TryConsumeIntent(out ContentSwapTransitionIntent intent);
+        bool TryPeekIntent(out ContentSwapTransitionIntent intent);
         void ClearIntent(string reason);
 
-        // Compatibilidade: assinatura explícita (legado).
-        bool TrySet(string contextSignature, PhasePlan plan, string reason, DateTime? timestampUtc = null);
-        bool TryConsume(string contextSignature, out PhaseTransitionIntent intent);
+        // Compatibilidade: assinatura explícita.
+        bool TrySet(string contextSignature, ContentSwapPlan plan, string reason, DateTime? timestampUtc = null);
+        bool TryConsume(string contextSignature, out ContentSwapTransitionIntent intent);
         void Clear(string contextSignature);
     }
 
-    public readonly struct PhaseTransitionIntent
+    public readonly struct ContentSwapTransitionIntent
     {
-        public PhasePlan Plan { get; }
-        public PhaseChangeMode Mode { get; }
+        public ContentSwapPlan Plan { get; }
+        public ContentSwapMode Mode { get; }
         public string Reason { get; }
         public string SourceSignature { get; }
         public string TransitionProfile { get; }
         public string TargetScene { get; }
         public DateTime? TimestampUtc { get; }
 
-        public PhaseTransitionIntent(
-            PhasePlan plan,
-            PhaseChangeMode mode,
+        public ContentSwapTransitionIntent(
+            ContentSwapPlan plan,
+            ContentSwapMode mode,
             string reason,
             string sourceSignature,
             string transitionProfile,

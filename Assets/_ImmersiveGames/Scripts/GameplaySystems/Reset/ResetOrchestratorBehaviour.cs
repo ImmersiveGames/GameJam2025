@@ -183,9 +183,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                         this);
                 }
 
-                await RunPhaseAsync(ctx.WithPhase(ResetStructs.Cleanup), ResetStructs.Cleanup);
-                await RunPhaseAsync(ctx.WithPhase(ResetStructs.Restore), ResetStructs.Restore);
-                await RunPhaseAsync(ctx.WithPhase(ResetStructs.Rebind), ResetStructs.Rebind);
+                await RunStepAsync(ctx.WithStep(ResetStructs.Cleanup), ResetStructs.Cleanup);
+                await RunStepAsync(ctx.WithStep(ResetStructs.Restore), ResetStructs.Restore);
+                await RunStepAsync(ctx.WithStep(ResetStructs.Rebind), ResetStructs.Rebind);
 
                 if (_errors.Count > 0)
                 {
@@ -280,15 +280,15 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             }
         }
 
-        private async Task RunPhaseAsync(ResetContext ctx, ResetStructs phase)
+        private async Task RunStepAsync(ResetContext ctx, ResetStructs step)
         {
             if (logVerbose)
             {
                 DebugUtility.LogVerbose<ResetOrchestratorBehaviour>(
-                    $"[Reset] Phase={phase} Targets={_targets.Count}");
+                    $"[Reset] Step={step} Targets={_targets.Count}");
             }
 
-            // 1) Scene-level participants (ex.: GameTimer), uma vez por fase.
+            // 1) Scene-level participants (ex.: GameTimer), uma vez por etapa.
             if (includeSceneLevelParticipants)
             {
                 CollectSceneLevelParticipants(ctx.Request.Scope);
@@ -301,14 +301,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
                     try
                     {
-                        await ExecuteParticipantPhaseAsync(participant, ctx, phase);
+                        await ExecuteParticipantStepAsync(participant, ctx, step);
                     }
                     catch (Exception ex)
                     {
                         _errors.Add(ex);
 
                         DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                            $"[Reset] Erro (scene-level) em '{participant.GetType().Name}' Phase={phase} | Ex={ex.Message}",
+                            $"[Reset] Erro (scene-level) em '{participant.GetType().Name}' Step={step} | Ex={ex.Message}",
                             this);
 
                         if (!bestEffort) throw;
@@ -338,14 +338,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
                     try
                     {
-                        await ExecuteParticipantPhaseAsync(participant, ctx, phase);
+                        await ExecuteParticipantStepAsync(participant, ctx, step);
                     }
                     catch (Exception ex)
                     {
                         _errors.Add(ex);
 
                         DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                            $"[Reset] Erro em '{participant.GetType().Name}' | Actor='{actor.ActorName}' Phase={phase} | Ex={ex.Message}",
+                            $"[Reset] Erro em '{participant.GetType().Name}' | Actor='{actor.ActorName}' Step={step} | Ex={ex.Message}",
                             this);
 
                         if (!bestEffort) throw;
@@ -455,11 +455,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             });
         }
 
-        private static Task ExecuteParticipantPhaseAsync(object participant, ResetContext ctx, ResetStructs phase)
+        private static Task ExecuteParticipantStepAsync(object participant, ResetContext ctx, ResetStructs step)
         {
             if (participant is IResetInterfaces asyncP)
             {
-                return phase switch
+                return step switch
                 {
                     ResetStructs.Cleanup => asyncP.Reset_CleanupAsync(ctx),
                     ResetStructs.Restore => asyncP.Reset_RestoreAsync(ctx),
@@ -470,7 +470,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
             if (participant is IResetParticipantSync syncP)
             {
-                switch (phase)
+                switch (step)
                 {
                     case ResetStructs.Cleanup: syncP.Reset_Cleanup(ctx); break;
                     case ResetStructs.Restore: syncP.Reset_Restore(ctx); break;

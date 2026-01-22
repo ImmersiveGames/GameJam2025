@@ -20,10 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         public const string Cinematic = "flow.cinematic";
         public const string SoftReset = "flow.soft_reset";
         public const string Loading = "flow.loading";
-        public const string PhaseTransition = "flow.phase_transition";
-        public const string PhaseInPlace = "flow.phase_inplace";
-        public const string ContentSwapTransition = PhaseTransition;
-        public const string ContentSwapInPlace = PhaseInPlace;
+        public const string ContentSwapTransition = "flow.contentswap_transition";
+        public const string ContentSwapInPlace = "flow.contentswap_inplace";
 
         // Simulação de gameplay (deve bloquear apenas lógica de gameplay, não UI).
         public const string GameplaySimulation = "sim.gameplay";

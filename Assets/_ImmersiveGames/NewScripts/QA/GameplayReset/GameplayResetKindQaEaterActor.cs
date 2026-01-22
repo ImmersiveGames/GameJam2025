@@ -39,29 +39,29 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 
         public Task ResetCleanupAsync(GameplayResetContext ctx)
         {
-            LogPhase("Cleanup", ctx);
+            LogStep("Cleanup", ctx);
             return Task.CompletedTask;
         }
 
         public Task ResetRestoreAsync(GameplayResetContext ctx)
         {
-            LogPhase("Restore", ctx);
+            LogStep("Restore", ctx);
             return Task.CompletedTask;
         }
 
         public Task ResetRebindAsync(GameplayResetContext ctx)
         {
-            LogPhase("Rebind", ctx);
+            LogStep("Rebind", ctx);
             return Task.CompletedTask;
         }
 
-        private void LogPhase(string phase, GameplayResetContext ctx)
+        private void LogStep(string step, GameplayResetContext ctx)
         {
             string name = DisplayName;
             string id = string.IsNullOrWhiteSpace(actorId) ? "<unknown>" : actorId;
 
             DebugUtility.Log(typeof(GameplayResetKindQaEaterActor),
-                $"[QA][GameplayResetKind] Eater Probe -> {phase} (actor='{name}', id={id}, kind={Kind}, target={ctx.Request.Target})");
+                $"[QA][GameplayResetKind] Eater Probe -> {step} (actor='{name}', id={id}, kind={Kind}, target={ctx.Request.Target})");
         }
     }
 

@@ -1,0 +1,23 @@
+﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/IContentSwapChangeService.cs
+#nullable enable
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+
+namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
+{
+    /// <summary>
+    /// API de produção para solicitar troca de conteúdo.
+    /// - InPlace: conteúdo + hard reset na mesma cena.
+    /// - WithTransition: conteúdo + SceneFlow (fade/loading) + reset após ScenesReady.
+    /// </summary>
+    public interface IContentSwapChangeService
+    {
+        Task RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason);
+        Task RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason, ContentSwapOptions? options);
+        Task RequestContentSwapInPlaceAsync(string contentId, string reason, ContentSwapOptions? options = null);
+
+        Task RequestContentSwapWithTransitionAsync(ContentSwapPlan plan, SceneTransitionRequest transition, string reason);
+        Task RequestContentSwapWithTransitionAsync(ContentSwapPlan plan, SceneTransitionRequest transition, string reason, ContentSwapOptions? options);
+        Task RequestContentSwapWithTransitionAsync(string contentId, SceneTransitionRequest transition, string reason, ContentSwapOptions? options = null);
+    }
+}

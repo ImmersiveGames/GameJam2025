@@ -5,7 +5,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
     /// <summary>
-    /// Orquestra progressão de níveis, delegando ContentSwap (Phase) e IntroStage.
+    /// Orquestra progressão de níveis, delegando ContentSwap e IntroStage.
     /// </summary>
     public interface ILevelManager
     {

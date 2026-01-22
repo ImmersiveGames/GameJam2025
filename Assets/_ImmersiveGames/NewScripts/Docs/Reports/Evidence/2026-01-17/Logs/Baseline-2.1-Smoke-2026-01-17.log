@@ -194,11 +194,11 @@ NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.
 
 <color=#A8DEED>[VERBOSE] [GlobalBootstrap] [InputMode] InputModeSceneFlowBridge registrado no DI global. (@ 3,46s)</color>
 
-<color=#A8DEED>[VERBOSE] [PhaseStartPhaseCommitBridge] [PhaseStart] Bridge registrado (PhaseCommittedEvent -> IntroStage pipeline). (@ 3,46s)</color>
+<color=#A8DEED>[VERBOSE] [ContentSwapStartCommitBridge] [ContentSwapStart] Bridge registrado (ContentSwapCommittedEvent -> IntroStage pipeline). (@ 3,46s)</color>
 
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge registrado no escopo global. (@ 3,46s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapStartCommitBridge registrado no escopo global. (@ 3,46s)</color>
 
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseStart] PhaseStartPhaseCommitBridge registrado no DI global (PhaseCommitted -> IntroStage). (@ 3,46s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwapStart] ContentSwapStartCommitBridge registrado no DI global (ContentSwapCommitted -> IntroStage). (@ 3,46s)</color>
 
 <color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IStateDependentService registrado no escopo global. (@ 3,46s)</color>
 
@@ -210,9 +210,9 @@ NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.
 
 [VERBOSE] [GlobalBootstrap] Registered global service: ICameraResolver. (@ 3,46s)
 
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService registrado no escopo global. (@ 3,46s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService registrado no escopo global. (@ 3,46s)</color>
 
-[VERBOSE] [GlobalBootstrap] Registered global service: IPhaseContextService. (@ 3,46s)
+[VERBOSE] [GlobalBootstrap] Registered global service: IContentSwapContextService. (@ 3,46s)
 
 <color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] IntroStageQaContextMenu instalado (DontDestroyOnLoad).</color>
 
@@ -220,25 +220,25 @@ NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.
 
 <color=#A8DEED>[INFO] [IntroStageQaInstaller] [QA][IntroStage] Para acessar o ContextMenu, selecione o GameObject 'QA_IntroStage' no Hierarchy (DontDestroyOnLoad).</color>
 
-<color=#A8DEED>[VERBOSE] [PhaseContextSceneFlowBridge] [PhaseContext] PhaseContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending). (@ 3,47s)</color>
+<color=#A8DEED>[VERBOSE] [ContentSwapContextSceneFlowBridge] [ContentSwapContext] ContentSwapContextSceneFlowBridge registrado (SceneTransitionStartedEvent -> ClearPending). (@ 3,47s)</color>
 
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço PhaseContextSceneFlowBridge registrado no escopo global. (@ 3,47s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapContextSceneFlowBridge registrado no escopo global. (@ 3,47s)</color>
 
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseContext] PhaseContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending). (@ 3,47s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwapContext] ContentSwapContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending). (@ 3,47s)</color>
 
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry registrado no escopo global. (@ 3,47s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry registrado no escopo global. (@ 3,47s)</color>
 
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseIntent] PhaseTransitionIntentRegistry registrado no DI global. (@ 3,47s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwapIntent] ContentSwapTransitionIntentRegistry registrado no DI global. (@ 3,47s)</color>
 
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 3,47s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 3,47s)
 
 [VERBOSE] [GlobalServiceRegistry] Serviço IWorldResetRequestService encontrado no escopo global (tipo registrado: IWorldResetRequestService). (@ 3,47s)
 
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseTransitionIntentRegistry encontrado no escopo global (tipo registrado: IPhaseTransitionIntentRegistry). (@ 3,47s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapTransitionIntentRegistry encontrado no escopo global (tipo registrado: IContentSwapTransitionIntentRegistry). (@ 3,47s)
 
-<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseChangeService registrado no escopo global. (@ 3,47s)</color>
+<color=#4CAF50>[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapChangeService registrado no escopo global. (@ 3,47s)</color>
 
-<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [PhaseChange] PhaseChangeService registrado no DI global. (@ 3,47s)</color>
+<color=#A8DEED>[VERBOSE] [GlobalBootstrap] [ContentSwap] ContentSwapChangeService registrado no DI global. (@ 3,47s)</color>
 
 [VERBOSE] [GameReadinessService] [Readiness] GameReadinessService registrado nos eventos de Scene Flow. (@ 3,47s)
 
@@ -336,7 +336,7 @@ NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
 
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'. (@ 3,85s)</color>
 
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 3,85s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 3,85s)
 
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 3,85s)
 
@@ -530,7 +530,7 @@ NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
 
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 8,80s)</color>
 
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 8,80s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 8,80s)
 
 [VERBOSE] [GameReadinessService] [Readiness] Snapshot publicado. gameplayReady=False, gateOpen=False, activeTokens=1, reason='gate_closed'. (@ 8,80s)
 
@@ -890,7 +890,7 @@ NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
 
 [VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 9,90s)
 
-[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge encontrado no escopo global (tipo registrado: PhaseStartPhaseCommitBridge). (@ 9,90s)
+[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapStartCommitBridge encontrado no escopo global (tipo registrado: ContentSwapStartCommitBridge). (@ 9,90s)
 
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator encontrado no escopo global (tipo registrado: IIntroStageCoordinator). (@ 9,90s)
 
@@ -1322,7 +1322,7 @@ NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
 
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'. (@ 18,54s)</color>
 
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 18,54s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 18,54s)
 
 [VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=1). (@ 18,54s)
 
@@ -1620,7 +1620,7 @@ NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
 
 [VERBOSE] [GlobalServiceRegistry] Serviço IGameplaySceneClassifier encontrado no escopo global (tipo registrado: IGameplaySceneClassifier). (@ 19,54s)
 
-[VERBOSE] [GlobalServiceRegistry] Serviço PhaseStartPhaseCommitBridge encontrado no escopo global (tipo registrado: PhaseStartPhaseCommitBridge). (@ 19,54s)
+[VERBOSE] [GlobalServiceRegistry] Serviço ContentSwapStartCommitBridge encontrado no escopo global (tipo registrado: ContentSwapStartCommitBridge). (@ 19,54s)
 
 [VERBOSE] [GlobalServiceRegistry] Serviço IIntroStageCoordinator encontrado no escopo global (tipo registrado: IIntroStageCoordinator). (@ 19,54s)
 
@@ -1754,7 +1754,7 @@ NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.
 
 <color=#A8DEED>[VERBOSE] [InputModeSceneFlowBridge] [InputModeSceneFlowBridge] [GameLoop] SceneFlow/Started -> reset dedupe. signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'. (@ 24,13s)</color>
 
-[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 24,13s)
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapContextService encontrado no escopo global (tipo registrado: IContentSwapContextService). (@ 24,13s)
 
 [VERBOSE] [StateDependentService] [StateDependent] Action 'Move' bloqueada: GateClosed (gateOpen=False, gameplayReady=False, paused=False, serviceState=Ready, gameLoopState='Playing', activeTokens=1). (@ 24,13s)
 

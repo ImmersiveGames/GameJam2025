@@ -1,11 +1,11 @@
-// Assets/_ImmersiveGames/NewScripts/QA/Phases/PhaseQaContextMenu.cs
-// QA de ContentSwap (Phase) legado: ações objetivas para gerar evidência.
+// Assets/_ImmersiveGames/NewScripts/QA/ContentSwap/ContentSwapQaContextMenu.cs
+// QA de ContentSwap: ações objetivas para gerar evidência.
 // Comentários PT; código EN.
 
 #nullable enable
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Gameplay.Phases;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
@@ -16,9 +16,9 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace _ImmersiveGames.NewScripts.QA.Phases
+namespace _ImmersiveGames.NewScripts.QA.ContentSwap
 {
-    public sealed class PhaseQaContextMenu : MonoBehaviour
+    public sealed class ContentSwapQaContextMenu : MonoBehaviour
     {
         // Paleta do projeto
         private const string ColorInfo = "#A8DEED";
@@ -26,9 +26,9 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
         private const string ColorWarn = "#FFC107";
         private const string ColorErr = "#F44336";
 
-        [Header("Default PhaseIds")]
-        [SerializeField] private string inPlacePhaseId = "phase.2";
-        [SerializeField] private string withTransitionPhaseId = "phase.2";
+        [Header("Default ContentIds")]
+        [SerializeField] private string inPlaceContentId = "content.2";
+        [SerializeField] private string withTransitionContentId = "content.2";
 
         [Header("WithTransition SceneFlow Request")]
         [SerializeField] private string profileId = "gameplay";
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
         private const string ReasonG02 = "QA/ContentSwap/WithTransition/SceneFlow";
 
         // Recomendado: rastreável no log/observability
-        private const string RequestedBy = "QA/ContentSwap/PhaseQaContextMenu";
+        private const string RequestedBy = "QA/ContentSwap/ContentSwapQaContextMenu";
 
         // ----------------------------
         // Public QA Actions (ContextMenu)
@@ -57,13 +57,13 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
         [ContextMenu("QA/ContentSwap/G02 - WithTransition (SingleClick)")]
         private void Qa_G02_WithTransition_SingleClick()
         {
-            _ = RunG02WithTransitionAsync(withTransitionPhaseId, ReasonG02);
+            _ = RunG02WithTransitionAsync(withTransitionContentId, ReasonG02);
         }
 
-        [ContextMenu("QA/ContentSwap/Dump - PhaseContext Snapshot")]
-        private void Qa_Dump_PhaseContext()
+        [ContextMenu("QA/ContentSwap/Dump - ContentSwapContext Snapshot")]
+        private void Qa_Dump_ContentSwapContext()
         {
-            DumpPhaseContext();
+            DumpContentSwapContext();
         }
 
         // ----------------------------
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
             }
             else
             {
-                DebugUtility.Log(typeof(PhaseQaContextMenu), "[QA][ContentSwap] QA_ContentSwap não encontrado no Hierarchy (Play Mode).", ColorWarn);
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu), "[QA][ContentSwap] QA_ContentSwap não encontrado no Hierarchy (Play Mode).", ColorWarn);
             }
         }
 #endif
@@ -91,53 +91,53 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
 
         private async Task RunG01InPlaceAsync(bool useFadeOpt, bool useLoadingHudOpt, string reason)
         {
-            var svc = ResolveGlobal<IPhaseChangeService>();
+            var svc = ResolveGlobal<IContentSwapChangeService>();
             if (svc == null)
             {
                 return;
             }
 
-            var phaseId = string.IsNullOrWhiteSpace(inPlacePhaseId) ? "phase.2" : inPlacePhaseId.Trim();
+            var contentId = string.IsNullOrWhiteSpace(inPlaceContentId) ? "content.2" : inPlaceContentId.Trim();
 
-            DebugUtility.Log(typeof(PhaseQaContextMenu),
-                $"[QA][ContentSwap] G01 start phaseId='{phaseId}' reason='{reason}' (fade={useFadeOpt}, hud={useLoadingHudOpt}).",
+            DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                $"[QA][ContentSwap] G01 start contentId='{contentId}' reason='{reason}' (fade={useFadeOpt}, hud={useLoadingHudOpt}).",
                 ColorInfo);
 
             try
             {
-                var options = new PhaseChangeOptions
+                var options = new ContentSwapOptions
                 {
                     UseFade = useFadeOpt,
                     UseLoadingHud = useLoadingHudOpt,
                     TimeoutMs = 20000
                 };
 
-                await svc.RequestPhaseInPlaceAsync(phaseId, reason, options);
+                await svc.RequestContentSwapInPlaceAsync(contentId, reason, options);
 
-                DebugUtility.Log(typeof(PhaseQaContextMenu),
-                    $"[QA][ContentSwap] G01 done phaseId='{phaseId}'.",
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                    $"[QA][ContentSwap] G01 done contentId='{contentId}'.",
                     ColorOk);
             }
             catch (Exception ex)
             {
-                DebugUtility.Log(typeof(PhaseQaContextMenu),
-                    $"[QA][ContentSwap] G01 failed phaseId='{phaseId}' ex='{ex.GetType().Name}: {ex.Message}'.",
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                    $"[QA][ContentSwap] G01 failed contentId='{contentId}' ex='{ex.GetType().Name}: {ex.Message}'.",
                     ColorErr);
             }
         }
 
-        private async Task RunG02WithTransitionAsync(string phaseIdRaw, string reason)
+        private async Task RunG02WithTransitionAsync(string contentIdRaw, string reason)
         {
-            var phaseSvc = ResolveGlobal<IPhaseChangeService>();
-            if (phaseSvc == null)
+            var contentSwapSvc = ResolveGlobal<IContentSwapChangeService>();
+            if (contentSwapSvc == null)
             {
                 return;
             }
 
-            var phaseId = string.IsNullOrWhiteSpace(phaseIdRaw) ? "phase.2" : phaseIdRaw.Trim();
+            var contentId = string.IsNullOrWhiteSpace(contentIdRaw) ? "content.2" : contentIdRaw.Trim();
 
-            DebugUtility.Log(typeof(PhaseQaContextMenu),
-                $"[QA][ContentSwap] G02 start phaseId='{phaseId}' reason='{reason}'.",
+            DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                $"[QA][ContentSwap] G02 start contentId='{contentId}' reason='{reason}'.",
                 ColorInfo);
 
             try
@@ -145,18 +145,18 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
                 var request = BuildTransitionRequest();
 
                 // IMPORTANTE:
-                // - SingleClick deve chamar APENAS o PhaseChangeService.
-                // - O PhaseChangeService já registra intent e dispara SceneFlow internamente.
-                await phaseSvc.RequestPhaseWithTransitionAsync(phaseId, request, reason);
+                // - SingleClick deve chamar APENAS o ContentSwapChangeService.
+                // - O ContentSwapChangeService já registra intent e dispara SceneFlow internamente.
+                await contentSwapSvc.RequestContentSwapWithTransitionAsync(contentId, request, reason);
 
-                DebugUtility.Log(typeof(PhaseQaContextMenu),
-                    $"[QA][ContentSwap] G02 done phaseId='{phaseId}'.",
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                    $"[QA][ContentSwap] G02 done contentId='{contentId}'.",
                     ColorOk);
             }
             catch (Exception ex)
             {
-                DebugUtility.Log(typeof(PhaseQaContextMenu),
-                    $"[QA][ContentSwap] G02 failed phaseId='{phaseId}' ex='{ex.GetType().Name}: {ex.Message}'.",
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                    $"[QA][ContentSwap] G02 failed contentId='{contentId}' ex='{ex.GetType().Name}: {ex.Message}'.",
                     ColorErr);
             }
         }
@@ -167,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
             var pid = new SceneFlowProfileId(profileId);
 
             // Observação:
-            // - contextSignature null: PhaseChangeService pode preencher/normalizar.
+            // - contextSignature null: ContentSwapChangeService pode preencher/normalizar.
             // - requestedBy: rastreável para diagnósticos.
             return new SceneTransitionRequest(
                 scenesToLoad: scenesToLoad ?? Array.Empty<string>(),
@@ -180,9 +180,9 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
             );
         }
 
-        private void DumpPhaseContext()
+        private void DumpContentSwapContext()
         {
-            var ctx = ResolveGlobal<IPhaseContextService>();
+            var ctx = ResolveGlobal<IContentSwapContextService>();
             if (ctx == null)
             {
                 return;
@@ -191,8 +191,8 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
             var current = ctx.Current;
             var pending = ctx.Pending;
 
-            DebugUtility.Log(typeof(PhaseQaContextMenu),
-                $"[QA][ContentSwap] PhaseContext snapshot current='{current.PhaseId}' pending='{pending.PhaseId}'.",
+            DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                $"[QA][ContentSwap] ContentSwapContext snapshot current='{current.ContentId}' pending='{pending.ContentId}'.",
                 ColorInfo);
         }
 
@@ -200,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
         {
             if (DependencyManager.Provider == null)
             {
-                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
                     "[QA][ContentSwap] DependencyManager.Provider é null (infra global não inicializada?).",
                     ColorErr);
                 return null;
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
 
             if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
             {
-                DebugUtility.Log(typeof(PhaseQaContextMenu),
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
                     $"[QA][ContentSwap] Serviço global ausente: {typeof(T).Name}.",
                     ColorErr);
                 return null;

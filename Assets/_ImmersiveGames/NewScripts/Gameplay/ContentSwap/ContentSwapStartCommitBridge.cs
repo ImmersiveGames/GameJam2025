@@ -9,19 +9,19 @@ using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine.SceneManagement;
 
-namespace _ImmersiveGames.NewScripts.Gameplay.Phases
+namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PhaseStartPhaseCommitBridge : IDisposable
+    public sealed class ContentSwapStartCommitBridge : IDisposable
     {
         private const string UnknownSignature = "<none>";
         private const string LevelChangePrefix = "LevelChange/";
         private const string QaLevelPrefix = "QA/Levels/";
 
-        private readonly EventBinding<PhaseCommittedEvent> _committedBinding;
+        private readonly EventBinding<ContentSwapCommittedEvent> _committedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
 
-        private PhaseStartRequest? _pendingRequest;
+        private ContentSwapStartRequest? _pendingRequest;
 
         // Importante:
         // _pendingSignature deve conter SOMENTE assinatura verificável.
@@ -32,16 +32,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         private bool _disposed;
 
-        public PhaseStartPhaseCommitBridge()
+        public ContentSwapStartCommitBridge()
         {
-            _committedBinding = new EventBinding<PhaseCommittedEvent>(OnPhaseCommitted);
-            EventBus<PhaseCommittedEvent>.Register(_committedBinding);
+            _committedBinding = new EventBinding<ContentSwapCommittedEvent>(OnContentSwapCommitted);
+            EventBus<ContentSwapCommittedEvent>.Register(_committedBinding);
 
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
 
-            DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                "[PhaseStart] Bridge registrado (PhaseCommittedEvent -> IntroStage pipeline).",
+            DebugUtility.LogVerbose<ContentSwapStartCommitBridge>(
+                "[ContentSwapStart] Bridge registrado (ContentSwapCommittedEvent -> IntroStage pipeline).",
                 DebugUtility.Colors.Info);
         }
 
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             _disposed = true;
 
-            EventBus<PhaseCommittedEvent>.Unregister(_committedBinding);
+            EventBus<ContentSwapCommittedEvent>.Unregister(_committedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
 
             _pendingRequest = null;
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
         /// <summary>
         /// Indica se existe um pipeline pendente para esta assinatura de transição.
-        /// Usado para evitar disparo duplicado de IntroStage (SceneFlow/Completed + PhaseCommitted/pendente).
+        /// Usado para evitar disparo duplicado de IntroStage (SceneFlow/Completed + ContentSwapCommitted/pendente).
         /// </summary>
         public bool HasPendingFor(string contextSignature)
         {
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             return IsContentSwapReason(_lastCommitReason);
         }
 
-        private async void OnPhaseCommitted(PhaseCommittedEvent evt)
+        private async void OnContentSwapCommitted(ContentSwapCommittedEvent evt)
         {
             if (_disposed)
             {
@@ -140,8 +140,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             if (!evt.Current.IsValid)
             {
-                DebugUtility.LogWarning<PhaseStartPhaseCommitBridge>(
-                    "[PhaseStart] PhaseCommittedEvent com Current inválido. Pipeline ignorado.");
+                DebugUtility.LogWarning<ContentSwapStartCommitBridge>(
+                    "[ContentSwapStart] ContentSwapCommittedEvent com Current inválido. Pipeline ignorado.");
                 return;
             }
 
@@ -151,25 +151,25 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             if (!ShouldHandleLevelChange(reason))
             {
-                DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                    $"[PhaseStart] PhaseCommittedEvent ignorado (não é LevelChange). reason='{reason}'.");
+                DebugUtility.LogVerbose<ContentSwapStartCommitBridge>(
+                    $"[ContentSwapStart] ContentSwapCommittedEvent ignorado (não é LevelChange). reason='{reason}'.");
                 return;
             }
 
-            var phaseStartReason = $"PhaseStart/Committed|phaseId={evt.Current.PhaseId}|reason={reason}";
+            var contentSwapStartReason = $"ContentSwapStart/Committed|contentId={evt.Current.ContentId}|reason={reason}";
 
             if (!IsGameplaySceneOrTarget(targetScene))
             {
-                DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                    "[PhaseStart] PhaseCommittedEvent fora da gameplay. Pipeline ignorado.");
+                DebugUtility.LogVerbose<ContentSwapStartCommitBridge>(
+                    "[ContentSwapStart] ContentSwapCommittedEvent fora da gameplay. Pipeline ignorado.");
                 return;
             }
 
-            var request = new PhaseStartRequest(
+            var request = new ContentSwapStartRequest(
                 signature,
-                evt.Current.PhaseId,
+                evt.Current.ContentId,
                 targetScene,
-                phaseStartReason);
+                contentSwapStartReason);
 
             if (IsSceneTransitionGateActive())
             {
@@ -177,20 +177,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
                 if (_pendingRequest != null)
                 {
-                    DebugUtility.LogWarning<PhaseStartPhaseCommitBridge>(
-                        $"[PhaseStart] Pipeline pendente substituído por novo commit. oldSig='{(_pendingSignature.Length == 0 ? UnknownSignature : _pendingSignature)}', newSig='{(verifiableSig.Length == 0 ? UnknownSignature : verifiableSig)}'.");
+                    DebugUtility.LogWarning<ContentSwapStartCommitBridge>(
+                        $"[ContentSwapStart] Pipeline pendente substituído por novo commit. oldSig='{(_pendingSignature.Length == 0 ? UnknownSignature : _pendingSignature)}', newSig='{(verifiableSig.Length == 0 ? UnknownSignature : verifiableSig)}'.");
                 }
 
                 _pendingRequest = request;
                 _pendingSignature = verifiableSig;
 
-                DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                    $"[PhaseStart] SceneTransition ativo; pipeline pendente até TransitionCompleted. signature='{(verifiableSig.Length == 0 ? UnknownSignature : verifiableSig)}'.",
+                DebugUtility.LogVerbose<ContentSwapStartCommitBridge>(
+                    $"[ContentSwapStart] SceneTransition ativo; pipeline pendente até TransitionCompleted. signature='{(verifiableSig.Length == 0 ? UnknownSignature : verifiableSig)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            await PhaseStartPipeline.RunAsync(request);
+            await ContentSwapStartPipeline.RunAsync(request);
         }
 
         private async void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
@@ -206,8 +206,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             {
                 var completedSignatureNow = SceneTransitionSignatureUtil.Compute(evt.Context);
 
-                DebugUtility.LogWarning<PhaseStartPhaseCommitBridge>(
-                    $"[PhaseStart] TransitionCompleted observado, mas SceneTransition token ainda está ativo (reentrância detectada). " +
+                DebugUtility.LogWarning<ContentSwapStartCommitBridge>(
+                    $"[ContentSwapStart] TransitionCompleted observado, mas SceneTransition token ainda está ativo (reentrância detectada). " +
                     $"Mantendo pipeline pendente. completedSig='{completedSignatureNow}'.");
                 return;
             }
@@ -218,21 +218,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 var completedSignature = SceneTransitionSignatureUtil.Compute(evt.Context);
                 if (!string.Equals(completedSignature, _pendingSignature, StringComparison.Ordinal))
                 {
-                    DebugUtility.LogWarning<PhaseStartPhaseCommitBridge>(
-                        $"[PhaseStart] TransitionCompleted com assinatura divergente; descartando pendência. expected='{_pendingSignature}', got='{completedSignature}'.");
+                    DebugUtility.LogWarning<ContentSwapStartCommitBridge>(
+                        $"[ContentSwapStart] TransitionCompleted com assinatura divergente; descartando pendência. expected='{_pendingSignature}', got='{completedSignature}'.");
                     _pendingRequest = null;
                     _pendingSignature = string.Empty;
                     return;
                 }
 
-                DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                    $"[PhaseStart] TransitionCompleted observado; executando pipeline pendente. signature='{completedSignature}'.",
+                DebugUtility.LogVerbose<ContentSwapStartCommitBridge>(
+                    $"[ContentSwapStart] TransitionCompleted observado; executando pipeline pendente. signature='{completedSignature}'.",
                     DebugUtility.Colors.Info);
             }
             else
             {
-                DebugUtility.LogVerbose<PhaseStartPhaseCommitBridge>(
-                    "[PhaseStart] TransitionCompleted observado; assinatura pendente não-verificável ('<none>'). Executando pipeline pendente sem validação de mismatch.",
+                DebugUtility.LogVerbose<ContentSwapStartCommitBridge>(
+                    "[ContentSwapStart] TransitionCompleted observado; assinatura pendente não-verificável ('<none>'). Executando pipeline pendente sem validação de mismatch.",
                     DebugUtility.Colors.Info);
             }
 
@@ -240,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
             _pendingRequest = null;
             _pendingSignature = string.Empty;
 
-            await PhaseStartPipeline.RunAsync(request);
+            await ContentSwapStartPipeline.RunAsync(request);
         }
 
         private static bool ShouldHandleLevelChange(string reason)
@@ -255,12 +255,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         {
             return reason.StartsWith("ContentSwap/", StringComparison.Ordinal)
                    || reason.StartsWith("QA/ContentSwap/", StringComparison.Ordinal)
-                   || reason.StartsWith("QA/Phases/", StringComparison.Ordinal)
-                   || reason.StartsWith("PhaseChange/", StringComparison.Ordinal)
                    || reason.Contains("|reason=ContentSwap/", StringComparison.Ordinal)
-                   || reason.Contains("|reason=QA/ContentSwap/", StringComparison.Ordinal)
-                   || reason.Contains("|reason=QA/Phases/", StringComparison.Ordinal)
-                   || reason.Contains("|reason=PhaseChange/", StringComparison.Ordinal);
+                   || reason.Contains("|reason=QA/ContentSwap/", StringComparison.Ordinal);
         }
 
         private void CacheLastCommit(string signature, string reason)
