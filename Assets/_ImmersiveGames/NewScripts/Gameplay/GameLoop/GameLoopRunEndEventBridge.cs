@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (!IsGameplayScene())
             {
                 DebugUtility.LogWarning<GameLoopRunEndEventBridge>(
-                    $"[OBS][PostPlay] PostPlaySkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
+                    $"[OBS][PostGame] PostGameSkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
                 return;
             }
 
