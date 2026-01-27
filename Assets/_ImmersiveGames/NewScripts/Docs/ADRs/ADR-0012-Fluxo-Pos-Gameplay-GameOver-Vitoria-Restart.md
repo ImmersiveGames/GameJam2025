@@ -273,6 +273,9 @@ Regras:
 
 ### Caminho canônico (produção)
 
+- **Nomenclatura canônica**: o contrato/logs usam **PostGame**; `PostPlay` pode existir apenas como nome interno
+  (enum/estado) por compatibilidade.
+- **Idempotência**: o `PostGameOverlayController` é idempotente (double click ignora e publica apenas uma intenção).
 - **Fim de run**: `GameRunOutcomeService` publica `GameRunEndedEvent` e `GameRunStatusService` mantém `Outcome` + `Reason`.
 - **UI pós-game**: `PostGameOverlayController` observa `GameRunEndedEvent`, exibe overlay e:
   - `Restart` → publica `GameResetRequestedEvent` (`reason='PostGame/Restart'`)
@@ -288,4 +291,3 @@ Regras:
 
 - O baseline atual não depende de um estado explícito `PostGame` no `GameLoop` para operar corretamente.
   O pós-game é representado via evento (`GameRunEndedEvent`) + overlay + intents de navegação (evento/bridge).
-
