@@ -275,7 +275,8 @@ Regras:
 
 - **Nomenclatura canônica**: o contrato/logs usam **PostGame**; `PostPlay` pode existir apenas como nome interno
   (enum/estado) por compatibilidade.
-- **Idempotência**: o `PostGameOverlayController` é idempotente (double click ignora e publica apenas uma intenção).
+- **Idempotência**: o `PostGameOverlayController` é idempotente (double click ignora e publica apenas uma intenção;
+  `GameRunEndedEvent` duplicado após ação é ignorado).
 - **Fim de run**: `GameRunOutcomeService` publica `GameRunEndedEvent` e `GameRunStatusService` mantém `Outcome` + `Reason`.
 - **UI pós-game**: `PostGameOverlayController` observa `GameRunEndedEvent`, exibe overlay e:
   - `Restart` → publica `GameResetRequestedEvent` (`reason='PostGame/Restart'`)

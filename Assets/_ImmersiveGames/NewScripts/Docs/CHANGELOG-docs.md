@@ -1,5 +1,12 @@
 # Changelog (Docs)
 
+## 2026-01-27
+- Docs: Baseline 2.0 → fontes vigentes (ADR-0015 + Evidence/LATEST + Observability-Contract).
+- ADR-0012: PostGame canônico + idempotência do overlay (double click + evento duplicado).
+- Arquivos alterados: `Docs/ARCHITECTURE.md`, `Docs/CHANGELOG-docs.md`,
+  `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`,
+  `Docs/Reports/Observability-Contract.md`.
+
 ## 2026-01-21
 - ADR-0018 reescrito para formalizar a mudança semântica para ContentSwap + LevelManager e delimitar o LevelManager.
 - ADR-0019 atualizado para descrever promoção do Baseline 2.2 com escopo, gates e metodologia de evidência por data.

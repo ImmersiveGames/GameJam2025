@@ -94,6 +94,16 @@ Estados observáveis (mínimo):
 | `Playing` | log de `ENTER: Playing` e `GameRunStartedEvent` observado | Ações de gameplay devem ser liberadas apenas em Playing. |
 | `PostGame` | log de `ENTER: PostGame` e overlay/eventos relacionados | PostGame deve ser idempotente. |
 
+Assinaturas canônicas (Gameplay → PostGame):
+- `[GameLoop] ENTER: PostGame (active=...)`
+- `[OBS][PostGame] PostGameEntered signature='...' outcome='...' reason='...' scene='...' profile='...' frame=...`
+- `[OBS][PostGame] PostGameExited signature='...' reason='...' nextState='...' scene='...' profile='...' frame=...`
+- `[OBS][PostGame] PostGameSkipped reason='scene_not_gameplay' scene='...'`
+- `[PostGame] GameRunEndedEvent recebido. Exibindo overlay.`
+- `[PostGame] Restart ignorado (ação já solicitada).`
+- `[PostGame] ExitToMenu ignorado (ação já solicitada).`
+- `[PostGame] GameRunEndedEvent ignorado (ação já solicitada).`
+
 ### InputMode
 
 Eventos observáveis (mínimo):
