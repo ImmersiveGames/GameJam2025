@@ -189,6 +189,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void OnGameRunEnded(GameRunEndedEvent evt)
         {
+            if (_actionRequested)
+            {
+                DebugUtility.LogVerbose<PostGameOverlayController>(
+                    "[PostGame] GameRunEndedEvent ignorado (ação já solicitada).",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             if (_isVisible)
             {
                 return;
