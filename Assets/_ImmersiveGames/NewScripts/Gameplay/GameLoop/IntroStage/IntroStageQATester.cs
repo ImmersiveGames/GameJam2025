@@ -142,6 +142,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static IIntroStageCoordinator? ResolveCoordinator()
         {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.LogWarning(typeof(IntroStageQATester),
+                    "[QA][IntroStage] DependencyManager.Provider indisponível; coordinator não resolvido.");
+                return null;
+            }
+
             return DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var coordinator)
                 ? coordinator
                 : null;
@@ -149,6 +156,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static IIntroStageControlService? ResolveControlService()
         {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.LogWarning(typeof(IntroStageQATester),
+                    "[QA][IntroStage] DependencyManager.Provider indisponível; control service não resolvido.");
+                return null;
+            }
+
             return DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var control)
                 ? control
                 : null;

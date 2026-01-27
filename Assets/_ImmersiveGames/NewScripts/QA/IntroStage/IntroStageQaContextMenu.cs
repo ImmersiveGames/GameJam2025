@@ -44,6 +44,13 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
 
         private static IIntroStageControlService? ResolveControlService()
         {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.LogWarning(typeof(IntroStageQaContextMenu),
+                    "[QA][IntroStage] DependencyManager.Provider indisponível; serviço não resolvido.");
+                return null;
+            }
+
             return DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service)
                 ? service
                 : null;
