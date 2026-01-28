@@ -1,7 +1,7 @@
 /*
  * ChangeLog
  * - Registrado IContentSwapContextService (ContentSwapContextService) no DI global (ADR-0016).
- * - Adicionado ContentSwapContextSceneFlowBridge para limpar Pending no SceneTransitionStarted (Baseline 3B).
+ * - ContentSwap permanece InPlace-only (sem integração com SceneFlow).
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas StateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
@@ -25,14 +25,12 @@ using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
-using _ImmersiveGames.NewScripts.Gameplay.ContentSwap.Integrations.SceneFlow;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.Gameplay;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
@@ -186,10 +184,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIntroStageRuntimeDebugGui();
 #endif
 
-            // Baseline 3B: Pending NÃO pode atravessar transição.
-            RegisterContentSwapContextSceneFlowBridge();
-
-            // ContentSwapChange (modo ContentSwap-only): usa apenas ContentSwapContext e commit imediato.
+            // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
@@ -218,7 +213,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<ContentSwapCommittedEvent>.Clear();
             EventBus<ContentSwapPendingSetEvent>.Clear();
             EventBus<ContentSwapPendingClearedEvent>.Clear();
-            EventBus<ContentSwapRejectedEvent>.Clear();
 
             // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
             EventBus<SceneTransitionStartedEvent>.Clear();
@@ -735,28 +729,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        // --------------------------------------------------------------------
-        // ContentSwapContext (Baseline 3B)
-        // --------------------------------------------------------------------
-
-        private static void RegisterContentSwapContextSceneFlowBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ContentSwapContextSceneFlowBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[ContentSwapContext] ContentSwapContextSceneFlowBridge já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new ContentSwapContextSceneFlowBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[ContentSwapContext] ContentSwapContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending).",
-                DebugUtility.Colors.Info);
-        }
-
         private static void RegisterIntroStageQaInstaller()
         {
             try
@@ -913,59 +885,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (TryRegisterContentSwapWithTransition(contentSwapContext, out var selectionReason))
-            {
-                DebugUtility.Log(
-                    typeof(GlobalBootstrap),
-                    $"[ContentSwap] ContentSwapChangeService selected=WithTransition reason='{selectionReason}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
             DependencyManager.Provider.RegisterGlobal<IContentSwapChangeService>(
                 new ContentSwapChangeServiceInPlaceOnly(contentSwapContext),
                 allowOverride: false);
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
-                $"[ContentSwap] ContentSwapChangeService selected=InPlaceOnly reason='{selectionReason}'.",
+                "[ContentSwap] ContentSwapChangeService selected=InPlaceOnly reason='NewScripts InPlace-only'.",
                 DebugUtility.Colors.Info);
-        }
-
-        private static bool TryRegisterContentSwapWithTransition(IContentSwapContextService contentSwapContext, out string reason)
-        {
-#if NEWSCRIPTS_CONTENTSWAP_FORCE_INPLACE
-            reason = "forced by NEWSCRIPTS_CONTENTSWAP_FORCE_INPLACE";
-            return false;
-#endif
-            if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var worldReset) || worldReset == null)
-            {
-                reason = "IWorldResetRequestService indisponível";
-                return false;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
-            {
-                reason = "ISceneTransitionService indisponível";
-                return false;
-            }
-
-            RegisterIfMissing<IContentSwapTransitionIntentRegistry>(() => new ContentSwapTransitionIntentRegistry());
-
-            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapTransitionIntentRegistry>(out var intentRegistry) || intentRegistry == null)
-            {
-                reason = "IContentSwapTransitionIntentRegistry indisponível";
-                return false;
-            }
-
-            RegisterIfMissing(() => new ContentSwapTransitionIntentWorldLifecycleBridge(intentRegistry, contentSwapContext));
-
-            DependencyManager.Provider.RegisterGlobal<IContentSwapChangeService>(
-                new ContentSwapChangeServiceWithTransition(contentSwapContext, worldReset, sceneFlow, intentRegistry),
-                allowOverride: false);
-
-            reason = "dependências SceneFlow/WorldLifecycle/Intent disponíveis";
-            return true;
         }
 
     }

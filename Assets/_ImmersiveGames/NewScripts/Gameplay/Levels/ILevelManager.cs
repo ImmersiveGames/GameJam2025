@@ -1,6 +1,5 @@
 #nullable enable
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
@@ -10,6 +9,5 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
     public interface ILevelManager
     {
         Task RequestLevelInPlaceAsync(LevelPlan plan, string reason, LevelChangeOptions? options = null);
-        Task RequestLevelWithTransitionAsync(LevelPlan plan, SceneTransitionRequest transition, string reason, LevelChangeOptions? options = null);
     }
 }

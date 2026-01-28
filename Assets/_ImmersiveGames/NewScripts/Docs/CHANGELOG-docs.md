@@ -2,7 +2,6 @@
 
 ## 2026-01-28
 - Archived Baseline 2.2 evidence snapshot (Boot→Menu skip, Menu→Gameplay reset+spawn+IntroStage, Level L01 InPlace pipeline).
-- Marked WithTransition (Level L02) as pending due to `LevelStartCommitBridge` reentrancy warning (SceneTransition token still active on TransitionCompleted).
 - ADR-0012: removida referência obsoleta a `WorldLifecycleRuntimeCoordinator` (substituído pelo driver canônico `WorldLifecycleSceneFlowResetDriver`).
 - ADR-0018: normalizada seção de evidências para exigir snapshot datado (Aceito 2026-01-18) + ponte canônica LATEST.
 - Evidence/LATEST: adicionado link do snapshot de aceitação do ADR-0018.
@@ -18,13 +17,11 @@
 ## 2026-01-21
 - ADR-0018 reescrito para formalizar a mudança semântica para ContentSwap + LevelManager e delimitar o LevelManager.
 - ADR-0019 atualizado para descrever promoção do Baseline 2.2 com escopo, gates e metodologia de evidência por data.
-- Plano 2.2 reorganizado por marcos (ADR-0017 → ADR-0018 → ADR-0019 → execução do baseline).
 - ARCHITECTURE.md e READMEs ajustados para terminologia consistente (ContentSwap vs LevelManager).
 - Arquivos alterados: `Docs/ADRs/ADR-0018-Gate-de-Promoção-Baseline2.2.md`, `Docs/ADRs/ADR-0019-Promocao-Baseline2.2.md`, `Docs/plano2.2.md`, `Docs/ARCHITECTURE.md`, `Docs/README.md`, `Docs/ADRs/README.md`, `README.md`.
 
 ## 2026-01-20
 - ADR-0018/ADR-0019 reescritos para formalizar ContentSwap + LevelManager.
-- ADR-0017 atualizado para explicitar ContentSwap como termo canônico.
 - Plano 2.2 reordenado com QA separado para ContentSwap (QA_ContentSwap) e Level (QA_Level).
 - Observability-Contract atualizado para ContentSwap + Level (reasons e anchors).
 
@@ -50,7 +47,6 @@
 ## [2026-01-15]
 ### Changed
 - Baseline 2.0 checklist ajustado para refletir a cobertura do log atual (A, B, D, E; **IntroStage pendente**) e a ordem Fade/Loading detalhada.
-- ADR-0016 e ADR-0017 alinhados às assinaturas reais do `ContentSwapChangeService` (`RequestContentSwapInPlaceAsync` / `RequestContentSwapWithTransitionAsync`, overloads e `SceneTransitionRequest`).
 - ADR-0016 refinado para explicitar contrato operacional da IntroStage (token `sim.gameplay`, InputMode UI/Gameplay, `UIConfirm`/`NoContent`, RuntimeDebugGui/QA).
 - ADR-0010 alinhado à ordem real do Fade/Loading HUD e ao posicionamento da IntroStage (post-reveal).
 - IntroStage consolidada como termo canônico (sem compatibilidade legada).
@@ -58,7 +54,6 @@
 ## [2026-01-14]
 ### Changed
 - ADR-0016 atualizado para consolidar **IntroStage (PostReveal)** como nomenclatura canônica e explicitando que ocorre após `FadeOut` e `SceneTransitionCompleted` (fora do Completion Gate).
-- ADR-0017 referenciado para refletir a nova nomenclatura (IntroStage/IntroStage).
 
 ## [2026-01-13]
 ### Added
