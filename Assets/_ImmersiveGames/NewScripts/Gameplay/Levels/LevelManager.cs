@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
@@ -97,6 +98,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             var normalizedReason = NormalizeReason(reason);
             var normalizedOptions = NormalizeOptions(options);
 
+            if (!SupportsWithTransition(_contentSwapChangeService, out var rejectionReason))
+            {
+                DebugUtility.LogWarning<LevelManager>(
+                    $"[WARN][ContentSwap] ContentSwapRejected mode={ContentSwapMode.SceneTransition} contentId='{plan.ContentId}' reason='{normalizedReason}' rejectionReason='{rejectionReason}'.");
+
+                EventBus<ContentSwapRejectedEvent>.Raise(
+                    new ContentSwapRejectedEvent(plan.ToContentSwapPlan(), ContentSwapMode.SceneTransition, normalizedReason, rejectionReason));
+                Interlocked.Exchange(ref _inProgress, 0);
+                return;
+            }
+
             DebugUtility.Log<LevelManager>(
                 $"[OBS][Level] LevelChangeRequested levelId='{plan.LevelId}' contentId='{plan.ContentId}' mode='SceneTransition' reason='{normalizedReason}' contentSig='{plan.ContentSignature}'.",
                 DebugUtility.Colors.Info);
@@ -148,6 +160,27 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         private static LevelChangeOptions NormalizeOptions(LevelChangeOptions? options)
         {
             return options?.Clone() ?? LevelChangeOptions.Default.Clone();
+        }
+
+        private static bool SupportsWithTransition(IContentSwapChangeService service, out string rejectionReason)
+        {
+            var caps = service as IContentSwapChangeServiceCapabilities;
+            if (caps == null)
+            {
+                rejectionReason = "ContentSwap/WithTransitionUnavailable";
+                return false;
+            }
+
+            if (!caps.SupportsWithTransition)
+            {
+                rejectionReason = string.IsNullOrWhiteSpace(caps.CapabilityReason)
+                    ? "ContentSwap/WithTransitionUnavailable"
+                    : caps.CapabilityReason;
+                return false;
+            }
+
+            rejectionReason = string.Empty;
+            return true;
         }
     }
 }

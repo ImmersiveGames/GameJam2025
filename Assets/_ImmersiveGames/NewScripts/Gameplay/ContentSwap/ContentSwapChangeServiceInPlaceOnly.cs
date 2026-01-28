@@ -4,15 +4,20 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class ContentSwapChangeServiceInPlaceOnly : IContentSwapChangeService
+    public sealed class ContentSwapChangeServiceInPlaceOnly : IContentSwapChangeService, IContentSwapChangeServiceCapabilities
     {
+        private const string WithTransitionUnavailable = "ContentSwap/WithTransitionUnavailable";
         private readonly IContentSwapContextService _contentSwapContext;
         private int _inProgress;
+
+        public bool SupportsWithTransition => false;
+        public string CapabilityReason => WithTransitionUnavailable;
 
         public ContentSwapChangeServiceInPlaceOnly(IContentSwapContextService contentSwapContext)
         {
@@ -94,10 +99,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
         public Task RequestContentSwapWithTransitionAsync(ContentSwapPlan plan, SceneTransitionRequest transition, string reason, ContentSwapOptions? options)
         {
-            DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                "[ContentSwap] WithTransition indisponível no modo ContentSwap-only. Executando commit InPlace imediato.");
+            var contentId = plan.IsValid ? plan.ContentId : "<invalid>";
+            var rejectionReason = WithTransitionUnavailable;
 
-            return RequestContentSwapInPlaceAsync(plan, reason, options);
+            DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
+                $"[WARN][ContentSwap] ContentSwapRejected mode={ContentSwapMode.SceneTransition} contentId='{contentId}' reason='{Sanitize(reason)}' rejectionReason='{rejectionReason}'.");
+
+            if (plan.IsValid)
+            {
+                EventBus<ContentSwapRejectedEvent>.Raise(
+                    new ContentSwapRejectedEvent(plan, ContentSwapMode.SceneTransition, reason, rejectionReason));
+            }
+
+            return Task.CompletedTask;
         }
 
         private static ContentSwapPlan BuildPlan(string contentId)

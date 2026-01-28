@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine;
@@ -54,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
             _ = RunG01InPlaceAsync(useFadeOpt: false, useLoadingHudOpt: false, reason: ReasonG01);
         }
 
-        [ContextMenu("QA/ContentSwap/G02 - WithTransition (SingleClick)")]
+        [ContextMenu("QA/ContentSwap/G02 - WithTransition (Disabled if unavailable)")]
         private void Qa_G02_WithTransition_SingleClick()
         {
             _ = RunG02WithTransitionAsync(withTransitionContentId, ReasonG02);
@@ -135,6 +136,16 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
             }
 
             var contentId = string.IsNullOrWhiteSpace(contentIdRaw) ? "content.2" : contentIdRaw.Trim();
+            if (!SupportsWithTransition(contentSwapSvc, out var rejectionReason))
+            {
+                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
+                    $"[WARN][ContentSwap] ContentSwapRejected mode={ContentSwapMode.SceneTransition} contentId='{contentId}' reason='{reason}' rejectionReason='{rejectionReason}'.",
+                    ColorWarn);
+
+                EventBus<ContentSwapRejectedEvent>.Raise(
+                    new ContentSwapRejectedEvent(new ContentSwapPlan(contentId, string.Empty), ContentSwapMode.SceneTransition, reason, rejectionReason));
+                return;
+            }
 
             DebugUtility.Log(typeof(ContentSwapQaContextMenu),
                 $"[QA][ContentSwap] G02 start contentId='{contentId}' reason='{reason}'.",
@@ -215,6 +226,27 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
             }
 
             return service;
+        }
+
+        private static bool SupportsWithTransition(IContentSwapChangeService service, out string rejectionReason)
+        {
+            var caps = service as IContentSwapChangeServiceCapabilities;
+            if (caps == null)
+            {
+                rejectionReason = "ContentSwap/WithTransitionUnavailable";
+                return false;
+            }
+
+            if (!caps.SupportsWithTransition)
+            {
+                rejectionReason = string.IsNullOrWhiteSpace(caps.CapabilityReason)
+                    ? "ContentSwap/WithTransitionUnavailable"
+                    : caps.CapabilityReason;
+                return false;
+            }
+
+            rejectionReason = string.Empty;
+            return true;
         }
     }
 }

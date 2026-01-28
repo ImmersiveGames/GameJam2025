@@ -1,8 +1,9 @@
-﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/ContentSwapChangeService.cs
+﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/Integrations/SceneFlow/ContentSwapChangeServiceWithTransition.cs
 #nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
@@ -11,10 +12,10 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 
-namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
+namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap.Integrations.SceneFlow
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class ContentSwapChangeService : IContentSwapChangeService
+    public sealed class ContentSwapChangeServiceWithTransition : IContentSwapChangeService, IContentSwapChangeServiceCapabilities
     {
         private readonly IContentSwapContextService _contentSwapContext;
         private readonly IWorldResetRequestService _worldReset;
@@ -23,7 +24,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
         private int _inProgress;
 
-        public ContentSwapChangeService(
+        public bool SupportsWithTransition => true;
+        public string CapabilityReason => "ContentSwap/WithTransitionAvailable";
+
+        public ContentSwapChangeServiceWithTransition(
             IContentSwapContextService contentSwapContext,
             IWorldResetRequestService worldReset,
             ISceneTransitionService sceneFlow,
@@ -49,18 +53,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
         {
             if (!plan.IsValid)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] Ignorando RequestContentSwapInPlaceAsync com ContentSwapPlan inválido.");
                 return;
             }
 
-            DebugUtility.Log<ContentSwapChangeService>(
+            DebugUtility.Log<ContentSwapChangeServiceWithTransition>(
                 $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode={ContentSwapMode.InPlace} contentId='{plan.ContentId}' reason='{Sanitize(reason)}'",
                 DebugUtility.Colors.Info);
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] Já existe uma troca de conteúdo em progresso. Ignorando (InPlace).");
                 return;
             }
@@ -69,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
             if (normalizedOptions.UseLoadingHud)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>("[ContentSwap] In-Place ignora LoadingHUD. Use WithTransition/SceneFlow para loading completo.");
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>("[ContentSwap] In-Place ignora LoadingHUD. Use WithTransition/SceneFlow para loading completo.");
                 normalizedOptions.UseLoadingHud = false;
             }
 
@@ -96,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
                 _contentSwapContext.SetPending(plan, reason);
 
                 var resetReason = $"ContentSwap/InPlace plan='{plan}' reason='{reason ?? "n/a"}'";
-                DebugUtility.Log<ContentSwapChangeService>(
+                DebugUtility.Log<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] InPlace -> pending set. Disparando WorldReset. {resetReason}",
                     DebugUtility.Colors.Info);
 
@@ -107,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
                 if (!_contentSwapContext.TryCommitPending(reason ?? "ContentSwap/InPlace", out _))
                 {
-                    DebugUtility.LogWarning<ContentSwapChangeService>(
+                    DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                         $"[ContentSwap] Reset concluído, mas TryCommitPending falhou. signature='{signature}', plan='{plan}', reason='{Sanitize(reason)}'.");
                 }
 
@@ -119,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<ContentSwapChangeService>(
+                DebugUtility.LogError<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] Falha no InPlace. Limpando pending por segurança. ex={ex}");
 
                 _contentSwapContext.ClearPending($"ContentSwap/InPlace failed: {ex.GetType().Name}");
@@ -142,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
                     }
                     catch (Exception ex)
                     {
-                        DebugUtility.LogWarning<ContentSwapChangeService>(
+                        DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                             $"[ContentSwap] Falha ao executar FadeOut final (InPlace). ex={ex.GetType().Name}: {ex.Message}");
                     }
                 }
@@ -163,28 +167,28 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
         {
             if (!plan.IsValid)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] Ignorando RequestContentSwapWithTransitionAsync com ContentSwapPlan inválido.");
                 return;
             }
 
             if (transition == null)
             {
-                DebugUtility.LogError<ContentSwapChangeService>(
+                DebugUtility.LogError<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] Transition request nulo. Abortando.");
                 return;
             }
 
             if (transition.ScenesToLoad == null || transition.ScenesToUnload == null)
             {
-                DebugUtility.LogError<ContentSwapChangeService>(
+                DebugUtility.LogError<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] Transition request inválido (ScenesToLoad/ScenesToUnload nulos). Abortando.");
                 return;
             }
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] Já existe uma troca de conteúdo em progresso. Ignorando (WithTransition).");
                 return;
             }
@@ -212,21 +216,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
                 if (!_intentRegistry.RegisterIntent(intent))
                 {
-                    DebugUtility.LogWarning<ContentSwapChangeService>(
+                    DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                         $"[ContentSwap] Falha ao registrar ContentSwap intent. Ignorando RequestContentSwapWithTransitionAsync. signature='{signature}', plan='{plan}'.");
                     return;
                 }
 
-                DebugUtility.Log<ContentSwapChangeService>(
+                DebugUtility.Log<ContentSwapChangeServiceWithTransition>(
                     $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_transition mode={ContentSwapMode.SceneTransition} contentId='{plan.ContentId}' reason='{Sanitize(reason)}' signature='{signature}' profile='{normalizedRequest.TransitionProfileName}'",
                     DebugUtility.Colors.Info);
 
-                DebugUtility.Log<ContentSwapChangeService>(
+                DebugUtility.Log<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] WithTransition -> intent registrado. Iniciando SceneFlow. " +
                     $"plan='{plan}', reason='{reason ?? "n/a"}', profile='{normalizedRequest.TransitionProfileName}', active='{normalizedRequest.TargetActiveScene}'.",
                     DebugUtility.Colors.Info);
 
-                DebugUtility.LogVerbose<ContentSwapChangeService>(
+                DebugUtility.LogVerbose<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] WithTransition signature='{signature}'.");
 
                 var transitionOk = await AwaitWithTimeoutAsync(
@@ -243,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<ContentSwapChangeService>(
+                DebugUtility.LogError<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] Falha no WithTransition. Limpando intent por segurança. ex={ex}");
 
                 _intentRegistry.ClearIntent($"ContentSwap/WithTransition failed: {ex.GetType().Name}");
@@ -276,7 +280,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
         {
             if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] ISimulationGateService indisponível. Gate não será adquirido para InPlace.");
                 return null;
             }
@@ -288,7 +292,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
         {
             if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     "[ContentSwap] ISimulationGateService indisponível. Gate não será adquirido para WithTransition.");
                 return null;
             }
@@ -312,14 +316,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             var completed = await Task.WhenAny(task, Task.Delay(timeoutMs));
             if (completed != task)
             {
-                DebugUtility.LogError<ContentSwapChangeService>(
+                DebugUtility.LogError<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] Timeout aguardando '{label}'. timeoutMs={timeoutMs}.");
 
                 _ = task.ContinueWith(t =>
                 {
                     if (t.Exception != null)
                     {
-                        DebugUtility.LogWarning<ContentSwapChangeService>(
+                        DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                             $"[ContentSwap] '{label}' terminou com erro após timeout. ex={t.Exception.GetBaseException()}");
                     }
                 });
@@ -335,7 +339,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
         {
             if (!DependencyManager.Provider.TryGetGlobal<INewScriptsFadeService>(out var fade) || fade == null)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] Fade solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
                 return;
             }
@@ -347,7 +351,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
         {
             if (!DependencyManager.Provider.TryGetGlobal<INewScriptsFadeService>(out var fade) || fade == null)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] FadeOut solicitado, mas INewScriptsFadeService indisponível. signature='{signature}'.");
                 return;
             }
@@ -359,7 +363,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
         {
             if (!DependencyManager.Provider.TryGetGlobal<INewScriptsLoadingHudService>(out var hud) || hud == null)
             {
-                DebugUtility.LogWarning<ContentSwapChangeService>(
+                DebugUtility.LogWarning<ContentSwapChangeServiceWithTransition>(
                     $"[ContentSwap] LoadingHUD solicitado, mas serviço indisponível. signature='{signature}'.");
                 return;
             }

@@ -25,6 +25,7 @@ using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap.Integrations.SceneFlow;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
@@ -217,6 +218,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<ContentSwapCommittedEvent>.Clear();
             EventBus<ContentSwapPendingSetEvent>.Clear();
             EventBus<ContentSwapPendingClearedEvent>.Clear();
+            EventBus<ContentSwapRejectedEvent>.Clear();
 
             // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
             EventBus<SceneTransitionStartedEvent>.Clear();
@@ -911,13 +913,55 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
+            if (TryRegisterContentSwapWithTransition(contentSwapContext, out var selectionReason))
+            {
+                DebugUtility.Log(
+                    typeof(GlobalBootstrap),
+                    $"[ContentSwap] ContentSwapChangeService selected: WithTransition (SceneFlow) because {selectionReason}.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             DependencyManager.Provider.RegisterGlobal<IContentSwapChangeService>(
                 new ContentSwapChangeServiceInPlaceOnly(contentSwapContext),
                 allowOverride: false);
 
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[ContentSwap] ContentSwapChangeService registrado no DI global.",
+            DebugUtility.Log(
+                typeof(GlobalBootstrap),
+                $"[ContentSwap] ContentSwapChangeService selected: InPlaceOnly because {selectionReason}.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static bool TryRegisterContentSwapWithTransition(IContentSwapContextService contentSwapContext, out string reason)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var worldReset) || worldReset == null)
+            {
+                reason = "IWorldResetRequestService indisponível";
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
+            {
+                reason = "ISceneTransitionService indisponível";
+                return false;
+            }
+
+            RegisterIfMissing<IContentSwapTransitionIntentRegistry>(() => new ContentSwapTransitionIntentRegistry());
+
+            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapTransitionIntentRegistry>(out var intentRegistry) || intentRegistry == null)
+            {
+                reason = "IContentSwapTransitionIntentRegistry indisponível";
+                return false;
+            }
+
+            RegisterIfMissing(() => new ContentSwapTransitionIntentWorldLifecycleBridge(intentRegistry, contentSwapContext));
+
+            DependencyManager.Provider.RegisterGlobal<IContentSwapChangeService>(
+                new ContentSwapChangeServiceWithTransition(contentSwapContext, worldReset, sceneFlow, intentRegistry),
+                allowOverride: false);
+
+            reason = "dependências SceneFlow/WorldLifecycle/Intent disponíveis";
+            return true;
         }
 
     }
