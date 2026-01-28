@@ -7,17 +7,16 @@
 
 ## Contexto
 
-Em NewScripts, ContentSwap é um mecanismo simples e determinístico para trocar conteúdo **na mesma cena**, com reset/hard reset local. Não há integração com SceneFlow/WorldLifecycle dentro do ContentSwap, nem rotas alternativas para transições de cena.
+Em NewScripts, ContentSwap é um mecanismo simples e determinístico para trocar conteúdo **na mesma cena**, com reset/hard reset local. O escopo é intencionalmente reduzido e não considera transições entre cenas dentro do próprio ContentSwap.
 
 ## Decisão
 
 - **ContentSwap em NewScripts é exclusivamente InPlace.**
-- **Não existe WithTransition.**
-- **ContentSwap não integra com SceneFlow** e **não expõe APIs de transição**.
-- **Não há “capabilities”, “rejection event”, “force define”, “seleção dinâmica” ou “fallback”.**
+- **Não há múltiplos tipos de ContentSwap.**
+- **Não existem mecanismos de seleção dinâmica de implementação.**
 
 ### API
-- Interface única: `IContentSwapChangeService`
+- Interface única: `IContentSwapChangeService`.
 - **Apenas** métodos `RequestContentSwapInPlaceAsync(...)` permanecem disponíveis.
 
 ### Observabilidade mínima
@@ -37,13 +36,12 @@ Eventos/logs mínimos:
 - ContentSwap é registrado **sempre** como InPlace-only.
 
 ## Non-goals
-- Implementar WithTransition.
-- Integração de ContentSwap com SceneFlow.
+- Qualquer expansão de escopo além do InPlace-only.
+- Integração do ContentSwap com transições de cena.
 - Registro/seleção dinâmica de implementação.
-- Qualquer workaround de compatibilidade.
 
 ## Consequências
-- Qualquer chamada a WithTransition é inválida e **deve falhar em compile** (API removida).
+- O sistema deve permanecer simples e determinístico ao trocar conteúdo na mesma cena.
 - Transições de cena são responsabilidade de SceneFlow/Navigation/LevelFlow (fora de ContentSwap).
 
 ## Referências
