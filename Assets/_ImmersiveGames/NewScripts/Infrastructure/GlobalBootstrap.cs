@@ -917,7 +917,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             {
                 DebugUtility.Log(
                     typeof(GlobalBootstrap),
-                    $"[ContentSwap] ContentSwapChangeService selected: WithTransition (SceneFlow) because {selectionReason}.",
+                    $"[ContentSwap] ContentSwapChangeService selected=WithTransition reason='{selectionReason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -928,12 +928,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
-                $"[ContentSwap] ContentSwapChangeService selected: InPlaceOnly because {selectionReason}.",
+                $"[ContentSwap] ContentSwapChangeService selected=InPlaceOnly reason='{selectionReason}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static bool TryRegisterContentSwapWithTransition(IContentSwapContextService contentSwapContext, out string reason)
         {
+#if NEWSCRIPTS_CONTENTSWAP_FORCE_INPLACE
+            reason = "forced by NEWSCRIPTS_CONTENTSWAP_FORCE_INPLACE";
+            return false;
+#endif
             if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var worldReset) || worldReset == null)
             {
                 reason = "IWorldResetRequestService indisponível";
