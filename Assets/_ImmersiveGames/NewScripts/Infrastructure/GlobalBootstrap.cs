@@ -24,7 +24,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
-using _ImmersiveGames.NewScripts.Gameplay.Levels;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
@@ -45,7 +44,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
-using _ImmersiveGames.NewScripts.QA.Levels;
 using _ImmersiveGames.NewScripts.QA.ContentSwap;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
@@ -174,8 +172,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterSceneFlowLoadingIfAvailable();
 
             RegisterInputModeSceneFlowBridge();
-            RegisterLevelStartCommitBridge();
-
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
             // ADR-0016: ContentSwapContext precisa existir no DI global.
@@ -184,7 +180,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
             RegisterContentSwapQaInstaller();
-            RegisterLevelQaInstaller();
 #endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageRuntimeDebugGui();
@@ -193,11 +188,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // Baseline 3B: Pending NÃO pode atravessar transição.
             RegisterContentSwapContextSceneFlowBridge();
 
-            RegisterContentSwapTransitionIntentRegistry();
-
-            // ContentSwapChange depende de ContentSwapContext + SceneFlow/WorldReset (para "in place" vs. "transition").
+            // ContentSwapChange (modo ContentSwap-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
-            RegisterLevelManager();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
@@ -741,24 +733,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLevelStartCommitBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.LevelStartCommitBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[LevelStart] LevelStartCommitBridge já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new _ImmersiveGames.NewScripts.Gameplay.Levels.LevelStartCommitBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[LevelStart] LevelStartCommitBridge registrado no DI global (ContentSwapCommitted(LevelChange/*) -> IntroStage).",
-                DebugUtility.Colors.Info);
-        }
-
         // --------------------------------------------------------------------
         // ContentSwapContext (Baseline 3B)
         // --------------------------------------------------------------------
@@ -804,19 +778,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
                     $"[QA][ContentSwap] Falha ao instalar ContentSwapQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
-            }
-        }
-
-        private static void RegisterLevelQaInstaller()
-        {
-            try
-            {
-                LevelQaInstaller.EnsureInstalled();
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[QA][Level] Falha ao instalar LevelQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -950,82 +911,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var worldReset) || worldReset == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] IWorldResetRequestService indisponível. IContentSwapChangeService não será registrado.");
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] ISceneTransitionService indisponível. IContentSwapChangeService não será registrado.");
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapTransitionIntentRegistry>(out var intentRegistry) || intentRegistry == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] IContentSwapTransitionIntentRegistry indisponível. IContentSwapChangeService não será registrado.");
-                return;
-            }
-
             DependencyManager.Provider.RegisterGlobal<IContentSwapChangeService>(
-                new ContentSwapChangeService(contentSwapContext, worldReset, sceneFlow, intentRegistry),
+                new ContentSwapChangeServiceInPlaceOnly(contentSwapContext),
                 allowOverride: false);
-
-            // ADR-0016: quando a troca de conteúdo usa SceneFlow, o commit ocorre no ponto seguro
-            // (WorldLifecycleResetCompletedEvent). O bridge abaixo consome o intent e aplica o commit.
-            RegisterIfMissing(() => new ContentSwapTransitionIntentWorldLifecycleBridge(intentRegistry, contentSwapContext));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[ContentSwap] ContentSwapChangeService registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterLevelManager()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ILevelManager>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Level] ILevelManager já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapChangeService>(out var contentSwapChangeService) || contentSwapChangeService == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[Level] IContentSwapChangeService indisponível. ILevelManager não será registrado.");
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal<ILevelManager>(
-                new LevelManager(contentSwapChangeService),
-                allowOverride: false);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Level] LevelManager registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterContentSwapTransitionIntentRegistry()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IContentSwapTransitionIntentRegistry>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[ContentSwapIntent] IContentSwapTransitionIntentRegistry já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal<IContentSwapTransitionIntentRegistry>(
-                new ContentSwapTransitionIntentRegistry(),
-                allowOverride: false);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[ContentSwapIntent] ContentSwapTransitionIntentRegistry registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
