@@ -891,7 +891,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
-                "[ContentSwap] ContentSwapChangeService selected=InPlaceOnly reason='NewScripts InPlace-only'.",
+                "[ContentSwap] ContentSwapChangeService registered=InPlaceOnly reason='ADR-0016 InPlace-only'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -9,7 +9,7 @@
 
 Historicamente, o termo legado foi usado para dois significados diferentes:
 
-- **Troca de conteúdo** do runtime (troca de fase dentro da mesma cena ou via SceneFlow).
+- **Troca de conteúdo** do runtime (troca de fase dentro da mesma cena).
 - **Progressão de nível/fase do jogo** (o “capítulo” ou estágio de gameplay).
 
 Essa ambiguidade gera problemas práticos:
@@ -23,7 +23,7 @@ Essa ambiguidade gera problemas práticos:
 ### 1) Termos formais e boundaries
 
 - **ContentSwap** = módulo **exclusivo** para trocar conteúdo no runtime.
-  - Executa o reset e o commit de conteúdo (in-place ou com SceneFlow).
+  - Executa o reset e o commit de conteúdo in-place.
   - É a camada técnica (executor) e continua exposta via `IContentSwapChangeService`.
 - **LevelManager** = **orquestrador** da progressão de níveis/fases do jogo.
   - Decide quando avançar/retroceder de nível.
@@ -37,10 +37,9 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 
 - `IContentSwapChangeService`
 - `ContentSwapPlan`
-- `ContentSwapMode` (`InPlace`, `SceneTransition`)
+- `ContentSwapMode` (`InPlace`)
 - `ContentSwapOptions`
 - `IContentSwapContextService`
-- `IContentSwapTransitionIntentRegistry`
 
 > Se houver renomeação futura adicional no código, **devem existir aliases/bridges** compatíveis para não quebrar build nem chamadas existentes.
 
@@ -52,12 +51,10 @@ Os contratos abaixo **permanecem válidos** e são o ponto de integração públ
 
 O LevelManager reutiliza o ContentSwap existente e **sempre** executa IntroStage após mudança de nível neste ciclo.
 
-### 4) Relação com ADR-0017 (modos)
+### 4) Relação com ADR-0016 (ContentSwap InPlace-only)
 
-- ADR-0017 define os **modos canônicos** de ContentSwap:
-  - **In-Place**: troca de conteúdo sem SceneFlow.
-  - **SceneTransition**: troca com SceneFlow + intent registry.
-- ADR-0018 **não altera** o escopo do ADR-0017; apenas reposiciona a semântica legada.
+- ADR-0016 define ContentSwap como **InPlace-only** e sem múltiplos modos.
+- ADR-0018 mantém essa decisão e reposiciona a semântica de LevelManager como orquestrador.
 
 ## Consequências
 
@@ -77,7 +74,6 @@ O LevelManager reutiliza o ContentSwap existente e **sempre** executa IntroStage
 - Ponte canônica (regressão contínua): `Docs/Reports/Evidence/LATEST.md`
 
 ## Referências
-- ADR-0017 — Tipos de troca de conteúdo (ContentSwap: In-Place vs SceneTransition)
+- ADR-0016 — ContentSwap InPlace-only
 - ADR-0019 — Promoção/fechamento do Baseline 2.2
-- ADR-0016 — ContentSwap + IntroStage opcional (histórico do contrato)
 - Observability Contract — `Docs/Reports/Observability-Contract.md`

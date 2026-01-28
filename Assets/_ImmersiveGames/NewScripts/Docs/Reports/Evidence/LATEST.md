@@ -10,4 +10,3 @@ Notas:
     - Boot→Menu (startup, reset skip)
     - Menu→Gameplay (reset + spawn + IntroStage → Playing)
     - Level L01 (InPlace ContentSwap → Reset → Commit → IntroStage)
-- Cenário WithTransition (Level L02) ainda está pendente devido a reentrância no `LevelStartCommitBridge` (token SceneTransition ativo no TransitionCompleted).

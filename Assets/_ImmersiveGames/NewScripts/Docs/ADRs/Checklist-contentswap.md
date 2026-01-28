@@ -14,4 +14,3 @@ No objeto **[QA] ContentSwapQA** (DontDestroyOnLoad), executar o ContextMenu:
 
 ### Observações
 - ContentSwap em NewScripts é **exclusivamente InPlace**.
-- Não existe WithTransition e não há integração com SceneFlow.

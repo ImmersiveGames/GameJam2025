@@ -5,7 +5,7 @@ Foco: SceneFlow + WorldLifecycle + InputMode + Level/ContentSwap/IntroStage.
 
 ## Ambiente
 - NEWSCRIPTS_MODE: ativo
-- Run: Boot → Menu (startup) → Gameplay (gameplay) → Level L01 (InPlace) → Level L02 (WithTransition)
+- Run: Boot → Menu (startup) → Gameplay (gameplay) → Level L01 (InPlace)
 
 ---
 
@@ -76,30 +76,5 @@ Foco: SceneFlow + WorldLifecycle + InputMode + Level/ContentSwap/IntroStage.
 
 ---
 
-## D) Level L02 — WithTransition ContentSwap → SceneFlow → Commit OK, mas IntroStage NÃO dispara
-
-### Anchors esperados (alvo)
-- ContentSwapRequested event=content_swap_transition
-- SceneFlow TransitionStarted/ScenesReady/TransitionCompleted
-- WorldLifecycle ResetCompleted -> commit aplicado
-- LevelStartCommitBridge libera pipeline após TransitionCompleted
-- IntroStageStarted reason=LevelStart/Committed...
-
-### Evidência observada
-- [QA][Level] L02 start ... mode=WithTransition
-- [OBS][Level] LevelChangeRequested ... mode='SceneTransition'
-- [OBS][ContentSwap] ContentSwapRequested event=content_swap_transition ... signature='p:gameplay|...|u:'
-- [SceneFlow] TransitionStarted id=3 ... signature='p:gameplay|...|u:'
-- [OBS][WorldLifecycle] ResetCompleted ... reason='SceneFlow/ScenesReady'
-- [ContentSwapIntentBridge] ResetCompleted -> consumindo intent e aplicando conteúdo ...
-- ContentSwapCommitted ... current='content.2 | content:level.1'
-- [WARNING] [LevelStartCommitBridge] TransitionCompleted observado, mas SceneTransition token ainda está ativo (reentrância detectada). Mantendo pipeline pendente.
-- [QA][Level] IntroStage não ativa; AutoComplete ignorado.
-
-**Resultado:** FAIL parcial (WithTransition ainda não fecha LevelStart → IntroStage)
-
----
-
 ## Conclusão do Snapshot
 - PASS: Boot→Menu (skip), Menu→Gameplay (reset+spawn+intro→playing), Level L01 InPlace pipeline completo.
-- Pendente: Level L02 WithTransition (reentrância/token ativo impede disparo de IntroStage).

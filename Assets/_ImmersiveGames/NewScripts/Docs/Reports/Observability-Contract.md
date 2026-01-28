@@ -14,7 +14,7 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 - **WorldLifecycle** (ResetRequested / ResetCompleted / Skipped / Failed)
 - **GameLoop** (Ready / IntroStage / Playing / PostGame)
 - **InputMode** (aplicações e `reason`)
-- **ContentSwap** (in-place vs scene transition)
+- **ContentSwap** (InPlace-only)
 - **Level** (progressão: orquestra ContentSwap + IntroStage)
 
 ## Princípios
@@ -122,17 +122,15 @@ Reasons canônicos (prefixos) para InputMode:
 
 ### ContentSwap
 
-O contrato para ContentSwap é definido em ADR-0017 (Tipos de troca de fase).
+O contrato para ContentSwap é definido em ADR-0016 (ContentSwap InPlace-only).
 
-**Tipos (canônicos)**
+**Modo canônico**
 
 - `InPlace` — troca dentro da mesma cena de gameplay. Pode usar mini-fade opcional, mas **não** deve usar LoadingHUD.
-- `SceneTransition` — troca com transição completa via SceneFlow (Fade/Loading fazem parte do profile/pipeline).
 
 **Eventos/anchors mínimos**
 
 - `[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode=InPlace contentId='...' reason='...'`
-- `[OBS][ContentSwap] ContentSwapRequested event=content_swap_transition mode=SceneTransition contentId='...' reason='...' signature='...' profile='...'`
 - `[OBS][ContentSwap] ContentSwapRequested ...` (legado; alias do ContentSwap)
 - `[ContentSwapContext] ContentSwapPendingSet plan='...' reason='...'` (legado; contexto de ContentSwap)
 - `[ContentSwapContext] ContentSwapCommitted prev='...' current='...' reason='...'` (legado; contexto de ContentSwap)
@@ -142,9 +140,6 @@ O contrato para ContentSwap é definido em ADR-0017 (Tipos de troca de fase).
 - O `reason` da troca de conteúdo é **fornecido pelo caller** (produção/QA).
 - Recomendações para QA (prefixos estáveis):
     - `QA/ContentSwap/InPlace/<...>`
-    - `QA/ContentSwap/WithTransition/<...>`
-    - `QA/ContentSwap/InPlace/<...>` (legado)
-    - `QA/ContentSwap/WithTransition/<...>` (legado)
 
 ### Level
 
@@ -152,16 +147,15 @@ O contrato para Level Manager é definido em ADR-0018/ADR-0019.
 
 **Eventos/anchors mínimos**
 
-- `[OBS][Level] LevelChangeRequested levelId='...' contentId='...' mode='<InPlace|SceneTransition>' reason='...' contentSig='...'`
-- `[OBS][Level] LevelChangeStarted levelId='...' contentId='...' mode='...' reason='...'`
-- `[OBS][Level] LevelChangeCompleted levelId='...' contentId='...' mode='...' reason='...'`
+- `[OBS][Level] LevelChangeRequested levelId='...' contentId='...' mode='InPlace' reason='...' contentSig='...'`
+- `[OBS][Level] LevelChangeStarted levelId='...' contentId='...' mode='InPlace' reason='...'`
+- `[OBS][Level] LevelChangeCompleted levelId='...' contentId='...' mode='InPlace' reason='...'`
 
 **Regra do `reason`**
 
 - O `reason` da mudança de nível é **fornecido pelo caller** (produção/QA).
 - Recomendações para QA (prefixos estáveis):
     - `QA/Levels/InPlace/<...>`
-    - `QA/Levels/WithTransition/<...>`
 
 ### IntroStage
 
@@ -189,11 +183,9 @@ Este catálogo reúne os principais reasons citados como critérios de aceite, g
     - `IntroStage/NoContent`
 - ContentSwap
     - `ContentSwap/InPlace/<source>`
-    - `ContentSwap/WithTransition/<source>`
 - Level
     - `LevelChange/<source>`
     - `QA/Levels/InPlace/<...>`
-    - `QA/Levels/WithTransition/<...>`
 
 Observação: `Reason-Map.md` é mantido apenas como redirect histórico para este contrato (não deve conter lista paralela).
 

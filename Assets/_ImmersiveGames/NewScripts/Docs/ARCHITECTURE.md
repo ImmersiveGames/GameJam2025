@@ -28,7 +28,7 @@ Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Pla
 ### 3) ContentSwap vs LevelManager
 
 - **ContentSwap** é o executor técnico de troca de conteúdo em runtime:
-  - troca **in-place** (sem SceneFlow) ou **scene transition** (com SceneFlow).
+  - troca **in-place** (sem SceneFlow).
   - usa os contratos `IContentSwapChangeService`, `ContentSwapPlan`, `ContentSwapOptions` e `IContentSwapContextService`.
   - representa a troca de conteúdo como **troca de conteúdo**, não como progresso de nível.
 - **LevelManager** é o orquestrador de **progressão**:
@@ -36,7 +36,7 @@ Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Pla
   - delega a troca de conteúdo para o ContentSwap,
   - **sempre dispara IntroStage** ao entrar em um nível (política deste ciclo).
 
-> Referências: ADR-0017 (modos de ContentSwap) e ADR-0018 (mudança semântica para ContentSwap + LevelManager).
+> Referências: ADR-0016 (ContentSwap InPlace-only) e ADR-0018 (mudança semântica para ContentSwap + LevelManager).
 
 ### 4) Navigation (produção)
 - `IGameNavigationService` é a entrada de produção para ir **Menu ↔ Gameplay**.
