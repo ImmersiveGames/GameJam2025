@@ -20,7 +20,7 @@ O fluxo de produção atual está estável para:
 * Startup → Menu → Gameplay, com:
 
     * `SceneTransitionService` + Fade + LoadingHUD.
-    * `WorldLifecycleRuntimeCoordinator` disparando hard reset em perfis `gameplay` após `SceneTransitionScenesReadyEvent`.
+    * `WorldLifecycleSceneFlowResetDriver` disparando hard reset em perfis `gameplay` após `SceneTransitionScenesReadyEvent`.
     * `GameReadinessService` + `SimulationGateService` controlando `GameplayReady` + gate.
     * `InputModeService` trocando entre `FrontendMenu`, `Gameplay`, `PauseOverlay`.
     * `GameLoopService` com estados principais: `Boot`, `Ready`, `Playing`, `Paused`.
@@ -64,7 +64,7 @@ Sem um desenho explícito para GameOver/Vitória/Restart:
 
 2. Garantir que **Restart** use o mesmo pipeline de produção do `profile='gameplay'`:
 
-    * `SceneTransitionService` → `WorldLifecycleRuntimeCoordinator` → `WorldLifecycleOrchestrator`.
+    * `SceneTransitionService` → `WorldLifecycleSceneFlowResetDriver` → `WorldLifecycleOrchestrator`.
 
 3. Reutilizar infra existente sempre que possível:
 
@@ -213,7 +213,7 @@ Fluxo canônico de Restart:
 
     * `SceneTransitionService` inicia a transição (`GameplayScene` + `UIGlobalScene`, unload do que for necessário).
     * Fade + LoadingHUD operam normalmente.
-    * `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` com `profile='gameplay'` e dispara hard reset:
+    * `WorldLifecycleSceneFlowResetDriver` recebe `SceneTransitionScenesReadyEvent` com `profile='gameplay'` e dispara hard reset:
 
         * `WorldLifecycleController` → `WorldLifecycleOrchestrator` → despawn + spawn determinístico.
     * Gate + `GameReadinessService` consolidam o estado `GameplayReady`.
@@ -238,7 +238,7 @@ Para voltar ao Menu, reusa-se o fluxo já existente:
 
 Invariantes:
 
-* O **único responsável** por resetar o mundo é o pipeline `SceneTransitionScenesReadyEvent` + `WorldLifecycleRuntimeCoordinator` + `WorldLifecycleController` + `WorldLifecycleOrchestrator`.
+* O **único responsável** por resetar o mundo é o pipeline `SceneTransitionScenesReadyEvent` + `WorldLifecycleSceneFlowResetDriver` + `WorldLifecycleController` + `WorldLifecycleOrchestrator`.
 * O fluxo pós-gameplay **não** introduz resets manuais adicionais dentro de atores ou serviços de gameplay.
 
 Regras:
@@ -273,6 +273,10 @@ Regras:
 
 ### Caminho canônico (produção)
 
+- **Nomenclatura canônica**: o contrato/logs usam **PostGame**; `PostPlay` pode existir apenas como nome interno
+  (enum/estado) por compatibilidade.
+- **Idempotência**: o `PostGameOverlayController` é idempotente (double click ignora e publica apenas uma intenção;
+  `GameRunEndedEvent` duplicado após ação é ignorado).
 - **Fim de run**: `GameRunOutcomeService` publica `GameRunEndedEvent` e `GameRunStatusService` mantém `Outcome` + `Reason`.
 - **UI pós-game**: `PostGameOverlayController` observa `GameRunEndedEvent`, exibe overlay e:
   - `Restart` → publica `GameResetRequestedEvent` (`reason='PostGame/Restart'`)
@@ -288,4 +292,3 @@ Regras:
 
 - O baseline atual não depende de um estado explícito `PostGame` no `GameLoop` para operar corretamente.
   O pós-game é representado via evento (`GameRunEndedEvent`) + overlay + intents de navegação (evento/bridge).
-

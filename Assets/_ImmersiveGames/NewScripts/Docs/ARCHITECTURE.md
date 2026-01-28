@@ -133,15 +133,16 @@ Diagrama simplificado:
     - `GameLoopSceneFlowCoordinator` chama `GameLoop.RequestStart()` apenas após `TransitionCompleted + ResetCompleted`.
 
 ## Baseline 2.0 (contrato)
-A fonte de verdade do Baseline 2.0 é o smoke log, e a spec é documento histórico:
-- [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md)
-- [Baseline 2.0 — Checklist](Reports/Baseline-2.0-Checklist.md)
+A fonte vigente do Baseline 2.0 é o contrato de observabilidade + evidência datada:
+- [ADR-0015 — Baseline 2.0: Fechamento Operacional](ADRs/ADR-0015-Baseline-2.0-Fechamento.md)
+- [Evidence/LATEST.md](Reports/Evidence/LATEST.md)
+- [Observability-Contract.md](Reports/Observability-Contract.md)
 
 ### Baseline 2.0 (status fechado)
 - **Status:** FECHADO / OPERACIONAL (2026-01-05).
-- **ADR de fechamento:** [ADR-0016-Baseline-2.0-Fechamento](ADRs/ADR-0016-Baseline-2.0-Fechamento.md).
+- **ADR de fechamento:** [ADR-0015-Baseline-2.0-Fechamento](ADRs/ADR-0015-Baseline-2.0-Fechamento.md).
 - Contrato do pipeline: **SceneFlow → ScenesReady → WorldLifecycleResetCompleted → Gate → FadeOut/Completed**.
-- Spec congelada: [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md).
+- Spec/checklist antigos foram removidos; a verificação vigente usa contrato de observabilidade + evidência datada.
 
 ## Documentos relacionados
 - [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)

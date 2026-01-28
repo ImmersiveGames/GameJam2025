@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -41,16 +42,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             string targetActiveScene,
             bool useFade = true,
             SceneFlowProfileId transitionProfileId = default,
-            string contextSignature = null,
-            string requestedBy = null)
+            string? contextSignature = null,
+            string? requestedBy = null)
         {
             ScenesToLoad = scenesToLoad;
             ScenesToUnload = scenesToUnload;
             TargetActiveScene = targetActiveScene;
             UseFade = useFade;
             TransitionProfileId = transitionProfileId;
-            ContextSignature = contextSignature;
-            RequestedBy = requestedBy;
+
+            // Mantém propriedades não-nulas (evita NRT warnings/erros).
+            ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
+            RequestedBy = string.IsNullOrWhiteSpace(requestedBy) ? string.Empty : requestedBy.Trim();
         }
     }
 
@@ -127,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         public SceneTransitionService(
             ISceneFlowLoaderAdapter loaderAdapter,
             ISceneFlowFadeAdapter fadeAdapter,
-            ISceneTransitionCompletionGate completionGate = null)
+            ISceneTransitionCompletionGate? completionGate = null)
         {
             _loaderAdapter = loaderAdapter ?? new SceneManagerLoaderAdapter();
             _fadeAdapter = fadeAdapter ?? new NullFadeAdapter();

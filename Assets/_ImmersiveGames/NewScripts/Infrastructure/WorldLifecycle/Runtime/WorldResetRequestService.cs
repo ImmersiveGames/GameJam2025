@@ -18,6 +18,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
     {
         private readonly ISimulationGateService _gateService;
 
+        private const string ProductionTriggerPrefix = "ProductionTrigger/";
+        private const string ManualProfile = "manual";
+
         public WorldResetRequestService(ISimulationGateService gateService = null)
         {
             _gateService = gateService;
@@ -28,7 +31,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             try
             {
                 string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
-                string reason = string.IsNullOrWhiteSpace(source) ? WorldLifecycleReasons.WorldResetRequest : source;
+                string normalizedSource = string.IsNullOrWhiteSpace(source) ? "unknown" : source.Trim();
+                string reason = normalizedSource.StartsWith(ProductionTriggerPrefix, StringComparison.Ordinal)
+                    ? normalizedSource
+                    : $"{ProductionTriggerPrefix}{normalizedSource}";
+
+                // Observabilidade canônica (Contrato): ResetRequested com sourceSignature/reason/profile/target.
+                // Como este caminho não passa pelo SceneFlow, usamos uma assinatura manual correlacionável.
+                string signature = $"directReset:scene={activeScene};src={normalizedSource}";
+                DebugUtility.LogVerbose(typeof(WorldResetRequestService),
+                    $"[OBS][WorldLifecycle] ResetRequested signature='{signature}' sourceSignature='{signature}' profile='{ManualProfile}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
+                    DebugUtility.Colors.Info);
 
                 // Observabilidade: se estiver em transição, isso pode ser um sinal de uso indevido.
                 if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
@@ -46,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
 
                 DebugUtility.LogVerbose<WorldResetRequestService>(
-                    $"[WorldLifecycle] RequestResetAsync → ResetWorldAsync. source='{source ?? "<null>"}', scene='{activeScene}'.",
+                    $"[WorldLifecycle] RequestResetAsync → ResetWorldAsync. source='{normalizedSource}', scene='{activeScene}', reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
                 await controller.ResetWorldAsync(reason);

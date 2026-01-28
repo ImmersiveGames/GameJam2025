@@ -1,5 +1,7 @@
 #nullable enable
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -19,6 +21,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         private const string LevelChangePrefix = "LevelChange/";
         private const string QaLevelPrefix = "QA/Levels/";
 
+        // Se o Completed chegar antes do Release do token, aguardamos alguns frames.
+        // A intenção é cobrir ordem de handlers sem depender de ordering global do EventBus.
+        private const int CompletedGateWaitTimeoutMs = 1500;
+
         private readonly EventBinding<ContentSwapCommittedEvent> _committedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
 
@@ -30,6 +36,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         private string _pendingSignature = string.Empty;
         private string _lastCommitSignature = string.Empty;
         private string _lastCommitReason = string.Empty;
+
+        // Guard: evita executar o pipeline pendente duas vezes se houver reentrância/dupla notificação.
+        private int _pendingRunInProgress;
 
         private bool _disposed;
 
@@ -201,47 +210,80 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return;
             }
 
-            // Se já existe outro SceneTransition ativo no momento do Completed, significa reentrância.
-            // Não executamos o pipeline agora para evitar interleaving (IntroStage durante fade/loading do novo start).
-            if (IsSceneTransitionGateActive())
+            // Guard: evita executar duas vezes em cenários raros (reentrância/duplicidade).
+            if (Interlocked.CompareExchange(ref _pendingRunInProgress, 1, 0) == 1)
             {
-                var completedSignatureNow = SceneTransitionSignatureUtil.Compute(evt.Context);
-
-                DebugUtility.LogWarning<LevelStartCommitBridge>(
-                    $"[LevelStart] TransitionCompleted observado, mas SceneTransition token ainda está ativo (reentrância detectada). " +
-                    $"Mantendo pipeline pendente. completedSig='{completedSignatureNow}'.");
                 return;
             }
 
-            // Se não temos assinatura verificável, NUNCA descartamos por mismatch.
-            if (HasVerifiableSignature(_pendingSignature))
+            try
             {
-                var completedSignature = SceneTransitionSignatureUtil.Compute(evt.Context);
-                if (!string.Equals(completedSignature, _pendingSignature, StringComparison.Ordinal))
+                // Se o Completed chegar antes do Release do token (ordem de handlers), aguardamos alguns frames.
+                // Isso evita o bug: "mantém pendente e nunca roda" por não existir segundo Completed.
+                if (IsSceneTransitionGateActive())
                 {
+                    var completedSignatureNow = SceneTransitionSignatureUtil.Compute(evt.Context);
+
                     DebugUtility.LogWarning<LevelStartCommitBridge>(
-                        $"[LevelStart] TransitionCompleted com assinatura divergente; descartando pendência. expected='{_pendingSignature}', got='{completedSignature}'.");
-                    _pendingRequest = null;
-                    _pendingSignature = string.Empty;
-                    return;
+                        $"[LevelStart] TransitionCompleted observado, mas SceneTransition token ainda está ativo (provável ordering). " +
+                        $"Aguardando liberação para executar pipeline pendente. completedSig='{completedSignatureNow}'.");
+
+                    var startTick = Environment.TickCount;
+
+                    while (!_disposed && _pendingRequest != null && IsSceneTransitionGateActive())
+                    {
+                        await Task.Yield();
+
+                        var dt = unchecked(Environment.TickCount - startTick);
+                        if (dt >= CompletedGateWaitTimeoutMs)
+                        {
+                            DebugUtility.LogWarning<LevelStartCommitBridge>(
+                                $"[LevelStart] Timeout aguardando liberação do SceneTransition token após Completed. " +
+                                $"Mantendo pendência. timeoutMs={CompletedGateWaitTimeoutMs}.");
+                            return; // mantém pendente (fallback seguro)
+                        }
+                    }
+
+                    if (_disposed || _pendingRequest == null)
+                    {
+                        return;
+                    }
                 }
 
-                DebugUtility.LogVerbose<LevelStartCommitBridge>(
-                    $"[LevelStart] TransitionCompleted observado; executando pipeline pendente. signature='{completedSignature}'.",
-                    DebugUtility.Colors.Info);
+                // Se não temos assinatura verificável, NUNCA descartamos por mismatch.
+                if (HasVerifiableSignature(_pendingSignature))
+                {
+                    var completedSignature = SceneTransitionSignatureUtil.Compute(evt.Context);
+                    if (!string.Equals(completedSignature, _pendingSignature, StringComparison.Ordinal))
+                    {
+                        DebugUtility.LogWarning<LevelStartCommitBridge>(
+                            $"[LevelStart] TransitionCompleted com assinatura divergente; descartando pendência. expected='{_pendingSignature}', got='{completedSignature}'.");
+                        _pendingRequest = null;
+                        _pendingSignature = string.Empty;
+                        return;
+                    }
+
+                    DebugUtility.LogVerbose<LevelStartCommitBridge>(
+                        $"[LevelStart] TransitionCompleted observado; executando pipeline pendente. signature='{completedSignature}'.",
+                        DebugUtility.Colors.Info);
+                }
+                else
+                {
+                    DebugUtility.LogVerbose<LevelStartCommitBridge>(
+                        "[LevelStart] TransitionCompleted observado; assinatura pendente não-verificável ('<none>'). Executando pipeline pendente sem validação de mismatch.",
+                        DebugUtility.Colors.Info);
+                }
+
+                var request = _pendingRequest.Value;
+                _pendingRequest = null;
+                _pendingSignature = string.Empty;
+
+                await LevelStartPipeline.RunAsync(request);
             }
-            else
+            finally
             {
-                DebugUtility.LogVerbose<LevelStartCommitBridge>(
-                    "[LevelStart] TransitionCompleted observado; assinatura pendente não-verificável ('<none>'). Executando pipeline pendente sem validação de mismatch.",
-                    DebugUtility.Colors.Info);
+                Interlocked.Exchange(ref _pendingRunInProgress, 0);
             }
-
-            var request = _pendingRequest.Value;
-            _pendingRequest = null;
-            _pendingSignature = string.Empty;
-
-            await LevelStartPipeline.RunAsync(request);
         }
 
         private static bool ShouldHandleLevelChange(string reason)

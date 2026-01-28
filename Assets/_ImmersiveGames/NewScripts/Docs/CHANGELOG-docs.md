@@ -1,5 +1,20 @@
 # Changelog (Docs)
 
+## 2026-01-28
+- Archived Baseline 2.2 evidence snapshot (Boot→Menu skip, Menu→Gameplay reset+spawn+IntroStage, Level L01 InPlace pipeline).
+- Marked WithTransition (Level L02) as pending due to `LevelStartCommitBridge` reentrancy warning (SceneTransition token still active on TransitionCompleted).
+- ADR-0012: removida referência obsoleta a `WorldLifecycleRuntimeCoordinator` (substituído pelo driver canônico `WorldLifecycleSceneFlowResetDriver`).
+- ADR-0018: normalizada seção de evidências para exigir snapshot datado (Aceito 2026-01-18) + ponte canônica LATEST.
+- Evidence/LATEST: adicionado link do snapshot de aceitação do ADR-0018.
+- Runtime/Observability: alinhado contrato mínimo de observabilidade para WorldLifecycle (ResetRequested/ResetCompleted) e InputMode em `SceneFlow/Completed`.
+
+## 2026-01-27
+- Docs: Baseline 2.0 → fontes vigentes (ADR-0015 + Evidence/LATEST + Observability-Contract).
+- ADR-0012: PostGame canônico + idempotência do overlay (double click + evento duplicado).
+- Arquivos alterados: `Docs/ARCHITECTURE.md`, `Docs/CHANGELOG-docs.md`,
+  `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`,
+  `Docs/Reports/Observability-Contract.md`.
+
 ## 2026-01-21
 - ADR-0018 reescrito para formalizar a mudança semântica para ContentSwap + LevelManager e delimitar o LevelManager.
 - ADR-0019 atualizado para descrever promoção do Baseline 2.2 com escopo, gates e metodologia de evidência por data.
@@ -110,7 +125,8 @@
     - `WorldLifecycleResetCompletionGate` recebe o evento e libera a continuação do SceneFlow **antes do FadeOut**.
     - Spawn em Gameplay registra 2 serviços (`PlayerSpawnService`, `EaterSpawnService`) e resulta em `ActorRegistry count at 'After Spawn': 2`.
     - `GameLoopService` sincroniza **Ready → Playing** após `SceneTransitionCompleted` (profile gameplay), liberando StateDependent (`Action 'Move' liberada`).
-- Checklist gerada: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Checklist.md`.
+- Checklist gerada para o Baseline 2.0 (removida posteriormente conforme ADR-0015;
+  referência vigente é Evidence/LATEST + Observability-Contract).
 
 ## [2026-01-03]
 - Added: `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.
@@ -175,8 +191,9 @@ All notable documentation changes to **NewScripts** are documented in this file.
     - atualização do ADR de Fade/Loading (ADR-0009) com orquestração entre `SceneTransitionService`, `INewScriptsFadeService` e `SceneFlowLoadingService`,
     - atualização do QA `GameLoop-StateFlow-QA` com cenário end-to-end (defeat/victory forçados via hotkeys).
 - Added: `ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md` com nota operacional sobre skip em frontend e reset completo em gameplay.
-- Updated: `Reports/GameLoop.md` para documentar o estado `PostPlay`, os eventos `GameRunStartedEvent` / `GameRunEndedEvent` /
-  `GameLoopActivityChangedEvent` e o serviço `IGameRunStatusService` no fluxo de pós-game.
+- Updated: `Reports/GameLoop.md` para documentar o estado interno `PostPlay` (nome canônico: **PostGame**),
+  os eventos `GameRunStartedEvent` / `GameRunEndedEvent` / `GameLoopActivityChangedEvent` e o serviço
+  `IGameRunStatusService` no fluxo de pós-game.
 - Updated: `WORLD_LIFECYCLE.md` alinhado ao fluxo de run/resultados via GameLoop.
 - Updated: caminhos de QA deprecated consolidados em `QA/Deprecated` e referências de documentação ajustadas.
 - Updated: cenas de produção/QA limpas de referências diretas aos tools de QA deprecated.

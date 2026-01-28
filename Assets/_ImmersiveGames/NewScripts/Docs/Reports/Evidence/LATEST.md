@@ -1,14 +1,13 @@
-# Evidência canônica (LATEST)
+# Evidence — LATEST
 
-Snapshot canônico mais recente:
+Último snapshot arquivado: **2026-01-28**
 
-- **Data:** 2026-01-18
-- **Resumo:** [Baseline-2.1-Evidence-2026-01-18.md](./2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- Baseline 2.2 Evidence Snapshot:
+    - `Evidence/2026-01-28/Baseline-2.2-Evidence-2026-01-28.md`
 
-Uso:
-
-- ADRs em **Proposto/Em andamento** referenciam este arquivo.
-- ADRs em **Aceito/Implementado** referenciam o snapshot datado e podem manter este arquivo como evidência de regressão contínua.
-
-## ADRs (adicionados no snapshot 2026-01-18)
-- ADR-0017: [ADR-0017-Evidence-2026-01-18.md](./2026-01-18/ADR-0017-Evidence-2026-01-18.md)
+Notas:
+- Snapshot 2026-01-28 confirma pipeline completo para:
+    - Boot→Menu (startup, reset skip)
+    - Menu→Gameplay (reset + spawn + IntroStage → Playing)
+    - Level L01 (InPlace ContentSwap → Reset → Commit → IntroStage)
+- Cenário WithTransition (Level L02) ainda está pendente devido a reentrância no `LevelStartCommitBridge` (token SceneTransition ativo no TransitionCompleted).

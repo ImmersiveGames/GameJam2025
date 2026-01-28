@@ -45,6 +45,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private bool _registered;
         private IDisposable _postGameGateHandle;
         private bool _loggedMissingGate;
+        private bool _isVisible;
+        private bool _actionRequested;
 
         private void Awake()
         {
@@ -101,6 +103,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         /// </summary>
         public void OnClickRestart()
         {
+            if (_actionRequested)
+            {
+                DebugUtility.LogVerbose<PostGameOverlayController>(
+                    "[PostGame] Restart ignorado (ação já solicitada).",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _actionRequested = true;
             // Ao solicitar restart, o overlay deixa de fazer sentido imediatamente.
             HideImmediate();
 
@@ -118,6 +129,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         /// </summary>
         public void OnClickExitToMenu()
         {
+            if (_actionRequested)
+            {
+                DebugUtility.LogVerbose<PostGameOverlayController>(
+                    "[PostGame] ExitToMenu ignorado (ação já solicitada).",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _actionRequested = true;
             // Ao sair para o menu, o overlay não é mais relevante — ocultamos imediatamente.
             HideImmediate();
 
@@ -159,6 +179,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 "[PostGame] GameRunStartedEvent recebido. Ocultando overlay.",
                 DebugUtility.Colors.Info);
 
+            _actionRequested = false;
             HideImmediate();
             if (ShouldOverlayManageOwnership())
             {
@@ -168,6 +189,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void OnGameRunEnded(GameRunEndedEvent evt)
         {
+            if (_actionRequested)
+            {
+                DebugUtility.LogVerbose<PostGameOverlayController>(
+                    "[PostGame] GameRunEndedEvent ignorado (ação já solicitada).",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (_isVisible)
+            {
+                return;
+            }
+
             DebugUtility.LogVerbose<PostGameOverlayController>(
                 "[PostGame] GameRunEndedEvent recebido. Exibindo overlay.",
                 DebugUtility.Colors.Info);
@@ -238,6 +272,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void Show()
         {
+            if (_isVisible)
+            {
+                return;
+            }
+
+            _isVisible = true;
+            _actionRequested = false;
             SetVisible(true);
             if (ShouldOverlayManageOwnership())
             {
@@ -249,6 +290,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private void HideImmediate()
         {
             SetVisible(false);
+
+            if (!_isVisible)
+            {
+                return;
+            }
+
+            _isVisible = false;
             if (ShouldOverlayManageOwnership())
             {
                 ReleasePostGameGate("HideImmediate");

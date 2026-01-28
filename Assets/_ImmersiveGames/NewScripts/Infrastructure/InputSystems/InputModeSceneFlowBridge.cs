@@ -69,11 +69,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             var profile = evt.Context.TransitionProfileName;
             var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
             var dedupeKey = $"{profile}|{signature}";
+            var activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
             // ===== Gameplay =====
             if (evt.Context.TransitionProfileId == SceneFlowProfileId.Gameplay)
             {
                 inputModeService.SetGameplay("SceneFlow/Completed:Gameplay");
+
+                LogObsInputModeApplied(
+                    mode: "Gameplay",
+                    map: "Gameplay",
+                    reason: "SceneFlow/Completed:Gameplay",
+                    signature: signature,
+                    scene: activeScene,
+                    profile: profile);
 
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
@@ -204,6 +213,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 _lastProcessedSignature = dedupeKey;
                 inputModeService.SetFrontendMenu("SceneFlow/Completed:Frontend");
 
+                LogObsInputModeApplied(
+                    mode: "FrontendMenu",
+                    map: "UI",
+                    reason: "SceneFlow/Completed:Frontend",
+                    signature: signature,
+                    scene: activeScene,
+                    profile: profile);
+
                 // Correção-alvo:
                 // Menu/Frontend não deve “rodar run”. Se algo iniciou o GameLoop antes,
                 // encerramos a run aqui para evitar ficar em Playing no menu.
@@ -244,6 +261,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                 $"[InputMode] Profile nao reconhecido ('{profile}'); input mode nao alterado.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogObsInputModeApplied(
+            string mode,
+            string map,
+            string reason,
+            string signature,
+            string scene,
+            string profile)
+        {
+            // Observabilidade canônica (Contrato): Applied mode/map/reason/signature/scene/profile.
+            DebugUtility.LogVerbose(typeof(InputModeSceneFlowBridge),
+                $"[OBS][InputMode] Applied mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' profile='{profile ?? string.Empty}' reason='{reason ?? string.Empty}'.",
                 DebugUtility.Colors.Info);
         }
 

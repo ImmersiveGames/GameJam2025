@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     {
         private readonly ISimulationGateService _gateService;
 
-        private IDisposable _activeGateHandle;
+        private IDisposable? _activeGateHandle;
         private bool _gameplayReady;
 
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;

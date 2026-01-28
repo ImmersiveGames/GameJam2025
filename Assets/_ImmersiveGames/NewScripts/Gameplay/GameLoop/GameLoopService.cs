@@ -89,7 +89,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             CurrentStateIdName = stateId.ToString();
-            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {stateId} (active={isActive})");
+            var logStateName = GetLogStateName(stateId);
+            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {logStateName} (active={isActive})");
 
             if (stateId == GameLoopStateId.Boot && previousState != GameLoopStateId.Boot)
             {
@@ -151,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         }
 
         public void OnStateExited(GameLoopStateId stateId) =>
-            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {stateId}");
+            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {GetLogStateName(stateId)}");
 
         public void OnGameActivityChanged(bool isActive)
         {
@@ -172,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (!IsGameplayScene())
             {
                 DebugUtility.LogWarning<GameLoopService>(
-                    $"[OBS][PostPlay] PostPlaySkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
+                    $"[OBS][PostGame] PostGameSkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
                 return;
             }
 
@@ -182,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var reason = status?.HasResult == true ? status.Reason ?? "<null>" : "<none>";
 
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][PostPlay] PostPlayEntered signature='{info.Signature}' outcome='{outcome}' reason='{reason}' " +
+                $"[OBS][PostGame] PostGameEntered signature='{info.Signature}' outcome='{outcome}' reason='{reason}' " +
                 $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
@@ -195,7 +196,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var reason = ResolvePostPlayExitReason(nextState);
 
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][PostPlay] PostPlayExited signature='{info.Signature}' reason='{reason}' nextState='{nextState}' " +
+                $"[OBS][PostGame] PostGameExited signature='{info.Signature}' reason='{reason}' nextState='{nextState}' " +
                 $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
@@ -337,6 +338,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             return new SignatureInfo(signature, sceneName, profile, Time.frameCount);
+        }
+
+        private static string GetLogStateName(GameLoopStateId stateId)
+        {
+            return stateId == GameLoopStateId.PostPlay ? "PostGame" : stateId.ToString();
         }
 
         private readonly struct SignatureInfo

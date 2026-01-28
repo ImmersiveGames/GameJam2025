@@ -26,8 +26,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
         private bool _disposed;
 
-        // Reason canônico para evidência/contrato.
-        private const string ReasonScenesReady = WorldLifecycleReasons.SceneFlowScenesReady;
+        // Reasons canônicos (Contrato de Observability).
+        private const string ReasonScenesReady = "SceneFlow/ScenesReady";
+        private const string ReasonSkippedStartupOrFrontendPrefix = "Skipped_StartupOrFrontend";
+        private const string ReasonFailedNoControllerPrefix = "Failed_NoController";
 
         public WorldLifecycleSceneFlowResetDriver()
         {
@@ -68,34 +70,68 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
                 // Defensivo: assinatura vazia não deve travar o SceneFlow; apenas libera.
                 DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
                     "[WorldLifecycle] ScenesReady recebido com ContextSignature vazia. Liberando gate sem reset.");
-                PublishResetCompleted(signature, ReasonScenesReady);
+                LogObsResetRequested(
+                    signature: string.Empty,
+                    sourceSignature: string.Empty,
+                    profile: context.TransitionProfileName,
+                    target: ResolveTargetSceneName(context),
+                    reason: ReasonScenesReady);
+                PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, ResolveTargetSceneName(context));
                 return;
             }
 
             // Regra canônica: reset determinístico de WorldLifecycle só é obrigatório em profile gameplay.
+            string targetScene;
             if (!context.TransitionProfileId.IsGameplay)
             {
+                targetScene = ResolveTargetSceneName(context);
+                string skippedReason = $"{ReasonSkippedStartupOrFrontendPrefix}:profile={context.TransitionProfileName};scene={targetScene}";
+
+                LogObsResetRequested(
+                    signature: signature,
+                    sourceSignature: signature,
+                    profile: context.TransitionProfileName,
+                    target: targetScene,
+                    reason: skippedReason);
+
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
                     $"[WorldLifecycle] ScenesReady ignorado (profile != gameplay). signature='{signature}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Info);
 
-                PublishResetCompleted(signature, ReasonScenesReady);
+                PublishResetCompleted(signature, skippedReason, context.TransitionProfileName, targetScene);
                 return;
             }
 
-            string targetScene = ResolveTargetSceneName(context);
+            targetScene = ResolveTargetSceneName(context);
             var controllers = WorldLifecycleControllerLocator.FindControllersForScene(targetScene);
 
             if (controllers.Count == 0)
             {
                 // Cena pode não ter WorldLifecycle (ex.: fluxo especial). Não travar o SceneFlow.
+                string failedReason = $"{ReasonFailedNoControllerPrefix}:{targetScene}";
+
+                LogObsResetRequested(
+                    signature: signature,
+                    sourceSignature: signature,
+                    profile: context.TransitionProfileName,
+                    target: targetScene,
+                    reason: failedReason);
+
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
                     $"[WorldLifecycle] Nenhum WorldLifecycleController encontrado para reset. signature='{signature}', targetScene='{targetScene}'. Liberando gate.",
                     DebugUtility.Colors.Info);
 
-                PublishResetCompleted(signature, ReasonScenesReady);
+                PublishResetCompleted(signature, failedReason, context.TransitionProfileName, targetScene);
                 return;
             }
+
+            // Reset real (profile=gameplay).
+            LogObsResetRequested(
+                signature: signature,
+                sourceSignature: signature,
+                profile: context.TransitionProfileName,
+                target: targetScene,
+                reason: ReasonScenesReady);
 
             try
             {
@@ -139,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
             }
             finally
             {
-                PublishResetCompleted(signature, ReasonScenesReady);
+                PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, targetScene);
             }
         }
 
@@ -154,11 +190,42 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
             return SceneManager.GetActiveScene().name ?? string.Empty;
         }
 
-        private static void PublishResetCompleted(string signature, string reason)
+        private static void PublishResetCompleted(string signature, string reason, string profile, string target)
         {
             // Sempre publicar: o completion gate depende disso para não degradar em timeout.
+            LogObsResetCompleted(
+                signature: signature,
+                profile: profile,
+                target: target,
+                reason: reason);
+
             EventBus<WorldLifecycleResetCompletedEvent>.Raise(
                 new WorldLifecycleResetCompletedEvent(signature ?? string.Empty, reason));
+        }
+
+        private static void LogObsResetRequested(
+            string signature,
+            string sourceSignature,
+            string profile,
+            string target,
+            string reason)
+        {
+            // Observabilidade canônica (Contrato): ResetRequested com sourceSignature/reason/profile/target.
+            DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
+                $"[OBS][WorldLifecycle] ResetRequested signature='{signature ?? string.Empty}' sourceSignature='{sourceSignature ?? string.Empty}' profile='{profile ?? string.Empty}' target='{target ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogObsResetCompleted(
+            string signature,
+            string profile,
+            string target,
+            string reason)
+        {
+            // Observabilidade canônica (Contrato): ResetCompleted correlacionável ao gate (signature) e reason final.
+            DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
+                $"[OBS][WorldLifecycle] ResetCompleted signature='{signature ?? string.Empty}' profile='{profile ?? string.Empty}' target='{target ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+                DebugUtility.Colors.Success);
         }
 
     }
