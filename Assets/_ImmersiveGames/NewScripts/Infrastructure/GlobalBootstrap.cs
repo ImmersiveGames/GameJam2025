@@ -184,7 +184,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
             RegisterContentSwapQaInstaller();
-            RegisterLevelQaInstaller();
 #endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageRuntimeDebugGui();
@@ -193,6 +192,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
             RegisterLevelServices();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RegisterLevelQaInstaller();
+#endif
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
