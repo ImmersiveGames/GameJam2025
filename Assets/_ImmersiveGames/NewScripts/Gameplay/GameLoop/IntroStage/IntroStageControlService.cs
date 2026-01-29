@@ -76,21 +76,31 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             TaskCompletionSource<IntroStageCompletionResult> source;
             IntroStageContext context;
+            bool wasActive;
+
             lock (_sync)
             {
-                if (!_isActive)
+                wasActive = _isActive;
+                context = _activeContext;
+
+                if (!wasActive)
                 {
+                    var ignoredReason = NormalizeValue(reason);
+                    DebugUtility.LogWarning<IntroStageControlService>(
+                        $"[OBS][IntroStage] CompleteIntroStage ignored reason='{ignoredReason}' " +
+                        $"skip={wasSkipped.ToString().ToLowerInvariant()} active={wasActive.ToString().ToLowerInvariant()} " +
+                        $"signature='{NormalizeValue(context.ContextSignature)}' " +
+                        $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.");
                     return;
                 }
 
                 _isActive = false;
                 source = _completionSource;
-                context = _activeContext;
             }
 
             var normalizedReason = NormalizeValue(reason);
             DebugUtility.Log<IntroStageControlService>(
-                $"[OBS][IntroStage] CompleteIntroStage received reason='{normalizedReason}' " +
+                $"[OBS][IntroStage] CompleteIntroStage applied reason='{normalizedReason}' " +
                 $"skip={wasSkipped.ToString().ToLowerInvariant()} " +
                 $"signature='{NormalizeValue(context.ContextSignature)}' " +
                 $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.",

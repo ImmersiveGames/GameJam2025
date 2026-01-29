@@ -25,6 +25,9 @@ using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
+using _ImmersiveGames.NewScripts.Gameplay.Levels;
+using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
+using _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
@@ -45,6 +48,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
 using _ImmersiveGames.NewScripts.QA.ContentSwap;
+using _ImmersiveGames.NewScripts.QA.Levels;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -187,6 +191,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
+            RegisterLevelServices();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RegisterLevelQaInstaller();
+#endif
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
@@ -894,6 +902,51 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 typeof(GlobalBootstrap),
                 "[ContentSwap] ContentSwapChangeService registered=InPlaceOnly scope='InPlace-only'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLevelServices()
+        {
+            RegisterIfMissing<ILevelCatalogProvider>(() => new ResourcesLevelCatalogProvider());
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelCatalogProvider>(out var catalogProvider) || catalogProvider == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[Level] ILevelCatalogProvider indisponível; LevelCatalogResolver não será registrado.");
+                return;
+            }
+
+            RegisterIfMissing<ILevelDefinitionProvider>(() => new LevelDefinitionProviderFromCatalog(catalogProvider));
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelDefinitionProvider>(out var definitionProvider) || definitionProvider == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[Level] ILevelDefinitionProvider indisponível; LevelCatalogResolver não será registrado.");
+                return;
+            }
+
+            RegisterIfMissing<ILevelCatalogResolver>(() => new LevelCatalogResolver(catalogProvider, definitionProvider));
+
+            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapChangeService>(out var contentSwap) || contentSwap == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[Level] IContentSwapChangeService indisponível; ILevelManager não será registrado.");
+                return;
+            }
+
+            RegisterIfMissing<ILevelManager>(() => new LevelManager(contentSwap));
+        }
+
+        private static void RegisterLevelQaInstaller()
+        {
+            try
+            {
+                LevelQaInstaller.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    $"[QA][Level] Falha ao instalar LevelQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
         }
 
     }
