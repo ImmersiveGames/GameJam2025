@@ -1,5 +1,8 @@
 # Changelog (Docs)
 
+## 2026-02-01
+- ADR-0017 atualizado com status em andamento e etapa 0 (assets + providers/resolver + QA).
+
 ## 2026-01-29
 
 - Atualizado `Docs/Reports/Evidence/LATEST.md` para apontar para o snapshot **2026-01-29**.

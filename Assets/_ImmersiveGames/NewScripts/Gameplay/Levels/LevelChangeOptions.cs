@@ -1,14 +1,23 @@
 #nullable enable
+using System;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
     /// <summary>
     /// Opções para mudança de nível (opções de ContentSwap).
     /// </summary>
+    [Serializable]
     public sealed class LevelChangeOptions
     {
-        public ContentSwapOptions? ContentSwapOptions { get; set; }
+        [SerializeField] private ContentSwapOptions? contentSwapOptions;
+
+        public ContentSwapOptions? ContentSwapOptions
+        {
+            get => contentSwapOptions;
+            set => contentSwapOptions = value;
+        }
 
         public static LevelChangeOptions Default => new LevelChangeOptions();
 
