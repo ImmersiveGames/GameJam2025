@@ -95,9 +95,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var normalizedReason = NormalizeValue(reason);
             var actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
             var gameLoopState = NormalizeValue(ResolveGameLoopStateName());
-            var signature = NormalizeValue(context.ContextSignature);
-            var profile = NormalizeValue(context.ProfileId.Value);
-            var targetScene = NormalizeValue(context.TargetScene);
+            var logContext = BuildSafeLogContext(context);
+            var signature = logContext.Signature;
+            var profile = logContext.Profile;
+            var targetScene = logContext.TargetScene;
 
             if (!wasActive)
             {
@@ -156,6 +157,39 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) && gameLoop != null
                 ? gameLoop.CurrentStateIdName
                 : "<none>";
+        }
+
+        private static IntroStageLogContext BuildSafeLogContext(IntroStageContext context)
+        {
+            try
+            {
+                return new IntroStageLogContext(
+                    NormalizeValue(context.ContextSignature),
+                    NormalizeValue(context.ProfileId.Value),
+                    NormalizeValue(context.TargetScene));
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<IntroStageControlService>(
+                    $"[OBS][IntroStage] Failed to read IntroStageContext for logging. ex='{ex.GetType().Name}: {ex.Message}'.");
+                return IntroStageLogContext.Fallback;
+            }
+        }
+
+        private readonly struct IntroStageLogContext
+        {
+            public static readonly IntroStageLogContext Fallback = new("<error>", "<error>", "<error>");
+
+            public string Signature { get; }
+            public string Profile { get; }
+            public string TargetScene { get; }
+
+            public IntroStageLogContext(string signature, string profile, string targetScene)
+            {
+                Signature = signature;
+                Profile = profile;
+                TargetScene = targetScene;
+            }
         }
     }
 }
