@@ -19,6 +19,7 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 | [ADR-0014](./ADR-0014-GameplayReset-Targets-Grupos.md) | Gameplay Reset: Targets e Grupos | Implementado | `GameplayReset` (NewScripts), WorldLifecycle, spawn services (Player/Eater) |
 | [ADR-0015](./ADR-0015-Baseline-2.0-Fechamento.md) | Baseline 2.0: Fechamento Operacional | Implementado | NewScripts / Baseline 2.0 |
 | [ADR-0016](./ADR-0016-ContentSwap-WorldLifecycle.md) | ContentSwap InPlace-only (NewScripts) | Implementado | ContentSwap + WorldLifecycle (NewScripts) |
+| [ADR-0017](./ADR-0017-LevelManager-Config-Catalog.md) | LevelManager + ConfigCatalog (SSOT) | Em andamento | LevelManager |
 | [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md) | Mudança de semântica: ContentSwap + LevelManager | Aceito | ContentSwap + LevelManager |
 | [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md) | Promoção do Baseline 2.2 (ContentSwap + LevelManager + Config) | Proposto | Baseline 2.2 |
 

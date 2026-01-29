@@ -1,4 +1,7 @@
 #nullable enable
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -8,21 +11,36 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
 {
     public sealed class IntroStageQaContextMenu : MonoBehaviour
     {
+        private const int AwaitTimeoutMs = 2000;
+
+        [ContextMenu("QA/IntroStage/Dump - Status")]
+        private void DumpStatus()
+        {
+            var controlService = ResolveControlService();
+            if (controlService == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(IntroStageQaContextMenu),
+                $"[QA][IntroStage] Status snapshot isActive={controlService.IsIntroStageActive.ToString().ToLowerInvariant()}.",
+                DebugUtility.Colors.Info);
+        }
+
         [ContextMenu("QA/IntroStage/Complete (Force)")]
         private void CompleteIntroStage()
         {
             var controlService = ResolveControlService();
             if (controlService == null)
             {
-                DebugUtility.LogWarning<IntroStageQaContextMenu>(
-                    "[QA][IntroStage] IIntroStageControlService indisponível; Complete ignorado.");
                 return;
             }
 
-            controlService.CompleteIntroStage("QA/IntroStage/Complete");
-            DebugUtility.Log<IntroStageQaContextMenu>(
+            DebugUtility.Log(typeof(IntroStageQaContextMenu),
                 "[QA][IntroStage] CompleteIntroStage solicitado.",
                 DebugUtility.Colors.Info);
+
+            controlService.CompleteIntroStage("QA/IntroStage/Complete");
         }
 
         [ContextMenu("QA/IntroStage/Skip (Force)")]
@@ -31,22 +49,84 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             var controlService = ResolveControlService();
             if (controlService == null)
             {
-                DebugUtility.LogWarning<IntroStageQaContextMenu>(
-                    "[QA][IntroStage] IIntroStageControlService indisponível; Skip ignorado.");
                 return;
             }
 
-            controlService.SkipIntroStage("QA/IntroStage/Skip");
-            DebugUtility.Log<IntroStageQaContextMenu>(
+            DebugUtility.Log(typeof(IntroStageQaContextMenu),
                 "[QA][IntroStage] SkipIntroStage solicitado.",
                 DebugUtility.Colors.Info);
+
+            controlService.SkipIntroStage("QA/IntroStage/Skip");
+        }
+
+        [ContextMenu("QA/IntroStage/Complete + Await Result (2s)")]
+        private void CompleteIntroStageAwait()
+        {
+            _ = CompleteAwaitAsync(skip: false);
+        }
+
+        [ContextMenu("QA/IntroStage/Skip + Await Result (2s)")]
+        private void SkipIntroStageAwait()
+        {
+            _ = CompleteAwaitAsync(skip: true);
+        }
+
+        private async Task CompleteAwaitAsync(bool skip)
+        {
+            var controlService = ResolveControlService();
+            if (controlService == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(IntroStageQaContextMenu),
+                $"[QA][IntroStage] {(skip ? "Skip" : "Complete")} solicitado + aguardando resultado (timeout={AwaitTimeoutMs}ms).",
+                DebugUtility.Colors.Info);
+
+            try
+            {
+                using var cts = new CancellationTokenSource(AwaitTimeoutMs);
+
+                if (skip)
+                {
+                    controlService.SkipIntroStage("QA/IntroStage/Skip");
+                }
+                else
+                {
+                    controlService.CompleteIntroStage("QA/IntroStage/Complete");
+                }
+
+                var result = await controlService.WaitForCompletionAsync(cts.Token);
+
+                // Evita depender de propriedades específicas do tipo.
+                DebugUtility.Log(typeof(IntroStageQaContextMenu),
+                    $"[QA][IntroStage] Await result => '{result}'.",
+                    DebugUtility.Colors.Success);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(IntroStageQaContextMenu),
+                    $"[QA][IntroStage] Await FAILED ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
         }
 
         private static IIntroStageControlService? ResolveControlService()
         {
-            return DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service)
-                ? service
-                : null;
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.LogError(typeof(IntroStageQaContextMenu),
+                    "[QA][IntroStage] DependencyManager.Provider é null (infra global não inicializada?).");
+                return null;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service) || service == null)
+            {
+                DebugUtility.LogWarning(typeof(IntroStageQaContextMenu),
+                    "[QA][IntroStage] IIntroStageControlService indisponível; ação ignorada.");
+                return null;
+            }
+
+            return service;
         }
     }
 }
