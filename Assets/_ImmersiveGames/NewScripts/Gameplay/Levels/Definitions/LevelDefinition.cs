@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
+using _ImmersiveGames.NewScripts.Gameplay.Levels;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions

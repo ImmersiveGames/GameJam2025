@@ -1,7 +1,7 @@
 # ADR-0017 — LevelManager: Config + Catalog (Single Source of Truth)
 
 ## Status
-- Estado: Em andamento
+- Estado: Em andamento (Etapa 0 concluída)
 - Data: 2026-01-29
 - Escopo: NewScripts → Gameplay/Levels + Docs/Reports
 
@@ -73,10 +73,11 @@ Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas
 - LevelManager deve consumir **apenas** abstrações (providers/resolvers), mantendo DIP.
 - Observabilidade deve reutilizar strings existentes no contrato (não criar reasons novos).
 
-### Etapa 0 — Artefatos entregues
+### Etapa 0 — Artefatos entregues (concluída)
 - ScriptableObjects `LevelDefinition` e `LevelCatalog` com campos mínimos.
 - Providers: `ResourcesLevelCatalogProvider` + `LevelDefinitionProviderFromCatalog`.
 - Resolver: `ILevelCatalogResolver` + `LevelCatalogResolver`.
+- DI: registro de providers/resolver + `ILevelManager` via `LevelManager` quando possível.
 - QA: `LevelQaContextMenu` com actions `QA/Levels/L01-GoToLevel` e `QA/Levels/Resolve/Definitions`.
 
 ## Evidências
