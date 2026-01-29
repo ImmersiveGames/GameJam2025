@@ -37,8 +37,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
                 return Task.CompletedTask;
             }
 
+            var normalizedReason = NormalizeReason(reason);
+
             DebugUtility.Log<ContentSwapChangeServiceInPlaceOnly>(
-                $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode={ContentSwapMode.InPlace} contentId='{plan.ContentId}' reason='{Sanitize(reason)}'",
+                $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode={ContentSwapMode.InPlace} contentId='{plan.ContentId}' reason='{normalizedReason}'",
                 DebugUtility.Colors.Info);
 
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
@@ -53,17 +55,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             if (normalizedOptions.UseFade || normalizedOptions.UseLoadingHud)
             {
                 DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                    "[ContentSwap] InPlace-only ignora Fade/LoadingHUD; ContentSwap não integra com SceneFlow.");
+                    "[ContentSwap] ContentSwap é InPlace-only e não integra com SceneFlow; ignorando Fade/LoadingHUD.");
             }
 
             try
             {
-                _contentSwapContext.SetPending(plan, reason);
+                _contentSwapContext.SetPending(plan, normalizedReason);
 
-                if (!_contentSwapContext.TryCommitPending(reason ?? "ContentSwap/InPlaceOnly", out _))
+                if (!_contentSwapContext.TryCommitPending(normalizedReason, out _))
                 {
                     DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                        $"[ContentSwap] TryCommitPending falhou. plan='{plan}' reason='{Sanitize(reason)}'.");
+                        $"[ContentSwap] TryCommitPending falhou. plan='{plan}' reason='{normalizedReason}'.");
                 }
             }
             catch (Exception ex)
@@ -98,7 +100,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             return normalized;
         }
 
-        private static string Sanitize(string? s)
+        private static string NormalizeReason(string reason)
+        {
+            var sanitized = Sanitize(reason);
+            return string.Equals(sanitized, "n/a", StringComparison.Ordinal)
+                ? "ContentSwap/InPlaceOnly"
+                : sanitized;
+        }
+
+        private static string Sanitize(string s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 }
