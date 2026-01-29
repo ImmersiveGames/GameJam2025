@@ -1,7 +1,7 @@
 # ADR-0017 — LevelManager: Config + Catalog (Single Source of Truth)
 
 ## Status
-- Estado: Em andamento (Etapa 0 concluída)
+- Estado: Em andamento (Etapa 0 concluída; evidência pendente)
 - Data: 2026-01-29
 - Escopo: NewScripts → Gameplay/Levels + Docs/Reports
 
@@ -79,6 +79,7 @@ Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas
 - Resolver: `ILevelCatalogResolver` + `LevelCatalogResolver`.
 - DI: registro de providers/resolver + `ILevelManager` via `LevelManager` quando possível.
 - QA: `LevelQaContextMenu` com actions `QA/Levels/L01-GoToLevel` e `QA/Levels/Resolve/Definitions`.
+- Evidência: execução/QA ainda pendente (não há snapshot dedicado a Level).
 
 ## Evidências
 - Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/` com:

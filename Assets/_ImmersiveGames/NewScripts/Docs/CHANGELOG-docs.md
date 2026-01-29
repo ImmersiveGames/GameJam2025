@@ -2,7 +2,7 @@
 
 ## 2026-01-29
 
-- ADR-0017 Etapa 0 concluída (assets + providers/resolver + DI + QA) para catálogo de níveis.
+- ADR-0017 Etapa 0 concluída (assets + providers/resolver + DI + QA); execução/evidência de Level ainda pendente.
 - Atualizado `Docs/Reports/Evidence/LATEST.md` para apontar para o snapshot **2026-01-29**.
 - Arquivado novo snapshot: `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`.
 - **ADR-0016** marcado como **Implementado** e vinculado à evidência 2026-01-29 (ContentSwap in-place / G01).
