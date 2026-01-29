@@ -239,7 +239,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<INewScriptsFadeService>(() => new NewScriptsFadeService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Fade] INewScriptsFadeService registrado no DI global (ADR-0009).",
+                "[Fade] INewScriptsFadeService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
