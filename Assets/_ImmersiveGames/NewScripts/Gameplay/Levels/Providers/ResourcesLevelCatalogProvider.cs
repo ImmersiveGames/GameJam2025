@@ -1,4 +1,5 @@
 #nullable enable
+using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 

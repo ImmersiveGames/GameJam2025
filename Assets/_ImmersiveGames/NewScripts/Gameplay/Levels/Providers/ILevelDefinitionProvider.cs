@@ -1,4 +1,5 @@
 #nullable enable
+using _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
 {

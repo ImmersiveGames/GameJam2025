@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Gameplay.Levels
+namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
 {
     /// <summary>
     /// Catálogo configurável de níveis: ordem, inicial e overrides explícitos.

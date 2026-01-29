@@ -2,7 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Gameplay.Levels
+namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions
 {
     /// <summary>
     /// Definição configurável de um nível (fonte de verdade para LevelManager).

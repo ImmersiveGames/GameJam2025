@@ -2,7 +2,7 @@
 
 ## Status
 - Estado: Em andamento
-- Data: 2026-02-01
+- Data: 2026-01-29
 - Escopo: NewScripts → Gameplay/Levels + Docs/Reports
 
 ## Contexto
