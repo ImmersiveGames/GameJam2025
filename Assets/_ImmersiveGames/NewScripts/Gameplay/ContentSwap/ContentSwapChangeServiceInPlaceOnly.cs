@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             if (normalizedOptions.UseFade || normalizedOptions.UseLoadingHud)
             {
                 DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                    "[ContentSwap] InPlace-only ignora Fade/LoadingHUD. Use o fluxo completo quando SceneFlow for reintroduzido.");
+                    "[ContentSwap] InPlace-only ignora Fade/LoadingHUD; ContentSwap não integra com SceneFlow.");
             }
 
             try

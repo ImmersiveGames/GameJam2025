@@ -584,7 +584,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 if (completionGate != null)
                 {
                     DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                        $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir ADR-0016/0017.");
+                        $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
                 }
 
                 completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
