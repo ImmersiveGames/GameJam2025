@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
@@ -76,31 +77,52 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             TaskCompletionSource<IntroStageCompletionResult> source;
             IntroStageContext context;
+            bool wasActive;
+            bool alreadyCompleted;
             lock (_sync)
             {
-                if (!_isActive)
-                {
-                    return;
-                }
-
-                _isActive = false;
                 source = _completionSource;
                 context = _activeContext;
+                wasActive = _isActive;
+                alreadyCompleted = source.Task.IsCompleted;
+
+                if (_isActive)
+                {
+                    _isActive = false;
+                }
             }
 
             var normalizedReason = NormalizeValue(reason);
+            var actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
+            var gameLoopState = NormalizeValue(ResolveGameLoopStateName());
+            var signature = NormalizeValue(context.ContextSignature);
+            var profile = NormalizeValue(context.ProfileId.Value);
+            var targetScene = NormalizeValue(context.TargetScene);
+
+            if (!wasActive)
+            {
+                var ignoreReason = alreadyCompleted ? "already_completed" : "not_active";
+                DebugUtility.Log<IntroStageControlService>(
+                    $"[OBS][IntroStage] {actionName} received reason='{normalizedReason}' " +
+                    $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' " +
+                    $"ignoreReason='{ignoreReason}' state='{gameLoopState}' isActive=false " +
+                    $"signature='{signature}' profile='{profile}' target='{targetScene}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             DebugUtility.Log<IntroStageControlService>(
-                $"[OBS][IntroStage] CompleteIntroStage received reason='{normalizedReason}' " +
-                $"skip={wasSkipped.ToString().ToLowerInvariant()} " +
-                $"signature='{NormalizeValue(context.ContextSignature)}' " +
-                $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.",
+                $"[OBS][IntroStage] {actionName} received reason='{normalizedReason}' " +
+                $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' " +
+                $"state='{gameLoopState}' isActive=true signature='{signature}' " +
+                $"profile='{profile}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
 
             if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
             {
                 DebugUtility.LogWarning<IntroStageControlService>(
-                    $"[OBS][IntroStage] IntroStageTimedOut signature='{NormalizeValue(context.ContextSignature)}' " +
-                    $"profile='{NormalizeValue(context.ProfileId.Value)}' target='{NormalizeValue(context.TargetScene)}'.");
+                    $"[OBS][IntroStage] IntroStageTimedOut signature='{signature}' " +
+                    $"profile='{profile}' target='{targetScene}'.");
             }
 
             source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
@@ -128,5 +150,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static string NormalizeValue(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+
+        private static string ResolveGameLoopStateName()
+        {
+            return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) && gameLoop != null
+                ? gameLoop.CurrentStateIdName
+                : "<none>";
+        }
     }
 }
