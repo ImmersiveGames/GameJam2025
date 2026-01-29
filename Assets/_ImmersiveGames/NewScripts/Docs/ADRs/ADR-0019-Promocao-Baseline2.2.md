@@ -30,15 +30,14 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 
 ### G-01 — Semântica e contrato de ContentSwap
 **Critério verificável**
-- ADR-0018 atualizado e coerente com ADR-0017.
-- Observability mantém o contrato de ContentSwap (logs e reasons canônicos).
+- ADR-0018 atualizado e coerente com ADR-0016.
+- Observability mantém o contrato de ContentSwap InPlace-only (logs e reasons canônicos).
 
 **QA mínimo (ContextMenu)**
 - `QA/ContentSwap/G01 - InPlace (NoVisuals)`
-- `QA/ContentSwap/G02 - WithTransition (SingleClick)`
 
 **Evidência**
-- Snapshot datado com logs demonstrando os dois modos.
+- Snapshot datado com logs demonstrando o modo InPlace.
 
 ### G-02 — LevelManager integrado
 **Critério verificável**
@@ -47,10 +46,9 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 
 **QA mínimo (ContextMenu)**
 - `QA/Levels/L01-GoToLevel (InPlace + IntroStage)`
-- `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)`
 
 **Evidência**
-- Snapshot datado com logs mostrando ContentSwap + IntroStage no mesmo fluxo de Level.
+- Snapshot datado com logs mostrando ContentSwap + IntroStage no fluxo de Level.
 
 ### G-03 — Configuração centralizada
 **Critério verificável**
@@ -89,5 +87,5 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 
 ## Referências
 - ADR-0018 — Mudança de semântica: ContentSwap + LevelManager
-- ADR-0017 — Tipos de troca de conteúdo (ContentSwap: In-Place vs SceneTransition)
+- ADR-0016 — ContentSwap InPlace-only
 - Plano 2.2 — Execução (plano2.2.md)

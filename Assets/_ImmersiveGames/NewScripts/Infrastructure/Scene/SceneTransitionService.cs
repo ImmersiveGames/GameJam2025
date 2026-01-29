@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         public string ContextSignature { get; }
 
         /// <summary>
-        /// (Opcional) Origem do pedido para diagnóstico (ex.: "QA/ContentSwap/WithTransition/G03", "Navigation/MenuPlayButton").
+        /// (Opcional) Origem do pedido para diagnóstico (ex.: "QA/Levels/InPlace/L01", "Navigation/MenuPlayButton").
         /// </summary>
         public string RequestedBy { get; }
 

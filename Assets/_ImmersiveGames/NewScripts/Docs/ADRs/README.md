@@ -18,8 +18,7 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 | [ADR-0013](./ADR-0013-Ciclo-de-Vida-Jogo.md) | Ciclo de vida do jogo (NewScripts) | Implementado | GameLoop + SceneFlow + WorldLifecycle (NewScripts) |
 | [ADR-0014](./ADR-0014-GameplayReset-Targets-Grupos.md) | Gameplay Reset: Targets e Grupos | Implementado | `GameplayReset` (NewScripts), WorldLifecycle, spawn services (Player/Eater) |
 | [ADR-0015](./ADR-0015-Baseline-2.0-Fechamento.md) | Baseline 2.0: Fechamento Operacional | Implementado | NewScripts / Baseline 2.0 |
-| [ADR-0016](./ADR-0016-ContentSwap-WorldLifecycle.md) | ContentSwap + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow) | Implementado | WorldLifecycle + SceneFlow + GameLoop (NewScripts) |
-| [ADR-0017](./ADR-0017-Tipos-de-troca-conteudo.md) | Tipos de troca de conteúdo (ContentSwap: In-Place vs SceneTransition) | Implementado | ContentSwap + SceneFlow (NewScripts) |
+| [ADR-0016](./ADR-0016-ContentSwap-WorldLifecycle.md) | ContentSwap InPlace-only (NewScripts) | Implementado | ContentSwap + WorldLifecycle (NewScripts) |
 | [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md) | Mudança de semântica: ContentSwap + LevelManager | Aceito | ContentSwap + LevelManager |
 | [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md) | Promoção do Baseline 2.2 (ContentSwap + LevelManager + Config) | Proposto | Baseline 2.2 |
 

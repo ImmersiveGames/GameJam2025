@@ -36,4 +36,5 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             Reason = reason ?? string.Empty;
         }
     }
+
 }

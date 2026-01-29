@@ -3,12 +3,12 @@
 ## Status
 - Estado: Implementado
 - Data: 2025-12-28
-- Fechado em: 2026-01-18
+- Fechado em: 2026-01-28
 - Escopo: `GameLoop` (NewScripts), `WorldLifecycle`, SceneFlow, `UIGlobalScene` (overlays de UI)
 
 ## Evidência
 
-- Snapshot canônico: `Docs/Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md`
+- Snapshot canônico: `Docs/Reports/Evidence/2026-01-28/Baseline-2.2-Evidence-2026-01-28.md`
 - Ponte para regressão contínua: `Docs/Reports/Evidence/LATEST.md`
 
 ## Contexto
@@ -262,7 +262,7 @@ Regras:
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot arquivado (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- Snapshot arquivado (2026-01-28): [`Baseline-2.2-Evidence-2026-01-28.md`](../Reports/Evidence/2026-01-28/Baseline-2.2-Evidence-2026-01-28.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências

@@ -6,7 +6,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
     /// </summary>
     public enum ContentSwapMode
     {
-        InPlace = 0,
-        SceneTransition = 1
+        InPlace = 0
     }
 }

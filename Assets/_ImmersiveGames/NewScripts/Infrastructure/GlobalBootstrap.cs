@@ -1,7 +1,7 @@
 /*
  * ChangeLog
  * - Registrado IContentSwapContextService (ContentSwapContextService) no DI global (ADR-0016).
- * - Adicionado ContentSwapContextSceneFlowBridge para limpar Pending no SceneTransitionStarted (Baseline 3B).
+ * - ContentSwap permanece InPlace-only (sem integração com SceneFlow).
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas StateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
@@ -185,10 +185,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIntroStageRuntimeDebugGui();
 #endif
 
-            // Baseline 3B: Pending NÃO pode atravessar transição.
-            RegisterContentSwapContextSceneFlowBridge();
-
-            // ContentSwapChange (modo ContentSwap-only): usa apenas ContentSwapContext e commit imediato.
+            // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
@@ -243,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<INewScriptsFadeService>(() => new NewScriptsFadeService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Fade] INewScriptsFadeService registrado no DI global (ADR-0009).",
+                "[Fade] INewScriptsFadeService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -588,7 +585,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 if (completionGate != null)
                 {
                     DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                        $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir ADR-0016/0017.");
+                        $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
                 }
 
                 completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
@@ -730,28 +727,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[InputMode] InputModeSceneFlowBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        // --------------------------------------------------------------------
-        // ContentSwapContext (Baseline 3B)
-        // --------------------------------------------------------------------
-
-        private static void RegisterContentSwapContextSceneFlowBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ContentSwapContextSceneFlowBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[ContentSwapContext] ContentSwapContextSceneFlowBridge já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new ContentSwapContextSceneFlowBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[ContentSwapContext] ContentSwapContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending).",
                 DebugUtility.Colors.Info);
         }
 
@@ -915,8 +890,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 new ContentSwapChangeServiceInPlaceOnly(contentSwapContext),
                 allowOverride: false);
 
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[ContentSwap] ContentSwapChangeService registrado no DI global.",
+            DebugUtility.Log(
+                typeof(GlobalBootstrap),
+                "[ContentSwap] ContentSwapChangeService registered=InPlaceOnly scope='InPlace-only'.",
                 DebugUtility.Colors.Info);
         }
 

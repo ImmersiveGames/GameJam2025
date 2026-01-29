@@ -4,7 +4,7 @@
 
 ## Pré-condições
 - Baseline 2.1 fechado via snapshot datado e `Docs/Reports/Evidence/LATEST.md` válido.
-- ADR-0017 já implementado (modos canônicos de ContentSwap).
+- ADR-0016 já implementado (ContentSwap InPlace-only).
 
 ## Meta
 - Evoluir para Baseline 2.2 com critérios objetivos, sem regressões em observability e pipeline.
@@ -12,7 +12,7 @@
 ---
 
 ## Linha 0 — Sequência de marcos (dependências)
-1. **ADR-0017** (modos de ContentSwap) — já implementado.
+1. **ADR-0016** (ContentSwap InPlace-only) — já implementado.
 2. **ADR-0018** (semântica: ContentSwap + LevelManager).
 3. **ADR-0019** (promoção: config centralizada + gates + evidências).
 4. **Execução Baseline 2.2** (QA + evidências + gate final).
@@ -25,7 +25,7 @@
 - Formalizar ContentSwap como executor técnico e separar LevelManager (progressão).
 
 **Entregáveis (docs)**
-- ADR-0018 atualizado com termos formais, boundaries e relação com ADR-0017.
+- ADR-0018 atualizado com termos formais, boundaries e relação com ADR-0016.
 - Terminologia consistente em docs de topo (ARCHITECTURE/README).
 
 **Critérios de aceite**
@@ -76,10 +76,8 @@
 **QA mínimo (ContextMenu)**
 - ContentSwap:
   - `QA/ContentSwap/G01 - InPlace (NoVisuals)`
-  - `QA/ContentSwap/G02 - WithTransition (SingleClick)`
 - LevelManager:
   - `QA/Levels/L01-GoToLevel (InPlace + IntroStage)`
-  - `QA/Levels/L02-GoToLevel (WithTransition + IntroStage)`
 - Configuração:
   - `QA/Levels/Resolve/Definitions`
 

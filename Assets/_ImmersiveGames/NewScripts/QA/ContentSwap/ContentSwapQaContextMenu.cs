@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -28,21 +26,10 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
 
         [Header("Default ContentIds")]
         [SerializeField] private string inPlaceContentId = "content.2";
-        [SerializeField] private string withTransitionContentId = "content.2";
-
-        [Header("WithTransition SceneFlow Request")]
-        [SerializeField] private string profileId = "gameplay";
-        [SerializeField] private string targetActiveScene = "GameplayScene";
-        [SerializeField] private string[] scenesToLoad = { "GameplayScene", "UIGlobalScene" };
-        [SerializeField] private string[] scenesToUnload = Array.Empty<string>();
-        [SerializeField] private bool useFade = true;
 
         // Gate default (Baseline 2.2): ContentSwap sem visuais e sem IntroStage.
         private const string ReasonG01 = "QA/ContentSwap/InPlace/NoVisuals";
-        private const string ReasonG02 = "QA/ContentSwap/WithTransition/SceneFlow";
 
-        // Recomendado: rastreável no log/observability
-        private const string RequestedBy = "QA/ContentSwap/ContentSwapQaContextMenu";
 
         // ----------------------------
         // Public QA Actions (ContextMenu)
@@ -52,12 +39,6 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
         private void Qa_G01_InPlace_NoVisuals()
         {
             _ = RunG01InPlaceAsync(useFadeOpt: false, useLoadingHudOpt: false, reason: ReasonG01);
-        }
-
-        [ContextMenu("QA/ContentSwap/G02 - WithTransition (SingleClick)")]
-        private void Qa_G02_WithTransition_SingleClick()
-        {
-            _ = RunG02WithTransitionAsync(withTransitionContentId, ReasonG02);
         }
 
         [ContextMenu("QA/ContentSwap/Dump - ContentSwapContext Snapshot")]
@@ -126,60 +107,6 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
             }
         }
 
-        private async Task RunG02WithTransitionAsync(string contentIdRaw, string reason)
-        {
-            var contentSwapSvc = ResolveGlobal<IContentSwapChangeService>();
-            if (contentSwapSvc == null)
-            {
-                return;
-            }
-
-            var contentId = string.IsNullOrWhiteSpace(contentIdRaw) ? "content.2" : contentIdRaw.Trim();
-
-            DebugUtility.Log(typeof(ContentSwapQaContextMenu),
-                $"[QA][ContentSwap] G02 start contentId='{contentId}' reason='{reason}'.",
-                ColorInfo);
-
-            try
-            {
-                var request = BuildTransitionRequest();
-
-                // IMPORTANTE:
-                // - SingleClick deve chamar APENAS o ContentSwapChangeService.
-                // - O ContentSwapChangeService já registra intent e dispara SceneFlow internamente.
-                await contentSwapSvc.RequestContentSwapWithTransitionAsync(contentId, request, reason);
-
-                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
-                    $"[QA][ContentSwap] G02 done contentId='{contentId}'.",
-                    ColorOk);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.Log(typeof(ContentSwapQaContextMenu),
-                    $"[QA][ContentSwap] G02 failed contentId='{contentId}' ex='{ex.GetType().Name}: {ex.Message}'.",
-                    ColorErr);
-            }
-        }
-
-        private SceneTransitionRequest BuildTransitionRequest()
-        {
-            // Construção baseada no contrato existente do projeto (SceneFlowProfileId + request imutável).
-            var pid = new SceneFlowProfileId(profileId);
-
-            // Observação:
-            // - contextSignature null: ContentSwapChangeService pode preencher/normalizar.
-            // - requestedBy: rastreável para diagnósticos.
-            return new SceneTransitionRequest(
-                scenesToLoad: scenesToLoad ?? Array.Empty<string>(),
-                scenesToUnload: scenesToUnload ?? Array.Empty<string>(),
-                targetActiveScene: string.IsNullOrWhiteSpace(targetActiveScene) ? "GameplayScene" : targetActiveScene.Trim(),
-                useFade: useFade,
-                transitionProfileId: pid,
-                contextSignature: null,
-                requestedBy: RequestedBy
-            );
-        }
-
         private void DumpContentSwapContext()
         {
             var ctx = ResolveGlobal<IContentSwapContextService>();
@@ -216,5 +143,6 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
 
             return service;
         }
+
     }
 }

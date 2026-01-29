@@ -1,13 +1,14 @@
 # Evidence — LATEST
 
-Último snapshot arquivado: **2026-01-28**
+Último snapshot arquivado: **2026-01-29**
 
 - Baseline 2.2 Evidence Snapshot:
-    - `Evidence/2026-01-28/Baseline-2.2-Evidence-2026-01-28.md`
+    - `Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
 
 Notas:
-- Snapshot 2026-01-28 confirma pipeline completo para:
+- Snapshot 2026-01-29 confirma o pipeline completo para:
     - Boot→Menu (startup, reset skip)
     - Menu→Gameplay (reset + spawn + IntroStage → Playing)
-    - Level L01 (InPlace ContentSwap → Reset → Commit → IntroStage)
-- Cenário WithTransition (Level L02) ainda está pendente devido a reentrância no `LevelStartCommitBridge` (token SceneTransition ativo no TransitionCompleted).
+    - ContentSwap in-place (G01) com reason canônico (`QA/ContentSwap/InPlace/NoVisuals`)
+    - Pause/Resume e PostGame (Victory/Defeat) com gates/tokens e InputMode coerentes
+    - Restart e ExitToMenu (reset determinístico / frontend reset skip)
