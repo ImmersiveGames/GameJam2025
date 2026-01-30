@@ -37,16 +37,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
 
             _attempted = true;
 
-            if (TryLoadCatalog(_resourcePath, out var catalog))
+            if (TryLoadCatalog(_resourcePath, LegacyResourcesPath, out var catalog, out var source))
             {
                 _cached = catalog;
+                LogCatalogLoaded(_cached, source);
                 return _cached;
             }
 
             if (!string.Equals(_resourcePath, LegacyResourcesPath, StringComparison.Ordinal)
-                && TryLoadCatalog(LegacyResourcesPath, out catalog))
+                && TryLoadCatalog(LegacyResourcesPath, "none", out catalog, out source))
             {
                 _cached = catalog;
+                LogCatalogLoaded(_cached, source);
                 return _cached;
             }
 
@@ -55,15 +57,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
             return null;
         }
 
-        private static bool TryLoadCatalog(string path, out LevelCatalog catalog)
+        private static bool TryLoadCatalog(string path, string fallback, out LevelCatalog catalog, out string source)
         {
             catalog = Resources.Load<LevelCatalog>(path);
+            source = string.Equals(path, LegacyResourcesPath, StringComparison.Ordinal) ? "legacy" : "new";
+
             if (catalog != null)
             {
+                DebugUtility.Log<ResourcesLevelCatalogProvider>(
+                    $"[OBS][LevelCatalog] CatalogLoadAttempt path='{path}' result='hit' fallback='{fallback}'.");
                 DebugUtility.LogVerbose<ResourcesLevelCatalogProvider>(
                     $"[LevelCatalog] Catalog resolvido via Resources. path='{path}', name='{catalog.name}'.");
                 return true;
             }
+
+            DebugUtility.Log<ResourcesLevelCatalogProvider>(
+                $"[OBS][LevelCatalog] CatalogLoadAttempt path='{path}' result='miss' fallback='{fallback}'.");
 
             var any = Resources.Load(path);
             if (any != null)
@@ -74,6 +83,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
             }
 
             return false;
+        }
+
+        private static void LogCatalogLoaded(LevelCatalog catalog, string source)
+        {
+            var initial = catalog?.InitialLevelId ?? string.Empty;
+            var orderedCount = catalog?.OrderedLevels?.Count ?? 0;
+            var definitionsCount = catalog?.Definitions?.Count ?? 0;
+
+            DebugUtility.Log<ResourcesLevelCatalogProvider>(
+                $"[OBS][LevelCatalog] CatalogLoaded name='{catalog.name}' initial='{initial}' orderedCount='{orderedCount}' definitionsCount='{definitionsCount}' source='{source}'.");
         }
     }
 }

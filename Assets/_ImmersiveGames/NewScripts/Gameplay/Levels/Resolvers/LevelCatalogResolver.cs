@@ -28,6 +28,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             {
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     "[LevelCatalog] Catalog ausente ao resolver nível inicial.");
+                DebugUtility.LogWarning<LevelCatalogResolver>(
+                    "[OBS][LevelCatalog] CatalogMissing action='ResolveInitialLevelId'.");
                 return false;
             }
 
@@ -49,6 +51,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             {
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     "[LevelCatalog] Catalog ausente ao resolver catálogo.");
+                DebugUtility.LogWarning<LevelCatalogResolver>(
+                    "[OBS][LevelCatalog] CatalogMissing action='ResolveCatalog'.");
                 return false;
             }
 
@@ -63,10 +67,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             {
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     $"[LevelCatalog] LevelDefinition ausente. levelId='{levelId}'.");
+                DebugUtility.LogWarning<LevelCatalogResolver>(
+                    $"[OBS][LevelCatalog] DefinitionMissing levelId='{levelId}'.");
+
+                if (_catalogProvider.GetCatalog() == null)
+                {
+                    DebugUtility.LogWarning<LevelCatalogResolver>(
+                        "[OBS][LevelCatalog] CatalogMissing action='ResolveDefinition'.");
+                }
+
                 definition = null!;
                 return false;
             }
 
+            DebugUtility.Log<LevelCatalogResolver>(
+                $"[OBS][LevelCatalog] DefinitionResolved levelId='{definition.LevelId}' contentId='{definition.ContentId}'.");
             return true;
         }
 
@@ -89,6 +104,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             {
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     "[LevelCatalog] Catalog ausente ao resolver próximo nível.");
+                DebugUtility.LogWarning<LevelCatalogResolver>(
+                    "[OBS][LevelCatalog] CatalogMissing action='ResolveNextLevelId'.");
                 return false;
             }
 
