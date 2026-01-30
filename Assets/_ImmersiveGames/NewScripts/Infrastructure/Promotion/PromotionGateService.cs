@@ -3,9 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Promotion
 {
@@ -15,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Promotion
     /// Carrega um PromotionGateConfig via Resources (se existir), caso contrário
     /// usa defaults seguros ("default enabled").
     /// </summary>
-    public sealed class PromotionGateService : IPromotionGateService
+    public sealed class PromotionGateService
     {
         public const string DefaultResourcesPath = "NewScripts/Config/PromotionGateConfig";
 
@@ -49,45 +47,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Promotion
 
         public static PromotionGateService CreateFromResourcesOrDefaults(string resourcesPath = DefaultResourcesPath)
         {
-            var config = Resources.Load<PromotionGateConfig>(resourcesPath);
-            if (config == null)
-            {
-                var service = new PromotionGateService(
-                    source: "defaults(no-config)",
-                    defaultEnabled: true,
-                    enabled: Array.Empty<string>()
-                );
-
-                DebugUtility.Log(typeof(PromotionGateService),
-                    $"PromotionGate: nenhum config encontrado em Resources/{resourcesPath}; usando defaults: defaultEnabled=true.",
-                    DebugUtility.Colors.Warning);
-
-                return service;
-            }
-
-            var gates = (config.EnabledGateIds ?? Array.Empty<string>())
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            var result = new PromotionGateService(
-                source: $"Resources/{resourcesPath}",
-                defaultEnabled: config.DefaultEnabled,
-                enabled: gates
+            var service = new PromotionGateService(
+                source: "defaults(no-config)",
+                defaultEnabled: true,
+                enabled: Array.Empty<string>()
             );
 
             DebugUtility.Log(typeof(PromotionGateService),
-                $"PromotionGate carregado: source='{result.Source}' defaultEnabled={result._defaultEnabled} enabledCount={gates.Length}.",
-                DebugUtility.Colors.Info);
+                $"PromotionGate: nenhum config encontrado em Resources/{resourcesPath}; usando defaults: defaultEnabled=true.",
+                DebugUtility.Colors.Warning);
 
-            if (gates.Length > 0)
-            {
-                DebugUtility.Log(typeof(PromotionGateService),
-                    $"PromotionGate enabled=[{string.Join(",", gates)}]",
-                    DebugUtility.Colors.Info);
-            }
-
-            return result;
+            return service;
         }
     }
 }

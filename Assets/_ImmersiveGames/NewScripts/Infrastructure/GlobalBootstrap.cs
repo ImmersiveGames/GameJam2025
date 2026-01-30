@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // ADR-0016: ContentSwapContext precisa existir no DI global.
             RegisterIfMissing<IContentSwapContextService>(() =>
             {
-                return IsPromotionEnabled(DependencyManager.Provider, PromotionGateIds.ContentSwap)
+                return IsPromotionEnabled(DependencyManager.Provider, string.Empty)
                     ? (IContentSwapContextService)new ContentSwapContextService()
                     : new ContentSwapContextServiceNoop();
             });
@@ -250,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static bool IsPromotionEnabled(IDependencyProvider provider, string gateId)
         {
-            if (provider.TryGetGlobal<IPromotionGateService>(out var gate) && gate != null)
+            if (provider.TryGetGlobal<PromotionGateService>(out var gate) && gate != null)
             {
                 return gate.IsEnabled(gateId);
             }
@@ -912,7 +912,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static bool IsPromotionEnabled(IDependencyProvider provider, string gateId)
         {
-            if (provider.TryGetGlobal<IPromotionGateService>(out var gate) && gate != null)
+            if (provider.TryGetGlobal<PromotionGateService>(out var gate) && gate != null)
             {
                 return gate.IsEnabled(gateId);
             }
@@ -930,7 +930,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (!IsPromotionEnabled(provider, PromotionGateIds.ContentSwap))
+            if (!IsPromotionEnabled(provider, string.Empty))
             {
                 provider.RegisterGlobal<IContentSwapChangeService>(new ContentSwapChangeServiceNoop());
                 DebugUtility.Log(typeof(GlobalBootstrap), "[ContentSwap] Gate desabilitado: registrando Noop (IContentSwapChangeService).", DebugColor.Warning);
@@ -956,7 +956,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (!IsPromotionEnabled(provider, PromotionGateIds.LevelManager))
+            if (!IsPromotionEnabled(provider, string.Empty))
             {
                 provider.RegisterGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>(new _ImmersiveGames.NewScripts.Gameplay.Levels.NoopLevelManagerService());
                 DebugUtility.Log(typeof(GlobalBootstrap), "[LevelManager] Gate desabilitado: registrando Noop (ILevelManagerService).", DebugColor.Warning);
