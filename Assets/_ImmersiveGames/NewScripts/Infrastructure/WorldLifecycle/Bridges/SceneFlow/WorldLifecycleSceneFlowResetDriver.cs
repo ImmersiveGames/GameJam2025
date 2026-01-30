@@ -24,12 +24,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
     public sealed class WorldLifecycleSceneFlowResetDriver : IDisposable
     {
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
+        private readonly object _guardLock = new();
+        private readonly HashSet<string> _inFlightSignatures = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _completedTicks = new(StringComparer.Ordinal);
         private bool _disposed;
 
         // Reasons canônicos (Contrato de Observability).
         private const string ReasonScenesReady = "SceneFlow/ScenesReady";
         private const string ReasonSkippedStartupOrFrontendPrefix = "Skipped_StartupOrFrontend";
         private const string ReasonFailedNoControllerPrefix = "Failed_NoController";
+        private const string ReasonGuardDuplicatePrefix = "Guard_DuplicateScenesReady";
+
+        // Janela curta para dedupe de assinatura (evita reset duplicado no mesmo frame).
+        private const int DuplicateSignatureWindowMs = 750;
+        private const int CompletedCacheLimit = 128;
 
         public WorldLifecycleSceneFlowResetDriver()
         {
@@ -87,6 +95,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
                 targetScene = ResolveTargetSceneName(context);
                 string skippedReason = $"{ReasonSkippedStartupOrFrontendPrefix}:profile={context.TransitionProfileName};scene={targetScene}";
 
+                if (ShouldSkipDuplicate(signature, out string guardReason))
+                {
+                    LogDuplicateGuard(signature, context.TransitionProfileName, targetScene, guardReason);
+                    return;
+                }
+
+                MarkInFlight(signature);
+
                 LogObsResetRequested(
                     signature: signature,
                     sourceSignature: signature,
@@ -95,14 +111,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
                     reason: skippedReason);
 
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] ScenesReady ignorado (profile != gameplay). signature='{signature}', profile='{context.TransitionProfileName}'.",
+                    $"[WorldLifecycle] ResetWorld SKIP (profile != gameplay). signature='{signature}', profile='{context.TransitionProfileName}', targetScene='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 PublishResetCompleted(signature, skippedReason, context.TransitionProfileName, targetScene);
+                MarkCompleted(signature);
                 return;
             }
 
             targetScene = ResolveTargetSceneName(context);
+
+            if (ShouldSkipDuplicate(signature, out string duplicateReason))
+            {
+                LogDuplicateGuard(signature, context.TransitionProfileName, targetScene, duplicateReason);
+                return;
+            }
+
+            MarkInFlight(signature);
             var controllers = WorldLifecycleControllerLocator.FindControllersForScene(targetScene);
 
             if (controllers.Count == 0)
@@ -122,6 +147,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
                     DebugUtility.Colors.Info);
 
                 PublishResetCompleted(signature, failedReason, context.TransitionProfileName, targetScene);
+                MarkCompleted(signature);
                 return;
             }
 
@@ -176,6 +202,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
             finally
             {
                 PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, targetScene);
+                MarkCompleted(signature);
             }
         }
 
@@ -228,5 +255,80 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
                 DebugUtility.Colors.Success);
         }
 
+        private bool ShouldSkipDuplicate(string signature, out string guardReason)
+        {
+            guardReason = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return false;
+            }
+
+            var now = Environment.TickCount;
+
+            lock (_guardLock)
+            {
+                if (_inFlightSignatures.Contains(signature))
+                {
+                    guardReason = $"{ReasonGuardDuplicatePrefix}:in_flight";
+                    return true;
+                }
+
+                if (_completedTicks.TryGetValue(signature, out int lastTick))
+                {
+                    var dt = unchecked(now - lastTick);
+                    if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
+                    {
+                        guardReason = $"{ReasonGuardDuplicatePrefix}:recent";
+                        return true;
+                    }
+
+                    if (dt > DuplicateSignatureWindowMs)
+                    {
+                        _completedTicks.Remove(signature);
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void MarkInFlight(string signature)
+        {
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return;
+            }
+
+            lock (_guardLock)
+            {
+                _inFlightSignatures.Add(signature);
+            }
+        }
+
+        private void MarkCompleted(string signature)
+        {
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return;
+            }
+
+            lock (_guardLock)
+            {
+                _inFlightSignatures.Remove(signature);
+                _completedTicks[signature] = Environment.TickCount;
+
+                if (_completedTicks.Count > CompletedCacheLimit)
+                {
+                    _completedTicks.Clear();
+                }
+            }
+        }
+
+        private static void LogDuplicateGuard(string signature, string profile, string target, string guardReason)
+        {
+            DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
+                $"[WorldLifecycle] ResetWorld guard: ScenesReady duplicado. signature='{signature}', profile='{profile}', targetScene='{target}', guard='{guardReason}'.");
+        }
     }
 }

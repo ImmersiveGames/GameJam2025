@@ -39,6 +39,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
     public sealed class PauseOverlayController : MonoBehaviour
     {
         private const string ExitToMenuReason = "PauseOverlay/ExitToMenu";
+        private const string QaPauseReason = "QA/PauseOverlay/Show";
+        private const string QaResumeReason = "QA/PauseOverlay/Hide";
         [Header("Overlay")]
         [SerializeField] private GameObject overlayRoot;
         [SerializeField] private string showReason = "PauseOverlay/Show";
@@ -213,6 +215,29 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             if (isActive) Hide();
             else Show();
         }
+
+        // =========================
+        // QA / Context Menu (Editor + DevBuild)
+        // =========================
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [ContextMenu("QA/Pause/Enter (TC: PauseOverlay)")]
+        private void QaPause()
+        {
+            DebugUtility.Log(typeof(PauseOverlayController),
+                $"[QA][PauseOverlay] Pause solicitado. reason='{QaPauseReason}'.",
+                DebugUtility.Colors.Info);
+            Show();
+        }
+
+        [ContextMenu("QA/Pause/Resume (TC: PauseOverlay Resume)")]
+        private void QaResume()
+        {
+            DebugUtility.Log(typeof(PauseOverlayController),
+                $"[QA][PauseOverlay] Resume solicitado. reason='{QaResumeReason}'.",
+                DebugUtility.Colors.Info);
+            Hide();
+        }
+#endif
 
         // =========================
         // Event reactions (NO publish)
