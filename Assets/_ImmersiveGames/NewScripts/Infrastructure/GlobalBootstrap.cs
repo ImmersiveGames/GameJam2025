@@ -183,12 +183,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
             // ADR-0016: ContentSwapContext precisa existir no DI global.
-            RegisterIfMissing<IContentSwapContextService>(() =>
-            {
-                return IsPromotionEnabled(DependencyManager.Provider, string.Empty)
-                    ? (IContentSwapContextService)new ContentSwapContextService()
-                    : new ContentSwapContextServiceNoop();
-            });
+            RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
@@ -246,17 +241,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle).",
                 DebugUtility.Colors.Info);
-        }
-
-        private static bool IsPromotionEnabled(IDependencyProvider provider, string gateId)
-        {
-            if (provider.TryGetGlobal<PromotionGateService>(out var gate) && gate != null)
-            {
-                return gate.IsEnabled(gateId);
-            }
-
-            // Fallback safe: sem gate registrado, manter comportamento anterior (enabled).
-            return true;
         }
 
         private static void RegisterPromotionGateService()
@@ -925,15 +909,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         {
             var provider = DependencyManager.Provider;
 
-            if (provider.HasGlobal<IContentSwapChangeService>())
+            if (provider.TryGetGlobal<IContentSwapChangeService>(out var existing) && existing != null)
             {
                 return;
             }
 
             if (!IsPromotionEnabled(provider, string.Empty))
             {
-                provider.RegisterGlobal<IContentSwapChangeService>(new ContentSwapChangeServiceNoop());
-                DebugUtility.Log(typeof(GlobalBootstrap), "[ContentSwap] Gate desabilitado: registrando Noop (IContentSwapChangeService).", DebugColor.Warning);
+                DebugUtility.Log(typeof(GlobalBootstrap),
+                    "[ContentSwap] Gate desabilitado: IContentSwapChangeService não será registrado.",
+                    DebugUtility.Colors.Warning);
                 return;
             }
 
@@ -944,14 +929,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             provider.RegisterGlobal<IContentSwapChangeService>(new ContentSwapChangeServiceInPlaceOnly(contextService));
-            DebugUtility.Log(typeof(GlobalBootstrap), "[ContentSwap] Registered IContentSwapChangeService (InPlaceOnly).", DebugColor.Success);
+            DebugUtility.Log(typeof(GlobalBootstrap),
+                "[ContentSwap] Registered IContentSwapChangeService (InPlaceOnly).",
+                DebugUtility.Colors.Success);
         }
 
         private static void RegisterLevelServices()
         {
             var provider = DependencyManager.Provider;
 
-            if (provider.HasGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>())
+            if (provider.TryGetGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>(out var existing) && existing != null)
             {
                 return;
             }
@@ -959,7 +946,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!IsPromotionEnabled(provider, string.Empty))
             {
                 provider.RegisterGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>(new _ImmersiveGames.NewScripts.Gameplay.Levels.NoopLevelManagerService());
-                DebugUtility.Log(typeof(GlobalBootstrap), "[LevelManager] Gate desabilitado: registrando Noop (ILevelManagerService).", DebugColor.Warning);
+                DebugUtility.Log(typeof(GlobalBootstrap),
+                    "[LevelManager] Gate desabilitado: registrando Noop (ILevelManagerService).",
+                    DebugUtility.Colors.Warning);
                 return;
             }
 
