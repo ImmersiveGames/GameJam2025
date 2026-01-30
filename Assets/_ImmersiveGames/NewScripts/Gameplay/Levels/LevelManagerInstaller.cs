@@ -1,3 +1,5 @@
+// Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/LevelManagerInstaller.cs
+
 #nullable enable
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
@@ -8,78 +10,100 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
     /// <summary>
-    /// Registrador de serviços de LevelManager (providers/resolver/manager/service).
+    /// Registro global do módulo de Levels:
+    /// - ILevelCatalogProvider (Resources)
+    /// - ILevelDefinitionProvider (via catálogo)
+    /// - ILevelCatalogResolver
+    /// - ILevelManager (aplica ContentSwap)
+    /// - ILevelSessionService (seleção/aplicação)
+    ///
+    /// Ajuste Fase A:
+    /// - No bootstrap, inicializa a sessão para garantir seleção inicial determinística
+    ///   (sem aplicar automaticamente).
     /// </summary>
     public static class LevelManagerInstaller
     {
-        public static void EnsureRegistered(bool fromBootstrap = false)
+        private static bool _registered;
+
+        public static void EnsureRegistered(bool fromBootstrap)
         {
-            if (DependencyManager.Provider == null)
+            if (_registered)
             {
-                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
-                    "[LevelManager] DependencyManager.Provider é null; instalação abortada.");
                 return;
             }
 
             var provider = DependencyManager.Provider;
 
+            // 1) Provider do catálogo
             if (!provider.TryGetGlobal<ILevelCatalogProvider>(out var catalogProvider) || catalogProvider == null)
             {
-                provider.RegisterGlobal<ILevelCatalogProvider>(new ResourcesLevelCatalogProvider(), allowOverride: false);
-                provider.TryGetGlobal(out catalogProvider);
+                catalogProvider = new ResourcesLevelCatalogProvider();
+                provider.RegisterGlobal<ILevelCatalogProvider>(catalogProvider);
             }
 
-            if (catalogProvider == null)
-            {
-                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
-                    "[LevelManager] ILevelCatalogProvider indisponível; registro abortado.");
-                return;
-            }
-
+            // 2) Provider de definições
             if (!provider.TryGetGlobal<ILevelDefinitionProvider>(out var definitionProvider) || definitionProvider == null)
             {
-                provider.RegisterGlobal<ILevelDefinitionProvider>(new LevelDefinitionProviderFromCatalog(catalogProvider), allowOverride: false);
-                provider.TryGetGlobal(out definitionProvider);
+                definitionProvider = new LevelDefinitionProviderFromCatalog(catalogProvider);
+                provider.RegisterGlobal<ILevelDefinitionProvider>(definitionProvider);
             }
 
-            if (definitionProvider == null)
-            {
-                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
-                    "[LevelManager] ILevelDefinitionProvider indisponível; registro abortado.");
-                return;
-            }
-
+            // 3) Resolver de catálogo
             if (!provider.TryGetGlobal<ILevelCatalogResolver>(out var resolver) || resolver == null)
             {
-                provider.RegisterGlobal<ILevelCatalogResolver>(new LevelCatalogResolver(catalogProvider, definitionProvider), allowOverride: false);
-                provider.TryGetGlobal(out resolver);
+                resolver = new LevelCatalogResolver(catalogProvider, definitionProvider);
+                provider.RegisterGlobal<ILevelCatalogResolver>(resolver);
             }
 
-            if (resolver == null)
-            {
-                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
-                    "[LevelManager] ILevelCatalogResolver indisponível; registro abortado.");
-                return;
-            }
-
+            // 4) ContentSwap (dependência obrigatória do LevelManager)
             if (!provider.TryGetGlobal<IContentSwapChangeService>(out var contentSwap) || contentSwap == null)
             {
-                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
-                    "[LevelManager] IContentSwapChangeService indisponível; ILevelManager não será registrado.");
+                DebugUtility.Log(typeof(LevelManagerInstaller),
+                    "[LevelManager] IContentSwapChangeService não encontrado no DI global; registro abortado.",
+                    DebugUtility.Colors.Warning);
                 return;
             }
 
+            // 5) LevelManager (construtor real: apenas IContentSwapChangeService)
             if (!provider.TryGetGlobal<ILevelManager>(out var levelManager) || levelManager == null)
             {
-                provider.RegisterGlobal<ILevelManager>(new LevelManager(contentSwap), allowOverride: false);
-                provider.TryGetGlobal(out levelManager);
+                levelManager = new LevelManager(contentSwap);
+                provider.RegisterGlobal<ILevelManager>(levelManager);
             }
 
+            // 6) Sessão (depende do resolver + manager)
+            if (!provider.TryGetGlobal<ILevelSessionService>(out var session) || session == null)
+            {
+                session = new LevelSessionService(resolver, levelManager);
+                provider.RegisterGlobal<ILevelSessionService>(session);
+            }
+
+            // Ajuste pequeno Fase A:
+            // No bootstrap, garantir que exista seleção inicial (sem aplicar).
+            if (fromBootstrap)
+            {
+                var ok = session.Initialize();
+                DebugUtility.Log(typeof(LevelManagerInstaller),
+                    ok
+                        ? "[LevelManager] Session Initialize OK (bootstrap)."
+                        : "[LevelManager] Session Initialize falhou (bootstrap).",
+                    ok ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+            }
+
+            _registered = true;
+
+            // Log somente informativo (não obrigatório)
             if (!fromBootstrap)
             {
                 DebugUtility.Log(typeof(LevelManagerInstaller),
-                    "[LevelManager] Registered (no bootstrap)",
-                    DebugUtility.Colors.Info);
+                    "[LevelManager] EnsureRegistered chamado fora do bootstrap; verifique a ordem de inicialização.",
+                    DebugUtility.Colors.Warning);
+            }
+            else
+            {
+                DebugUtility.Log(typeof(LevelManagerInstaller),
+                    "[LevelManager] Registro concluído (bootstrap).",
+                    DebugUtility.Colors.Success);
             }
         }
     }

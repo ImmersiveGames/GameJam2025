@@ -22,6 +22,10 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         private const string ReasonResolveDefinitions = "QA/Levels/Resolve/Definitions";
         private const string ReasonGoToLevel1 = "QA/Levels/L01-GoToLevel";
         private const string ReasonGoToLevel2 = "QA/Levels/L02-GoToLevel";
+        private const string ReasonSelectInitial = "QA/Levels/Select/Initial";
+        private const string ReasonSelectNext = "QA/Levels/Select/Next";
+        private const string ReasonSelectPrev = "QA/Levels/Select/Prev";
+        private const string ReasonApplySelected = "QA/Levels/ApplySelected";
 
         [ContextMenu("QA/Levels/Resolve/Definitions")]
         private void Qa_ResolveDefinitions()
@@ -54,6 +58,74 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
             DebugUtility.Log(typeof(LevelQaContextMenu),
                 $"[QA][Levels] Definitions resolved {summary}reason='{ReasonResolveDefinitions}'.",
                 ColorOk);
+        }
+
+        [ContextMenu("QA/Levels/Select/Initial")]
+        private void Qa_SelectInitial()
+        {
+            if (!EnsureGateEnabled())
+            {
+                return;
+            }
+
+            var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
+            if (sessionService == null)
+            {
+                return;
+            }
+
+            sessionService.SelectInitial(ReasonSelectInitial);
+        }
+
+        [ContextMenu("QA/Levels/Select/Next")]
+        private void Qa_SelectNext()
+        {
+            if (!EnsureGateEnabled())
+            {
+                return;
+            }
+
+            var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
+            if (sessionService == null)
+            {
+                return;
+            }
+
+            sessionService.SelectNext(ReasonSelectNext);
+        }
+
+        [ContextMenu("QA/Levels/Select/Prev")]
+        private void Qa_SelectPrev()
+        {
+            if (!EnsureGateEnabled())
+            {
+                return;
+            }
+
+            var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
+            if (sessionService == null)
+            {
+                return;
+            }
+
+            sessionService.SelectPrevious(ReasonSelectPrev);
+        }
+
+        [ContextMenu("QA/Levels/ApplySelected")]
+        private void Qa_ApplySelected()
+        {
+            if (!EnsureGateEnabled())
+            {
+                return;
+            }
+
+            var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
+            if (sessionService == null)
+            {
+                return;
+            }
+
+            sessionService.ApplySelected(ReasonApplySelected);
         }
 
         [ContextMenu("QA/Levels/L01-GoToLevel (InPlace)")]
@@ -140,6 +212,18 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return;
             }
 
+            // Preferir a sessão (seleção + apply) quando disponível.
+            var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
+            if (sessionService != null)
+            {
+                if (sessionService.SelectLevelById(levelId, reason))
+                {
+                    sessionService.ApplySelected(reason);
+                    return;
+                }
+            }
+
+            // Fallback: resolver direto + RequestLevelInPlaceAsync.
             var resolver = ResolveGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver>("ILevelCatalogResolver");
             if (resolver == null)
             {

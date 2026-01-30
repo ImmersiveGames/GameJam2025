@@ -17,6 +17,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
         private readonly string _resourcePath;
         private LevelCatalog? _cached;
         private bool _attempted;
+        private string _cachedSource = string.Empty;
+        private bool _cacheHitLogged;
 
         public ResourcesLevelCatalogProvider(string? resourcePath = null)
         {
@@ -27,6 +29,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
         {
             if (_cached != null)
             {
+                // Observabilidade: quando o catalog já está em cache, ainda queremos um sinal único no log.
+                // Isso evita “buracos” de evidência quando o primeiro load ocorreu muito antes do QA/Apply.
+                if (!_cacheHitLogged)
+                {
+                    _cacheHitLogged = true;
+                    DebugUtility.LogVerbose<ResourcesLevelCatalogProvider>(
+                        $"[OBS][LevelCatalog] CatalogCacheHit name='{_cached.name}' source='{_cachedSource}'.");
+                }
+
                 return _cached;
             }
 
@@ -40,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
             if (TryLoadCatalog(_resourcePath, LegacyResourcesPath, out var catalog, out var source))
             {
                 _cached = catalog;
+                _cachedSource = source;
                 LogCatalogLoaded(_cached, source);
                 return _cached;
             }
@@ -48,6 +60,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
                 && TryLoadCatalog(LegacyResourcesPath, "none", out catalog, out source))
             {
                 _cached = catalog;
+                _cachedSource = source;
                 LogCatalogLoaded(_cached, source);
                 return _cached;
             }
