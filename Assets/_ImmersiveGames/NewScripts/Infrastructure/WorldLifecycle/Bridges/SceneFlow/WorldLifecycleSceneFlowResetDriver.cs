@@ -101,6 +101,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
                     return;
                 }
 
+                MarkInFlight(signature);
+
                 LogObsResetRequested(
                     signature: signature,
                     sourceSignature: signature,
