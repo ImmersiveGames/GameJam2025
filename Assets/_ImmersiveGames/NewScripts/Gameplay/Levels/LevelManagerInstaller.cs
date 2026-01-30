@@ -75,6 +75,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 provider.TryGetGlobal(out levelManager);
             }
 
+            if (levelManager == null)
+            {
+                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
+                    "[LevelManager] ILevelManager indisponível; ILevelSessionService não será registrado.");
+                return;
+            }
+
+            if (!provider.TryGetGlobal<ILevelSessionService>(out var levelSession) || levelSession == null)
+            {
+                provider.RegisterGlobal<ILevelSessionService>(new LevelSessionService(resolver, levelManager), allowOverride: false);
+                provider.TryGetGlobal(out levelSession);
+            }
+
+            if (levelSession == null)
+            {
+                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
+                    "[LevelManager] ILevelSessionService indisponível; registro abortado.");
+                return;
+            }
+
             if (!fromBootstrap)
             {
                 DebugUtility.Log(typeof(LevelManagerInstaller),
