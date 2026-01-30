@@ -32,6 +32,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         public void RequestDefeat(string reason) => Request(GameRunOutcome.Defeat, reason);
 
+        [ContextMenu("QA/PostGame/Trigger Victory (TC: Victory)")]
+        private void QA_TriggerVictory()
+        {
+            DebugUtility.Log<GameRunEndRequestTrigger>(
+                "[QA][PostGame] Trigger Victory solicitado.",
+                DebugUtility.Colors.Info);
+            Request(GameRunOutcome.Victory, "QA/PostGame/TriggerVictory");
+        }
+
+        [ContextMenu("QA/PostGame/Trigger Defeat (TC: Defeat)")]
+        private void QA_TriggerDefeat()
+        {
+            DebugUtility.Log<GameRunEndRequestTrigger>(
+                "[QA][PostGame] Trigger Defeat solicitado.",
+                DebugUtility.Colors.Info);
+            Request(GameRunOutcome.Defeat, "QA/PostGame/TriggerDefeat");
+        }
+
         [ContextMenu("QA/Test3 - ForcePostPlay")]
         private void QA_ForcePostPlay()
         {
