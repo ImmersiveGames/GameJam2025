@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
         fileName = "LevelCatalog",
         menuName = "ImmersiveGames/Levels/Level Catalog",
         order = 1)]
-    public sealed class LevelCatalog : ScriptableObject
+    public class LevelCatalog : ScriptableObject
     {
         [SerializeField] private string initialLevelId = string.Empty;
         [SerializeField] private List<string> orderedLevels = new();
@@ -183,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
             return list;
         }
 
-        private static string Normalize(string value)
+        protected static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }

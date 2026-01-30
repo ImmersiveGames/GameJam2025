@@ -80,36 +80,33 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             try
             {
                 TaskCompletionSource<IntroStageCompletionResult> source;
-                IntroStageContext context;
+                IntroStageContext context = default;
                 bool wasActive;
                 bool alreadyCompleted;
 
                 lock (_sync)
                 {
                     source = _completionSource;
-                    context = _activeContext;
                     wasActive = _isActive;
                     alreadyCompleted = source.Task.IsCompleted;
 
+                    // Só captura contexto quando de fato estava ativo.
                     if (_isActive)
                     {
+                        context = _activeContext;
                         _isActive = false;
                     }
                 }
 
-            var normalizedReason = NormalizeValue(reason);
-            var actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
-            var gameLoopState = NormalizeValue(ResolveGameLoopStateName());
-            var logContext = BuildSafeLogContext(context);
-            var signature = logContext.Signature;
-            var profile = logContext.Profile;
-            var targetScene = logContext.TargetScene;
+                var normalizedReason = NormalizeValue(reason);
+                var actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
+                var gameLoopState = NormalizeValue(ResolveGameLoopStateName());
 
-                // Context fields podem estar “stale/default” quando não está ativo.
-                // Então: extraímos de forma defensiva.
-                var signature = SafeGet(() => context.ContextSignature);
-                var profile = SafeGet(() => context.ProfileId.Value);
-                var targetScene = SafeGet(() => context.TargetScene);
+                // Contexto de log extraído defensivamente (com fallback e log de erro se falhar).
+                var logContext = BuildSafeLogContext(context);
+                var signature = logContext.Signature;
+                var profile = logContext.Profile;
+                var targetScene = logContext.TargetScene;
 
                 if (!wasActive)
                 {

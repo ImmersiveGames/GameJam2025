@@ -906,34 +906,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterLevelServices()
         {
-            RegisterIfMissing<ILevelCatalogProvider>(() => new ResourcesLevelCatalogProvider());
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelCatalogProvider>(out var catalogProvider) || catalogProvider == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[Level] ILevelCatalogProvider indisponível; LevelCatalogResolver não será registrado.");
-                return;
-            }
-
-            RegisterIfMissing<ILevelDefinitionProvider>(() => new LevelDefinitionProviderFromCatalog(catalogProvider));
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelDefinitionProvider>(out var definitionProvider) || definitionProvider == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[Level] ILevelDefinitionProvider indisponível; LevelCatalogResolver não será registrado.");
-                return;
-            }
-
-            RegisterIfMissing<ILevelCatalogResolver>(() => new LevelCatalogResolver(catalogProvider, definitionProvider));
-
-            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapChangeService>(out var contentSwap) || contentSwap == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[Level] IContentSwapChangeService indisponível; ILevelManager não será registrado.");
-                return;
-            }
-
-            RegisterIfMissing<ILevelManager>(() => new LevelManager(contentSwap));
+            LevelManagerInstaller.EnsureRegistered(fromBootstrap: true);
         }
 
         private static void RegisterLevelQaInstaller()
