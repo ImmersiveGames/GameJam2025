@@ -2,14 +2,13 @@
 // QA de LevelManager: ações objetivas para evidência.
 
 #nullable enable
+using System.Text;
 using _ImmersiveGames.NewScripts.Gameplay.Levels;
+using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
 using UnityEngine;
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace _ImmersiveGames.NewScripts.QA.Levels
 {
@@ -20,65 +19,69 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         private const string ColorWarn = "#FFC107";
         private const string ColorErr = "#F44336";
 
-        private const string ReasonResolveInitial = "QA/Levels/Resolve/InitialLevelId";
-        private const string ReasonGoToLevel1 = "QA/Levels/L01-GoToLevel_Level1";
-        private const string ReasonGoToLevel2 = "QA/Levels/L01-GoToLevel_Level2";
+        private const string ReasonResolveDefinitions = "QA/Levels/Resolve/Definitions";
+        private const string ReasonGoToLevel1 = "QA/Levels/L01-GoToLevel";
+        private const string ReasonGoToLevel2 = "QA/Levels/L02-GoToLevel";
 
-        [ContextMenu("QA/Levels/Resolve/InitialLevelId")]
-        private void Qa_ResolveInitialLevelId()
+        [ContextMenu("QA/Levels/Resolve/Definitions")]
+        private void Qa_ResolveDefinitions()
         {
             if (!EnsureGateEnabled())
             {
                 return;
             }
 
+            var provider = ResolveGlobal<ILevelCatalogProvider>("ILevelCatalogProvider");
             var resolver = ResolveGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver>("ILevelCatalogResolver");
-            if (resolver == null)
+            if (provider == null || resolver == null)
             {
                 return;
             }
 
-            if (resolver.TryResolveInitialLevelId(out var levelId))
+            var catalog = provider.GetCatalog();
+            if (catalog == null)
             {
                 DebugUtility.Log(typeof(LevelQaContextMenu),
-                    $"[QA][Levels] InitialLevelId resolved levelId='{levelId}' reason='{ReasonResolveInitial}'.",
-                    ColorOk);
-            }
-            else
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    $"[QA][Levels] InitialLevelId resolve failed reason='{ReasonResolveInitial}'.",
+                    $"[QA][Levels] Catalog ausente ao resolver definições reason='{ReasonResolveDefinitions}'.",
                     ColorWarn);
+                return;
             }
+
+            var summary = new StringBuilder();
+            AppendDefinitionSummary(resolver, summary, "level.1");
+            AppendDefinitionSummary(resolver, summary, "level.2");
+
+            DebugUtility.Log(typeof(LevelQaContextMenu),
+                $"[QA][Levels] Definitions resolved {summary}reason='{ReasonResolveDefinitions}'.",
+                ColorOk);
         }
 
-        [ContextMenu("QA/Levels/L01-GoToLevel_Level1")]
+        [ContextMenu("QA/Levels/L01-GoToLevel (InPlace)")]
         private void Qa_GoToLevel1()
         {
             GoToLevelById("level.1", ReasonGoToLevel1);
         }
 
-        [ContextMenu("QA/Levels/L01-GoToLevel_Level2")]
+        [ContextMenu("QA/Levels/L02-GoToLevel (InPlace)")]
         private void Qa_GoToLevel2()
         {
             GoToLevelById("level.2", ReasonGoToLevel2);
         }
 
-#if UNITY_EDITOR
-        [MenuItem("Tools/NewScripts/QA/Level/Select QA_Level Object", priority = 11)]
-        private static void SelectQaObject()
+        private static void AppendDefinitionSummary(
+            _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver resolver,
+            StringBuilder summary,
+            string levelId)
         {
-            var obj = GameObject.Find("QA_Level");
-            if (obj != null)
+            if (resolver.TryResolveDefinition(levelId, out var definition))
             {
-                Selection.activeObject = obj;
+                summary.Append($"levelId='{definition.LevelId}' contentId='{definition.ContentId}' ");
             }
             else
             {
-                DebugUtility.Log(typeof(LevelQaContextMenu), "[QA][LevelManager] QA_Level não encontrado no Hierarchy (Play Mode).", ColorWarn);
+                summary.Append($"levelId='{levelId}' contentId='<missing>' ");
             }
         }
-#endif
 
         private static T? ResolveGlobal<T>(string label) where T : class
         {
@@ -111,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<Infrastructure.Promotion.PromotionGateService>(out var gate) || gate == null)
+            if (!DependencyManager.Provider.TryGetGlobal<PromotionGateService>(out var gate) || gate == null)
             {
                 DebugUtility.Log(typeof(LevelQaContextMenu),
                     "[QA][LevelManager] PromotionGateService ausente; prosseguindo por default.",
