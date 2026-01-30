@@ -75,18 +75,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 provider.TryGetGlobal(out levelManager);
             }
 
-            if (levelManager == null)
-            {
-                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
-                    "[LevelManager] ILevelManager indisponível; ILevelManagerService não será registrado.");
-                return;
-            }
-
-            if (!provider.TryGetGlobal<ILevelManagerService>(out var service) || service == null)
-            {
-                provider.RegisterGlobal<ILevelManagerService>(new LevelManagerService(levelManager, resolver, catalogProvider), allowOverride: false);
-            }
-
             if (!fromBootstrap)
             {
                 DebugUtility.Log(typeof(LevelManagerInstaller),

@@ -938,16 +938,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         {
             var provider = DependencyManager.Provider;
 
-            if (provider.TryGetGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>(out var existing) && existing != null)
+            if (provider.TryGetGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManager>(out var existing) && existing != null)
             {
                 return;
             }
 
             if (!IsPromotionEnabled(provider, string.Empty))
             {
-                provider.RegisterGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>(new _ImmersiveGames.NewScripts.Gameplay.Levels.NoopLevelManagerService());
                 DebugUtility.Log(typeof(GlobalBootstrap),
-                    "[LevelManager] Gate desabilitado: registrando Noop (ILevelManagerService).",
+                    "[LevelManager] Gate desabilitado: ILevelManager não será registrado.",
                     DebugUtility.Colors.Warning);
                 return;
             }
