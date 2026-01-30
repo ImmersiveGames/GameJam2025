@@ -49,6 +49,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
 using _ImmersiveGames.NewScripts.QA.ContentSwap;
 using _ImmersiveGames.NewScripts.QA.Levels;
+using _ImmersiveGames.NewScripts.QA.SceneFlow;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -184,6 +185,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
             RegisterContentSwapQaInstaller();
+            RegisterSceneFlowQaInstaller();
 #endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageRuntimeDebugGui();
@@ -761,6 +763,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
                     $"[QA][ContentSwap] Falha ao instalar ContentSwapQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
+        }
+
+        private static void RegisterSceneFlowQaInstaller()
+        {
+            try
+            {
+                SceneFlowQaInstaller.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    $"[QA][SceneFlow] Falha ao instalar SceneFlowQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
