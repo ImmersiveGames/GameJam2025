@@ -136,6 +136,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             UpdateCurrentFromPlan(_selectedPlan, normalizedReason, logApplied: true);
         }
 
+        public async Task ApplyLevelAsync(string levelId, string reason)
+        {
+            if (!_resolver.TryResolvePlan(levelId, out var plan, out var options))
+            {
+                DebugUtility.LogWarning<LevelManagerService>(
+                    $"[LevelManager] ApplyLevelAsync falhou ao resolver plano. levelId='{Sanitize(levelId)}'.");
+                return;
+            }
+
+            ApplySelection(plan, options, reason);
+            await ApplySelectedLevelAsync(reason);
+        }
+
         public void ClearSelection(string reason)
         {
             _selectedPlan = LevelPlan.None;

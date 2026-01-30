@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
@@ -10,7 +11,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
     /// </summary>
     public sealed class ResourcesLevelCatalogProvider : ILevelCatalogProvider
     {
-        public const string DefaultResourcesPath = "Levels/LevelCatalog";
+        public const string DefaultResourcesPath = "NewScripts/Config/LevelCatalog";
+        public const string LegacyResourcesPath = "Levels/LevelCatalog";
 
         private readonly string _resourcePath;
         private LevelCatalog? _cached;
@@ -35,27 +37,43 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
 
             _attempted = true;
 
-            var catalog = Resources.Load<LevelCatalog>(_resourcePath);
-            if (catalog != null)
+            if (TryLoadCatalog(_resourcePath, out var catalog))
             {
                 _cached = catalog;
-                DebugUtility.LogVerbose<ResourcesLevelCatalogProvider>(
-                    $"[LevelCatalog] Catalog resolvido via Resources. path='{_resourcePath}', name='{catalog.name}'.");
                 return _cached;
             }
 
-            var any = Resources.Load(_resourcePath);
-            if (any != null)
+            if (!string.Equals(_resourcePath, LegacyResourcesPath, StringComparison.Ordinal)
+                && TryLoadCatalog(LegacyResourcesPath, out catalog))
             {
-                DebugUtility.LogWarning<ResourcesLevelCatalogProvider>(
-                    $"[LevelCatalog] Asset encontrado em Resources no path '{_resourcePath}', mas com tipo incorreto: '{any.GetType().FullName}'. " +
-                    $"Esperado: '{typeof(LevelCatalog).FullName}'.");
-                return null;
+                _cached = catalog;
+                return _cached;
             }
 
             DebugUtility.LogWarning<ResourcesLevelCatalogProvider>(
-                $"[LevelCatalog] LevelCatalog não encontrado em Resources. path='{_resourcePath}'.");
+                $"[LevelCatalog] LevelCatalog não encontrado em Resources. path='{_resourcePath}', fallback='{LegacyResourcesPath}'.");
             return null;
+        }
+
+        private static bool TryLoadCatalog(string path, out LevelCatalog catalog)
+        {
+            catalog = Resources.Load<LevelCatalog>(path);
+            if (catalog != null)
+            {
+                DebugUtility.LogVerbose<ResourcesLevelCatalogProvider>(
+                    $"[LevelCatalog] Catalog resolvido via Resources. path='{path}', name='{catalog.name}'.");
+                return true;
+            }
+
+            var any = Resources.Load(path);
+            if (any != null)
+            {
+                DebugUtility.LogWarning<ResourcesLevelCatalogProvider>(
+                    $"[LevelCatalog] Asset encontrado em Resources no path '{path}', mas com tipo incorreto: '{any.GetType().FullName}'. " +
+                    $"Esperado: '{typeof(LevelCatalog).FullName}'.");
+            }
+
+            return false;
         }
     }
 }

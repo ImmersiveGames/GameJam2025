@@ -47,6 +47,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             return Task.CompletedTask;
         }
 
+        public Task ApplyLevelAsync(string levelId, string reason)
+        {
+            DebugUtility.Log(typeof(NoopLevelManagerService),
+                $"[LevelManager] Gate desabilitado: ApplyLevelAsync ignorado levelId='{levelId}' reason='{reason}'.");
+            return Task.CompletedTask;
+        }
+
         public void ClearSelection(string reason)
         {
             DebugUtility.Log(typeof(NoopLevelManagerService),

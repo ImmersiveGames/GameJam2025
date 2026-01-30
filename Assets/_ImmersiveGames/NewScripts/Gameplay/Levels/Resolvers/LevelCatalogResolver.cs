@@ -42,6 +42,45 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             return true;
         }
 
+        public bool TryResolveCatalog(out LevelCatalog catalog)
+        {
+            catalog = _catalogProvider.GetCatalog();
+            if (catalog == null)
+            {
+                DebugUtility.LogWarning<LevelCatalogResolver>(
+                    "[LevelCatalog] Catalog ausente ao resolver catálogo.");
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool TryResolveDefinition(string levelId, out LevelDefinition definition)
+        {
+            definition = null!;
+
+            if (!_definitionProvider.TryGetDefinition(levelId, out definition) || definition == null)
+            {
+                DebugUtility.LogWarning<LevelCatalogResolver>(
+                    $"[LevelCatalog] LevelDefinition ausente. levelId='{levelId}'.");
+                definition = null!;
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool TryResolveInitialDefinition(out LevelDefinition definition)
+        {
+            definition = null!;
+            if (!TryResolveInitialLevelId(out var levelId))
+            {
+                return false;
+            }
+
+            return TryResolveDefinition(levelId, out definition);
+        }
+
         public bool TryResolveNextLevelId(string levelId, out string nextLevelId)
         {
             nextLevelId = string.Empty;
@@ -69,10 +108,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             plan = LevelPlan.None;
             options = LevelChangeOptions.Default.Clone();
 
-            if (!_definitionProvider.TryGetDefinition(levelId, out var definition) || definition == null)
+            if (!TryResolveDefinition(levelId, out var definition))
             {
-                DebugUtility.LogWarning<LevelCatalogResolver>(
-                    $"[LevelCatalog] LevelDefinition ausente. levelId='{levelId}'.");
                 return false;
             }
 

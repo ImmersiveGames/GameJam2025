@@ -20,64 +20,58 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         private const string ColorWarn = "#FFC107";
         private const string ColorErr = "#F44336";
 
+        private const string ReasonSelectInitial = "QA/Level/Select/initial";
         private const string ReasonApply = "QA/Level/Apply";
         private const string ReasonSelectLevel1 = "QA/Level/Select/level.1";
         private const string ReasonSelectLevel2 = "QA/Level/Select/level.2";
-        private const string ReasonPrintStatus = "QA/Level/PrintStatus";
-        private const string ReasonClearSelection = "QA/Level/ClearSelection";
 
-        [ContextMenu("QA/Level/Select Level 1")]
-        private void Qa_SelectLevel1()
+        [ContextMenu("QA/Level/L01 Select Initial")]
+        private void Qa_SelectInitial()
         {
-            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
-            if (service == null)
+            if (!EnsureGateEnabled())
             {
                 return;
             }
 
-            if (service.SelectLevel("level.1", ReasonSelectLevel1))
+            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
+            if (service == null || !EnsureCatalogReady())
+            {
+                return;
+            }
+
+            if (service.SelectInitialLevel(ReasonSelectInitial))
             {
                 DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Select Level 1 aplicado.",
+                    "[QA][LevelManager] Select Initial aplicado.",
                     ColorOk);
             }
             else
             {
                 DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Select Level 1 falhou.",
+                    "[QA][LevelManager] Select Initial falhou.",
                     ColorWarn);
             }
         }
 
-        [ContextMenu("QA/Level/Select Level 2")]
-        private void Qa_SelectLevel2()
+        [ContextMenu("QA/Level/L02 Apply Selected InPlace")]
+        private void Qa_ApplySelected()
         {
-            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
-            if (service == null)
+            if (!EnsureGateEnabled())
             {
                 return;
             }
 
-            if (service.SelectLevel("level.2", ReasonSelectLevel2))
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Select Level 2 aplicado.",
-                    ColorOk);
-            }
-            else
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Select Level 2 falhou.",
-                    ColorWarn);
-            }
-        }
-
-        [ContextMenu("QA/Level/Apply Selected")]
-        private void Qa_ApplyLevel()
-        {
             var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
-            if (service == null)
+            if (service == null || !EnsureCatalogReady())
             {
+                return;
+            }
+
+            if (!service.SelectInitialLevel(ReasonSelectInitial))
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Apply Selected abortado (falha ao selecionar initial).",
+                    ColorWarn);
                 return;
             }
 
@@ -88,32 +82,60 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
             _ = service.ApplySelectedLevelAsync(ReasonApply);
         }
 
-        [ContextMenu("QA/Level/Print Status")]
-        private void Qa_PrintStatus()
+        [ContextMenu("QA/Level/L03 Select level.1")]
+        private void Qa_SelectLevel1()
         {
-            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
-            if (service == null)
+            if (!EnsureGateEnabled())
             {
                 return;
             }
 
-            service.DumpCurrent(ReasonPrintStatus);
+            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
+            if (service == null || !EnsureCatalogReady())
+            {
+                return;
+            }
+
+            if (service.SelectLevel("level.1", ReasonSelectLevel1))
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Select level.1 aplicado.",
+                    ColorOk);
+            }
+            else
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Select level.1 falhou.",
+                    ColorWarn);
+            }
         }
 
-        [ContextMenu("QA/Level/Clear Selection")]
-        private void Qa_ClearSelection()
+        [ContextMenu("QA/Level/L04 Select level.2")]
+        private void Qa_SelectLevel2()
         {
-            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
-            if (service == null)
+            if (!EnsureGateEnabled())
             {
                 return;
             }
 
-            service.ClearSelection(ReasonClearSelection);
+            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
+            if (service == null || !EnsureCatalogReady())
+            {
+                return;
+            }
 
-            DebugUtility.Log(typeof(LevelQaContextMenu),
-                "[QA][LevelManager] Clear Selection solicitado.",
-                ColorInfo);
+            if (service.SelectLevel("level.2", ReasonSelectLevel2))
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Select level.2 aplicado.",
+                    ColorOk);
+            }
+            else
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Select level.2 falhou.",
+                    ColorWarn);
+            }
         }
 
 #if UNITY_EDITOR
@@ -151,6 +173,70 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
             }
 
             return service;
+        }
+
+        private static bool EnsureGateEnabled()
+        {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] DependencyManager.Provider é null (infra global não inicializada?).",
+                    ColorErr);
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<Infrastructure.Promotion.PromotionGateService>(out var gate) || gate == null)
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] PromotionGateService ausente; prosseguindo por default.",
+                    ColorWarn);
+                return true;
+            }
+
+            if (!gate.IsEnabled(string.Empty))
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Gate de promoção desabilitado; ação QA ignorada.",
+                    ColorWarn);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool EnsureCatalogReady()
+        {
+            var resolver = ResolveGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver>("ILevelCatalogResolver");
+            if (resolver == null)
+            {
+                return false;
+            }
+
+            if (!resolver.TryResolveCatalog(out var catalog) || catalog == null)
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] LevelCatalog ausente (Resources).",
+                    ColorWarn);
+                return false;
+            }
+
+            if (catalog.Definitions == null || catalog.Definitions.Count == 0)
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] LevelCatalog sem definitions.",
+                    ColorWarn);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(catalog.InitialLevelId))
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] LevelCatalog sem initialLevelId válido.",
+                    ColorWarn);
+                return false;
+            }
+
+            return true;
         }
     }
 }
