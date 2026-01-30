@@ -33,6 +33,7 @@ using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gameplay;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
@@ -134,6 +135,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         {
             PrimeEventSystems();
 
+            RegisterPromotionGateService();
+
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
@@ -180,7 +183,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
             // ADR-0016: ContentSwapContext precisa existir no DI global.
-            RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
+            RegisterIfMissing<IContentSwapContextService>(() =>
+            {
+                return IsPromotionEnabled(DependencyManager.Provider, PromotionGateIds.ContentSwap)
+                    ? (IContentSwapContextService)new ContentSwapContextService()
+                    : new ContentSwapContextServiceNoop();
+            });
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             RegisterIntroStageQaInstaller();
@@ -240,7 +248,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        // --------------------------------------------------------------------
+        private static bool IsPromotionEnabled(IDependencyProvider provider, string gateId)
+        {
+            if (provider.TryGetGlobal<IPromotionGateService>(out var gate) && gate != null)
+            {
+                return gate.IsEnabled(gateId);
+            }
+
+            // Fallback safe: sem gate registrado, manter comportamento anterior (enabled).
+            return true;
+        }
+
+        private static void RegisterPromotionGateService()
+        {
+            // Gate de promoção: features podem ser ligadas/desligadas sem quebrar o boot.
+            PromotionGateInstaller.EnsureRegistered(DependencyManager.Provider);
+        }
+
+// --------------------------------------------------------------------
         // Fade / Loading
         // --------------------------------------------------------------------
 
@@ -458,8 +483,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             DependencyManager.Provider.RegisterGlobal<IPostPlayOwnershipService>(
-                new PostPlayOwnershipService(),
-                allowOverride: false);
+                new PostPlayOwnershipService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[PostPlay] PostPlayOwnershipService registrado no DI global.",
@@ -477,8 +501,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             DependencyManager.Provider.RegisterGlobal<IIntroStageCoordinator>(
-                new IntroStageCoordinator(),
-                allowOverride: false);
+                new IntroStageCoordinator());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[IntroStage] IntroStageCoordinator registrado no DI global.",
@@ -496,8 +519,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             DependencyManager.Provider.RegisterGlobal<IIntroStageControlService>(
-                new IntroStageControlService(),
-                allowOverride: false);
+                new IntroStageControlService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[IntroStage] IntroStageControlService registrado no DI global.",
@@ -519,8 +541,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 : new DefaultGameplaySceneClassifier();
 
             DependencyManager.Provider.RegisterGlobal<IIntroStagePolicyResolver>(
-                new DefaultIntroStagePolicyResolver(classifier),
-                allowOverride: false);
+                new DefaultIntroStagePolicyResolver(classifier));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[IntroStage] DefaultIntroStagePolicyResolver registrado no DI global.",
@@ -538,8 +559,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             DependencyManager.Provider.RegisterGlobal<IGameplaySceneClassifier>(
-                new DefaultGameplaySceneClassifier(),
-                allowOverride: false);
+                new DefaultGameplaySceneClassifier());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Gameplay] IGameplaySceneClassifier registrado no DI global.",
@@ -557,8 +577,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             DependencyManager.Provider.RegisterGlobal<IIntroStageStep>(
-                new ConfirmToStartIntroStageStep(),
-                allowOverride: false);
+                new ConfirmToStartIntroStageStep());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[IntroStage] ConfirmToStartIntroStageStep registrado no DI global.",
@@ -599,7 +618,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 }
 
                 completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: true);
+                DependencyManager.Provider.RegisterGlobal(completionGate);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                     "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
@@ -625,8 +644,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             DependencyManager.Provider.RegisterGlobal<ISceneFlowSignatureCache>(
-                new SceneFlowSignatureCache(),
-                allowOverride: false);
+                new SceneFlowSignatureCache());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[SceneFlow] SceneFlowSignatureCache registrado no DI global.",
@@ -650,7 +668,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal(resetService, allowOverride: false);
+            DependencyManager.Provider.RegisterGlobal(resetService);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[WorldLifecycle] IWorldResetRequestService registrado no DI global (via WorldLifecycleRuntimeCoordinator).",
@@ -806,8 +824,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                     $"[StateDependent] Serviço registrado ({existing.GetType().Name}) não usa gate; substituindo por StateDependentService.");
 
                 DependencyManager.Provider.RegisterGlobal<IStateDependentService>(
-                    new StateDependentService(),
-                    allowOverride: true);
+                    new StateDependentService());
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                     "[StateDependent] Registrado StateDependentService (gate-aware) como IStateDependentService.",
@@ -892,35 +909,60 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Registered global service: {typeof(T).Name}.");
         }
+
+        private static bool IsPromotionEnabled(IDependencyProvider provider, string gateId)
+        {
+            if (provider.TryGetGlobal<IPromotionGateService>(out var gate) && gate != null)
+            {
+                return gate.IsEnabled(gateId);
+            }
+
+            // Sem gate configurado, manter comportamento
+            return true;
+        }
+
         private static void RegisterContentSwapChangeService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IContentSwapChangeService>(out var existing) && existing != null)
+            var provider = DependencyManager.Provider;
+
+            if (provider.HasGlobal<IContentSwapChangeService>())
             {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[ContentSwap] IContentSwapChangeService já registrado no DI global.",
-                    DebugUtility.Colors.Info);
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IContentSwapContextService>(out var contentSwapContext) || contentSwapContext == null)
+            if (!IsPromotionEnabled(provider, PromotionGateIds.ContentSwap))
             {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[ContentSwap] IContentSwapContextService indisponível. IContentSwapChangeService não será registrado.");
+                provider.RegisterGlobal<IContentSwapChangeService>(new ContentSwapChangeServiceNoop());
+                DebugUtility.Log(typeof(GlobalBootstrap), "[ContentSwap] Gate desabilitado: registrando Noop (IContentSwapChangeService).", DebugColor.Warning);
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal<IContentSwapChangeService>(
-                new ContentSwapChangeServiceInPlaceOnly(contentSwapContext),
-                allowOverride: false);
+            if (!provider.TryGetGlobal<IContentSwapContextService>(out var contextService) || contextService == null)
+            {
+                throw new InvalidOperationException(
+                    "IContentSwapContextService is not registered. Ensure GlobalBootstrap registered it before ContentSwapChangeService.");
+            }
 
-            DebugUtility.Log(
-                typeof(GlobalBootstrap),
-                "[ContentSwap] ContentSwapChangeService registered=InPlaceOnly scope='InPlace-only'.",
-                DebugUtility.Colors.Info);
+            provider.RegisterGlobal<IContentSwapChangeService>(new ContentSwapChangeServiceInPlaceOnly(contextService));
+            DebugUtility.Log(typeof(GlobalBootstrap), "[ContentSwap] Registered IContentSwapChangeService (InPlaceOnly).", DebugColor.Success);
         }
 
         private static void RegisterLevelServices()
         {
+            var provider = DependencyManager.Provider;
+
+            if (provider.HasGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>())
+            {
+                return;
+            }
+
+            if (!IsPromotionEnabled(provider, PromotionGateIds.LevelManager))
+            {
+                provider.RegisterGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManagerService>(new _ImmersiveGames.NewScripts.Gameplay.Levels.NoopLevelManagerService());
+                DebugUtility.Log(typeof(GlobalBootstrap), "[LevelManager] Gate desabilitado: registrando Noop (ILevelManagerService).", DebugColor.Warning);
+                return;
+            }
+
             LevelManagerInstaller.EnsureRegistered(fromBootstrap: true);
         }
 
