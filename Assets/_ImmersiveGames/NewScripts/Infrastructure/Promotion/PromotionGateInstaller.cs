@@ -21,11 +21,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Promotion
 
             // Use singleton explícito para garantir log único e comportamento determinístico.
             var service = PromotionGateService.CreateFromResourcesOrDefaults();
-            provider.RegisterGlobal<IPromotionGateService>(service);
+            provider.RegisterGlobal(service);
 
             DebugUtility.Log(typeof(PromotionGateInstaller),
                 "PromotionGate registrado (global).",
-                DebugUtility.Colors.Verbose);
+                DebugUtility.Colors.Info);
         }
     }
 }

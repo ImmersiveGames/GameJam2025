@@ -3,6 +3,7 @@
 
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
@@ -11,27 +12,51 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
     /// </summary>
     public sealed class NoopLevelManagerService : ILevelManagerService
     {
-        public int CurrentLevelIndex => -1;
-
-        public ValueTask GoToLevelAsync(int levelIndex, string reason)
+        public bool SelectLevel(string levelId, string reason)
         {
             DebugUtility.Log(typeof(NoopLevelManagerService),
-                $"[LevelManager] Gate desabilitado: GoToLevelAsync ignorado levelIndex='{levelIndex}' reason='{reason}'.");
-            return default;
+                $"[LevelManager] Gate desabilitado: SelectLevel ignorado levelId='{levelId}' reason='{reason}'.");
+            return false;
         }
 
-        public ValueTask RestartLevelAsync(string reason)
+        public bool SelectInitialLevel(string reason)
         {
             DebugUtility.Log(typeof(NoopLevelManagerService),
-                $"[LevelManager] Gate desabilitado: RestartLevelAsync ignorado reason='{reason}'.");
-            return default;
+                $"[LevelManager] Gate desabilitado: SelectInitialLevel ignorado reason='{reason}'.");
+            return false;
         }
 
-        public ValueTask AdvanceToNextLevelAsync(string reason)
+        public bool SelectNextLevel(string reason)
         {
             DebugUtility.Log(typeof(NoopLevelManagerService),
-                $"[LevelManager] Gate desabilitado: AdvanceToNextLevelAsync ignorado reason='{reason}'.");
-            return default;
+                $"[LevelManager] Gate desabilitado: SelectNextLevel ignorado reason='{reason}'.");
+            return false;
+        }
+
+        public bool SelectPreviousLevel(string reason)
+        {
+            DebugUtility.Log(typeof(NoopLevelManagerService),
+                $"[LevelManager] Gate desabilitado: SelectPreviousLevel ignorado reason='{reason}'.");
+            return false;
+        }
+
+        public Task ApplySelectedLevelAsync(string reason)
+        {
+            DebugUtility.Log(typeof(NoopLevelManagerService),
+                $"[LevelManager] Gate desabilitado: ApplySelectedLevelAsync ignorado reason='{reason}'.");
+            return Task.CompletedTask;
+        }
+
+        public void NotifyContentSwapCommitted(ContentSwapPlan plan, string reason)
+        {
+            DebugUtility.Log(typeof(NoopLevelManagerService),
+                $"[LevelManager] Gate desabilitado: NotifyContentSwapCommitted ignorado reason='{reason}'.");
+        }
+
+        public void DumpCurrent(string reason)
+        {
+            DebugUtility.Log(typeof(NoopLevelManagerService),
+                $"[LevelManager] Gate desabilitado: DumpCurrent ignorado reason='{reason}'.");
         }
     }
 }
