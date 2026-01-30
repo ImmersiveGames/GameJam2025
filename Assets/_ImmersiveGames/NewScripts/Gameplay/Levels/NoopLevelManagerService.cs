@@ -47,6 +47,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             return Task.CompletedTask;
         }
 
+        public void ClearSelection(string reason)
+        {
+            DebugUtility.Log(typeof(NoopLevelManagerService),
+                $"[LevelManager] Gate desabilitado: ClearSelection ignorado reason='{reason}'.");
+        }
+
         public void NotifyContentSwapCommitted(ContentSwapPlan plan, string reason)
         {
             DebugUtility.Log(typeof(NoopLevelManagerService),

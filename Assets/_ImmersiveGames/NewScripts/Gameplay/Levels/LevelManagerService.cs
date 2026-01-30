@@ -2,11 +2,14 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
+using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
@@ -16,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         private const string LevelChangePrefix = "LevelChange/";
         private const string QaLevelPrefix = "QA/Level/";
         private const string QaLevelsPrefix = "QA/Levels/";
+        private const string DefaultGameplaySceneName = "GameplayScene";
 
         private readonly ILevelManager _levelManager;
         private readonly ILevelCatalogResolver _resolver;
@@ -113,15 +117,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         public async Task ApplySelectedLevelAsync(string reason)
         {
-            if (!_selectedPlan.IsValid)
+            var normalizedReason = NormalizeApplyReason(reason);
+
+            if (!_selectedPlan.IsValid && !TryAutoSelectInitial(normalizedReason))
             {
-                DebugUtility.LogWarning<LevelManagerService>("[LevelManager] ApplySelectedLevel ignorado (selection inválida)." );
+                LogApplySelectionInvalid(normalizedReason);
                 return;
             }
 
-            var normalizedReason = NormalizeReason(reason);
+            if (!IsGameplaySceneActive())
+            {
+                DebugUtility.LogWarning<LevelManagerService>(
+                    $"[LevelManager] ApplySelectedLevel ignorado (fora da gameplay). scene='{SceneManager.GetActiveScene().name}' reason='{normalizedReason}'.");
+                return;
+            }
+
             await _levelManager.RequestLevelInPlaceAsync(_selectedPlan, normalizedReason, _selectedOptions);
             UpdateCurrentFromPlan(_selectedPlan, normalizedReason, logApplied: true);
+        }
+
+        public void ClearSelection(string reason)
+        {
+            _selectedPlan = LevelPlan.None;
+            _selectedOptions = LevelChangeOptions.Default.Clone();
+            _selectedReason = string.Empty;
+
+            DebugUtility.Log(typeof(LevelManagerService),
+                $"[OBS][LevelManager] LevelSelectionCleared reason='{NormalizeReason(reason)}'.",
+                DebugUtility.Colors.Info);
         }
 
         public void NotifyContentSwapCommitted(ContentSwapPlan plan, string reason)
@@ -158,16 +181,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         public void DumpCurrent(string reason)
         {
-            var levelId = _currentPlan.IsValid ? _currentPlan.LevelId : "<none>";
-            var contentId = string.IsNullOrWhiteSpace(_currentContentId)
-                ? (_currentPlan.IsValid ? _currentPlan.ContentId : "<none>")
-                : _currentContentId;
-            var signature = string.IsNullOrWhiteSpace(_currentContentSignature)
-                ? (_currentPlan.IsValid ? _currentPlan.ContentSignature : "<none>")
-                : _currentContentSignature;
+            var current = BuildSnapshot(_currentPlan, _currentContentId, _currentContentSignature);
+            var selected = BuildSnapshot(_selectedPlan, string.Empty, string.Empty);
 
             DebugUtility.Log(typeof(LevelManagerService),
-                $"[OBS][LevelManager] CurrentSnapshot levelId='{levelId}' contentId='{contentId}' contentSig='{signature}' reason='{NormalizeReason(reason)}'.",
+                $"[OBS][LevelManager] StatusSnapshot current={{levelId='{current.LevelId}', contentId='{current.ContentId}', contentSig='{current.ContentSignature}'}} " +
+                $"selected={{levelId='{selected.LevelId}', contentId='{selected.ContentId}', contentSig='{selected.ContentSignature}'}} reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -320,6 +339,74 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             return string.IsNullOrWhiteSpace(reason) ? "n/a" : reason.Trim();
         }
 
+        private string NormalizeApplyReason(string reason)
+        {
+            var normalized = NormalizeReason(reason);
+            if (normalized == "n/a" && !string.IsNullOrWhiteSpace(_selectedReason))
+            {
+                return _selectedReason;
+            }
+
+            return normalized;
+        }
+
+        private bool TryAutoSelectInitial(string reason)
+        {
+            if (!_resolver.TryResolveInitialPlan(out var plan, out var options))
+            {
+                return false;
+            }
+
+            ApplySelection(plan, options, reason);
+
+            DebugUtility.Log(typeof(LevelManagerService),
+                $"[LevelManager] Seleção inválida; auto-select aplicou nível inicial levelId='{plan.LevelId}' reason='{NormalizeReason(reason)}'.",
+                DebugUtility.Colors.Warning);
+            return true;
+        }
+
+        private void LogApplySelectionInvalid(string reason)
+        {
+            var catalog = _catalogProvider.GetCatalog();
+            if (catalog == null)
+            {
+                DebugUtility.LogWarning<LevelManagerService>(
+                    $"[LevelManager] ApplySelectedLevel ignorado (catálogo ausente). reason='{NormalizeReason(reason)}'.");
+                return;
+            }
+
+            var definitionsCount = catalog.Definitions?.Count ?? 0;
+            var orderedCount = catalog.OrderedLevels?.Count ?? 0;
+            DebugUtility.LogWarning<LevelManagerService>(
+                $"[LevelManager] ApplySelectedLevel ignorado (selection inválida, catálogo sem nível inicial/defs). " +
+                $"definitions='{definitionsCount}' ordered='{orderedCount}' reason='{NormalizeReason(reason)}'.");
+        }
+
+        private static bool IsGameplaySceneActive()
+        {
+            if (DependencyManager.Provider != null
+                && DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier)
+                && classifier != null)
+            {
+                return classifier.IsGameplayScene();
+            }
+
+            return SceneManager.GetActiveScene().name == DefaultGameplaySceneName;
+        }
+
+        private static Snapshot BuildSnapshot(LevelPlan plan, string contentIdOverride, string signatureOverride)
+        {
+            var levelId = plan.IsValid ? plan.LevelId : "<none>";
+            var contentId = string.IsNullOrWhiteSpace(contentIdOverride)
+                ? (plan.IsValid ? plan.ContentId : "<none>")
+                : contentIdOverride;
+            var signature = string.IsNullOrWhiteSpace(signatureOverride)
+                ? (plan.IsValid ? plan.ContentSignature : "<none>")
+                : signatureOverride;
+
+            return new Snapshot(levelId, contentId, signature);
+        }
+
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -328,6 +415,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         private static string Sanitize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "n/a" : value.Replace("\n", " ").Replace("\r", " ").Trim();
+        }
+
+        private readonly struct Snapshot
+        {
+            public string LevelId { get; }
+            public string ContentId { get; }
+            public string ContentSignature { get; }
+
+            public Snapshot(string levelId, string contentId, string contentSignature)
+            {
+                LevelId = levelId;
+                ContentId = contentId;
+                ContentSignature = contentSignature;
+            }
         }
     }
 }

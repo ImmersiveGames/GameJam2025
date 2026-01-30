@@ -20,15 +20,14 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         private const string ColorWarn = "#FFC107";
         private const string ColorErr = "#F44336";
 
-        private const string ReasonSelect = "QA/Level/Select";
         private const string ReasonApply = "QA/Level/Apply";
-        private const string ReasonNavigate = "QA/Level/Navigate";
-        private const string ReasonDump = "QA/Level/Dump";
+        private const string ReasonSelectLevel1 = "QA/Level/Select/level.1";
+        private const string ReasonSelectLevel2 = "QA/Level/Select/level.2";
+        private const string ReasonPrintStatus = "QA/Level/PrintStatus";
+        private const string ReasonClearSelection = "QA/Level/ClearSelection";
 
-        [SerializeField] private string levelId = string.Empty;
-
-        [ContextMenu("QA/Level/SelectLevel - Resolve Catalog")]
-        private void Qa_SelectLevel()
+        [ContextMenu("QA/Level/Select Level 1")]
+        private void Qa_SelectLevel1()
         {
             var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
             if (service == null)
@@ -36,39 +35,44 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(levelId))
-            {
-                if (service.SelectInitialLevel(ReasonSelect))
-                {
-                    DebugUtility.Log(typeof(LevelQaContextMenu),
-                        "[QA][LevelManager] SelectLevel resolveu nível inicial via catálogo.",
-                        ColorOk);
-                }
-                else
-                {
-                    DebugUtility.Log(typeof(LevelQaContextMenu),
-                        "[QA][LevelManager] SelectLevel falhou ao resolver nível inicial.",
-                        ColorWarn);
-                }
-
-                return;
-            }
-
-            if (service.SelectLevel(levelId.Trim(), ReasonSelect))
+            if (service.SelectLevel("level.1", ReasonSelectLevel1))
             {
                 DebugUtility.Log(typeof(LevelQaContextMenu),
-                    $"[QA][LevelManager] SelectLevel selecionado levelId='{levelId}'.",
+                    "[QA][LevelManager] Select Level 1 aplicado.",
                     ColorOk);
             }
             else
             {
                 DebugUtility.Log(typeof(LevelQaContextMenu),
-                    $"[QA][LevelManager] SelectLevel falhou levelId='{levelId}'.",
+                    "[QA][LevelManager] Select Level 1 falhou.",
                     ColorWarn);
             }
         }
 
-        [ContextMenu("QA/Level/ApplyLevel - Apply Selected")]
+        [ContextMenu("QA/Level/Select Level 2")]
+        private void Qa_SelectLevel2()
+        {
+            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
+            if (service == null)
+            {
+                return;
+            }
+
+            if (service.SelectLevel("level.2", ReasonSelectLevel2))
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Select Level 2 aplicado.",
+                    ColorOk);
+            }
+            else
+            {
+                DebugUtility.Log(typeof(LevelQaContextMenu),
+                    "[QA][LevelManager] Select Level 2 falhou.",
+                    ColorWarn);
+            }
+        }
+
+        [ContextMenu("QA/Level/Apply Selected")]
         private void Qa_ApplyLevel()
         {
             var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
@@ -78,14 +82,14 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
             }
 
             DebugUtility.Log(typeof(LevelQaContextMenu),
-                "[QA][LevelManager] ApplyLevel solicitado.",
+                "[QA][LevelManager] Apply Selected solicitado.",
                 ColorInfo);
 
             _ = service.ApplySelectedLevelAsync(ReasonApply);
         }
 
-        [ContextMenu("QA/Level/Next - Select Next")]
-        private void Qa_SelectNext()
+        [ContextMenu("QA/Level/Print Status")]
+        private void Qa_PrintStatus()
         {
             var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
             if (service == null)
@@ -93,22 +97,11 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return;
             }
 
-            if (service.SelectNextLevel(ReasonNavigate))
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Next selecionado (catálogo).",
-                    ColorOk);
-            }
-            else
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Next falhou (catálogo).",
-                    ColorWarn);
-            }
+            service.DumpCurrent(ReasonPrintStatus);
         }
 
-        [ContextMenu("QA/Level/Previous - Select Previous")]
-        private void Qa_SelectPrevious()
+        [ContextMenu("QA/Level/Clear Selection")]
+        private void Qa_ClearSelection()
         {
             var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
             if (service == null)
@@ -116,30 +109,11 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return;
             }
 
-            if (service.SelectPreviousLevel(ReasonNavigate))
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Previous selecionado (catálogo).",
-                    ColorOk);
-            }
-            else
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Previous falhou (catálogo).",
-                    ColorWarn);
-            }
-        }
+            service.ClearSelection(ReasonClearSelection);
 
-        [ContextMenu("QA/Level/DumpCurrent - Current Snapshot")]
-        private void Qa_DumpCurrent()
-        {
-            var service = ResolveGlobal<ILevelManagerService>("ILevelManagerService");
-            if (service == null)
-            {
-                return;
-            }
-
-            service.DumpCurrent(ReasonDump);
+            DebugUtility.Log(typeof(LevelQaContextMenu),
+                "[QA][LevelManager] Clear Selection solicitado.",
+                ColorInfo);
         }
 
 #if UNITY_EDITOR

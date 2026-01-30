@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         bool SelectNextLevel(string reason);
         bool SelectPreviousLevel(string reason);
         Task ApplySelectedLevelAsync(string reason);
+        void ClearSelection(string reason);
         void NotifyContentSwapCommitted(ContentSwapPlan plan, string reason);
         void DumpCurrent(string reason);
     }
