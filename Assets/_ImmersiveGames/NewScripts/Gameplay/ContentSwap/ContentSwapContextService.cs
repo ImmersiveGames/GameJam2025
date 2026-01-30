@@ -1,4 +1,6 @@
 #nullable enable
+using _ImmersiveGames.NewScripts.Gameplay.Levels;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
@@ -78,6 +80,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             // Assinatura: ContentSwapCommitted
             DebugUtility.Log<ContentSwapContextService>($"[ContentSwapContext] ContentSwapCommitted prev='{previous}' current='{next}' reason='{Sanitize(reason)}'");
             EventBus<ContentSwapCommittedEvent>.Raise(new ContentSwapCommittedEvent(previous, next, reason));
+            NotifyLevelManager(next, reason);
             return true;
         }
 
@@ -94,6 +97,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
             DebugUtility.Log<ContentSwapContextService>($"[ContentSwapContext] ContentSwapPendingCleared reason='{Sanitize(reason)}'");
             EventBus<ContentSwapPendingClearedEvent>.Raise(new ContentSwapPendingClearedEvent(reason));
+        }
+
+        private static void NotifyLevelManager(ContentSwapPlan plan, string reason)
+        {
+            if (DependencyManager.Provider == null)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelManagerService>(out var service) || service == null)
+            {
+                return;
+            }
+
+            service.NotifyContentSwapCommitted(plan, reason);
         }
 
         private static string Sanitize(string? s)
