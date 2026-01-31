@@ -2,11 +2,15 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using TMPro;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
+namespace _ImmersiveGames.NewScripts.Presentation.LoadingHud
 {
     /// <summary>
-    /// Controller mínimo do HUD de loading (NewScripts).
+    /// Controller do HUD de loading (NewScripts).
     /// Responsável apenas por mostrar/ocultar via CanvasGroup.
+    ///
+    /// Observação:
+    /// - Este MonoBehaviour deve existir na cena "LoadingHudScene".
+    /// - O serviço (LoadingHudService) resolve o controller via FindAnyObjectByType.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudController : MonoBehaviour
@@ -16,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         [Header("References")]
         [SerializeField] private CanvasGroup rootGroup;
         [SerializeField] private TMP_Text loadingText;
+
+        private bool _isVisible;
 
         private void Awake()
         {
@@ -51,6 +57,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 return;
             }
 
+            if (_isVisible == visible)
+            {
+                return; // idempotência
+            }
+
+            _isVisible = visible;
             rootGroup.alpha = visible ? 1f : 0f;
             rootGroup.interactable = visible;
             rootGroup.blocksRaycasts = visible;
@@ -63,6 +75,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 return;
             }
 
+            // Comentário: por ora mantemos label fixa; phase pode ser usada futuramente para debug visual.
             loadingText.text = DefaultLabel;
         }
     }

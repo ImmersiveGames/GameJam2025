@@ -213,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 return;
             }
 
-            await _hudService.EnsureLoadedAsync();
+            await _hudService.EnsureLoadedAsync(signature);
 
             // Se estamos em transição com Fade, só exibimos quando a etapa já avançou além do Started
             // (FadeInCompleted/ScenesReady).

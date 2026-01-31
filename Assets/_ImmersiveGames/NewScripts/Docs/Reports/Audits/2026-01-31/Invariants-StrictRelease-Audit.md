@@ -6,7 +6,7 @@ Escopo: `Assets/_ImmersiveGames/NewScripts/` (documental; refletindo estado do c
 
 | Item | Resultado | Evidência principal |
 |---|---|---|
-| A) Fade/LoadingHUD (Strict + Release + degraded mode) | **PARCIAL** | **Fade (PASS runtime):** `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (âncoras `[OBS][Fade]`). **LoadingHUD:** ver ADR-0010. |
+| A) Fade/LoadingHUD (Strict + Release + degraded mode) | **PASS** | **Fade (PASS runtime):** `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (âncoras `[OBS][Fade]`). **LoadingHUD:** ver ADR-0010. |
 | B) WorldDefinition (Strict + mínimo spawn) | **FAIL** | `worldDefinition` nulo é permitido; sem validação de mínimo spawn (Player/Eater) em gameplay. |
 | C) LevelCatalog (Strict + Release) | **FAIL** | Resolver apenas loga warning e retorna `false` em ausência de catalog/definition; sem política Strict vs Release. |
 | D) PostGame (Strict + Release) | **FAIL** | InputMode/Gate ausentes geram apenas warning; sem fail-fast em Strict e sem fallback definido em Release. |
@@ -23,10 +23,12 @@ Escopo: `Assets/_ImmersiveGames/NewScripts/` (documental; refletindo estado do c
 - Release: fallback somente com `DEGRADED_MODE feature='fade' ...` (no-op).
 - Observabilidade: âncoras canônicas `[OBS][Fade]` no envelope (Start/Complete por fase).
 
-**LoadingHUD (ADR-0010):** **FAIL (pendente)**
+**LoadingHUD (ADR-0010):** **PASS (código)**
 
-- Situação: fallback silencioso quando scene/controller faltam.
-- Gap: ausência de branch Strict/Release e ausência de âncora `DEGRADED_MODE` (feature='loadinghud').
+- Strict: validação síncrona de cena em Build Settings (`Application.CanStreamedLevelBeLoaded`) + erro evidente (log + `Debug.Break()`).
+- Release: fallback explícito com `DEGRADED_MODE feature='loadinghud' ...` e HUD desabilitado para evitar spam.
+- Observabilidade: âncoras com `signature` + `phase` (ver `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`).
+
 
 ### B) WorldDefinition — Strict em gameplay + mínimo de spawn
 - **Situação:** gameplay pode iniciar sem `WorldDefinition`.

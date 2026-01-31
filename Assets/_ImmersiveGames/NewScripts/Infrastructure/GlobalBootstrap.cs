@@ -46,6 +46,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Presentation.LoadingHud;
 using _ImmersiveGames.NewScripts.QA.IntroStage;
 using _ImmersiveGames.NewScripts.QA.ContentSwap;
 using _ImmersiveGames.NewScripts.QA.Levels;
@@ -277,7 +278,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterSceneFlowLoadingIfAvailable()
         {
-            RegisterIfMissing<ILoadingHudService>(() => new LoadingHudService());
+            // ADR-0010: LoadingHudService depende da policy Strict/Release + reporter de degraded.
+            // Mantemos best-effort: se por algum motivo os serviços não estiverem disponíveis,
+            // ainda assim injetamos nulls e deixamos o próprio serviço decidir como degradar.
+            DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeMode);
+            DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
+
+            RegisterIfMissing<ILoadingHudService>(() => new LoadingHudService(runtimeMode, degradedReporter));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Loading] ILoadingHudService registrado no DI global.",

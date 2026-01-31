@@ -11,8 +11,8 @@
 
 | ADR                          | Status   | Principais Evidências (Paths)                                                                 | Principais Gaps                                                                 | Risco  |
 |------------------------------|----------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|--------|
-| ADR-0009 (Fade + SceneFlow) | OK | SceneTransitionService + NewScriptsFadeService + NewScriptsSceneFlowFadeAdapter + Runtime policy (IRuntimeModeProvider/IDegradedModeReporter) + logs [OBS][Fade] | Sem gaps críticos. Evidência (2026-01-31): `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` | Baixo |
-| ADR-0010 (Loading HUD + SceneFlow) | RISCO   | SceneFlow + NewScriptsLoadingHudService + GlobalBootstrap                                    | HUD não fail-fast; continua sem HUD sem modo degradado explícito; logs não são [OBS] no contrato | Alto   |
+| ADR-0009 (Fade + SceneFlow) | OK | SceneTransitionService + FadeService + NewScriptsSceneFlowFadeAdapter + Runtime policy (IRuntimeModeProvider/IDegradedModeReporter) + logs [OBS][Fade] | Sem gaps críticos. Evidência (2026-01-31): `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` | Baixo |
+| ADR-0010 (Loading HUD + SceneFlow) | OK      | SceneFlowLoadingService + ILoadingHudService + LoadingHudService + GlobalBootstrap                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas ([OBS][LoadingHUD]) | Baixo  |
 | ADR-0011 (WorldDefinition multi-actor) | PARCIAL | WorldDefinition + NewSceneBootstrapper + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | WorldDefinition ausente não falha em gameplay; ausência de verificação de “mínimo de atores” | Médio  |
 | ADR-0012 (PostGame)         | PARCIAL | PostGameOverlayController + GameRunOutcomeService + GameLoopRunEndEventBridge + Restart/ExitToMenuNavigationBridge + logs [OBS][PostGame] | Dependências críticas (InputMode/Gate) apenas warning; não fail-fast           | Médio  |
 | ADR-0013 (Ciclo de vida)    | PARCIAL | SceneTransitionService + WorldLifecycleSceneFlowResetDriver + WorldLifecycleResetCompletionGate + GameLoopSceneFlowCoordinator + InputModeSceneFlowBridge | GameLoopSceneFlowCoordinator pode RequestStart() antes de IntroStage completar (diverge do contrato esperado em ADR-0010) | Médio  |
@@ -24,8 +24,8 @@
 | ADR-0019 (Promoção Baseline 2.2) | AUSENTE (no runtime) | ADR é processual (Docs/Reports/Evidence); nenhum runtime/DI específico                       | Sem implementação de processo em runtime                                        | Baixo  |
 
 ### Top Divergências / Faltas (Impacto Alto)
-- Fail-fast não cumprido em Loading HUD: serviço segue sem HUD quando referências faltam (Fade já está hardenizado com Strict/Release + DEGRADED_MODE).
-- IntroStage vs RequestStart: GameLoopSceneFlowCoordinator pode chamar RequestStart() antes de IntroStage completar, divergindo do contrato esperado em ADR-0010 (obs. no próprio ADR).
+- (Resolvido) Loading HUD: fluxo agora falha em modo strict quando controller faltar, e o setup final inclui `LoadingHudController` na cena correta.
+- IntroStage vs RequestStart: GameLoopSceneFlowCoordinator pode chamar RequestStart() antes de IntroStage completar, divergindo do contrato esperado em ADR-0013 (ordem do fluxo) (obs. no próprio ADR).
 - ContentSwap sem gating: ContentSwapChangeServiceInPlaceOnly não consulta gates (scene_transition / sim.gameplay) apesar do contrato exigir respeito a gates.
 - WorldDefinition opcional em gameplay: NewSceneBootstrapper aceita worldDefinition nulo; contrato pede spawn determinístico mínimo (Player/Eater).
 - Level catalog fail-fast não aplicado: resolver e session logam warnings e retornam false, mas não falham; contrato pede falha explícita para IDs/config ausentes.
@@ -40,11 +40,11 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 
 **Implementação Encontrada:**
 - Arquivos: `SceneTransitionService` aplica FadeIn antes das operações de cena e FadeOut após completion gate, emitindo âncoras canônicas `[OBS][Fade]`.
-- `NewScriptsFadeService` carrega `FadeScene` (Additive), localiza `NewScriptsFadeController` e executa fades; falha explicitamente quando pré-condições não são atendidas.
+- `FadeService` carrega `FadeScene` (Additive), localiza `FadeController` e executa fades; falha explicitamente quando pré-condições não são atendidas.
 - `NewScriptsSceneFlowFadeAdapter` resolve profiles e configura tempos de fade, aplicando policy Strict/Release e `DEGRADED_MODE` quando necessário.
 - Policy Runtime (Strict/Release + reporter): `IRuntimeModeProvider` / `IDegradedModeReporter`.
-- DI: `GlobalBootstrap` registra `INewScriptsFadeService` e policy runtime.
-- Símbolos-chave: `INewScriptsFadeService`, `NewScriptsFadeService`, `NewScriptsSceneFlowFadeAdapter`, `SceneTransitionService`, `IRuntimeModeProvider`, `IDegradedModeReporter`.
+- DI: `GlobalBootstrap` registra `IFadeService` e policy runtime.
+- Símbolos-chave: `IFadeService`, `FadeService`, `NewScriptsSceneFlowFadeAdapter`, `SceneTransitionService`, `IRuntimeModeProvider`, `IDegradedModeReporter`.
 - Fluxo de produção: `SceneTransitionService` chama `FadeIn` → `ScenesReady` → gate → `BeforeFadeOut` → `FadeOut` → `Completed`.
 
 **Observabilidade:**
@@ -61,69 +61,26 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - **PASS (2026-01-31):** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (contem âncoras `[OBS][Fade]` e ordenação FadeIn→Ops→ScenesReady→Gate→FadeOut→Completed para startup e gameplay).
 
 ### ADR-0010 — Loading HUD + SceneFlow
-**Objetivo de produção:** Feedback de loading sem acoplar ao fluxo, determinístico e observável.
-**Contrato mínimo:** HUD opcional, ordem correta (fade → loading → ready → fade-out), fail-fast em dev/QA; fallback só com configuração explícita.
 
-**Implementação Encontrada:**
-- Arquivos: SceneFlowLoadingService orquestra etapas Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed.
-- NewScriptsLoadingHudService carrega LoadingHudScene e controla NewScriptsLoadingHudController.
-- Registro no DI via GlobalBootstrap (INewScriptsLoadingHudService + SceneFlowLoadingService).
-- Fluxo de produção: HUD “Ensure” no Started; Show após FadeIn; Hide antes do FadeOut; safety hide no Completed.
+**Status:** OK (fechado)
 
-**Observabilidade:**
-- Esperado: logs de estado e etapas (ADR).
-- Encontrado: logs [Loading] e [LoadingHUD] (sem prefixo [OBS]).
+**Implementação alinhada ao ADR:**
+- Separação: Infra (SceneFlow) vs Presentation (LoadingHud UI).
+- Política Strict/Release:
+  - Strict: validação de cena em Build Settings + erro evidente (log + Break).
+  - Release: fallback explícito com `DEGRADED_MODE feature='loadinghud' ...` e HUD desabilitado.
+- Observabilidade: logs canônicos com `signature` + `phase` (âncoras `[OBS][LoadingHUD]`).
 
-**Alinhamento:**
-- ✅ Aderente: ordem de Show/Hide está conforme ADR.
-- ⚠️ Parcial: logs não estão no formato canônico [OBS].
-- ❌ Divergente: fallback silencioso quando HUD/controller faltam, sem modo degradado explícito (RISCO).
+**Arquivos-chave:**
+- `NewScripts/Infrastructure/SceneFlow/Loading/ILoadingHudService.cs`
+- `NewScripts/Infrastructure/SceneFlow/Loading/SceneFlowLoadingService.cs`
+- `NewScripts/Presentation/LoadingHud/LoadingHudService.cs`
+- `NewScripts/Presentation/LoadingHud/LoadingHudController.cs`
+- `NewScripts/Infrastructure/GlobalBootstrap.cs`
 
-**Gaps:**
-- Alta — Fail-fast em dev/QA quando LoadingHudScene/controller não existe; fallback apenas via config explícita.
-- Média — Padronizar logs com assinatura [OBS] se exigido pelo contrato.
+**Evidência:**
+- `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (seção ADR-0010)
 
-### ADR-0011 — WorldDefinition multi-actor
-**Objetivo:** WorldDefinition declara Player + Eater determinístico via reset pipeline.
-**Contrato mínimo:** Spawn via WorldLifecycle, ActorRegistry atualizado, fail-fast em ausência de refs.
-
-**Implementação Encontrada:**
-- Arquivos: WorldDefinition (ScriptableObject), NewSceneBootstrapper registra spawn services via definition, WorldSpawnServiceFactory cria Player/Eater, WorldLifecycleOrchestrator loga ActorRegistry counts.
-- Fluxo: NewSceneBootstrapper registra spawn services por WorldDefinition; WorldLifecycleOrchestrator despawn/spawn e loga contagens.
-
-**Observabilidade:**
-- Esperado: ActorRegistry mínimo (ex.: 2) em logs.
-- Encontrado: logs de contagem no orchestrator (ActorRegistry count at 'After Spawn').
-
-**Alinhamento:**
-- ✅ Aderente: assets e pipeline de spawn existem, incluindo Player/Eater.
-- ⚠️ Parcial: worldDefinition pode ser nula sem erro (em gameplay isso mascara problema).
-- ⚠️ Parcial: não há validação explícita de “mínimo de atores”.
-
-**Gaps:**
-- Alta — Validar presença de WorldDefinition em gameplay (fail-fast ou gate).
-- Média — Check explícito de mínimos (Player + Eater) com log âncora.
-
-### ADR-0012 — Fluxo pós-gameplay (PostGame)
-**Objetivo:** PostGame idempotente via eventos, overlay + gating/input, Restart/ExitToMenu.
-**Contrato mínimo:** Entrada via evento, gate sim.gameplay, Restart via SceneFlow/WorldLifecycle, ExitToMenu via frontend.
-
-**Implementação Encontrada:**
-- Overlay e intents: PostGameOverlayController publica GameResetRequestedEvent/GameExitToMenuRequestedEvent e usa gate state.postgame + InputMode.
-- Eventos de fim de run: GameRunOutcomeService publica GameRunEndedEvent de forma idempotente e só em Playing.
-- Bridge para GameLoop: GameLoopRunEndEventBridge converte GameRunEndedEvent → RequestEnd().
-- Navegação: RestartNavigationBridge e ExitToMenuNavigationBridge acionam IGameNavigationService.
-
-**Observabilidade:**
-- Esperado: [OBS][PostGame] + logs do overlay (contrato).
-- Encontrado: [OBS][PostGame] em GameLoopService e logs [PostGame] no overlay.
-
-**Alinhamento:**
-- ✅ Aderente: eventos e navegação canonizados (Restart/ExitToMenu) com logs.
-- ⚠️ Parcial: dependências críticas (gate/input) apenas warning (não fail-fast).
-
-**Gaps:**
-- Média — Fail-fast controlado em dev/QA para dependências de UI/gate (conforme ADR).
 
 ### ADR-0013 — Ciclo de vida do jogo
 **Objetivo:** Boot → Menu → Gameplay → PostGame → Restart/Exit com SceneFlow + WorldLifecycle + GameLoop.
@@ -141,7 +98,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 
 **Alinhamento:**
 - ✅ Aderente: completion gate e reset driver respeitam ordem.
-- ⚠️ Parcial: GameLoopSceneFlowCoordinator pode RequestStart() antes da IntroStage (divergência já citada no ADR-0010).
+- ⚠️ Parcial: GameLoopSceneFlowCoordinator pode RequestStart() antes da IntroStage (divergência já citada no ADR-0013).
 
 **Gaps:**
 - Alta — Garantir que RequestStart() ocorra após IntroStage (contrato esperado).
