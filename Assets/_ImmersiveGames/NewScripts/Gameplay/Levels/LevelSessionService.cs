@@ -1,12 +1,7 @@
-// Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/LevelSessionService.cs
-
 #nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
+using System.Text;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -15,18 +10,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
     public interface ILevelSessionService
     {
+        string SelectedLevelId { get; }
+        LevelPlan SelectedPlan { get; }
+        string AppliedLevelId { get; }
+        LevelPlan AppliedPlan { get; }
+
         bool Initialize();
         bool SelectInitial(string reason);
         bool SelectLevelById(string levelId, string reason);
         bool SelectNext(string reason);
         bool SelectPrevious(string reason);
-        void ResetSelection(string reason);
-        Task<bool> ApplySelectedAsync(string reason, LevelChangeOptions? options = null);
-        LevelPlan SelectedPlan { get; }
-        LevelPlan AppliedPlan { get; }
+        bool ApplySelected(string reason);
     }
 
-    [DebugLevel(DebugLevel.Verbose)]
+    /// <summary>
+    /// Serviço de sessão de níveis: seleção atual + aplicação idempotente.
+    /// </summary>
     public sealed class LevelSessionService : ILevelSessionService
     {
         private const string DefaultInitializeReason = "LevelSession/Initialize";
@@ -35,17 +34,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         private readonly ILevelCatalogResolver _resolver;
         private readonly ILevelManager _levelManager;
-
         private readonly List<string> _orderedLevels = new();
 
-        private bool _disabled;
-        private string _disabledReason = string.Empty;
-
         private bool _catalogSnapshotResolved;
-        private LevelCatalog? _catalogSnapshot;
+        private LevelChangeOptions _selectedOptions = LevelChangeOptions.Default.Clone();
 
-        public LevelPlan SelectedPlan { get; private set; } = LevelPlan.Invalid;
-        public LevelPlan AppliedPlan { get; private set; } = LevelPlan.Invalid;
+        public string SelectedLevelId { get; private set; } = string.Empty;
+        public LevelPlan SelectedPlan { get; private set; } = LevelPlan.None;
+        public string AppliedLevelId { get; private set; } = string.Empty;
+        public LevelPlan AppliedPlan { get; private set; } = LevelPlan.None;
 
         public LevelSessionService(ILevelCatalogResolver resolver, ILevelManager levelManager)
         {
@@ -56,69 +53,37 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         public bool Initialize()
         {
             var reason = DefaultInitializeReason;
-
-            if (_disabled)
-            {
-                DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] InitializeSkipped reason='{reason}' detail='Disabled' disabledReason='{_disabledReason}'.",
-                    DebugUtility.Colors.Warning);
-                return false;
-            }
-
-            if (!EnsureCatalogSnapshot(reason))
-            {
-                Disable("CatalogMissing", reason);
-                return false;
-            }
-
+            EnsureCatalogSnapshot(reason);
             return SelectInitialInternal(reason, out _);
         }
 
         public bool SelectInitial(string reason)
         {
             var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
-
-            if (_disabled)
-            {
-                DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionSkipped levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='Disabled' disabledReason='{_disabledReason}'.",
-                    DebugUtility.Colors.Warning);
-                return false;
-            }
-
             return SelectInitialInternal(normalizedReason, out _);
         }
 
         public bool SelectLevelById(string levelId, string reason)
         {
             var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
-
-            if (_disabled)
+            var normalizedLevelId = NormalizeLevelId(levelId);
+            if (normalizedLevelId.Length == 0)
             {
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionSkipped levelId='{levelId}' contentId='<unknown>' reason='{normalizedReason}' detail='Disabled' disabledReason='{_disabledReason}'.",
+                    $"[OBS][Level] SelectionFailed levelId='' contentId='' reason='{normalizedReason}' detail='EmptyLevelId'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(levelId))
-            {
-                DebugUtility.LogWarning<LevelSessionService>(
-                    $"[Level] Ignorando SelectLevelById com id vazio. reason='{normalizedReason}'.");
-                return false;
-            }
-
-            var trimmed = levelId.Trim();
-
-            if (!TryResolvePlanCompat(trimmed, normalizedReason, out var plan) || !plan.IsValid)
+            if (!_resolver.TryResolvePlan(normalizedLevelId, out var plan, out var options))
             {
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionFailed levelId='{trimmed}' contentId='<missing>' reason='{normalizedReason}' detail='PlanMissing'.",
+                    $"[OBS][Level] SelectionFailed levelId='{normalizedLevelId}' contentId='' reason='{normalizedReason}' detail='PlanNotResolved'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            SelectedPlan = plan;
+            ApplySelection(plan, options);
 
             DebugUtility.Log<LevelSessionService>(
                 $"[OBS][Level] Selected levelId='{plan.LevelId}' contentId='{plan.ContentId}' reason='{normalizedReason}' source='Direct'.",
@@ -130,242 +95,295 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         public bool SelectNext(string reason)
         {
             var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
-
-            if (_disabled)
+            if (string.IsNullOrWhiteSpace(SelectedLevelId))
             {
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionSkipped levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='Disabled' disabledReason='{_disabledReason}'.",
+                    $"[OBS][Level] SelectionFailed levelId='' contentId='' reason='{normalizedReason}' detail='NoSelection'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            if (!EnsureCatalogSnapshot(normalizedReason))
+            if (!_resolver.TryResolveNextPlan(SelectedLevelId, out var plan, out var options))
             {
-                Disable("CatalogMissing", normalizedReason);
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionFailed levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='CatalogMissing'.",
+                    $"[OBS][Level] SelectionFailed levelId='{SelectedLevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='NextNotResolved'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            if (_orderedLevels.Count == 0)
-            {
-                DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionFailed levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='NoOrderedLevels'.",
-                    DebugUtility.Colors.Warning);
-                return false;
-            }
+            ApplySelection(plan, options);
 
-            var initialId = GetInitialLevelId(_catalogSnapshot);
-            var current = SelectedPlan.IsValid ? SelectedPlan.LevelId : initialId;
+            DebugUtility.Log<LevelSessionService>(
+                $"[OBS][Level] Selected levelId='{plan.LevelId}' contentId='{plan.ContentId}' reason='{normalizedReason}' source='Next'.",
+                DebugUtility.Colors.Info);
 
-            var idx = Math.Max(0, _orderedLevels.IndexOf(current));
-            var nextIdx = (idx + 1) % _orderedLevels.Count;
-
-            return SelectLevelById(_orderedLevels[nextIdx], normalizedReason);
+            return true;
         }
 
         public bool SelectPrevious(string reason)
         {
             var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
-
-            if (_disabled)
+            if (string.IsNullOrWhiteSpace(SelectedLevelId))
             {
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionSkipped levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='Disabled' disabledReason='{_disabledReason}'.",
+                    $"[OBS][Level] SelectionFailed levelId='' contentId='' reason='{normalizedReason}' detail='NoSelection'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
             if (!EnsureCatalogSnapshot(normalizedReason))
             {
-                Disable("CatalogMissing", normalizedReason);
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionFailed levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='CatalogMissing'.",
+                    $"[OBS][Level] SelectionFailed levelId='{SelectedLevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='CatalogMissing'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            if (_orderedLevels.Count == 0)
+            var previousId = ResolvePreviousLevelId(SelectedLevelId);
+            if (string.IsNullOrWhiteSpace(previousId))
             {
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] SelectionFailed levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='NoOrderedLevels'.",
+                    $"[OBS][Level] SelectionFailed levelId='{SelectedLevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='PreviousNotResolved'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            var initialId = GetInitialLevelId(_catalogSnapshot);
-            var current = SelectedPlan.IsValid ? SelectedPlan.LevelId : initialId;
+            if (!_resolver.TryResolvePlan(previousId, out var plan, out var options))
+            {
+                DebugUtility.Log<LevelSessionService>(
+                    $"[OBS][Level] SelectionFailed levelId='{previousId}' contentId='' reason='{normalizedReason}' detail='PlanNotResolved'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
 
-            var idx = Math.Max(0, _orderedLevels.IndexOf(current));
-            var prevIdx = (idx - 1 + _orderedLevels.Count) % _orderedLevels.Count;
-
-            return SelectLevelById(_orderedLevels[prevIdx], normalizedReason);
-        }
-
-        public void ResetSelection(string reason)
-        {
-            var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
-
-            SelectedPlan = LevelPlan.Invalid;
+            ApplySelection(plan, options);
 
             DebugUtility.Log<LevelSessionService>(
-                $"[OBS][Level] SelectionReset levelId='<none>' contentId='<none>' reason='{normalizedReason}'.",
+                $"[OBS][Level] Selected levelId='{plan.LevelId}' contentId='{plan.ContentId}' reason='{normalizedReason}' source='Previous'.",
                 DebugUtility.Colors.Info);
+
+            return true;
         }
 
-        public async Task<bool> ApplySelectedAsync(string reason, LevelChangeOptions? options = null)
+        public bool ApplySelected(string reason)
         {
             var normalizedReason = NormalizeReason(reason, DefaultApplyReason);
 
-            if (_disabled)
-            {
-                DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] ApplySkipped levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='Disabled' disabledReason='{_disabledReason}'.",
-                    DebugUtility.Colors.Warning);
-                return false;
-            }
+            DebugUtility.Log<LevelSessionService>(
+                $"[OBS][Level] ApplyRequested levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' selectedLevelId='{SelectedPlan.LevelId}' selectedContentId='{SelectedPlan.ContentId}' appliedLevelId='{AppliedPlan.LevelId}' appliedContentId='{AppliedPlan.ContentId}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
 
             if (!SelectedPlan.IsValid)
             {
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] ApplyFailed levelId='<none>' contentId='<none>' reason='{normalizedReason}' detail='NoSelection' catalogResolved='{_catalogSnapshotResolved}'.",
+                    $"[OBS][Level] ApplySkipped levelId='' contentId='' reason='{normalizedReason}' detail='NoSelection'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            if (AppliedPlan.IsValid && AppliedPlan.Equals(SelectedPlan))
+            if (AppliedPlan == SelectedPlan)
             {
                 DebugUtility.Log<LevelSessionService>(
                     $"[OBS][Level] ApplySkipped levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' detail='AlreadyApplied'.",
-                    DebugUtility.Colors.Info);
-                return true;
+                    DebugUtility.Colors.Warning);
+                return false;
             }
 
-            var normalizedOptions = options?.Clone() ?? LevelChangeOptions.Default.Clone();
-
-            DebugUtility.Log<LevelSessionService>(
-                $"[OBS][Level] ApplyRequested levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}' mode='InPlace'.",
-                DebugUtility.Colors.Info);
-
-            await _levelManager.RequestLevelInPlaceAsync(SelectedPlan, normalizedReason, normalizedOptions);
+            _ = _levelManager.RequestLevelInPlaceAsync(SelectedPlan, normalizedReason, _selectedOptions);
 
             AppliedPlan = SelectedPlan;
+            AppliedLevelId = SelectedPlan.LevelId;
 
             DebugUtility.Log<LevelSessionService>(
-                $"[OBS][Level] Applied levelId='{AppliedPlan.LevelId}' contentId='{AppliedPlan.ContentId}' reason='{normalizedReason}'.",
+                $"[OBS][Level] Applied levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
 
             return true;
         }
 
-        private bool SelectInitialInternal(string reason, out LevelPlan plan)
+        private bool SelectInitialInternal(string reason, out string detail)
         {
-            plan = LevelPlan.Invalid;
+            detail = "CatalogInitial";
+            if (_resolver.TryResolveInitialPlan(out var plan, out var options))
+            {
+                ApplySelection(plan, options);
+                DebugUtility.Log<LevelSessionService>(
+                    $"[OBS][Level] InitialSelected levelId='{plan.LevelId}' contentId='{plan.ContentId}' reason='{reason}' source='CatalogInitial'.",
+                    DebugUtility.Colors.Info);
+                return true;
+            }
 
             if (!EnsureCatalogSnapshot(reason))
             {
-                Disable("CatalogMissing", reason);
+                detail = "CatalogMissing";
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] InitialResolveFailed levelId='<missing>' contentId='<missing>' reason='{reason}' detail='CatalogMissing'.",
+                    $"[OBS][Level] InitialSelectionFailed levelId='' contentId='' reason='{reason}' detail='{detail}'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            var initialId = GetInitialLevelId(_catalogSnapshot);
-            if (string.IsNullOrWhiteSpace(initialId))
+            if (TryResolveFallbackPlan(out plan, out options, out detail))
             {
-                Disable("InitialMissing", reason);
+                ApplySelection(plan, options);
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] InitialResolveFailed levelId='<missing>' contentId='<missing>' reason='{reason}' detail='InitialMissing'.",
-                    DebugUtility.Colors.Warning);
-                return false;
+                    $"[OBS][Level] InitialSelected levelId='{plan.LevelId}' contentId='{plan.ContentId}' reason='{reason}' source='{detail}'.",
+                    DebugUtility.Colors.Info);
+                return true;
             }
-
-            if (!TryResolvePlanCompat(initialId, reason, out plan) || !plan.IsValid)
-            {
-                Disable("InitialPlanMissing", reason);
-                DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] InitialResolveFailed levelId='{initialId}' contentId='<missing>' reason='{reason}' detail='InitialPlanMissing'.",
-                    DebugUtility.Colors.Warning);
-                plan = LevelPlan.Invalid;
-                return false;
-            }
-
-            SelectedPlan = plan;
 
             DebugUtility.Log<LevelSessionService>(
-                $"[OBS][Level] InitialResolved levelId='{plan.LevelId}' contentId='{plan.ContentId}' reason='{reason}' source='CatalogInitial'.",
-                DebugUtility.Colors.Info);
+                $"[OBS][Level] InitialSelectionFailed levelId='' contentId='' reason='{reason}' detail='{detail}'.",
+                DebugUtility.Colors.Warning);
+            return false;
+        }
 
-            return true;
+        private void ApplySelection(LevelPlan plan, LevelChangeOptions options)
+        {
+            // Atualiza o estado de seleção atual de forma centralizada.
+            SelectedPlan = plan;
+            SelectedLevelId = plan.LevelId;
+            _selectedOptions = options?.Clone() ?? LevelChangeOptions.Default.Clone();
         }
 
         private bool EnsureCatalogSnapshot(string reason)
         {
-            if (_disabled)
-            {
-                return false;
-            }
-
             if (_catalogSnapshotResolved)
             {
-                return _catalogSnapshot != null;
+                return true;
             }
 
-            if (!TryResolveCatalogCompat(reason, out var catalog) || catalog == null)
+            if (!_resolver.TryResolveCatalog(out var catalog))
             {
+                _orderedLevels.Clear();
                 DebugUtility.Log<LevelSessionService>(
-                    $"[OBS][Level] CatalogResolveFailed reason='{reason}' detail='CatalogMissing'.",
+                    $"[OBS][Level] CatalogSnapshotFailed levels='<missing>' count='0' reason='{reason}' detail='CatalogMissing'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
-            _catalogSnapshot = catalog;
+            BuildOrderedLevels(catalog);
             _catalogSnapshotResolved = true;
 
-            BuildOrderedLevelsCompat(catalog);
-
             DebugUtility.Log<LevelSessionService>(
-                $"[OBS][Level] CatalogResolved levels='{FormatLevels(_orderedLevels)}' count='{_orderedLevels.Count}' reason='{reason}'.",
+                $"[OBS][Level] CatalogSnapshotResolved levels='{FormatLevels(_orderedLevels)}' count='{_orderedLevels.Count}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return true;
         }
 
-        private void BuildOrderedLevelsCompat(LevelCatalog catalog)
+        private void BuildOrderedLevels(LevelCatalog catalog)
         {
             _orderedLevels.Clear();
 
-            // 1) Tenta OrderedLevels / OrderedLevelIds etc.
-            var ordered = GetStringListCompat(catalog, "OrderedLevels", "OrderedLevelIds", "Ordered");
-            if (ordered.Count > 0)
+            if (catalog == null)
             {
-                _orderedLevels.AddRange(ordered);
                 return;
             }
 
-            // 2) Fallback: tenta Definitions.Keys (dicionário)
-            var keys = GetDictionaryKeysCompat(catalog, "Definitions", "LevelDefinitions");
-            if (keys.Count > 0)
+            if (catalog.OrderedLevels != null && catalog.OrderedLevels.Count > 0)
             {
-                _orderedLevels.AddRange(keys.OrderBy(s => s, StringComparer.Ordinal));
+                AddLevels(catalog.OrderedLevels);
+                return;
+            }
+
+            if (catalog.Definitions != null && catalog.Definitions.Count > 0)
+            {
+                foreach (var definition in catalog.Definitions)
+                {
+                    if (definition == null)
+                    {
+                        continue;
+                    }
+
+                    var id = NormalizeLevelId(definition.LevelId);
+                    if (id.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    if (!_orderedLevels.Contains(id))
+                    {
+                        _orderedLevels.Add(id);
+                    }
+                }
             }
         }
 
-        private void Disable(string detail, string reason)
+        private void AddLevels(IReadOnlyList<string> levels)
         {
-            if (_disabled)
+            if (levels == null)
             {
                 return;
             }
 
-            _disabled = true;
-            _disabledReason = string.IsNullOrWhiteSpace(detail) ? "Unknown" : detail.Trim();
+            foreach (var entry in levels)
+            {
+                var id = NormalizeLevelId(entry);
+                if (id.Length == 0)
+                {
+                    continue;
+                }
 
-            DebugUtility.Log<LevelSessionService>(
-                $"[OBS][Level] ServiceDisabled reason='{reason}' detail='{_disabledReason}'.",
-                DebugUtility.Colors.Warning);
+                if (!_orderedLevels.Contains(id))
+                {
+                    _orderedLevels.Add(id);
+                }
+            }
+        }
+
+        private bool TryResolveFallbackPlan(out LevelPlan plan, out LevelChangeOptions options, out string detail)
+        {
+            plan = LevelPlan.None;
+            options = LevelChangeOptions.Default.Clone();
+            detail = "FallbackEmpty";
+
+            if (_orderedLevels.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var levelId in _orderedLevels)
+            {
+                if (_resolver.TryResolvePlan(levelId, out plan, out options))
+                {
+                    detail = "FallbackOrdered";
+                    return true;
+                }
+            }
+
+            detail = "FallbackNoValidPlan";
+            return false;
+        }
+
+        private string ResolvePreviousLevelId(string currentLevelId)
+        {
+            if (_orderedLevels.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var normalized = NormalizeLevelId(currentLevelId);
+            if (normalized.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            for (int index = 0; index < _orderedLevels.Count; index++)
+            {
+                if (!string.Equals(_orderedLevels[index], normalized, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (index == 0)
+                {
+                    return string.Empty;
+                }
+
+                return _orderedLevels[index - 1];
+            }
+
+            return string.Empty;
         }
 
         private static string NormalizeReason(string reason, string fallback)
@@ -378,218 +396,30 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             return reason.Trim();
         }
 
-        private static string FormatLevels(List<string> levels)
+        private static string NormalizeLevelId(string levelId)
         {
-            if (levels.Count == 0)
-            {
-                return "<none>";
-            }
-
-            if (levels.Count <= 8)
-            {
-                return string.Join(",", levels);
-            }
-
-            return string.Join(",", levels.Take(8)) + $",...(+{levels.Count - 8})";
+            return string.IsNullOrWhiteSpace(levelId) ? string.Empty : levelId.Trim();
         }
 
-        // ---------------------------
-        // Compat / Reflection helpers
-        // ---------------------------
-
-        private bool TryResolveCatalogCompat(string reason, out LevelCatalog? catalog)
+        private static string FormatLevels(IReadOnlyList<string> levels)
         {
-            catalog = null;
-
-            var type = _resolver.GetType();
-            var byRefCatalog = typeof(LevelCatalog).MakeByRefType();
-
-            // bool TryResolveCatalog(string reason, out LevelCatalog catalog)
-            var m1 = type.GetMethod("TryResolveCatalog", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null, types: new[] { typeof(string), byRefCatalog }, modifiers: null);
-            if (m1 != null)
-            {
-                var args = new object?[] { reason, null };
-                var result = m1.Invoke(_resolver, args);
-                if (result is bool ok && ok)
-                {
-                    catalog = args[1] as LevelCatalog;
-                    return catalog != null;
-                }
-
-                return false;
-            }
-
-            // bool TryResolveCatalog(out LevelCatalog catalog)
-            var m2 = type.GetMethod("TryResolveCatalog", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null, types: new[] { byRefCatalog }, modifiers: null);
-            if (m2 != null)
-            {
-                var args = new object?[] { null };
-                var result = m2.Invoke(_resolver, args);
-                if (result is bool ok && ok)
-                {
-                    catalog = args[0] as LevelCatalog;
-                    return catalog != null;
-                }
-
-                return false;
-            }
-
-            // Nenhuma assinatura conhecida
-            return false;
-        }
-
-        private bool TryResolvePlanCompat(string levelId, string reason, out LevelPlan plan)
-        {
-            plan = LevelPlan.Invalid;
-
-            var type = _resolver.GetType();
-            var byRefPlan = typeof(LevelPlan).MakeByRefType();
-            var byRefOptions = typeof(LevelChangeOptions).MakeByRefType();
-
-            // bool TryResolvePlan(string levelId, string reason, out LevelPlan plan)
-            var m1 = type.GetMethod("TryResolvePlan", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null, types: new[] { typeof(string), typeof(string), byRefPlan }, modifiers: null);
-            if (m1 != null)
-            {
-                var args = new object?[] { levelId, reason, null };
-                var result = m1.Invoke(_resolver, args);
-                if (result is bool ok && ok && args[2] is LevelPlan p1)
-                {
-                    plan = p1;
-                    return true;
-                }
-
-                return false;
-            }
-
-            // bool TryResolvePlan(string levelId, out LevelPlan plan, out LevelChangeOptions options)
-            var m2 = type.GetMethod("TryResolvePlan", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null, types: new[] { typeof(string), byRefPlan, byRefOptions }, modifiers: null);
-            if (m2 != null)
-            {
-                var args = new object?[] { levelId, null, null };
-                var result = m2.Invoke(_resolver, args);
-                if (result is bool ok && ok && args[1] is LevelPlan p2)
-                {
-                    plan = p2;
-                    return true;
-                }
-
-                return false;
-            }
-
-            // bool TryResolvePlan(string levelId, out LevelPlan plan)
-            var m3 = type.GetMethod("TryResolvePlan", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null, types: new[] { typeof(string), byRefPlan }, modifiers: null);
-            if (m3 != null)
-            {
-                var args = new object?[] { levelId, null };
-                var result = m3.Invoke(_resolver, args);
-                if (result is bool ok && ok && args[1] is LevelPlan p3)
-                {
-                    plan = p3;
-                    return true;
-                }
-
-                return false;
-            }
-
-            return false;
-        }
-
-        private static string GetInitialLevelId(LevelCatalog? catalog)
-        {
-            if (catalog == null)
+            if (levels == null || levels.Count == 0)
             {
                 return string.Empty;
             }
 
-            // tenta nomes comuns sem assumir exatamente
-            var s = GetStringPropCompat(catalog, "InitialLevelId", "InitialLevelID", "InitialLevel", "Initial");
-            return s ?? string.Empty;
-        }
-
-        private static string? GetStringPropCompat(object obj, params string[] names)
-        {
-            var t = obj.GetType();
-            foreach (var n in names)
+            var builder = new StringBuilder();
+            for (int index = 0; index < levels.Count; index++)
             {
-                var p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (p != null && p.PropertyType == typeof(string))
+                if (index > 0)
                 {
-                    return p.GetValue(obj) as string;
+                    builder.Append(',');
                 }
+
+                builder.Append(levels[index]);
             }
 
-            return null;
-        }
-
-        private static List<string> GetStringListCompat(object obj, params string[] names)
-        {
-            var t = obj.GetType();
-            foreach (var n in names)
-            {
-                var p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (p == null)
-                {
-                    continue;
-                }
-
-                var value = p.GetValue(obj);
-                if (value is IEnumerable enumerable)
-                {
-                    var list = new List<string>();
-                    foreach (var item in enumerable)
-                    {
-                        if (item is string s && !string.IsNullOrWhiteSpace(s))
-                        {
-                            list.Add(s.Trim());
-                        }
-                    }
-
-                    if (list.Count > 0)
-                    {
-                        return list;
-                    }
-                }
-            }
-
-            return new List<string>();
-        }
-
-        private static List<string> GetDictionaryKeysCompat(object obj, params string[] names)
-        {
-            var t = obj.GetType();
-            foreach (var n in names)
-            {
-                var p = t.GetProperty(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (p == null)
-                {
-                    continue;
-                }
-
-                var value = p.GetValue(obj);
-                if (value is IDictionary dict)
-                {
-                    var list = new List<string>();
-                    foreach (var k in dict.Keys)
-                    {
-                        if (k is string s && !string.IsNullOrWhiteSpace(s))
-                        {
-                            list.Add(s.Trim());
-                        }
-                    }
-
-                    if (list.Count > 0)
-                    {
-                        return list;
-                    }
-                }
-            }
-
-            return new List<string>();
+            return builder.ToString();
         }
     }
 }

@@ -16,10 +16,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
     /// - ILevelCatalogResolver
     /// - ILevelManager (aplica ContentSwap)
     /// - ILevelSessionService (seleção/aplicação)
-    ///
-    /// Ajuste Fase A:
-    /// - No bootstrap, inicializa a sessão para garantir seleção inicial determinística
-    ///   (sem aplicar automaticamente).
     /// </summary>
     public static class LevelManagerInstaller
     {
@@ -32,35 +28,41 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return;
             }
 
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
+                    "[LevelManager] DependencyManager.Provider é null; registro abortado.");
+                return;
+            }
+
             var provider = DependencyManager.Provider;
 
             // 1) Provider do catálogo
             if (!provider.TryGetGlobal<ILevelCatalogProvider>(out var catalogProvider) || catalogProvider == null)
             {
                 catalogProvider = new ResourcesLevelCatalogProvider();
-                provider.RegisterGlobal<ILevelCatalogProvider>(catalogProvider);
+                provider.RegisterGlobal<ILevelCatalogProvider>(catalogProvider, allowOverride: false);
             }
 
             // 2) Provider de definições
             if (!provider.TryGetGlobal<ILevelDefinitionProvider>(out var definitionProvider) || definitionProvider == null)
             {
                 definitionProvider = new LevelDefinitionProviderFromCatalog(catalogProvider);
-                provider.RegisterGlobal<ILevelDefinitionProvider>(definitionProvider);
+                provider.RegisterGlobal<ILevelDefinitionProvider>(definitionProvider, allowOverride: false);
             }
 
             // 3) Resolver de catálogo
             if (!provider.TryGetGlobal<ILevelCatalogResolver>(out var resolver) || resolver == null)
             {
                 resolver = new LevelCatalogResolver(catalogProvider, definitionProvider);
-                provider.RegisterGlobal<ILevelCatalogResolver>(resolver);
+                provider.RegisterGlobal<ILevelCatalogResolver>(resolver, allowOverride: false);
             }
 
             // 4) ContentSwap (dependência obrigatória do LevelManager)
             if (!provider.TryGetGlobal<IContentSwapChangeService>(out var contentSwap) || contentSwap == null)
             {
-                DebugUtility.Log(typeof(LevelManagerInstaller),
-                    "[LevelManager] IContentSwapChangeService não encontrado no DI global; registro abortado.",
-                    DebugUtility.Colors.Warning);
+                DebugUtility.LogWarning(typeof(LevelManagerInstaller),
+                    "[LevelManager] IContentSwapChangeService não encontrado no DI global; registro abortado.");
                 return;
             }
 
@@ -68,26 +70,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             if (!provider.TryGetGlobal<ILevelManager>(out var levelManager) || levelManager == null)
             {
                 levelManager = new LevelManager(contentSwap);
-                provider.RegisterGlobal<ILevelManager>(levelManager);
+                provider.RegisterGlobal<ILevelManager>(levelManager, allowOverride: false);
             }
 
             // 6) Sessão (depende do resolver + manager)
             if (!provider.TryGetGlobal<ILevelSessionService>(out var session) || session == null)
             {
                 session = new LevelSessionService(resolver, levelManager);
-                provider.RegisterGlobal<ILevelSessionService>(session);
-            }
-
-            // Ajuste pequeno Fase A:
-            // No bootstrap, garantir que exista seleção inicial (sem aplicar).
-            if (fromBootstrap)
-            {
-                var ok = session.Initialize();
-                DebugUtility.Log(typeof(LevelManagerInstaller),
-                    ok
-                        ? "[LevelManager] Session Initialize OK (bootstrap)."
-                        : "[LevelManager] Session Initialize falhou (bootstrap).",
-                    ok ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+                provider.RegisterGlobal<ILevelSessionService>(session, allowOverride: false);
             }
 
             _registered = true;

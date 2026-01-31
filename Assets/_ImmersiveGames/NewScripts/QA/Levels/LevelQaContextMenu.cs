@@ -212,7 +212,6 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return;
             }
 
-            // Preferir a sessão (seleção + apply) quando disponível.
             var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
             if (sessionService != null)
             {
@@ -223,7 +222,6 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 }
             }
 
-            // Fallback: resolver direto + RequestLevelInPlaceAsync.
             var resolver = ResolveGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver>("ILevelCatalogResolver");
             if (resolver == null)
             {
