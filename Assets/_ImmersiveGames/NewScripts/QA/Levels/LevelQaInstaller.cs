@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return;
             }
 
-            var existing = Object.FindObjectOfType<LevelQaContextMenu>(true);
+            var existing = Object.FindFirstObjectByType<LevelQaContextMenu>(FindObjectsInactive.Include);
             if (existing != null)
             {
                 EnsureName(existing.gameObject);

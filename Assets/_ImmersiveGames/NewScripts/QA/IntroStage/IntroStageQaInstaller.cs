@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
 {
     public sealed class IntroStageQaInstaller : MonoBehaviour
     {
-        private static IntroStageQaInstaller _instance;
+        private static IntroStageQaInstaller? _instance;
         private const string QaGameObjectName = "QA_IntroStage";
 
         public static void EnsureInstalled()
@@ -44,15 +44,15 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             }
         }
 
-        private static bool TryResolveExisting(out IntroStageQaInstaller resolved)
+        private static bool TryResolveExisting(out IntroStageQaInstaller? resolved)
         {
             resolved = FindExistingInstaller();
             return resolved != null;
         }
 
-        private static IntroStageQaInstaller FindExistingInstaller()
+        private static IntroStageQaInstaller? FindExistingInstaller()
         {
-            var installers = FindObjectsOfType<IntroStageQaInstaller>(true);
+            var installers = FindObjectsByType<IntroStageQaInstaller>(FindObjectsSortMode.None);
             if (installers == null || installers.Length == 0)
             {
                 return null;

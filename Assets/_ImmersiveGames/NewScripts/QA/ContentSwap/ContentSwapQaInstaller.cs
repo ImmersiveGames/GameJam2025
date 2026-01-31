@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
     /// Garante que exista um GameObject com o componente ContentSwapQaContextMenu no Play Mode.
     ///
     /// Regras:
-    /// - O chamador deve instalar apenas em Editor/Development (este arquivo não referencia UnityEditor).
+    /// - O chamador deve instalar apenas em Editor/Development (este arquivo não referência UnityEditor).
     /// - O GameObject é criado como DontDestroyOnLoad para ser acessível em qualquer cena.
     /// </summary>
     public static class ContentSwapQaInstaller
@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
                 return;
             }
 
-            var existing = Object.FindObjectOfType<ContentSwapQaContextMenu>(true);
+            var existing = Object.FindFirstObjectByType<ContentSwapQaContextMenu>(FindObjectsInactive.Include);
             if (existing != null)
             {
                 EnsureName(existing.gameObject);

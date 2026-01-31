@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.QA.SceneFlow
                 return;
             }
 
-            var existing = Object.FindObjectOfType<SceneFlowQaContextMenu>(true);
+            var existing = Object.FindFirstObjectByType<SceneFlowQaContextMenu>(FindObjectsInactive.Include);
             if (existing != null)
             {
                 EnsureName(existing.gameObject);

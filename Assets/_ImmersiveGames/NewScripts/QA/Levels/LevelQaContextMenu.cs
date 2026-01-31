@@ -236,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 return;
             }
 
-            var levelManager = ResolveGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManager>("ILevelManager");
+            var levelManager = ResolveGlobal<ILevelManager>("ILevelManager");
             if (levelManager == null)
             {
                 return;

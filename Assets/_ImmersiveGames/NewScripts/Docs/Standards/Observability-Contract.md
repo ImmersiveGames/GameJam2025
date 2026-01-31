@@ -210,8 +210,7 @@ Observação: `Reason-Map.md` é mantido apenas como redirect histórico para es
 As evidências abaixo são extraídas de:
 
 - `Docs/Reports/Evidence/LATEST.md`
-- `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
-- `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
+- `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
 
 ### Skipped startup/frontend
 

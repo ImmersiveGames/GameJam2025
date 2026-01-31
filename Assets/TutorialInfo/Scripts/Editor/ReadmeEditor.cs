@@ -42,7 +42,7 @@ public class ReadmeEditor : Editor
             var readmeAsset = SelectReadme();
             if (readmeAsset != null)
             {
-                var path = AssetDatabase.GetAssetPath(readmeAsset);
+                string path = AssetDatabase.GetAssetPath(readmeAsset);
                 FileUtil.DeleteFileOrDirectory(path + ".meta");
                 FileUtil.DeleteFileOrDirectory(path);
             }
@@ -76,7 +76,7 @@ public class ReadmeEditor : Editor
 
     static Readme SelectReadme()
     {
-        var ids = AssetDatabase.FindAssets("Readme t:Readme");
+        string[] ids = AssetDatabase.FindAssets("Readme t:Readme");
         if (ids.Length == 1)
         {
             var readmeObject = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(ids[0]));
@@ -97,7 +97,7 @@ public class ReadmeEditor : Editor
         var readme = (Readme)target;
         Init();
 
-        var iconWidth = Mathf.Min(EditorGUIUtility.currentViewWidth / 3f - 20f, 128f);
+        float iconWidth = Mathf.Min(EditorGUIUtility.currentViewWidth / 3f - 20f, 128f);
 
         GUILayout.BeginHorizontal("In BigTitle");
         {

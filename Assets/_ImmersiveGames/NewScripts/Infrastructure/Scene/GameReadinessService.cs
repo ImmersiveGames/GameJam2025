@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameReadinessService : IDisposable
     {
-        private readonly ISimulationGateService _gateService;
+        private readonly ISimulationGateService? _gateService;
 
         private IDisposable? _activeGateHandle;
         private bool _gameplayReady;

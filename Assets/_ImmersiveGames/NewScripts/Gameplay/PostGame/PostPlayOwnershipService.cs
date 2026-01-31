@@ -181,7 +181,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             {
                 _gateHandle.Dispose();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 DebugUtility.LogWarning<PostPlayOwnershipService>(
                     $"[PostPlay] Falha ao liberar gate ({reason}): {ex}");

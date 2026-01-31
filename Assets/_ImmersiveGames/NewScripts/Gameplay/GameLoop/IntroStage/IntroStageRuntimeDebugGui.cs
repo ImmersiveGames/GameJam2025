@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 
         private static GameObject? FindExistingRuntimeGuiObject()
         {
-            var objects = FindObjectsOfType<GameObject>(true);
+            var objects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
             foreach (var obj in objects)
             {
                 if (!string.Equals(obj.name, RuntimeGuiObjectName, StringComparison.Ordinal))

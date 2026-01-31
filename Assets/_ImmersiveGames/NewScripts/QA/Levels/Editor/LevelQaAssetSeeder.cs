@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels.Editor
             var newDefinition1 = LoadOrCreateDefinition(NewDefinitionsFolder, Level1Id, Content1Id, Signature1, "novo");
             var newDefinition2 = LoadOrCreateDefinition(NewDefinitionsFolder, Level2Id, Content2Id, Signature2, "novo");
 
-            var updatedNewCatalog = EnsureCatalogData(newCatalog, newDefinition1, newDefinition2, "novo");
+            bool updatedNewCatalog = EnsureCatalogData(newCatalog, newDefinition1, newDefinition2, "novo");
 
             var legacyCatalog = AssetDatabase.LoadAssetAtPath<LevelCatalog>(LegacyCatalogAssetPath);
             if (legacyCatalog == null)
@@ -104,8 +104,8 @@ namespace _ImmersiveGames.NewScripts.QA.Levels.Editor
             string signature,
             string scopeLabel)
         {
-            var assetName = $"LevelDefinition_{levelId}";
-            var path = $"{definitionsFolder}/{assetName}.asset";
+            string assetName = $"LevelDefinition_{levelId}";
+            string path = $"{definitionsFolder}/{assetName}.asset";
             var definition = AssetDatabase.LoadAssetAtPath<LevelDefinition>(path);
             if (definition != null)
             {
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels.Editor
             LevelDefinition definition2,
             string scopeLabel)
         {
-            var updated = false;
+            bool updated = false;
 
             if (string.IsNullOrWhiteSpace(catalog.InitialLevelId))
             {
@@ -212,15 +212,15 @@ namespace _ImmersiveGames.NewScripts.QA.Levels.Editor
             list.Add(definition);
         }
 
-        private static void EnsureFolder(string path)
+        private static void EnsureFolder(string? path)
         {
             if (AssetDatabase.IsValidFolder(path))
             {
                 return;
             }
 
-            var parent = System.IO.Path.GetDirectoryName(path)?.Replace("\\", "/");
-            var folderName = System.IO.Path.GetFileName(path);
+            string? parent = System.IO.Path.GetDirectoryName(path)?.Replace("\\", "/");
+            string? folderName = System.IO.Path.GetFileName(path);
 
             if (!string.IsNullOrWhiteSpace(parent) && !AssetDatabase.IsValidFolder(parent))
             {

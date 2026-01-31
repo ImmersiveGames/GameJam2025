@@ -1,114 +1,25 @@
-# ADR-0015 — Baseline 2.0: Fechamento Operacional
+# ADR-0015 - Baseline 2.0: Fechamento
 
 ## Status
 
-- Estado: Implementado
-- Data: 2026-01-05
-- Escopo: NewScripts / Baseline 2.0
+- Estado: **Aceito**
+- Data: **2026-01-31** (snapshot canonico atual)
 
 ## Contexto
 
-O Baseline 2.0 existe para garantir um **contrato mínimo e verificável** do pipeline de produção:
-SceneFlow → ScenesReady → WorldLifecycleResetCompleted → Gate → FadeOut/Completed. Esse contrato
-consolidou ordem de eventos, tokens de gate, assinatura de logs e invariantes HARD para evitar
-regressões em transições e resets determinísticos.
+O Baseline 2.0 foi o primeiro contrato minimo para:
+- Boot -> Menu com skip de reset em frontend
+- Menu -> Gameplay com ResetWorld + spawn deterministico
+- PostGame com Restart/ExitToMenu e gating consistente
 
-Após estabilização e validação checklist-driven, faz sentido declarar o Baseline 2.0 como
-**FECHADO e OPERACIONAL**, preservando a spec congelada e o histórico já registrado.
+A partir do Baseline 2.2, as mesmas garantias ficam cobertas e ampliadas por evidencia e auditoria.
 
-## Decisão
+## Decisao
 
-### Objetivo de produção (sistema ideal)
+Considerar o Baseline 2.0 fechado e nao evoluir mais o contrato 2.0. Evolucoes devem acontecer via Baseline 2.2+ (com gate, evidencia e auditoria).
 
-Congelar o Baseline 2.0 como contrato verificável (matriz A–E + invariantes + evidências datadas), reduzindo regressões e ambiguidade na validação.
+## Referencias
 
-### Contrato de produção (mínimo)
-
-- Baseline 2.0 é verificado por logs canônicos + lista de invariantes, não por scripts frágeis.
-- Evidências são arquivadas por data; `LATEST.md` aponta para a última evidência canônica.
-- Mudanças que afetem o baseline devem atualizar evidência e changelog.
-
-### Não-objetivos (resumo)
-
-Ver seção **Fora de escopo**.
-
-## Fora de escopo
-
-- Automatizar totalmente a verificação via ferramenta (pode falhar; log é fonte de verdade).
-
-- Melhorias futuras de tooling/parser/regex do checklist-driven.
-- Expansões do baseline para novos cenários além de A–E.
-- Ajustes cosméticos de logs que não violem invariantes HARD.
-
-## Consequências
-
-### Benefícios
-
-- Novas features **não podem alterar** assinaturas, ordem do pipeline ou razões canônicas sem
-  atualizar **spec + checklist + ADR** (nova versão do baseline).
-- Mudanças que toquem o contrato do Baseline 2.0 devem ser tratadas como **Baseline 2.1** ou
-  novo ADR substitutivo, evitando regressões silenciosas.
-
-### Trade-offs / Riscos
-
-- (não informado)
-
-### Política de falhas e fallback (fail-fast)
-
-- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
-- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
-- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
-
-
-### Critérios de pronto (DoD)
-
-- Existe um documento de evidência datado com âncoras A–E e `LATEST.md` apontando.
-
-## Notas de implementação
-
-### Evidências (fechamento)
-
-O fechamento do Baseline 2.0 foi validado via **snapshot datado** (evidência canônica para ADRs aceitos).
-
-- Snapshot (canônico 2026-01-29): [`Baseline-2.2-Evidence-2026-01-29.md`](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
-- Log (snapshot): [`Logs/Baseline-2.2-Smoke-2026-01-18.log`](../Reports/Evidence/LATEST.md)
-- Verificação (snapshot): [`Baseline-2.2-ContractVerification-2026-01-18.md`](../Reports/Evidence/LATEST.md)
-
-Observação: artefatos antigos do Baseline 2.0 (spec/checklist/smoke) foram removidos de `Reports/` para reduzir ruído; o snapshot datado permanece como evidência histórica.
-
-### Escopo do “fechado” (A–E, checklist-driven)
-
-O fechamento cobre:
-- **A–E do checklist** (startup → menu, menu → gameplay, pause → resume, postgame victory → exit,
-  postgame defeat → restart).
-- **Invariantes HARD** do pipeline (ordem de eventos, reset antes de FadeOut, tokens balanceados,
-  razões canônicas de reset/skip).
-- **Assinaturas-chave** e motivos (`reason`) conforme contrato de observabilidade, validados pelo snapshot datado.
-
-### Próximos passos pós-fechamento (fora do baseline)
-
-- Operacionalizar o **ResetWorld trigger de produção** como iniciativa paralela.
-- Itens do plano macro (melhorias de tooling/parser, extensões do checklist) seguem como backlog
-  fora do Baseline 2.0.
-
-## Evidência
-
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- **Âncoras/assinaturas relevantes:**
-  - Ver `Docs/Reports/Evidence/LATEST.md` e evidência datada.
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-
-## Evidências
-
-- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
-- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot (canônico 2026-01-29): [`Baseline-2.2-Evidence-2026-01-29.md`](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
-- Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-
-## Referências
-
-- [Docs/README.md](../README.md)
-- [Docs/Overview/Overview.md](../Overview/Overview.md)
-- [Docs/Overview/Overview.md](../Overview/Overview.md)
-- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- Snapshot canonico (2.2): `../Reports/Evidence/LATEST.md`
+- Evidencia datada (2026-01-31): `../Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
+- Auditoria Strict/Release (2026-01-31): `../Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`

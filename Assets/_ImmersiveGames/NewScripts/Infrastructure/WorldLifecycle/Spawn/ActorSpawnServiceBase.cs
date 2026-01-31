@@ -28,8 +28,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
             GameObject prefab)
         {
             this.uniqueIdFactory = uniqueIdFactory;
-            this._actorRegistry = actorRegistry;
-            this._context = context;
+            _actorRegistry = actorRegistry;
+            _context = context;
             _prefab = prefab;
         }
 

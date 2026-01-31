@@ -1,99 +1,29 @@
-# ADR-0014 — Gameplay Reset: Targets e Grupos
+# ADR-0014 - GameplayReset: Targets e Grupos
 
 ## Status
 
-- Estado: Implementado
-- Data: 2025-12-28
-- Escopo: `GameplayReset` (NewScripts), WorldLifecycle, spawn services (Player/Eater)
+- Estado: **Aceito**
+- Data: **2026-01-31** (revalidado no snapshot canonico)
 
 ## Contexto
 
-Durante o desenvolvimento foi necessário suportar resets parciais e previsíveis em gameplay, sem:
+Durante transicoes para gameplay (profile=gameplay), o projeto precisa resetar de forma deterministica um conjunto bem definido de alvos (targets) e grupos (grupos de servicos/registries) para garantir:
 
-- destruir/recriar toda a cena;
-- depender de objetos legados;
-- introduzir resets implícitos “por acaso”.
+- ausencia de state leak entre runs
+- spawns coerentes (Player/Eater, etc.)
+- invariantes de gating e InputMode
 
-Além do reset “hard” por WorldLifecycle, há casos de QA e debug onde precisamos resetar apenas
-um subconjunto dos atores (ex.: somente Player).
+## Decisao
 
-## Decisão
+- Consolidar o conceito de "targets" e "grupos" do GameplayReset.
+- O reset de gameplay e disparado via driver de producao na fase ScenesReady do SceneFlow.
+- A validacao do comportamento e feita via Baseline (logs) e auditoria Strict/Release.
 
-### Objetivo de produção (sistema ideal)
+## Evidencia
 
-Controlar quais sistemas/targets participam do reset de gameplay via grupos declarativos, garantindo resets determinísticos e evitando 'vazamentos' entre runs.
+- Snapshot canonico: `../Reports/Evidence/LATEST.md`
+- Evidencia datada (2026-01-31): `../Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
 
-### Contrato de produção (mínimo)
+## Notas
 
-- ResetWorld recebe um conjunto de targets/grupos (global vs scene, gameplay-only etc.).
-- Cada target é idempotente e observa a ordem (limpeza → spawn → gates).
-- Falhas de target ausente/config inconsistente são fail-fast (não inventar targets).
-
-### Não-objetivos (resumo)
-
-Ver seção **Fora de escopo**.
-
-## Fora de escopo
-
-- Implementar pooling/cleanup genérico fora do contrato de reset.
-
-- (não informado)
-
-## Consequências
-
-### Benefícios
-- Resets parciais com semântica explícita.
-- Facilita QA (validar despawn/spawn por grupo).
-- Base para evoluções: waves, checkpoints, respawn por morte, etc.
-
-### Trade-offs / Riscos
-- Se a classificação estiver incorreta, o reset pode deixar atores “órfãos” no mundo.
-- Novos tipos de ator exigem atualização no classificador e/ou nos spawn services.
-
-### Política de falhas e fallback (fail-fast)
-
-- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
-- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
-- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
-
-
-### Critérios de pronto (DoD)
-
-- ResetRequested/ResetCompleted usam reason/contextSignature padronizados.
-- Evidência mostra reset determinístico e spawn pipeline executando no perfil gameplay.
-
-## Notas de implementação
-
-### Regras de classificação (baseline)
-
-- A classificação é feita preferencialmente pelo **`ActorRegistry`** (determinística e rápida).
-- Se não houver dados no registry, o orchestrator faz **fallback por scan de cena** (`IActor`).
-- Para `PlayersOnly` e `ByActorKind`, o filtro principal é o `ActorKind`.
-- Para `ActorIdSet`, a fonte de verdade é a lista `ActorIds` do request.
-- Para `EaterOnly`, aplica-se `ActorKind.Eater` com fallback string-based (`EaterActor`) quando necessário.
-
-### Integração com WorldLifecycle
-
-- O hard reset acionado em runtime (ScenesReady) equivale semanticamente a `AllActorsInScene`.
-- Targets parciais são usados principalmente para QA/debug e para futuras features (ex.: respawn individual).
-
-## Evidência
-
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- **Âncoras/assinaturas relevantes:**
-  - `ResetRequested ... reason='SceneFlow/ScenesReady'`
-  - `ResetCompleted ...` (profile gameplay) + spawns
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-
-## Evidências
-
-- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
-- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot (canônico 2026-01-29): [`Baseline-2.2-Evidence-2026-01-29.md`](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
-- Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-
-## Referências
-
-- [Overview/Overview.md](../Overview/Overview.md)
-- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+Detalhes finos de implementacao (targets/grupos especificos) devem permanecer no codigo e no contrato de observabilidade, evitando duplicacao extensa em docs.

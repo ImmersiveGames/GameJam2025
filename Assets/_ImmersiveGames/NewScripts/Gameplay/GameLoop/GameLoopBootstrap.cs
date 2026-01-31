@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     public sealed class GameLoopBootstrap : MonoBehaviour
     {
         private const string DriverObjectName = "[NewScripts] GameLoopRuntimeDriver";
+        private const string RunEndBridgeObjectName = "[NewScripts] GameLoopRunEndEventBridge";
 
         private static bool _initialized;
 
@@ -29,6 +30,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             EnsureService();
             EnsureBridge();
+            EnsureGameRunServices();
+            EnsureOutcomeEventInputBridge();
+            EnsureRunEndEventBridge();
             EnsureDriver();
 
             _initialized = true;
@@ -59,6 +63,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static void EnsureDriver()
         {
+            // Compatível com versões mais antigas do Unity (evita FindFirstObjectByType).
             if (FindFirstObjectByType<GameLoopRuntimeDriver>() != null)
             {
                 return;
@@ -66,6 +71,61 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             var go = new GameObject(DriverObjectName);
             go.AddComponent<GameLoopRuntimeDriver>();
+            DontDestroyOnLoad(go);
+        }
+
+        private static void EnsureGameRunServices()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+            {
+                Debug.LogWarning("[NewScripts] GameLoopBootstrap: IGameLoopService não está disponível; pulando serviços de run.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var endRequest) || endRequest == null)
+            {
+                endRequest = new GameRunEndRequestService();
+                DependencyManager.Provider.RegisterGlobal(endRequest);
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunStatusService>(out var status) || status == null)
+            {
+                status = new GameRunStatusService(gameLoopService);
+                DependencyManager.Provider.RegisterGlobal(status);
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcome) || outcome == null)
+            {
+                outcome = new GameRunOutcomeService(gameLoopService);
+                DependencyManager.Provider.RegisterGlobal(outcome);
+            }
+        }
+
+        private static void EnsureOutcomeEventInputBridge()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) || outcomeService == null)
+            {
+                Debug.LogWarning("[NewScripts] GameLoopBootstrap: IGameRunOutcomeService não está disponível; pulando GameRunOutcomeEventInputBridge.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<GameRunOutcomeEventInputBridge>(out var bridge) || bridge == null)
+            {
+                bridge = new GameRunOutcomeEventInputBridge(outcomeService);
+                DependencyManager.Provider.RegisterGlobal(bridge);
+            }
+        }
+
+        private static void EnsureRunEndEventBridge()
+        {
+            // Compatível com versões mais antigas do Unity (evita FindFirstObjectByType).
+            if (FindFirstObjectByType<GameLoopRunEndEventBridge>() != null)
+            {
+                return;
+            }
+
+            var go = new GameObject(RunEndBridgeObjectName);
+            go.AddComponent<GameLoopRunEndEventBridge>();
             DontDestroyOnLoad(go);
         }
 

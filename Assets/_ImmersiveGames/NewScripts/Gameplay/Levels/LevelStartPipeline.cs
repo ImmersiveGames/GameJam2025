@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 || string.Equals(state, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal);
         }
 
-        private static bool IsReadyState(string state)
+        private static bool IsReadyState(string? state)
         {
             return string.Equals(state, nameof(GameLoopStateId.Ready), StringComparison.Ordinal)
                 || string.Equals(state, nameof(GameLoopStateId.Boot), StringComparison.Ordinal)
@@ -158,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContentId);
 
-        public LevelStartRequest(string contextSignature, string contentId, string targetScene, string reason)
+        public LevelStartRequest(string contextSignature, string contentId, string? targetScene, string reason)
         {
             ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? "<none>" : contextSignature.Trim();
             ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();

@@ -957,7 +957,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         {
             var provider = DependencyManager.Provider;
 
-            if (provider.TryGetGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.ILevelManager>(out var existing) && existing != null)
+            if (provider.TryGetGlobal<ILevelManager>(out var existing) && existing != null)
             {
                 return;
             }

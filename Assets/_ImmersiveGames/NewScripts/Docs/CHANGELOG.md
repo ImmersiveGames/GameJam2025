@@ -26,6 +26,13 @@
 ### Changed
 - Sincronizado `ADR-0017-LevelManager-Config-Catalog.md` com a versão mais recente enviada.
 - Corrigido o nome do arquivo `ADR-0018` (remoção de artefatos de encoding no filename) e sincronizado com a versão mais recente enviada.
+- Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
+- Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
+- Sincronizados ADRs e o contrato de observabilidade com o snapshot canônico 2026-01-31.
+- Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canônico 2026-01-31 (LATEST + evidência datada + auditoria) e remover duplicidades.
+- `Standards/Observability-Contract.md` sincronizado para apontar o snapshot 2026-01-31 (sem duplicatas).
+- Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canonico 2026-01-31 (LATEST + evidencia datada + auditoria) e remover duplicidades.
+- `Standards/Observability-Contract.md` sincronizado para apontar para a evidencia 2026-01-31.
 
 ### Changed (ADR-0009 — completude)
 
