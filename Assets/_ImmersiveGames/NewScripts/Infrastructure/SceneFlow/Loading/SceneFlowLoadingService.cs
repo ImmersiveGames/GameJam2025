@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
     public sealed class SceneFlowLoadingService
     {
 
-        private INewScriptsLoadingHudService _hudService;
+        private ILoadingHudService _hudService;
 
         private string _activeSignature;
         private string _pendingSignature;
@@ -260,7 +260,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 return true;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<INewScriptsLoadingHudService>(out var service) || service == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ILoadingHudService>(out var service) || service == null)
             {
                 return false;
             }

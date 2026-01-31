@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.Scripts.CameraSystems;
-using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
+using _ImmersiveGames.Scripts.LegaadoFadeSystem;
+using _ImmersiveGames.Scripts.LegadoFadeSystem;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
@@ -54,7 +55,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 EnsureGlobal<ISimulationGateService>(() => new SimulationGateService());
 
                 // Fade + pré-carregamento da FadeScene
-                EnsureGlobal<IFadeService>(() =>new FadeService());
+                EnsureGlobal<ILegadoFadeService>(() =>new LegadoFadeService());
 
                 EnsureGlobal<ISceneLoader>(() => new SceneLoaderCore());
 
@@ -65,7 +66,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     var provider = DependencyManager.Provider;
 
                     provider.TryGetGlobal(out ISceneLoader sceneLoader);
-                    provider.TryGetGlobal(out IFadeService fadeService);
+                    provider.TryGetGlobal(out ILegadoFadeService fadeService);
 
                     if (sceneLoader == null)
                     {
@@ -78,7 +79,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     if (fadeService == null)
                     {
                         DebugUtility.LogWarning<DependencyBootstrapper>(
-                            "[SceneTransition] IFadeService não encontrado ao criar SceneTransitionService. " +
+                            "[SceneTransition] ILegadoFadeService não encontrado ao criar SceneTransitionService. " +
                             "Transições funcionarão, mas sem fade.");
                     }
 

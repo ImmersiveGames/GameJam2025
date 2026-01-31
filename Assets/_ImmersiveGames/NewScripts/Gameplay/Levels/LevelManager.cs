@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {

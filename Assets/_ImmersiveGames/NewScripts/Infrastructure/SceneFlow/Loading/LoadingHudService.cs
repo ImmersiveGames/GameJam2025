@@ -11,12 +11,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
     /// Serviço global para garantir o carregamento da cena de HUD de loading (Additive).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class NewScriptsLoadingHudService : INewScriptsLoadingHudService
+    public sealed class LoadingHudService : ILoadingHudService
     {
         private const string LoadingHudSceneName = "LoadingHudScene";
 
         private readonly SemaphoreSlim _ensureGate = new(1, 1);
-        private NewScriptsLoadingHudController _controller;
+        private LoadingHudController _controller;
 
         public async Task EnsureLoadedAsync()
         {
@@ -43,13 +43,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                     var scene = SceneManager.GetSceneByName(LoadingHudSceneName);
                     if (!scene.IsValid() || !scene.isLoaded)
                     {
-                        DebugUtility.LogVerbose<NewScriptsLoadingHudService>(
+                        DebugUtility.LogVerbose<LoadingHudService>(
                             $"[LoadingHUD] Carregando cena '{LoadingHudSceneName}' (Additive)...");
 
                         var loadOp = SceneManager.LoadSceneAsync(LoadingHudSceneName, LoadSceneMode.Additive);
                         if (loadOp == null)
                         {
-                            DebugUtility.LogWarning<NewScriptsLoadingHudService>(
+                            DebugUtility.LogWarning<LoadingHudService>(
                                 $"[LoadingHUD] LoadSceneAsync retornou null para '{LoadingHudSceneName}'. Verifique Build Settings.");
                             return;
                         }
@@ -65,18 +65,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
                     if (!IsControllerValid(_controller))
                     {
-                        DebugUtility.LogWarning<NewScriptsLoadingHudService>(
-                            "[LoadingHUD] Nenhum NewScriptsLoadingHudController encontrado na cena.");
+                        DebugUtility.LogWarning<LoadingHudService>(
+                            "[LoadingHUD] Nenhum LoadingHudController encontrado na cena.");
                     }
                     else
                     {
-                        DebugUtility.LogVerbose<NewScriptsLoadingHudService>(
-                            "[LoadingHUD] NewScriptsLoadingHudController localizado com sucesso.");
+                        DebugUtility.LogVerbose<LoadingHudService>(
+                            "[LoadingHUD] LoadingHudController localizado com sucesso.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    DebugUtility.LogWarning<NewScriptsLoadingHudService>(
+                    DebugUtility.LogWarning<LoadingHudService>(
                         $"[LoadingHUD] Falha ao garantir LoadingHudScene/controller. Continuando sem HUD. ({ex.Message})");
                 }
             }
@@ -90,14 +90,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         {
             if (!TryEnsureController())
             {
-                DebugUtility.LogWarning<NewScriptsLoadingHudService>(
+                DebugUtility.LogWarning<LoadingHudService>(
                     $"[LoadingHUD] Show ignorado: controller indisponível. signature='{signature}', phase='{phase}'.");
                 return;
             }
 
             _controller.Show(phase);
 
-            DebugUtility.LogVerbose<NewScriptsLoadingHudService>(
+            DebugUtility.LogVerbose<LoadingHudService>(
                 $"[LoadingHUD] Show aplicado. signature='{signature}', phase='{phase}'.");
         }
 
@@ -105,14 +105,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         {
             if (!TryEnsureController())
             {
-                DebugUtility.LogWarning<NewScriptsLoadingHudService>(
+                DebugUtility.LogWarning<LoadingHudService>(
                     $"[LoadingHUD] Hide ignorado: controller indisponível. signature='{signature}', phase='{phase}'.");
                 return;
             }
 
             _controller.Hide(phase);
 
-            DebugUtility.LogVerbose<NewScriptsLoadingHudService>(
+            DebugUtility.LogVerbose<LoadingHudService>(
                 $"[LoadingHUD] Hide aplicado. signature='{signature}', phase='{phase}'.");
         }
 
@@ -129,10 +129,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void TryResolveController()
         {
-            _controller = Object.FindAnyObjectByType<NewScriptsLoadingHudController>();
+            _controller = Object.FindAnyObjectByType<LoadingHudController>();
         }
 
-        private static bool IsControllerValid(NewScriptsLoadingHudController controller)
+        private static bool IsControllerValid(LoadingHudController controller)
         {
             if (controller == null)
             {

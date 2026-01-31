@@ -1,9 +1,5 @@
 # Changelog — Docs
 
-## Política de retenção de evidências (2026-01-31)
-- `Docs/Reports/Evidence/` mantém **LATEST.md** + **apenas 3 snapshots datados** (mais recente + 2 anteriores).
-- Snapshots mais antigos foram removidos para reduzir churn (ex.: 2026-01-16/17/18).
-
 ## 2026-01-31
 
 
@@ -30,6 +26,12 @@
 ### Changed
 - Sincronizado `ADR-0017-LevelManager-Config-Catalog.md` com a versão mais recente enviada.
 - Corrigido o nome do arquivo `ADR-0018` (remoção de artefatos de encoding no filename) e sincronizado com a versão mais recente enviada.
+
+### Changed (ADR-0009 — completude)
+
+- ADR-0009 atualizado para refletir o contrato operacional completo (Strict vs Release + `DEGRADED_MODE` + âncoras `[OBS][Fade]`) e incluir procedimento de verificação QA.
+- `ADR-Sync-Audit-NewScripts.md`: ADR-0009 reclassificado de **RISCO** para **OK** (gaps críticos removidos; evidência datada pendente).
+- `Invariants-StrictRelease-Audit.md`: Item A atualizado para **PARCIAL** (Fade PASS; LoadingHUD pendente/FAIL).
 
 
 ## 2026-01-29
@@ -68,15 +70,16 @@
 - Plano 2.2 reordenado (ContentSwap → Level Manager → Configuração → QA/Evidências/Gate).
 - Índice de ADRs atualizado para refletir os novos escopos.
 
-## 2026-01-18 (pruned)
+## 2026-01-18
 - Reports/Evidence: novo snapshot 2026-01-18 (Baseline 2.1) com logs mesclados (Restart e ExitToMenu).
 - ADR-0012: referência de evidência atualizada para o snapshot 2026-01-18.
 - ADR-0015: referência de evidência atualizada para o snapshot 2026-01-18.
 
-## 2026-01-16 (pruned)
+## [2026-01-16]
+
 ### Alterado
 
-- Consolidado snapshot datado de evidências em `Docs/Reports/Evidence/2026-01-29/` e atualizado `Docs/Reports/Evidence/LATEST.md`.
+- Consolidado snapshot datado de evidências em `Docs/Reports/Evidence/2026-01-16/` e atualizado `Docs/Reports/Evidence/LATEST.md`.
 - Restaurado `Docs/Standards/Observability-Contract.md` como fonte de verdade.
 - Atualizados links de evidência em ADRs e READMEs para apontar para `Docs/Reports/Evidence/`.
 

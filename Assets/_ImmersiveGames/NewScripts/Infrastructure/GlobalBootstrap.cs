@@ -26,14 +26,13 @@ using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.Levels;
-using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
-using _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
+using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gameplay;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
@@ -136,6 +135,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             PrimeEventSystems();
 
             RegisterPromotionGateService();
+
+            RegisterRuntimePolicyServices();
 
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
@@ -249,6 +250,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             PromotionGateInstaller.EnsureRegistered(DependencyManager.Provider);
         }
 
+        private static void RegisterRuntimePolicyServices()
+        {
+            // Comentário: policy Strict/Release + reporter canônico de DEGRADED_MODE.
+            RegisterIfMissing<IRuntimeModeProvider>(() => new UnityRuntimeModeProvider());
+            RegisterIfMissing<IDegradedModeReporter>(() => new DegradedModeReporter());
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter registrados no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
 // --------------------------------------------------------------------
         // Fade / Loading
         // --------------------------------------------------------------------
@@ -256,19 +268,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static void RegisterSceneFlowFadeModule()
         {
             // Registra o serviço de fade NewScripts no DI global.
-            RegisterIfMissing<INewScriptsFadeService>(() => new NewScriptsFadeService());
+            RegisterIfMissing<IFadeService>(() => new FadeService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Fade] INewScriptsFadeService registrado no DI global.",
+                "[Fade] IFadeService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
         private static void RegisterSceneFlowLoadingIfAvailable()
         {
-            RegisterIfMissing<INewScriptsLoadingHudService>(() => new NewScriptsLoadingHudService());
+            RegisterIfMissing<ILoadingHudService>(() => new LoadingHudService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Loading] INewScriptsLoadingHudService registrado no DI global.",
+                "[Loading] ILoadingHudService registrado no DI global.",
                 DebugUtility.Colors.Info);
 
             if (DependencyManager.Provider.TryGetGlobal<SceneFlowLoadingService>(out var existing) && existing != null)
@@ -583,8 +595,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             // Loader/Fade (NewScripts standalone)
-            var loaderAdapter = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
-            var fadeAdapter = NewScriptsSceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
+            var loaderAdapter = SceneFlowAdapters.CreateLoaderAdapter();
+            var fadeAdapter = SceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
 
             // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
             ISceneTransitionCompletionGate completionGate = null;

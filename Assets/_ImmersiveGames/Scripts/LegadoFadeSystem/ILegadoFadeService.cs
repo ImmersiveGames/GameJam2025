@@ -1,8 +1,7 @@
 ﻿using System.Threading.Tasks;
-
-namespace _ImmersiveGames.Scripts.FadeSystem
+namespace _ImmersiveGames.Scripts.LegadoFadeSystem
 {
-    public interface IFadeService
+    public interface ILegadoFadeService
     {
         /// <summary>
         /// Solicita um fade-in (tela escurece).

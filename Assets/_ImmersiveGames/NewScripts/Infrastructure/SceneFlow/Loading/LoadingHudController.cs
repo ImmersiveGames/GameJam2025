@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
     /// Responsável apenas por mostrar/ocultar via CanvasGroup.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class NewScriptsLoadingHudController : MonoBehaviour
+    public sealed class LoadingHudController : MonoBehaviour
     {
         private const string DefaultLabel = "Loading...";
 
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             SetVisible(false);
             ApplyLabel(null);
 
-            DebugUtility.LogVerbose<NewScriptsLoadingHudController>(
+            DebugUtility.LogVerbose<LoadingHudController>(
                 "[LoadingHUD] Controller inicializado (CanvasGroup pronto).");
         }
 
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         {
             if (rootGroup == null)
             {
-                DebugUtility.LogWarning<NewScriptsLoadingHudController>(
+                DebugUtility.LogWarning<LoadingHudController>(
                     "[LoadingHUD] CanvasGroup não configurado. Não foi possível alterar visibilidade.");
                 return;
             }

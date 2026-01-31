@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
         fileName = "startup",
         menuName = "ImmersiveGames/NewScripts/SceneFlow/Transition Profile",
         order = 10)]
-    public sealed class NewScriptsSceneTransitionProfile : ScriptableObject
+    public sealed class SceneTransitionProfile : ScriptableObject
     {
         [Header("Fade")]
         [SerializeField] private bool useFade = true;

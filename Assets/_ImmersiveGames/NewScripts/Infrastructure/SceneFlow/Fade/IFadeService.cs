@@ -6,9 +6,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
     /// <summary>
     /// Configuração “crua” de fade (sem depender de SceneTransitionProfile).
     /// </summary>
-    public readonly struct NewScriptsFadeConfig
+    public readonly struct FadeConfig
     {
-        public NewScriptsFadeConfig(
+        public FadeConfig(
             float fadeInDuration,
             float fadeOutDuration,
             AnimationCurve fadeInCurve,
@@ -26,9 +26,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
         public AnimationCurve FadeOutCurve { get; }
     }
 
-    public interface INewScriptsFadeService
+    public interface IFadeService
     {
-        void Configure(NewScriptsFadeConfig config);
+        void Configure(FadeConfig config);
         Task FadeInAsync();
         Task FadeOutAsync();
     }

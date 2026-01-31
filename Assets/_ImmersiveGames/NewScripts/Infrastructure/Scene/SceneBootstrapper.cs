@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     /// <summary>
     /// Inicializa serviços de escopo de cena para o NewScripts e garante limpeza determinística.
     /// </summary>
-    public sealed class NewSceneBootstrapper : MonoBehaviour
+    public sealed class SceneBootstrapper : MonoBehaviour
     {
         [SerializeField]
         private WorldDefinition worldDefinition;
@@ -35,16 +35,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             if (_registered)
             {
                 // Não é um problema em fluxo additive; reduzimos ruído (warning) para verbose.
-                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                     $"Scene scope already created (ignored): {_sceneName}");
                 return;
             }
 
             var provider = DependencyManager.Provider;
 
-            provider.RegisterForScene<INewSceneScopeMarker>(
+            provider.RegisterForScene<ISceneScopeMarker>(
                 _sceneName,
-                new NewSceneScopeMarker(),
+                new SceneScopeMarker(),
                 allowOverride: false);
 
             var worldRoot = EnsureWorldRoot(scene);
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 _worldSpawnContext,
                 allowOverride: false);
 
-            DebugUtility.Log(typeof(NewSceneBootstrapper),
+            DebugUtility.Log(typeof(SceneBootstrapper),
                 $"WorldRoot ready: {BuildTransformPath(worldRoot)}");
 
             var actorRegistry = new ActorRegistry();
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 classifier = new DefaultGameplayResetTargetClassifier();
                 provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
 
-                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                     $"IGameplayResetTargetClassifier registrado para a cena '{_sceneName}'.");
             }
 
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 gameplayReset = new GameplayResetOrchestrator(_sceneName);
                 provider.RegisterForScene(_sceneName, gameplayReset, allowOverride: false);
 
-                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                     $"IGameplayResetOrchestrator registrado para a cena '{_sceneName}'.");
             }
 
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             WorldLifecycleHookRegistry hookRegistry;
             if (provider.TryGetForScene<WorldLifecycleHookRegistry>(_sceneName, out var existingRegistry))
             {
-                DebugUtility.LogError(typeof(NewSceneBootstrapper),
+                DebugUtility.LogError(typeof(SceneBootstrapper),
                     $"WorldLifecycleHookRegistry já existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
                 hookRegistry = existingRegistry;
             }
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     _sceneName,
                     hookRegistry,
                     allowOverride: false);
-                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                     $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
@@ -119,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 _sceneName,
                 playersResetParticipant,
                 allowOverride: false);
-            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+            DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                 $"PlayersResetParticipant registrado para a cena '{_sceneName}'.");
 
             RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
             _registered = true;
-            DebugUtility.Log(typeof(NewSceneBootstrapper), $"Scene scope created: {_sceneName}");
+            DebugUtility.Log(typeof(SceneBootstrapper), $"Scene scope created: {_sceneName}");
         }
 
         private void OnDestroy()
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             DependencyManager.Provider.ClearSceneServices(_sceneName);
-            DebugUtility.Log(typeof(NewSceneBootstrapper), $"Scene scope cleared: {_sceneName}");
+            DebugUtility.Log(typeof(SceneBootstrapper), $"Scene scope cleared: {_sceneName}");
 
             _registered = false;
         }
@@ -158,16 +158,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             if (worldDefinition == null)
             {
                 // Esperado em cenas sem spawn (Ready). Evita WARNING no fluxo normal.
-                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                     $"WorldDefinition não atribuída (scene='{_sceneName}'). " +
                     "Isto é permitido em cenas sem spawn (ex.: Ready). Serviços de spawn não serão registrados.");
 
-                DebugUtility.Log(typeof(NewSceneBootstrapper),
+                DebugUtility.Log(typeof(SceneBootstrapper),
                     "Spawn services registered from definition: 0");
                 return;
             }
 
-            DebugUtility.Log(typeof(NewSceneBootstrapper),
+            DebugUtility.Log(typeof(SceneBootstrapper),
                 $"WorldDefinition loaded: {worldDefinition.name}");
 
             int registeredCount = 0;
@@ -179,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             IReadOnlyList<WorldDefinition.SpawnEntry> entries = worldDefinition.Entries;
             int totalEntries = entries?.Count ?? 0;
 
-            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+            DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                 $"WorldDefinition entries count: {totalEntries}");
 
             if (entries != null)
@@ -190,13 +190,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     string entryKind = entry.Kind.ToString();
                     string entryPrefabName = entry.Prefab != null ? entry.Prefab.name : "<null>";
 
-                    DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                    DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                         $"Spawn entry #{index}: Enabled={entry.Enabled}, Kind={entryKind}, Prefab={entryPrefabName}");
 
                     if (!entry.Enabled)
                     {
                         skippedDisabledCount++;
-                        DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                        DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                             $"Spawn entry #{index} SKIPPED_DISABLED: Kind={entryKind}, Prefab={entryPrefabName}");
                         continue;
                     }
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     {
                         failedCreateCount++;
                         // Mantém WARNING: aqui já é indicação real de configuração/entrada problemática.
-                        DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                        DebugUtility.LogWarning(typeof(SceneBootstrapper),
                             $"Spawn entry #{index} FAILED_CREATE: Kind={entryKind}, Prefab={entryPrefabName}");
                         continue;
                     }
@@ -217,15 +217,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     registry.Register(service);
                     registeredCount++;
 
-                    DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                    DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                         $"Spawn entry #{index} REGISTERED: {service.Name} (Kind={entryKind}, Prefab={entryPrefabName})");
                 }
 
-                DebugUtility.Log(typeof(NewSceneBootstrapper),
+                DebugUtility.Log(typeof(SceneBootstrapper),
                     $"Spawn services registered from definition: {registeredCount}");
             }
 
-            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+            DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                 $"Spawn services summary => Total={totalEntries}, Enabled={enabledCount}, Disabled={skippedDisabledCount}, " +
                 $"Created={createdCount}, FailedCreate={failedCreateCount}");
         }
@@ -235,7 +235,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             var targetScene = scene.IsValid() ? scene : SceneManager.GetActiveScene();
             if (!scene.IsValid())
             {
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                DebugUtility.LogWarning(typeof(SceneBootstrapper),
                     $"EnsureWorldRoot recebeu uma cena inválida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
             }
 
@@ -269,19 +269,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private void LogMultipleWorldRoots(UnityEngine.SceneManagement.Scene scene, GameObject[] allRoots, int foundCount, GameObject selectedRoot)
         {
-            DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+            DebugUtility.LogWarning(typeof(SceneBootstrapper),
                 $"Multiple WorldRoot objects found in scene '{scene.name}': {foundCount}");
 
             foreach (var root in allRoots)
             {
                 if (root != null && root.name == "WorldRoot")
                 {
-                    DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    DebugUtility.LogWarning(typeof(SceneBootstrapper),
                         $"WorldRoot candidate: {BuildTransformPath(root.transform)}");
                 }
             }
 
-            DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+            DebugUtility.LogWarning(typeof(SceneBootstrapper),
                 $"WorldRoot selected: {BuildTransformPath(selectedRoot?.transform)}");
         }
 
@@ -292,7 +292,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             if (hookRegistry == null)
             {
                 // Anômalo; mantém WARNING.
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                DebugUtility.LogWarning(typeof(SceneBootstrapper),
                     "WorldLifecycleHookRegistry ausente; hooks de cena não serão registrados.");
                 return;
             }
@@ -300,7 +300,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             if (worldRoot == null)
             {
                 // Anômalo; mantém WARNING.
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                DebugUtility.LogWarning(typeof(SceneBootstrapper),
                     "WorldRoot ausente; hooks de cena não serão adicionados.");
                 return;
             }
@@ -330,20 +330,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             if (hook == null)
             {
                 // Anômalo; mantém WARNING.
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                DebugUtility.LogWarning(typeof(SceneBootstrapper),
                     "Hook de cena nulo; registro ignorado.");
                 return;
             }
 
             if (registry.Hooks.Contains(hook))
             {
-                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                     $"Hook de cena já registrado: {hook.GetType().Name}");
                 return;
             }
 
             registry.Register(hook);
-            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+            DebugUtility.LogVerbose(typeof(SceneBootstrapper),
                 $"Hook de cena registrado: {hook.GetType().Name}");
         }
 

@@ -1,8 +1,7 @@
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.FadeSystem
+namespace _ImmersiveGames.Scripts.LegaadoFadeSystem
 {
     /// <summary>
     /// Executor de fade:
@@ -13,7 +12,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
     /// Este componente também garante ordenação de attributeCanvas para o FadeScene.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public class FadeController : MonoBehaviour
+    public class LegadoFadeController : MonoBehaviour
     {
         [Header("Referências")]
         [SerializeField] private CanvasGroup canvasGroup;
@@ -22,7 +21,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         [Tooltip("SortingOrder do attributeCanvas do Fade. Deve ficar abaixo do Loading HUD, mas acima de UI comum.")]
         [SerializeField] private int sortingOrder = 11000;
 
-        // Configuração de runtime (vem do FadeService).
+        // Configuração de runtime (vem do LegadoFadeService).
         private float _fadeInDuration  = 0.5f;
         private float _fadeOutDuration = 0.5f;
         private AnimationCurve _fadeInCurve;
@@ -36,7 +35,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             if (canvasGroup == null)
                 canvasGroup = GetComponent<CanvasGroup>();
 
-            DebugUtility.LogVerbose<FadeController>(
+            DebugUtility.LogVerbose<LegadoFadeController>(
                 "Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULO"));
 
             // Garantir ordenação do Canvas do Fade
@@ -60,7 +59,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             var canvas = GetComponentInParent<Canvas>(true);
             if (canvas == null)
             {
-                DebugUtility.LogWarning<FadeController>(
+                DebugUtility.LogWarning<LegadoFadeController>(
                     "[Fade] Nenhum Canvas encontrado no FadeScene. Ordenação não será configurada.");
                 return;
             }
@@ -68,7 +67,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             canvas.overrideSorting = true;
             canvas.sortingOrder = sortingOrder;
 
-            DebugUtility.LogVerbose<FadeController>(
+            DebugUtility.LogVerbose<LegadoFadeController>(
                 $"[Fade] Canvas sorting configurado. overrideSorting={canvas.overrideSorting}, sortingOrder={canvas.sortingOrder}");
         }
 
@@ -114,7 +113,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             float time = 0f;
 
-            DebugUtility.LogVerbose<FadeController>(
+            DebugUtility.LogVerbose<LegadoFadeController>(
                 $"Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
 
             while (time < duration)
@@ -130,7 +129,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             canvasGroup.alpha = targetAlpha;
 
-            DebugUtility.LogVerbose<FadeController>(
+            DebugUtility.LogVerbose<LegadoFadeController>(
                 $"Fade concluído para alpha = {targetAlpha}");
         }
 

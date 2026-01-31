@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
-using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine.SceneManagement;
 

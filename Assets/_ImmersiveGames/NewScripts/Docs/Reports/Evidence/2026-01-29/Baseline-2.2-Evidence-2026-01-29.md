@@ -207,3 +207,54 @@ Key log anchors (exact substrings):
 
 - This evidence is intended to be **link-stable** via `Docs/Reports/Evidence/LATEST.md`.
 - If future changes alter log signatures or reasons, create a new dated snapshot folder and update `LATEST.md` accordingly.
+
+---
+
+## Apêndice — Arquivos mesclados (consolidação: 1 evidência/dia)
+
+### Fonte mesclada: `Docs/Reports/Evidence/2026-01-29/ADR-0016-Evidence-2026-01-29.md`
+
+# ADR-0016 — Evidência (2026-01-29)
+
+Este snapshot valida o **fechamento do ADR-0016** (ContentSwap integrado ao WorldLifecycle), usando o **Baseline 2.2** como fonte canônica.
+
+## Fonte canônica
+
+- `Baseline-2.2-Evidence-2026-01-29.md` (seção **D**)
+
+## Âncoras observáveis (Console)
+
+As seguintes assinaturas confirmam que o ContentSwap **in-place** foi disparado e registrado com `contentId` e `reason` canônicos:
+
+- `[QA][ContentSwap] ContentSwap triggered mode='InPlace' contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'.`
+
+## Interpretação
+
+- O ContentSwap **não** exige transição de cena (in-place), mas mantém o contrato de observabilidade:
+  - `reason` com prefixo `QA/ContentSwap/...`
+  - registro explícito de `contentId`
+
+### Fonte mesclada: `Docs/Reports/Evidence/2026-01-29/Verifications/ADR-0016-Verification-2026-01-29.md`
+
+# ADR-0016 — Verification (2026-01-29)
+
+Checklist de verificação para o fechamento do **ADR-0016**.
+
+## Pré-condições
+
+- Execução do Baseline 2.2 (snapshot 2026-01-29).
+
+## Verificações (PASS esperado)
+
+1) **G01 / ContentSwap in-place observado**
+- Deve existir no log:
+  - `[QA][ContentSwap] ContentSwap triggered mode='InPlace' contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'.`
+
+2) **Sem dependência de transição de cena**
+- Não é necessário `SceneTransitionStarted` para o ContentSwap in-place (pode ocorrer dentro da mesma gameplay).
+
+## Referências
+
+- `../Baseline-2.2-Evidence-2026-01-29.md` (seção D)
+- `../ADR-0016-Evidence-2026-01-29.md`
+

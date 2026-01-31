@@ -1,12 +1,12 @@
 # Auditoria de Invariants — Strict/Release (2026-01-31)
 
-Escopo: `Assets/_ImmersiveGames/NewScripts/` (documental; sem alterações de código).
+Escopo: `Assets/_ImmersiveGames/NewScripts/` (documental; refletindo estado do código desta iteração).
 
 ## ✅ Tabela de PASS/FAIL (Checklist A–F)
 
 | Item | Resultado | Evidência principal |
 |---|---|---|
-| A) Fade/LoadingHUD (Strict + Release + degraded mode) | **FAIL** | Fade continua sem controller (fallback silencioso); LoadingHUD idem; sem modo STRICT explícito, sem âncora `DEGRADED_MODE`. |
+| A) Fade/LoadingHUD (Strict + Release + degraded mode) | **PARCIAL** | **Fade (PASS runtime):** `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (âncoras `[OBS][Fade]`). **LoadingHUD:** ver ADR-0010. |
 | B) WorldDefinition (Strict + mínimo spawn) | **FAIL** | `worldDefinition` nulo é permitido; sem validação de mínimo spawn (Player/Eater) em gameplay. |
 | C) LevelCatalog (Strict + Release) | **FAIL** | Resolver apenas loga warning e retorna `false` em ausência de catalog/definition; sem política Strict vs Release. |
 | D) PostGame (Strict + Release) | **FAIL** | InputMode/Gate ausentes geram apenas warning; sem fail-fast em Strict e sem fallback definido em Release. |
@@ -16,8 +16,17 @@ Escopo: `Assets/_ImmersiveGames/NewScripts/` (documental; sem alterações de c�
 ## Detalhamento por item
 
 ### A) Fade/LoadingHUD — Strict fail-fast, Release e modo degradado
-- **Situação:** fallback silencioso quando controller/cena não existe.
-- **Gap:** ausência de branch Strict/Release e ausência de âncora `DEGRADED_MODE`.
+
+**Fade (ADR-0009):** **PASS (código)**
+
+- Strict: falha cedo quando profile/DI/scene/controller ausentes.
+- Release: fallback somente com `DEGRADED_MODE feature='fade' ...` (no-op).
+- Observabilidade: âncoras canônicas `[OBS][Fade]` no envelope (Start/Complete por fase).
+
+**LoadingHUD (ADR-0010):** **FAIL (pendente)**
+
+- Situação: fallback silencioso quando scene/controller faltam.
+- Gap: ausência de branch Strict/Release e ausência de âncora `DEGRADED_MODE` (feature='loadinghud').
 
 ### B) WorldDefinition — Strict em gameplay + mínimo de spawn
 - **Situação:** gameplay pode iniciar sem `WorldDefinition`.

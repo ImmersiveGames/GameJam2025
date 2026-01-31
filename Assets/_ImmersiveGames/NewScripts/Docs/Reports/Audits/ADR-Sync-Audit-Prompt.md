@@ -97,3 +97,8 @@ O relatório final deve ficar em:
 - `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audits/YYYY-MM-DD/ADR-Sync-Audit-NewScripts.md`
 
 Usar `YYYY-MM-DD` da execução.
+
+
+## Regra adicional — Evidência
+
+- Manter **1 arquivo de evidência por dia** em `Docs/Reports/Evidence/<data>/Baseline-2.2-Evidence-YYYY-MM-DD.md`. Se houver anexos/patches/excerpts adicionais, **mesclar** no snapshot do dia e remover os arquivos extras.

@@ -190,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
                 // FadeIn é a primeira etapa visual. O HUD de Loading pode ser "ensured" em paralelo,
                 // mas deve aparecer apenas após o FadeIn estar concluído (Opção A+).
-                await RunFadeInIfNeeded(context);
+                await RunFadeInIfNeeded(context, transitionId, signature);
 
                 if (context.UseFade)
                 {
@@ -211,7 +211,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
                 EventBus<SceneTransitionBeforeFadeOutEvent>.Raise(new SceneTransitionBeforeFadeOutEvent(context));
 
-                await RunFadeOutIfNeeded(context);
+                await RunFadeOutIfNeeded(context, transitionId, signature);
 
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
 
@@ -298,37 +298,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
         }
 
-        private async Task RunFadeInIfNeeded(SceneTransitionContext context)
+        private async Task RunFadeInIfNeeded(SceneTransitionContext context, long transitionId, string signature)
         {
             if (!context.UseFade)
             {
                 return;
             }
 
-            if (!_fadeAdapter.IsAvailable)
-            {
-                DebugUtility.LogWarning<SceneTransitionService>(
-                    "[SceneFlow] Fade solicitado, porém nenhum adapter está disponível. Continuando sem fade.");
-                return;
-            }
+            LogObsFade("FadeInStarted", transitionId, signature, context.TransitionProfileName);
 
             _fadeAdapter.ConfigureFromProfile(context.TransitionProfileId);
             await _fadeAdapter.FadeInAsync();
+
+            LogObsFade("FadeInCompleted", transitionId, signature, context.TransitionProfileName);
         }
 
-        private async Task RunFadeOutIfNeeded(SceneTransitionContext context)
+        private async Task RunFadeOutIfNeeded(SceneTransitionContext context, long transitionId, string signature)
         {
             if (!context.UseFade)
             {
                 return;
             }
 
-            if (!_fadeAdapter.IsAvailable)
-            {
-                return;
-            }
+            LogObsFade("FadeOutStarted", transitionId, signature, context.TransitionProfileName);
 
             await _fadeAdapter.FadeOutAsync();
+
+            LogObsFade("FadeOutCompleted", transitionId, signature, context.TransitionProfileName);
+        }
+
+        private static void LogObsFade(string phase, long transitionId, string signature, string profile)
+        {
+            // Comentário: âncora canônica (auditável) para ADR-0009 / Item A (Strict/Release).
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][Fade] {phase} id={transitionId} signature='{signature}' profile='{profile}'.");
         }
 
         private async Task RunSceneOperationsAsync(SceneTransitionContext context)

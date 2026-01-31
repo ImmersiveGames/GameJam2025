@@ -1,26 +1,15 @@
-# Baseline 2.2 — Evidence (LATEST)
+# LATEST — Evidence (fonte canônica)
 
-Este arquivo é a **ponte canônica** para o snapshot recomendado para auditoria e detecção de regressões.
+**Última atualização:** 2026-01-31  
+**Regra:** manter **1 arquivo de evidência por dia** (um snapshot consolidado). Outros artefatos do dia devem ser **mesclados** neste arquivo e removidos.
 
-## Snapshot recomendado (canônico)
+## Snapshot canônico atual
 
-- **Snapshot:** `2026-01-29`
-- **Arquivo:** `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
+- **2026-01-31 — Baseline 2.2 Evidence Snapshot:** `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
 
-Este snapshot cobre:
+## Histórico recente
 
-- Boot → Menu (startup) com **SKIP** de reset no frontend
-- Menu → Gameplay com **ResetWorld + ResetCompleted + spawn** (Player + Eater)
-- IntroStage bloqueia `sim.gameplay` e conclui via `IntroStage/UIConfirm` → Playing
-- ContentSwap QA in-place (`QA/ContentSwap/InPlace/NoVisuals`)
-- Pause/Resume (`state.pause`, InputMode PauseOverlay)
-- PostGame (Victory/Defeat), Restart e ExitToMenu (frontend skip)
+- 2026-01-29 — `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
+- 2026-01-28 — `Reports/Evidence/2026-01-28/Baseline-2.2-Evidence-2026-01-28.md`
 
-## Snapshot mais recente (rastreamento)
-
-- **Snapshot:** `2026-01-31`
-- **Nota:** captura **parcial** (trecho colado) — útil para rastreabilidade, não substitui o canônico.
-
-## Retenção
-
-Mantemos apenas o **mais recente + 2 anteriores** (além deste `LATEST.md`).
+> Observação: a pasta `Reports/Evidence/<data>/` pode conter `.meta` por exigência do Unity, mas **não deve** conter múltiplos arquivos de evidência humana por dia.

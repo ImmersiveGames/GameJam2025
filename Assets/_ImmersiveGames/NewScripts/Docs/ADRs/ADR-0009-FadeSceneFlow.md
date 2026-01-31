@@ -2,9 +2,10 @@
 
 ## Status
 
-- Estado: Implementado
-- Data: 2025-12-24
-- Escopo: SceneFlow + Fade + Loading HUD (NewScripts)
+- **Estado:** Completo (implementação + política Strict/Release + observabilidade canônica)
+- **Data (decisão):** 2025-12-24
+- **Última atualização:** 2026-01-31
+- **Escopo:** SceneFlow + Fade (NewScripts). *(Loading HUD é ADR-0010.)*
 
 ## Contexto
 
@@ -13,92 +14,135 @@ O pipeline NewScripts precisava:
 - Aplicar **FadeIn/FadeOut** durante transições do SceneFlow.
 - Evitar dependência do fade legado.
 - Permitir configurar timings por **profile** (startup/frontend/gameplay).
-- Coordenar Fade com **Loading HUD** para manter UI consistente (Loading só aparece após FadeIn e some antes do FadeOut).
+- Garantir **comportamento determinístico** (ordem fixa) e **observável** (logs canônicos).
+- Aplicar política **Strict vs Release**:
+  - Strict (Dev/QA): **falhar cedo** quando pré-condições críticas não existem.
+  - Release: permitir fallback **somente via modo degradado explícito**.
 
 ## Decisão
 
 ### Objetivo de produção (sistema ideal)
 
-Garantir que TODA transição de cena do SceneFlow tenha um envelope visual determinístico (fade-out → trabalho de transição → fade-in), com ordem consistente e sem flicker.
+Garantir que TODA transição de cena do SceneFlow tenha um envelope visual determinístico:
 
-### Contrato de produção (mínimo)
+**FadeIn (escurece) → operações de cena → ScenesReady → completion gate → FadeOut (revela) → Completed**
 
-- Fade-out inicia **antes** de descarregar/carregar cenas (ou qualquer mutação visual).
-- Transição de cena só é considerada `Completed` após o fade-in (quando aplicável) ou após liberar o gate visual.
-- Serviço de fade não cria UI 'em voo' em produção: depende de prefab/scene bootstrap (fail-fast).
-- O contrato deve ser observável via logs/âncoras (ver Observability Contract).
+> Nota: no naming atual do runtime, `FadeInAsync()` = “escurecer” (0→1) e `FadeOutAsync()` = “revelar” (1→0).
 
-### Não-objetivos (resumo)
+### Contrato mínimo (produção)
 
-Ver seção **Fora de escopo**.
+1) **Ordem (invariantes)**
+- **FadeIn** inicia **antes** de qualquer mutação visual (load/unload/setActive).
+- `ScenesReady` é emitido **após** operações de cena e **antes** de `Completed` (mesma `signature`).
+- **Completion gate** é aguardado **antes** do `BeforeFadeOut` e do `FadeOut`.
+- `Completed` só ocorre **após** `FadeOut` (quando `UseFade=true`), preservando “reveal before completion”.
 
-## Fora de escopo
+2) **Strict vs Release (fail-fast + degraded)**
+- **Strict (UNITY_EDITOR / DEVELOPMENT_BUILD)**
+  - Falha explicitamente quando:
+    - profile não é encontrado em Resources,
+    - `INewScriptsFadeService` não existe no DI global,
+    - `FadeScene` não carrega,
+    - `NewScriptsFadeController` não existe na `FadeScene`.
+- **Release**
+  - Pode seguir sem fade **apenas** com `DEGRADED_MODE` explícito:
+    - `DEGRADED_MODE feature='fade' reason='<...>' detail='<...>'`
+  - Após degradar, o fade vira **no-op** (dur=0) mantendo a ordem do pipeline.
 
-- Criar automaticamente canvas/câmera de fade quando ausente (preferir erro explícito).
-- Normalizar o visual do loading/HUD (isso é ADR-0010).
-
-- Compatibilidade com fade legado.
+3) **Não criar UI “em voo”**
+- O fade depende de `FadeScene` + `NewScriptsFadeController`.
+- O runtime não deve instanciar canvas/câmera de forma silenciosa.
 
 ## Consequências
 
 ### Benefícios
 
-- O SceneFlow se torna independente do fade legado.
-- A duração do fade é declarativa por profile (sem strings espalhadas além do ponto de resolução).
-- O Loading HUD pode ser sincronizado com fases explícitas do SceneFlow:
-  - `AfterFadeIn` → `Show`
-  - `BeforeFadeOut` → `Hide`
-  - `Completed` → safety hide
-- Fade e Loading HUD ficam integrados ao `SceneTransitionService` por adapters dedicados
-  (`NewScriptsSceneFlowFadeAdapter` + `SceneFlowLoadingService`), mantendo responsabilidades separadas.
+- Envelope visual determinístico em todas as transições do SceneFlow.
+- Timings declarativos por profile, sem strings/timings espalhados.
+- Comportamento auditável via âncoras canônicas `[OBS][Fade]`.
+- Política Strict/Release explícita, reduzindo “fallback silencioso”.
 
-### Trade-offs / Riscos
+### Trade-offs / riscos
 
-- (não informado)
+- Strict pode “quebrar cedo” durante integração (o objetivo é expor setup incompleto imediatamente).
+- Release pode degradar visualmente (sem fade) — mas isso fica **explícito** via `DEGRADED_MODE`.
 
-### Política de falhas e fallback (fail-fast)
+## Mapeamento para implementação
 
-- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
-- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
-- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+Arquivos (NewScripts):
 
+- Orquestração / ordem / anchors `[OBS][Fade]`:
+  - `Infrastructure/Scene/SceneTransitionService.cs`
+- Policy Strict/Release + degraded reporter:
+  - `Infrastructure/Runtime/IRuntimeModeProvider.cs`
+  - `Infrastructure/Runtime/UnityRuntimeModeProvider.cs`
+  - `Infrastructure/Runtime/IDegradedModeReporter.cs`
+  - `Infrastructure/Runtime/DegradedModeReporter.cs`
+- Adapter (profile → config → policy):
+  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs` (`NewScriptsSceneFlowFadeAdapter`)
+- Serviço de fade (garante FadeScene + Controller; falha explícita se inválido):
+  - `Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs`
 
-### Critérios de pronto (DoD)
+## Observabilidade (contrato)
 
-- SceneFlow chama FadeService (ou equivalente) em todas as rotas (Boot→Menu, Menu→Gameplay, ExitToMenu, Restart, etc.).
-- Gating/ordem: fade-out antes de mutações; fade-in somente após `ScenesReady`.
-- Evidência: logs mostram o envelope de fade em transições críticas (ou ADR permanece 'Parcial').
+**Contrato canônico:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
-## Notas de implementação
+### Âncoras mínimas de Fade (evidência)
 
-Evidências observadas:
+Emitidas por `SceneTransitionService` quando `UseFade=true`:
 
-- O DI global registra `INewScriptsFadeService`.
-- O resolver informa:
-  - `Profile resolvido: name='<profile>', path='SceneFlow/Profiles/<profile>'`
-- O adapter aplica timings:
-  - `fadeIn=0,5` e `fadeOut=0,5` (exemplo do log)
-- O fade carrega a `FadeScene` additive quando necessário e encontra `NewScriptsFadeController`.
-- O canvas de fade opera com sorting alto (ex.: `sortingOrder=11000`) para sobrepor UI durante transição.
+- `[OBS][Fade] FadeInStarted ...`
+- `[OBS][Fade] FadeInCompleted ...`
+- `[OBS][Fade] FadeOutStarted ...`
+- `[OBS][Fade] FadeOutCompleted ...`
+
+### Âncora canônica de fallback (Release)
+
+Quando o fade não pode operar em Release:
+
+- `DEGRADED_MODE feature='fade' reason='<Reason>' detail='<...>'`
+
+## Critérios de pronto (DoD)
+
+### DoD (implementação)
+
+- [x] Ordem e gating conforme “Contrato mínimo”.
+- [x] Policy Strict vs Release aplicada no caminho do fade.
+- [x] `DEGRADED_MODE` emitido em Release quando necessário.
+- [x] Logs `[OBS][Fade]` emitidos no envelope (Start/Complete por fase).
+
+### DoD (evidência)
+
+- [x] Snapshot com transições (startup + gameplay) contendo as 4 âncoras `[OBS][Fade]` na mesma `signature`: `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`.
+- [ ] (Opcional) Um snapshot de falha em Strict comprovando erro explícito para `FadeScene`/controller ausente.
+
+## Procedimento de verificação (QA)
+
+1) **Happy path**
+- Use: `QA/SceneFlow/EnterGameplay (TC: Menu->Gameplay ResetWorld)` (ContextMenu).
+- Verifique no log da transição:
+  - `SceneTransitionStartedEvent` → `[OBS][Fade] FadeInStarted/Completed` → `ScenesReady` → gate → `[OBS][Fade] FadeOutStarted/Completed` → `SceneTransitionCompletedEvent`.
+
+2) **Fail-fast (Strict)**
+- Em Editor/Development:
+  - Remova temporariamente a `FadeScene` do Build Settings **ou** remova `NewScriptsFadeController` dela.
+- Dispare a mesma transição e confirme:
+  - exceção clara (`InvalidOperationException`) com `reason`/`detail` (sem seguir “silenciosamente”).
+
+3) **Degraded mode (Release)**
+- Em build Release:
+  - reproduza a ausência (scene/controller/service) e confirme:
+  - `DEGRADED_MODE feature='fade' ...` e transição segue sem fade (no-op), sem crash.
 
 ## Evidência
 
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- **Âncoras/assinaturas relevantes:**
-  - TODO: definir âncoras de log para FadeOut/FadeIn (não aparecem na evidência canônica atual).
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-
-## Evidências
-
-- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
-- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot (canônico 2026-01-29): [`Baseline-2.2-Evidence-2026-01-29.md`](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
-- Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+- **Snapshot datado (PASS, startup + gameplay):** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
+  - Contém âncoras `[OBS][Fade]` (`FadeInStarted/Completed`, `FadeOutStarted/Completed`) para `profile=startup` e `profile=gameplay` com `signature` completa.
+  - Contém evidência de ordenação: `FadeInCompleted` ocorre antes do load; `ScenesReady` + completion gate antes de `FadeOut`; `FadeOutCompleted` antes de `TransitionCompleted`.
 
 ## Referências
 
 - [ADR-0010 — Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)
-- [Overview/Overview.md](../Overview/Overview.md)
-- [Observability-Contract.md](../Standards/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes
 - [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+- [`Production-Policy-Strict-Release.md`](../Standards/Production-Policy-Strict-Release.md)

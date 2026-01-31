@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
     /// - Usa Time.unscaledDeltaTime para não ser afetado por pausas/timeScale.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class NewScriptsFadeController : MonoBehaviour
+    public sealed class FadeController : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private CanvasGroup canvasGroup;
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
                 canvasGroup = GetComponent<CanvasGroup>();
             }
 
-            DebugUtility.LogVerbose<NewScriptsFadeController>(
+            DebugUtility.LogVerbose<FadeController>(
                 "[Fade] Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULL"));
 
             TryConfigureCanvasSorting();
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
             var canvas = GetComponentInParent<Canvas>(true);
             if (canvas == null)
             {
-                DebugUtility.LogWarning<NewScriptsFadeController>(
+                DebugUtility.LogWarning<FadeController>(
                     "[Fade] Nenhum Canvas encontrado no FadeScene. Ordenação não será configurada.");
                 return;
             }
@@ -72,11 +72,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
 
             canvas.sortingOrder = sortingOrder;
 
-            DebugUtility.LogVerbose<NewScriptsFadeController>(
+            DebugUtility.LogVerbose<FadeController>(
                 $"[Fade] Canvas sorting configurado. isRootCanvas={isRoot}, overrideSorting={canvas.overrideSorting}, sortingOrder={canvas.sortingOrder}");
         }
 
-        public void Configure(NewScriptsFadeConfig config)
+        public void Configure(FadeConfig config)
         {
             _fadeInDuration = config.FadeInDuration > 0f ? config.FadeInDuration : 0.5f;
             _fadeOutDuration = config.FadeOutDuration > 0f ? config.FadeOutDuration : 0.5f;
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
 
             float time = 0f;
 
-            DebugUtility.LogVerbose<NewScriptsFadeController>(
+            DebugUtility.LogVerbose<FadeController>(
                 $"[Fade] Iniciando Fade para alpha={targetAlpha} (dur={duration})");
 
             while (time < duration)
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
                 canvasGroup.interactable = false;
             }
 
-            DebugUtility.LogVerbose<NewScriptsFadeController>(
+            DebugUtility.LogVerbose<FadeController>(
                 $"[Fade] Fade concluído para alpha={targetAlpha}");
         }
 

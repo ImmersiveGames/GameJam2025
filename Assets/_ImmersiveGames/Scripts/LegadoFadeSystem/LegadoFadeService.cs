@@ -1,17 +1,17 @@
 ﻿using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.LegaadoFadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.Scripts.FadeSystem
+namespace _ImmersiveGames.Scripts.LegadoFadeSystem
 {
     [DebugLevel(level: DebugLevel.Verbose)]
-    public sealed class FadeService : IFadeService
+    public sealed class LegadoFadeService : ILegadoFadeService
     {
         private const string FadeSceneName = "FadeScene";
 
-        private FadeController _fadeController;
+        private LegadoFadeController _legadoFadeController;
         private bool _isLoadingFadeScene;
         private readonly object _lock = new();
 
@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
         private async Task EnsureFadeControllerAsync()
         {
-            if (_fadeController != null)
+            if (_legadoFadeController != null)
                 return;
 
             lock (_lock)
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
                 if (!fadeScene.isLoaded)
                 {
-                    DebugUtility.LogVerbose<FadeService>($"Carregando cena de fade '{FadeSceneName}' (async)...");
+                    DebugUtility.LogVerbose<LegadoFadeService>($"Carregando cena de fade '{FadeSceneName}' (async)...");
                     var loadOp = SceneManager.LoadSceneAsync(FadeSceneName, LoadSceneMode.Additive);
 
                     if (loadOp != null)
@@ -59,15 +59,15 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
                 await Task.Yield();
 
-                _fadeController = Object.FindAnyObjectByType<FadeController>();
+                _legadoFadeController = Object.FindAnyObjectByType<LegadoFadeController>();
 
-                if (_fadeController == null)
+                if (_legadoFadeController == null)
                 {
-                    DebugUtility.LogError<FadeService>($"Nenhum FadeController encontrado na FadeScene.");
+                    DebugUtility.LogError<LegadoFadeService>($"Nenhum LegadoFadeController encontrado na FadeScene.");
                 }
                 else
                 {
-                    DebugUtility.LogVerbose<FadeService>($"FadeController localizado.");
+                    DebugUtility.LogVerbose<LegadoFadeService>($"LegadoFadeController localizado.");
                 }
             }
             finally
@@ -81,12 +81,12 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
         private void ApplyProfileToController()
         {
-            if (_fadeController == null)
+            if (_legadoFadeController == null)
                 return;
 
             if (_currentProfile == null || !_currentProfile.UseFade)
             {
-                _fadeController.Configure(
+                _legadoFadeController.Configure(
                     DefaultFadeInDuration,
                     DefaultFadeOutDuration,
                     DefaultFadeInCurve,
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 return;
             }
 
-            _fadeController.Configure(
+            _legadoFadeController.Configure(
                 _currentProfile.FadeInDuration > 0f ? _currentProfile.FadeInDuration : DefaultFadeInDuration,
                 _currentProfile.FadeOutDuration > 0f ? _currentProfile.FadeOutDuration : DefaultFadeOutDuration,
                 _currentProfile.FadeInCurve ?? DefaultFadeInCurve,
@@ -105,22 +105,22 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         {
             await EnsureFadeControllerAsync();
 
-            if (_fadeController == null)
+            if (_legadoFadeController == null)
                 return;
 
             ApplyProfileToController();
-            await _fadeController.FadeInAsync();
+            await _legadoFadeController.FadeInAsync();
         }
 
         public async Task FadeOutAsync()
         {
             await EnsureFadeControllerAsync();
 
-            if (_fadeController == null)
+            if (_legadoFadeController == null)
                 return;
 
             ApplyProfileToController();
-            await _fadeController.FadeOutAsync();
+            await _legadoFadeController.FadeOutAsync();
         }
     }
 }

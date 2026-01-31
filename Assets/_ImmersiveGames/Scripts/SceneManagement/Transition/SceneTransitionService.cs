@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.FadeSystem;
+using _ImmersiveGames.Scripts.LegaadoFadeSystem;
+using _ImmersiveGames.Scripts.LegadoFadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -20,21 +21,21 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     public sealed class SceneTransitionService : ISceneTransitionService
     {
         private readonly ISceneLoader _sceneLoader;
-        private readonly IFadeService _fadeService;
+        private readonly ILegadoFadeService _legadoFadeService;
 
         public SceneTransitionService(
             ISceneLoader sceneLoader,
-            IFadeService fadeService)
+            ILegadoFadeService legadoFadeService)
         {
             _sceneLoader = sceneLoader ?? throw new ArgumentNullException(nameof(sceneLoader));
-            _fadeService = fadeService; // pode ser null (transição sem fade)
+            _legadoFadeService = legadoFadeService; // pode ser null (transição sem fade)
         }
 
         private void ConfigureFadeFromContext(SceneTransitionContext context)
         {
-            // Mantém IFadeService “limpo”, mas aproveita a capacidade do FadeService concreto.
+            // Mantém ILegadoFadeService “limpo”, mas aproveita a capacidade do LegadoFadeService concreto.
             // Se no futuro você quiser formalizar isso, aí sim criamos uma interface específica.
-            if (_fadeService is FadeService fadeServiceConcrete)
+            if (_legadoFadeService is LegadoFadeService fadeServiceConcrete)
             {
                 fadeServiceConcrete.ConfigureFromProfile(context.transitionProfile);
             }
@@ -55,10 +56,10 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 ConfigureFadeFromContext(context);
 
                 // 1) FadeIn
-                if (context.useFade && _fadeService != null)
+                if (context.useFade && _legadoFadeService != null)
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>("[Fade] Executando FadeIn...");
-                    await _fadeService.FadeInAsync();
+                    await _legadoFadeService.FadeInAsync();
                 }
 
                 // 2) Load cenas alvo
@@ -114,10 +115,10 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     new SceneTransitionScenesReadyEvent(context));
 
                 // 5) FadeOut
-                if (context.useFade && _fadeService != null)
+                if (context.useFade && _legadoFadeService != null)
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>("[Fade] Executando FadeOut...");
-                    await _fadeService.FadeOutAsync();
+                    await _legadoFadeService.FadeOutAsync();
                 }
 
                 EventBus<SceneTransitionCompletedEvent>.Raise(
