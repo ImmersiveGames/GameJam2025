@@ -1,15 +1,26 @@
 # Baseline 2.2 — Evidence (LATEST)
 
-**Canonical evidence snapshot:** `2026-01-29`  
-See: `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
+Este arquivo é a **ponte canônica** para o snapshot recomendado para auditoria e detecção de regressões.
 
-This snapshot covers:
+## Snapshot recomendado (canônico)
 
-- Boot → Menu (startup) with frontend **SKIP** reset
-- Menu → Gameplay with **ResetWorld + ResetCompleted + spawn** (Player + Eater)
-- IntroStage blocks `sim.gameplay` and completes via `IntroStage/UIConfirm` → Playing
-- QA ContentSwap in-place (`QA/ContentSwap/InPlace/NoVisuals`)
-- Pause/Resume (`state.pause` token + InputMode `PauseOverlay`)
-- PostGame flows: Victory/Defeat, Restart (`PostGame/Restart`), ExitToMenu (`PostGame/ExitToMenu`) with frontend **SKIP** reset
+- **Snapshot:** `2026-01-29`
+- **Arquivo:** `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
 
-If you update log signatures / reasons, create a new dated snapshot folder under `Docs/Reports/Evidence/` and update this file.
+Este snapshot cobre:
+
+- Boot → Menu (startup) com **SKIP** de reset no frontend
+- Menu → Gameplay com **ResetWorld + ResetCompleted + spawn** (Player + Eater)
+- IntroStage bloqueia `sim.gameplay` e conclui via `IntroStage/UIConfirm` → Playing
+- ContentSwap QA in-place (`QA/ContentSwap/InPlace/NoVisuals`)
+- Pause/Resume (`state.pause`, InputMode PauseOverlay)
+- PostGame (Victory/Defeat), Restart e ExitToMenu (frontend skip)
+
+## Snapshot mais recente (rastreamento)
+
+- **Snapshot:** `2026-01-31`
+- **Nota:** captura **parcial** (trecho colado) — útil para rastreabilidade, não substitui o canônico.
+
+## Retenção
+
+Mantemos apenas o **mais recente + 2 anteriores** (além deste `LATEST.md`).

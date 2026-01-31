@@ -1,7 +1,22 @@
 # Changelog — Docs
 
+## Política de retenção de evidências (2026-01-31)
+- `Docs/Reports/Evidence/` mantém **LATEST.md** + **apenas 3 snapshots datados** (mais recente + 2 anteriores).
+- Snapshots mais antigos foram removidos para reduzir churn (ex.: 2026-01-16/17/18).
+
 ## 2026-01-31
 
+
+
+### Changed (redução de arquivos)
+- Consolidado `Overview/Architecture.md` + `Overview/WorldLifecycle.md` em `Overview/Overview.md`.
+- Consolidado guias/checklists em `Guides.md` (remoção de `HowTo/` e `Checklists/`).
+- Removidos READMEs redundantes de subpastas (Overview/Plans/Reports/Audits/Archive).
+- `Reason-Registry.md` incorporado ao `Standards/Observability-Contract.md` (mantido `Reason-Map.md` como redirect).
+- `Standards/Evidence-Methodology.md` removido; a metodologia passa a viver em `Reports/Evidence/README.md`.
+- Removido `Reports/README.md` (conteúdo redundante/inconsistente).
+- Removido `Reports/Evidence/_Archive/` redundante (duplicava snapshots já presentes por data).
+- `Archive/Plans/Plano-2.2.md` movido para `Plans/Archive-Plano-2.2.md`.
 
 ### Changed (Docs reorg)
 - Reorganizada a estrutura de `Docs/` (Overview/Standards/Reports/Plans/Archive/Checklists).
@@ -32,15 +47,15 @@
 ## 2026-01-27
 - Docs: Baseline 2.0 → fontes vigentes (ADR-0015 + Evidence/LATEST + Observability-Contract).
 - ADR-0012: PostGame canônico + idempotência do overlay (double click + evento duplicado).
-- Arquivos alterados: `Docs/ARCHITECTURE.md`, `Docs/CHANGELOG-docs.md`,
+- Arquivos alterados: `Docs/Overview/Overview.md`, `Docs/CHANGELOG.md`,
   `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`,
-  `Docs/Reports/Observability-Contract.md`.
+  `Docs/Standards/Observability-Contract.md`.
 
 ## 2026-01-21
 - ADR-0018 reescrito para formalizar a mudança semântica para ContentSwap + LevelManager e delimitar o LevelManager.
 - ADR-0019 atualizado para descrever promoção do Baseline 2.2 com escopo, gates e metodologia de evidência por data.
 - ARCHITECTURE.md e READMEs ajustados para terminologia consistente (ContentSwap vs LevelManager).
-- Arquivos alterados: `Docs/ADRs/ADR-0018-Gate-de-Promoção-Baseline2.2.md`, `Docs/ADRs/ADR-0019-Promocao-Baseline2.2.md`, `Docs/plano2.2.md`, `Docs/ARCHITECTURE.md`, `Docs/README.md`, `Docs/ADRs/README.md`, `README.md`.
+- Arquivos alterados: `Docs/ADRs/ADR-0018-Gate-de-Promocao-Baseline2.2.md`, `Docs/ADRs/ADR-0019-Promocao-Baseline2.2.md`, `Docs/plano2.2.md`, `Docs/Overview/Overview.md`, `Docs/README.md`, `Docs/ADRs/README.md`, `README.md`.
 
 ## 2026-01-20
 - ADR-0018/ADR-0019 reescritos para formalizar ContentSwap + LevelManager.
@@ -53,17 +68,16 @@
 - Plano 2.2 reordenado (ContentSwap → Level Manager → Configuração → QA/Evidências/Gate).
 - Índice de ADRs atualizado para refletir os novos escopos.
 
-## 2026-01-18
+## 2026-01-18 (pruned)
 - Reports/Evidence: novo snapshot 2026-01-18 (Baseline 2.1) com logs mesclados (Restart e ExitToMenu).
 - ADR-0012: referência de evidência atualizada para o snapshot 2026-01-18.
 - ADR-0015: referência de evidência atualizada para o snapshot 2026-01-18.
 
-## [2026-01-16]
-
+## 2026-01-16 (pruned)
 ### Alterado
 
-- Consolidado snapshot datado de evidências em `Docs/Reports/Evidence/2026-01-16/` e atualizado `Docs/Reports/Evidence/LATEST.md`.
-- Restaurado `Docs/Reports/Observability-Contract.md` como fonte de verdade.
+- Consolidado snapshot datado de evidências em `Docs/Reports/Evidence/2026-01-29/` e atualizado `Docs/Reports/Evidence/LATEST.md`.
+- Restaurado `Docs/Standards/Observability-Contract.md` como fonte de verdade.
 - Atualizados links de evidência em ADRs e READMEs para apontar para `Docs/Reports/Evidence/`.
 
 ## [2026-01-15]

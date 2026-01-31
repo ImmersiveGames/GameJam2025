@@ -20,7 +20,7 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 | [ADR-0015](./ADR-0015-Baseline-2.0-Fechamento.md) | Baseline 2.0: Fechamento Operacional | Implementado | NewScripts / Baseline 2.0 |
 | [ADR-0016](./ADR-0016-ContentSwap-WorldLifecycle.md) | ContentSwap InPlace-only (NewScripts) | Implementado | ContentSwap + WorldLifecycle (NewScripts) |
 | [ADR-0017](./ADR-0017-LevelManager-Config-Catalog.md) | LevelManager + ConfigCatalog (SSOT) | Em andamento | LevelManager |
-| [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md) | Mudança de semântica: ContentSwap + LevelManager | Aceito | ContentSwap + LevelManager |
+| [ADR-0018](./ADR-0018-Gate-de-Promocao-Baseline2.2.md) | Mudança de semântica: ContentSwap + LevelManager | Aceito | ContentSwap + LevelManager |
 | [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md) | Promoção do Baseline 2.2 (ContentSwap + LevelManager + Config) | Proposto | Baseline 2.2 |
 
 
@@ -28,11 +28,12 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 
 - Contrato canônico: [Observability-Contract.md](../Standards/Observability-Contract.md)
 - Evidência vigente (ponte): [LATEST](../Reports/Evidence/LATEST.md)
-- Snapshot (2026-01-18): [Evidência consolidada](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- Snapshot (canônico 2026-01-29): [Evidência consolidada](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
+- Ponte contínua: [Evidence/LATEST.md](../Reports/Evidence/LATEST.md)
 
 
 ## Contratos obrigatórios
 
 - `../Standards/Observability-Contract.md`
 - `../Standards/Production-Policy-Strict-Release.md`
-- `../Standards/Evidence-Methodology.md`
+- `../Reports/Evidence/README.md`

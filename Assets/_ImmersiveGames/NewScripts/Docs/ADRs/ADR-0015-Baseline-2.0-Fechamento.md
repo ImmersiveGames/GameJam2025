@@ -70,9 +70,9 @@ Ver seção **Fora de escopo**.
 
 O fechamento do Baseline 2.0 foi validado via **snapshot datado** (evidência canônica para ADRs aceitos).
 
-- Snapshot (2026-01-18): [`Baseline 2.1 — Evidência consolidada`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
-- Log (snapshot): [`Logs/Baseline-2.1-Smoke-2026-01-18.log`](../Reports/Evidence/2026-01-18/Logs/Baseline-2.1-Smoke-2026-01-18.log)
-- Verificação (snapshot): [`Baseline-2.1-ContractVerification-2026-01-18.md`](../Reports/Evidence/2026-01-18/Verifications/Baseline-2.1-ContractVerification-2026-01-18.md)
+- Snapshot (canônico 2026-01-29): [`Baseline-2.2-Evidence-2026-01-29.md`](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
+- Log (snapshot): [`Logs/Baseline-2.2-Smoke-2026-01-18.log`](../Reports/Evidence/LATEST.md)
+- Verificação (snapshot): [`Baseline-2.2-ContractVerification-2026-01-18.md`](../Reports/Evidence/LATEST.md)
 
 Observação: artefatos antigos do Baseline 2.0 (spec/checklist/smoke) foram removidos de `Reports/` para reduzir ruído; o snapshot datado permanece como evidência histórica.
 
@@ -102,13 +102,13 @@ O fechamento cobre:
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- Snapshot (canônico 2026-01-29): [`Baseline-2.2-Evidence-2026-01-29.md`](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
 - Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Referências
 
 - [Docs/README.md](../README.md)
-- [Docs/Overview/Architecture.md](../Overview/Architecture.md)
-- [Docs/Overview/WorldLifecycle.md](../Overview/WorldLifecycle.md)
+- [Docs/Overview/Overview.md](../Overview/Overview.md)
+- [Docs/Overview/Overview.md](../Overview/Overview.md)
 - [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

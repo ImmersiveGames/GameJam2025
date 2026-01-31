@@ -78,7 +78,7 @@ Ver seção **Fora de escopo**.
 **Critério verificável**
 - Evidências consolidadas em snapshot datado (`Docs/Reports/Evidence/<YYYY-MM-DD>/`).
 - `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot do baseline fechado.
-- `Docs/CHANGELOG-docs.md` atualizado com gates fechados.
+- `Docs/CHANGELOG.md` atualizado com gates fechados.
 
 ## Fora de escopo
 

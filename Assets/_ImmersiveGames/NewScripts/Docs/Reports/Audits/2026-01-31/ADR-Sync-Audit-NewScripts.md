@@ -1,99 +1,360 @@
-# ADR Sync Audit — NewScripts (ADR-0009..ADR-0019)
+ADR Sync Audit — NewScripts (ADR-0009..ADR-0019)
+Escopo: Assets/_ImmersiveGames/NewScripts/ (primário) e pastas secundárias quando referenciadas pelos ADRs.
+Contratos de observabilidade: Docs/Standards/Observability-Contract.md é a fonte canônica de reasons/assinaturas; Reason-Map.md é mencionado como deprecated no contrato, mas o arquivo não foi encontrado no repo (busca por Reason-Map.md).
 
-Data: 2026-01-31
-Escopo: `Assets/_ImmersiveGames/NewScripts/`
+1) Sumário executivo
+   Tabela de status (ADR x Implementação)
+   ADR	Status	Principais evidências (paths)	Principais gaps	Risco
+   ADR-0009 (Fade + SceneFlow)	RISCO	SceneTransitionService + NewScriptsFadeService + NewScriptsSceneFlowFadeAdapter + GlobalBootstrap	Fail-fast não aplicado (continua sem fade); adapter pode virar NullFade; ausência de âncoras de log explícitas para Fade	Alto
+   ADR-0010 (Loading HUD + SceneFlow)	RISCO	SceneFlowLoadingService, NewScriptsLoadingHudService, GlobalBootstrap	HUD não fail-fast; continua sem HUD sem modo degradado explícito; logs não são [OBS] no contrato	Alto
+   ADR-0011 (WorldDefinition multi-actor)	PARCIAL	WorldDefinition, NewSceneBootstrapper, WorldSpawnServiceFactory, WorldLifecycleOrchestrator	WorldDefinition ausente não falha em gameplay; ausência de verificação de “mínimo de atores”	Médio
+   ADR-0012 (PostGame)	PARCIAL	PostGameOverlayController, GameRunOutcomeService, GameLoopRunEndEventBridge, Restart/ExitToMenuNavigationBridge, logs [OBS][PostGame]	Dependências críticas (InputMode/Gate) apenas warning; não fail-fast	Médio
+   ADR-0013 (Ciclo de vida)	PARCIAL	SceneTransitionService, WorldLifecycleSceneFlowResetDriver, WorldLifecycleResetCompletionGate, GameLoopSceneFlowCoordinator, InputModeSceneFlowBridge	GameLoopSceneFlowCoordinator pode RequestStart() antes de IntroStage completar (diverge do contrato esperado em ADR-0010)	Médio
+   ADR-0014 (Gameplay Reset Targets/Grupos)	PARCIAL	DefaultGameplayResetTargetClassifier, GameplayResetOrchestrator, NewSceneBootstrapper	Falta fail-fast em targets ausentes; fallback por scan sempre habilitado	Médio
+   ADR-0015 (Baseline 2.0 fechamento)	OK	Evidências e contratos em Docs/Reports/Evidence/LATEST.md e ADR	Não aplicável (documental)	Baixo
+   ADR-0016 (ContentSwap InPlace-only)	PARCIAL	ContentSwapChangeServiceInPlaceOnly, ContentSwapContextService, GlobalBootstrap	Respeito a gates (scene_transition/sim.gameplay) não aparece no serviço	Médio
+   ADR-0017 (LevelManager + Catalog)	PARCIAL	LevelManager, LevelCatalogResolver, ResourcesLevelCatalogProvider, LevelManagerInstaller, assets em Resources	Fail-fast para ID/config ausente não ocorre; evidência canônica ainda “TODO” no ADR	Médio
+   ADR-0018 (Gate promoção Baseline 2.2)	PARCIAL	PromotionGateService + gating no bootstrap + contratos de ContentSwap/Level	Gate sempre default habilitado (sem config carregado no serviço); critérios de promoção dependem de processo/doc	Médio
+   ADR-0019 (Promoção Baseline 2.2)	AUSENTE (no runtime)	ADR é processual (Docs/Reports/Evidence); nenhum runtime/DI específico	Sem implementação de processo em runtime	Baixo
+   Top divergências / faltas (impacto alto)
+   Fail-fast não cumprido em Fade e Loading HUD: serviços seguem sem UI quando referências faltam (contrato pede falha explícita em dev/QA).
 
-> **Nota de execução:** auditoria SOMENTE-LEITURA. Não foram sugeridos patches nem alterações de código.
+IntroStage vs RequestStart: GameLoopSceneFlowCoordinator pode chamar RequestStart() antes de IntroStage completar, divergindo do contrato esperado em ADR-0010 (obs. no próprio ADR).
 
----
+ContentSwap sem gating: ContentSwapChangeServiceInPlaceOnly não consulta gates (scene_transition / sim.gameplay) apesar do contrato exigir respeito a gates.
 
-## 1) Sumário executivo
+WorldDefinition opcional em gameplay: NewSceneBootstrapper aceita worldDefinition nulo; contrato pede spawn determinístico mínimo (Player/Eater).
 
-### Principais divergências (por impacto)
+Level catalog fail-fast não aplicado: resolver e session logam warnings e retornam false, mas não falham; contrato pede falha explícita para IDs/config ausentes.
 
-1) **Strict/Release/DEGRADED_MODE ausentes no runtime**: Fade/LoadingHUD/PostGame caem em fallback por warnings, sem branch Strict/Release explícito e sem âncora `DEGRADED_MODE`. (Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs:L43-L137; Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Loading/NewScriptsLoadingHudService.cs:L41-L117; Assets/_ImmersiveGames/NewScripts/Gameplay/PostGame/PostGameOverlayController.cs:L320-L419; Assets/_ImmersiveGames/NewScripts/Docs/Standards/Observability-Contract.md:L251-L256; Assets/_ImmersiveGames/NewScripts/Docs/Standards/Production-Policy-Strict-Release.md:L14-L45)
-2) **Ordem do fluxo**: `GameLoopSceneFlowCoordinator` chama `RequestStart()` sem evidência de que a IntroStage foi concluída; o ADR-0010 documenta que o start deve ocorrer após IntroStage completar. (Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopSceneFlowCoordinator.cs:L234-L279; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0010-LoadingHud-SceneFlow.md:L110-L137)
-3) **Gates de ContentSwap não são respeitados**: o serviço InPlace não consulta `flow.scene_transition` nem `sim.gameplay`, apesar do contrato do ADR-0016. (Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs:L31-L83; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0016-ContentSwap-WorldLifecycle.md:L21-L24)
-4) **WorldDefinition em gameplay sem fail-fast**: `NewSceneBootstrapper` aceita `worldDefinition == null` e não valida mínimo de spawn (Player+Eater). (Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs:L158-L226; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0011-WorldDefinition-MultiActor-GameplayScene.md:L48-L63)
-5) **LevelCatalog sem policy Strict/Release**: `LevelCatalogResolver` apenas emite warnings e retorna `false` quando catálogo/definição não existem. (Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Resolvers/LevelCatalogResolver.cs:L32-L193; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0017-LevelManager-Config-Catalog.md:L10-L43)
+Promotion gate sempre habilitado: PromotionGateService retorna defaults habilitados, sem carregamento de config (contrato de gate processual fica sem enforcement real).
 
-### Pontos positivos (prontos para promoção)
+2) Matriz detalhada (por ADR)
+   Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, observabilidade, alinhamento e gaps com prioridade.
 
-1) **Ordem do SceneFlow**: `SceneTransitionService` executa `FadeIn → ScenesReady → BeforeFadeOut → FadeOut → Completed`. (Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/SceneTransitionService.cs:L191-L223)
-2) **WorldLifecycle observável**: logs `[OBS][WorldLifecycle] ResetRequested/ResetCompleted` com campos canônicos. (Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs:L220-L255)
-3) **ContentSwap com logs canônicos mínimos**: `[OBS][ContentSwap] ContentSwapRequested`. (Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs:L42-L58)
-4) **LevelManager com logs canônicos mínimos**: `[OBS][Level] LevelChangeRequested/Started/Completed`. (Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/LevelManager.cs:L25-L61; Assets/_ImmersiveGames/NewScripts/Docs/Standards/Observability-Contract.md:L148-L152)
-5) **PostGame idempotente**: dupla ação de Restart/ExitToMenu é bloqueada por `_actionRequested`. (Assets/_ImmersiveGames/NewScripts/Gameplay/PostGame/PostGameOverlayController.cs:L104-L148)
+ADR-0009 — Fade + SceneFlow
+Objetivo de produção (ideal): envelope determinístico fade-out → transição → fade-in, sem flicker.
+Contrato mínimo: fade-out antes de mutações; Completed após fade-in; fail-fast quando fade UI não existe.
 
----
+Implementação encontrada
 
-## 2) Tabela por ADR (0009–0019)
+Arquivos:
 
-> Status permitido: **ALINHADO | PARCIAL | DIVERGENTE**.
+SceneTransitionService aplica FadeIn antes das operações de cena e FadeOut após completion gate.
 
-| ADR | Implementação encontrada (paths) | Divergências vs ideal de produção | Evidências (linhas) | Status |
-|---|---|---|---|---|
-| ADR-0009 (Fade + SceneFlow) | `NewScriptsFadeService`, `NewScriptsSceneFlowFadeAdapter`, `SceneTransitionService` | Sem fail-fast em Strict e sem `DEGRADED_MODE` em Release; fallback para `NullFadeAdapter`; não há logs `[OBS][Fade]` no runtime. | Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs:L43-L137; Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs:L31-L45; Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/SceneTransitionService.cs:L301-L332; Assets/_ImmersiveGames/NewScripts/Docs/Standards/ADR-Ideal-Completeness-Checklist.md:L15-L16 | **PARCIAL** |
-| ADR-0010 (Loading HUD + SceneFlow) | `SceneFlowLoadingService`, `NewScriptsLoadingHudService` | Sem fail-fast em Strict e sem `DEGRADED_MODE` em Release; ausência de `[OBS][LoadingHUD]`; ADR-0010 registra risco de `RequestStart()` antecipado. | Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Loading/NewScriptsLoadingHudService.cs:L41-L117; Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Loading/SceneFlowLoadingService.cs:L256-L270; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0010-LoadingHud-SceneFlow.md:L110-L137 | **PARCIAL** |
-| ADR-0011 (WorldDefinition multi-actor) | `NewSceneBootstrapper`, `WorldDefinition`, `WorldSpawnServiceFactory` | `worldDefinition` nulo é permitido mesmo em gameplay; não há validação explícita de spawn mínimo (Player+Eater). | Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs:L158-L226; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0011-WorldDefinition-MultiActor-GameplayScene.md:L48-L63 | **PARCIAL** |
-| ADR-0012 (PostGame) | `PostGameOverlayController`, `GameLoopService` | Dependências críticas (Gate/InputMode) não falham em Strict; fallback sem `DEGRADED_MODE` em Release. | Assets/_ImmersiveGames/NewScripts/Gameplay/PostGame/PostGameOverlayController.cs:L320-L419; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md:L86-L151 | **PARCIAL** |
-| ADR-0013 (Ciclo de vida) | `SceneTransitionService`, `WorldLifecycleSceneFlowResetDriver`, `GameLoopSceneFlowCoordinator` | `RequestStart()` não é condicionado à conclusão da IntroStage; contrato pede start pós-IntroStage. | Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopSceneFlowCoordinator.cs:L234-L279; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md:L24-L38 | **PARCIAL** |
-| ADR-0014 (Gameplay Reset: targets/grupos) | `DefaultGameplayResetTargetClassifier`, `GameplayResetOrchestrator` | Fallback por scan de cena e fallback string-based para `EaterOnly` sem política Strict/Release explícita; falhas de target não são fail-fast. | Assets/_ImmersiveGames/NewScripts/Gameplay/Reset/DefaultGameplayResetTargetClassifier.cs:L44-L51; Assets/_ImmersiveGames/NewScripts/Gameplay/Reset/GameplayResetOrchestrator.cs:L125-L225; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0014-GameplayReset-Targets-Grupos.md:L26-L73 | **PARCIAL** |
-| ADR-0015 (Baseline 2.0 fechamento) | `Docs/Reports/Evidence/LATEST.md` | Processo documental presente e referenciado como canônico. | Assets/_ImmersiveGames/NewScripts/Docs/Reports/Evidence/LATEST.md:L1-L15 | **ALINHADO** |
-| ADR-0016 (ContentSwap InPlace-only) | `ContentSwapChangeServiceInPlaceOnly`, `ContentSwapContextService` | Não consulta gates `flow.scene_transition`/`sim.gameplay`; sem policy de bloqueio/retry/abort. | Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs:L31-L83; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0016-ContentSwap-WorldLifecycle.md:L21-L24 | **PARCIAL** |
-| ADR-0017 (LevelManager + Catalog) | `LevelManager`, `LevelCatalogResolver`, `ResourcesLevelCatalogProvider`, `LevelManagerInstaller` | Falha de catálogo/definição não é Strict fail-fast; Release não tem comportamento definido; evidência canônica não cobre LevelCatalog. | Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Resolvers/LevelCatalogResolver.cs:L32-L193; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0017-LevelManager-Config-Catalog.md:L10-L43 | **PARCIAL** |
-| ADR-0018 (Gate de promoção) | `PromotionGateService`, `PromotionGateInstaller` | Gate default `defaultEnabled=true` sem config real; ausência de logs `[OBS][PromotionGate]`. | Assets/_ImmersiveGames/NewScripts/Infrastructure/Promotion/PromotionGateService.cs:L48-L60; Assets/_ImmersiveGames/NewScripts/Docs/Standards/ADR-Ideal-Completeness-Checklist.md:L24-L25 | **PARCIAL** |
-| ADR-0019 (Promoção Baseline 2.2) | Processo documental + `LATEST.md` | Processo documentado, mas sem evidência explícita de gate fechado além do LATEST; sem registro de promoção no runtime. | Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0019-Promocao-Baseline2.2.md:L20-L104; Assets/_ImmersiveGames/NewScripts/Docs/Reports/Evidence/LATEST.md:L1-L15 | **PARCIAL** |
+NewScriptsFadeService carrega FadeScene, localiza NewScriptsFadeController e executa fades.
 
----
+NewScriptsSceneFlowFadeAdapter resolve profiles e configura tempos de fade, com fallback para NullFadeAdapter.
 
-## 3) Auditoria de invariants (Checklist A–F)
+DI: GlobalBootstrap registra INewScriptsFadeService e SceneTransitionService com gate de WorldLifecycle.
 
-Checklist A–F conforme `Production-Policy-Strict-Release.md` e `ADR-Ideal-Completeness-Checklist.md`. (Assets/_ImmersiveGames/NewScripts/Docs/Standards/Production-Policy-Strict-Release.md:L38-L45; Assets/_ImmersiveGames/NewScripts/Docs/Standards/ADR-Ideal-Completeness-Checklist.md:L15-L34)
+Símbolos-chave: INewScriptsFadeService, NewScriptsFadeService, NewScriptsSceneFlowFadeAdapter, SceneTransitionService.
 
-| Item | PASS/FAIL | Evidências |
-|---|---|---|
-| A) Fade/LoadingHUD | **FAIL** | Não há branch Strict/Release nem `DEGRADED_MODE`; fallback por warning no runtime. (Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs:L43-L137; Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Loading/NewScriptsLoadingHudService.cs:L41-L117; Assets/_ImmersiveGames/NewScripts/Docs/Standards/Observability-Contract.md:L251-L256)
-| B) WorldDefinition | **FAIL** | `worldDefinition` pode ser nulo em gameplay e não há validação de spawn mínimo. (Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs:L158-L226)
-| C) LevelCatalog | **FAIL** | Ausência de catálogo/definição apenas gera warning; não há Strict fail-fast nem política Release explícita. (Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Resolvers/LevelCatalogResolver.cs:L32-L193)
-| D) PostGame | **FAIL** | Gate/InputMode indisponíveis só geram warning; não há `DEGRADED_MODE`. (Assets/_ImmersiveGames/NewScripts/Gameplay/PostGame/PostGameOverlayController.cs:L320-L419; Assets/_ImmersiveGames/NewScripts/Docs/Standards/Observability-Contract.md:L251-L256)
-| E) Ordem do fluxo | **FAIL** | `GameLoopSceneFlowCoordinator` chama `RequestStart()` sem evidência de IntroStage concluída; ADR-0010 explicita que start deve ocorrer após IntroStage completar. (Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopSceneFlowCoordinator.cs:L234-L279; Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0010-LoadingHud-SceneFlow.md:L123-L137)
-| F) ContentSwap (gates) | **FAIL** | `ContentSwapChangeServiceInPlaceOnly` não consulta `flow.scene_transition`/`sim.gameplay`. (Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs:L31-L83)
+Registro DI: RegisterSceneFlowFadeModule() + RegisterSceneFlowNative() no GlobalBootstrap.
 
----
+Fluxo de produção: SceneTransitionService chama FadeIn → ScenesReady → gate → BeforeFadeOut → FadeOut → Completed.
 
-## 4) Observabilidade
+Observabilidade
 
-### Ocorrência de `DEGRADED_MODE`
+Esperado: logs/âncoras de Fade conforme ADR e contrato de observability (ainda “TODO” no ADR).
 
-- **Definição existe apenas nos standards**; não há uso explícito no runtime observado nas features auditadas. (Assets/_ImmersiveGames/NewScripts/Docs/Standards/Observability-Contract.md:L251-L256; Assets/_ImmersiveGames/NewScripts/Docs/Standards/Production-Policy-Strict-Release.md:L26-L45)
-- **Fallbacks atuais** usam warnings sem âncora `DEGRADED_MODE` (Fade/LoadingHUD/PostGame). (Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs:L43-L137; Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneFlow/Loading/NewScriptsLoadingHudService.cs:L41-L117; Assets/_ImmersiveGames/NewScripts/Gameplay/PostGame/PostGameOverlayController.cs:L320-L419)
+Encontrado: logs [Fade] em NewScriptsFadeService e logs de profile em NewScriptsSceneFlowFadeAdapter (não [OBS]).
 
-### Logs `[OBS][Fade]`, `[OBS][LoadingHUD]`, `[OBS][PromotionGate]`
+Alinhamento
 
-- **Não há logs `[OBS][Fade]`/`[OBS][LoadingHUD]` no runtime**; o checklist ideal os menciona como requisito. (Assets/_ImmersiveGames/NewScripts/Docs/Standards/ADR-Ideal-Completeness-Checklist.md:L15-L16)
-- **`PromotionGateService`** não emite logs `[OBS][PromotionGate]` (apenas log genérico de defaults). (Assets/_ImmersiveGames/NewScripts/Infrastructure/Promotion/PromotionGateService.cs:L48-L60)
+✅ Aderente: ordem de Fade + ScenesReady + gate + FadeOut está implementada.
 
----
+⚠️ Parcial: observabilidade do fade não segue anchors [OBS] e ADR diz “TODO”.
 
-## 5) Ações sugeridas (sem código)
+❌ Divergente: fail-fast não aplicado; continua sem fade se controller não existe ou se não houver serviço no DI. Isso é fallback sem modo degradado explícito (RISCO).
 
-> Priorização por risco/impacto. Cada item indica ADR(s) e o checklist A–F que desbloqueia.
+Gaps para completar
 
-1) **Definir política Strict/Release e âncora `DEGRADED_MODE`** para Fade e LoadingHUD (ADR-0009/ADR-0010; Checklist A). (Assets/_ImmersiveGames/NewScripts/Docs/Standards/Production-Policy-Strict-Release.md:L14-L45)
-2) **WorldDefinition em gameplay deve ser obrigatória + validação de spawn mínimo** (ADR-0011; Checklist B). (Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0011-WorldDefinition-MultiActor-GameplayScene.md:L48-L63)
-3) **PostGame: Gate/InputMode como pré-condições em Strict + degraded explícito em Release** (ADR-0012; Checklist D). (Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md:L86-L151)
-4) **Ordem de fluxo: RequestStart após IntroStageComplete** (ADR-0010/ADR-0013; Checklist E). (Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0010-LoadingHud-SceneFlow.md:L123-L137)
-5) **ContentSwap: checagem de gates + policy de bloqueio/adiamento/abort** (ADR-0016; Checklist F). (Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0016-ContentSwap-WorldLifecycle.md:L21-L24)
-6) **LevelCatalog: fail-fast em Strict e comportamento Release definido** (ADR-0017; Checklist C). (Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0017-LevelManager-Config-Catalog.md:L10-L43)
-7) **PromotionGate: config real ou policy “always on” observável** com logs canônicos (ADR-0018). (Assets/_ImmersiveGames/NewScripts/Docs/Standards/ADR-Ideal-Completeness-Checklist.md:L24-L25)
-8) **GameplayReset: política explícita para fallback por scan/strings** (ADR-0014; Checklist B/C). (Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0014-GameplayReset-Targets-Grupos.md:L26-L73)
+Alta — Fail-fast configurável: ausência de FadeScene/NewScriptsFadeController deve falhar (ou exigir modo degradado explícito com log âncora). Onde: NewScriptsFadeService, NewScriptsSceneFlowAdapters. Critério de pronto: erro explícito em dev/QA; modo degradado apenas quando configurado.
 
----
+Média — Âncoras de observabilidade para Fade ([OBS]) alinhadas ao contrato. Onde: NewScriptsFadeService/SceneTransitionService. Critério de pronto: logs canônicos presentes e documentados.
 
-## Referências internas consultadas
+ADR-0010 — Loading HUD + SceneFlow
+Objetivo de produção: feedback de loading sem acoplar ao fluxo, determinístico e observável.
+Contrato mínimo: HUD opcional, ordem correta (fade → loading → ready → fade-out), fail-fast em dev/QA; fallback só com configuração explícita.
 
-- `Docs/Standards/Production-Policy-Strict-Release.md` (Strict/Release + A–F). (Assets/_ImmersiveGames/NewScripts/Docs/Standards/Production-Policy-Strict-Release.md:L1-L61)
-- `Docs/Standards/ADR-Ideal-Completeness-Checklist.md` (completude ideal por ADR). (Assets/_ImmersiveGames/NewScripts/Docs/Standards/ADR-Ideal-Completeness-Checklist.md:L1-L34)
-- `Docs/Standards/Observability-Contract.md` (anchors + DEGRADED_MODE). (Assets/_ImmersiveGames/NewScripts/Docs/Standards/Observability-Contract.md:L140-L256)
-- `Docs/Reports/Evidence/LATEST.md` (evidência canônica). (Assets/_ImmersiveGames/NewScripts/Docs/Reports/Evidence/LATEST.md:L1-L15)
+Implementação encontrada
+
+Arquivos:
+
+SceneFlowLoadingService orquestra etapas Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed.
+
+NewScriptsLoadingHudService carrega LoadingHudScene e controla NewScriptsLoadingHudController.
+
+Registro no DI via GlobalBootstrap (INewScriptsLoadingHudService + SceneFlowLoadingService).
+
+Fluxo de produção: HUD “Ensure” no Started; Show após FadeIn; Hide antes do FadeOut; safety hide no Completed.
+
+Observabilidade
+
+Esperado: logs de estado e etapas (ADR).
+
+Encontrado: logs [Loading] e [LoadingHUD] (sem prefixo [OBS]).
+
+Alinhamento
+
+✅ Aderente: ordem de Show/Hide está conforme ADR.
+
+⚠️ Parcial: logs não estão no formato canônico [OBS].
+
+❌ Divergente: fallback silencioso quando HUD/controller faltam, sem modo degradado explícito (RISCO).
+
+Gaps
+
+Alta — Fail-fast em dev/QA quando LoadingHudScene/controller não existe; fallback apenas via config explícita.
+
+Média — Padronizar logs com assinatura [OBS] se exigido pelo contrato.
+
+ADR-0011 — WorldDefinition multi-actor
+Objetivo: WorldDefinition declara Player + Eater determinístico via reset pipeline.
+Contrato mínimo: spawn via WorldLifecycle, ActorRegistry atualizado, fail-fast em ausência de refs.
+
+Implementação encontrada
+
+Arquivos: WorldDefinition (ScriptableObject), NewSceneBootstrapper registra spawn services via definition, WorldSpawnServiceFactory cria Player/Eater, WorldLifecycleOrchestrator loga ActorRegistry counts.
+
+Fluxo: NewSceneBootstrapper registra spawn services por WorldDefinition; WorldLifecycleOrchestrator despawn/spawn e loga contagens.
+
+Observabilidade
+
+Esperado: ActorRegistry mínimo (ex.: 2) em logs.
+
+Encontrado: logs de contagem no orchestrator (ActorRegistry count at 'After Spawn').
+
+Alinhamento
+
+✅ Aderente: assets e pipeline de spawn existem, incluindo Player/Eater.
+
+⚠️ Parcial: worldDefinition pode ser nula sem erro (em gameplay isso mascara problema).
+
+⚠️ Parcial: não há validação explícita de “mínimo de atores”.
+
+Gaps
+
+Alta — Validar presença de WorldDefinition em gameplay (fail-fast ou gate).
+
+Média — Check explícito de mínimos (Player + Eater) com log âncora.
+
+ADR-0012 — Fluxo pós-gameplay (PostGame)
+Objetivo: PostGame idempotente via eventos, overlay + gating/input, Restart/ExitToMenu.
+Contrato mínimo: entrada via evento, gate sim.gameplay, Restart via SceneFlow/WorldLifecycle, ExitToMenu via frontend.
+
+Implementação encontrada
+
+Overlay e intents: PostGameOverlayController publica GameResetRequestedEvent/GameExitToMenuRequestedEvent e usa gate state.postgame + InputMode.
+
+Eventos de fim de run: GameRunOutcomeService publica GameRunEndedEvent de forma idempotente e só em Playing.
+
+Bridge para GameLoop: GameLoopRunEndEventBridge converte GameRunEndedEvent → RequestEnd().
+
+Navegação: RestartNavigationBridge e ExitToMenuNavigationBridge acionam IGameNavigationService.
+
+Observabilidade
+
+Esperado: [OBS][PostGame] + logs do overlay (contrato).
+
+Encontrado: [OBS][PostGame] em GameLoopService e logs [PostGame] no overlay.
+
+Alinhamento
+
+✅ Aderente: eventos e navegação canonizados (Restart/ExitToMenu) com logs.
+
+⚠️ Parcial: dependências críticas (gate/input) apenas warning (não fail-fast).
+
+Gaps
+
+Média — Fail-fast controlado em dev/QA para dependências de UI/gate (conforme ADR).
+
+ADR-0013 — Ciclo de vida do jogo
+Objetivo: Boot → Menu → Gameplay → PostGame → Restart/Exit com SceneFlow + WorldLifecycle + GameLoop.
+Contrato mínimo: reset só em gameplay; ResetCompleted sempre; GameLoop só joga após gates/IntroStage.
+
+Implementação encontrada
+
+SceneFlow + Gate: SceneTransitionService aguarda completion gate antes do FadeOut.
+
+Reset determinístico: WorldLifecycleSceneFlowResetDriver publica [OBS][WorldLifecycle] ResetRequested/ResetCompleted e lida com SKIP/Failed.
+
+GameLoop sync: GameLoopSceneFlowCoordinator aguarda ScenesReady + ResetCompleted + Completed e em gameplay faz RequestStart().
+
+InputMode + IntroStage: InputModeSceneFlowBridge aplica InputMode e dispara IntroStage em SceneFlow/Completed:Gameplay.
+
+Observabilidade
+
+Esperado: logs de SceneFlow + ResetCompleted + IntroStage/Playing.
+
+Encontrado: [OBS][WorldLifecycle] em driver; [OBS][InputMode] em bridge; logs de SceneFlow em SceneTransitionService.
+
+Alinhamento
+
+✅ Aderente: completion gate e reset driver respeitam ordem.
+
+⚠️ Parcial: GameLoopSceneFlowCoordinator pode RequestStart() antes da IntroStage (divergência já citada no ADR-0010).
+
+Gaps
+
+Alta — Garantir que RequestStart() ocorra após IntroStage (contrato esperado).
+
+ADR-0014 — Gameplay Reset Targets/Grupos
+Objetivo: resets determinísticos por grupo/target.
+Contrato mínimo: targets idempotentes e ordenados; fail-fast se target ausente/config inconsistente.
+
+Implementação encontrada
+
+Classifier: DefaultGameplayResetTargetClassifier usa ActorRegistry e fallback string-based para Eater.
+
+Orchestrator: GameplayResetOrchestrator tenta ActorRegistry e faz fallback por scan de cena.
+
+Registro de cena: NewSceneBootstrapper registra classifier e orchestrator por cena.
+
+Observabilidade
+
+Esperado: logs de ResetRequested/ResetCompleted com reason canônico.
+
+Encontrado: logs [OBS][WorldLifecycle] em driver; GameplayReset logs informativos (não [OBS]).
+
+Alinhamento
+
+✅ Aderente: classificação por ActorRegistry + fallback conforme ADR.
+
+⚠️ Parcial: fail-fast para targets ausentes não ocorre (fallback sempre habilitado).
+
+Gaps
+
+Média — Fail-fast controlado quando target inválido/config inconsistente.
+
+ADR-0015 — Baseline 2.0 fechamento
+Objetivo/Contrato: fechamento documental e evidências datadas (LATEST).
+Implementação encontrada: evidências e LATEST existem no docs; natureza processual (sem runtime).
+
+Status: ✅ OK (documental; sem gaps de runtime).
+
+ADR-0016 — ContentSwap InPlace-only
+Objetivo: ContentSwap in-place com observabilidade; respeitar gates.
+Contrato mínimo: logs ContentSwapRequested/Pending/Committed/Cleared.
+
+Implementação encontrada
+
+Serviço: ContentSwapChangeServiceInPlaceOnly emite [OBS][ContentSwap] ContentSwapRequested e ignora Fade/LoadingHUD.
+
+Contexto: ContentSwapContextService emite ContentSwapPendingSet, Committed, PendingCleared.
+
+Registro DI: GlobalBootstrap registra IContentSwapContextService + IContentSwapChangeService.
+
+Observabilidade
+
+Esperado: [OBS][ContentSwap] + context logs conforme contrato.
+
+Encontrado: logs em serviço + contexto conforme contrato mínimo.
+
+Alinhamento
+
+✅ Aderente: modo InPlace e logs canônicos.
+
+⚠️ Parcial: ausência de checagem de gates scene_transition/sim.gameplay no serviço.
+
+Gaps
+
+Média — Respeito explícito a gates (ou justificativa documentada).
+
+ADR-0017 — LevelManager + Catalog
+Objetivo: catalog como fonte única (DIP/SRP), sem hardcode.
+Contrato mínimo: fail-fast para ID/config ausente; resolução via catálogo; logs de resolução.
+
+Implementação encontrada
+
+Código: LevelManager emite [OBS][Level] + usa ContentSwap.
+
+Resolver + Providers: LevelCatalogResolver, ResourcesLevelCatalogProvider.
+
+DI: LevelManagerInstaller registra providers/resolver/manager/session.
+
+Assets: LevelCatalog.asset e LevelDefinition_level.1/level.2 em Resources.
+
+Observabilidade
+
+Esperado: [OBS][Level] e [OBS][LevelCatalog] (contrato).
+
+Encontrado: logs [OBS][Level] no manager e [OBS][LevelCatalog] no resolver/provider.
+
+Alinhamento
+
+✅ Aderente: catálogo + resolver + assets existem.
+
+⚠️ Parcial: ausência de fail-fast (apenas warnings).
+
+⚠️ Parcial: ADR indica evidência canônica “TODO”.
+
+Gaps
+
+Alta — Fail-fast para IDs/config ausentes.
+
+Média — Evidência canônica do catálogo em LATEST.md (ADR cita TODO).
+
+ADR-0018 — Gate de promoção (Baseline 2.2)
+Objetivo: gate processual e semântica ContentSwap vs LevelManager.
+Contrato mínimo: gate define critérios + LATEST.md como referência canônica.
+
+Implementação encontrada
+
+PromotionGate: PromotionGateService sempre default-enabled (sem carregamento de config).
+
+Registro: PromotionGateInstaller é chamado no bootstrap.
+
+Uso: LevelCatalogResolver checa gate para plans e GlobalBootstrap usa gate para registrar ContentSwap/LevelManager.
+
+Observabilidade
+
+Esperado: observability alinhada ao contrato (ContentSwap/Level).
+
+Encontrado: logs [OBS][LevelCatalog] sobre gate missing/allow.
+
+Alinhamento
+
+✅ Aderente: separação de semântica ContentSwap vs LevelManager está refletida no código.
+
+⚠️ Parcial: gate sempre allow (defaults), sem config real.
+
+Gaps
+
+Média — Implementar leitura de config real para gates (ou explicitar modo sempre habilitado).
+
+ADR-0019 — Promoção Baseline 2.2
+Objetivo/Contrato: processo de promoção e evidência canônica.
+Implementação encontrada: nenhuma em runtime (é processo de docs/evidências).
+
+Status: AUSENTE (no runtime)
+Gaps:
+
+Baixa — Processo permanece documental; sem automation runtime (esperado, mas explícito).
+
+3) Inventário de “componentes órfãos” e “documentação órfã”
+   Componentes órfãos (código sem ADR explícito 0009–0019)
+   WorldSpawnSmokeRunner (tool de smoke test) não aparece nos ADRs de 0009–0019; é utilitário isolado para testes locais.
+
+WorldResetRequestHotkeyBridge (dev hotkey) também não aparece nos ADRs do ciclo 0009–0019; é ferramenta DEV/QA.
+
+Documentação órfã
+Reason-Map.md não encontrado: o contrato de observabilidade afirma que o Reason-Map é deprecated e deveria conter apenas redirect, mas o arquivo não existe no repo (busca realizada).
+
+4) Checklist para o próximo passo (planejamento)
+   Perguntas respondíveis pelo próximo log/evidência
+
+Logs mostram FadeOut/FadeIn com âncoras [OBS]? (atualmente não existem).
+
+LevelCatalog e LevelChange aparecem no snapshot canônico LATEST?
+
+IntroStage sempre antecede GameLoop em Playing nos fluxos de gameplay?
+
+Alvos para normalização (áreas)
+
+Fail-fast controlado para Fade/LoadingHUD/WorldDefinition/LevelCatalog (evitar fallback silencioso em produção).
+
+Gates explícitos para ContentSwap e LevelChange (scene_transition / sim.gameplay).
+
+Promoção (Baseline 2.2): decidir se gate fica sempre enabled ou se haverá config real + evidências.

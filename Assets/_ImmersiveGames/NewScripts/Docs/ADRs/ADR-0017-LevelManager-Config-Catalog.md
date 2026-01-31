@@ -98,9 +98,9 @@ Ver seção **Fora de escopo**.
 ## Referências
 
 - [README.md](../README.md)
-- [Overview/Architecture.md](../Overview/Architecture.md)
+- [Overview/Overview.md](../Overview/Overview.md)
 - [Observability-Contract.md](../Standards/Observability-Contract.md)
-- [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md)
+- [ADR-0018](./ADR-0018-Gate-de-Promocao-Baseline2.2.md)
 - [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md)
 - [LevelManager](../../Gameplay/Levels/LevelManager.cs)
 - [LevelPlan](../../Gameplay/Levels/LevelPlan.cs)

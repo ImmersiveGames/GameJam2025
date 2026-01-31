@@ -297,7 +297,7 @@ Regras:
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot arquivado (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+- Snapshot arquivado (2026-01-18): [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Referências

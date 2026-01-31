@@ -23,8 +23,11 @@ Este diretório contém **evidências arquivadas** (snapshots) usadas para:
 
 ## Estrutura
 
+> Arquivos antigos/obsoletos podem ser movidos para `Evidence/_Archive/` para manter o diretório principal enxuto, sem perder histórico.
+
+
 - `Evidence/YYYY-MM-DD/`
-  - `Baseline-2.1-Evidence-YYYY-MM-DD.md` (resumo canônico do snapshot)
+  - `Baseline-2.x-Evidence-YYYY-MM-DD.md` (resumo canônico do snapshot)
   - `Logs/` (opcional): espelho do Console em `.log`
   - `Verifications/` (opcional): checagens/âncoras curadas para navegação
 
@@ -44,10 +47,10 @@ Este diretório contém **evidências arquivadas** (snapshots) usadas para:
 
 1. Rodar o fluxo/cenário relevante (ex.: Baseline 2.1).
 2. Copiar o log do **Console** (fonte de verdade) e, se desejado, salvar um espelho em `Evidence/YYYY-MM-DD/Logs/`.
-3. Gerar um resumo canônico (arquivo `Baseline-2.1-Evidence-YYYY-MM-DD.md`) com links para os artefatos e âncoras.
+3. Gerar um resumo canônico (arquivo `Baseline-2.x-Evidence-YYYY-MM-DD.md`) com links para os artefatos e âncoras.
 4. Atualizar `Evidence/LATEST.md` para apontar para a nova data.
 5. Atualizar o(s) ADR(s) com os links de evidência.
-6. Registrar no `Docs/CHANGELOG-docs.md`.
+6. Registrar no `Docs/CHANGELOG.md`.
 
 ## Retenção e limpeza
 
