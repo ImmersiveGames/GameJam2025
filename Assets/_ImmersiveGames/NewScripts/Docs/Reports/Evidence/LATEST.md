@@ -1,14 +1,15 @@
-# Evidence — LATEST
+# Baseline 2.2 — Evidence (LATEST)
 
-Último snapshot arquivado: **2026-01-29**
+**Canonical evidence snapshot:** `2026-01-29`  
+See: `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
 
-- Baseline 2.2 Evidence Snapshot:
-    - `Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
+This snapshot covers:
 
-Notas:
-- Snapshot 2026-01-29 confirma o pipeline completo para:
-    - Boot→Menu (startup, reset skip)
-    - Menu→Gameplay (reset + spawn + IntroStage → Playing)
-    - ContentSwap in-place (G01) com reason canônico (`QA/ContentSwap/InPlace/NoVisuals`)
-    - Pause/Resume e PostGame (Victory/Defeat) com gates/tokens e InputMode coerentes
-    - Restart e ExitToMenu (reset determinístico / frontend reset skip)
+- Boot → Menu (startup) with frontend **SKIP** reset
+- Menu → Gameplay with **ResetWorld + ResetCompleted + spawn** (Player + Eater)
+- IntroStage blocks `sim.gameplay` and completes via `IntroStage/UIConfirm` → Playing
+- QA ContentSwap in-place (`QA/ContentSwap/InPlace/NoVisuals`)
+- Pause/Resume (`state.pause` token + InputMode `PauseOverlay`)
+- PostGame flows: Victory/Defeat, Restart (`PostGame/Restart`), ExitToMenu (`PostGame/ExitToMenu`) with frontend **SKIP** reset
+
+If you update log signatures / reasons, create a new dated snapshot folder under `Docs/Reports/Evidence/` and update this file.

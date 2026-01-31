@@ -1,5 +1,15 @@
 # Changelog (Docs)
 
+## 2026-01-31
+
+### Added
+- Evidence snapshot **2026-01-31** (trecho parcial de log) em `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`.
+
+### Changed
+- Sincronizado `ADR-0017-LevelManager-Config-Catalog.md` com a versão mais recente enviada.
+- Corrigido o nome do arquivo `ADR-0018` (remoção de artefatos de encoding no filename) e sincronizado com a versão mais recente enviada.
+
+
 ## 2026-01-29
 - Evidence/Baseline 2.2 (2026-01-29): atualizado com anchors exatos e trechos canônicos do log (Startup→Menu skip, Menu→Gameplay reset+spawn, IntroStage, ContentSwap, Pause/Resume, PostGame Restart/ExitToMenu).
 - ADR-0017 adicionado (LevelManager + ConfigCatalog) com seção de evidência pendente + assinaturas esperadas.

@@ -84,23 +84,18 @@ Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas
 - Evidência: atualização de `Docs/Reports/Evidence/LATEST.md` e snapshot dedicado com QA de Level.
 
 ## Evidências
+- Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/` com:
+  - Resolução por catálogo (`QA/Levels/Resolve/Definitions`).
+  - Mudança de nível (LevelChange + ContentSwap + IntroStage).
+- Atualização do `Docs/Reports/Evidence/LATEST.md`.
 
-### Situação atual (2026-01-29)
-
-- **Este ADR ainda não possui evidência direta em log**, porque o fluxo “LevelManager/ConfigCatalog” **ainda não emite assinaturas canônicas** no runtime.
-- O **Baseline 2.2 (evidência 2026-01-29)** cobre `SceneFlow/WorldLifecycle/IntroStage/ContentSwap/PostGame`, mas **não contém linhas específicas de LevelCatalog/LevelManager**.
-
-### Evidência esperada (quando a Etapa 0 estiver completa)
-
-Adicionar logs canônicos (e manter estáveis) para permitir “grep-based evidence”. Sugestão de *anchors*:
-
-- `[OBS][LevelCatalog] CatalogLoaded` com `catalogId`, `hash`/`version` e `source` (Resources/Addressables/ScriptableObject).
-- `[OBS][LevelConfig] ConfigResolved` com `levelId`, `variant`, `seedPolicy`/`determinism`.
-- `[OBS][LevelManager] LevelActivated` com `levelId`, `reason`, `contextSignature`.
-
-### Vinculação à evidência canônica
-
-Quando os anchors acima existirem, referenciar o snapshot do dia em:
-
-- `Docs/Reports/Evidence/LATEST.md` → arquivo datado correspondente.
-
+## Referências
+- [README.md](../README.md)
+- [ARCHITECTURE.md](../ARCHITECTURE.md)
+- [Observability-Contract.md](../Reports/Observability-Contract.md)
+- [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md)
+- [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md)
+- [LevelManager](../../Gameplay/Levels/LevelManager.cs)
+- [LevelPlan](../../Gameplay/Levels/LevelPlan.cs)
+- [LevelStartPipeline](../../Gameplay/Levels/LevelStartPipeline.cs)
+- [ContentSwap Change Service](../../Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs)

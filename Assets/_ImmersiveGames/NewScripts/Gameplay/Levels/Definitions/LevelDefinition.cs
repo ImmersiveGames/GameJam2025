@@ -17,12 +17,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions
         [SerializeField] private string levelId = string.Empty;
         [SerializeField] private string contentId = string.Empty;
         [SerializeField] private string contentSignature = string.Empty;
+
+        // Gate de promoção opcional.
+        // Quando preenchido, o LevelCatalogResolver pode bloquear a seleção/aplicação do nível
+        // quando a feature correspondente estiver desabilitada.
+        // Mantido vazio por padrão para compatibilidade com assets existentes.
+        [SerializeField] private string promotionGateId = string.Empty;
         [SerializeField] private LevelChangeOptions defaultOptions = new();
         [SerializeField] [TextArea] private string notes;
 
         public string LevelId => Normalize(levelId);
         public string ContentId => Normalize(contentId);
         public string ContentSignature => Normalize(contentSignature);
+
+        public string PromotionGateId => Normalize(promotionGateId);
 
         public string Notes => notes;
 
