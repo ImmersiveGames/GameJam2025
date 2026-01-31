@@ -28,7 +28,7 @@ Este diretório é o **ponto de entrada** para documentação do módulo **NewSc
 
 ## Regra operacional
 
-- **CODEX é usado apenas para auditorias** (varredura/diagnóstico).
+- **CODEX é usado apenas para auditorias** (varredura/diagnóstico). Veja: `Standards/Codex-Audit-Only.md`.
 - Implementações e correções **devem** referenciar: ADR(s) + política Strict/Release + contrato de observabilidade + evidência datada.
 
 ## Atalhos
