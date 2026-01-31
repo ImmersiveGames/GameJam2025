@@ -1,6 +1,7 @@
 # ADR-0013 — Ciclo de vida do jogo (NewScripts)
 
 ## Status
+
 - Estado: Implementado
 - Data: 2025-12-24
 - Escopo: GameLoop + SceneFlow + WorldLifecycle (NewScripts)
@@ -15,31 +16,23 @@ O NewScripts precisava de um ciclo de vida de jogo consistente, que:
 
 ## Decisão
 
-1. Introduzir um `GameLoop` explícito com estados:
+### Objetivo de produção (sistema ideal)
 
-- `Boot` (inicialização global)
-- `Ready` (apto a receber comando para iniciar/continuar, mas simulação não ativa)
-- `Playing` (simulação ativa)
-- `Paused` (simulação travada via gate/eventos)
+Padronizar o ciclo de vida (Boot → Menu → Gameplay → PostGame → Restart/ExitToMenu) via SceneFlow + WorldLifecycle + GameLoop, com contratos claros de reset, gating e observabilidade.
 
-2. Integrar o GameLoop com SceneFlow via coordinator:
+### Contrato de produção (mínimo)
 
-- `GameLoopSceneFlowCoordinator` reage ao evento de start (`GameStartRequestedEvent`) e dispara uma transição inicial (StartPlan).
-- O coordinator espera:
-    - `SceneTransitionCompletedEvent`
-    - `WorldLifecycleResetCompletedEvent` (ou skip)
-      para sincronizar o GameLoop com o estado correto.
+- SceneFlow define perfis (startup/frontend/gameplay) e dispara reset **apenas** quando apropriado (gameplay).
+- WorldLifecycle executa reset determinístico e publica `ResetCompleted` com reason/contextSignature padronizados.
+- GameLoop inicia simulação apenas após gates liberados (ex.: IntroStage/UIConfirm).
 
-3. Manter a simulação “gate-aware”:
+### Não-objetivos (resumo)
 
-- `GameReadinessService` usa o `ISimulationGateService` para fechar/abrir simulação durante transições.
-- `IStateDependentService` bloqueia/libera ações (ex.: `Move`) com base em:
-    - gate aberto/fechado
-    - `gameplayReady`
-    - estado do GameLoop
-    - pausa
+Ver seção **Fora de escopo**.
 
 ## Fora de escopo
+
+- Detalhar implementação de loading/fade (ver ADR-0009/0010).
 
 - (não informado)
 
@@ -56,6 +49,27 @@ O NewScripts precisava de um ciclo de vida de jogo consistente, que:
 
 - (não informado)
 
+### Política de falhas e fallback (fail-fast)
+
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+
+
+### Critérios de pronto (DoD)
+
+- Evidência cobre Boot→Menu (SKIP), Menu→Gameplay (RESET), PostGame, Restart e ExitToMenu.
+- Tokens de gate e InputMode coerentes ao longo do fluxo.
+
+## Evidência
+
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
+  - `[SceneFlow] TransitionStarted ... profile='startup'` + `ResetCompleted ... Skipped_StartupOrFrontend`
+  - `[SceneFlow] TransitionStarted ... profile='gameplay'` + `ResetRequested ... reason='SceneFlow/ScenesReady'`
+  - `[IntroStage] ... reason='IntroStage/UIConfirm'` + `GameLoop ENTER Playing`
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+
 ## Evidências
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
@@ -68,3 +82,5 @@ O NewScripts precisava de um ciclo de vida de jogo consistente, que:
 - [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
 - [ARCHITECTURE.md](../ARCHITECTURE.md)
 - [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes
+- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

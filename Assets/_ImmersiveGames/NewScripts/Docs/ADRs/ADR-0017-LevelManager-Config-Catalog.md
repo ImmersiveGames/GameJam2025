@@ -1,53 +1,38 @@
 # ADR-0017 — LevelManager: Config + Catalog (Single Source of Truth)
 
 ## Status
+
 - Estado: Em andamento (Etapa 0 concluída; integração/evidência pendentes)
 - Data: 2026-01-29
 - Escopo: NewScripts → Gameplay/Levels + Docs/Reports
 
 ## Contexto
+
 O subsistema de Levels já existe em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions, LevelStartPipeline, LevelStartCommitBridge). O ContentSwap é InPlace-only e é o executor técnico real, enquanto o LevelManager orquestra a progressão e dispara IntroStage pós-commit. Porém, **não existe** hoje uma fonte de verdade configurável para níveis (LevelDefinition/LevelCatalog): as intenções aparecem em docs (Baseline 2.2), mas não há assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronização e com o gate G-03 do ADR-0019.
 
 Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas em listas hardcoded, precisamos de uma **configuração centralizada via ScriptableObjects**, consumida pelo LevelManager/QA/resolvedor, com observabilidade alinhada ao contrato canônico.
 
 ## Decisão
-1) **Single Source of Truth via ScriptableObjects**
-   - Introduzir assets configuráveis que definem níveis e seu catálogo, evitando hardcode em runtime.
-   - A semântica permanece: LevelManager orquestra progressão e delega ContentSwap; IntroStage ocorre pós-commit. Referência: `LevelManager` + `LevelPlan` + `LevelStartPipeline`. 
 
-2) **Artefatos concretos (ScriptableObject)**
-   - `LevelDefinition` (ScriptableObject):
-     - Campos mínimos: `levelId`, `contentId`, `contentSignature` (opcional), `defaultOptions` (LevelChangeOptions → ContentSwapOptions), `notes`.
-     - Motivo: encapsular a definição de um nível e suas opções default, garantindo SRP (definição ≠ execução).
-   - `LevelCatalog` (ScriptableObject):
-     - Campos mínimos: `initialLevelId`, `orderedLevels` (lista de ids em ordem), `nextById` (mapa explicitamente configurável), lookup por id.
-     - Motivo: centralizar progressão e resolver o próximo nível de maneira determinística.
+### Objetivo de produção (sistema ideal)
 
-3) **Provider/Resolver para o LevelManager (DIP)**
-   - Criar interfaces mínimas e um resolver para desacoplar LevelManager de assets concretos:
-     - `ILevelDefinitionProvider` (ex.: `TryGetDefinition(levelId, out LevelDefinition def)`), localizado em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/`.
-     - `ILevelCatalogProvider` (ex.: `GetCatalog()`), localizado em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/`.
-     - `LevelCatalogResolver` (ex.: `ResolveInitial()`, `ResolveNext(levelId)`), localizado em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Resolvers/`.
-   - **Por quê:** SRP (separar resolução de nível da execução), DIP (LevelManager depende de abstrações, não de assets), e testabilidade.
+Centralizar definição e descoberta de levels/fases via um catálogo de configs (LevelManager), evitando hardcode e permitindo evolução (fases, campanhas, playlists) sem quebrar o fluxo de produção.
 
-4) **Observabilidade (alinhada ao contrato canônico)**
-   - Logs e reasons devem respeitar `Docs/Reports/Observability-Contract.md`.
-   - Eventos/logs esperados (sem criar novos formatos de reason):
-     - Level: `[OBS][Level] LevelChangeRequested/Started/Completed` com `reason` fornecido pelo caller (prefixos `LevelChange/<source>` ou `QA/Levels/InPlace/<...>`).
-     - ContentSwap: logs canônicos já existentes em ContentSwap InPlace-only.
-     - IntroStage: `IntroStage/UIConfirm` e `IntroStage/NoContent`.
-   - O ADR reforça que **Reason-Map é histórico/deprecated** e a fonte de verdade é o Observability-Contract.
+### Contrato de produção (mínimo)
 
-5) **QA mínimo e critérios de aceite (Baseline 2.2)**
-   - QA mínimo (ContextMenu) permanece alinhado ao plano existente:
-     - `QA/Levels/L01-GoToLevel (InPlace + IntroStage)`
-     - `QA/Levels/Resolve/Definitions`
-   - Critérios de aceite:
-     - Evidência com snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/`.
-     - Atualização de `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot.
-     - Logs demonstram resolução por catálogo + assinatura de conteúdo (G-03 do ADR-0019).
+- Catálogo é a fonte de verdade para enumerar conteúdos jogáveis (ids, metadata, configs).
+- Seleção de level/fase não depende de assets soltos; deve ser resolvida via id/config.
+- Mudança de level pode ser in-place (ContentSwap) ou via transição (SceneFlow), explicitando o modo.
+- Falhas de id/config ausente são fail-fast (não gerar level default silencioso).
+
+### Não-objetivos (resumo)
+
+Ver seção **Fora de escopo**.
 
 ## Fora de escopo
+
+- UI/UX completa de seleção de level (apenas contrato e plumbing).
+
 - Refactor total de nomenclaturas legadas no runtime.
 - Remoção imediata de bridges legadas (ContentSwapStart*), que permanecem até migração completa.
 - Implementar um sistema de campanha completo (Campaign/Progression) além de LevelCatalog.
@@ -63,7 +48,20 @@ Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas
 - Requer criação e manutenção de assets (ScriptableObjects) e seus providers/resolvers.
 - Migração incremental: enquanto assets não existirem, o LevelManager ainda dependerá de fallback/QA.
 
+### Política de falhas e fallback (fail-fast)
+
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+
+
+### Critérios de pronto (DoD)
+
+- Existe API estável para: listar levels, resolver id→config, aplicar seleção.
+- Evidência/logs para pelo menos um caminho (QA ou produção) demonstrando resolução do catálogo.
+
 ## Notas de implementação
+
 - Assets sugeridos (paths):
   - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Definitions/LevelDefinition.cs`
   - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Catalogs/LevelCatalog.cs`
@@ -83,13 +81,22 @@ Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas
 - QA: `LevelQaContextMenu` e `LevelQaInstaller`.
 - Evidência: atualização de `Docs/Reports/Evidence/LATEST.md` e snapshot dedicado com QA de Level.
 
+## Evidência
+
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
+  - TODO: adicionar evidência/log âncora do catálogo de levels (não aparece na evidência canônica atual).
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+
 ## Evidências
+
 - Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/` com:
   - Resolução por catálogo (`QA/Levels/Resolve/Definitions`).
   - Mudança de nível (LevelChange + ContentSwap + IntroStage).
 - Atualização do `Docs/Reports/Evidence/LATEST.md`.
 
 ## Referências
+
 - [README.md](../README.md)
 - [ARCHITECTURE.md](../ARCHITECTURE.md)
 - [Observability-Contract.md](../Reports/Observability-Contract.md)
@@ -99,3 +106,5 @@ Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas
 - [LevelPlan](../../Gameplay/Levels/LevelPlan.cs)
 - [LevelStartPipeline](../../Gameplay/Levels/LevelStartPipeline.cs)
 - [ContentSwap Change Service](../../Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs)
+- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

@@ -1,6 +1,7 @@
 # ADR-0010 — Loading HUD + SceneFlow (NewScripts)
 
 ## Status
+
 - Estado: Implementado
 - Data: 2025-12-25
 - Escopo: SceneFlow + Loading HUD (NewScripts)
@@ -13,20 +14,25 @@ sem depender de legados e sem acoplar ao Fade. Além disso, a transição pode a
 
 ## Decisão
 
-1. O `SceneFlowLoadingService` deve chamar `INewScriptsLoadingHudService.EnsureLoadedAsync()` no `SceneTransitionStartedEvent`.
-    - Se `UseFade=false`, a HUD pode ser exibida imediatamente (mantém comportamento antigo).
-    - Se `UseFade=true`, **não** exibir no Started: aguardar o `SceneTransitionFadeInCompletedEvent`.
+### Objetivo de produção (sistema ideal)
 
-2. Quando `UseFade=true`, o `SceneFlowLoadingService` deve exibir a HUD apenas após o `SceneTransitionFadeInCompletedEvent`
-   (tela já escura), mantendo-a visível durante `Load/Unload/ActiveScene` e durante o gate do `WorldLifecycle`.
+Exibir feedback de loading em transições do SceneFlow (quando aplicável) sem acoplar o fluxo de produção ao HUD e sem quebrar determinismo/observabilidade.
 
-3. Em `SceneTransitionScenesReadyEvent`, a HUD pode atualizar a fase/situação (idempotente), sem esconder.
+### Contrato de produção (mínimo)
 
-4. Em `SceneTransitionBeforeFadeOutEvent`, a HUD deve ser escondida.
+- Loading HUD é opcional e não pode bloquear o SceneFlow (no máximo espelha progresso/estado).
+- Abertura/fechamento do HUD segue o envelope: (opcional) fade-out → loading → scenes ready → fade-in → hide HUD.
+- Falha de binding do HUD deve ser fail-fast em dev/QA; em produção, preferir fallback 'HUD desabilitado' apenas se explicitamente configurado.
+- Eventos/estado expostos devem ser observáveis via logs (ver Observability Contract).
 
-5. Em `SceneTransitionCompletedEvent`, executar um “safety hide” (idempotente).
+### Não-objetivos (resumo)
+
+Ver seção **Fora de escopo**.
 
 ## Fora de escopo
+
+- Implementar o sistema de fade (ADR-0009).
+- Auto-instanciar UI/hud quando assets não existirem (preferir erro).
 
 Evolução futura de Addressables e tarefas agregadas (sem implementação atual):
 
@@ -54,6 +60,19 @@ seguir as regras já descritas para SceneFlow/WorldLifecycle.
 ### Trade-offs / Riscos
 
 - (não informado)
+
+### Política de falhas e fallback (fail-fast)
+
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+
+
+### Critérios de pronto (DoD)
+
+- SceneFlow publica estado suficiente (started/ready/completed) para o HUD reagir.
+- HUD não cria dependência circular com SceneFlow/WorldLifecycle.
+- Evidência: transições com loading exibem logs âncora ou, se não implementado, ADR permanece 'Aberto/Parcial'.
 
 ## Notas de implementação
 
@@ -141,6 +160,13 @@ Essa integração garante que:
       para iniciar a IntroStage (PostReveal) e só então avançar para `GameLoop.RequestStart()` após `UIConfirm`/`NoContent`;
     - `IGameNavigationService` **não** emite `RequestStart()` diretamente; ele apenas dispara transições de cena.
 
+## Evidência
+
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
+  - TODO: adicionar evidência de HUD de loading (não aparece na evidência canônica atual).
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+
 ## Evidências
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
@@ -153,3 +179,5 @@ Essa integração garante que:
 - [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
 - [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
 - [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes
+- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

@@ -1,6 +1,7 @@
 # ADR-0009 — Fade + SceneFlow (NewScripts)
 
 ## Status
+
 - Estado: Implementado
 - Data: 2025-12-24
 - Escopo: SceneFlow + Fade + Loading HUD (NewScripts)
@@ -16,15 +17,25 @@ O pipeline NewScripts precisava:
 
 ## Decisão
 
-1. Expor `INewScriptsFadeService` no **DI global**.
-2. Integrar o fade ao `ISceneTransitionService` via adapter (`NewScriptsSceneFlowFadeAdapter`).
-3. Resolver timings de fade por `NewScriptsSceneTransitionProfile`, carregado via `Resources` em:
-   - `SceneFlow/Profiles/<profileName>`
-4. Implementar o Fade como uma cena additive (`FadeScene`) com controlador (`NewScriptsFadeController`) que opera via `CanvasGroup`.
-5. Integrar o pipeline de transição com `SceneFlowLoadingService` (LoadingHUD) para manter o ordering
-   após o `FadeIn` e antes do `FadeOut`.
+### Objetivo de produção (sistema ideal)
+
+Garantir que TODA transição de cena do SceneFlow tenha um envelope visual determinístico (fade-out → trabalho de transição → fade-in), com ordem consistente e sem flicker.
+
+### Contrato de produção (mínimo)
+
+- Fade-out inicia **antes** de descarregar/carregar cenas (ou qualquer mutação visual).
+- Transição de cena só é considerada `Completed` após o fade-in (quando aplicável) ou após liberar o gate visual.
+- Serviço de fade não cria UI 'em voo' em produção: depende de prefab/scene bootstrap (fail-fast).
+- O contrato deve ser observável via logs/âncoras (ver Observability Contract).
+
+### Não-objetivos (resumo)
+
+Ver seção **Fora de escopo**.
 
 ## Fora de escopo
+
+- Criar automaticamente canvas/câmera de fade quando ausente (preferir erro explícito).
+- Normalizar o visual do loading/HUD (isso é ADR-0010).
 
 - Compatibilidade com fade legado.
 
@@ -45,6 +56,19 @@ O pipeline NewScripts precisava:
 
 - (não informado)
 
+### Política de falhas e fallback (fail-fast)
+
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+
+
+### Critérios de pronto (DoD)
+
+- SceneFlow chama FadeService (ou equivalente) em todas as rotas (Boot→Menu, Menu→Gameplay, ExitToMenu, Restart, etc.).
+- Gating/ordem: fade-out antes de mutações; fade-in somente após `ScenesReady`.
+- Evidência: logs mostram o envelope de fade em transições críticas (ou ADR permanece 'Parcial').
+
 ## Notas de implementação
 
 Evidências observadas:
@@ -56,6 +80,13 @@ Evidências observadas:
   - `fadeIn=0,5` e `fadeOut=0,5` (exemplo do log)
 - O fade carrega a `FadeScene` additive quando necessário e encontra `NewScriptsFadeController`.
 - O canvas de fade opera com sorting alto (ex.: `sortingOrder=11000`) para sobrepor UI durante transição.
+
+## Evidência
+
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
+  - TODO: definir âncoras de log para FadeOut/FadeIn (não aparecem na evidência canônica atual).
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Evidências
 
@@ -69,3 +100,5 @@ Evidências observadas:
 - [ADR-0010 — Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)
 - [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
 - [Observability-Contract.md](../Reports/Observability-Contract.md) — contrato canônico de reasons, campos mínimos e invariantes
+- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

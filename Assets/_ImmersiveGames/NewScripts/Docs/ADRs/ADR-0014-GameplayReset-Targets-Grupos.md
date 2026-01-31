@@ -1,6 +1,7 @@
 # ADR-0014 — Gameplay Reset: Targets e Grupos
 
 ## Status
+
 - Estado: Implementado
 - Data: 2025-12-28
 - Escopo: `GameplayReset` (NewScripts), WorldLifecycle, spawn services (Player/Eater)
@@ -18,21 +19,23 @@ um subconjunto dos atores (ex.: somente Player).
 
 ## Decisão
 
-Introduzir um classificador de alvo de reset (`IGameplayResetTargetClassifier`) que define **targets** suportados.
+### Objetivo de produção (sistema ideal)
 
-No baseline atual, os targets são:
+Controlar quais sistemas/targets participam do reset de gameplay via grupos declarativos, garantindo resets determinísticos e evitando 'vazamentos' entre runs.
 
-| Target | Descrição | Impacto esperado |
-|---|---|---|
-| `AllActorsInScene` | Reseta todos os atores registrados no `ActorRegistry` da cena (com fallback por scan). | Despawn+Spawn de Player e Eater (quando presentes). |
-| `PlayersOnly` | Reseta apenas atores do tipo Player. | Despawn+Spawn de Player; Eater permanece. |
-| `EaterOnly` | Reseta apenas atores do tipo Eater. | Despawn+Spawn de Eater; Player permanece. |
-| `ActorIdSet` | Reseta um subconjunto explícito por `ActorIds`. | Despawn+Spawn somente dos IDs informados. |
-| `ByActorKind` | Reseta por `ActorKind` arbitrário (ex.: Dummy). | Despawn+Spawn apenas do kind requisitado. |
+### Contrato de produção (mínimo)
 
-> Nota: nomes devem refletir exatamente os existentes no projeto (enum `GameplayResetTarget`).
+- ResetWorld recebe um conjunto de targets/grupos (global vs scene, gameplay-only etc.).
+- Cada target é idempotente e observa a ordem (limpeza → spawn → gates).
+- Falhas de target ausente/config inconsistente são fail-fast (não inventar targets).
+
+### Não-objetivos (resumo)
+
+Ver seção **Fora de escopo**.
 
 ## Fora de escopo
+
+- Implementar pooling/cleanup genérico fora do contrato de reset.
 
 - (não informado)
 
@@ -46,6 +49,18 @@ No baseline atual, os targets são:
 ### Trade-offs / Riscos
 - Se a classificação estiver incorreta, o reset pode deixar atores “órfãos” no mundo.
 - Novos tipos de ator exigem atualização no classificador e/ou nos spawn services.
+
+### Política de falhas e fallback (fail-fast)
+
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+
+
+### Critérios de pronto (DoD)
+
+- ResetRequested/ResetCompleted usam reason/contextSignature padronizados.
+- Evidência mostra reset determinístico e spawn pipeline executando no perfil gameplay.
 
 ## Notas de implementação
 
@@ -62,6 +77,14 @@ No baseline atual, os targets são:
 - O hard reset acionado em runtime (ScenesReady) equivale semanticamente a `AllActorsInScene`.
 - Targets parciais são usados principalmente para QA/debug e para futuras features (ex.: respawn individual).
 
+## Evidência
+
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
+  - `ResetRequested ... reason='SceneFlow/ScenesReady'`
+  - `ResetCompleted ...` (profile gameplay) + spawns
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+
 ## Evidências
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
@@ -72,3 +95,5 @@ No baseline atual, os targets são:
 ## Referências
 
 - [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
+- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

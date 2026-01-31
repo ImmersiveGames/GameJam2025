@@ -1,6 +1,7 @@
 # ADR-0019 — Promoção do Baseline 2.2 (ContentSwap + LevelManager + Config)
 
 ## Status
+
 - Estado: Proposto
 - Data: 2026-01-18
 - Escopo: Promoção Baseline 2.2 (Docs/Reports/Evidence)
@@ -26,7 +27,19 @@ Para evitar regressões silenciosas, a promoção deve ser baseada em **gates ve
 
 ## Decisão
 
-A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PASS**, com QA objetivo e evidência em snapshot datado.
+### Objetivo de produção (sistema ideal)
+
+Formalizar o ato de 'promover' Baseline 2.2 (congelar contrato + evidência canônica) e como evoluí-lo sem quebrar a rastreabilidade (datas, changelog, regressões).
+
+### Contrato de produção (mínimo)
+
+- Promoção gera/atualiza uma evidência datada e atualiza `LATEST.md`.
+- Changelog registra o que foi promovido e por quê, com link para evidência.
+- Se a promoção falhar, não atualizar `LATEST.md` (evitar falso positivo).
+
+### Não-objetivos (resumo)
+
+Ver seção **Fora de escopo**.
 
 ### G-01 — Semântica e contrato de ContentSwap
 **Critério verificável**
@@ -67,6 +80,10 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 - `Docs/Reports/Evidence/LATEST.md` apontando para o snapshot do baseline fechado.
 - `Docs/CHANGELOG-docs.md` atualizado com gates fechados.
 
+## Fora de escopo
+
+- Resolver todas as causas de regressão; apenas definir processo/contrato de promoção.
+
 ## Metodologia de evidência (por data)
 
 - **ADR aberto**: referencia `Docs/Reports/Evidence/LATEST.md`.
@@ -81,11 +98,33 @@ A promoção do Baseline 2.2 ocorre quando **todos os gates abaixo estiverem PAS
 ### Trade-offs / Riscos
 - Exige disciplina de QA e curadoria de evidências para avançar o baseline.
 
+### Política de falhas e fallback (fail-fast)
+
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+
+
+### Critérios de pronto (DoD)
+
+- Existe um snapshot de evidência datado + LATEST atualizado para Baseline 2.2.
+
+## Evidência
+
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
+  - Ver evidência Baseline 2.2 em `Docs/Reports/Evidence/LATEST.md`.
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+
 ## Evidências
+
 - Metodologia: `Docs/Reports/Evidence/README.md`
 - Ponte canônica (ADR aberto): `Docs/Reports/Evidence/LATEST.md`
 
 ## Referências
+
 - ADR-0018 — Mudança de semântica: ContentSwap + LevelManager
 - ADR-0016 — ContentSwap InPlace-only
 - Plano 2.2 — Execução (plano2.2.md)
+- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

@@ -1,15 +1,20 @@
 # ADR-0012 — Fluxo pós-gameplay: GameOver, Vitória e Restart
 
 ## Status
+
 - Estado: Implementado
 - Data: 2025-12-28
-- Fechado em: 2026-01-28
+- Fechado em: 2026-01-18
 - Escopo: `GameLoop` (NewScripts), `WorldLifecycle`, SceneFlow, `UIGlobalScene` (overlays de UI)
 
 ## Evidência
 
-- Snapshot canônico: `Docs/Reports/Evidence/2026-01-28/Baseline-2.2-Evidence-2026-01-28.md`
-- Ponte para regressão contínua: `Docs/Reports/Evidence/LATEST.md`
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
+  - `[PostGame] RunEnded kind='Victory'` / `kind='Defeat'`
+  - `reason='PostGame/Restart'` e reset subsequente
+  - `reason='PostGame/ExitToMenu'` com transição para Menu/frontend
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Contexto
 
@@ -74,6 +79,21 @@ Sem um desenho explícito para GameOver/Vitória/Restart:
 
 ## Decisão
 
+### Objetivo de produção (sistema ideal)
+
+Ter um fluxo de pós-gameplay (PostGame) dirigido por eventos, idempotente, que controla overlay + gating/input, e suporta Victory/Defeat + Restart + ExitToMenu sem duplicação de efeitos.
+
+### Contrato de produção (mínimo)
+
+- Entrada em PostGame é dirigida por evento (ex.: RunEnd/Victory/Defeat) e o overlay é idempotente.
+- PostGame controla gate `sim.gameplay` e InputMode apropriado; sair de PostGame restaura estado corretamente.
+- Restart executa reset determinístico e retorna ao caminho de produção (IntroStage→Playing).
+- ExitToMenu navega para frontend e respeita SKIP reset em frontend.
+
+### Não-objetivos (resumo)
+
+Ver seção **Fora de escopo**.
+
 ### 4. Decisão (resumo)
 
 1. Introduzir um **estado pós-gameplay** no `GameLoop` (por exemplo, `PostGame` / `Ended`) para representar “fim de run” (Vitória ou GameOver).
@@ -98,6 +118,9 @@ Sem um desenho explícito para GameOver/Vitória/Restart:
 
 ## Fora de escopo
 
+- Implementar o sistema de vitória/derrota em si (apenas consumir o evento).
+- Criar fallback automático quando serviços (gate/input) faltarem; deve falhar cedo em dev.
+
 - O fluxo pós-game **não define** como vitória/derrota é detectada em produção (timer, morte, objetivos, etc.).
 
 ## Consequências
@@ -120,6 +143,18 @@ Sem um desenho explícito para GameOver/Vitória/Restart:
 * Introdução de um novo estado no `GameLoop` (`PostGame`) aumenta a matriz de transições possíveis; precisa ser bem coberta em QA.
 * Se o domínio usar múltiplos eventos de fim de run ou disparar `GameRunEndedEvent` mais de uma vez por partida, será necessário reforçar invariantes e logs.
 * O overlay pós-gameplay é mais uma UI em `UIGlobalScene`; requer cuidado para não conflitar com PauseOverlay (visibilidade, input, etc.).
+
+### Política de falhas e fallback (fail-fast)
+
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+
+
+### Critérios de pronto (DoD)
+
+- Logs demonstram PostGame por Victory e Defeat.
+- Restart e ExitToMenu geram transições corretas e não duplicam overlays/gates.
 
 ## Notas de implementação
 
@@ -262,12 +297,14 @@ Regras:
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot arquivado (2026-01-28): [`Baseline-2.2-Evidence-2026-01-28.md`](../Reports/Evidence/2026-01-28/Baseline-2.2-Evidence-2026-01-28.md)
+- Snapshot arquivado (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
 - Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
 
 ## Referências
 
 - (não informado)
+- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
 
 ## Implementação final (baseline)
 
