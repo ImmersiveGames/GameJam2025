@@ -114,7 +114,7 @@ Ver seção **Fora de escopo**.
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Âncoras/assinaturas relevantes:**
   - Ver evidência Baseline 2.2 em `Docs/Reports/Evidence/LATEST.md`.
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Evidências
 
@@ -126,5 +126,5 @@ Ver seção **Fora de escopo**.
 - ADR-0018 — Mudança de semântica: ContentSwap + LevelManager
 - ADR-0016 — ContentSwap InPlace-only
 - Plano 2.2 — Execução (plano2.2.md)
-- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

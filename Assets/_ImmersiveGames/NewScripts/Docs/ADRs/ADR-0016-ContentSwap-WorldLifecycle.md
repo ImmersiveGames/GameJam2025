@@ -72,12 +72,12 @@ Eventos/logs mínimos:
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Âncoras/assinaturas relevantes:**
   - `[QA][ContentSwap] SwapInPlace contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Referências
 
 - ADR-TEMPLATE.md
-- Reports/Observability-Contract.md
-- WORLD_LIFECYCLE.md
-- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- Standards/Observability-Contract.md
+- Overview/WorldLifecycle.md
+- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

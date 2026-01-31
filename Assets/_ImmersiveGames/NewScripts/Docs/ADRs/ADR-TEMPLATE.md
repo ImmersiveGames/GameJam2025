@@ -51,7 +51,7 @@ Detalhes de arquitetura, pontos de integração, exemplos de API, etc.
 
 * **Fonte canônica atual:** `Docs/Reports/Evidence/LATEST.md`
 * **Âncoras/assinaturas relevantes:** (strings ou padrões de log)
-* **Contrato de observabilidade:** `Docs/Reports/Observability-Contract.md`
+* **Contrato de observabilidade:** `Docs/Standards/Observability-Contract.md`
 
 ## Evidências
 

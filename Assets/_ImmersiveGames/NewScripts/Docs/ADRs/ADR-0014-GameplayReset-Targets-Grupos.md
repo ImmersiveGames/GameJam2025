@@ -83,17 +83,17 @@ Ver seção **Fora de escopo**.
 - **Âncoras/assinaturas relevantes:**
   - `ResetRequested ... reason='SceneFlow/ScenesReady'`
   - `ResetCompleted ...` (profile gameplay) + spawns
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Evidências
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
 - Snapshot  (2026-01-17): [`Baseline-2.1-Evidence-2026-01-17.md`](../Reports/Evidence/2026-01-17/Baseline-2.1-Evidence-2026-01-17.md)
-- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Referências
 
-- [WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
-- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [Overview/WorldLifecycle.md](../Overview/WorldLifecycle.md)
+- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

@@ -12,9 +12,14 @@ Current canonical snapshot:
 
 ## Contracts
 
-- `Docs/Reports/Observability-Contract.md` — log signature + reason contracts (used by QA + evidence)
+- `Docs/Standards/Observability-Contract.md` — log signature + reason contracts (used by QA + evidence)
 - `Docs/Reports/Evidence/README.md` — methodology for “Spec → Evidence → Audit”
 
 ## Deprecated
 
-- `Docs/Reports/Reason-Map.md` is deprecated (kept for history only). Prefer `Observability-Contract.md`.
+- `Docs/Standards/Reason-Registry.md` is deprecated (kept for history only). Prefer `Observability-Contract.md`.
+
+
+## Auditorias
+
+- `Audits/<YYYY-MM-DD>/...` — relatórios de auditoria estática (ex.: sync ADR↔código, invariants Strict/Release).

@@ -14,7 +14,7 @@
   - `[PostGame] RunEnded kind='Victory'` / `kind='Defeat'`
   - `reason='PostGame/Restart'` e reset subsequente
   - `reason='PostGame/ExitToMenu'` com transição para Menu/frontend
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Contexto
 
@@ -298,12 +298,12 @@ Regras:
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
 - Snapshot arquivado (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
-- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Referências
 
 - (não informado)
-- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
 
 ## Implementação final (baseline)

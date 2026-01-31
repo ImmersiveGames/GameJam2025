@@ -86,7 +86,7 @@ Ver seção **Fora de escopo**.
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Âncoras/assinaturas relevantes:**
   - TODO: adicionar evidência/log âncora do catálogo de levels (não aparece na evidência canônica atual).
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Evidências
 
@@ -98,13 +98,13 @@ Ver seção **Fora de escopo**.
 ## Referências
 
 - [README.md](../README.md)
-- [ARCHITECTURE.md](../ARCHITECTURE.md)
-- [Observability-Contract.md](../Reports/Observability-Contract.md)
+- [Overview/Architecture.md](../Overview/Architecture.md)
+- [Observability-Contract.md](../Standards/Observability-Contract.md)
 - [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md)
 - [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md)
 - [LevelManager](../../Gameplay/Levels/LevelManager.cs)
 - [LevelPlan](../../Gameplay/Levels/LevelPlan.cs)
 - [LevelStartPipeline](../../Gameplay/Levels/LevelStartPipeline.cs)
 - [ContentSwap Change Service](../../Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs)
-- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

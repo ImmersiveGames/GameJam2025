@@ -96,19 +96,19 @@ O fechamento cobre:
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Âncoras/assinaturas relevantes:**
   - Ver `Docs/Reports/Evidence/LATEST.md` e evidência datada.
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Evidências
 
 - Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
 - Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
 - Snapshot (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
-- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 
 ## Referências
 
 - [Docs/README.md](../README.md)
-- [Docs/ARCHITECTURE.md](../ARCHITECTURE.md)
-- [Docs/WORLD_LIFECYCLE.md](../WORLD_LIFECYCLE.md)
-- [`Observability-Contract.md`](../Reports/Observability-Contract.md)
+- [Docs/Overview/Architecture.md](../Overview/Architecture.md)
+- [Docs/Overview/WorldLifecycle.md](../Overview/WorldLifecycle.md)
+- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

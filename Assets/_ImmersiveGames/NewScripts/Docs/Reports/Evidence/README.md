@@ -14,7 +14,7 @@ Este diretório contém **evidências arquivadas** (snapshots) usadas para:
    - Logs gerados por ferramentas/scripts podem falhar; se houver divergência, o Console continua sendo a fonte de verdade.
 
 2. **Contrato como fonte de tokens canônicos**
-   - `Docs/Reports/Observability-Contract.md` define o contrato de evidências (tokens/strings).
+   - `Docs/Standards/Observability-Contract.md` define o contrato de evidências (tokens/strings).
    - Verificações automatizadas são opcionais; o snapshot deve sempre conter um resumo curado com âncoras observáveis.
 
 3. **Snapshot datado e imutável**
