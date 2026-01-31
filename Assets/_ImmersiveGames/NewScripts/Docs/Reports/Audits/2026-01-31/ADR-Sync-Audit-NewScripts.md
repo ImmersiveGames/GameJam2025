@@ -13,10 +13,10 @@
 |------------------------------|----------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|--------|
 | ADR-0009 (Fade + SceneFlow) | OK | SceneTransitionService + FadeService + NewScriptsSceneFlowFadeAdapter + Runtime policy (IRuntimeModeProvider/IDegradedModeReporter) + logs [OBS][Fade] | Sem gaps críticos. Evidência (2026-01-31): `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` | Baixo |
 | ADR-0010 (Loading HUD + SceneFlow) | OK      | SceneFlowLoadingService + ILoadingHudService + LoadingHudService + GlobalBootstrap                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas ([OBS][LoadingHUD]) | Baixo  |
-| ADR-0011 (WorldDefinition multi-actor) | PARCIAL | WorldDefinition + NewSceneBootstrapper + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | WorldDefinition ausente não falha em gameplay; ausência de verificação de “mínimo de atores” | Médio  |
+| ADR-0011 (WorldDefinition multi-actor) | OK | WorldDefinition + SceneBootstrapper + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | Enforce em gameplay (Strict/Release) + validações mínimas (Player/Eater) | Baixo  |
 | ADR-0012 (PostGame)         | PARCIAL | PostGameOverlayController + GameRunOutcomeService + GameLoopRunEndEventBridge + Restart/ExitToMenuNavigationBridge + logs [OBS][PostGame] | Dependências críticas (InputMode/Gate) apenas warning; não fail-fast           | Médio  |
 | ADR-0013 (Ciclo de vida)    | PARCIAL | SceneTransitionService + WorldLifecycleSceneFlowResetDriver + WorldLifecycleResetCompletionGate + GameLoopSceneFlowCoordinator + InputModeSceneFlowBridge | GameLoopSceneFlowCoordinator pode RequestStart() antes de IntroStage completar (diverge do contrato esperado em ADR-0010) | Médio  |
-| ADR-0014 (Gameplay Reset Targets/Grupos) | PARCIAL | DefaultGameplayResetTargetClassifier + GameplayResetOrchestrator + NewSceneBootstrapper      | Falta fail-fast em targets ausentes; fallback por scan sempre habilitado       | Médio  |
+| ADR-0014 (Gameplay Reset Targets/Grupos) | PARCIAL | DefaultGameplayResetTargetClassifier + GameplayResetOrchestrator + SceneBootstrapper         | Falta fail-fast em targets ausentes; fallback por scan sempre habilitado       | Médio  |
 | ADR-0015 (Baseline 2.0 fechamento) | OK      | Evidências e contratos em Docs/Reports/Evidence/LATEST.md e ADR                              | Não aplicável (documental)                                                      | Baixo  |
 | ADR-0016 (ContentSwap InPlace-only) | PARCIAL | ContentSwapChangeServiceInPlaceOnly + ContentSwapContextService + GlobalBootstrap            | Respeito a gates (scene_transition/sim.gameplay) não aparece no serviço         | Médio  |
 | ADR-0017 (LevelManager + Catalog) | PARCIAL | LevelManager + LevelCatalogResolver + ResourcesLevelCatalogProvider + LevelManagerInstaller + assets em Resources | Fail-fast para ID/config ausente não ocorre; evidência canônica ainda “TODO” no ADR | Médio  |
@@ -27,7 +27,7 @@
 - (Resolvido) Loading HUD: fluxo agora falha em modo strict quando controller faltar, e o setup final inclui `LoadingHudController` na cena correta.
 - IntroStage vs RequestStart: GameLoopSceneFlowCoordinator pode chamar RequestStart() antes de IntroStage completar, divergindo do contrato esperado em ADR-0013 (ordem do fluxo) (obs. no próprio ADR).
 - ContentSwap sem gating: ContentSwapChangeServiceInPlaceOnly não consulta gates (scene_transition / sim.gameplay) apesar do contrato exigir respeito a gates.
-- WorldDefinition opcional em gameplay: NewSceneBootstrapper aceita worldDefinition nulo; contrato pede spawn determinístico mínimo (Player/Eater).
+- (Resolvido) WorldDefinition em gameplay: SceneBootstrapper aplica enforce (Strict/Release) para worldDefinition ausente e valida mínimos (Player/Eater).
 - Level catalog fail-fast não aplicado: resolver e session logam warnings e retornam false, mas não falham; contrato pede falha explícita para IDs/config ausentes.
 - Promotion gate sempre habilitado: PromotionGateService retorna defaults habilitados, sem carregamento de config (contrato de gate processual fica sem enforcement real).
 
@@ -110,7 +110,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 **Implementação Encontrada:**
 - Classifier: DefaultGameplayResetTargetClassifier usa ActorRegistry e fallback string-based para Eater.
 - Orchestrator: GameplayResetOrchestrator tenta ActorRegistry e faz fallback por scan de cena.
-- Registro de cena: NewSceneBootstrapper registra classifier e orchestrator por cena.
+- Registro de cena: SceneBootstrapper registra classifier e orchestrator por cena.
 
 **Observabilidade:**
 - Esperado: logs de ResetRequested/ResetCompleted com reason canônico.

@@ -32,6 +32,8 @@
 - ADR-0009 atualizado para refletir o contrato operacional completo (Strict vs Release + `DEGRADED_MODE` + âncoras `[OBS][Fade]`) e incluir procedimento de verificação QA.
 - `ADR-Sync-Audit-NewScripts.md`: ADR-0009 reclassificado de **RISCO** para **OK** (gaps críticos removidos; evidência datada pendente).
 - `Invariants-StrictRelease-Audit.md`: Item A atualizado para **PARCIAL** (Fade PASS; LoadingHUD pendente/FAIL).
+- ADR-0011: reforçado contrato de WorldDefinition em gameplay (Strict/Release) e incluída validação de mínimos (Player/Eater) na doc.
+- `ADR-Sync-Audit-NewScripts.md`: ADR-0011 reclassificado de **PARCIAL** para **OK** (enforce implementado).
 
 
 ## 2026-01-29

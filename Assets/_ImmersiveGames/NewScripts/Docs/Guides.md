@@ -56,7 +56,7 @@ pular este passo.
    no spawn:
     - Ex.: `Player` (1), `Eater` (2), `SeuNovoAtor` (3).
 
-A partir disso, o `NewSceneBootstrapper` irá:
+A partir disso, o `SceneBootstrapper` irá:
 - Ler o `WorldDefinition`.
 - Criar o `IWorldSpawnService` correspondente.
 - Registrar no `IWorldSpawnServiceRegistry` da cena.

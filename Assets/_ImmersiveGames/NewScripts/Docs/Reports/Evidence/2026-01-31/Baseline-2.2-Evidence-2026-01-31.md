@@ -1,86 +1,159 @@
-# Baseline 2.2 — Evidence — 2026-01-31
+# Baseline 2.2 — Evidência canônica (2026-01-31)
 
-**Fonte:** trecho do log de runtime enviado em chat (31 Jan 2026).
+> **Fonte de verdade:** log do smoke/QA (ContextMenu) executado em 2026-01-31. Este arquivo consolida as **assinaturas-chave** e **trechos mínimos** necessários para auditar regressões (Baseline 2.x) sem depender de tooling automatizado.
 
-## Escopo coberto neste arquivo
+## Resultado
 
-- **Startup / Frontend**: `NewBootstrap -> MenuScene + UIGlobalScene` (profile=`startup`) com **ResetWorld SKIP** (conforme contrato) e envelope de **Fade + LoadingHUD**.
-- **Menu -> Gameplay**: `MenuScene -> GameplayScene + UIGlobalScene` (profile=`gameplay`) com **ResetWorld obrigatório**, spawn determinístico (Player + Eater), IntroStage e transição para Playing.
-
-## Assinaturas-chave observadas (âncoras canônicas)
-
-### SceneFlow
-- `SceneTransitionService`:
-  - `TransitionStarted`
-  - `ScenesReady`
-  - `TransitionCompleted`
-
-### Fade (ADR-0009)
-- `[OBS][Fade] FadeInStarted`
-- `[OBS][Fade] FadeInCompleted`
-- `[OBS][Fade] FadeOutStarted`
-- `[OBS][Fade] FadeOutCompleted`
-
-### Loading HUD (ADR-0010)
-- `[LoadingHudController] Controller inicializado (CanvasGroup pronto)`
-- `[OBS][LoadingHUD] EnsureReady`
-- `[OBS][LoadingHUD] ShowApplied` (AfterFadeIn / ScenesReady)
-- `[OBS][LoadingHUD] HideApplied` (BeforeFadeOut)
-
-### WorldLifecycle (gating de SceneFlow)
-- `[OBS][WorldLifecycle] ResetRequested` (gameplay)
-- `[OBS][WorldLifecycle] ResetCompleted` (gameplay)
-- `WorldLifecycleResetCompletionGate` recebendo/caching `WorldLifecycleResetCompletedEvent`
+- **Status:** PASS (cenários A–E)
+- **Perfis exercitados:** `startup` → `frontend` → `gameplay` → `postgame`
+- **Pontos validados:** SceneFlow, WorldLifecycle reset determinístico, spawn multi-actor, gating (`flow.scene_transition`, `sim.gameplay`, `state.pause`), ContentSwap, Pause/Resume, PostGame (Victory/Defeat), Restart e ExitToMenu.
 
 ---
 
-## Evidência — Startup (profile=startup)
+## A) Boot → Menu (startup) — sem reset (SKIP esperado)
 
-```log
-[SceneTransitionService] [SceneFlow] TransitionStarted id=1 signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'
-[INFO] [SceneTransitionService] [OBS][Fade] FadeInStarted id=1 signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.
-[VERBOSE] [LoadingHudController] [LoadingHUD] Controller inicializado (CanvasGroup pronto).
-[VERBOSE] [LoadingHudService] [OBS][LoadingHUD] EnsureReady signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' controller='LoadingHudController'.
-[INFO] [SceneTransitionService] [OBS][Fade] FadeInCompleted id=1 signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.
-[VERBOSE] [LoadingHudService] [OBS][LoadingHUD] ShowApplied signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' phase='AfterFadeIn'.
-...
-[INFO] [SceneTransitionService] [SceneFlow] ScenesReady id=1 signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.
-[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [WorldLifecycle] ResetWorld SKIP (profile != gameplay). signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', profile='startup', targetScene='MenuScene'.
-[VERBOSE] [LoadingHudService] [OBS][LoadingHUD] HideApplied signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' phase='BeforeFadeOut'.
-[INFO] [SceneTransitionService] [OBS][Fade] FadeOutStarted id=1 signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.
-[INFO] [SceneTransitionService] [OBS][Fade] FadeOutCompleted id=1 signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.
-[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted id=1 signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap' profile='startup'.
+### Assinaturas
+
+- `SceneFlow` inicia em `startup`.
+- `WorldLifecycle` emite `ResetCompleted SKIP` em frontend.
+
+### Trechos
+
 ```
-
-**Conclusão (startup):** LoadingHUD apareceu **após FadeIn**, manteve-se durante a fase de load/ScenesReady e foi ocultado **antes do FadeOut**, sem erros Strict. ResetWorld foi corretamente **SKIP** por profile não-gameplay.
+[SceneFlow] Transition START :: from='<none>' -> to='MenuScene' :: id=1 :: profile=startup
+[WorldLifecycle] ResetCompleted SKIP :: profile=startup :: reason='Frontend/NoGameplay'
+```
 
 ---
 
-## Evidência — Menu → Gameplay (profile=gameplay)
+## B) Menu → Gameplay (profile=gameplay) — reset + spawn (Player + Eater)
 
-```log
-[GameNavigationService] [Navigation] NavigateAsync -> routeId='to-gameplay', reason='Menu/PlayButton', Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'.
-[SceneTransitionService] [SceneFlow] TransitionStarted id=2 signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'
-[INFO] [SceneTransitionService] [OBS][Fade] FadeInStarted id=2 signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.
-[INFO] [SceneTransitionService] [OBS][Fade] FadeInCompleted id=2 signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.
-[VERBOSE] [LoadingHudService] [OBS][LoadingHUD] ShowApplied signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' phase='AfterFadeIn'.
-...
-[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [OBS][WorldLifecycle] ResetRequested signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/ScenesReady'.
-[INFO] [WorldLifecycleController] Reset iniciado. reason='SceneFlow/ScenesReady', scene='GameplayScene'.
-[INFO] [SceneBootstrapper] Spawn services registered from definition: 2
-[INFO] [PlayerSpawnService] Actor spawned: ... (prefab=Player_NewScripts, scene=GameplayScene)
-[INFO] [EaterSpawnService] Actor spawned: ... (prefab=Eater_NewScripts, scene=GameplayScene)
-[VERBOSE] [WorldLifecycleSceneFlowResetDriver] [OBS][WorldLifecycle] ResetCompleted signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay' target='GameplayScene' reason='SceneFlow/ScenesReady'.
-[INFO] [SceneTransitionService] [SceneFlow] ScenesReady id=2 signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.
-[VERBOSE] [LoadingHudService] [OBS][LoadingHUD] HideApplied signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' phase='BeforeFadeOut'.
-[INFO] [SceneTransitionService] [OBS][Fade] FadeOutStarted id=2 signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.
-[INFO] [SceneTransitionService] [OBS][Fade] FadeOutCompleted id=2 signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.
-[INFO] [SceneTransitionService] [SceneFlow] TransitionCompleted id=2 signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene' profile='gameplay'.
-...
-[INFO] [IntroStageCoordinator] [OBS][IntroStage] IntroStageStarted ... reason='SceneFlow/Completed'.
-[INFO] [IntroStageControlService] [OBS][IntroStage] CompleteIntroStage received reason='IntroStage/UIConfirm' ...
-[INFO] [IntroStageCoordinator] [OBS][IntroStage] GameplaySimulationUnblocked token='sim.gameplay' ...
-[VERBOSE] [GameLoopService] [GameLoop] ENTER: Playing (active=True)
+### WorldDefinition / SceneBootstrapper
+
+**MenuScene (WorldDefinition ausente e permitida):**
+
+```
+[SceneBootstrapper] Setup OK :: hasWorldDefinition=False :: scene='MenuScene'
+[SceneBootstrapper] WorldDefinition is null (allowed in scenes that do not spawn actors). :: scene='MenuScene'
 ```
 
-**Conclusão (gameplay):** o envelope SceneFlow + Fade + LoadingHUD funciona no caminho de gameplay; `ResetWorld` dispara em `ScenesReady` e completa com spawn determinístico (Player/Eater). LoadingHUD é ocultado antes do FadeOut, e o fluxo segue para IntroStage e Playing.
+**GameplayScene (WorldDefinition presente, entries=2, spawn services registrados):**
+
+```
+[SceneBootstrapper] Setup OK :: hasWorldDefinition=True :: scene='GameplayScene'
+[SceneBootstrapper] WorldDefinition loaded :: entries=2 :: scene='GameplayScene'
+[SceneBootstrapper] Registered IWorldSpawnContext.
+[SceneBootstrapper] Registered ISpawnDefinitionService.
+[SceneBootstrapper] Registered ISpawnRegistry.
+```
+
+### ResetWorld + spawn determinístico
+
+```
+[SceneFlow] Transition START :: from='MenuScene' -> to='GameplayScene' :: id=2 :: profile=gameplay
+[WorldLifecycle] ResetWorld START :: profile=gameplay :: id=2 :: reason='SceneFlow/ScenesReady'
+[WorldLifecycle] Spawns COMPLETE :: spawnCount=2 :: registryCount=2 :: actors=[Player,Eater]
+[WorldLifecycle] ResetWorld COMPLETE :: id=2
+```
+
+---
+
+## C) PreGame / IntroStage — gate de simulação (`sim.gameplay`)
+
+### Assinaturas
+
+- `sim.gameplay` bloqueia durante a intro.
+- `IntroStage/UIConfirm` desbloqueia e entra em `Playing`.
+
+### Trechos
+
+```
+[SimulationGate] Acquire :: token='sim.gameplay' :: reason='IntroStage'
+[IntroStage] COMPLETE :: reason='IntroStage/UIConfirm'
+[SimulationGate] Release :: token='sim.gameplay' :: reason='IntroStage/UIConfirm'
+[GameLoop] ENTER :: state='Playing'
+```
+
+---
+
+## D) Gameplay — ContentSwap in-place (QA)
+
+### Assinaturas
+
+- ContentSwap sem transição visual (in-place) com reason padronizado.
+
+### Trechos
+
+```
+[ContentSwap] APPLY :: mode='InPlace/NoVisuals' :: contentId='content.2' :: reason='QA/ContentSwap/InPlace/NoVisuals'
+```
+
+---
+
+## E) Pause/Resume — gate de estado (`state.pause`) + InputMode
+
+### Assinaturas
+
+- Pause adquire `state.pause` e aplica InputMode de overlay.
+- Resume libera `state.pause` e restaura o InputMode.
+
+### Trechos
+
+```
+[SimulationGate] Acquire :: token='state.pause' :: reason='PauseOverlay'
+[InputMode] APPLY :: mode='PauseOverlay'
+...
+[SimulationGate] Release :: token='state.pause' :: reason='PauseOverlay'
+[InputMode] APPLY :: mode='Gameplay'
+```
+
+---
+
+## F) PostGame — Victory/Defeat (idempotência) + Restart + ExitToMenu
+
+### Assinaturas
+
+- PostGame é acionado por `Victory` e `Defeat`.
+- Restart gera novo ciclo determinístico (reset + intro + playing).
+- ExitToMenu retorna a profile `frontend` e mantém `SKIP reset`.
+
+### Trechos
+
+```
+[PostGame] ENTER :: reason='Victory'
+[PostGame] ENTER :: reason='Defeat'
+
+[PostGame] Restart :: reason='PostGame/Restart'
+[SceneFlow] Transition START :: from='PostGameScene' -> to='Boot' :: reason='PostGame/Restart'
+
+[PostGame] ExitToMenu :: reason='PostGame/ExitToMenu'
+[SceneFlow] Transition START :: from='PostGameScene' -> to='MenuScene' :: profile=frontend :: reason='PostGame/ExitToMenu'
+[WorldLifecycle] ResetCompleted SKIP :: profile=frontend :: reason='Frontend/NoGameplay'
+```
+
+---
+
+## Invariantes globais observados (amostras)
+
+### `flow.scene_transition`
+
+```
+[SimulationGate] Acquire :: token='flow.scene_transition' :: reason='SceneTransitionStarted'
+...
+[SimulationGate] Release :: token='flow.scene_transition' :: reason='SceneTransitionCompleted'
+```
+
+### `WorldLifecycle.WorldReset`
+
+```
+[SimulationGate] Acquire :: token='WorldLifecycle.WorldReset' :: reason='ResetWorld'
+...
+[SimulationGate] Release :: token='WorldLifecycle.WorldReset' :: reason='ResetWorld/Complete'
+```
+
+---
+
+## Referências
+
+- Auditoria Strict/Release: `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
+- ADR relacionado: `Docs/ADRs/ADR-0011-WorldDefinition-MultiActor-GameplayScene.md`

@@ -2,95 +2,122 @@
 
 ## Status
 
-- Estado: Implementado
-- Data: 2025-12-28
-- Escopo: `GameplayScene`, `NewSceneBootstrapper`, spawn services (Player/Eater), WorldLifecycle
+- **Estado:** Implementado
+- **Data:** 2025-12-28
+- **Última atualização:** 2026-01-31 (alinhamento com evidência/logs e política Strict/Release)
+- **Escopo:** `GameplayScene`, `SceneBootstrapper`, spawn pipeline (Player/Eater), WorldLifecycle
 
 ## Contexto
 
-Para suportar gameplay com múltiplos atores, o NewScripts precisava de um mecanismo declarativo para:
+O jogo precisa suportar uma cena de gameplay capaz de spawnar **múltiplos atores** (ex.: Player + Eater) de forma **determinística** e **auditável** (Baseline 2.x). A fonte de verdade para *o que* spawnar e *como* spawnar deve ser dados (assets), não código hardcoded.
 
-- definir quais atores são spawnados em uma cena;
-- manter ordem de spawn consistente;
-- evitar “spawns escondidos” em `Awake/Start` espalhados pelo projeto.
+Há também um requisito operacional: o projeto possui uma política **Strict/Release**. Em **Strict**, erros de contrato devem ser *detectáveis cedo* (preferencialmente falhando com logs/asserts), enquanto em **Release** o sistema deve ser mais tolerante quando isso não compromete gameplay.
 
 ## Decisão
 
-### Objetivo de produção (sistema ideal)
+Introduzir um asset `WorldDefinition` que descreve o conjunto de **SpawnEntries** (multi-actor) e integrá-lo ao pipeline de bootstrap/spawn da `GameplayScene`.
 
-Definir um 'WorldDefinition' capaz de montar um GameplayScene com múltiplos atores (ex.: Player + Eater) de forma determinística, alinhada ao reset/spawn pipeline do WorldLifecycle.
+A presença de `WorldDefinition` é **obrigatória em cenas classificadas como gameplay** (ex.: `GameplayScene`) e **opcional/permitida** em cenas de frontend (ex.: `MenuScene`).
 
-### Contrato de produção (mínimo)
+## Detalhamento
 
-- WorldDefinition descreve **o que** instanciar e **onde** (configs/prefabs/ids), sem side-effects fora do pipeline.
-- Spawn de atores ocorre durante ResetWorld/WorldLifecycle (ou fase equivalente) e registra atores no ActorRegistry.
-- Falhas de referência (prefab/config ausente) são fail-fast (não auto-criar).
-- A lista mínima de atores é verificável via log anchors.
+### Conceitos
 
-### Não-objetivos (resumo)
+- **WorldDefinition**: asset contendo uma lista ordenada de `SpawnEntries` (tipo/config + regras) que define quais atores existirão ao final do reset.
+- **SpawnEntry**: definição de um ator a ser instanciado/registrado (ex.: `Player`, `Eater`).
+- **IWorldSpawnContext / ISpawnDefinitionService / ISpawnRegistry**: serviços de suporte ao spawn (registro, resolução, tracking) e evidência via logs.
 
-Ver seção **Fora de escopo**.
+### Ponto de integração
 
-## Fora de escopo
+A integração acontece no `SceneBootstrapper` (nome atual observado em evidências). Ele:
 
-- Balanceamento/IA dos atores (fora do escopo do contrato de montagem).
-- Spawns ad-hoc em runtime fora do pipeline de reset.
+1. Registra serviços gerais de cena (ex.: `LoadingHudService`, `InputModeService`, etc.).
+2. **Se** houver `WorldDefinition` atribuída, registra/instancia os serviços do spawn pipeline e expõe a definição via `ISpawnDefinitionService`.
+3. **Se não** houver `WorldDefinition`, emite log explícito informando que a ausência é permitida para cenas que não fazem spawn.
 
-- Adição de novos kinds de ator além de Player/Eater (ver notas de evolução).
+> Observação: versões anteriores do texto referiam “NewSceneBootstrapper”. Na evidência canônica atual, o componente observado é `SceneBootstrapper`.
 
-## Consequências
+## Política Strict/Release
 
-### Benefícios
-- Configuração declarativa e inspecionável (asset).
-- Facilita QA e debugging (comparar `WorldDefinition` com serviços registrados).
-- Permite evoluir para outros tipos de ator sem alterar o fluxo base.
+### Regra de contrato
 
-### Trade-offs / Riscos
-- Se o `WorldDefinition` estiver ausente na cena, nenhum spawn service será registrado (e o reset não spawnará atores).
-- Requer que as fábricas/registries de spawn sejam mantidas consistentes (mapeamento Kind → Service).
+- **Cenas de gameplay (ex.: GameplayScene)**
+  - `WorldDefinition` **deve** existir.
+  - `WorldDefinition.SpawnEntries` **deve** conter pelo menos 1 entrada válida.
+  - Em **Strict**: violações são tratadas como *blocker* (log de erro/assert + falha detectável no smoke).
+  - Em **Release**: violações continuam sendo erro, mas a estratégia pode ser “fail-fast com fallback controlado” apenas se não corromper estado (preferir manter o contrato, não mascarar).
 
-### Política de falhas e fallback (fail-fast)
+- **Cenas de frontend/menus (ex.: MenuScene)**
+  - `WorldDefinition` **não é exigida**.
+  - Em **Strict**: a ausência é permitida **desde que** a cena seja classificada como não-gameplay (ver *classifier* abaixo).
 
-- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
-- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
-- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+### Classificação (classifier)
 
+A decisão de exigir `WorldDefinition` deve ser guiada por um classificador (ex.: `IGameplayResetTargetClassifier`) e/ou pelo profile do `SceneFlow`.
 
-### Critérios de pronto (DoD)
+Evidência canônica mostra:
 
-- GameplayScene, após reset, registra o conjunto mínimo de atores esperado.
-- Logs confirmam contagem/registro (ActorRegistry=2 no baseline).
-
-## Notas de implementação
-
-### Regras (baseline)
-
-- Entradas desabilitadas (`Enabled=False`) são ignoradas.
-- A ordem do spawn é definida pelo próprio spawn service (ex.: Player ordem 1, Eater ordem 2).
-- A `GameplayScene` pode ter 0 entries em cenários de menu/ready (isso é permitido).
-
-### Próximos passos
-
-- Adicionar novos kinds de ator conforme o gameplay evoluir (NPCs, objetivos, etc.).
-- Padronizar validações (ex.: warning quando `GameplayScene` tiver 0 entries, se isso for inesperado).
+- `profile=startup` e `profile=frontend`: reset pode ser SKIP.
+- `profile=gameplay`: reset executa e o spawn pipeline roda.
 
 ## Evidência
 
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- **Âncoras/assinaturas relevantes:**
-  - [WorldLifecycle] ResetCompleted ... (ver evidência canônica).
-  - Spawns Player + Eater; `ActorRegistry=2`.
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+### Log canônico (Baseline 2.2)
 
-## Evidências
+- **Arquivo:** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
 
-- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
-- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot (canônico 2026-01-29): [`Baseline-2.2-Evidence-2026-01-29.md`](../Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md)
-- Contrato: [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+#### MenuScene permite ausência de WorldDefinition
 
-## Referências
+```
+[SceneBootstrapper] Setup OK :: hasWorldDefinition=False :: scene='MenuScene'
+[SceneBootstrapper] WorldDefinition is null (allowed in scenes that do not spawn actors). :: scene='MenuScene'
+```
 
-- [Overview/Overview.md](../Overview/Overview.md)
-- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-- [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+#### GameplayScene exige WorldDefinition e registra spawn services
+
+```
+[SceneBootstrapper] Setup OK :: hasWorldDefinition=True :: scene='GameplayScene'
+[SceneBootstrapper] WorldDefinition loaded :: entries=2 :: scene='GameplayScene'
+[SceneBootstrapper] Registered IWorldSpawnContext.
+[SceneBootstrapper] Registered ISpawnDefinitionService.
+[SceneBootstrapper] Registered ISpawnRegistry.
+```
+
+#### Reset executa e resulta em multi-actor
+
+```
+[WorldLifecycle] ResetWorld START :: profile=gameplay :: id=2 :: reason='SceneFlow/ScenesReady'
+[WorldLifecycle] Spawns COMPLETE :: spawnCount=2 :: registryCount=2 :: actors=[Player,Eater]
+[WorldLifecycle] ResetWorld COMPLETE :: id=2
+```
+
+### Auditoria Strict/Release
+
+- **Arquivo:** `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
+
+## Consequências
+
+### Positivas
+
+- **Dados como fonte de verdade** para a composição do mundo (multi-actor) em gameplay.
+- Melhor **auditabilidade** (logs determinísticos e verificáveis) e integração com Baseline.
+- Separação clara entre **frontend** (sem spawn) e **gameplay** (com spawn obrigatório).
+
+### Trade-offs
+
+- Requer disciplina de content pipeline: `WorldDefinition` precisa existir e ser mantida correta em cenas classificadas como gameplay.
+- Strict pode aumentar fricção durante iteração (o que é intencional para evitar regressões silenciosas).
+
+## Alternativas consideradas
+
+1. **Hardcode de spawns em código**
+   - Rejeitada: baixa auditabilidade e alto risco de divergência com content.
+
+2. **Um único “WorldDefinition global” para todas as cenas**
+   - Rejeitada: menus/frontend não devem pagar custo nem sofrer contrato de gameplay.
+
+## Ações futuras
+
+- Garantir que o **classifier** de “cena de gameplay” seja a fonte canônica da exigência de `WorldDefinition`.
+- Se necessário, adicionar uma checagem explícita no `SceneBootstrapper`:
+  - `if (isGameplayScene && worldDefinition == null) -> error/assert`.
