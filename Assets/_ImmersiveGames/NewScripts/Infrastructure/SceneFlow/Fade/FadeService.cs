@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
             // Comentário: evita FindAnyObjectByType (custo + risco de pegar controller errado fora da FadeScene).
             try
             {
-                var roots = scene.GetRootGameObjects();
+                GameObject[] roots = scene.GetRootGameObjects();
                 for (int i = 0; i < roots.Length; i++)
                 {
                     var controller = roots[i].GetComponentInChildren<FadeController>(true);

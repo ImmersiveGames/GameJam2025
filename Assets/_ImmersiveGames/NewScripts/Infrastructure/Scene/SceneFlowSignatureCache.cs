@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
 
         private string _lastSignature = string.Empty;
-        private SceneFlowProfileId _lastProfileId = default;
+        private SceneFlowProfileId _lastProfileId;
         private string _lastTargetScene = string.Empty;
         private bool _disposed;
 

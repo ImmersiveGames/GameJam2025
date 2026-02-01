@@ -22,8 +22,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
         public override string ToString()
         {
-            if (!IsValid) return "<none>";
-            if (string.IsNullOrWhiteSpace(ContentSignature)) return ContentId;
+            if (!IsValid)
+            {
+                return "<none>";
+            }
+            if (string.IsNullOrWhiteSpace(ContentSignature))
+            {
+                return ContentId;
+            }
             return $"{ContentId} | {ContentSignature}";
         }
 

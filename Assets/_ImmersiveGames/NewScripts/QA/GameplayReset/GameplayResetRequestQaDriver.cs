@@ -3,10 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.GameplayReset

@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
-using _ImmersiveGames.Tools;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Infrastructure.Util.Tools;
 
 [CustomEditor(typeof(WorldSpawnSmokeRunner))]
 public class WorldSpawnSmokeRunnerEditor : Editor

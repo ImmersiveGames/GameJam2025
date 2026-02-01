@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            var reason = evt?.Reason ?? "<null>";
+            string reason = evt?.Reason ?? "<null>";
             DebugUtility.Log<GameLoopRunEndEventBridge>(
                 $"[GameLoop] GameRunEndedEvent recebido. Outcome={evt?.Outcome}, Reason='{reason}'. Sinalizando EndRequested.");
 
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return classifier.IsGameplayScene();
             }
 
-            var sceneName = SceneManager.GetActiveScene().name;
+            string sceneName = SceneManager.GetActiveScene().name;
             return string.Equals(sceneName, "GameplayScene", System.StringComparison.Ordinal);
         }
     }

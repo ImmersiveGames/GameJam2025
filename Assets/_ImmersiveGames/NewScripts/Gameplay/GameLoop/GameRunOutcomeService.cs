@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             if (!IsInActiveGameplay())
             {
-                var stateName = _gameLoopService?.CurrentStateIdName ?? "<null>";
+                string stateName = _gameLoopService?.CurrentStateIdName ?? "<null>";
 
                 DebugUtility.LogVerbose<GameRunOutcomeService>(
                     $"[GameLoop] TryEnd ignorado: GameLoop não está em Playing (state={stateName}). Outcome={outcome}, Reason='{reason ?? "<null>"}'.");
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return false;
             }
 
-            var stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
+            string stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
             return string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
         }
 

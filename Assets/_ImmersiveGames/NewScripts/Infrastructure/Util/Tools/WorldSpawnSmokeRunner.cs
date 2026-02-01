@@ -1,14 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Actions;
-using UnityEngine;
-using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
-
-namespace _ImmersiveGames.Tools
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
+using UnityEngine;
+namespace _ImmersiveGames.NewScripts.Infrastructure.Util.Tools
 {
     // Small smoke test runner to exercise WorldSpawnServiceFactory and spawn/despawn flow.
     [DisallowMultipleComponent]

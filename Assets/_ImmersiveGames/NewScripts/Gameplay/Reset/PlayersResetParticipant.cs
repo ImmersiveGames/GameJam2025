@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -33,11 +33,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         {
             EnsureDependencies();
 
-            var reason = string.IsNullOrWhiteSpace(context.Reason)
+            string reason = string.IsNullOrWhiteSpace(context.Reason)
                 ? "WorldLifecycle/SoftReset"
                 : context.Reason;
 
-            var actorIds = CollectPlayerActorIdsWithFallback();
+            IReadOnlyList<string> actorIds = CollectPlayerActorIdsWithFallback();
 
             DebugUtility.Log(typeof(PlayersResetParticipant),
                 $"[PlayersResetParticipant] Bridge start => GameplayReset PlayersOnly (players={actorIds.Count}, reason='{reason}')");
@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         private IReadOnlyList<string> CollectPlayerActorIdsWithFallback()
         {
             // 1) Tenta via registry (quando houver)…
-            var ids = CollectPlayerActorIdsFromRegistry();
+            List<string> ids = CollectPlayerActorIdsFromRegistry();
 
             // 2) …mas se vier vazio, faz fallback por scan de cena (mesmo que registry exista).
             if (ids.Count == 0)
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                     continue;
                 }
 
-                var id = actor.ActorId;
+                string id = actor.ActorId;
                 if (!string.IsNullOrWhiteSpace(id))
                 {
                     result.Add(id);
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         {
             var result = new List<string>(16);
 
-            var behaviours = Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
+            MonoBehaviour[] behaviours = Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
             if (behaviours == null || behaviours.Length == 0)
             {
                 return result;
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                     continue;
                 }
 
-                var id = actor.ActorId;
+                string id = actor.ActorId;
                 if (!string.IsNullOrWhiteSpace(id))
                 {
                     result.Add(id);

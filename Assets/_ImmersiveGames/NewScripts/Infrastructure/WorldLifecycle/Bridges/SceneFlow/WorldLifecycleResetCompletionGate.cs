@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 
@@ -13,11 +13,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
     {
         private readonly EventBinding<WorldLifecycleResetCompletedEvent> _binding;
 
-        private readonly Dictionary<string, TaskCompletionSource<string>> _pending =
-            new Dictionary<string, TaskCompletionSource<string>>(StringComparer.Ordinal);
+        private readonly Dictionary<string, TaskCompletionSource<string>> _pending = new(StringComparer.Ordinal);
 
-        private readonly Dictionary<string, string> _completedReasons =
-            new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _completedReasons = new(StringComparer.Ordinal);
 
         private readonly int _timeoutMs;
 

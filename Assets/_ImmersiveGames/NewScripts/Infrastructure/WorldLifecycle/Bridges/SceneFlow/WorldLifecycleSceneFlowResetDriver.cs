@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Gameplay.WorldLifecycle;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine.SceneManagement;
@@ -128,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
             }
 
             MarkInFlight(signature);
-            var controllers = WorldLifecycleControllerLocator.FindControllersForScene(targetScene);
+            IReadOnlyList<WorldLifecycleController> controllers = WorldLifecycleControllerLocator.FindControllersForScene(targetScene);
 
             if (controllers.Count == 0)
             {
@@ -161,49 +163,71 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
 
             try
             {
-				// Determinismo e robustez:
-				// - remove nulls
-				// - ordena por InstanceID (ordem consistente entre frames)
-				// Observação: evitar LINQ aqui reduz alocações em um caminho quente (ScenesReady).
-				var filteredControllers = new List<WorldLifecycleController>(controllers.Count);
-				for (int i = 0; i < controllers.Count; i++)
-				{
-					var controller = controllers[i];
-					if (controller != null)
-					{
-						filteredControllers.Add(controller);
-					}
-				}
-
-				filteredControllers.Sort(static (a, b) => a.GetInstanceID().CompareTo(b.GetInstanceID()));
-
-                DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-					$"[WorldLifecycle] Disparando ResetWorld para {filteredControllers.Count} controller(s). signature='{signature}', targetScene='{targetScene}'.",
-                    DebugUtility.Colors.Info);
-
-				var tasks = new List<Task>(filteredControllers.Count);
-				for (int i = 0; i < filteredControllers.Count; i++)
-				{
-					tasks.Add(filteredControllers[i].ResetWorldAsync(ReasonScenesReady));
-				}
-
-                await Task.WhenAll(tasks);
-
-                DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] ResetWorld concluído (ScenesReady). signature='{signature}', targetScene='{targetScene}'.",
-                    DebugUtility.Colors.Success);
+                await ExecuteResetForGameplayAsync(signature, targetScene, controllers);
             }
             catch (Exception ex)
             {
                 // Best-effort: loga, mas NÃO impede liberação do gate.
                 DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] Erro durante ResetWorld (ScenesReady). signature='{signature}', targetScene='{targetScene}', ex='{ex}'.");
+                    $"[WorldLifecycle] Erro durante ResetWorld (ScenesReady). signature='{signature}', targetScene='{targetScene}', ex='{ex}'");
             }
             finally
             {
                 PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, targetScene);
                 MarkCompleted(signature);
             }
+        }
+
+        private static async Task ExecuteResetForGameplayAsync(string signature, string targetScene, IReadOnlyList<WorldLifecycleController> controllers)
+        {
+            // Primeiro: se um ResetWorldService estiver registrado no DI, use-o (ponto de integração centralizado).
+            if (DependencyManager.HasInstance && DependencyManager.Provider.TryGetGlobal<IResetWorldService>(out var resetService) && resetService != null)
+            {
+                DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
+                    $"[WorldLifecycle] Usando ResetWorldService (DI) para executar reset. signature='{signature}', targetScene='{targetScene}'.",
+                    DebugUtility.Colors.Info);
+
+                try
+                {
+                    await resetService.TriggerResetAsync(signature, ReasonScenesReady);
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
+                        $"[WorldLifecycle] ResetWorldService falhou durante TriggerResetAsync. signature='{signature}', targetScene='{targetScene}', ex='{ex}'.");
+                }
+
+                return;
+            }
+
+            // Fallback: executar ResetWorld diretamente nos controllers (determinismo/local orchestrator).
+            var filteredControllers = new List<WorldLifecycleController>(controllers.Count);
+            for (int i = 0; i < controllers.Count; i++)
+            {
+                var controller = controllers[i];
+                if (controller != null)
+                {
+                    filteredControllers.Add(controller);
+                }
+            }
+
+            filteredControllers.Sort(static (a, b) => a.GetInstanceID().CompareTo(b.GetInstanceID()));
+
+            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
+                $"[WorldLifecycle] Disparando ResetWorld para {filteredControllers.Count} controller(s). signature='{signature}', targetScene='{targetScene}'.",
+                DebugUtility.Colors.Info);
+
+            var tasks = new List<Task>(filteredControllers.Count);
+            for (int i = 0; i < filteredControllers.Count; i++)
+            {
+                tasks.Add(filteredControllers[i].ResetWorldAsync(ReasonScenesReady));
+            }
+
+            await Task.WhenAll(tasks);
+
+            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
+                $"[WorldLifecycle] ResetWorld concluído (ScenesReady). signature='{signature}', targetScene='{targetScene}'.",
+                DebugUtility.Colors.Success);
         }
 
         private static string ResolveTargetSceneName(SceneTransitionContext context)
@@ -264,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
                 return false;
             }
 
-            var now = Environment.TickCount;
+            int now = Environment.TickCount;
 
             lock (_guardLock)
             {
@@ -276,7 +300,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.Scene
 
                 if (_completedTicks.TryGetValue(signature, out int lastTick))
                 {
-                    var dt = unchecked(now - lastTick);
+                    int dt = unchecked(now - lastTick);
                     if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
                     {
                         guardReason = $"{ReasonGuardDuplicatePrefix}:recent";

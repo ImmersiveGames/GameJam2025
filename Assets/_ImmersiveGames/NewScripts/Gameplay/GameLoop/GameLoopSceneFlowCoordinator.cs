@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     ///
     /// Regra Strict/Release (ADR-0013): o SceneFlow NÃO deve forçar RequestStart() em gameplay;
     /// o start efetivo é responsabilidade do pipeline de início de nível (ex.: LevelStartPipeline/IntroStageCoordinator)
-    /// que só libera o início após IntroStage completar.
+    /// que só libera o início após IntroStageController completar.
     /// </summary>
     public sealed class GameLoopSceneFlowCoordinator : IDisposable
     {
@@ -265,16 +265,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             // Importante: este coordinator é usado para o startPlan de produção.
             // Regra Strict/Release:
             // - Em frontend/startup: apenas manter o GameLoop em Ready.
-            // - Em gameplay: também manter em Ready (NÃO RequestStart aqui). O início efetivo acontece após IntroStage completar.
+            // - Em gameplay: também manter em Ready (NÃO RequestStart aqui). O início efetivo acontece após IntroStageController completar.
             //   (ex.: LevelStartPipeline/IntroStageCoordinator chama RequestStart no momento correto)
             var profileId = _startPlan?.TransitionProfileId ?? default;
 
             gameLoop.Initialize();
 
-            var profileLabel = profileId.IsValid ? profileId.Value : "<none>";
+            string profileLabel = profileId.IsValid ? profileId.Value : "<none>";
 
             DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                $"[GameLoopSceneFlow] Sync concluído. profileId='{profileLabel}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStage).",
+                $"[GameLoopSceneFlow] Sync concluído. profileId='{profileLabel}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestReady();

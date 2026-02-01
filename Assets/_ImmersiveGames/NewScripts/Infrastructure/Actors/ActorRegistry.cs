@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
 {

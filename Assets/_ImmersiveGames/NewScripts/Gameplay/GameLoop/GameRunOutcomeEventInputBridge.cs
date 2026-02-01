@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {

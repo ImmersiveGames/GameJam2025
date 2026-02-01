@@ -1,8 +1,8 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
 {
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 return;
             }
 
-            var reason = evt?.Reason ?? RestartReason;
+            string reason = evt?.Reason ?? RestartReason;
 
             DebugUtility.Log<RestartNavigationBridge>(
                 $"[Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync. reason='{reason}'.",

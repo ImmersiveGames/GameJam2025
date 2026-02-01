@@ -1,20 +1,20 @@
 #nullable enable
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 {
     /// <summary>
-    /// GUI temporário (runtime) para concluir a IntroStage sem depender de QA.
+    /// GUI temporário (runtime) para concluir a IntroStageController sem depender de QA.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageRuntimeDebugGui : MonoBehaviour
     {
         private static IntroStageRuntimeDebugGui? _instance;
         private const string RuntimeGuiObjectName = "IntroStageRuntimeDebugGui";
-        private const string CompleteReason = "IntroStage/UIConfirm";
+        private const string CompleteReason = "IntroStageController/UIConfirm";
         private const float GuiWidth = 280f;
         private const float GuiHeight = 90f;
         private const float GuiMargin = 12f;
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
                 {
                     _duplicateDestroyedLogged = true;
                     DebugUtility.LogVerbose<IntroStageRuntimeDebugGui>(
-                        "[IntroStage][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata.",
+                        "[IntroStageController][RuntimeDebugGui] Instância duplicada detectada; destruindo duplicata.",
                         DebugUtility.Colors.Info);
                 }
 
@@ -75,15 +75,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 
         private void Update()
         {
-            var shouldShow = IsIntroStageActive();
+            bool shouldShow = IsIntroStageActive();
             if (shouldShow == _isVisible)
             {
                 return;
             }
 
             _isVisible = shouldShow;
-            var state = _isVisible ? "exibido" : "oculto";
-            DebugUtility.Log<IntroStageRuntimeDebugGui>($"[IntroStage][RuntimeDebugGui] GUI {state}.");
+            string state = _isVisible ? "exibido" : "oculto";
+            DebugUtility.Log<IntroStageRuntimeDebugGui>($"[IntroStageController][RuntimeDebugGui] GUI {state}.");
         }
 
         private void OnGUI()
@@ -95,12 +95,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 
             var rect = new Rect(GuiMargin, GuiMargin, GuiWidth, GuiHeight);
             GUILayout.BeginArea(rect, GUI.skin.box);
-            GUILayout.Label("IntroStage (Runtime Debug)");
+            GUILayout.Label("IntroStageController (Runtime Debug)");
 
-            if (GUILayout.Button("Concluir IntroStage"))
+            if (GUILayout.Button("Concluir IntroStageController"))
             {
                 DebugUtility.Log<IntroStageRuntimeDebugGui>(
-                    "[IntroStage][RuntimeDebugGui] Botão Concluir IntroStage clicado.");
+                    "[IntroStageController][RuntimeDebugGui] Botão Concluir IntroStageController clicado.");
                 RequestComplete();
             }
 
@@ -113,12 +113,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
             if (controlService == null)
             {
                 DebugUtility.LogWarning<IntroStageRuntimeDebugGui>(
-                    "[IntroStage][RuntimeDebugGui] IIntroStageControlService indisponível; Complete ignorado.");
+                    "[IntroStageController][RuntimeDebugGui] IIntroStageControlService indisponível; Complete ignorado.");
                 return;
             }
 
             DebugUtility.Log<IntroStageRuntimeDebugGui>(
-                $"[IntroStage][RuntimeDebugGui] Solicitando CompleteIntroStage reason='{CompleteReason}'.");
+                $"[IntroStageController][RuntimeDebugGui] Solicitando CompleteIntroStage reason='{CompleteReason}'.");
             controlService.CompleteIntroStage(CompleteReason);
         }
 
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 
         private static GameObject? FindExistingRuntimeGuiObject()
         {
-            var objects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+            GameObject[]? objects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
             foreach (var obj in objects)
             {
                 if (!string.Equals(obj.name, RuntimeGuiObjectName, StringComparison.Ordinal))

@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using TMPro;
 using UnityEngine;
 

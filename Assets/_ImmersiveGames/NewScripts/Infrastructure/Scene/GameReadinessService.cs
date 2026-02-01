@@ -1,7 +1,7 @@
 #nullable enable
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene

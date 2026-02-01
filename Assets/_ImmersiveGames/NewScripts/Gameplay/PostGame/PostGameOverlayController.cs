@@ -1,8 +1,8 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using TMPro;
@@ -149,7 +149,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void RegisterBindings()
         {
-            if (_registered) return;
+            if (_registered)
+            {
+                return;
+            }
 
             EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
@@ -162,7 +165,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void UnregisterBindings()
         {
-            if (!_registered) return;
+            if (!_registered)
+            {
+                return;
+            }
 
             EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
@@ -251,13 +257,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void SetTitle(string text)
         {
-            if (titleText == null) return;
+            if (titleText == null)
+            {
+                return;
+            }
             titleText.text = text;
         }
 
         private void SetReason(string reason)
         {
-            if (reasonText == null) return;
+            if (reasonText == null)
+            {
+                return;
+            }
 
             if (string.IsNullOrWhiteSpace(reason))
             {
@@ -352,10 +364,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void EnsureDependenciesInjected()
         {
-            if (_dependenciesInjected) return;
+            if (_dependenciesInjected)
+            {
+                return;
+            }
 
             var provider = DependencyManager.Provider;
-            if (provider == null) return;
+            if (provider == null)
+            {
+                return;
+            }
 
             try
             {
@@ -422,15 +440,25 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private void ValidateReferences()
         {
             if (rootCanvasGroup == null)
+            {
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] rootCanvasGroup não configurado no Inspector.");
+            }
             if (titleText == null)
+            {
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] titleText não configurado no Inspector.");
+            }
             if (reasonText == null)
+            {
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] reasonText não configurado no Inspector.");
+            }
             if (restartButton == null)
+            {
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] restartButton não configurado no Inspector.");
+            }
             if (exitToMenuButton == null)
+            {
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] exitToMenuButton não configurado no Inspector.");
+            }
         }
 
         // --------------------------------------------------------------------

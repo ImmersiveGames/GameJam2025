@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
             set => timeoutMs = value;
         }
 
-        public static ContentSwapOptions Default => new ContentSwapOptions();
+        public static ContentSwapOptions Default => new();
 
         public ContentSwapOptions Clone()
         {

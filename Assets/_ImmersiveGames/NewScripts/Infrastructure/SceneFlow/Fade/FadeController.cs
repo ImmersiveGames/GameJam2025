@@ -1,5 +1,6 @@
-﻿using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+﻿using System;
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
@@ -26,6 +27,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
 
         private static readonly AnimationCurve LinearCurve =
             AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
+        private string _lastContextSignature;
+
+        // Evento para integração com SceneFlow
+        public event Action<string> OnFadeComplete;
+
+        // Permite que adaptadores/SceneTransitionService definam explicitamente a signature antes do fade.
+        public void SetContextSignature(string contextSignature)
+        {
+            if (!string.IsNullOrEmpty(contextSignature) && contextSignature != "no-signature")
+            {
+                _lastContextSignature = contextSignature;
+            }
+        }
 
         private void Awake()
         {
@@ -90,14 +105,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
                 : LinearCurve;
         }
 
-        public Task FadeInAsync() => FadeToAsync(1f);
-        public Task FadeOutAsync() => FadeToAsync(0f);
+        // Compatibilidade: métodos existentes
+        public Task FadeInAsync() => FadeInAsync("no-signature");
+        public Task FadeOutAsync() => FadeOutAsync("no-signature");
 
-        private async Task FadeToAsync(float targetAlpha)
+        // Novas assinaturas com contextSignature (propagação)
+        public Task FadeInAsync(string contextSignature) => FadeToAsync(1f, contextSignature);
+        public Task FadeOutAsync(string contextSignature) => FadeToAsync(0f, contextSignature);
+
+        private async Task FadeToAsync(float targetAlpha, string contextSignature)
         {
             if (canvasGroup == null)
             {
                 return;
+            }
+
+            // Resolve signature: se chamado sem signature ("no-signature"), usar o último cacheado.
+            string usedSignature = contextSignature;
+            if (string.IsNullOrEmpty(usedSignature) || usedSignature == "no-signature")
+            {
+                usedSignature = _lastContextSignature ?? "no-signature";
+            }
+            else
+            {
+                _lastContextSignature = usedSignature;
             }
 
             float currentAlpha = canvasGroup.alpha;
@@ -121,13 +152,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
                     canvasGroup.blocksRaycasts = false;
                     canvasGroup.interactable = false;
                 }
+
+                DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeComplete signature={usedSignature} targetAlpha={targetAlpha}");
+                try { OnFadeComplete?.Invoke(usedSignature); } catch { }
                 return;
             }
 
             float time = 0f;
 
-            DebugUtility.LogVerbose<FadeController>(
-                $"[Fade] Iniciando Fade para alpha={targetAlpha} (dur={duration})");
+            DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeStart signature={usedSignature} targetAlpha={targetAlpha} dur={duration}");
 
             while (time < duration)
             {
@@ -148,8 +181,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade
                 canvasGroup.interactable = false;
             }
 
-            DebugUtility.LogVerbose<FadeController>(
-                $"[Fade] Fade concluído para alpha={targetAlpha}");
+            DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeComplete signature={usedSignature} targetAlpha={targetAlpha}");
+            try { OnFadeComplete?.Invoke(usedSignature); } catch { }
         }
 
         private static float EvaluateCurve(AnimationCurve curve, float t)

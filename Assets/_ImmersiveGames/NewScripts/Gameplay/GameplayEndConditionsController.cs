@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
+using UnityEngine;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Gameplay
 {
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay
 
         [Header("Dev-only manual triggers (opcional)")]
         [Tooltip("Permite disparo manual em Editor/Development Build.")]
-        [SerializeField] private bool enableDevManualTriggers = false;
+        [SerializeField] private bool enableDevManualTriggers;
 
         [SerializeField] private KeyCode devVictoryKey = KeyCode.F9;
         [SerializeField] private KeyCode devDefeatKey = KeyCode.F10;
@@ -87,13 +87,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay
         private void Update()
         {
             if (_requested)
+            {
                 return;
+            }
 
             // Se não foi injetado, tenta resolver via DI global.
             if (!TryResolveEndRequestService())
+            {
                 return;
+            }
 
-            var now = useUnscaledTime ? Time.unscaledTime : Time.time;
+            float now = useUnscaledTime ? Time.unscaledTime : Time.time;
 
             if (enableTimeout && (now - _startTime) >= timeoutSeconds)
             {
@@ -125,7 +129,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
             if (!rearmOnGameRunStarted)
+            {
                 return;
+            }
 
             // Este é o ponto crítico: a GameplayScene pode não ser recarregada em Restart,
             // então este controller precisa rearmar aqui.
@@ -160,7 +166,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay
         private void Subscribe()
         {
             if (_subscribed)
+            {
                 return;
+            }
 
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
             EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
@@ -170,7 +178,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay
         private void Unsubscribe()
         {
             if (!_subscribed)
+            {
                 return;
+            }
 
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
             EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
@@ -180,7 +190,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay
         private bool TryResolveEndRequestService()
         {
             if (_endRequest != null)
+            {
                 return true;
+            }
 
             // Fallback: resolve do DI global.
             if (DependencyManager.HasInstance &&

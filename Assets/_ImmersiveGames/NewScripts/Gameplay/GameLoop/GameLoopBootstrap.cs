@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.GameLoop;
 using UnityEngine;
 

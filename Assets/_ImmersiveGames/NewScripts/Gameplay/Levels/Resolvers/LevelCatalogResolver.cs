@@ -2,10 +2,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
 
         public bool TryResolveCatalog(out LevelCatalog catalog)
         {
-            catalog = _catalogProvider.GetCatalog();
+            catalog = _catalogProvider.GetCatalog() ?? throw new InvalidOperationException();
             if (catalog == null)
             {
                 DebugUtility.LogWarning<LevelCatalogResolver>(
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
         public bool TryResolveInitialDefinition(out LevelDefinition definition)
         {
             definition = null!;
-            if (!TryResolveInitialLevelId(out var levelId))
+            if (!TryResolveInitialLevelId(out string levelId))
             {
                 return false;
             }
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
                 return false;
             }
 
-            if (!IsEnabled(definition, out var gateId))
+            if (!IsEnabled(definition, out string gateId))
             {
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     $"[LevelCatalog] Nível bloqueado por gate. levelId='{definition.LevelId}' gateId='{gateId}'.");
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
                 return false;
             }
 
-            foreach (var candidateId in EnumerateCandidateLevelIds(catalog))
+            foreach (string? candidateId in EnumerateCandidateLevelIds(catalog))
             {
                 if (TryResolvePlan(candidateId, out plan, out options))
                 {
@@ -203,10 +203,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             }
 
             var visited = new HashSet<string>(StringComparer.Ordinal);
-            var current = string.IsNullOrWhiteSpace(levelId) ? string.Empty : levelId.Trim();
-            for (var i = 0; i < 32; i++)
+            string current = string.IsNullOrWhiteSpace(levelId) ? string.Empty : levelId.Trim();
+            for (int i = 0; i < 32; i++)
             {
-                if (!catalog.TryResolveNextLevelId(current, out var nextId) || string.IsNullOrWhiteSpace(nextId))
+                if (!catalog.TryResolveNextLevelId(current, out string? nextId) || string.IsNullOrWhiteSpace(nextId))
                 {
                     DebugUtility.LogWarning<LevelCatalogResolver>(
                         $"[LevelCatalog] Próximo nível não resolvido. levelId='{current}'.");
@@ -268,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             // 1) Priorizar o initial
             if (!string.IsNullOrWhiteSpace(catalog.InitialLevelId))
             {
-                var initial = catalog.InitialLevelId.Trim();
+                string initial = catalog.InitialLevelId.Trim();
                 if (seen.Add(initial))
                 {
                     yield return initial;
@@ -278,14 +278,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             // 2) Depois OrderedLevels (se existir)
             if (catalog.OrderedLevels != null)
             {
-                foreach (var id in catalog.OrderedLevels)
+                foreach (string? id in catalog.OrderedLevels)
                 {
                     if (string.IsNullOrWhiteSpace(id))
                     {
                         continue;
                     }
 
-                    var trimmed = id.Trim();
+                    string trimmed = id.Trim();
                     if (seen.Add(trimmed))
                     {
                         yield return trimmed;
@@ -296,17 +296,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
             // 3) Por fim Definitions (tipo pode variar: Dictionary, List, etc.)
             if (catalog.Definitions != null)
             {
-                foreach (var entry in (IEnumerable)catalog.Definitions)
+                foreach (object? entry in (IEnumerable)catalog.Definitions)
                 {
                     switch (entry)
                     {
                         // Caso A: Dictionary<string, LevelDefinition>
                         case KeyValuePair<string, LevelDefinition> kv:
                         {
-                            var id = kv.Key;
+                            string? id = kv.Key;
                             if (!string.IsNullOrWhiteSpace(id))
                             {
-                                var trimmed = id.Trim();
+                                string trimmed = id.Trim();
                                 if (seen.Add(trimmed))
                                 {
                                     yield return trimmed;
@@ -319,10 +319,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
                         // Caso B: List/Array de LevelDefinition
                         case LevelDefinition def:
                         {
-                            var id = def.LevelId;
+                            string? id = def.LevelId;
                             if (!string.IsNullOrWhiteSpace(id))
                             {
-                                var trimmed = id.Trim();
+                                string trimmed = id.Trim();
                                 if (seen.Add(trimmed))
                                 {
                                     yield return trimmed;
@@ -337,7 +337,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers
                         {
                             if (!string.IsNullOrWhiteSpace(idStr))
                             {
-                                var trimmed = idStr.Trim();
+                                string trimmed = idStr.Trim();
                                 if (seen.Add(trimmed))
                                 {
                                     yield return trimmed;

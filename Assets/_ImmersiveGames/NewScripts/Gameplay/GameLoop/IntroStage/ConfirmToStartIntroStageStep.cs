@@ -3,17 +3,16 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
+namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 {
     /// <summary>
-    /// Passo mínimo de IntroStage com confirmação via input.
+    /// Passo mínimo de IntroStageController com confirmação via input.
     /// O timeout é opcional e só deve ser habilitado para QA/dev.
     /// </summary>
     public sealed class ConfirmToStartIntroStageStep : IIntroStageStep
@@ -36,24 +35,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public async Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
         {
-            var activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
-            var profile = context.ProfileId.Value;
+            string activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
+            string? profile = context.ProfileId.Value;
 
-            var signature = NormalizeSignature(context.ContextSignature);
+            string signature = NormalizeSignature(context.ContextSignature);
             ApplyUiInputMode(signature, activeScene, profile);
 
             var controlService = ResolveIntroStageControlService();
             if (controlService == null)
             {
                 DebugUtility.LogWarning<ConfirmToStartIntroStageStep>(
-                    "[IntroStage] IIntroStageControlService indisponível. ConfirmToStart não poderá concluir a IntroStage.");
+                    "[IntroStageController] IIntroStageControlService indisponível. ConfirmToStart não poderá concluir a IntroStageController.");
                 return;
             }
 
             var actions = new List<InputAction>();
 
             void CompleteFromInput(InputAction.CallbackContext _)
-                => controlService.CompleteIntroStage("IntroStage/UIConfirm");
+                => controlService.CompleteIntroStage("IntroStageController/UIConfirm");
 
             TryBindUiActions(actions, CompleteFromInput);
 
@@ -81,15 +80,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (inputMode == null)
             {
                 DebugUtility.LogWarning<ConfirmToStartIntroStageStep>(
-                    "[IntroStage] IInputModeService indisponível. InputMode não será alternado.");
+                    "[IntroStageController] IInputModeService indisponível. InputMode não será alternado.");
                 return;
             }
 
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
-                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='IntroStage' reason='IntroStage/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}'.",
+                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}'.",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetFrontendMenu("IntroStage/ConfirmToStart");
+            inputMode.SetFrontendMenu("IntroStageController/ConfirmToStart");
         }
 
         private async Task TriggerTimeoutAsync(IIntroStageControlService controlService, CancellationToken cancellationToken)
@@ -107,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static void TryBindUiActions(List<InputAction> actions, Action<InputAction.CallbackContext> handler)
         {
-            var inputs = UnityEngine.Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
+            PlayerInput[]? inputs = UnityEngine.Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
             if (inputs == null || inputs.Length == 0)
             {
                 return;

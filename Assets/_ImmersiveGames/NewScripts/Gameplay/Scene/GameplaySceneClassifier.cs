@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Scene
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Scene
 
         private static bool HasMarkerInScene(UnityEngine.SceneManagement.Scene scene)
         {
-            var roots = scene.GetRootGameObjects();
+            GameObject[] roots = scene.GetRootGameObjects();
             if (roots == null || roots.Length == 0)
             {
                 return false;

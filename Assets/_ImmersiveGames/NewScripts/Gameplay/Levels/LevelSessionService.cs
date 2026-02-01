@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
@@ -52,21 +52,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         public bool Initialize()
         {
-            var reason = DefaultInitializeReason;
+            string reason = DefaultInitializeReason;
             EnsureCatalogSnapshot(reason);
             return SelectInitialInternal(reason, out _);
         }
 
         public bool SelectInitial(string reason)
         {
-            var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
+            string normalizedReason = NormalizeReason(reason, DefaultSelectReason);
             return SelectInitialInternal(normalizedReason, out _);
         }
 
         public bool SelectLevelById(string levelId, string reason)
         {
-            var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
-            var normalizedLevelId = NormalizeLevelId(levelId);
+            string normalizedReason = NormalizeReason(reason, DefaultSelectReason);
+            string normalizedLevelId = NormalizeLevelId(levelId);
             if (normalizedLevelId.Length == 0)
             {
                 DebugUtility.Log<LevelSessionService>(
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         public bool SelectNext(string reason)
         {
-            var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
+            string normalizedReason = NormalizeReason(reason, DefaultSelectReason);
             if (string.IsNullOrWhiteSpace(SelectedLevelId))
             {
                 DebugUtility.Log<LevelSessionService>(
@@ -122,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         public bool SelectPrevious(string reason)
         {
-            var normalizedReason = NormalizeReason(reason, DefaultSelectReason);
+            string normalizedReason = NormalizeReason(reason, DefaultSelectReason);
             if (string.IsNullOrWhiteSpace(SelectedLevelId))
             {
                 DebugUtility.Log<LevelSessionService>(
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return false;
             }
 
-            var previousId = ResolvePreviousLevelId(SelectedLevelId);
+            string previousId = ResolvePreviousLevelId(SelectedLevelId);
             if (string.IsNullOrWhiteSpace(previousId))
             {
                 DebugUtility.Log<LevelSessionService>(
@@ -167,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         public bool ApplySelected(string reason)
         {
-            var normalizedReason = NormalizeReason(reason, DefaultApplyReason);
+            string normalizedReason = NormalizeReason(reason, DefaultApplyReason);
 
             DebugUtility.Log<LevelSessionService>(
                 $"[OBS][Level] ApplyRequested levelId='{SelectedPlan.LevelId}' contentId='{SelectedPlan.ContentId}' selectedLevelId='{SelectedPlan.LevelId}' selectedContentId='{SelectedPlan.ContentId}' appliedLevelId='{AppliedPlan.LevelId}' appliedContentId='{AppliedPlan.ContentId}' reason='{normalizedReason}'.",
@@ -295,7 +295,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                         continue;
                     }
 
-                    var id = NormalizeLevelId(definition.LevelId);
+                    string id = NormalizeLevelId(definition.LevelId);
                     if (id.Length == 0)
                     {
                         continue;
@@ -316,9 +316,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return;
             }
 
-            foreach (var entry in levels)
+            foreach (string? entry in levels)
             {
-                var id = NormalizeLevelId(entry);
+                string id = NormalizeLevelId(entry);
                 if (id.Length == 0)
                 {
                     continue;
@@ -342,7 +342,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return false;
             }
 
-            foreach (var levelId in _orderedLevels)
+            foreach (string? levelId in _orderedLevels)
             {
                 if (_resolver.TryResolvePlan(levelId, out plan, out options))
                 {
@@ -362,7 +362,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return string.Empty;
             }
 
-            var normalized = NormalizeLevelId(currentLevelId);
+            string normalized = NormalizeLevelId(currentLevelId);
             if (normalized.Length == 0)
             {
                 return string.Empty;

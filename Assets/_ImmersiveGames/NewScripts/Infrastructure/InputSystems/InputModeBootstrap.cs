@@ -3,8 +3,9 @@
  * - Menu/UI deve funcionar via EventSystem + InputSystemUIInputModule (sem PlayerInput global).
  * - PlayerInput deve existir apenas em objetos de jogador (spawnados), especialmente pensando em multiplayer.
  */
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems

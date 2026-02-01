@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using UnityEngine.SceneManagement;
 

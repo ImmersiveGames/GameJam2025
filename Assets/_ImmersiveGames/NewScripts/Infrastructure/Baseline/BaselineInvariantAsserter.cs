@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
@@ -262,7 +262,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
 
         private void OnStarted(SceneTransitionStartedEvent evt)
         {
-            var sig = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string sig = SceneTransitionSignatureUtil.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
             if (state.Started && !state.Completed)
@@ -290,7 +290,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
 
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            var sig = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string sig = SceneTransitionSignatureUtil.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
             if (!state.Started)
@@ -308,7 +308,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
 
         private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
         {
-            var rawSig = evt.ContextSignature ?? string.Empty;
+            string rawSig = evt.ContextSignature ?? string.Empty;
             if (string.IsNullOrWhiteSpace(rawSig))
             {
                 Fail("<missing-signature>", "I3",
@@ -319,7 +319,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
                 rawSig = "<missing-signature>";
             }
 
-            var sig = rawSig;
+            string sig = rawSig;
             var state = GetOrCreate(sig);
 
             if (state.ResetCompleted)
@@ -349,7 +349,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
 
         private void OnBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
-            var sig = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string sig = SceneTransitionSignatureUtil.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
             if (!state.ScenesReady)
@@ -372,7 +372,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
 
         private void OnCompleted(SceneTransitionCompletedEvent evt)
         {
-            var sig = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string sig = SceneTransitionSignatureUtil.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
             if (!state.ScenesReady)
@@ -539,10 +539,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
 
         private static void Fail(string signature, string invariantId, string message, string contextText, string extra = null)
         {
-            var ctx = string.IsNullOrWhiteSpace(contextText) ? "<no-context>" : contextText;
-            var extraText = string.IsNullOrWhiteSpace(extra) ? string.Empty : $" extra={extra}";
+            string ctx = string.IsNullOrWhiteSpace(contextText) ? "<no-context>" : contextText;
+            string extraText = string.IsNullOrWhiteSpace(extra) ? string.Empty : $" extra={extra}";
 
-            var full = $"[Baseline][FAIL] {invariantId} signature='{signature}': {message} ctx={ctx}{extraText}";
+            string full = $"[Baseline][FAIL] {invariantId} signature='{signature}': {message} ctx={ctx}{extraText}";
 
             DebugUtility.LogError<BaselineInvariantAsserter>(full);
 

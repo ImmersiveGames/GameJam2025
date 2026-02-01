@@ -1,5 +1,5 @@
 #nullable enable
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.IntroStage
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             {
                 _instance = existing;
                 DebugUtility.Log<IntroStageQaInstaller>(
-                    "[QA][IntroStage] QA_IntroStage já presente; instalação ignorada.",
+                    "[QA][IntroStageController] QA_IntroStage já presente; instalação ignorada.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
                 _instance = go.AddComponent<IntroStageQaInstaller>();
 
                 DebugUtility.Log<IntroStageQaInstaller>(
-                    "[QA][IntroStage] IntroStageQaContextMenu instalado (DontDestroyOnLoad).",
+                    "[QA][IntroStageController] IntroStageQaContextMenu instalado (DontDestroyOnLoad).",
                     DebugUtility.Colors.Info);
 
                 EnsureContextMenu(go);
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             catch (System.Exception ex)
             {
                 DebugUtility.LogWarning<IntroStageQaInstaller>(
-                    $"[QA][IntroStage] Falha ao instalar IntroStageQaContextMenu. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStageController] Falha ao instalar IntroStageQaContextMenu. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
 
         private static IntroStageQaInstaller? FindExistingInstaller()
         {
-            var installers = FindObjectsByType<IntroStageQaInstaller>(FindObjectsSortMode.None);
+            IntroStageQaInstaller[]? installers = FindObjectsByType<IntroStageQaInstaller>(FindObjectsSortMode.None);
             if (installers == null || installers.Length == 0)
             {
                 return null;
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             if (go == null)
             {
                 DebugUtility.LogWarning<IntroStageQaInstaller>(
-                    "[QA][IntroStage] QA_IntroStage não disponível; ContextMenu não pode ser anexado.");
+                    "[QA][IntroStageController] QA_IntroStage não disponível; ContextMenu não pode ser anexado.");
                 return;
             }
 
@@ -74,12 +74,12 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             {
                 go.AddComponent<IntroStageQaContextMenu>();
                 DebugUtility.Log<IntroStageQaInstaller>(
-                    "[QA][IntroStage] IntroStageQaContextMenu ausente; componente adicionado.",
+                    "[QA][IntroStageController] IntroStageQaContextMenu ausente; componente adicionado.",
                     DebugUtility.Colors.Info);
             }
 
             DebugUtility.Log<IntroStageQaInstaller>(
-                "[QA][IntroStage] Para acessar o ContextMenu, selecione o GameObject 'QA_IntroStage' no Hierarchy (DontDestroyOnLoad).",
+                "[QA][IntroStageController] Para acessar o ContextMenu, selecione o GameObject 'QA_IntroStage' no Hierarchy (DontDestroyOnLoad).",
                 DebugUtility.Colors.Info);
         }
     }

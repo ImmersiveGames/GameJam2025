@@ -12,14 +12,14 @@ namespace _ImmersiveGames.NewScripts.QA.Editor
         {
             if (!Application.isPlaying)
             {
-                Debug.LogWarning("[QA][IntroStage] Selecao requer Play Mode.");
+                Debug.LogWarning("[QA][IntroStageController] Selecao requer Play Mode.");
                 return;
             }
 
             var go = GameObject.Find(QaGameObjectName);
             if (go == null)
             {
-                Debug.LogWarning("[QA][IntroStage] QA_IntroStage nao encontrado. Verifique o log de instalacao do QA.");
+                Debug.LogWarning("[QA][IntroStageController] QA_IntroStage nao encontrado. Verifique o log de instalacao do QA.");
                 return;
             }
 

@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
         public bool TryGetDefinition(string levelId, out LevelDefinition definition)
         {
             definition = null;
-            var normalized = Normalize(levelId);
+            string normalized = Normalize(levelId);
             if (normalized.Length == 0)
             {
                 return false;
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
         public bool TryResolveNextLevelId(string levelId, out string nextLevelId)
         {
             nextLevelId = string.Empty;
-            var normalized = Normalize(levelId);
+            string normalized = Normalize(levelId);
             if (normalized.Length == 0)
             {
                 return false;
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
                 return true;
             }
 
-            var fallbackOrdered = ExtractDefinitionOrder();
+            List<string> fallbackOrdered = ExtractDefinitionOrder();
             if (TryResolveOrdered(fallbackOrdered, normalized, out nextLevelId))
             {
                 return true;
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
                     continue;
                 }
 
-                var candidate = Normalize(def.LevelId);
+                string candidate = Normalize(def.LevelId);
                 if (candidate.Length > 0)
                 {
                     resolvedLevelId = candidate;
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
 
             for (int index = 0; index < list.Count; index++)
             {
-                var entry = Normalize(list[index]);
+                string entry = Normalize(list[index]);
                 if (!string.Equals(entry, normalizedLevelId, StringComparison.Ordinal))
                 {
                     continue;
@@ -173,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs
                     continue;
                 }
 
-                var id = Normalize(def.LevelId);
+                string id = Normalize(def.LevelId);
                 if (id.Length > 0)
                 {
                     list.Add(id);

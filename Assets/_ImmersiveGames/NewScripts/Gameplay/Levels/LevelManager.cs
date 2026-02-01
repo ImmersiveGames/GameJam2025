@@ -2,8 +2,8 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return;
             }
 
-            var normalizedReason = NormalizeReason(reason);
+            string normalizedReason = NormalizeReason(reason);
             var normalizedOptions = NormalizeOptions(options);
 
             DebugUtility.Log<LevelManager>(
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return "LevelChange/GoTo";
             }
 
-            var trimmed = reason.Trim();
+            string trimmed = reason.Trim();
             if (trimmed.StartsWith(LevelChangePrefix, StringComparison.Ordinal)
                 || trimmed.StartsWith(QaLevelPrefix, StringComparison.Ordinal))
             {

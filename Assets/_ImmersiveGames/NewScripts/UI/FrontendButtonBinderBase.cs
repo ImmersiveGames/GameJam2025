@@ -1,8 +1,8 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.UI
 {
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.UI
             }
 
             _ignoreClicksUntilUnscaledTime = Mathf.Max(_ignoreClicksUntilUnscaledTime, Time.unscaledTime + seconds);
-            var buttonName = button != null ? button.name : "<null>";
+            string buttonName = button != null ? button.name : "<null>";
 
             DebugUtility.LogVerbose<FrontendButtonBinderBase>(
                 $"[FrontendButton] Click-guard armado por {seconds:0.000}s (label='{label}', go='{gameObject.name}', btn='{buttonName}').",

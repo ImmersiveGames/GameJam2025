@@ -8,10 +8,10 @@
  */
 
 using System;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
 {
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
 
         private void OnExitToMenuRequested(GameExitToMenuRequestedEvent evt)
         {
-            var reason = evt?.Reason ?? "<null>";
+            string reason = evt?.Reason ?? "<null>";
             DebugUtility.LogVerbose<GamePauseGateBridge>(
                 $"[PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge). reason='{reason}'.");
             ReleasePauseGate(ReasonExitToMenuRequested);

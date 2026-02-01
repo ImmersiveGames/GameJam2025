@@ -1,24 +1,23 @@
 #nullable enable
 using System;
 using System.Collections;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
+namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 {
     /// <summary>
     /// QA helper para:
-    /// - Disparar IntroStage manualmente (sem depender do SceneFlow).
-    /// - Forçar Complete/Skip da IntroStage (o gatilho canônico que destrava o gameplay).
+    /// - Disparar IntroStageController manualmente (sem depender do SceneFlow).
+    /// - Forçar Complete/Skip da IntroStageController (o gatilho canônico que destrava o gameplay).
     /// - (Opcional) Auto-Complete com delay usando Coroutine (main thread), evitando Task/threads.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class IntroStageQATester : MonoBehaviour
     {
-        [Header("Run IntroStage QA")]
+        [Header("Run IntroStageController QA")]
         [SerializeField] private string qaSignature = "qa.introstage";
         [SerializeField] private string qaReason = "QA/IntroStageOptional";
 
@@ -27,18 +26,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private Coroutine? _autoCompleteRoutine;
 
-        [ContextMenu("QA/IntroStage/Run Optional (TestCase: IntroStageOptional)")]
+        [ContextMenu("QA/IntroStageController/Run Optional (TestCase: IntroStageOptional)")]
         private async void QA_RunIntroStageOptional()
         {
             var coordinator = ResolveCoordinator();
             if (coordinator == null)
             {
                 DebugUtility.LogWarning<IntroStageQATester>(
-                    "[QA][IntroStage] IIntroStageCoordinator não encontrado no DI global.");
+                    "[QA][IntroStageController] IIntroStageCoordinator não encontrado no DI global.");
                 return;
             }
 
-            var activeScene = SceneManager.GetActiveScene().name;
+            string? activeScene = SceneManager.GetActiveScene().name;
             var context = new IntroStageContext(
                 contextSignature: qaSignature,
                 profileId: SceneFlowProfileId.Gameplay,
@@ -48,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             try
             {
                 DebugUtility.Log<IntroStageQATester>(
-                    $"[QA][IntroStage] RunIntroStageOptional solicitado. signature='{qaSignature}' scene='{activeScene}'.",
+                    $"[QA][IntroStageController] RunIntroStageOptional solicitado. signature='{qaSignature}' scene='{activeScene}'.",
                     DebugUtility.Colors.Info);
 
                 await coordinator.RunIntroStageAsync(context);
@@ -56,11 +55,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<IntroStageQATester>(
-                    $"[QA][IntroStage] Falha ao executar IntroStage QA. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStageController] Falha ao executar IntroStageController QA. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
-        [ContextMenu("QA/IntroStage/Complete Active (Force)")]
+        [ContextMenu("QA/IntroStageController/Complete Active (Force)")]
         private void QA_CompleteActiveIntroStage_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -69,17 +68,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (control == null)
             {
                 DebugUtility.LogWarning<IntroStageQATester>(
-                    "[QA][IntroStage] IIntroStageControlService não encontrado no DI global; Complete ignorado.");
+                    "[QA][IntroStageController] IIntroStageControlService não encontrado no DI global; Complete ignorado.");
                 return;
             }
 
             control.CompleteIntroStage("QA/IntroStageQATester/Complete");
             DebugUtility.Log<IntroStageQATester>(
-                "[QA][IntroStage] CompleteIntroStage solicitado (Force).",
+                "[QA][IntroStageController] CompleteIntroStage solicitado (Force).",
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/IntroStage/Skip Active (Force)")]
+        [ContextMenu("QA/IntroStageController/Skip Active (Force)")]
         private void QA_SkipActiveIntroStage_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -88,17 +87,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (control == null)
             {
                 DebugUtility.LogWarning<IntroStageQATester>(
-                    "[QA][IntroStage] IIntroStageControlService não encontrado no DI global; Skip ignorado.");
+                    "[QA][IntroStageController] IIntroStageControlService não encontrado no DI global; Skip ignorado.");
                 return;
             }
 
             control.SkipIntroStage("QA/IntroStageQATester/Skip");
             DebugUtility.Log<IntroStageQATester>(
-                "[QA][IntroStage] SkipIntroStage solicitado (Force).",
+                "[QA][IntroStageController] SkipIntroStage solicitado (Force).",
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/IntroStage/Auto-Complete in 0.5s (Force)")]
+        [ContextMenu("QA/IntroStageController/Auto-Complete in 0.5s (Force)")]
         private void QA_AutoCompleteActiveIntroStage_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -107,9 +106,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private IEnumerator AutoCompleteRoutine()
         {
-            var delay = Mathf.Max(0f, autoCompleteDelaySeconds);
+            float delay = Mathf.Max(0f, autoCompleteDelaySeconds);
             DebugUtility.Log<IntroStageQATester>(
-                $"[QA][IntroStage] Auto-Complete agendado. delay='{delay:0.###}s'.",
+                $"[QA][IntroStageController] Auto-Complete agendado. delay='{delay:0.###}s'.",
                 DebugUtility.Colors.Info);
 
             yield return new WaitForSecondsRealtime(delay);
@@ -118,14 +117,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (control == null)
             {
                 DebugUtility.LogWarning<IntroStageQATester>(
-                    "[QA][IntroStage] IIntroStageControlService indisponível; Auto-Complete abortado.");
+                    "[QA][IntroStageController] IIntroStageControlService indisponível; Auto-Complete abortado.");
                 _autoCompleteRoutine = null;
                 yield break;
             }
 
             control.CompleteIntroStage("QA/IntroStageQATester/AutoComplete");
             DebugUtility.Log<IntroStageQATester>(
-                "[QA][IntroStage] Auto-Complete executado (CompleteIntroStage).",
+                "[QA][IntroStageController] Auto-Complete executado (CompleteIntroStage).",
                 DebugUtility.Colors.Info);
 
             _autoCompleteRoutine = null;

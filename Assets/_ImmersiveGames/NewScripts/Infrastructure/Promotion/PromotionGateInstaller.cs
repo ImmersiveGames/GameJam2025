@@ -1,9 +1,8 @@
 // Assets/_ImmersiveGames/NewScripts/Infrastructure/Promotion/PromotionGateInstaller.cs
 #nullable enable
 
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Promotion
 {
     public static class PromotionGateInstaller

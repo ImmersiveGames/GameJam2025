@@ -22,27 +22,27 @@
  * - Arquivo reordenado por seções (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.
  */
 using System;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Ids;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.Levels;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
+using _ImmersiveGames.NewScripts.Gameplay.WorldLifecycle;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
 using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gameplay;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
-using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
-using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Bridges.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
@@ -52,7 +52,7 @@ using _ImmersiveGames.NewScripts.QA.ContentSwap;
 using _ImmersiveGames.NewScripts.QA.Levels;
 using _ImmersiveGames.NewScripts.QA.SceneFlow;
 using UnityEngine;
-using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
+using IUniqueIdFactory = _ImmersiveGames.NewScripts.Core.Ids.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterRuntimePolicyServices();
 
-            RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
+            RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
             // Resolve ISimulationGateService UMA vez para os consumidores (reduz repetição de TryGetGlobal).
@@ -172,6 +172,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterSceneFlowSignatureCache();
 
             RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
+            RegisterIfMissing(() => new ResetWorldService());
+            RegisterIfMissing<IResetWorldService>(() => new ResetWorldService());
             RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
 
 
@@ -498,7 +500,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[IntroStage] IIntroStageCoordinator já registrado no DI global.",
+                    "[IntroStageController] IIntroStageCoordinator já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -507,7 +509,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 new IntroStageCoordinator());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[IntroStage] IntroStageCoordinator registrado no DI global.",
+                "[IntroStageController] IntroStageCoordinator registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -516,7 +518,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[IntroStage] IIntroStageControlService já registrado no DI global.",
+                    "[IntroStageController] IIntroStageControlService já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -525,7 +527,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 new IntroStageControlService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[IntroStage] IntroStageControlService registrado no DI global.",
+                "[IntroStageController] IntroStageControlService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -534,7 +536,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IIntroStagePolicyResolver>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[IntroStage] IIntroStagePolicyResolver já registrado no DI global.",
+                    "[IntroStageController] IIntroStagePolicyResolver já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -547,7 +549,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 new DefaultIntroStagePolicyResolver(classifier));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[IntroStage] DefaultIntroStagePolicyResolver registrado no DI global.",
+                "[IntroStageController] DefaultIntroStagePolicyResolver registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -574,7 +576,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageStep>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[IntroStage] IIntroStageStep já registrado no DI global.",
+                    "[IntroStageController] IIntroStageStep já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -583,7 +585,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 new ConfirmToStartIntroStageStep());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[IntroStage] ConfirmToStartIntroStageStep registrado no DI global.",
+                "[IntroStageController] ConfirmToStartIntroStageStep registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -651,30 +653,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[SceneFlow] SceneFlowSignatureCache registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterWorldResetRequestService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[WorldLifecycle] IWorldResetRequestService já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var resetService) || resetService == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[WorldLifecycle] IWorldResetRequestService não disponível após registrar WorldLifecycleRuntimeCoordinator.");
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal(resetService);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[WorldLifecycle] IWorldResetRequestService registrado no DI global (via WorldLifecycleRuntimeCoordinator).",
                 DebugUtility.Colors.Info);
         }
 
@@ -770,7 +748,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[QA][IntroStage] Falha ao instalar IntroStageQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStageController] Falha ao instalar IntroStageQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

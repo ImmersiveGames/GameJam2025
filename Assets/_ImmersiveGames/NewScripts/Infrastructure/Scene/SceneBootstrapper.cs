@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks.QA;

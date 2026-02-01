@@ -3,7 +3,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 {
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
                 return Task.CompletedTask;
             }
 
-            var normalizedReason = NormalizeReason(reason);
+            string normalizedReason = NormalizeReason(reason);
 
             DebugUtility.Log<ContentSwapChangeServiceInPlaceOnly>(
                 $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode={ContentSwapMode.InPlace} contentId='{plan.ContentId}' reason='{normalizedReason}'",
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
         private static string NormalizeReason(string reason)
         {
-            var sanitized = Sanitize(reason);
+            string sanitized = Sanitize(reason);
             return string.Equals(sanitized, "n/a", StringComparison.Ordinal)
                 ? "ContentSwap/InPlaceOnly"
                 : sanitized;

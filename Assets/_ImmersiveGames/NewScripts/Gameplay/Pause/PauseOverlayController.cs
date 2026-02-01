@@ -11,10 +11,10 @@
  * - Ao reagir a eventos, o overlay NÃO republica eventos (evita loop).
  */
 
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using UnityEngine;
 
@@ -115,8 +115,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
         {
             // Safety net: se o controller sumir enquanto overlay estava ativo, publica Resume para não deixar pausa “presa”.
             // (Só faz sentido para teardown/disable inesperado do controller.)
-            if (overlayRoot == null) return;
-            if (!overlayRoot.activeSelf) return;
+            if (overlayRoot == null)
+            {
+                return;
+            }
+            if (!overlayRoot.activeSelf)
+            {
+                return;
+            }
 
             overlayRoot.SetActive(false);
 
@@ -148,7 +154,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
 
             // UI local primeiro (idempotente)
             if (!TrySetOverlayActive(true))
+            {
                 return;
+            }
 
             // Publica intenção/comando
             EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
@@ -168,7 +176,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             EnsureDependenciesInjected();
 
             if (!TrySetOverlayActive(false))
+            {
                 return;
+            }
 
             EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
             DebugUtility.LogVerbose(typeof(PauseOverlayController),
@@ -212,8 +222,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             EnsureDependenciesInjected();
 
             bool isActive = overlayRoot != null && overlayRoot.activeSelf;
-            if (isActive) Hide();
-            else Show();
+            if (isActive)
+            {
+                Hide();
+            }
+            else
+            {
+                Show();
+            }
         }
 
         // =========================
@@ -307,7 +323,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             EnsureDependenciesInjected();
 
             if (!TrySetOverlayActive(true))
+            {
                 return;
+            }
 
             DebugUtility.LogVerbose(typeof(PauseOverlayController),
                 $"[PauseOverlay] ShowLocal (reason='{reason}').",
@@ -327,7 +345,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
 
             // Idempotente: se já estiver oculto, não faz barulho.
             if (overlayRoot != null && !overlayRoot.activeSelf)
+            {
                 return;
+            }
 
             TrySetOverlayActive(false);
 
@@ -373,10 +393,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
 
         private void EnsureDependenciesInjected()
         {
-            if (_dependenciesInjected) return;
+            if (_dependenciesInjected)
+            {
+                return;
+            }
 
             var provider = DependencyManager.Provider;
-            if (provider == null) return;
+            if (provider == null)
+            {
+                return;
+            }
 
             try
             {

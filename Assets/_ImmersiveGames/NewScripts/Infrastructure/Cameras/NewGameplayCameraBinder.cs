@@ -5,8 +5,8 @@
  * - Garantido desregistro também em OnDestroy (cobre casos de teardown/Domain reload).
  */
 
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
 
             if (DependencyManager.Provider.TryGetGlobal(out _resolver) && _resolver != null)
             {
-                var message = _warnedMissingResolver
+                string message = _warnedMissingResolver
                     ? $"ICameraResolver resolvido após indisponibilidade em {context}."
                     : $"ICameraResolver resolved in {context}.";
 

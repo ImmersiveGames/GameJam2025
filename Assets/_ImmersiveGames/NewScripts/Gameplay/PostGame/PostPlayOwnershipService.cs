@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 
@@ -124,9 +124,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 return;
             }
 
-            var applyGameplay = context.NextState == "Playing";
-            var modeName = applyGameplay ? "Gameplay" : "FrontendMenu";
-            var mapName = applyGameplay ? "Player" : "UI";
+            bool applyGameplay = context.NextState == "Playing";
+            string modeName = applyGameplay ? "Gameplay" : "FrontendMenu";
+            string mapName = applyGameplay ? "Player" : "UI";
 
             DebugUtility.Log<PostPlayOwnershipService>(
                 $"[OBS][InputMode] Apply mode='{modeName}' map='{mapName}' phase='PostPlayExit' reason='PostPlay/{context.Reason}' " +

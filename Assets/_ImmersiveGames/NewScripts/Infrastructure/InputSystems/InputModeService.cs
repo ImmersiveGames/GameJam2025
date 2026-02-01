@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Object = UnityEngine.Object;
@@ -36,9 +36,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
         private void ApplyMode(InputMode mode, string reason)
         {
-            var resolvedReason = string.IsNullOrWhiteSpace(reason) ? "InputMode/Unknown" : reason;
+            string resolvedReason = string.IsNullOrWhiteSpace(reason) ? "InputMode/Unknown" : reason;
 
-            var isRepeat = _currentMode == mode;
+            bool isRepeat = _currentMode == mode;
             _currentMode = mode;
 
             if (isRepeat)
@@ -55,10 +55,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             }
 
             // Menu/Pause = UI map. Gameplay = Player map.
-            var targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
+            string targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
 
             // Multiplayer-safe: aplica em todos os PlayerInput ativos.
-            var inputs = FindActivePlayerInputs();
+            PlayerInput[] inputs = FindActivePlayerInputs();
             if (inputs.Length == 0)
             {
                 DebugUtility.LogVerbose<InputModeService>(
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
         {
             // Inclui inativos; filtramos por activeInHierarchy.
             // FindObjectsOfType(true) funciona em versões mais antigas do Unity.
-            var all = Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
+            PlayerInput[] all = Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
             if (all == null || all.Length == 0)
             {
                 return Array.Empty<PlayerInput>();

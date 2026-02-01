@@ -1,11 +1,11 @@
 // Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/LevelManagerInstaller.cs
 
 #nullable enable
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels

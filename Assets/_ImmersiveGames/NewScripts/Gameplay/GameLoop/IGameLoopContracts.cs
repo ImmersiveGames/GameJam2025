@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         Boot,
         Ready,
         /// <summary>
-        /// Fase opcional antes do gameplay jogável (IntroStage/PostReveal).
+        /// Fase opcional antes do gameplay jogável (IntroStageController/PostReveal).
         /// </summary>
         IntroStage,
         Playing,

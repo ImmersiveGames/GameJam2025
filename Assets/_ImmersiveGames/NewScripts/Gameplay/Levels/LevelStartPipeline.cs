@@ -1,9 +1,10 @@
 #nullable enable
 using System;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine.SceneManagement;
 
@@ -39,16 +40,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             if (coordinator == null)
             {
                 DebugUtility.LogWarning(typeof(LevelStartPipeline),
-                    "[LevelStart] IIntroStageCoordinator indisponível; IntroStage não será executada.");
+                    "[LevelStart] IIntroStageCoordinator indisponível; IntroStageController não será executada.");
                 return;
             }
 
-            var targetScene = string.IsNullOrWhiteSpace(request.TargetScene)
+            string? targetScene = string.IsNullOrWhiteSpace(request.TargetScene)
                 ? SceneManager.GetActiveScene().name
                 : request.TargetScene.Trim();
 
             DebugUtility.Log(typeof(LevelStartPipeline),
-                $"[OBS][ContentSwap] LevelStartPipeline -> IntroStage. contentId='{request.ContentId}' signature='{request.ContextSignature}' " +
+                $"[OBS][ContentSwap] LevelStartPipeline -> IntroStageController. contentId='{request.ContentId}' signature='{request.ContextSignature}' " +
                 $"scene='{targetScene}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
@@ -65,17 +66,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(LevelStartPipeline),
-                    $"[LevelStart] Falha ao executar IntroStage. contentId='{request.ContentId}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[LevelStart] Falha ao executar IntroStageController. contentId='{request.ContentId}', ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
         private static async Task EnsureLoopReadyAsync(IGameLoopService gameLoop, LevelStartRequest request)
         {
-            var stateBefore = gameLoop.CurrentStateIdName ?? string.Empty;
+            string stateBefore = gameLoop.CurrentStateIdName ?? string.Empty;
             if (ShouldRequestReady(stateBefore))
             {
                 DebugUtility.LogVerbose(typeof(LevelStartPipeline),
-                    $"[LevelStart] RequestReady antes da IntroStage. state='{stateBefore}' contentId='{request.ContentId}'.");
+                    $"[LevelStart] RequestReady antes da IntroStageController. state='{stateBefore}' contentId='{request.ContentId}'.");
                 gameLoop.RequestReady();
             }
 
@@ -85,9 +86,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             }
 
             // Observação: para troca de conteúdo, o GameLoop pode permanecer em 'Playing' sem transitar para 'Ready'.
-            // A IntroStage já bloqueia a simulação via gate próprio, então não faz sentido aguardar longamente.
+            // A IntroStageController já bloqueia a simulação via gate próprio, então não faz sentido aguardar longamente.
             // Aguardamos apenas uma janela curta para permitir transições assíncronas, e então prosseguimos.
-            var graceStart = Environment.TickCount;
+            int graceStart = Environment.TickCount;
             while (Environment.TickCount - graceStart < ReadyWaitGraceMs)
             {
                 await Task.Delay(ReadyWaitStepMs);
@@ -97,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 }
             }
 
-            var stateAfterGrace = gameLoop.CurrentStateIdName ?? string.Empty;
+            string stateAfterGrace = gameLoop.CurrentStateIdName ?? string.Empty;
             if (ShouldRequestReady(stateBefore) && ShouldRequestReady(stateAfterGrace))
             {
                 DebugUtility.LogVerbose(typeof(LevelStartPipeline),
@@ -106,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             }
 
             // Fallback: em casos inesperados (ex.: estados intermediários), mantém o comportamento de espera total.
-            var start = Environment.TickCount;
+            int start = Environment.TickCount;
             while (Environment.TickCount - start < ReadyWaitTimeoutMs)
             {
                 await Task.Delay(ReadyWaitStepMs);

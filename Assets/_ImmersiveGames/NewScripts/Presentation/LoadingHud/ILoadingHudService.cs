@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
+namespace _ImmersiveGames.NewScripts.Presentation.LoadingHud
 {
     /// <summary>
     /// Serviço mínimo para o HUD de loading do Scene Flow (NewScripts).

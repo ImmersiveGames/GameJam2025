@@ -1,7 +1,7 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_QA
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Reset

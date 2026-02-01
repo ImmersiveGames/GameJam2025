@@ -6,7 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
             _defaultCamera = nextDefault;
             OnDefaultCameraChanged?.Invoke(_defaultCamera);
 
-            var description = nextDefault == null ? "null" : nextDefault.name;
+            string description = nextDefault == null ? "null" : nextDefault.name;
 
             DebugUtility.LogVerbose<CameraResolverService>(
                 $"Default camera updated to {description} (playerId=0).",

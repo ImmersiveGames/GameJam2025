@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             set => contentSwapOptions = value;
         }
 
-        public static LevelChangeOptions Default => new LevelChangeOptions();
+        public static LevelChangeOptions Default => new();
 
         public LevelChangeOptions Clone()
         {

@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
@@ -81,8 +81,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            var stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
-            var isInActiveGameplay = string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
+            string stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
+            bool isInActiveGameplay = string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
 
             if (!isInActiveGameplay)
             {

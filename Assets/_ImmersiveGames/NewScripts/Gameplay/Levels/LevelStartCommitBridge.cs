@@ -2,11 +2,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine.SceneManagement;
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
 
             DebugUtility.LogVerbose<LevelStartCommitBridge>(
-                "[LevelStart] Bridge registrado (ContentSwapCommittedEvent -> LevelChange/IntroStage pipeline).",
+                "[LevelStart] Bridge registrado (ContentSwapCommittedEvent -> LevelChange/IntroStageController pipeline).",
                 DebugUtility.Colors.Info);
         }
 
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         /// <summary>
         /// Indica se existe um pipeline pendente para esta assinatura de transição.
-        /// Usado para evitar disparo duplicado de IntroStage (SceneFlow/Completed + ContentSwapCommitted/pendente).
+        /// Usado para evitar disparo duplicado de IntroStageController (SceneFlow/Completed + ContentSwapCommitted/pendente).
         /// </summary>
         public bool HasPendingFor(string contextSignature)
         {
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return false;
             }
 
-            var verifiableSig = NormalizeVerifiableSignature(contextSignature);
+            string verifiableSig = NormalizeVerifiableSignature(contextSignature);
 
             if (verifiableSig.Length == 0 || _pendingSignature.Length == 0)
             {
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
         }
 
         /// <summary>
-        /// Indica se o pipeline pendente deve suprimir a IntroStage para esta assinatura concluída.
+        /// Indica se o pipeline pendente deve suprimir a IntroStageController para esta assinatura concluída.
         /// </summary>
         public bool ShouldSuppressIntroStage(string completedSignature)
         {
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return true;
             }
 
-            var verifiableSig = NormalizeVerifiableSignature(completedSignature);
+            string verifiableSig = NormalizeVerifiableSignature(completedSignature);
             if (verifiableSig.Length == 0)
             {
                 return false;
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
         /// <summary>
         /// Indica se a assinatura concluída pertence a um ContentSwap (não-Levels).
-        /// Usado para evitar IntroStage no fluxo de ContentSwap com SceneFlow.
+        /// Usado para evitar IntroStageController no fluxo de ContentSwap com SceneFlow.
         /// </summary>
         public bool IsContentSwapSignature(string completedSignature)
         {
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return false;
             }
 
-            var verifiableSig = NormalizeVerifiableSignature(completedSignature);
+            string verifiableSig = NormalizeVerifiableSignature(completedSignature);
             if (verifiableSig.Length == 0 || _lastCommitSignature.Length == 0)
             {
                 return false;
@@ -154,8 +154,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return;
             }
 
-            var reason = string.IsNullOrWhiteSpace(evt.Reason) ? "ContentSwap/Committed" : evt.Reason.Trim();
-            var signature = ResolveContextSignature(out var targetScene);
+            string reason = string.IsNullOrWhiteSpace(evt.Reason) ? "ContentSwap/Committed" : evt.Reason.Trim();
+            string signature = ResolveContextSignature(out string targetScene);
             CacheLastCommit(signature, reason);
 
             if (!ShouldHandleLevelChange(reason))
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 return;
             }
 
-            var contentSwapStartReason = $"LevelStart/Committed|contentId={evt.Current.ContentId}|reason={reason}";
+            string contentSwapStartReason = $"LevelStart/Committed|contentId={evt.Current.ContentId}|reason={reason}";
 
             if (!IsGameplaySceneOrTarget(targetScene))
             {
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
             if (IsSceneTransitionGateActive())
             {
-                var verifiableSig = NormalizeVerifiableSignature(signature);
+                string verifiableSig = NormalizeVerifiableSignature(signature);
 
                 if (_pendingRequest != null)
                 {
@@ -221,19 +221,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 // Isso evita o bug: "mantém pendente e nunca roda" por não existir segundo Completed.
                 if (IsSceneTransitionGateActive())
                 {
-                    var completedSignatureNow = SceneTransitionSignatureUtil.Compute(evt.Context);
+                    string? completedSignatureNow = SceneTransitionSignatureUtil.Compute(evt.Context);
 
                     DebugUtility.LogWarning<LevelStartCommitBridge>(
                         $"[LevelStart] TransitionCompleted observado, mas SceneTransition token ainda está ativo (provável ordering). " +
                         $"Aguardando liberação para executar pipeline pendente. completedSig='{completedSignatureNow}'.");
 
-                    var startTick = Environment.TickCount;
+                    int startTick = Environment.TickCount;
 
                     while (!_disposed && _pendingRequest != null && IsSceneTransitionGateActive())
                     {
                         await Task.Yield();
 
-                        var dt = unchecked(Environment.TickCount - startTick);
+                        int dt = unchecked(Environment.TickCount - startTick);
                         if (dt >= CompletedGateWaitTimeoutMs)
                         {
                             DebugUtility.LogWarning<LevelStartCommitBridge>(
@@ -252,7 +252,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
                 // Se não temos assinatura verificável, NUNCA descartamos por mismatch.
                 if (HasVerifiableSignature(_pendingSignature))
                 {
-                    var completedSignature = SceneTransitionSignatureUtil.Compute(evt.Context);
+                    string? completedSignature = SceneTransitionSignatureUtil.Compute(evt.Context);
                     if (!string.Equals(completedSignature, _pendingSignature, StringComparison.Ordinal))
                     {
                         DebugUtility.LogWarning<LevelStartCommitBridge>(
@@ -313,7 +313,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var cache) &&
                 cache != null &&
-                cache.TryGetLast(out var signature, out _, out var cachedTarget))
+                cache.TryGetLast(out string? signature, out _, out string? cachedTarget))
             {
                 if (!string.IsNullOrWhiteSpace(cachedTarget))
                 {

@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Infrastructure.Events;
+﻿using _ImmersiveGames.NewScripts.Core.Events;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -61,11 +61,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.Inputs
         private void Update()
         {
             if (!IsEscapePressedThisFrame())
+            {
                 return;
+            }
 
             // ESC só é Pause do jogador durante run ativa (Gameplay) e antes do final da run.
             if (!_runActive || _runEnded)
+            {
                 return;
+            }
 
             if (_paused)
             {

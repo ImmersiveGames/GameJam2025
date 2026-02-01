@@ -1,8 +1,8 @@
 // Assets/_ImmersiveGames/NewScripts/Infrastructure/Gameplay/GameCommands.cs
 
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 {
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 
         public void RequestVictory(string reason)
         {
-            var normalizedReason = NormalizeRequiredReason(reason);
+            string normalizedReason = NormalizeRequiredReason(reason);
 
             DebugUtility.Log(typeof(GameCommands),
                 $"[GameCommands] RequestVictory reason='{normalizedReason}'");
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 
         public void RequestDefeat(string reason)
         {
-            var normalizedReason = NormalizeRequiredReason(reason);
+            string normalizedReason = NormalizeRequiredReason(reason);
 
             DebugUtility.Log(typeof(GameCommands),
                 $"[GameCommands] RequestDefeat reason='{normalizedReason}'");
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 
         public void RequestRestart(string reason)
         {
-            var normalizedReason = NormalizeOptionalReason(reason, DefaultRestartReason);
+            string normalizedReason = NormalizeOptionalReason(reason, DefaultRestartReason);
 
             DebugUtility.Log(typeof(GameCommands),
                 $"[GameCommands] RequestRestart reason='{normalizedReason}'");
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gameplay
 
         public void RequestExitToMenu(string reason)
         {
-            var normalizedReason = NormalizeOptionalReason(reason, DefaultExitToMenuReason);
+            string normalizedReason = NormalizeOptionalReason(reason, DefaultExitToMenuReason);
 
             DebugUtility.Log(typeof(GameCommands),
                 $"[GameCommands] RequestExitToMenu reason='{normalizedReason}'");

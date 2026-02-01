@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Reset
@@ -80,26 +80,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         private static void AddAllActors(IActorRegistry actorRegistry, List<IActor> results)
         {
             if (actorRegistry.Actors == null)
+            {
                 return;
+            }
 
             foreach (var actor in actorRegistry.Actors)
             {
                 if (actor != null)
+                {
                     results.Add(actor);
+                }
             }
         }
 
         private static void AddByActorIdSet(GameplayResetRequest request, IActorRegistry actorRegistry, List<IActor> results)
         {
-            var ids = request.ActorIds;
+            IReadOnlyList<string> ids = request.ActorIds;
             if (ids == null || ids.Count == 0)
+            {
                 return;
+            }
 
             for (int i = 0; i < ids.Count; i++)
             {
-                var id = ids[i];
+                string id = ids[i];
                 if (string.IsNullOrWhiteSpace(id))
+                {
                     continue;
+                }
 
                 if (actorRegistry.TryGetActor(id, out var actor) && actor != null)
                 {
@@ -111,15 +119,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         private static void AddByActorKind(IActorRegistry actorRegistry, List<IActor> results, ActorKind kind)
         {
             if (actorRegistry.Actors == null)
+            {
                 return;
+            }
 
             if (kind == ActorKind.Unknown)
+            {
                 return;
+            }
 
             foreach (var actor in actorRegistry.Actors)
             {
                 if (actor == null)
+                {
                     continue;
+                }
 
                 if (TryGetActorKind(actor, out var actorKind) && actorKind == kind)
                 {
@@ -149,12 +163,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             fallbackUsed = false;
 
             if (actorRegistry.Actors == null)
+            {
                 return;
+            }
 
             foreach (var actor in actorRegistry.Actors)
             {
                 if (actor == null)
+                {
                     continue;
+                }
 
                 if (TryGetActorKind(actor, out var actorKind) && actorKind == ActorKind.Eater)
                 {
@@ -164,7 +182,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
                 var t = actor.Transform;
                 if (t == null)
+                {
                     continue;
+                }
 
                 // Mantém a feature funcional sem depender de um tipo compile-time.
                 // Quando existir um EaterActor concreto, isso passa a classificar corretamente.

@@ -2,11 +2,10 @@
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
-
-namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
+namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 {
     /// <summary>
-    /// Contexto mínimo para execução da IntroStage antes da revelação da cena.
+    /// Contexto mínimo para execução da IntroStageController antes da revelação da cena.
     /// </summary>
     public readonly struct IntroStageContext
     {
@@ -25,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
-    /// Política de execução da IntroStage.
+    /// Política de execução da IntroStageController.
     /// </summary>
     public enum IntroStagePolicy
     {
@@ -35,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
-    /// Resolve a política de execução da IntroStage para um contexto.
+    /// Resolve a política de execução da IntroStageController para um contexto.
     /// </summary>
     public interface IIntroStagePolicyResolver
     {
@@ -43,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
-    /// Passo de IntroStage (opcional). Deve concluir sem bloquear o fluxo.
+    /// Passo de IntroStageController (opcional). Deve concluir sem bloquear o fluxo.
     /// </summary>
     public interface IIntroStageStep
     {
@@ -52,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
-    /// Coordenador que executa a IntroStage usando o IIntroStageStep disponível.
+    /// Coordenador que executa a IntroStageController usando o IIntroStageStep disponível.
     /// </summary>
     public interface IIntroStageCoordinator
     {
@@ -60,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
-    /// Serviço global para controlar a conclusão da IntroStage via comando explícito.
+    /// Serviço global para controlar a conclusão da IntroStageController via comando explícito.
     /// </summary>
     public interface IIntroStageControlService
     {
@@ -72,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
-    /// Resultado final da IntroStage (com razão e indicação de skip).
+    /// Resultado final da IntroStageController (com razão e indicação de skip).
     /// </summary>
     public readonly struct IntroStageCompletionResult
     {

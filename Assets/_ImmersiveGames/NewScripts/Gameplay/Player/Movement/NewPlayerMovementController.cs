@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.Actions;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using UnityEngine;
@@ -416,7 +416,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private bool ShouldLogGateChange(bool isOpen)
         {
-            var frame = Time.frameCount;
+            int frame = Time.frameCount;
             if (_lastGateLogFrame == frame && _lastGateLogOpen == isOpen)
             {
                 return false;

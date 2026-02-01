@@ -2,10 +2,20 @@
 
 ## Status
 
-- Estado: Aceito
+- Estado: Em progresso (Implementação iniciada)
 - Data (decisão): 2025-12-24
 - Última atualização: 2026-02-01
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
+
+### Status de implementação
+
+- Implementação iniciada: 2026-02-01
+- Dono: (preencher)
+- Artefatos criados nesta etapa (stubs iniciais):
+  - `Infrastructure/Scene/SceneTransitionService.cs` (stub)
+  - `Gameplay/WorldLifecycle/ResetWorldService.cs` (stub)
+- `Gameplay/GameLoop/GameLoopManager.cs` (nova implementação mínima que substitui o stub legado)
+- `Gameplay/WorldLifecycle/README.md` (coordenação de próximas tarefas)
 
 ## Contexto
 
@@ -113,20 +123,37 @@ Principais pontos (NewScripts):
 - `GameplaySimulationBlocked` / `GameplaySimulationUnblocked`
 - `GameLoop ENTER Playing`
 
+- Observação adicional: todas as âncoras acima devem incluir `reason` e `contextSignature` no payload/log para garantir correlação entre evidências.
+
 ## Critérios de pronto (DoD)
 
 - [x] Invariantes descritos acima aparecem em logs canônicos (Baseline 2.x).
 - [x] Evidência datada com startup + gameplay e transições principais.
 - [x] `reason/contextSignature` presentes nas âncoras críticas (SceneFlow + ResetWorld).
+- [ ] Implementação do pipeline de `ResetWorld` (WorldLifecycle) — Em progresso
+- [ ] Integração do gatilho `ScenesReady` → `ResetWorld` (SceneFlow driver) — Em progresso
+- [ ] GameLoop (Intro/Playing/PostGame) com gates e sinais de observabilidade — Em progresso
 
-## Evidência
+## Notas de implementação
 
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot (PASS): `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
+Nesta etapa inicial (2026-02-01) foram adicionados stubs e documentação mínima para começar a implementação técnica do ADR-0013. O objetivo é criar pontos de integração claros para o trabalho incremental.
 
-## Referências
+O que foi criado (artefatos):
 
-- [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
-- [ADR-0010 — Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)
-- [`Standards.md`](../Standards/Standards.md)
-- [`Overview.md`](../Overview/Overview.md)
+- `Infrastructure/Scene/SceneTransitionService.cs` — stub com API inicial para publicar `ScenesReady` e `SceneTransition` anchors. Serve como ponto de integração para o envelope visual (ADR-0009/0010).
+- `Gameplay/WorldLifecycle/ResetWorldService.cs` — stub com assinatura para `ResetWorld(reason, contextSignature)` e eventos `ResetWorldStarted`/`ResetCompleted` (a implementar).
+- `Gameplay/GameLoop/GameLoop.cs` — stub descrevendo estados (Intro, Playing, PostGame) e pontos de bloqueio (`GameplaySimulationBlocked/Unblocked`).
+- `Gameplay/WorldLifecycle/README.md` — notas de coordenação e próximos passos.
+
+Próximos passos (curto prazo):
+
+1) Implementar publicação de `ScenesReady` (com `contextSignature`) no `SceneTransitionService` e garantir a correlação com o `signature` do envelope visual.
+2) Implementar `ResetWorld` pipeline (reset → spawn → rearm) no `ResetWorldService`, com publicação única de `ResetCompleted`.
+3) Implementar GameLoop IntroStage que bloqueia `sim.gameplay` até confirmação de UI; sinalizar `GameplaySimulationUnblocked` e entrar em `Playing`.
+4) Instrumentar logs/âncoras canônicas conforme `Standards.md#observability-contract`.
+5) Criar testes unitários e de integração que validem determinismo, ordering e idempotência.
+
+Critérios para mover para `Implementado`:
+- Testes de integração passarem e evidencia publicada em `Docs/Reports/Evidence/`.
+- Logs canônicos contendo `reason/contextSignature` para as âncoras críticas.
+- `ResetCompleted` comprovadamente publicado exatamente uma vez por reset.

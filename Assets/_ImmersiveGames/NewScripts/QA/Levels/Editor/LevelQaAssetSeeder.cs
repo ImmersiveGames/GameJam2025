@@ -4,9 +4,9 @@
 #nullable enable
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Definitions;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEditor;
 using UnityEngine;
 

@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
         /// <summary>
         /// Factory padrão usada pelo GameNavigationService quando nenhum catálogo é injetado.
         /// </summary>
-        public static GameNavigationCatalog CreateDefaultMinimal() => new GameNavigationCatalog();
+        public static GameNavigationCatalog CreateDefaultMinimal() => new();
 
         /// <summary>
         /// Resolve uma rota canônica em um <see cref="SceneTransitionRequest"/>.

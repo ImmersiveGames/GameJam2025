@@ -1,9 +1,9 @@
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
+using _ImmersiveGames.NewScripts.Presentation.LoadingHud;
+namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 {
     /// <summary>
     /// Serviço global para orquestrar HUD de loading durante o Scene Flow.

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
                 if (_targets.Count == 0)
                 {
-                    var msg = $"[GameplayReset] No targets resolved. request={normalized}";
+                    string msg = $"[GameplayReset] No targets resolved. request={normalized}";
 
                     if (_runtimeModeProvider != null && _runtimeModeProvider.IsStrict)
                     {
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             }
 
             var provider = DependencyManager.Provider;
-            var scene = GetEffectiveSceneName();
+            string scene = GetEffectiveSceneName();
 
             provider.TryGetForScene(scene, out _actorRegistry);
 
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
         private void CollectTargetsBySceneScan(GameplayResetRequest request)
         {
-            var behaviours = Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
+            MonoBehaviour[] behaviours = Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
             if (behaviours == null || behaviours.Length == 0)
             {
                 return;
@@ -266,7 +266,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 return;
             }
 
-            var actorId = actor.ActorId ?? string.Empty;
+            string actorId = actor.ActorId ?? string.Empty;
             _targets.Add(new ResetTarget(actorId, root, t));
         }
 
@@ -282,9 +282,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
         private async Task ResetOneTargetAsync(ResetTarget target, GameplayResetRequest request, int serial)
         {
-            var actorId = string.IsNullOrWhiteSpace(target.ActorId) ? "<unknown>" : target.ActorId;
+            string actorId = string.IsNullOrWhiteSpace(target.ActorId) ? "<unknown>" : target.ActorId;
 
-            var components = ResolveResettableComponents(target, request);
+            IReadOnlyList<ResetEntry> components = ResolveResettableComponents(target, request);
             if (components.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(GameplayResetOrchestrator),
@@ -308,7 +308,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 return Array.Empty<ResetEntry>();
             }
 
-            var monoBehaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
+            MonoBehaviour[] monoBehaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
             if (monoBehaviours == null || monoBehaviours.Length == 0)
             {
                 return Array.Empty<ResetEntry>();
@@ -352,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
             foreach (var component in _resettableBuffer)
             {
-                var order = component is IGameplayResetOrder resetOrder ? resetOrder.ResetOrder : 0;
+                int order = component is IGameplayResetOrder resetOrder ? resetOrder.ResetOrder : 0;
                 _orderedResets.Add(new ResetEntry(component, order));
             }
 

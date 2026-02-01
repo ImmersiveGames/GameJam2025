@@ -5,9 +5,9 @@
 #nullable enable
 using System;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
         [Header("Default ContentIds")]
         [SerializeField] private string inPlaceContentId = "content.2";
 
-        // Gate default (Baseline 2.2): ContentSwap sem visuais e sem IntroStage.
+        // Gate default (Baseline 2.2): ContentSwap sem visuais e sem IntroStageController.
         private const string ReasonG01 = "QA/ContentSwap/InPlace/NoVisuals";
 
 
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
                 return;
             }
 
-            var contentId = string.IsNullOrWhiteSpace(inPlaceContentId) ? "content.2" : inPlaceContentId.Trim();
+            string contentId = string.IsNullOrWhiteSpace(inPlaceContentId) ? "content.2" : inPlaceContentId.Trim();
 
             DebugUtility.Log(typeof(ContentSwapQaContextMenu),
                 $"[QA][ContentSwap] G01 start contentId='{contentId}' reason='{reason}' (fade={useFadeOpt}, hud={useLoadingHudOpt}).",

@@ -1,7 +1,6 @@
 #nullable enable
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 {
     /// <summary>
@@ -22,17 +21,29 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
 
         public ContentSwapPlan Current
         {
-            get { lock (_lock) return _current; }
+            get { lock (_lock)
+                {
+                    return _current;
+                }
+            }
         }
 
         public ContentSwapPlan Pending
         {
-            get { lock (_lock) return _pending; }
+            get { lock (_lock)
+                {
+                    return _pending;
+                }
+            }
         }
 
         public bool HasPending
         {
-            get { lock (_lock) return _pending.IsValid; }
+            get { lock (_lock)
+                {
+                    return _pending.IsValid;
+                }
+            }
         }
 
         public void SetPending(ContentSwapPlan plan, string reason)
@@ -90,7 +101,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.ContentSwap
                 _pending = ContentSwapPlan.None;
             }
 
-            if (!hadPending) return;
+            if (!hadPending)
+            {
+                return;
+            }
 
             DebugUtility.Log<ContentSwapContextService>($"[ContentSwapContext] ContentSwapPendingCleared reason='{Sanitize(reason)}'");
             EventBus<ContentSwapPendingClearedEvent>.Raise(new ContentSwapPendingClearedEvent(reason));

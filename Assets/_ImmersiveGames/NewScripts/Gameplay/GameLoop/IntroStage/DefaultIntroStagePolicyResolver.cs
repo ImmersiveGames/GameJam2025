@@ -3,11 +3,10 @@ using System;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
+namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage
 {
     /// <summary>
-    /// Resolver padrão de política da IntroStage (preparado para produção).
+    /// Resolver padrão de política da IntroStageController (preparado para produção).
     /// </summary>
     public sealed class DefaultIntroStagePolicyResolver : IIntroStagePolicyResolver
     {

@@ -3,8 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine.SceneManagement;
 
@@ -176,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            var transitionId = Interlocked.Increment(ref _transitionIdSeq);
+            long transitionId = Interlocked.Increment(ref _transitionIdSeq);
 
             try
             {
@@ -241,12 +241,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return false;
             }
 
-            var now = Environment.TickCount;
+            int now = Environment.TickCount;
 
             // Caso 1: repetição imediatamente após Start anterior (start-start).
             if (string.Equals(signature, _lastStartedSignature, StringComparison.Ordinal))
             {
-                var dt = unchecked(now - _lastStartedTick);
+                int dt = unchecked(now - _lastStartedTick);
                 if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
                 {
                     return true;
@@ -256,7 +256,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             // Caso 2: repetição logo após Completed (completed-start).
             if (string.Equals(signature, _lastCompletedSignature, StringComparison.Ordinal))
             {
-                var dt = unchecked(now - _lastCompletedTick);
+                int dt = unchecked(now - _lastCompletedTick);
                 if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
                 {
                     return true;

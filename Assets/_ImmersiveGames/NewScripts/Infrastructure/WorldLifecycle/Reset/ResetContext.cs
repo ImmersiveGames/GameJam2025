@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
 
         public override string ToString()
         {
-            var scopesLabel = !HasScopes ? "<none>" : string.Join(",", Scopes);
+            string scopesLabel = !HasScopes ? "<none>" : string.Join(",", Scopes);
             return $"ResetContext(Reason='{Reason}', Scopes={scopesLabel}, Flags={Flags})";
         }
     }

@@ -1,9 +1,10 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine.SceneManagement;
@@ -13,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
     /// <summary>
     /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
     /// Também sincroniza o GameLoop com a intenção do profile:
-    /// - Gameplay: aplica InputMode e dispara a IntroStage (o início real ocorre após conclusão explícita da IntroStage).
+    /// - Gameplay: aplica InputMode e dispara a IntroStageController (o início real ocorre após conclusão explícita da IntroStageController).
     /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
     /// </summary>
     public sealed class InputModeSceneFlowBridge : IDisposable
@@ -47,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string signature = SceneTransitionSignatureUtil.Compute(evt.Context);
             _lastProcessedSignature = string.Empty;
 
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
@@ -65,10 +66,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 return;
             }
 
-            var profile = evt.Context.TransitionProfileName;
-            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
-            var dedupeKey = $"{profile}|{signature}";
-            var activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
+            string profile = evt.Context.TransitionProfileName;
+            string signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+            string dedupeKey = $"{profile}|{signature}";
+            string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
             // ===== Gameplay =====
             if (evt.Context.TransitionProfileId == SceneFlowProfileId.Gameplay)
@@ -91,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     return;
                 }
 
-                var isBootState = string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Boot), StringComparison.Ordinal);
+                bool isBootState = string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Boot), StringComparison.Ordinal);
                 if (!isBootState
                     && !string.IsNullOrWhiteSpace(_lastProcessedSignature)
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
@@ -139,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 if (isBootState)
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                        "[InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStage (Restart/Boot cycle).",
+                        "[InputModeSceneFlowBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStageController (Restart/Boot cycle).",
                         DebugUtility.Colors.Info);
                     gameLoopService.RequestReady();
                 }
@@ -147,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 if (!IsGameplayScene())
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                        $"[InputModeSceneFlowBridge] [IntroStage] Cena ativa não é gameplay. IntroStage ignorada. scene='{SceneManager.GetActiveScene().name}'.",
+                        $"[InputModeSceneFlowBridge] [IntroStageController] Cena ativa não é gameplay. IntroStageController ignorada. scene='{SceneManager.GetActiveScene().name}'.",
                         DebugUtility.Colors.Info);
                 }
                 else
@@ -156,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     if (coordinator == null)
                     {
                         DebugUtility.LogWarning<InputModeSceneFlowBridge>(
-                            "[InputModeSceneFlowBridge] [IntroStage] IIntroStageCoordinator indisponível; IntroStage não será executada.");
+                            "[InputModeSceneFlowBridge] [IntroStageController] IIntroStageCoordinator indisponível; IntroStageController não será executada.");
                     }
                     else
                     {
@@ -205,7 +206,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     return;
                 }
 
-                var state = gameLoopService.CurrentStateIdName;
+                string state = gameLoopService.CurrentStateIdName;
 
                 if (string.Equals(state, nameof(GameLoopStateId.Playing), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.Paused), StringComparison.Ordinal)

@@ -1,13 +1,11 @@
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_DEV
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
-namespace _ImmersiveGames.Tools.Dev
+namespace _ImmersiveGames.NewScripts.Infrastructure.Util.Tools.Dev
 {
     [DisallowMultipleComponent]
     public sealed class WorldResetRequestHotkeyBridge : MonoBehaviour

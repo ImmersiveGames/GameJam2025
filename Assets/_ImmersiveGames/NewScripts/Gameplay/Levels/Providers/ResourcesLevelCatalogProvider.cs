@@ -1,7 +1,7 @@
 #nullable enable
 using System;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Catalogs;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
 
             _attempted = true;
 
-            if (TryLoadCatalog(_resourcePath, LegacyResourcesPath, out var catalog, out var source))
+            if (TryLoadCatalog(_resourcePath, LegacyResourcesPath, out var catalog, out string source))
             {
                 _cached = catalog;
                 _cachedSource = source;
@@ -98,14 +98,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Levels.Providers
             return false;
         }
 
-        private static void LogCatalogLoaded(LevelCatalog catalog, string source)
+        private static void LogCatalogLoaded(LevelCatalog? catalog, string source)
         {
-            var initial = catalog?.InitialLevelId ?? string.Empty;
-            var orderedCount = catalog?.OrderedLevels?.Count ?? 0;
-            var definitionsCount = catalog?.Definitions?.Count ?? 0;
+            string initial = catalog?.InitialLevelId ?? string.Empty;
+            int orderedCount = catalog?.OrderedLevels?.Count ?? 0;
+            int definitionsCount = catalog?.Definitions?.Count ?? 0;
 
             DebugUtility.Log<ResourcesLevelCatalogProvider>(
-                $"[OBS][LevelCatalog] CatalogLoaded name='{catalog.name}' initial='{initial}' orderedCount='{orderedCount}' definitionsCount='{definitionsCount}' source='{source}'.");
+                $"[OBS][LevelCatalog] CatalogLoaded name='{catalog?.name}' initial='{initial}' orderedCount='{orderedCount}' definitionsCount='{definitionsCount}' source='{source}'.");
         }
     }
 }

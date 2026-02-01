@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.UI
 {
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.UI
         }
 
         [Header("Panels")]
-        [SerializeField] private List<PanelEntry> panels = new List<PanelEntry>();
+        [SerializeField] private List<PanelEntry> panels = new();
 
         [Header("Defaults")]
         [Tooltip("Painel inicial (id). Se vazio, tenta detectar pelo root ativo; senão usa o primeiro da lista.")]
@@ -51,8 +51,7 @@ namespace _ImmersiveGames.NewScripts.UI
 
         public string CurrentPanelId { get; private set; }
 
-        private readonly Dictionary<string, PanelEntry> _map =
-            new Dictionary<string, PanelEntry>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, PanelEntry> _map = new(StringComparer.OrdinalIgnoreCase);
 
         private void Awake()
         {

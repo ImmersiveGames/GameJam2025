@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Gameplay.PostGame;
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void RequestStart()
         {
             // ADR-0013: Start pode ser solicitado por diferentes sistemas, mas
-            // NUNCA deve efetivar antes do IntroStage completar (quando aplicável).
+            // NUNCA deve efetivar antes do IntroStageController completar (quando aplicável).
             if (_signals.IntroStageRequested && !_signals.IntroStageCompleted)
             {
                 DebugUtility.LogVerbose<GameLoopService>(
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             CurrentStateIdName = stateId.ToString();
-            var logStateName = GetLogStateName(stateId);
+            string logStateName = GetLogStateName(stateId);
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {logStateName} (active={isActive})");
 
             if (stateId == GameLoopStateId.Boot && previousState != GameLoopStateId.Boot)
@@ -187,8 +187,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             var info = BuildSignatureInfo();
             var status = ResolveGameRunStatus();
-            var outcome = status?.HasResult == true ? status.Outcome.ToString() : "Unknown";
-            var reason = status?.HasResult == true ? status.Reason ?? "<null>" : "<none>";
+            string outcome = status?.HasResult == true ? status.Outcome.ToString() : "Unknown";
+            string reason = status?.HasResult == true ? status.Reason ?? "<null>" : "<none>";
 
             DebugUtility.Log<GameLoopService>(
                 $"[OBS][PostGame] PostGameEntered signature='{info.Signature}' outcome='{outcome}' reason='{reason}' " +
@@ -201,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private void HandlePostPlayExited(GameLoopStateId nextState)
         {
             var info = BuildSignatureInfo();
-            var reason = ResolvePostPlayExitReason(nextState);
+            string reason = ResolvePostPlayExitReason(nextState);
 
             DebugUtility.Log<GameLoopService>(
                 $"[OBS][PostGame] PostGameExited signature='{info.Signature}' reason='{reason}' nextState='{nextState}' " +
@@ -326,12 +326,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static SignatureInfo BuildSignatureInfo()
         {
-            var sceneName = SceneManager.GetActiveScene().name;
-            var profile = "gameplay";
-            var signature = "<none>";
+            string sceneName = SceneManager.GetActiveScene().name;
+            string profile = "gameplay";
+            string signature = "<none>";
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var cache) && cache != null &&
-                cache.TryGetLast(out var cachedSignature, out var cachedProfile, out var cachedScene))
+                cache.TryGetLast(out string cachedSignature, out var cachedProfile, out string cachedScene))
             {
                 signature = string.IsNullOrWhiteSpace(cachedSignature) ? "<none>" : cachedSignature.Trim();
                 if (!string.IsNullOrWhiteSpace(cachedScene))

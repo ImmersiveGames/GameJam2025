@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         public static IReadOnlyList<WorldLifecycleController> FindControllersForScene(string sceneName)
         {
             string target = (sceneName ?? string.Empty).Trim();
-            var all = FindAllControllers(includeInactive: true);
+            IReadOnlyList<WorldLifecycleController> all = FindAllControllers(includeInactive: true);
 
             if (all.Count == 0)
             {
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             // 1) tenta localizar por nome da cena.
             if (target.Length > 0)
             {
-                var list = FindControllersForScene(target);
+                IReadOnlyList<WorldLifecycleController> list = FindControllersForScene(target);
                 if (list.Count == 1)
                 {
                     return list[0];
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
 
             // 2) fallback: se houver exatamente um controller válido em todas as cenas carregadas.
-            var all = FindAllControllers(includeInactive: true);
+            IReadOnlyList<WorldLifecycleController> all = FindAllControllers(includeInactive: true);
             return all.Count == 1 ? all[0] : null;
         }
 
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         {
             // Unity 6/2022+: API recomendada.
             var inactive = includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude;
-            var all = UnityEngine.Object.FindObjectsByType<WorldLifecycleController>(inactive, FindObjectsSortMode.None);
+            WorldLifecycleController[] all = UnityEngine.Object.FindObjectsByType<WorldLifecycleController>(inactive, FindObjectsSortMode.None);
             if (all == null || all.Length == 0)
             {
                 return Array.Empty<WorldLifecycleController>();

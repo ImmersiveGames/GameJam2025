@@ -3,10 +3,10 @@
 
 #nullable enable
 using System.Text;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.Levels;
 using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
 using UnityEngine;
 

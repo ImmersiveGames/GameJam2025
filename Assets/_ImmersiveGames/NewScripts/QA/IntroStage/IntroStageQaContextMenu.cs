@@ -2,9 +2,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.DI;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.IntroStage
@@ -13,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
     {
         private const int AwaitTimeoutMs = 2000;
 
-        [ContextMenu("QA/IntroStage/Dump - Status")]
+        [ContextMenu("QA/IntroStageController/Dump - Status")]
         private void DumpStatus()
         {
             var controlService = ResolveControlService();
@@ -23,11 +24,11 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             }
 
             DebugUtility.Log(typeof(IntroStageQaContextMenu),
-                $"[QA][IntroStage] Status snapshot isActive={controlService.IsIntroStageActive.ToString().ToLowerInvariant()}.",
+                $"[QA][IntroStageController] Status snapshot isActive={controlService.IsIntroStageActive.ToString().ToLowerInvariant()}.",
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/IntroStage/Complete (Force)")]
+        [ContextMenu("QA/IntroStageController/Complete (Force)")]
         private void CompleteIntroStage()
         {
             var controlService = ResolveControlService();
@@ -37,13 +38,13 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             }
 
             DebugUtility.Log(typeof(IntroStageQaContextMenu),
-                "[QA][IntroStage] CompleteIntroStage solicitado.",
+                "[QA][IntroStageController] CompleteIntroStage solicitado.",
                 DebugUtility.Colors.Info);
 
-            controlService.CompleteIntroStage("QA/IntroStage/Complete");
+            controlService.CompleteIntroStage("QA/IntroStageController/Complete");
         }
 
-        [ContextMenu("QA/IntroStage/Skip (Force)")]
+        [ContextMenu("QA/IntroStageController/Skip (Force)")]
         private void SkipIntroStage()
         {
             var controlService = ResolveControlService();
@@ -53,19 +54,19 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             }
 
             DebugUtility.Log(typeof(IntroStageQaContextMenu),
-                "[QA][IntroStage] SkipIntroStage solicitado.",
+                "[QA][IntroStageController] SkipIntroStage solicitado.",
                 DebugUtility.Colors.Info);
 
-            controlService.SkipIntroStage("QA/IntroStage/Skip");
+            controlService.SkipIntroStage("QA/IntroStageController/Skip");
         }
 
-        [ContextMenu("QA/IntroStage/Complete + Await Result (2s)")]
+        [ContextMenu("QA/IntroStageController/Complete + Await Result (2s)")]
         private void CompleteIntroStageAwait()
         {
             _ = CompleteAwaitAsync(skip: false);
         }
 
-        [ContextMenu("QA/IntroStage/Skip + Await Result (2s)")]
+        [ContextMenu("QA/IntroStageController/Skip + Await Result (2s)")]
         private void SkipIntroStageAwait()
         {
             _ = CompleteAwaitAsync(skip: true);
@@ -80,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             }
 
             DebugUtility.Log(typeof(IntroStageQaContextMenu),
-                $"[QA][IntroStage] {(skip ? "Skip" : "Complete")} solicitado + aguardando resultado (timeout={AwaitTimeoutMs}ms).",
+                $"[QA][IntroStageController] {(skip ? "Skip" : "Complete")} solicitado + aguardando resultado (timeout={AwaitTimeoutMs}ms).",
                 DebugUtility.Colors.Info);
 
             try
@@ -89,24 +90,24 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
 
                 if (skip)
                 {
-                    controlService.SkipIntroStage("QA/IntroStage/Skip");
+                    controlService.SkipIntroStage("QA/IntroStageController/Skip");
                 }
                 else
                 {
-                    controlService.CompleteIntroStage("QA/IntroStage/Complete");
+                    controlService.CompleteIntroStage("QA/IntroStageController/Complete");
                 }
 
                 var result = await controlService.WaitForCompletionAsync(cts.Token);
 
                 // Evita depender de propriedades específicas do tipo.
                 DebugUtility.Log(typeof(IntroStageQaContextMenu),
-                    $"[QA][IntroStage] Await result => '{result}'.",
+                    $"[QA][IntroStageController] Await result => '{result}'.",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(IntroStageQaContextMenu),
-                    $"[QA][IntroStage] Await FAILED ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStageController] Await FAILED ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -115,14 +116,14 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
             if (DependencyManager.Provider == null)
             {
                 DebugUtility.LogError(typeof(IntroStageQaContextMenu),
-                    "[QA][IntroStage] DependencyManager.Provider é null (infra global não inicializada?).");
+                    "[QA][IntroStageController] DependencyManager.Provider é null (infra global não inicializada?).");
                 return null;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service) || service == null)
             {
                 DebugUtility.LogWarning(typeof(IntroStageQaContextMenu),
-                    "[QA][IntroStage] IIntroStageControlService indisponível; ação ignorada.");
+                    "[QA][IntroStageController] IIntroStageControlService indisponível; ação ignorada.");
                 return null;
             }
 

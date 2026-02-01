@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace _ImmersiveGames.NewScripts.Gameplay.Levels
 {
     /// <summary>
-    /// Orquestra progressão de níveis, delegando ContentSwap e IntroStage.
+    /// Orquestra progressão de níveis, delegando ContentSwap e IntroStageController.
     /// </summary>
     public interface ILevelManager
     {
