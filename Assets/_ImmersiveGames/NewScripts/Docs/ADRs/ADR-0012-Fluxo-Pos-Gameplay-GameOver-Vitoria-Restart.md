@@ -1,14 +1,14 @@
 # ADR-0012 — Fluxo Pós-Gameplay (GameOver, Vitória, Restart, ExitToMenu)
 
 **Status:** Closed (atualizado com evidência do log canônico mais recente)  
-**Data:** 2026-01-29  
+**Data:** 2026-01-31
 **Escopo:** `Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/` + integrações com `WorldLifecycle/SceneFlow`
 
 ---
 
 ## Contexto
 
-O Baseline 2.0 exige que o fluxo **Gameplay → PostGame** seja determinístico, auditável por logs e compatível com política **Strict/Release**.
+O Baseline 2.2 exige que o fluxo **Gameplay → PostGame** seja determinístico, auditável por logs e compatível com política **Strict/Release** (matriz/invariantes do spec congelado em `Docs/Reports/Baseline-2.0-Spec.md`).
 
 O problema original era evitar ambiguidade e regressões em:
 
@@ -53,6 +53,13 @@ Padronizar o Pós-Gameplay como um conjunto de **transições explícitas** (com
 
 ## Evidências (log canônico)
 
+**Evidência canônica (Baseline 2.2):**
+
+- `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
+- Auditorias relacionadas:
+  - `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md` (itens B/D)
+  - `Docs/Reports/Audits/2026-01-31/ADR-Sync-Audit-NewScripts.md`
+
 > A evidência desta ADR é **por assinatura**, para manter robustez contra mudanças de linha/offset no log.
 
 ### Sequência mínima (restart)
@@ -85,9 +92,9 @@ Buscar no log:
 
 ## Consequências
 
-- O Pós-Gameplay fica **auditável** e alinhado ao Baseline 2.0 (D).
+- O Pós-Gameplay fica **auditável** e alinhado ao Baseline 2.2 (D).
 - Renomear `reason` quebra contrato; mudanças precisam atualizar:
-  - Baseline 2.0 Spec (Matrix D)
+  - Baseline 2.2 Spec (Matrix D)
   - Auditoria Strict/Release
   - ADR-0012 (esta).
 

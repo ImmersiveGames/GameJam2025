@@ -9,6 +9,14 @@ using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
+    /// <summary>
+    /// Sincroniza a conclusão do SceneFlow (SceneTransitionCompleted) com o WorldLifecycle reset (WorldLifecycleResetCompleted)
+    /// e coloca o GameLoop no estado correto para o perfil de transição.
+    ///
+    /// Regra Strict/Release (ADR-0013): o SceneFlow NÃO deve forçar RequestStart() em gameplay;
+    /// o start efetivo é responsabilidade do pipeline de início de nível (ex.: LevelStartPipeline/IntroStageCoordinator)
+    /// que só libera o início após IntroStage completar.
+    /// </summary>
     public sealed class GameLoopSceneFlowCoordinator : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
@@ -17,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private bool _startInProgress;
         private bool _transitionCompleted;
         private bool _worldResetCompleted;
-        private bool _startIssued;
+        private bool _syncIssued;
 
         private string _expectedContextSignature;
 
@@ -96,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _startInProgress = true;
             _transitionCompleted = false;
             _worldResetCompleted = false;
-            _startIssued = false;
+            _syncIssued = false;
             _expectedContextSignature = null;
 
             DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
@@ -233,7 +241,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void TryIssueGameLoopSync()
         {
-            if (_startIssued)
+            if (_syncIssued)
             {
                 return;
             }
@@ -252,29 +260,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            _startIssued = true;
+            _syncIssued = true;
 
-            // Importante: este coordinator é usado para o startPlan de produção (tipicamente 'startup').
-            // Regra: Só iniciar "run" em gameplay. Em startup/frontend, apenas deixar o GameLoop em Ready (sem ativar Playing).
+            // Importante: este coordinator é usado para o startPlan de produção.
+            // Regra Strict/Release:
+            // - Em frontend/startup: apenas manter o GameLoop em Ready.
+            // - Em gameplay: também manter em Ready (NÃO RequestStart aqui). O início efetivo acontece após IntroStage completar.
+            //   (ex.: LevelStartPipeline/IntroStageCoordinator chama RequestStart no momento correto)
             var profileId = _startPlan?.TransitionProfileId ?? default;
 
             gameLoop.Initialize();
 
-            if (profileId.IsGameplay)
-            {
-                DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                    $"[GameLoopSceneFlow] Profile gameplay detectado (profileId='{profileId.Value}'). Chamando RequestStart() no GameLoop.");
-                gameLoop.RequestStart();
-            }
-            else
-            {
-                var profileLabel = profileId.IsValid ? profileId.Value : "<none>";
+            var profileLabel = profileId.IsValid ? profileId.Value : "<none>";
 
-                DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                    $"[GameLoopSceneFlow] Profile não-gameplay (profileId='{profileLabel}'). Chamando RequestReady() no GameLoop.",
-                    DebugUtility.Colors.Info);
-                gameLoop.RequestReady();
-            }
+            DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
+                $"[GameLoopSceneFlow] Sync concluído. profileId='{profileLabel}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStage).",
+                DebugUtility.Colors.Info);
+
+            gameLoop.RequestReady();
 
             _startInProgress = false;
         }

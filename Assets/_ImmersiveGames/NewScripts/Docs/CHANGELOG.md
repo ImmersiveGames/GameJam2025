@@ -26,19 +26,15 @@
 ### Changed
 - Sincronizado `ADR-0017-LevelManager-Config-Catalog.md` com a versão mais recente enviada.
 - Corrigido o nome do arquivo `ADR-0018` (remoção de artefatos de encoding no filename) e sincronizado com a versão mais recente enviada.
-- Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
-- Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
-- Sincronizados ADRs e o contrato de observabilidade com o snapshot canônico 2026-01-31.
+- Sincronizados ADRs e `Standards/Observability-Contract.md` com o snapshot canônico **2026-01-31**.
 - Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canônico 2026-01-31 (LATEST + evidência datada + auditoria) e remover duplicidades.
-- `Standards/Observability-Contract.md` sincronizado para apontar o snapshot 2026-01-31 (sem duplicatas).
-- Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canonico 2026-01-31 (LATEST + evidencia datada + auditoria) e remover duplicidades.
-- `Standards/Observability-Contract.md` sincronizado para apontar para a evidencia 2026-01-31.
+- `Standards/Observability-Contract.md` sincronizado para apontar para a evidência 2026-01-31 **sem duplicatas**.
 
 ### Changed (ADR-0009 — completude)
 
 - ADR-0009 atualizado para refletir o contrato operacional completo (Strict vs Release + `DEGRADED_MODE` + âncoras `[OBS][Fade]`) e incluir procedimento de verificação QA.
 - `ADR-Sync-Audit-NewScripts.md`: ADR-0009 reclassificado de **RISCO** para **OK** (gaps críticos removidos; evidência datada pendente).
-- `Invariants-StrictRelease-Audit.md`: Item A atualizado para **PARCIAL** (Fade PASS; LoadingHUD pendente/FAIL).
+- `Invariants-StrictRelease-Audit.md`: itens **B** (WorldDefinition + mínimo spawn) e **D** (PostGame Gate/InputMode) atualizados para **PASS**; gaps restantes seguem em **C** e **F**.
 - ADR-0011: reforçado contrato de WorldDefinition em gameplay (Strict/Release) e incluída validação de mínimos (Player/Eater) na doc.
 - `ADR-Sync-Audit-NewScripts.md`: ADR-0011 reclassificado de **PARCIAL** para **OK** (enforce implementado).
 

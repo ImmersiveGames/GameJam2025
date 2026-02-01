@@ -32,19 +32,14 @@
 - Promotion gate sempre habilitado: PromotionGateService retorna defaults habilitados, sem carregamento de config (contrato de gate processual fica sem enforcement real).
 
 
-## 1.1) Snapshot Strict/Release (Baseline 2.2) — consolidado
+## 1.1) Auditoria Strict/Release (Baseline 2.2) — referência única
 
-> Este snapshot substitui o arquivo antigo `Invariants-StrictRelease-Audit.md` (removido para evitar duplicação).
+Para evitar duplicação, **este documento não repete** a tabela de Strict/Release.
 
-| Cenário | O que valida | Strict | Release | Evidência canônica |
-|--------|--------------|--------|---------|--------------------|
-| A | Boot → Menu (startup, frontend) + reset SKIP + envelope de Fade + LoadingHUD | OK | OK | `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (A) |
-| B | Menu → Gameplay (profile=gameplay): ResetWorld + ResetCompleted + spawn (Player/Eater) | OK | OK | `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (B) |
-| C | ContentSwap in-place (QA) | OK | OK | `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (D) |
-| D | PostGame: Victory/Defeat + Restart + ExitToMenu | OK | OK | `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (F) |
-| E | IntroStage: gate sim.gameplay + UIConfirm → Playing | OK | OK | `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (C) |
+- **Arquivo canônico:** `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
+- **Evidência:** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (+ evidências auxiliares 2026-01-29)
 
-**Nota:** no Strict/Release atual, ausência de `LoadingHudController` deve ser tratada como erro (fail-fast) para evitar transições “silenciosas” sem observabilidade.
+**Resumo consumido por este audit:** Boot→Menu (startup) e Menu→Gameplay (profile=gameplay) estão OK em Strict/Release; PostGame e IntroStage também estão OK; ContentSwap está OK **somente** no modo InPlace QA.
 
 ## 2) Matriz Detalhada (por ADR)
 Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, observabilidade, alinhamento e gaps com prioridade.
