@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Estado:** Completo (implementação + política Strict/Release + observabilidade canônica)
-- **Data (decisão):** 2025-12-24
-- **Última atualização:** 2026-01-31
-- **Escopo:** SceneFlow + Fade (NewScripts). *(Loading HUD é ADR-0010.)*
+- Estado: Implementado
+- Data (decisão): 2025-12-24
+- Última atualização: 2026-01-31
+- Escopo: SceneFlow + Fade (NewScripts). *(Loading HUD é ADR-0010.)*
 
 ## Contexto
 
@@ -85,7 +85,7 @@ Arquivos (NewScripts):
 
 ## Observabilidade (contrato)
 
-**Contrato canônico:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+**Contrato canônico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
 ### Âncoras mínimas de Fade (evidência)
 
@@ -144,5 +144,5 @@ Quando o fade não pode operar em Release:
 ## Referências
 
 - [ADR-0010 — Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)
-- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
-- [`Production-Policy-Strict-Release.md`](../Standards/Production-Policy-Strict-Release.md)
+- [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
+- [`Production-Policy-Strict-Release.md`](../Standards/Standards.md#politica-strict-vs-release)

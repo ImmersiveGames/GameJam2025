@@ -4,8 +4,8 @@ Este documento consolida a visão geral do módulo **NewScripts** em um único a
 
 ## Links canônicos
 
-- Contrato de observabilidade: `../Standards/Observability-Contract.md`
-- Política Strict/Release: `../Standards/Production-Policy-Strict-Release.md`
+- Contrato de observabilidade: `../Standards/Standards.md#observability-contract`
+- Política Strict/Release: `../Standards/Standards.md#politica-strict-vs-release`
 - Evidência vigente (ponte): `../Reports/Evidence/LATEST.md`
 
 ---
@@ -150,7 +150,7 @@ Diagrama simplificado:
 A fonte vigente do Baseline 2.0 é o contrato de observabilidade + evidência datada:
 - [ADR-0015 — Baseline 2.0: Fechamento Operacional](ADRs/ADR-0015-Baseline-2.0-Fechamento.md)
 - [Evidence/LATEST.md](Reports/Evidence/LATEST.md)
-- [Observability-Contract.md](../Standards/Observability-Contract.md)
+- [Observability-Contract.md](../Standards/Standards.md#observability-contract)
 
 ### Baseline 2.0 (status fechado)
 - **Status:** FECHADO / OPERACIONAL (2026-01-05).
@@ -198,7 +198,7 @@ O WorldLifecycle define o **reset determinístico** do mundo (spawn/despawn/hook
 - extensibilidade (hooks por fase/ator)
 
 > **Fonte de verdade de observabilidade**:
-> veja **[Standards/Observability-Contract.md](../Standards/Observability-Contract.md)**.
+> veja **[Standards/Standards.md#observability-contract](../Standards/Standards.md#observability-contract)**.
 
 ---
 
@@ -256,7 +256,7 @@ Quando presente:
 
 ## Invariantes globais (Baseline 2.0)
 
-> Ver contrato completo em **[Standards/Observability-Contract.md](../Standards/Observability-Contract.md)**.
+> Ver contrato completo em **[Standards/Standards.md#observability-contract](../Standards/Standards.md#observability-contract)**.
 
 - `ScenesReady` acontece antes de `Completed`.
 - `WorldLifecycleResetCompletedEvent` é sempre emitido (reset/skip/fail).
@@ -270,7 +270,7 @@ Quando presente:
 Este doc não lista todas as strings de reason para evitar divergência.
 
 **Contrato canônico**:
-- [Standards/Observability-Contract.md](../Standards/Observability-Contract.md)
+- [Standards/Standards.md#observability-contract](../Standards/Standards.md#observability-contract)
 
 ---
 
@@ -318,4 +318,4 @@ Trechos relevantes:
 - [ADR-0016 — ContentSwap InPlace-only](ADRs/ADR-0016-ContentSwap-WorldLifecycle.md)
 - [ADR-0010 — Loading HUD + SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
 - [ADR-0009 — Fade + SceneFlow](ADRs/ADR-0009-FadeSceneFlow.md)
-- [Standards/Observability-Contract.md](../Standards/Observability-Contract.md)
+- [Standards/Standards.md#observability-contract](../Standards/Standards.md#observability-contract)

@@ -2,10 +2,10 @@
 
 ## Status
 
-- **Estado:** Implementado
-- **Data:** 2025-12-28
-- **Última atualização:** 2026-01-31 (alinhamento com evidência/logs e política Strict/Release)
-- **Escopo:** `GameplayScene`, `SceneBootstrapper`, spawn pipeline (Player/Eater), WorldLifecycle
+- Estado: Implementado
+- Data (decisão): 2025-12-28
+- Última atualização: 2026-01-31
+- Escopo: `GameplayScene`, `SceneBootstrapper`, spawn pipeline (Player/Eater), WorldLifecycle
 
 ## Contexto
 

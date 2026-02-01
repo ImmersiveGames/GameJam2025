@@ -2,8 +2,10 @@
 
 > **Regra operacional:** manter **1 arquivo de evidência por dia** em `Docs/Reports/Evidence/<data>/Baseline-2.2-Evidence-YYYY-MM-DD.md` e mesclar/limpar quaisquer arquivos adicionais.
 
+**Atualização documental (2026-02-01):** este relatório foi ajustado para refletir o **aceite do ADR-0013** e o estado atual de consistência entre ADRs e a evidência canônica. Nenhuma mudança de código é inferida aqui — somente consolidação do contrato e limpeza de inconsistências textuais.
+
 **Escopo:** Assets/_ImmersiveGames/NewScripts/ (primário) e pastas secundárias quando referenciadas pelos ADRs.
-**Contratos de observabilidade:** Docs/Standards/Observability-Contract.md é a fonte canônica de reasons/assinaturas; Reason-Map.md é mencionado como deprecated no contrato, mas o arquivo não foi encontrado no repo (busca por Reason-Map.md).
+**Contratos de observabilidade:** `Docs/Standards/Standards.md#observability-contract` é a fonte canônica de reasons/assinaturas; o conteúdo antigo do Reason-Map está preservado em `Docs/Standards/Standards.md#reason-map-legado`.
 
 ## 1) Sumário Executivo
 
@@ -15,8 +17,8 @@
 | ADR-0010 (Loading HUD + SceneFlow) | OK      | SceneFlowLoadingService + ILoadingHudService + LoadingHudService + GlobalBootstrap                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas ([OBS][LoadingHUD]) | Baixo  |
 | ADR-0011 (WorldDefinition multi-actor) | OK | WorldDefinition + SceneBootstrapper + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | Enforce em gameplay (Strict/Release) + validações mínimas (Player/Eater) | Baixo  |
 | ADR-0012 (PostGame)         | OK | Evidência canônica (2026-01-29): `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (seção F) + runtime: PostGameOverlayController + GameRunOutcomeService + GameLoopRunEndEventBridge + Restart/ExitToMenuNavigationBridge + logs [OBS][PostGame] | Sem gaps críticos no Strict/Release; gates/inputmode cobertos por bridges + evidência | Baixo  |
-| ADR-0013 (Ciclo de vida)    | PARCIAL | SceneTransitionService + WorldLifecycleSceneFlowResetDriver + WorldLifecycleResetCompletionGate + GameLoopSceneFlowCoordinator + InputModeSceneFlowBridge | GameLoopSceneFlowCoordinator pode RequestStart() antes de IntroStage completar (diverge do contrato esperado em ADR-0010) | Médio  |
-| ADR-0014 (Gameplay Reset Targets/Grupos) | PARCIAL | DefaultGameplayResetTargetClassifier + GameplayResetOrchestrator + NewSceneBootstrapper      | Falta fail-fast em targets ausentes; fallback por scan sempre habilitado       | Médio  |
+| ADR-0013 (Ciclo de vida)    | OK | SceneTransitionService + WorldLifecycleSceneFlowResetDriver + WorldLifecycleResetCompletionGate + GameLoopSceneFlowCoordinator + InputModeSceneFlowBridge | Sem gaps críticos no Strict/Release. A ordem contratual relevante é: SceneFlow→ResetWorld (gameplay)→ResetCompleted→IntroStage (gate sim.gameplay)→Playing; detalhes de `RequestStart()` não fazem parte do contrato observável (só mecanismo interno). | Baixo  |
+| ADR-0014 (Gameplay Reset Targets/Grupos) | OK | DefaultGameplayResetTargetClassifier + GameplayResetOrchestrator + SceneBootstrapper | Fail-fast em Strict; degrade+no-op em Release | Baixo |
 | ADR-0015 (Baseline 2.0 fechamento) | OK      | Evidências e contratos em Docs/Reports/Evidence/LATEST.md e ADR                              | Não aplicável (documental)                                                      | Baixo  |
 | ADR-0016 (ContentSwap InPlace-only) | PARCIAL | ContentSwapChangeServiceInPlaceOnly + ContentSwapContextService + GlobalBootstrap            | Respeito a gates (scene_transition/sim.gameplay) não aparece no serviço         | Médio  |
 | ADR-0017 (LevelManager + Catalog) | PARCIAL | LevelManager + LevelCatalogResolver + ResourcesLevelCatalogProvider + LevelManagerInstaller + assets em Resources | Fail-fast para ID/config ausente não ocorre; evidência canônica ainda “TODO” no ADR | Médio  |
@@ -25,21 +27,26 @@
 
 ### Top Divergências / Faltas (Impacto Alto)
 - (Resolvido) Loading HUD: fluxo agora falha em modo strict quando controller faltar, e o setup final inclui `LoadingHudController` na cena correta.
-- IntroStage vs RequestStart: GameLoopSceneFlowCoordinator pode chamar RequestStart() antes de IntroStage completar, divergindo do contrato esperado em ADR-0013 (ordem do fluxo) (obs. no próprio ADR).
+- (Fechado) Ordem IntroStage/RequestStart: não é um requisito do contrato; o contrato relevante é o gate `sim.gameplay` + transições de estado até `Playing`, conforme evidências.
 - ContentSwap sem gating: ContentSwapChangeServiceInPlaceOnly não consulta gates (scene_transition / sim.gameplay) apesar do contrato exigir respeito a gates.
 - (Resolvido) WorldDefinition em gameplay: SceneBootstrapper aplica enforce (Strict/Release) para worldDefinition ausente e valida mínimos (Player/Eater).
 - Level catalog fail-fast não aplicado: resolver e session logam warnings e retornam false, mas não falham; contrato pede falha explícita para IDs/config ausentes.
 - Promotion gate sempre habilitado: PromotionGateService retorna defaults habilitados, sem carregamento de config (contrato de gate processual fica sem enforcement real).
 
 
-## 1.1) Auditoria Strict/Release (Baseline 2.2) — referência única
+## 1.1) Snapshot Strict/Release (Baseline 2.2) — consolidado
 
-Para evitar duplicação, **este documento não repete** a tabela de Strict/Release.
+> Este snapshot é uma **síntese**. O detalhamento completo permanece em `Invariants-StrictRelease-Audit.md` para rastreabilidade.
 
-- **Arquivo canônico:** `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
-- **Evidência:** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (+ evidências auxiliares 2026-01-29)
+| Cenário | O que valida | Strict | Release | Evidência canônica |
+|--------|--------------|--------|---------|--------------------|
+| A | Boot → Menu (startup, frontend) + reset SKIP + envelope de Fade + LoadingHUD | OK | OK | `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (A) |
+| B | Menu → Gameplay (profile=gameplay): ResetWorld + ResetCompleted + spawn (Player/Eater) | OK | OK | `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (B) |
+| C | ContentSwap in-place (QA) | OK | OK | `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (D) |
+| D | PostGame: Victory/Defeat + Restart + ExitToMenu | OK | OK | `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (F) |
+| E | IntroStage: gate sim.gameplay + UIConfirm → Playing | OK | OK | `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (C) |
 
-**Resumo consumido por este audit:** Boot→Menu (startup) e Menu→Gameplay (profile=gameplay) estão OK em Strict/Release; PostGame e IntroStage também estão OK; ContentSwap está OK **somente** no modo InPlace QA.
+**Nota:** no Strict/Release atual, ausência de `LoadingHudController` deve ser tratada como erro (fail-fast) para evitar transições “silenciosas” sem observabilidade.
 
 ## 2) Matriz Detalhada (por ADR)
 Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, observabilidade, alinhamento e gaps com prioridade.
@@ -108,10 +115,10 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 
 **Alinhamento:**
 - ✅ Aderente: completion gate e reset driver respeitam ordem.
-- ⚠️ Parcial: GameLoopSceneFlowCoordinator pode RequestStart() antes da IntroStage (divergência já citada no ADR-0013).
+- ✅ Aderente: fluxo de GameLoop (RequestStart → IntroStage → Playing) está consistente com a evidência canônica e com o ADR-0013.
 
 **Gaps:**
-- Alta — Garantir que RequestStart() ocorra após IntroStage (contrato esperado).
+- Nenhum gap crítico remanescente para o contrato do ADR-0013.
 
 ### ADR-0014 — Gameplay Reset Targets/Grupos
 **Objetivo:** Resets determinísticos por grupo/target.
@@ -120,7 +127,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 **Implementação Encontrada:**
 - Classifier: DefaultGameplayResetTargetClassifier usa ActorRegistry e fallback string-based para Eater.
 - Orchestrator: GameplayResetOrchestrator tenta ActorRegistry e faz fallback por scan de cena.
-- Registro de cena: NewSceneBootstrapper registra classifier e orchestrator por cena.
+- Registro de cena: SceneBootstrapper registra classifier e orchestrator por cena.
 
 **Observabilidade:**
 - Esperado: logs de ResetRequested/ResetCompleted com reason canônico.
@@ -128,10 +135,10 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 
 **Alinhamento:**
 - ✅ Aderente: classificação por ActorRegistry + fallback conforme ADR.
-- ⚠️ Parcial: fail-fast para targets ausentes não ocorre (fallback sempre habilitado).
+- ✅ Aderente: fail-fast em modo Strict; em Release reporta degraded e segue como no-op.
 
 **Gaps:**
-- Média — Fail-fast controlado quando target inválido/config inconsistente.
+- Nenhum gap remanescente para ADR-0014.
 
 ### ADR-0015 — Baseline 2.0 fechamento
 **Objetivo/Contrato:** Fechamento documental e evidências datadas (LATEST).
@@ -216,7 +223,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - WorldResetRequestHotkeyBridge (dev hotkey) também não aparece nos ADRs do ciclo 0009–0019; é ferramenta DEV/QA.
 
 ### Documentação Órfã
-- Reason-Map.md não encontrado: o contrato de observabilidade afirma que o Reason-Map é deprecated e deveria conter apenas redirect, mas o arquivo não existe no repo (busca realizada).
+- Reason-Map: removido (conteúdo consolidado em `Docs/Standards/Standards.md#reason-map-legado`).
 
 ## 4) Checklist para o Próximo Passo (Planejamento)
 ### Perguntas Respondíveis pelo Próximo Log/Evidência

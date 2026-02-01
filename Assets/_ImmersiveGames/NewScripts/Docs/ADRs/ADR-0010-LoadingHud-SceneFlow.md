@@ -1,128 +1,133 @@
-# ADR-0010 — Loading HUD + SceneFlow
+# ADR-0010 — Loading HUD + SceneFlow (NewScripts)
 
-- **Status:** Aceito (Baseline 2.2)
-- **Data:** 2026-01-31
-- **Owner:** NewScripts / Infrastructure
-- **Relacionado:** ADR-0009 (Fade + SceneFlow), ADR-0013 (Ciclo de Vida)
+## Status
+
+- Estado: Implementado
+- Data (decisão): 2025-12-24
+- Última atualização: 2026-02-01
+- Escopo: SceneFlow + Loading HUD (NewScripts)
 
 ## Contexto
 
-O SceneFlow (transições de cena) já possui:
-- envelope de **Fade** determinístico (ADR-0009)
-- **completion gate** para aguardar `ResetCompleted` quando aplicável
+O SceneFlow executa operações que podem causar “pop” visual (load/unload/setActive), especialmente em transições longas (Menu→Gameplay, Restart). O projeto precisava de um **Loading HUD** com as seguintes propriedades:
 
-Faltava um HUD simples de loading para:
-- sinalizar transição de cena (principalmente em builds)
-- manter o envelope observável e determinístico
-- não “misturar UI” dentro da infra do SceneFlow
+- Integrar no envelope do SceneFlow (mesma `signature` / mesma ordem).
+- Ser **determinístico** (show/hide em pontos fixos) e **auditável** (logs canônicos).
+- Seguir política **Strict vs Release**:
+  - Strict (Dev/QA): falhar cedo se o HUD estiver mal configurado.
+  - Release: permitir seguir sem HUD somente com degraded explícito.
 
-O risco identificado em auditorias: Loading HUD existia, mas estava **frágil** (fallback silencioso, logs pouco canônicos e responsabilidade espalhada).
+Além disso, o HUD não deve depender de instanciar UI “em voo” de forma silenciosa.
 
 ## Decisão
 
-Adotar um módulo mínimo e modular para Loading HUD:
+### Objetivo de produção
 
-1) **Infra (SceneFlow)** define apenas o contrato + orquestração de fases:
-- `ILoadingHudService` (contrato mínimo)
-- `SceneFlowLoadingService` (orquestra Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed)
+Garantir que transições do SceneFlow possam opcionalmente exibir um “Loading HUD” **sobre** o envelope de fade:
 
-2) **Presentation (UI)** implementa a UI do HUD:
-- `LoadingHudService` (concrete: carrega cena additiva + resolve controller + aplica Show/Hide)
-- `LoadingHudController` (MonoBehaviour na cena `LoadingHudScene`)
+**FadeIn (escurece) → LoadingHUD.Show → operações de cena → ScenesReady → completion gate → LoadingHUD.Hide → FadeOut (revela) → Completed**
 
-3) Política de runtime:
-- **Strict (Editor/Dev):** falhas são “gritantes” (log de erro + `Debug.Break()` + exception quando possível)
-- **Release:** falhas degradam explicitamente com `DEGRADED_MODE` (feature=`loadinghud`) e o jogo continua **sem HUD**
+> O fade continua sendo a primeira/última camada visual (ADR-0009). O Loading HUD é uma camada intermediária, usada quando a transição requer feedback.
 
-## Escopo
+### Contrato mínimo (produção)
 
-Inclui:
-- carregamento additivo da cena `LoadingHudScene`
-- show/hide do HUD alinhado ao envelope do SceneFlow e ao Fade
-- observabilidade com `signature` + `phase`
+1) **Pontos de show/hide (invariantes)**
+- `Show` ocorre após `FadeInCompleted` e antes das mutações de cena.
+- `Hide` ocorre após `ScenesReady` + completion gate e antes do `BeforeFadeOut`/`FadeOut`.
+- `Hide` é **forçado** no caminho de erro/early-exit para evitar HUD “preso”.
 
-Não inclui:
-- barras de progresso reais
-- tracking de assets/Addressables
-- “telas de loading” por feature (apenas HUD genérico)
+2) **Strict vs Release (fail-fast + degraded)**
+- **Strict (UNITY_EDITOR / DEVELOPMENT_BUILD)**
+  - Falha explicitamente quando:
+    - `INewScriptsLoadingHudService` não existe no DI global,
+    - a cena/objeto do Loading HUD não está configurado,
+    - o controller do HUD não existe/é inválido.
+- **Release**
+  - Pode seguir sem HUD **apenas** com `DEGRADED_MODE` explícito:
+    - `DEGRADED_MODE feature='loading_hud' reason='<...>' detail='<...>'`
+  - Após degradar, o HUD vira **no-op** preservando a ordem (show/hide são ignorados).
 
-## Contrato de Execução (ordem)
-
-Para uma transição com Fade (`UseFade=True`):
-
-1. `SceneTransitionStarted`  
-   → `SceneFlowLoadingService` chama **Ensure** (garantir cena/controller, sem mostrar ainda)
-
-2. `FadeInCompleted`  
-   → `LoadingHUD.Show(signature, phase='AfterFadeIn')`
-
-3. `ScenesReady`  
-   → `LoadingHUD.Show(signature, phase='ScenesReady')` (mantém visível enquanto o gate conclui)
-
-4. `BeforeFadeOut`  
-   → `LoadingHUD.Hide(signature, phase='BeforeFadeOut')`
-
-5. `TransitionCompleted`  
-   → **Safety hide** `LoadingHUD.Hide(signature, phase='Completed')`
-
-Observação: para transições sem Fade, o serviço ainda pode ser chamado; a fase “AfterFadeIn” continua sendo um marco lógico (mesmo que FadeIn seja 0).
-
-## Política Strict/Release (fail-fast vs degraded)
-
-### Strict (Editor/Dev)
-- Se `LoadingHudScene` **não** estiver no Build Settings: falha imediata (antes de awaits) para permitir **fail-fast**.
-- Se `LoadingHudController` não for encontrado após tentativas: log de erro + `Debug.Break()` (e exception quando aplicável).
-
-### Release
-- Se falhar carregar a cena, resolver controller ou aplicar UI:
-  - emitir `DEGRADED_MODE feature='loadinghud' ...`
-  - desabilitar o HUD para evitar spam
-  - SceneFlow segue normalmente (sem bloquear transição)
-
-## Observabilidade (âncoras)
-
-Requisito: logs devem ser correlacionáveis por `signature` (SceneFlow) e `phase`.
-
-Âncoras canônicas (mínimas):
-- `[OBS][LoadingHUD] EnsureLoadScene signature='...' scene='LoadingHudScene' ...`
-- `[OBS][LoadingHUD] EnsureReady signature='...' ...`
-- `[OBS][LoadingHUD] ShowApplied signature='...' phase='...'`
-- `[OBS][LoadingHUD] HideApplied signature='...' phase='...'`
-- `DEGRADED_MODE feature='loadinghud' reason='...' signature='...'` (Release)
-
-## Arquitetura / Separação
-
-### Infra (não-UI)
-- `NewScripts/Infrastructure/SceneFlow/Loading/ILoadingHudService.cs`
-- `NewScripts/Infrastructure/SceneFlow/Loading/SceneFlowLoadingService.cs`
-
-### Presentation (UI)
-- `NewScripts/Presentation/LoadingHud/LoadingHudService.cs`
-- `NewScripts/Presentation/LoadingHud/LoadingHudController.cs`
-
-### DI / Bootstrap
-- `NewScripts/Infrastructure/GlobalBootstrap.cs` registra:
-  - `ILoadingHudService` → `LoadingHudService(runtimePolicy + degradedReporter)`
-  - `SceneFlowLoadingService` (listener de SceneFlow)
+3) **Não criar UI “em voo”**
+- O Loading HUD é fornecido por cena/asset configurado (ou equivalente), não por instância silenciosa em runtime.
 
 ## Consequências
 
-**Prós**
-- SRP: SceneFlow não conhece UI concreta; UI não depende do loader do SceneFlow
-- Observabilidade padronizada via `signature + phase`
-- Fail-fast em dev/QA; Release degrada de forma explícita
+### Benefícios
 
-**Contras**
-- “LoadingHudScene” precisa existir em Build Settings
-- A busca do controller usa `FindAnyObjectByType` (custo pequeno, mas é UI pouco frequente)
+- Reduz “pop” visual e dá feedback em transições longas.
+- Mesma disciplina de contrato do SceneFlow: ordem fixa, evidência e policy.
+- Falhas de setup ficam óbvias em Strict; builds Release degradam explicitamente.
 
-## Evidência (Baseline 2.2)
+### Trade-offs / riscos
 
-Fonte canônica diária:
-- `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
+- Integração adiciona pontos extras de configuração (cena/controller/DI).
+- Release pode degradar (sem HUD) — mas fica explícito via `DEGRADED_MODE`.
 
-Evidência esperada:
-- logs do envelope com `SceneTransitionStarted` + `FadeInCompleted` + `ScenesReady` + `BeforeFadeOut` + `TransitionCompleted`
-- logs de Loading HUD com `signature` + `phase`
-- `DEGRADED_MODE feature='loadinghud' ...` quando HUD não puder ser carregado em Release
+## Mapeamento para implementação
 
+Arquivos (NewScripts):
+
+- Orquestração / ordem / anchors `[OBS][LoadingHud]`:
+  - `Infrastructure/Scene/SceneTransitionService.cs`
+- Adapter (profile → policy/config):
+  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs` (`NewScriptsSceneFlowLoadingHudAdapter`)
+- Serviço de loading HUD (setup + Strict/Release + no-op em degraded):
+  - `Infrastructure/SceneFlow/LoadingHud/NewScriptsLoadingHudService.cs`
+
+## Observabilidade (contrato)
+
+**Contrato canônico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
+
+### Âncoras mínimas de Loading HUD (evidência)
+
+Emitidas por `SceneTransitionService` quando `UseLoadingHud=true`:
+
+- `[OBS][LoadingHud] ShowStarted ...`
+- `[OBS][LoadingHud] ShowCompleted ...`
+- `[OBS][LoadingHud] HideStarted ...`
+- `[OBS][LoadingHud] HideCompleted ...`
+
+### Âncora canônica de fallback (Release)
+
+Quando o HUD não pode operar em Release:
+
+- `DEGRADED_MODE feature='loading_hud' reason='<Reason>' detail='<...>'`
+
+## Critérios de pronto (DoD)
+
+### DoD (implementação)
+
+- [x] Pontos de show/hide obedecem a ordem do “Contrato mínimo”.
+- [x] Policy Strict vs Release aplicada.
+- [x] `DEGRADED_MODE` emitido em Release quando necessário.
+- [x] Logs `[OBS][LoadingHud]` emitidos (Start/Complete por fase).
+
+### DoD (evidência)
+
+- [ ] Snapshot contendo uma transição com `UseLoadingHud=true` e as 4 âncoras `[OBS][LoadingHud]` na mesma `signature`.
+
+## Procedimento de verificação (QA)
+
+1) **Happy path**
+- Dispare uma transição com `UseLoadingHud=true` (ex.: Menu→Gameplay em perfis que demandam HUD).
+- Confirme no log:
+  - `FadeInCompleted` → `[OBS][LoadingHud] Show...` → operações de cena → `ScenesReady` → gate → `[OBS][LoadingHud] Hide...` → `FadeOut` → `Completed`.
+
+2) **Fail-fast (Strict)**
+- Em Editor/Development:
+  - remova temporariamente o service/controller do HUD.
+- Confirme falha explícita (exception) com `reason/detail`.
+
+3) **Degraded mode (Release)**
+- Em build Release:
+  - reproduza a ausência e confirme:
+  - `DEGRADED_MODE feature='loading_hud' ...` e transição segue sem HUD.
+
+## Evidência
+
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+
+## Referências
+
+- [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
+- [`Standards.md`](../Standards/Standards.md)

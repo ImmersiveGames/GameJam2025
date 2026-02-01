@@ -34,5 +34,5 @@ Fora de escopo do 2.2:
 ## Relacionados
 
 - ADR-0018 (Gate de promocao): `ADR-0018-Gate-de-Promocao-Baseline2.2.md`
-- Contrato de observabilidade: `../Standards/Observability-Contract.md`
-- Politica Strict/Release: `../Standards/Production-Policy-Strict-Release.md`
+- Contrato de observabilidade: `../Standards/Standards.md#observability-contract`
+- Politica Strict/Release: `../Standards/Standards.md#politica-strict-vs-release`

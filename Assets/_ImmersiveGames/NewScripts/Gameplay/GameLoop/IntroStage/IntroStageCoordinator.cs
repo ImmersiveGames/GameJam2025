@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (policy == IntroStagePolicy.Disabled)
             {
                 LogSkipped("policy_disabled", context, SceneManager.GetActiveScene().name);
-                RequestStartIfNeeded(gameLoop);
+                RequestStartIfNeeded(gameLoop, "policy_disabled");
                 return;
             }
 
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 var normalizedTargetScene = NormalizeValue(context.TargetScene);
 
                 LogCompletionWithReason(normalizeSignature, normalizedTargetScene, context.ProfileId.Value, "policy_autocomplete");
-                RequestStartIfNeeded(gameLoop);
+                RequestStartIfNeeded(gameLoop, "policy_autocomplete");
                 return;
             }
 
@@ -54,6 +54,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             var simulationGate = ResolveSimulationGateService();
             var simulationGateAcquired = false;
 
+            // ADR-0013: RequestStart deve acontecer APÓS IntroStageCompleted + liberação do gate.
+            var requestStartAfterComplete = false;
+            var requestStartReason = "IntroStage/Completed";
+
             DebugUtility.Log<IntroStageCoordinator>(
                 $"[OBS][IntroStage] IntroStageStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
@@ -71,16 +75,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 {
                     DebugUtility.LogWarning<IntroStageCoordinator>(
                         "[IntroStage] IIntroStageControlService indisponível. IntroStage será concluída imediatamente.");
+
                     gameLoop?.RequestIntroStageStart();
                     simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
                     LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Completed);
-                    RequestStartIfNeeded(gameLoop);
+
+                    requestStartAfterComplete = true;
+                    requestStartReason = "IntroStage/Auto";
                     return;
                 }
 
                 controlService.BeginIntroStage(context);
                 gameLoop?.RequestIntroStageStart();
                 simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
+
                 DebugUtility.Log<IntroStageCoordinator>(
                     "[IntroStage] IntroStage ativa: simulação gameplay bloqueada; aguardando confirmação (UI).",
                     DebugUtility.Colors.Info);
@@ -115,15 +123,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 var completion = await completionTask;
                 if (completion.WasSkipped)
                 {
-                    LogSkipped(NormalizeValue(completion.Reason), context, SceneManager.GetActiveScene().name);
+                    var skipReason = NormalizeValue(completion.Reason);
+                    LogSkipped(skipReason, context, SceneManager.GetActiveScene().name);
                     LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Skipped);
+                    requestStartReason = $"IntroStage/Skipped/{skipReason}";
                 }
                 else
                 {
                     LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Completed);
+                    requestStartReason = "IntroStage/UIConfirm";
                 }
 
-                RequestStartIfNeeded(gameLoop);
+                requestStartAfterComplete = true;
             }
             catch (Exception ex)
             {
@@ -131,15 +142,25 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     $"[IntroStage] Falha ao executar IntroStage. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
                 LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Failed);
-                RequestStartIfNeeded(gameLoop);
+
+                requestStartAfterComplete = true;
+                requestStartReason = "IntroStage/ErrorFallback";
             }
             finally
             {
                 gameLoop?.RequestIntroStageComplete();
+
                 if (simulationGateAcquired)
                 {
                     ReleaseSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene);
                 }
+
+                // RequestStart somente depois do Completed + gate liberado.
+                if (requestStartAfterComplete)
+                {
+                    RequestStartIfNeeded(gameLoop, requestStartReason);
+                }
+
                 Interlocked.Exchange(ref _inProgress, 0);
             }
         }
@@ -224,7 +245,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
         }
 
-        private static void RequestStartIfNeeded(IGameLoopService? gameLoop)
+        private static void RequestStartIfNeeded(IGameLoopService? gameLoop, string reason)
         {
             if (gameLoop == null)
             {
@@ -237,7 +258,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             DebugUtility.LogVerbose<IntroStageCoordinator>(
-                "[IntroStage] Solicitando RequestStart após conclusão explícita da IntroStage.",
+                $"[IntroStage] Solicitando RequestStart após término da IntroStage. reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestStart();

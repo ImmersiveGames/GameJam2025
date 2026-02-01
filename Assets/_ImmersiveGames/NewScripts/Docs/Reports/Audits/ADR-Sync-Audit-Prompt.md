@@ -5,14 +5,16 @@
 ## Objetivo
 Auditar se a implementação em `Assets/_ImmersiveGames/NewScripts/` está **alinhada** com os ADRs `ADR-0009..ADR-0019`.
 
+> Nota: `ADR-0013` é considerado **Aprovado / Implementado** (estado documental atual). Divergências só devem ser apontadas quando houver quebra objetiva do contrato (gates, ordem de fase, ownership/publicação de eventos), não por detalhes internos não especificados.
+
 A auditoria deve avaliar dois eixos:
 
 1) **Sincronia ADR ↔ código**: o que o ADR estabelece existe no código? está no lugar correto? respeita nomes/contratos (DI, eventos, gates, ordem de fluxo)?
 2) **Completude ideal de produção**: mesmo que o ADR “passe”, a solução é completa para produção? (Strict vs Release, modo degradado explícito, invariants verificáveis, observabilidade estável, ausência de fallback silencioso).
 
 > Referências canônicas dentro do repo:
-> - `Docs/Standards/Production-Policy-Strict-Release.md`
-> - `Docs/Standards/Observability-Contract.md`
+> - `Docs/Standards/Standards.md#politica-strict-vs-release`
+> - `Docs/Standards/Standards.md#observability-contract`
 > - `Docs/Reports/Evidence/` (evidências arquivadas)
 > - `Docs/Reports/LATEST.md` (última evidência canônica)
 
@@ -58,7 +60,7 @@ F) Gates (ContentSwap respeita scene_transition e sim.gameplay)
 Para cada item: `PASS | FAIL | UNCLEAR` + evidência.
 
 ### 4) Observabilidade
-- Verificar se logs seguem `Docs/Standards/Observability-Contract.md`.
+- Verificar se logs seguem `Docs/Standards/Standards.md#observability-contract`.
 - Listar “anchors” ausentes ou inconsistentes.
 
 ### 5) Lista de ações sugeridas (sem código)

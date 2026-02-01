@@ -22,10 +22,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private GameLoopStateId _lastStateId = GameLoopStateId.Boot;
 
         public string CurrentStateIdName { get; private set; } = string.Empty;
-
         public void RequestStart()
         {
-            if (_stateMachine != null && _stateMachine.IsGameActive)
+            // ADR-0013: Start pode ser solicitado por diferentes sistemas, mas
+            // NUNCA deve efetivar antes do IntroStage completar (quando aplicável).
+            if (_signals.IntroStageRequested && !_signals.IntroStageCompleted)
+            {
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[GameLoop] RequestStart ignored (intro stage pending). state={_stateMachine?.Current}.");
+                return;
+            }
+
+            if (_stateMachine is { IsGameActive: true })
             {
                 DebugUtility.LogVerbose<GameLoopService>(
                     $"[GameLoop] RequestStart ignored (already active). state={_stateMachine.Current}.");
@@ -139,7 +147,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
                 ApplyGameplayInputMode();
 
-                // Correção: se já emitimos nesta run (ex.: Paused -> Playing), apenas não publica novamente.
+                // Correção: se já emitimos nesta run (ex.: Paused → Playing), apenas não publica novamente.
                 // Importante: NÃO gerar log extra de "resume/duplicate" para evitar ruído no baseline/smoke.
                 if (!_runStartedEmittedThisRun)
                 {
@@ -216,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             // Ready é usado como estado-alvo “não ativo” durante navegações.
-            // Em PostPlay, ReadyRequested normalmente vem de ExitToMenu.
+            // Em PostPlay, ReadyRequested vem normalmente de ExitToMenu.
             if (_signals.ReadyRequested)
             {
                 return "ExitToMenu";
@@ -363,18 +371,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
-            private bool _startPending;
-            private bool _introStagePending;
-            private bool _introStageCompleted;
 
-            public bool StartRequested => _startPending;
+            public bool StartRequested { get; private set; }
             public bool PauseRequested { get; private set; }
             public bool ResumeRequested { get; private set; }
             public bool ReadyRequested { get; private set; }
             public bool ResetRequested { get; private set; }
             public bool EndRequested { get; private set; }
-            public bool IntroStageRequested => _introStagePending;
-            public bool IntroStageCompleted => _introStageCompleted;
+            public bool IntroStageRequested { get; private set; }
+            public bool IntroStageCompleted { get; private set; }
 
             bool IGameLoopSignals.EndRequested
             {
@@ -382,20 +387,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 set => EndRequested = value;
             }
 
-            public void MarkStart() => _startPending = true;
+            public void MarkStart() => StartRequested = true;
             public void MarkPause() => PauseRequested = true;
             public void MarkResume() => ResumeRequested = true;
             public void MarkReady() => ReadyRequested = true;
             public void MarkReset() => ResetRequested = true;
             public void MarkEnd() => EndRequested = true;
-            public void ClearStartPending() => _startPending = false;
-            public void MarkIntroStageStart() => _introStagePending = true;
-            public void MarkIntroStageComplete() => _introStageCompleted = true;
-            public void ClearIntroStagePending() => _introStagePending = false;
+            public void ClearStartPending() => StartRequested = false;
+            public void MarkIntroStageStart() => IntroStageRequested = true;
+            public void MarkIntroStageComplete() => IntroStageCompleted = true;
+            public void ClearIntroStagePending() => IntroStageRequested = false;
             public void ClearIntroStageFlags()
             {
-                _introStagePending = false;
-                _introStageCompleted = false;
+                IntroStageRequested = false;
+                IntroStageCompleted = false;
             }
 
             public void ResetTransientSignals()

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 {
@@ -14,6 +15,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
     /// </summary>
     public sealed class DefaultGameplayResetTargetClassifier : IGameplayResetTargetClassifier
     {
+        private readonly IRuntimeModeProvider _runtimeModeProvider;
+        private readonly IDegradedModeReporter _degradedModeReporter;
+
+        /// <summary>
+        /// Construtor padrão (compatibilidade). Não depende de modo em runtime.
+        /// </summary>
+        public DefaultGameplayResetTargetClassifier() : this(null, null)
+        {
+        }
+
+        /// <summary>
+        /// Construtor para cenários onde o bootstrap quer injetar modo/degraded.
+        /// (O classificador atual não precisa do modo para funcionar, mas mantemos a assinatura para integração.)
+        /// </summary>
+        public DefaultGameplayResetTargetClassifier(IRuntimeModeProvider runtimeModeProvider, IDegradedModeReporter degradedModeReporter)
+        {
+            _runtimeModeProvider = runtimeModeProvider;
+            _degradedModeReporter = degradedModeReporter;
+        }
+
         public void CollectTargets(GameplayResetRequest request, IActorRegistry actorRegistry, List<IActor> results)
         {
             results.Clear();

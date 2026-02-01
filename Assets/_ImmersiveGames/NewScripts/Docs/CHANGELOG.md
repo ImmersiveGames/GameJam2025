@@ -8,7 +8,7 @@
 - Consolidado `Overview/Architecture.md` + `Overview/WorldLifecycle.md` em `Overview/Overview.md`.
 - Consolidado guias/checklists em `Guides.md` (remoção de `HowTo/` e `Checklists/`).
 - Removidos READMEs redundantes de subpastas (Overview/Plans/Reports/Audits/Archive).
-- `Reason-Registry.md` incorporado ao `Standards/Observability-Contract.md` (mantido `Reason-Map.md` como redirect).
+- `Reason-Registry.md` incorporado ao `Standards/Standards.md#observability-contract` (Reason-Map removido; ver seção `Standards/Standards.md#reason-map-legado`).
 - `Standards/Evidence-Methodology.md` removido; a metodologia passa a viver em `Reports/Evidence/README.md`.
 - Removido `Reports/README.md` (conteúdo redundante/inconsistente).
 - Removido `Reports/Evidence/_Archive/` redundante (duplicava snapshots já presentes por data).
@@ -17,7 +17,7 @@
 ### Changed (Docs reorg)
 - Reorganizada a estrutura de `Docs/` (Overview/Standards/Reports/Plans/Archive/Checklists).
 - `Observability-Contract.md` movido para `Docs/Standards/` e atualizado com âncora `DEGRADED_MODE`.
-- Adicionados: `Production-Policy-Strict-Release.md`, `Evidence-Methodology.md`, `Reason-Registry.md`.
+- Consolidado: arquivos em `Docs/Standards/*` em `Docs/Standards/Standards.md`.
 - Auditorias movidas para `Docs/Reports/Audits/<data>/`.
 
 ### Added
@@ -26,15 +26,19 @@
 ### Changed
 - Sincronizado `ADR-0017-LevelManager-Config-Catalog.md` com a versão mais recente enviada.
 - Corrigido o nome do arquivo `ADR-0018` (remoção de artefatos de encoding no filename) e sincronizado com a versão mais recente enviada.
-- Sincronizados ADRs e `Standards/Observability-Contract.md` com o snapshot canônico **2026-01-31**.
+- Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
+- Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
+- Sincronizados ADRs e o contrato de observabilidade com o snapshot canônico 2026-01-31.
 - Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canônico 2026-01-31 (LATEST + evidência datada + auditoria) e remover duplicidades.
-- `Standards/Observability-Contract.md` sincronizado para apontar para a evidência 2026-01-31 **sem duplicatas**.
+- `Standards/Standards.md#observability-contract` sincronizado para apontar o snapshot 2026-01-31 (sem duplicatas).
+- Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canonico 2026-01-31 (LATEST + evidencia datada + auditoria) e remover duplicidades.
+- `Standards/Standards.md#observability-contract` sincronizado para apontar para a evidencia 2026-01-31.
 
 ### Changed (ADR-0009 — completude)
 
 - ADR-0009 atualizado para refletir o contrato operacional completo (Strict vs Release + `DEGRADED_MODE` + âncoras `[OBS][Fade]`) e incluir procedimento de verificação QA.
 - `ADR-Sync-Audit-NewScripts.md`: ADR-0009 reclassificado de **RISCO** para **OK** (gaps críticos removidos; evidência datada pendente).
-- `Invariants-StrictRelease-Audit.md`: itens **B** (WorldDefinition + mínimo spawn) e **D** (PostGame Gate/InputMode) atualizados para **PASS**; gaps restantes seguem em **C** e **F**.
+- `Invariants-StrictRelease-Audit.md`: Item A atualizado para **PARCIAL** (Fade PASS; LoadingHUD pendente/FAIL).
 - ADR-0011: reforçado contrato de WorldDefinition em gameplay (Strict/Release) e incluída validação de mínimos (Player/Eater) na doc.
 - `ADR-Sync-Audit-NewScripts.md`: ADR-0011 reclassificado de **PARCIAL** para **OK** (enforce implementado).
 
@@ -56,7 +60,7 @@
 - ADR-0012: PostGame canônico + idempotência do overlay (double click + evento duplicado).
 - Arquivos alterados: `Docs/Overview/Overview.md`, `Docs/CHANGELOG.md`,
   `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`,
-  `Docs/Standards/Observability-Contract.md`.
+  `Docs/Standards/Standards.md#observability-contract`.
 
 ## 2026-01-21
 - ADR-0018 reescrito para formalizar a mudança semântica para ContentSwap + LevelManager e delimitar o LevelManager.
@@ -85,7 +89,7 @@
 ### Alterado
 
 - Consolidado snapshot datado de evidências em `Docs/Reports/Evidence/2026-01-16/` e atualizado `Docs/Reports/Evidence/LATEST.md`.
-- Restaurado `Docs/Standards/Observability-Contract.md` como fonte de verdade.
+- Restaurado `Docs/Standards/Standards.md#observability-contract` como fonte de verdade.
 - Atualizados links de evidência em ADRs e READMEs para apontar para `Docs/Reports/Evidence/`.
 
 ## [2026-01-15]

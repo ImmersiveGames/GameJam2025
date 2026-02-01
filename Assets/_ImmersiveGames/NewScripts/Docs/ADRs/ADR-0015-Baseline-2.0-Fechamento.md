@@ -2,8 +2,10 @@
 
 ## Status
 
-- Estado: **Aceito**
-- Data: **2026-01-31** (snapshot canonico atual)
+- Estado: Aceito
+- Data (decisão): 2026-01-31
+- Última atualização: 2026-01-31
+- Escopo: Baseline 2.0 (fechamento do contrato)
 
 ## Contexto
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -30,6 +31,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         private bool _dependenciesResolved;
         private IActorRegistry _actorRegistry;
         private IGameplayResetTargetClassifier _classifier;
+
+		private IRuntimeModeProvider _runtimeModeProvider;
+		private IDegradedModeReporter _degradedModeReporter;
+		private const string _degradedFeature = "gameplay.reset";
 
         public bool IsResetInProgress { get; private set; }
 
@@ -64,8 +69,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
                 if (_targets.Count == 0)
                 {
-                    DebugUtility.LogVerbose(typeof(GameplayResetOrchestrator),
-                        $"[GameplayReset] No targets resolved. request={normalized}");
+                    var msg = $"[GameplayReset] No targets resolved. request={normalized}";
+
+                    if (_runtimeModeProvider != null && _runtimeModeProvider.IsStrict)
+                    {
+                        throw new InvalidOperationException(msg);
+                    }
+
+                    DebugUtility.LogWarning(typeof(GameplayResetOrchestrator), msg);
+                    _degradedModeReporter?.Report(_degradedFeature, msg, reason);
                     return true;
                 }
 
@@ -108,6 +120,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             {
                 _classifier = new DefaultGameplayResetTargetClassifier();
             }
+
+            provider.TryGetGlobal(out _runtimeModeProvider);
+            provider.TryGetGlobal(out _degradedModeReporter);
 
             _dependenciesResolved = true;
         }

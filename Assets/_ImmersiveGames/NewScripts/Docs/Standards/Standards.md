@@ -1,4 +1,19 @@
-# Observability Contract — SceneFlow, WorldLifecycle, GameLoop, InputMode, ContentSwap, Level
+# Standards
+
+Este arquivo consolida referências canônicas que antes estavam separadas em vários arquivos dentro de `Docs/Standards/`.
+
+## Índice
+- [Observability Contract](#observability-contract)
+- [Política Strict vs Release](#politica-strict-vs-release)
+- [Política de uso do Codex](#politica-de-uso-do-codex)
+- [Checklist ADRs](#checklist-adrs)
+- [Reason Map legado](#reason-map-legado)
+
+---
+
+## Observability Contract
+<a id="observability-contract"></a>
+
 
 > **Fonte de verdade** do contrato de observabilidade do pipeline NewScripts.
 >
@@ -6,7 +21,7 @@
 > - `reason`/`signature`/`token` são **API pública** do pipeline.
 > - Outros documentos devem remeter a este contrato em vez de duplicar listas de strings.
 
-## Escopo
+### Escopo
 
 Este contrato consolida, em um único ponto canônico, o que deve ser observado em:
 
@@ -17,16 +32,16 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 - **ContentSwap** (InPlace-only)
 - **Level** (progressão: orquestra ContentSwap + IntroStage)
 
-## Princípios
+### Princípios
 
 - **Log como evidência**: o pipeline é considerado correto quando as assinaturas canônicas aparecem no log, na ordem e com os campos mínimos.
 - **Strings canônicas são contrato**: `reason` e `signature` são tratadas como API pública. Mudanças devem ser explicitadas em docs e/ou changelog.
 - **Não duplicar fonte de verdade**: documentos que citam reasons devem apontar para este contrato (a seção "Catálogo de reasons" abaixo).
     - `Reason-Map.md` fica **DEPRECATED** e deve conter apenas um redirect para este arquivo.
 
-## Convenções
+### Convenções
 
-### Campos
+#### Campos
 
 - `signature`: assinatura do SceneFlow (ou assinatura de reset direto), usada para correlacionar eventos.
 - `profile`: profile do SceneFlow, quando aplicável (ex.: `startup`, `gameplay`).
@@ -34,21 +49,21 @@ Este contrato consolida, em um único ponto canônico, o que deve ser observado 
 - `sourceSignature`: origem lógica do gatilho (ex.: `Gameplay/HotkeyR`, `qa_marco0_reset`).
 - `token`: token do SimulationGate quando o evento envolve bloqueio/desbloqueio.
 
-### Formato e estabilidade
+#### Formato e estabilidade
 
 - `reason` deve ser estável e legível. Mudanças de nomenclatura são consideradas breaking change para QA.
 - `signature` deve ser estável dentro de uma transição e reaparecer de forma consistente nos eventos correlatos.
 
-### Regra oficial de `reason` (autoria e propagação)
+#### Regra oficial de `reason` (autoria e propagação)
 
 - **O `reason` é autoria de quem inicia a ação** (caller). Ex.: QA, UI, GameLoop, ContentSwap.
 - **Sistemas downstream não devem ‘renomear’ o reason**; se precisarem de contexto adicional, usem campos próprios (`sourceSignature`, `label`, `event=...`) ou incluam informação no log, mas preservem o `reason`.
 - **Exceção controlada**: quando o gatilho é do próprio pipeline (sem um caller externo), usar reasons canônicos do domínio (ex.: `SceneFlow/ScenesReady`).
 - **`WorldLifecycleResetCompletedEvent.reason` deve refletir o reason do reset que acabou de finalizar** (reset real, skip ou fail), garantindo correlação 1:1 com `ResetStarted/ResetCompleted`.
 
-## Contrato por domínio
+### Contrato por domínio
 
-### SceneFlow
+#### SceneFlow
 
 Eventos observáveis (mínimo):
 
@@ -66,7 +81,7 @@ Reasons canônicos de SceneFlow (quando aplicável):
 
 Observação: SceneFlow pode usar sufixos em alguns logs (ex.: `SceneFlow/Completed:Gameplay`) quando o domínio deseja diferenciar contexto.
 
-### WorldLifecycle
+#### WorldLifecycle
 
 Eventos observáveis (mínimo):
 
@@ -83,7 +98,7 @@ Reasons canônicos de WorldLifecycle:
 - `Skipped_StartupOrFrontend:profile=<profile>;scene=<scene>`
 - `Failed_NoController:<scene>`
 
-### GameLoop
+#### GameLoop
 
 Estados observáveis (mínimo):
 
@@ -104,7 +119,7 @@ Assinaturas canônicas (Gameplay → PostGame):
 - `[PostGame] ExitToMenu ignorado (ação já solicitada).`
 - `[PostGame] GameRunEndedEvent ignorado (ação já solicitada).`
 
-### InputMode
+#### InputMode
 
 Eventos observáveis (mínimo):
 
@@ -120,7 +135,7 @@ Reasons canônicos (prefixos) para InputMode:
 - `GameLoop/Playing`
 - `PostGame/RunStarted`
 
-### ContentSwap
+#### ContentSwap
 
 O contrato para ContentSwap é definido em ADR-0016 (ContentSwap InPlace-only).
 
@@ -141,7 +156,7 @@ O contrato para ContentSwap é definido em ADR-0016 (ContentSwap InPlace-only).
 - Recomendações para QA (prefixos estáveis):
     - `QA/ContentSwap/InPlace/<...>`
 
-### Level
+#### Level
 
 O contrato para Level Manager é definido em ADR-0018/ADR-0019.
 
@@ -157,14 +172,14 @@ O contrato para Level Manager é definido em ADR-0018/ADR-0019.
 - Recomendações para QA (prefixos estáveis):
     - `QA/Levels/InPlace/<...>`
 
-### IntroStage
+#### IntroStage
 
 Reasons canônicos:
 
 - `IntroStage/UIConfirm`
 - `IntroStage/NoContent`
 
-## Catálogo de reasons canônicos
+### Catálogo de reasons canônicos
 
 Este catálogo reúne os principais reasons citados como critérios de aceite, garantindo que documentos e QA usem o mesmo vocabulário.
 
@@ -198,46 +213,46 @@ Este catálogo reúne os principais reasons citados como critérios de aceite, g
 
 Observação: `Reason-Map.md` é mantido apenas como redirect histórico para este contrato (não deve conter lista paralela).
 
-## Invariantes
+### Invariantes
 
 - **ScenesReady acontece antes de Completed** (na mesma `signature`).
 - **ResetCompleted sempre é emitido** (reset real, skip ou fail) e pode ser usado por gates.
 - **Completion gate do SceneFlow aguarda ResetCompleted antes de FadeOut** quando configurado.
 - **IntroStage é pós-reveal**: ocorre após `SceneFlow/Completed` e não deve atrasar o completion gate.
 
-## Evidências (logs e relatórios)
+### Evidências (logs e relatórios)
 
 As evidências abaixo são extraídas de:
 
 - `Docs/Reports/Evidence/LATEST.md`
 - `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
 
-### Skipped startup/frontend
+#### Skipped startup/frontend
 
 Exemplo de `Skipped_StartupOrFrontend:profile=...;scene=...` (Baseline):
 
 - `[WorldLifecycle] Reset SKIPPED (startup/frontend). why='profile', profile='startup', activeScene='MenuScene', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.`
 
-### Reset em ScenesReady (gameplay)
+#### Reset em ScenesReady (gameplay)
 
 Exemplo de `SceneFlow/ScenesReady` (Baseline):
 
 - `[WorldLifecycle] Reset REQUESTED. reason='SceneFlow/ScenesReady', signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene', profile='gameplay'.`
 
-### Reset trigger de produção
+#### Reset trigger de produção
 
 Exemplo de `ProductionTrigger/<source>` (validação manual):
 
 - `[WorldLifecycle] Reset REQUESTED. signature='directReset:scene=GameplayScene;src=qa_marco0_reset;seq=4;salt=b3a0e296', reason='ProductionTrigger/qa_marco0_reset', source='qa_marco0_reset', scene='GameplayScene'.`
 
-### Reset fail por ausência de controller
+#### Reset fail por ausência de controller
 
 Exemplo de `Failed_NoController:<scene>` (validação manual):
 
 - `[WorldLifecycle] WorldLifecycleController não encontrado na cena 'MenuScene'. Reset abortado.`
 - `Emitting WorldLifecycleResetCompletedEvent. ... reason='Failed_NoController:MenuScene'.`
 
-### IntroStage
+#### IntroStage
 
 Exemplo de `IntroStage/UIConfirm` (validação manual):
 
@@ -247,7 +262,7 @@ Exemplo de `IntroStage/NoContent` (documentado em QA):
 
 - Ver `Docs/Reports/Evidence/LATEST.md` (seção IntroStage).
 
-## Âncora canônica: DEGRADED_MODE
+### Âncora canônica: DEGRADED_MODE
 
 Quando uma feature opera com fallback (Release), registre:
 
@@ -257,20 +272,20 @@ Isso evita evidência frágil baseada em warnings genéricos.
 
 ---
 
-## Reason Registry
+### Reason Registry
 
-# Reason Registry (canônico)
+## Reason Registry (canônico)
 
 Este arquivo mantém um **registro prático** de `reason` canônicos usados em logs e eventos (Observability Contract).
 
 > Nota: o antigo “Reason-Map” foi descontinuado e pode não existir no repositório.
 
-## Regras
+### Regras
 
 - `reason` é uma string curta e estável, com hierarquia por `/`.
 - Evite incluir IDs dinâmicos no reason; IDs vão em campos próprios (`contentId`, `levelId`, etc) ou em `detail`.
 
-## Convenções
+### Convenções
 
 - Prefixos por domínio:
   - `SceneFlow/...`
@@ -279,7 +294,7 @@ Este arquivo mantém um **registro prático** de `reason` canônicos usados em l
   - `PostGame/...`
   - `QA/...`
 
-## Catálogo inicial (baseline 2.x)
+### Catálogo inicial (baseline 2.x)
 
 - `SceneFlow/ScenesReady`
 - `IntroStage/UIConfirm`
@@ -288,9 +303,155 @@ Este arquivo mantém um **registro prático** de `reason` canônicos usados em l
 - `PostGame/ExitToMenu`
 - `QA/ContentSwap/InPlace/NoVisuals`
 
-## Como atualizar
+### Como atualizar
 
 Quando um ADR introduzir um novo reason:
 1) Registrar aqui (nome + contexto)
-2) Usar no código/logs conforme `Standards/Observability-Contract.md`
+2) Usar no código/logs conforme `Standards/Standards.md#observability-contract`
 3) Cobrir em evidência (log datado) quando chegar a produção
+
+---
+
+## Política Strict vs Release
+<a id="politica-strict-vs-release"></a>
+
+
+Este documento define como o runtime deve se comportar quando **pré-condições** não são atendidas (assets ausentes, serviços DI não registrados, cena/controller inexistente, etc).
+
+### Objetivo
+
+Garantir que:
+- Em **Strict (Dev/QA)** o sistema **falhe cedo** (fail-fast) para tornar regressões óbvias.
+- Em **Release**, o sistema tenha comportamento **definido** (abort/skip/disable) e **log explícito** quando operar em modo degradado.
+- Evidências (logs) sejam **estáveis** e auditáveis.
+
+### Modos
+
+#### Strict (Dev/QA)
+- Pré-condições **obrigatórias** → `throw`/assert/fail imediato.
+- O objetivo é **forçar correção** durante desenvolvimento.
+- Logs devem incluir o contexto (`[OBS]` quando aplicável) **antes** da falha, para diagnóstico.
+
+#### Release
+- Pré-condições podem falhar sem derrubar o jogo *apenas se* existir uma política explícita:
+  - **Abortar a operação** (ex.: não trocar fase, não iniciar gameplay)
+  - **Desabilitar feature** (ex.: sem HUD)
+  - **Fallback controlado** (ex.: NoFade)
+- O comportamento deve ser determinístico e documentado no ADR do feature.
+
+#### Degraded Mode (Release com fallback)
+Quando a operação segue em fallback, **sempre** registrar uma âncora canônica:
+
+- `DEGRADED_MODE feature='<FeatureName>' reason='<Reason>' detail='<...>'`
+
+Exemplos de *feature*:
+- `fade`, `loading_hud`, `postgame_inputmode`, `level_catalog`, `world_definition`
+
+### Checklist de invariants de produção (A–F)
+
+> Estes itens derivam das auditorias atuais e devem guiar a normalização do runtime.
+
+| Item | Invariant | Strict (Dev/QA) | Release | Observabilidade mínima |
+|---|---|---|---|---|
+| A | Fade + LoadingHUD existem quando habilitados | FAIL FAST | DEGRADED_MODE ou abort | `[OBS][SceneFlow]` + DEGRADED_MODE |
+| B | Gameplay tem WorldDefinition + spawn mínimo | FAIL FAST | abortar entrar em gameplay | `[OBS][World]` (spawn mínimo) |
+| C | LevelCatalog resolve ID/config | FAIL FAST | abortar mudança de nível | `[OBS][LevelCatalog]` |
+| D | PostGame depende de Gate/InputMode | FAIL FAST | DEGRADED_MODE com comportamento definido | `[OBS][PostGame]` |
+| E | `RequestStart()` ocorre após IntroStage completar | FAIL FAST (assert invariants) | corrigir ordem (sem fallback) | token `sim.gameplay` |
+| F | ContentSwap respeita gates (`flow.scene_transition`, `sim.gameplay`) | FAIL FAST (quando violado) | bloquear/adiar conforme política | `[OBS][ContentSwap]` |
+
+### Regras práticas (para implementação)
+
+1) **Não criar objetos “em voo”** como fallback silencioso em runtime (Unity):  
+   fallback só é aceitável se for **explícito**, **configurado**, e com **DEGRADED_MODE**.
+
+2) **Serviços críticos** (Gate/InputMode/SceneFlow) devem ser tratados como pré-condição, não como “best effort”.
+
+3) Toda exceção de Strict deve trazer:
+- feature
+- reason
+- signature/profile/target (quando aplicável)
+
+### Referências
+- `Standards/Standards.md#observability-contract`
+- ADRs relacionadas (Fade, LoadingHUD, PostGame, ContentSwap, etc)
+
+---
+
+## Política de uso do Codex
+<a id="politica-de-uso-do-codex"></a>
+
+
+### Objetivo
+
+Usar o CODEX **somente** para auditorias de sincronização (Docs ⇄ Código) e inventário de implementação.
+
+### Regras
+
+1. **Proibido:** solicitar ao CODEX qualquer ação que altere o repositório (criar/editar/remover arquivos, refatorar, “corrigir”, etc.).
+2. **Permitido:** leitura e análise (listar arquivos, localizar símbolos, mapear fluxos e comparar com ADRs/contratos).
+3. O output do CODEX deve ser **sempre** um artefato em `Docs/Reports/Audits/<YYYY-MM-DD>/`.
+4. Qualquer decisão de implementação entra como plano humano (fora do CODEX) e, só depois, mudanças reais são feitas no repositório.
+
+### Prompt canônico
+
+Use `Docs/Reports/Audits/ADR-Sync-Audit-Prompt.md`.
+
+---
+
+## Checklist ADRs
+<a id="checklist-adrs"></a>
+
+
+Este documento resume **o mínimo necessário** para considerar cada ADR (0009–0019) “completo para produção” sob a ótica:
+
+- **Strict vs Release** (falha controlada em Dev/QA; degradação explícita em Release).
+- **Invariants verificáveis** (ordem, gates, eventos).
+- **Observabilidade canônica** (logs âncora do contrato).
+
+> Uso: base para auditorias (CODEX read-only) e para normalização do sistema.
+
+### Tabela (resumo)
+
+| ADR | Tema | Para ficar “ideal de produção” (mínimos) | Evidência esperada |
+|---|---|---|---|
+| ADR-0009 | Fade + SceneFlow | (1) **Fail-fast em Strict** quando `FadeScene/Controller` não existe; (2) **Degraded mode explícito** em Release (config + log âncora); (3) Ordem: FadeIn → operação → ScenesReady → BeforeFadeOut → FadeOut → Completed; (4) Logs conforme Observability Contract | Logs/anchors `[OBS][Fade]` ou equivalente + trecho de código com branch Strict/Release |
+| ADR-0010 | Loading HUD + SceneFlow | (1) Fail-fast em Strict para HUD/controller ausente; (2) Degraded mode explícito em Release; (3) Orquestração por eventos SceneFlow; (4) Logs canônicos | Logs `[OBS][LoadingHUD]` + branch Strict/Release |
+| ADR-0011 | WorldDefinition + multi-actor | (1) Em gameplay: **worldDefinition obrigatório** em Strict; (2) validação de mínimo spawn (Player + Eater); (3) deterministic spawn pipeline | Logs `[OBS][WorldDefinition]`/`[OBS][Spawn]` + validações explícitas |
+| ADR-0012 | PostGame | (1) Dependências críticas (Gate/InputMode) falham em Strict; (2) fallback explícito em Release; (3) idempotência do overlay; (4) reason/contextSignature canônicos | Logs `[OBS][PostGame]` + evidências de idempotência |
+| ADR-0013 | Ciclo de vida | (1) `RequestStart()` somente após **IntroStageComplete** (ou equivalente); (2) tokens `flow.scene_transition`, `sim.gameplay` coerentes; (3) reset determinístico disparado no ponto “produção” definido | Logs `[OBS][SceneFlow]` + `[OBS][WorldLifecycle]` + ordem comprovada |
+| ADR-0014 | Reset targets/grupos | (1) Classificação determinística; (2) inconsistências falham em Strict (ou policy formal); (3) ausência de target/config não vira scan silencioso sem política | Logs `[OBS][GameplayReset]` + validações |
+| ADR-0015 | Baseline 2.0 | (1) Evidência canônica arquivada; (2) invariants A–E verificáveis via log; (3) método de atualização de evidências | `Docs/Reports/LATEST.md` + logs arquivados |
+| ADR-0016 | ContentSwap in-place | (1) Respeitar gates `flow.scene_transition` e `sim.gameplay`; (2) policy de bloqueio/retry/abort documentada; (3) logs canônicos e reason | Logs `[OBS][ContentSwap]` + checagens de gate |
+| ADR-0017 | LevelCatalog/LevelManager | (1) Resolver por ID falha em Strict se catálogo/definição ausente; (2) comportamento Release definido; (3) logs canônicos | Logs `[OBS][LevelCatalog]` + validações e policy |
+| ADR-0018 | Gate de promoção | (1) Gate carrega **config real** (ou policy explícita “always on”); (2) enforcement real no fluxo; (3) logs de decisão do gate | Logs `[OBS][PromotionGate]` + fonte de config |
+| ADR-0019 | Promoção Baseline 2.2 | (1) Processo documental consistente com ADR-0018; (2) quando “promovido”, evidência arquivada e linkada; (3) se não há runtime, explicitar limites | Doc de promoção + evidência |
+
+### Checklist transversal (A–F)
+
+- **A)** Fade/LoadingHUD: Strict + Release + degraded mode explícito
+- **B)** WorldDefinition: Strict + mínimo spawn
+- **C)** LevelCatalog: Strict + Release
+- **D)** PostGame: Strict + Release
+- **E)** Ordem do fluxo: RequestStart após IntroStageComplete
+- **F)** Gates: ContentSwap respeita `flow.scene_transition` e `sim.gameplay`
+
+---
+
+## Reason Map legado
+<a id="reason-map-legado"></a>
+
+
+Este arquivo existe **apenas** como *redirect* para buscas/ferramentas e para evitar referências órfãs em auditorias.
+
+### Fonte canônica
+
+- **Use:** `Standards/Standards.md#observability-contract`
+- **Não use:** este arquivo para registrar novos `reason`.
+
+### Regra
+
+Não manter listas duplicadas de `reason`. Qualquer duplicidade inevitavelmente diverge do runtime e enfraquece evidências.
+
+
+---

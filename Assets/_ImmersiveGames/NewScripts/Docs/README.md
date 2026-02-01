@@ -8,10 +8,10 @@ Este diretório é o **ponto de entrada** para documentação do módulo **NewSc
 - `Overview/Overview.md`
 
 2) **Contratos e políticas de produção (fonte canônica)**
-- `Standards/Observability-Contract.md` — formato de logs, anchors e campos canônicos (`reason`, `signature`, `profile`, `target`).
-- `Standards/Production-Policy-Strict-Release.md` — política **Strict vs Release** e definição de **DEGRADED_MODE**.
+- `Standards/Standards.md#observability-contract` — formato de logs, anchors e campos canônicos (`reason`, `signature`, `profile`, `target`).
+- `Standards/Standards.md#politica-strict-vs-release` — política **Strict vs Release** e definição de **DEGRADED_MODE**.
 - `Reports/Evidence/README.md` — como produzir e arquivar evidências datadas (baseline, auditorias, etc).
-- `Standards/Reason-Map.md` — redirect legado para o contrato (não manter lista paralela).
+- `Standards/Standards.md#reason-map-legado` — redirect legado para o contrato (não manter lista paralela).
 
 3) **Decisões de arquitetura (ADRs)**
 - `ADRs/README.md` (índice + guia)
@@ -30,9 +30,9 @@ Este diretório é o **ponto de entrada** para documentação do módulo **NewSc
 
 ## Regra operacional
 
-- **CODEX é usado apenas para auditorias** (varredura/diagnóstico). Veja: `Standards/Codex-Audit-Only.md`.
+- **CODEX é usado apenas para auditorias** (varredura/diagnóstico). Veja: `Standards/Standards.md#politica-de-uso-do-codex`.
 - Implementações e correções **devem** referenciar: ADR(s) + política Strict/Release + contrato de observabilidade + evidência datada.
 
 ## Atalhos
 
-- **Checklist de completude ideal (ADRs 0009–0019):** `Standards/ADR-Ideal-Completeness-Checklist.md`
+- **Checklist de completude ideal (ADRs 0009–0019):** `Standards/Standards.md#checklist-adrs`

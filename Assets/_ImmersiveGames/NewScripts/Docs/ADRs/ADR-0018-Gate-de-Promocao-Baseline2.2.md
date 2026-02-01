@@ -2,8 +2,10 @@
 
 ## Status
 
-- Estado: **Aceito**
-- Data: **2026-01-31**
+- Estado: Aceito
+- Data (decisão): 2026-01-31
+- Última atualização: 2026-01-31
+- Escopo: Gate de promoção para Baseline 2.2 (evidência + auditoria obrigatórias)
 
 ## Contexto
 
@@ -39,5 +41,5 @@ Requisitos minimos na mesma entrega:
 - Evidencia canonica: ../Reports/Evidence/LATEST.md
 - Evidencia datada: ../Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md
 - Auditoria: ../Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md
-- Contrato de observabilidade: ../Standards/Observability-Contract.md
-- Politica Strict/Release: ../Standards/Production-Policy-Strict-Release.md
+- Contrato de observabilidade: ../Standards/Standards.md#observability-contract
+- Politica Strict/Release: ../Standards/Standards.md#politica-strict-vs-release

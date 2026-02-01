@@ -2,8 +2,9 @@
 
 ## Status
 
-- Estado: Em andamento (Etapa 0 concluída; integração/evidência pendentes)
-- Data: 2026-01-31
+- Estado: Em andamento
+- Data (decisão): 2026-01-31
+- Última atualização: 2026-01-31
 - Escopo: NewScripts → Gameplay/Levels + Docs/Reports
 
 ## Contexto
@@ -86,7 +87,7 @@ Ver seção **Fora de escopo**.
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Âncoras/assinaturas relevantes:**
   - TODO: adicionar evidência/log âncora do catálogo de levels (não aparece na evidência canônica atual).
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
 ## Evidências
 
@@ -99,12 +100,12 @@ Ver seção **Fora de escopo**.
 
 - [README.md](../README.md)
 - [Overview/Overview.md](../Overview/Overview.md)
-- [Observability-Contract.md](../Standards/Observability-Contract.md)
+- [Observability-Contract.md](../Standards/Standards.md#observability-contract)
 - [ADR-0018](./ADR-0018-Gate-de-Promocao-Baseline2.2.md)
 - [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md)
 - [LevelManager](../../Gameplay/Levels/LevelManager.cs)
 - [LevelPlan](../../Gameplay/Levels/LevelPlan.cs)
 - [LevelStartPipeline](../../Gameplay/Levels/LevelStartPipeline.cs)
 - [ContentSwap Change Service](../../Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs)
-- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+- [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

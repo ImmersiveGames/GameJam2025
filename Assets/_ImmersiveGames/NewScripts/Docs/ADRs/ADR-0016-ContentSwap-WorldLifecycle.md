@@ -3,7 +3,8 @@
 ## Status
 
 - Estado: Aceito
-- Data: 2026-01-28
+- Data (decisão): 2026-01-28
+- Última atualização: 2026-01-28
 - Escopo: NewScripts → Gameplay/ContentSwap + Infrastructure (Bootstrap/QA)
 
 ## Contexto
@@ -72,12 +73,12 @@ Eventos/logs mínimos:
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Âncoras/assinaturas relevantes:**
   - `[QA][ContentSwap] SwapInPlace contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
 ## Referências
 
 - ADR-TEMPLATE.md
-- Standards/Observability-Contract.md
+- Standards/Standards.md#observability-contract
 - Overview/Overview.md
-- [`Observability-Contract.md`](../Standards/Observability-Contract.md)
+- [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)

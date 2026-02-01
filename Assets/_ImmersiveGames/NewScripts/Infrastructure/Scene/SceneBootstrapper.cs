@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
@@ -76,7 +77,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             // Classificador de alvos (Players/Eater/ActorIdSet/All) para reset de gameplay.
             if (!provider.TryGetForScene<IGameplayResetTargetClassifier>(_sceneName, out var classifier) || classifier == null)
             {
-                classifier = new DefaultGameplayResetTargetClassifier();
+                provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
+                provider.TryGetGlobal<IDegradedModeReporter>(out var degradedModeReporter);
+
+                classifier = new DefaultGameplayResetTargetClassifier(runtimeModeProvider, degradedModeReporter);
                 provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(SceneBootstrapper),

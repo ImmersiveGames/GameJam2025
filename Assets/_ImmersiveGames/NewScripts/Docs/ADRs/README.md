@@ -15,7 +15,7 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 | [ADR-0010](./ADR-0010-LoadingHud-SceneFlow.md) | Loading HUD + SceneFlow (NewScripts) | Implementado | SceneFlow + Loading HUD (NewScripts) |
 | [ADR-0011](./ADR-0011-WorldDefinition-MultiActor-GameplayScene.md) | WorldDefinition multi-actor para GameplayScene (NewScripts) | Implementado | `GameplayScene`, `SceneBootstrapper`, spawn services (Player/Eater), WorldLifecycle |
 | [ADR-0012](./ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md) | Fluxo pós-gameplay: GameOver, Vitória e Restart | Implementado | `GameLoop` (NewScripts), `WorldLifecycle`, SceneFlow, `UIGlobalScene` (overlays de UI) |
-| [ADR-0013](./ADR-0013-Ciclo-de-Vida-Jogo.md) | Ciclo de vida do jogo (NewScripts) | Implementado | GameLoop + SceneFlow + WorldLifecycle (NewScripts) |
+| [ADR-0013](./ADR-0013-Ciclo-de-Vida-Jogo.md) | Ciclo de vida do jogo (NewScripts) | Aprovado / Implementado | GameLoop + SceneFlow + WorldLifecycle (NewScripts) |
 | [ADR-0014](./ADR-0014-GameplayReset-Targets-Grupos.md) | Gameplay Reset: Targets e Grupos | Implementado | `GameplayReset` (NewScripts), WorldLifecycle, spawn services (Player/Eater) |
 | [ADR-0015](./ADR-0015-Baseline-2.0-Fechamento.md) | Baseline 2.0: Fechamento Operacional | Implementado | NewScripts / Baseline 2.0 |
 | [ADR-0016](./ADR-0016-ContentSwap-WorldLifecycle.md) | ContentSwap InPlace-only (NewScripts) | Implementado | ContentSwap + WorldLifecycle (NewScripts) |
@@ -26,7 +26,7 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 
 ## Atalhos
 
-- Contrato canônico: [Observability-Contract.md](../Standards/Observability-Contract.md)
+- Contrato canônico: [Observability-Contract.md](../Standards/Standards.md#observability-contract)
 - Evidência vigente (ponte): [LATEST](../Reports/Evidence/LATEST.md)
 - Snapshot (canônico 2026-01-31): [Evidência consolidada](../Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md)
 - Ponte contínua: [Evidence/LATEST.md](../Reports/Evidence/LATEST.md)
@@ -34,6 +34,6 @@ Este índice lista as decisões arquiteturais registradas como ADR no projeto. U
 
 ## Contratos obrigatórios
 
-- `../Standards/Observability-Contract.md`
-- `../Standards/Production-Policy-Strict-Release.md`
+- `../Standards/Standards.md#observability-contract`
+- `../Standards/Standards.md#politica-strict-vs-release`
 - `../Reports/Evidence/README.md`
