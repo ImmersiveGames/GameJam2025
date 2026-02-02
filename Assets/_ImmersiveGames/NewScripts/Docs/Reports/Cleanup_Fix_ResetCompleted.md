@@ -1,28 +1,29 @@
 # Fix de duplicação — WorldLifecycleResetCompletedEvent
 
-## Problema
+## Antes
 
-Antes do ajuste, havia três publishers para `WorldLifecycleResetCompletedEvent`:
+- Driver (`WorldLifecycleSceneFlowResetDriver`) publicava `ResetCompleted` em paralelo ao `ResetWorldService`.
+- Isso gerava duplicação quando o reset era executado via DI.
 
-- `WorldLifecycleSceneFlowResetDriver.PublishResetCompleted` (driver)
-- `ResetWorldService.TriggerResetAsync` (fluxo normal)
-- `ResetWorldService.TriggerResetAsync` (catch)
+## Depois
 
-Isso gerava duplicação quando o driver usava `ResetWorldService` via DI, pois ambos publicavam o mesmo evento para o mesmo reset.
+- **Publisher canônico:** `ResetWorldService.TriggerResetAsync` (fluxo normal e catch).
+- **Driver** só publica em **SKIP/fallback/defensivo** (profile != gameplay, sem controllers, assinatura inválida) ou quando executa reset via controllers.
 
-## Ajuste aplicado
+## Verificação (rg)
 
-- O driver agora **não publica** `WorldLifecycleResetCompletedEvent` quando o reset é executado via `ResetWorldService` (DI).
-- O publisher canônico passa a ser o **`ResetWorldService`** para o fluxo principal de gameplay.
-- A semântica de erro do `ResetWorldService` foi mantida (as publicações normal/catch permanecem e não ocorrem na mesma execução).
+Comando executado:
 
-## Ramo(s) onde o driver ainda publica (SKIP/fallback)
+```
+rg -n "EventBus<\s*WorldLifecycleResetCompletedEvent\s*>\.Raise" Assets/_ImmersiveGames/NewScripts
+```
 
-O driver continua publicando **apenas** para liberar o gate do SceneFlow em cenários onde **não há** `ResetWorldService` responsável pelo publish:
+Saída:
 
-- **SKIP**: profile diferente de gameplay (startup/frontend).
-- **Fallback**: não há `WorldLifecycleController` na cena alvo.
-- **Fallback**: reset executado diretamente nos controllers porque `ResetWorldService` não está disponível via DI.
-- **Defensivo**: assinatura vazia em `SceneTransitionScenesReadyEvent`.
+```
+Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs:258:            EventBus<WorldLifecycleResetCompletedEvent>.Raise(
+Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Runtime/ResetWorldService.cs:49:                EventBus<WorldLifecycleResetCompletedEvent>.Raise(new WorldLifecycleResetCompletedEvent(ctx, rsn));
+Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Runtime/ResetWorldService.cs:56:                EventBus<WorldLifecycleResetCompletedEvent>.Raise(new WorldLifecycleResetCompletedEvent(ctx, rsn));
+```
 
-Esses ramos são considerados exceções deliberadas para evitar deadlock no gate do SceneFlow.
+> Observação: o publish no driver está restrito ao método `PublishResetCompleted(...)`, usado somente nos ramos SKIP/fallback/defensivo descritos acima.
