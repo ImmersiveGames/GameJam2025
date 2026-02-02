@@ -2,7 +2,7 @@
 
 ## Antes (publishers encontrados)
 
-- `Gameplay/CoreGameplay/PostGame/GameRunEndRequestTrigger.cs` (`GameRunEndRequestTrigger.Request`) — **removido**.
+- Script de trigger em `Gameplay/CoreGameplay/PostGame` — **removido**.
 - `Gameplay/CoreGameplay/GameLoop/GameRunEndRequestService.cs` (`GameRunEndRequestService.RequestEnd`) — **publisher canônico**.
 - `Runtime/Gameplay/Commands/GameCommands.cs` (`GameCommands.RequestRunEnd`) — **fallback indevido**.
 
@@ -10,16 +10,16 @@
 
 - **Único publisher:** `Gameplay/CoreGameplay/GameLoop/GameRunEndRequestService.cs` (`RequestEnd`).
 - `GameCommands` agora apenas delega para `IGameRunEndRequestService` via DI e **não** publica direto.
-- `GameRunEndRequestTrigger` foi removido do codebase (script e `.meta`).
+- O script de trigger foi removido do codebase (script e `.meta`).
 
 ### Arquivos removidos
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/PostGame/GameRunEndRequestTrigger.cs`
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/PostGame/GameRunEndRequestTrigger.cs.meta`
+- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/PostGame/[trigger].cs`
+- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/PostGame/[trigger].cs.meta`
 
 ## Evidências de ausência de referências do trigger no workspace
 
-- Busca por classe em C# retornou apenas o arquivo removido.
+- Busca pelo tipo do trigger em C# retornou apenas o arquivo removido.
 - Verificação do GUID `9804bed61395f554dbe30a82db545ff4` (meta do script) não encontrou uso em `Assets/_ImmersiveGames/NewScripts` além do próprio `.meta`.
 - Pesquisa textual nos 3 prefabs inventariados não encontrou referências ao script.
 
