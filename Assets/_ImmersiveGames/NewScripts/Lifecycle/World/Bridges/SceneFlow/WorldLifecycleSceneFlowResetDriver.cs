@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
     ///
     /// Responsabilidades:
     /// - Ao receber SceneTransitionScenesReadyEvent (profile gameplay), dispara ResetWorld na cena alvo.
-    /// - Publica WorldLifecycleResetCompletedEvent(signature) para liberar o completion gate do SceneFlow.
+    /// - Publica WorldLifecycleResetCompletedEvent(signature) apenas em SKIP/fallback para liberar o completion gate do SceneFlow.
     ///
     /// Observações:
     /// - Não depende de "coordinator" obsoleto.
@@ -159,9 +159,10 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
                 target: targetScene,
                 reason: ReasonScenesReady);
 
+            bool shouldPublishCompletion = true;
             try
             {
-                await ExecuteResetForGameplayAsync(signature, targetScene, controllers);
+                shouldPublishCompletion = await ExecuteResetForGameplayAsync(signature, targetScene, controllers);
             }
             catch (Exception ex)
             {
@@ -171,12 +172,16 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
             }
             finally
             {
-                PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, targetScene);
+                if (shouldPublishCompletion)
+                {
+                    // Fallback/SKIP: driver libera o gate quando não há ResetWorldService publicando.
+                    PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, targetScene);
+                }
                 MarkCompleted(signature);
             }
         }
 
-        private static async Task ExecuteResetForGameplayAsync(string signature, string targetScene, IReadOnlyList<WorldLifecycleController> controllers)
+        private static async Task<bool> ExecuteResetForGameplayAsync(string signature, string targetScene, IReadOnlyList<WorldLifecycleController> controllers)
         {
             // Primeiro: se um ResetWorldService estiver registrado no DI, use-o (ponto de integração centralizado).
             if (DependencyManager.HasInstance && DependencyManager.Provider.TryGetGlobal<IResetWorldService>(out var resetService) && resetService != null)
@@ -195,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
                         $"[WorldLifecycle] ResetWorldService falhou durante TriggerResetAsync. signature='{signature}', targetScene='{targetScene}', ex='{ex}'.");
                 }
 
-                return;
+                return false;
             }
 
             // Fallback: executar ResetWorld diretamente nos controllers (determinismo/local orchestrator).
@@ -226,6 +231,8 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
             DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
                 $"[WorldLifecycle] ResetWorld concluído (ScenesReady). signature='{signature}', targetScene='{targetScene}'.",
                 DebugUtility.Colors.Success);
+
+            return true;
         }
 
         private static string ResolveTargetSceneName(SceneTransitionContext context)
@@ -241,7 +248,7 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
 
         private static void PublishResetCompleted(string signature, string reason, string profile, string target)
         {
-            // Sempre publicar: o completion gate depende disso para não degradar em timeout.
+            // Publica apenas em SKIP/fallback: o completion gate depende disso para não degradar em timeout.
             LogObsResetCompleted(
                 signature: signature,
                 profile: profile,
