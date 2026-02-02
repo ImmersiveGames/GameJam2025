@@ -134,24 +134,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
                     continue;
                 }
 
-                if (TryGetActorKind(actor, out var actorKind) && actorKind == kind)
+                if (GameplayResetTargetMatching.MatchesActorKind(actor, kind))
                 {
                     results.Add(actor);
                 }
             }
-        }
-
-        private static bool TryGetActorKind(IActor actor, out ActorKind kind)
-        {
-            kind = ActorKind.Unknown;
-
-            if (actor is not IActorKindProvider provider)
-            {
-                return false;
-            }
-
-            kind = provider.Kind;
-            return true;
         }
 
         private static void AddEatersKindFirstWithFallback(
@@ -173,24 +160,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
                     continue;
                 }
 
-                if (TryGetActorKind(actor, out var actorKind) && actorKind == ActorKind.Eater)
+                if (GameplayResetTargetMatching.MatchesEaterKindFirstWithFallback(actor, out bool usedFallback))
                 {
                     results.Add(actor);
-                    continue;
-                }
-
-                var t = actor.Transform;
-                if (t == null)
-                {
-                    continue;
-                }
-
-                // Mantém a feature funcional sem depender de um tipo compile-time.
-                // Quando existir um EaterActor concreto, isso passa a classificar corretamente.
-                if (t.GetComponent<EaterActor>() != null)
-                {
-                    results.Add(actor);
-                    fallbackUsed = true;
+                    if (usedFallback)
+                    {
+                        fallbackUsed = true;
+                    }
                 }
             }
         }

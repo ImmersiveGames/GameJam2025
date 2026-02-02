@@ -374,7 +374,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
 
         private static void RegisterGameLoop()
         {
-            GameLoopBootstrap.Ensure();
+            GameLoopBootstrap.Ensure(includeGameRunServices: false, includeOutcomeEventInputBridge: false);
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameLoopBootstrap.EnsureRegistered() executado (serviço + bridge no escopo global).",
                 DebugUtility.Colors.Info);

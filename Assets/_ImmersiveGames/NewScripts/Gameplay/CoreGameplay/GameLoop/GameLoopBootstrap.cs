@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop
 
         private static bool _initialized;
 
-        public static void Ensure()
+        public static void Ensure(bool includeGameRunServices = true, bool includeOutcomeEventInputBridge = true)
         {
             if (_initialized)
             {
@@ -29,8 +29,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop
 
             EnsureService();
             EnsureBridge();
-            EnsureGameRunServices();
-            EnsureOutcomeEventInputBridge();
+            if (includeGameRunServices)
+            {
+                EnsureGameRunServices();
+            }
+
+            if (includeOutcomeEventInputBridge)
+            {
+                EnsureOutcomeEventInputBridge();
+            }
             EnsureRunEndEventBridge();
             EnsureDriver();
 

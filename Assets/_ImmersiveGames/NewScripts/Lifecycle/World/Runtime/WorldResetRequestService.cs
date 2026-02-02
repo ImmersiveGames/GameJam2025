@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Runtime.Gates;
 using UnityEngine.SceneManagement;
@@ -41,6 +42,17 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Runtime
                 DebugUtility.LogVerbose(typeof(WorldResetRequestService),
                     $"[OBS][WorldLifecycle] ResetRequested signature='{signature}' sourceSignature='{signature}' profile='{ManualProfile}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
                     DebugUtility.Colors.Info);
+
+                if (DependencyManager.HasInstance &&
+                    DependencyManager.Provider.TryGetGlobal<IResetWorldService>(out var resetService) &&
+                    resetService != null)
+                {
+                    DebugUtility.LogVerbose<WorldResetRequestService>(
+                        $"[WorldLifecycle] RequestResetAsync -> ResetWorldService.TriggerResetAsync. source='{normalizedSource}', scene='{activeScene}', reason='{reason}'.",
+                        DebugUtility.Colors.Info);
+                    await resetService.TriggerResetAsync(signature, reason);
+                    return;
+                }
 
                 // Observabilidade: se estiver em transição, isso pode ser um sinal de uso indevido.
                 if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
