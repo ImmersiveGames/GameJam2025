@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
                 target: targetScene,
                 reason: ReasonScenesReady);
 
-            bool shouldPublishCompletion = true;
+            bool shouldPublishCompletion = false;
             try
             {
                 shouldPublishCompletion = await ExecuteResetForGameplayAsync(signature, targetScene, controllers);
@@ -169,6 +169,7 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Bridges.SceneFlow
                 // Best-effort: loga, mas NÃO impede liberação do gate.
                 DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
                     $"[WorldLifecycle] Erro durante ResetWorld (ScenesReady). signature='{signature}', targetScene='{targetScene}', ex='{ex}'");
+                shouldPublishCompletion = true;
             }
             finally
             {
