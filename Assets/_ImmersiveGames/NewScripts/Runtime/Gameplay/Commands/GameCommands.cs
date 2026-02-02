@@ -1,5 +1,6 @@
 // Assets/_ImmersiveGames/NewScripts/Infrastructure/Gameplay/GameCommands.cs
 
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop;
@@ -90,10 +91,16 @@ namespace _ImmersiveGames.NewScripts.Runtime.Gameplay.Commands
                 return;
             }
 
-            DebugUtility.LogWarning(typeof(GameCommands),
-                "[GameCommands] IGameRunEndRequestService indisponível. Publicando GameRunEndRequestedEvent diretamente.");
+            if (DependencyManager.HasInstance &&
+                DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var runEndRequestService) &&
+                runEndRequestService != null)
+            {
+                runEndRequestService.RequestEnd(outcome, reason);
+                return;
+            }
 
-            EventBus<GameRunEndRequestedEvent>.Raise(new GameRunEndRequestedEvent(outcome, reason));
+            DebugUtility.LogWarning(typeof(GameCommands),
+                "[GameCommands] IGameRunEndRequestService indisponível. Ignorando RequestRunEnd.");
         }
 
         private static string FormatReason(string reason)

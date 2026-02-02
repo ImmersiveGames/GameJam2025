@@ -10,26 +10,24 @@
 
 ## Resultado por evento
 
-### A) `EventBus<WorldLifecycleResetCompletedEvent>.Raise(...)`
+### A) `EventBus<WorldLifecycleResetCompletedEvent> Raise(...)`
 
 **Status:** DUPLICADO (3 publishers encontrados)
 
 | Arquivo | Linha | Classe / Método | Linha com Raise | Duplicado? |
 | --- | ---: | --- | --- | --- |
-| `Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs` | 251 | `WorldLifecycleSceneFlowResetDriver` / `PublishResetCompleted` | `EventBus<WorldLifecycleResetCompletedEvent>.Raise(` | SIM |
-| `Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Runtime/ResetWorldService.cs` | 49 | `ResetWorldService` / `TriggerResetAsync` | `EventBus<WorldLifecycleResetCompletedEvent>.Raise(new WorldLifecycleResetCompletedEvent(ctx, rsn));` | SIM |
-| `Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Runtime/ResetWorldService.cs` | 56 | `ResetWorldService` / `TriggerResetAsync` (catch) | `EventBus<WorldLifecycleResetCompletedEvent>.Raise(new WorldLifecycleResetCompletedEvent(ctx, rsn));` | SIM |
+| `Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs` | 251 | `WorldLifecycleSceneFlowResetDriver` / `PublishResetCompleted` | `EventBus<WorldLifecycleResetCompletedEvent> Raise(...)` | SIM |
+| `Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Runtime/ResetWorldService.cs` | 49 | `ResetWorldService` / `TriggerResetAsync` | `EventBus<WorldLifecycleResetCompletedEvent> Raise(...)` | SIM |
+| `Assets/_ImmersiveGames/NewScripts/Lifecycle/World/Runtime/ResetWorldService.cs` | 56 | `ResetWorldService` / `TriggerResetAsync` (catch) | `EventBus<WorldLifecycleResetCompletedEvent> Raise(...)` | SIM |
 
-### B) `EventBus<GameRunEndRequestedEvent>.Raise(...)`
+### B) `EventBus<GameRunEndRequestedEvent> Raise(...)`
 
-**Status:** DUPLICADO (3 publishers encontrados)
+**Status:** ÚNICO (1 publisher encontrado)
 
 | Arquivo | Linha | Classe / Método | Linha com Raise | Duplicado? |
 | --- | ---: | --- | --- | --- |
-| `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/PostGame/GameRunEndRequestTrigger.cs` | 88 | `GameRunEndRequestTrigger` / `Request` | `EventBus<GameRunEndRequestedEvent>.Raise(new GameRunEndRequestedEvent(outcome, reason));` | SIM |
-| `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/GameLoop/GameRunEndRequestService.cs` | 30 | `GameRunEndRequestService` / `RequestEnd` | `EventBus<GameRunEndRequestedEvent>.Raise(new GameRunEndRequestedEvent(outcome, reason));` | SIM |
-| `Assets/_ImmersiveGames/NewScripts/Runtime/Gameplay/Commands/GameCommands.cs` | 96 | `GameCommands` / `RequestRunEnd` | `EventBus<GameRunEndRequestedEvent>.Raise(new GameRunEndRequestedEvent(outcome, reason));` | SIM |
+| `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/GameLoop/GameRunEndRequestService.cs` | 30 | `GameRunEndRequestService` / `RequestEnd` | `EventBus<GameRunEndRequestedEvent> Raise(...)` | NÃO |
 
 ## Observações sobre prefabs
 
-- Não há referências textuais a `EventBus<WorldLifecycleResetCompletedEvent>.Raise(` ou `EventBus<GameRunEndRequestedEvent>.Raise(` nos 3 prefabs do inventário. (Pesquisa textual simples em arquivos `.prefab`.)
+- Não há referências textuais a `EventBus<WorldLifecycleResetCompletedEvent> Raise(` ou `EventBus<GameRunEndRequestedEvent> Raise(` nos 3 prefabs do inventário. (Pesquisa textual simples em arquivos `.prefab`.)
