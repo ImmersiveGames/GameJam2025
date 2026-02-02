@@ -109,3 +109,7 @@ Buscar no log:
   - definir `reason` próprio
   - atualizar Matrix D e esta ADR
   - incluir evidência por assinatura no log
+
+## Implementação (arquivos impactados)
+
+> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.

@@ -127,6 +127,20 @@ Quando o HUD não pode operar em Release:
 
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 
+## Implementação (arquivos impactados)
+
+### Runtime / Editor (código e assets)
+
+- **Infrastructure**
+  - `Infrastructure/Scene/SceneTransitionService.cs`
+  - `Infrastructure/SceneFlow/LoadingHud/NewScriptsLoadingHudService.cs`
+  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs`
+
+### Docs / evidências relacionadas
+
+- `Reports/Evidence/LATEST.md`
+- `Standards/Standards.md`
+
 ## Referências
 
 - [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)

@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.QA.Editor
+namespace _ImmersiveGames.NewScripts.QA.IntroStage.Editor
 {
     public static class IntroStageQaTools
     {

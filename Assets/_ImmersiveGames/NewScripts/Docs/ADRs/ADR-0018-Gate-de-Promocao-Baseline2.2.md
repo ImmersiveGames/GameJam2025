@@ -36,6 +36,10 @@ Requisitos minimos na mesma entrega:
 - Promocoes deixam de ser subjetivas; o baseline tem checkpoints versionados.
 - Mudancas de contrato (reason/ancoras) passam a exigir evidencia.
 
+## Implementação (arquivos impactados)
+
+> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+
 ## Referencias
 
 - Evidencia canonica: ../Reports/Evidence/LATEST.md

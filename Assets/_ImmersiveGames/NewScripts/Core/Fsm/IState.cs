@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Actions;
+using _ImmersiveGames.NewScripts.Runtime.Actions;
 namespace _ImmersiveGames.NewScripts.Core.Fsm
 {
     public interface IState

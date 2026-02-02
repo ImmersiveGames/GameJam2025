@@ -102,7 +102,7 @@
 ```
 [SimulationGate] Acquire :: token='state.pause' :: reason='PauseOverlay'
 [InputMode] APPLY :: mode='PauseOverlay'
-...
+[...trecho omitido...]
 [SimulationGate] Release :: token='state.pause' :: reason='PauseOverlay'
 [InputMode] APPLY :: mode='Gameplay'
 ```
@@ -139,7 +139,7 @@
 
 ```
 [SimulationGate] Acquire :: token='flow.scene_transition' :: reason='SceneTransitionStarted'
-...
+[...trecho omitido...]
 [SimulationGate] Release :: token='flow.scene_transition' :: reason='SceneTransitionCompleted'
 ```
 
@@ -147,7 +147,7 @@
 
 ```
 [SimulationGate] Acquire :: token='WorldLifecycle.WorldReset' :: reason='ResetWorld'
-...
+[...trecho omitido...]
 [SimulationGate] Release :: token='WorldLifecycle.WorldReset' :: reason='ResetWorld/Complete'
 ```
 

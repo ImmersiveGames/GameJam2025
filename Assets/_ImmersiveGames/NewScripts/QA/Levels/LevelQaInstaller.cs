@@ -2,7 +2,7 @@
 // Instalador do QA de Levels em Editor/Development.
 
 #nullable enable
-using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.Levels

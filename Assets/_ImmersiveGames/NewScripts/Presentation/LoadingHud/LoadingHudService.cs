@@ -1,8 +1,8 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Runtime;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Runtime.Mode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.LoadingHud
     /// - Release: falha degrada com aviso (DEGRADED_MODE) e o jogo continua sem HUD.
     ///
     /// Observação:
-    /// - A cena precisa existir em Build Settings e conter 1x LoadingHudController.
+    /// - A cena precisa existir em Build Settings e conter 1x SceneFlowLoadingHudDriver.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudService : ILoadingHudService

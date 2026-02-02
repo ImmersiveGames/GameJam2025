@@ -3,7 +3,7 @@
 // Comentários em português; código em inglês.
 
 #nullable enable
-using _ImmersiveGames.NewScripts.Core.DebugLog;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.ContentSwap

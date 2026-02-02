@@ -5,9 +5,9 @@
 #nullable enable
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.DebugLog;
-using _ImmersiveGames.NewScripts.Core.DI;
-using _ImmersiveGames.NewScripts.Gameplay.ContentSwap;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap;
 using UnityEngine;
 
 #if UNITY_EDITOR

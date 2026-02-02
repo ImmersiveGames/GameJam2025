@@ -141,6 +141,25 @@ Quando o fade não pode operar em Release:
   - Contém âncoras `[OBS][Fade]` (`FadeInStarted/Completed`, `FadeOutStarted/Completed`) para `profile=startup` e `profile=gameplay` com `signature` completa.
   - Contém evidência de ordenação: `FadeInCompleted` ocorre antes do load; `ScenesReady` + completion gate antes de `FadeOut`; `FadeOutCompleted` antes de `TransitionCompleted`.
 
+## Implementação (arquivos impactados)
+
+### Runtime / Editor (código e assets)
+
+- **Infrastructure**
+  - `Infrastructure/Runtime/DegradedModeReporter.cs`
+  - `Infrastructure/Runtime/IDegradedModeReporter.cs`
+  - `Infrastructure/Runtime/IRuntimeModeProvider.cs`
+  - `Infrastructure/Runtime/UnityRuntimeModeProvider.cs`
+  - `Infrastructure/Scene/SceneTransitionService.cs`
+  - `Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs`
+  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs`
+
+### Docs / evidências relacionadas
+
+- `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
+- `Reports/Evidence/LATEST.md`
+- `Standards/Standards.md`
+
 ## Referências
 
 - [ADR-0010 — Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)

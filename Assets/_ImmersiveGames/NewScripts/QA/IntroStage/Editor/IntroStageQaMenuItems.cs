@@ -1,7 +1,6 @@
-using _ImmersiveGames.NewScripts.Core.DebugLog;
-using _ImmersiveGames.NewScripts.Core.DI;
-using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-using _ImmersiveGames.NewScripts.Gameplay.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop.IntroStage;
 using UnityEditor;
 
 namespace _ImmersiveGames.NewScripts.QA.IntroStage.Editor

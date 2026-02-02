@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
+using _ImmersiveGames.NewScripts.Runtime.Predicates;
 namespace _ImmersiveGames.NewScripts.Core.Fsm
 {
     public class StateMachine

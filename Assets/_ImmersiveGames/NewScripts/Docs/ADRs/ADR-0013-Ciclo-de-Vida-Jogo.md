@@ -13,9 +13,9 @@
 - Dono: (preencher)
 - Artefatos criados nesta etapa (stubs iniciais):
   - `Infrastructure/Scene/SceneTransitionService.cs` (stub)
-  - `Gameplay/WorldLifecycle/ResetWorldService.cs` (stub)
+  - `Lifecycle/World/Runtime/ResetWorldService.cs` (implementado)
 - `Gameplay/GameLoop/GameLoopManager.cs` (nova implementação mínima que substitui o stub legado)
-- `Gameplay/WorldLifecycle/README.md` (coordenação de próximas tarefas)
+- `Lifecycle/World/Runtime/README.md` (coordenação de próximas tarefas)
 
 ## Contexto
 
@@ -106,7 +106,7 @@ Principais pontos (NewScripts):
 - **Fade**: ver ADR-0009 (`Infrastructure/SceneFlow/Fade/*`)
 - **Loading HUD**: ver ADR-0010 (`Infrastructure/SceneFlow/LoadingHud/*`)
 - **Gatilho de ResetWorld em produção**: driver ligado ao `ScenesReady` (SceneFlow)
-- **WorldLifecycle reset pipeline**: `Gameplay/WorldLifecycle/*`
+- **WorldLifecycle reset pipeline**: `Lifecycle/World/Runtime/*`
 - **GameLoop Intro/Playing/PostGame**: `Gameplay/GameLoop/*`
 
 ## Observabilidade
@@ -134,6 +134,22 @@ Principais pontos (NewScripts):
 - [ ] Integração do gatilho `ScenesReady` → `ResetWorld` (SceneFlow driver) — Em progresso
 - [ ] GameLoop (Intro/Playing/PostGame) com gates e sinais de observabilidade — Em progresso
 
+## Implementação (arquivos impactados)
+
+### Runtime / Editor (código e assets)
+
+- **Gameplay**
+  - `Gameplay/GameLoop/GameLoop.cs`
+  - `Gameplay/GameLoop/GameLoopManager.cs`
+  - `Lifecycle/World/Runtime/ResetWorldService.cs`
+- **Infrastructure**
+  - `Infrastructure/Scene/SceneTransitionService.cs`
+
+### Docs / evidências relacionadas
+
+- `Lifecycle/World/Runtime/README.md`
+- `Standards/Standards.md`
+
 ## Notas de implementação
 
 Nesta etapa inicial (2026-02-01) foram adicionados stubs e documentação mínima para começar a implementação técnica do ADR-0013. O objetivo é criar pontos de integração claros para o trabalho incremental.
@@ -141,9 +157,9 @@ Nesta etapa inicial (2026-02-01) foram adicionados stubs e documentação mínim
 O que foi criado (artefatos):
 
 - `Infrastructure/Scene/SceneTransitionService.cs` — stub com API inicial para publicar `ScenesReady` e `SceneTransition` anchors. Serve como ponto de integração para o envelope visual (ADR-0009/0010).
-- `Gameplay/WorldLifecycle/ResetWorldService.cs` — stub com assinatura para `ResetWorld(reason, contextSignature)` e eventos `ResetWorldStarted`/`ResetCompleted` (a implementar).
+- `Lifecycle/World/Runtime/ResetWorldService.cs` — serviço com assinatura para `ResetWorld(reason, contextSignature)` e eventos `ResetWorldStarted`/`ResetCompleted` (a implementar).
 - `Gameplay/GameLoop/GameLoop.cs` — stub descrevendo estados (Intro, Playing, PostGame) e pontos de bloqueio (`GameplaySimulationBlocked/Unblocked`).
-- `Gameplay/WorldLifecycle/README.md` — notas de coordenação e próximos passos.
+- `Lifecycle/World/Runtime/README.md` — notas de coordenação e próximos passos.
 
 Próximos passos (curto prazo):
 

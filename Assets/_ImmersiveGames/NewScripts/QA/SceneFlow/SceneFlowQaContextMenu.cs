@@ -2,10 +2,10 @@
 // QA de SceneFlow/WorldLifecycle: ações objetivas para evidência.
 
 #nullable enable
-using _ImmersiveGames.NewScripts.Core.DebugLog;
-using _ImmersiveGames.NewScripts.Core.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
-using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Lifecycle.World.Runtime;
+using _ImmersiveGames.NewScripts.Runtime.Navigation;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.SceneFlow

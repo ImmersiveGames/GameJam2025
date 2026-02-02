@@ -123,3 +123,17 @@ Quando editar o reset de gameplay, revisar também:
 - `NewScripts/Infrastructure/Scene/SceneBootstrapper.cs` (DI)
 - `NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs` (QA)
 - `NewScripts/Docs/Reports/Audits/*/ADR-Sync-Audit-NewScripts.md` (auditoria)
+
+## Implementação (arquivos impactados)
+
+### Runtime / Editor (código e assets)
+
+- **NewScripts**
+  - `NewScripts/Infrastructure/Scene/SceneBootstrapper.cs`
+  - `NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs`
+- **QA**
+  - `QA/GameplayReset/GameplayResetRequestQaDriver.cs`
+
+### Docs / evidências relacionadas
+
+- `NewScripts/Docs/Reports/Audits/*/ADR-Sync-Audit-NewScripts.md`

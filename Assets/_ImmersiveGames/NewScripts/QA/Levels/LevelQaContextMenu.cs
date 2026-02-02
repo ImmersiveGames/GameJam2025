@@ -3,11 +3,12 @@
 
 #nullable enable
 using System.Text;
-using _ImmersiveGames.NewScripts.Core.DebugLog;
-using _ImmersiveGames.NewScripts.Core.DI;
-using _ImmersiveGames.NewScripts.Gameplay.Levels;
-using _ImmersiveGames.NewScripts.Gameplay.Levels.Providers;
-using _ImmersiveGames.NewScripts.Infrastructure.Promotion;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels;
+using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Providers;
+using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers;
+using _ImmersiveGames.NewScripts.Runtime.Promotion;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.Levels
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
             }
 
             var provider = ResolveGlobal<ILevelCatalogProvider>("ILevelCatalogProvider");
-            var resolver = ResolveGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver>("ILevelCatalogResolver");
+            var resolver = ResolveGlobal<ILevelCatalogResolver>("ILevelCatalogResolver");
             if (provider == null || resolver == null)
             {
                 return;
@@ -141,7 +142,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         }
 
         private static void AppendDefinitionSummary(
-            _ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver resolver,
+            ILevelCatalogResolver resolver,
             StringBuilder summary,
             string levelId)
         {
@@ -222,7 +223,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                 }
             }
 
-            var resolver = ResolveGlobal<_ImmersiveGames.NewScripts.Gameplay.Levels.Resolvers.ILevelCatalogResolver>("ILevelCatalogResolver");
+            var resolver = ResolveGlobal<ILevelCatalogResolver>("ILevelCatalogResolver");
             if (resolver == null)
             {
                 return;

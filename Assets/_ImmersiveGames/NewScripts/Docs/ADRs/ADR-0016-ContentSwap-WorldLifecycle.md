@@ -75,6 +75,10 @@ Eventos/logs mínimos:
   - `[QA][ContentSwap] SwapInPlace contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
 - **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
+## Implementação (arquivos impactados)
+
+> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+
 ## Referências
 
 - ADR-TEMPLATE.md

@@ -1,59 +1,18 @@
-# Evidências — metodologia e estrutura
+# Evidence (Reports)
 
-Este diretório contém **evidências arquivadas** (snapshots) usadas para:
+Este diretório guarda snapshots de evidência (logs + interpretação) usados para validar o baseline.
 
-- Sustentar ADRs com prova observável.
-- Detectar regressões ao longo do tempo.
-- Reduzir ruído em `Docs/Reports` mantendo um conjunto mínimo e organizado de artefatos.
+## Como usar
 
-## Princípios
+1. Leia o ponteiro em [`LATEST.md`](LATEST.md).
+2. Abra o arquivo de evidência do snapshot (ex.: `Baseline-2.2-Evidence-2026-01-31.md`).
+3. Valide as **assinaturas-chave** e **invariantes** indicadas no documento.
+4. Use o `*.log` correspondente como fonte bruta quando houver dúvida.
 
-1. **Log do Console como evidência primária**
-   - A evidência primária é o **log bruto do Console (Unity)** produzido por uma execução real.
-   - Quando necessário, o log pode ser copiado para um arquivo `.log` apenas como **espelho estático** do Console.
-   - Logs gerados por ferramentas/scripts podem falhar; se houver divergência, o Console continua sendo a fonte de verdade.
+## Convenções
 
-2. **Contrato como fonte de tokens canônicos**
-   - `Docs/Standards/Standards.md#observability-contract` define o contrato de evidências (tokens/strings).
-   - Verificações automatizadas são opcionais; o snapshot deve sempre conter um resumo curado com âncoras observáveis.
-
-3. **Snapshot datado e imutável**
-   - Um snapshot é identificado por data (`YYYY-MM-DD`) e não deve ser reescrito.
-   - Cada snapshot representa o estado do sistema em um momento, e serve como baseline para regressão.
-
-## Estrutura
-
-> Arquivos antigos/obsoletos podem ser movidos para `Evidence/_Archive/` para manter o diretório principal enxuto, sem perder histórico.
-
-
-- `Evidence/YYYY-MM-DD/`
-  - `Baseline-2.x-Evidence-YYYY-MM-DD.md` (resumo canônico do snapshot)
-  - `Logs/` (opcional): espelho do Console em `.log`
-  - `Verifications/` (opcional): checagens/âncoras curadas para navegação
-
-- `Evidence/LATEST.md`
-  - Aponta para o snapshot mais recente considerado canônico.
-
-## Regras para ADR
-
-- **ADR em status “Aceito”**
-  - Deve referenciar pelo menos **um** snapshot datado (`Evidence/YYYY-MM-DD/...`).
-  - Pode também referenciar `Evidence/LATEST.md` como ponte para regressão contínua.
-
-- **ADR em status “Proposto/Em andamento”**
-  - Pode referenciar apenas `Evidence/LATEST.md` até o fechamento.
-
-## Como arquivar uma nova evidência (quando um ADR for fechado)
-
-1. Rodar o fluxo/cenário relevante (ex.: Baseline 2.1).
-2. Copiar o log do **Console** (fonte de verdade) e, se desejado, salvar um espelho em `Evidence/YYYY-MM-DD/Logs/`.
-3. Gerar um resumo canônico (arquivo `Baseline-2.x-Evidence-YYYY-MM-DD.md`) com links para os artefatos e âncoras.
-4. Atualizar `Evidence/LATEST.md` para apontar para a nova data.
-5. Atualizar o(s) ADR(s) com os links de evidência.
-6. Registrar no `Docs/CHANGELOG.md`.
-
-## Retenção e limpeza
-
-- É aceitável remover relatórios antigos em `Docs/Reports` desde que:
-  - `Standards/Standards.md#observability-contract` seja mantido; e
-  - `Evidence/` contenha os snapshots datados necessários.
+- **Snapshot:** pasta `YYYY-MM-DD/` contendo:
+  - `Baseline-<versão>-Evidence-YYYY-MM-DD.md`
+  - `Baseline-<versão>-Smoke-LastRun.log`
+- **Omissões de log:** usar `[...trecho omitido...]` quando necessário (evitar “...” solto).
+- **Promoção:** ao promover um snapshot para LATEST, atualizar `LATEST.md` e registrar o motivo em um ADR (quando aplicável).

@@ -20,6 +20,10 @@ A partir do Baseline 2.2, as mesmas garantias ficam cobertas e ampliadas por evi
 
 Considerar o Baseline 2.0 fechado e nao evoluir mais o contrato 2.0. Evolucoes devem acontecer via Baseline 2.2+ (com gate, evidencia e auditoria).
 
+## Implementação (arquivos impactados)
+
+> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+
 ## Referencias
 
 - Snapshot canonico (2.2): `../Reports/Evidence/LATEST.md`

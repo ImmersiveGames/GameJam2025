@@ -1,8 +1,8 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_QA
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.DebugLog;
-using _ImmersiveGames.NewScripts.Gameplay.Reset;
-using _ImmersiveGames.NewScripts.Infrastructure.Actors;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset;
+using _ImmersiveGames.NewScripts.Runtime.Actors;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.GameplayReset
@@ -63,14 +63,6 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
             DebugUtility.Log(typeof(GameplayResetKindQaEaterActor),
                 $"[QA][GameplayResetKind] Eater Probe -> {step} (actor='{name}', id={id}, kind={Kind}, target={ctx.Request.Target})");
         }
-    }
-
-    /// <summary>
-    /// Marker QA para permitir que EaterOnly resolva targets via GetComponent("EaterActor").
-    /// </summary>
-    [DisallowMultipleComponent]
-    public sealed class EaterActor : MonoBehaviour
-    {
     }
 }
 #endif

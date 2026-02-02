@@ -121,3 +121,7 @@ Evidência canônica mostra:
 - Garantir que o **classifier** de “cena de gameplay” seja a fonte canônica da exigência de `WorldDefinition`.
 - Se necessário, adicionar uma checagem explícita no `SceneBootstrapper`:
   - `if (isGameplayScene && worldDefinition == null) -> error/assert`.
+
+## Implementação (arquivos impactados)
+
+> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.

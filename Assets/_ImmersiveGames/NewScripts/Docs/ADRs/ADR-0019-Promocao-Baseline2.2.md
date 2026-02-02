@@ -36,3 +36,7 @@ Fora de escopo do 2.2:
 - ADR-0018 (Gate de promocao): `ADR-0018-Gate-de-Promocao-Baseline2.2.md`
 - Contrato de observabilidade: `../Standards/Standards.md#observability-contract`
 - Politica Strict/Release: `../Standards/Standards.md#politica-strict-vs-release`
+
+## Implementação (arquivos impactados)
+
+> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.

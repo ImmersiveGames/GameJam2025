@@ -43,6 +43,10 @@ Em Unity, preferir falhar cedo para sinalizar bugs de pipeline/config, evitando 
 
 Checklist objetiva do que precisa estar verdadeiro para considerar “feito”.
 
+## Implementação (arquivos impactados)
+
+> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+
 ## Notas de implementação (se necessário)
 
 Detalhes de arquitetura, pontos de integração, exemplos de API, etc.
