@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Providers;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers;
 using _ImmersiveGames.NewScripts.Runtime.Mode;
-using _ImmersiveGames.NewScripts.Runtime.Promotion;
 namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels
 {
     /// <summary>
@@ -57,12 +56,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels
             // 3) Resolver de catálogo
             if (!provider.TryGetGlobal<ILevelCatalogResolver>(out var resolver) || resolver == null)
             {
-                // PromotionGateService é opcional: se não estiver registrado, o resolver assume "allow".
-                provider.TryGetGlobal<PromotionGateService>(out var promotionGate);
                 resolver = new LevelCatalogResolver(
                     catalogProvider,
                     definitionProvider,
-                    promotionGate,
                     runtimeModeProvider,
                     degradedModeReporter);
                 provider.RegisterGlobal<ILevelCatalogResolver>(resolver, allowOverride: false);

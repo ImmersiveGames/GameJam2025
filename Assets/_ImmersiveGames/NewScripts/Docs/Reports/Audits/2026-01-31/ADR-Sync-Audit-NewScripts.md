@@ -1,4 +1,4 @@
-﻿# ADR Sync Audit — NewScripts (ADR-0009..ADR-0019)
+﻿# ADR Sync Audit — NewScripts (ADR-0009..ADR-0017)
 
 > **Regra operacional:** manter **1 arquivo de evidência por dia** em `Docs/Reports/Evidence/<data>/Baseline-2.2-Evidence-YYYY-MM-DD.md` e mesclar/limpar quaisquer arquivos adicionais.
 
@@ -22,8 +22,6 @@
 | ADR-0015 (Baseline 2.0 fechamento) | OK      | Evidências e contratos em Docs/Reports/Evidence/LATEST.md e ADR                              | Não aplicável (documental)                                                      | Baixo  |
 | ADR-0016 (ContentSwap InPlace-only) | PARCIAL | ContentSwapChangeServiceInPlaceOnly + ContentSwapContextService + GlobalBootstrap            | Respeito a gates (scene_transition/sim.gameplay) não aparece no serviço         | Médio  |
 | ADR-0017 (LevelManager + Catalog) | PARCIAL | LevelManager + LevelCatalogResolver + ResourcesLevelCatalogProvider + LevelManagerInstaller + assets em Resources | Fail-fast para ID/config ausente não ocorre; evidência canônica ainda “TODO” no ADR | Médio  |
-| ADR-0018 (Gate promoção Baseline 2.2) | PARCIAL | PromotionGateService + gating no bootstrap + contratos de ContentSwap/Level                   | Gate sempre default habilitado (sem config carregado no serviço); critérios de promoção dependem de processo/doc | Médio  |
-| ADR-0019 (Promoção Baseline 2.2) | AUSENTE (no runtime) | ADR é processual (Docs/Reports/Evidence); nenhum runtime/DI específico                       | Sem implementação de processo em runtime                                        | Baixo  |
 
 ### Top Divergências / Faltas (Impacto Alto)
 - (Resolvido) Loading HUD: fluxo agora falha em modo strict quando controller faltar, e o setup final inclui `LoadingHudController` na cena correta.
@@ -31,7 +29,6 @@
 - ContentSwap sem gating: ContentSwapChangeServiceInPlaceOnly não consulta gates (scene_transition / sim.gameplay) apesar do contrato exigir respeito a gates.
 - (Resolvido) WorldDefinition em gameplay: SceneBootstrapper aplica enforce (Strict/Release) para worldDefinition ausente e valida mínimos (Player/Eater).
 - Level catalog fail-fast não aplicado: resolver e session logam warnings e retornam false, mas não falham; contrato pede falha explícita para IDs/config ausentes.
-- Promotion gate sempre habilitado: PromotionGateService retorna defaults habilitados, sem carregamento de config (contrato de gate processual fica sem enforcement real).
 
 
 ## 1.1) Snapshot Strict/Release (Baseline 2.2) — consolidado
@@ -189,38 +186,10 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - Alta — Fail-fast para IDs/config ausentes.
 - Média — Evidência canônica do catálogo em LATEST.md (ADR cita TODO).
 
-### ADR-0018 — Gate de promoção (Baseline 2.2)
-**Objetivo:** Gate processual e semântica ContentSwap vs LevelManager.
-**Contrato mínimo:** Gate define critérios + LATEST.md como referência canônica.
-
-**Implementação Encontrada:**
-- PromotionGate: PromotionGateService sempre default-enabled (sem carregamento de config).
-- Registro: PromotionGateInstaller é chamado no bootstrap.
-- Uso: LevelCatalogResolver checa gate para plans e GlobalBootstrap usa gate para registrar ContentSwap/LevelManager.
-
-**Observabilidade:**
-- Esperado: observability alinhada ao contrato (ContentSwap/Level).
-- Encontrado: logs [OBS][LevelCatalog] sobre gate missing/allow.
-
-**Alinhamento:**
-- ✅ Aderente: separação de semântica ContentSwap vs LevelManager está refletida no código.
-- ⚠️ Parcial: gate sempre allow (defaults), sem config real.
-
-**Gaps:**
-- Média — Implementar leitura de config real para gates (ou explicitar modo sempre habilitado).
-
-### ADR-0019 — Promoção Baseline 2.2
-**Objetivo/Contrato:** Processo de promoção e evidência canônica.
-**Implementação Encontrada:** Nenhuma em runtime (é processo de docs/evidências).
-
-**Status:** AUSENTE (no runtime)
-**Gaps:**
-- Baixa — Processo permanece documental; sem automation runtime (esperado, mas explícito).
-
 ## 3) Inventário de “Componentes Órfãos” e “Documentação Órfã”
-### Componentes Órfãos (Código sem ADR Explícito 0009–0019)
-- WorldSpawnSmokeRunner (tool de smoke test) não aparece nos ADRs de 0009–0019; é utilitário isolado para testes locais.
-- WorldResetRequestHotkeyBridge (dev hotkey) também não aparece nos ADRs do ciclo 0009–0019; é ferramenta DEV/QA.
+### Componentes Órfãos (Código sem ADR Explícito 0009–0017)
+- WorldSpawnSmokeRunner (tool de smoke test) não aparece nos ADRs de 0009–0017; é utilitário isolado para testes locais.
+- WorldResetRequestHotkeyBridge (dev hotkey) também não aparece nos ADRs do ciclo 0009–0017; é ferramenta DEV/QA.
 
 ### Documentação Órfã
 - Reason-Map: removido (conteúdo consolidado em `Docs/Standards/Standards.md#reason-map-legado`).
@@ -234,4 +203,3 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 ### Alvos para Normalização (Áreas)
 - Fail-fast controlado para Fade/LoadingHUD/WorldDefinition/LevelCatalog (evitar fallback silencioso em produção).
 - Gates explícitos para ContentSwap e LevelChange (scene_transition / sim.gameplay).
-- Promoção (Baseline 2.2): decidir se gate fica sempre enabled ou se haverá config real + evidências.

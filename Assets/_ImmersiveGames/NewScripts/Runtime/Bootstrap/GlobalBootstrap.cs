@@ -46,7 +46,6 @@ using _ImmersiveGames.NewScripts.Runtime.Gates;
 using _ImmersiveGames.NewScripts.Runtime.InputSystems;
 using _ImmersiveGames.NewScripts.Runtime.Mode;
 using _ImmersiveGames.NewScripts.Runtime.Navigation;
-using _ImmersiveGames.NewScripts.Runtime.Promotion;
 using _ImmersiveGames.NewScripts.Runtime.Scene;
 using _ImmersiveGames.NewScripts.Runtime.SceneFlow;
 using _ImmersiveGames.NewScripts.Runtime.SceneFlow.Fade;
@@ -134,8 +133,6 @@ namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
         private static void RegisterEssentialServicesOnly()
         {
             PrimeEventSystems();
-
-            RegisterPromotionGateService();
 
             RegisterRuntimePolicyServices();
 
@@ -244,12 +241,6 @@ namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle).",
                 DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterPromotionGateService()
-        {
-            // Gate de promoção: features podem ser ligadas/desligadas sem quebrar o boot.
-            PromotionGateInstaller.EnsureRegistered(DependencyManager.Provider);
         }
 
         private static void RegisterRuntimePolicyServices()
@@ -890,31 +881,12 @@ namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Registered global service: {typeof(T).Name}.");
         }
 
-        private static bool IsPromotionEnabled(IDependencyProvider provider, string gateId)
-        {
-            if (provider.TryGetGlobal<PromotionGateService>(out var gate) && gate != null)
-            {
-                return gate.IsEnabled(gateId);
-            }
-
-            // Sem gate configurado, manter comportamento
-            return true;
-        }
-
         private static void RegisterContentSwapChangeService()
         {
             var provider = DependencyManager.Provider;
 
             if (provider.TryGetGlobal<IContentSwapChangeService>(out var existing) && existing != null)
             {
-                return;
-            }
-
-            if (!IsPromotionEnabled(provider, string.Empty))
-            {
-                DebugUtility.Log(typeof(GlobalBootstrap),
-                    "[ContentSwap] Gate desabilitado: IContentSwapChangeService não será registrado.",
-                    DebugUtility.Colors.Warning);
                 return;
             }
 
@@ -936,14 +908,6 @@ namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
 
             if (provider.TryGetGlobal<ILevelManager>(out var existing) && existing != null)
             {
-                return;
-            }
-
-            if (!IsPromotionEnabled(provider, string.Empty))
-            {
-                DebugUtility.Log(typeof(GlobalBootstrap),
-                    "[LevelManager] Gate desabilitado: ILevelManager não será registrado.",
-                    DebugUtility.Colors.Warning);
                 return;
             }
 

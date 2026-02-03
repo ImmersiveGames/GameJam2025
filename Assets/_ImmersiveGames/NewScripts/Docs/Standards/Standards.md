@@ -158,7 +158,7 @@ O contrato para ContentSwap é definido em ADR-0016 (ContentSwap InPlace-only).
 
 #### Level
 
-O contrato para Level Manager é definido em ADR-0018/ADR-0019.
+O contrato para Level Manager é definido em ADR-0017.
 
 **Eventos/anchors mínimos**
 
@@ -424,8 +424,6 @@ Este documento resume **o mínimo necessário** para considerar cada ADR (0009�
 | ADR-0015 | Baseline 2.0 | (1) Evidência canônica arquivada; (2) invariants A–E verificáveis via log; (3) método de atualização de evidências | `Docs/Reports/LATEST.md` + logs arquivados |
 | ADR-0016 | ContentSwap in-place | (1) Respeitar gates `flow.scene_transition` e `sim.gameplay`; (2) policy de bloqueio/retry/abort documentada; (3) logs canônicos e reason | Logs `[OBS][ContentSwap]` + checagens de gate |
 | ADR-0017 | LevelCatalog/LevelManager | (1) Resolver por ID falha em Strict se catálogo/definição ausente; (2) comportamento Release definido; (3) logs canônicos | Logs `[OBS][LevelCatalog]` + validações e policy |
-| ADR-0018 | Gate de promoção | (1) Gate carrega **config real** (ou policy explícita “always on”); (2) enforcement real no fluxo; (3) logs de decisão do gate | Logs `[OBS][PromotionGate]` + fonte de config |
-| ADR-0019 | Promoção Baseline 2.2 | (1) Processo documental consistente com ADR-0018; (2) quando “promovido”, evidência arquivada e linkada; (3) se não há runtime, explicitar limites | Doc de promoção + evidência |
 
 ### Checklist transversal (A–F)
 

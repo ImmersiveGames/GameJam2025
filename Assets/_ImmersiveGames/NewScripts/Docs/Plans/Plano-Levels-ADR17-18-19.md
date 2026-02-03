@@ -1,11 +1,9 @@
-# Plano de conclusão: Levels/Phases (ADR-0017 / ADR-0018 / ADR-0019)
+# Plano de conclusão: Levels/Phases (ADR-0017)
 
 ## 1) Direção do sistema
 A intenção de existir um **manager de níveis/fases** é **correta** e está alinhada aos ADRs.
 
 - **ADR-0017** (LevelManager / Config / Catalog): catálogo (**LevelCatalog**) + definições (**LevelDefinition**) como fonte de verdade; o manager é a API canônica para **resolver e aplicar** um nível.
-- **ADR-0018** (Gate de promoção): **PromotionGate** regula *elegibilidade* (quais níveis existem/ficam visíveis/aplicáveis), sem quebrar Baseline.
-- **ADR-0019** (Promoção Baseline2.2): fluxo de promoção que, na prática, precisa se refletir em: **seleção inicial determinística**, **telemetria/logs**, e **aplicação in-place** (ContentSwap) com fallback seguro.
 
 Em outras palavras: **o “LevelManager” é a camada que traduz regra + config em um “plano aplicável”**.
 
@@ -13,7 +11,7 @@ Em outras palavras: **o “LevelManager” é a camada que traduz regra + config
 ### 2.1 Componentes já existem (bom sinal)
 - `ResourcesLevelCatalogProvider` (catálogo em Resources)
 - `ILevelCatalogResolver` + `LevelCatalogResolver` (resolve nível inicial e retorna `LevelPlan`)
-- `ILevelManagerService` + `LevelManagerService` (seleção/aplicação, integra com ContentSwap e PromotionGate)
+- `ILevelManagerService` + `LevelManagerService` (seleção/aplicação, integra com ContentSwap)
 - `LevelQaInstaller` + `LevelQaContextMenu` (QA via ContextMenu)
 - Assets: `LevelCatalog.asset`, `LevelDefinition_level.1.asset`, `LevelDefinition_level.2.asset`
 
@@ -30,8 +28,7 @@ Isso indica que **nenhum nível aplicável foi resolvido/selecionado** (ou a res
 ## 3) Hipóteses do “selection inválida” (ordem de probabilidade)
 1) **Definição não-resolvida** (ILevelDefinitionProvider não acha a `LevelDefinition` por `levelId`), então o `LevelCatalogResolver` não consegue compor `LevelPlan`.
 2) **Catálogo não-carregado no runtime** (asset fora do caminho esperado em `Resources/NewScripts/Config/LevelCatalog`).
-3) **Elegibilidade bloqueada** pelo PromotionGate (catálogo tem níveis mas o resolver não enxerga “aplicáveis” conforme a política).
-4) **QA chama Apply sem seleção** e o *auto-select* não está determinístico/robusto o bastante.
+3) **QA chama Apply sem seleção** e o *auto-select* não está determinístico/robusto o bastante.
 
 Observação: o seu `LevelCatalog.asset` contém `initialLevelId: level.1` e dois entries (`level.1`, `level.2`). Se a resolução falhar, a causa costuma estar no **provider de LevelDefinition** (caminho/nome/id) ou em regra de elegibilidade.
 
@@ -46,7 +43,6 @@ Observação: o seu `LevelCatalog.asset` contém `initialLevelId: level.1` e doi
 - Um `LevelPlan` válido contém:
   - `levelId` (string canônica, ex.: `level.1`)
   - `contentId` (se houver ContentSwap)
-  - `isEligible` / `isUnlocked` (via PromotionGate)
   - `policy` (in-place vs requires-transition; por enquanto pode ser “in-place only”)
 
 **A2) Ajuste de logs “assinatura-chave” (Baseline-friendly)**
@@ -86,48 +82,26 @@ Antes de decidir “invalid selection”, logar:
 
 ---
 
-### Fase C — Consolidar integração com PromotionGate (ADR-0018 / ADR-0019)
-**Objetivo:** elegibilidade é uma função pura e rastreável.
-
-**C1) Mapear a regra de elegibilidade**
-Definir no `LevelCatalogResolver` (ou camada adjacente) uma função única:
-- `IsLevelEligible(levelId, levelDefinition, gateState) -> bool`
-
-**C2) Política de UI/QA**
-- QA deve permitir:
-  - listar níveis (com status: eligible/locked)
-  - selecionar próximo/anterior **pulando locked** (ou mostrando claramente)
-  - aplicar nível selecionado
-
-**C3) Logs de PromotionGate**
-- Ao resolver inicial, logar:
-  - gate enabled/disabled
-  - “why” um nível foi rejeitado (locked / disabled / missing definition)
-
-> Aceitação da fase C: ao trocar gate (ou config), o comportamento do LevelManager muda de forma previsível e explicável.
-
----
-
-### Fase D — Unificar “aplicar nível” com ContentSwap (in-place) e preparar evolução
+### Fase C — Unificar “aplicar nível” com ContentSwap (in-place) e preparar evolução
 **Objetivo:** aplicar nível hoje = **ContentSwap in-place** (sem transição). Amanhã podemos estender.
 
-**D1) Definir explicitamente o modo atual: InPlaceOnly**
+**C1) Definir explicitamente o modo atual: InPlaceOnly**
 - Se o `LevelPlan` exigir algo além de in-place (ex.: load/unload), logar `ApplySkipped reason='RequiresTransition_NotImplemented'`.
 
-**D2) Contrato com ContentSwap**
+**C2) Contrato com ContentSwap**
 - `LevelDefinition.contentId` deve casar com o ContentSwap.
 - Se `contentId` vazio/nulo:
   - logar e aplicar fallback (ex.: manter conteúdo atual) **ou** recusar com reason explícito.
 
-**D3) Separar “seleção” de “aplicação”**
+**C3) Separar “seleção” de “aplicação”**
 - Seleção muda estado interno.
 - Aplicação executa side-effects (ContentSwap).
 
-> Aceitação da fase D: aplicar `level.1` sempre leva ao `contentId` esperado, com log observável.
+> Aceitação da fase C: aplicar `level.1` sempre leva ao `contentId` esperado, com log observável.
 
 ---
 
-### Fase E — Limpeza estrutural (reduzir fragmentação)
+### Fase D — Limpeza estrutural (reduzir fragmentação)
 **Objetivo:** manter um módulo “Levels” coeso e mínimo.
 
 Checklist de limpeza:
@@ -138,7 +112,7 @@ Checklist de limpeza:
   - `Levels/QA` (installer, context menu)
 - Remover duplicatas / variações “noop” que não são necessárias em produção (ou mantê-las claramente como fallback).
 
-> Aceitação da fase E: módulo legível, sem “dois jeitos” de fazer a mesma coisa.
+> Aceitação da fase D: módulo legível, sem “dois jeitos” de fazer a mesma coisa.
 
 ## 5) Evidência e critérios de Done
 ### Cenários mínimos (Baseline-friendly)

@@ -50,7 +50,7 @@ Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Pla
   - delega a troca de conteúdo para o ContentSwap,
   - **sempre dispara IntroStage** ao entrar em um nível (política deste ciclo).
 
-> Referências: ADR-0016 (ContentSwap InPlace-only) e ADR-0018 (mudança semântica para ContentSwap + LevelManager).
+> Referências: ADR-0016 (ContentSwap InPlace-only).
 
 ### 4) Navigation (produção)
 - `IGameNavigationService` é a entrada de produção para ir **Menu ↔ Gameplay**.

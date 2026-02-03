@@ -9,7 +9,7 @@
 
 ## Contexto
 
-O subsistema de Levels jÃ¡ existe em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions). O ContentSwap Ã© InPlace-only e Ã© o executor tÃ©cnico real; o LevelManager orquestra a mudanÃ§a de conteÃºdo. A etapa de "start" (IntroStage/GameLoop) Ã© tratada por mÃ³dulos prÃ³prios (fora do LevelManager). PorÃ©m, **nÃ£o existe** hoje uma fonte de verdade configurÃ¡vel para nÃ­veis (LevelDefinition/LevelCatalog): as intenÃ§Ãµes aparecem em docs (Baseline 2.2), mas nÃ£o hÃ¡ assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronizaÃ§Ã£o e com o gate G-03 do ADR-0019.
+O subsistema de Levels jÃ¡ existe em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions). O ContentSwap Ã© InPlace-only e Ã© o executor tÃ©cnico real; o LevelManager orquestra a mudanÃ§a de conteÃºdo. A etapa de "start" (IntroStage/GameLoop) Ã© tratada por mÃ³dulos prÃ³prios (fora do LevelManager). PorÃ©m, **nÃ£o existe** hoje uma fonte de verdade configurÃ¡vel para nÃ­veis (LevelDefinition/LevelCatalog): as intenÃ§Ãµes aparecem em docs (Baseline 2.2), mas nÃ£o hÃ¡ assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronizaÃ§Ã£o.
 
 Para manter consistÃªncia arquitetural (SRP, DIP) e evitar dependÃªncias diretas em listas hardcoded, precisamos de uma **configuraÃ§Ã£o centralizada via ScriptableObjects**, consumida pelo LevelManager/QA/resolvedor, com observabilidade alinhada ao contrato canÃ´nico.
 
@@ -123,8 +123,6 @@ Ver seÃ§Ã£o **Fora de escopo**.
 - [README.md](../README.md)
 - [Overview/Overview.md](../Overview/Overview.md)
 - [Observability-Contract.md](../Standards/Standards.md#observability-contract)
-- [ADR-0018](./ADR-0018-Gate-de-Promocao-Baseline2.2.md)
-- [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md)
 - [LevelManager](../../Gameplay/Levels/LevelManager.cs)
 - [LevelPlan](../../Gameplay/Levels/LevelPlan.cs)
 - [ContentSwap Change Service](../../Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs)

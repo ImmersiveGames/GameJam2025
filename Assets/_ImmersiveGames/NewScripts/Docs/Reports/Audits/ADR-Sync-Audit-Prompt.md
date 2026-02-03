@@ -3,7 +3,7 @@
 > **Uso:** este prompt é para o CODEX executar **apenas leitura** do repositório e produzir um relatório. **Não modificar código.**
 
 ## Objetivo
-Auditar se a implementação em `Assets/_ImmersiveGames/NewScripts/` está **alinhada** com os ADRs `ADR-0009..ADR-0019`.
+Auditar se a implementação em `Assets/_ImmersiveGames/NewScripts/` está **alinhada** com os ADRs `ADR-0009..ADR-0017`.
 
 > Nota: `ADR-0013` é considerado **Aprovado / Implementado** (estado documental atual). Divergências só devem ser apontadas quando houver quebra objetiva do contrato (gates, ordem de fase, ownership/publicação de eventos), não por detalhes internos não especificados.
 
@@ -40,7 +40,7 @@ Produzir um relatório Markdown com:
 - Top 10 divergências por impacto (produção, determinismo, risco de regressão).
 - Top 5 pontos “prontos para promoção” (para não virar relatório só de falhas).
 
-### 2) Tabela por ADR (0009–0019)
+### 2) Tabela por ADR (0009–0017)
 Colunas mínimas:
 - **ADR**
 - **Status**: `ALINHADO | PARCIAL | DIVERGENTE | NOT_FOUND | UNCLEAR`
@@ -75,8 +75,8 @@ Para cada item: `PASS | FAIL | UNCLEAR` + evidência.
 ## Comandos sugeridos (não exaustivo)
 Use ferramentas de inspeção local. Exemplos:
 
-- `rg -n "ADR-0009|ADR-0010|ADR-0011|ADR-0012|ADR-0013|ADR-0014|ADR-0015|ADR-0016|ADR-0017|ADR-0018|ADR-0019" Assets/_ImmersiveGames/NewScripts`
-- `rg -n "Fade|FadeService|LoadingHud|LoadingHUD|WorldDefinition|LevelCatalog|PromotionGate|ContentSwap|IntroStage|RequestStart" Assets/_ImmersiveGames/NewScripts`
+- `rg -n "ADR-0009|ADR-0010|ADR-0011|ADR-0012|ADR-0013|ADR-0014|ADR-0015|ADR-0016|ADR-0017" Assets/_ImmersiveGames/NewScripts`
+- `rg -n "Fade|FadeService|LoadingHud|LoadingHUD|WorldDefinition|LevelCatalog|ContentSwap|IntroStage|RequestStart" Assets/_ImmersiveGames/NewScripts`
 - `rg -n "STRICT|Strict|fail-fast|FailFast|DEGRADED|degraded|assert|throw|InvalidOperationException" Assets/_ImmersiveGames/NewScripts`
 - `rg -n "flow.scene_transition|sim.gameplay|state.postgame|state.pause" Assets/_ImmersiveGames/NewScripts`
 - `find Assets/_ImmersiveGames/NewScripts/Docs -maxdepth 4 -type f`
@@ -91,8 +91,6 @@ Use ferramentas de inspeção local. Exemplos:
 - ADR-0015: Baseline 2.0 (evidência canônica e invariants)
 - ADR-0016: ContentSwap in-place (respeito a gates)
 - ADR-0017: LevelCatalog/LevelManager (fail-fast e resolução por ID)
-- ADR-0018: Gate de promoção (config real e enforcement)
-- ADR-0019: Promoção Baseline 2.2 (processo documental; validar se o docs cobre o contrato)
 
 ## Formato de saída
 O relatório final deve ficar em:

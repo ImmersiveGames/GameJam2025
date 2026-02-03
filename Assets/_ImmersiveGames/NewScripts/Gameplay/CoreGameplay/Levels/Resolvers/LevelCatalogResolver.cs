@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Definitions;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Providers;
 using _ImmersiveGames.NewScripts.Runtime.Mode;
-using _ImmersiveGames.NewScripts.Runtime.Promotion;
 namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
 {
     /// <summary>
@@ -19,20 +18,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
 
         private readonly ILevelCatalogProvider _catalogProvider;
         private readonly ILevelDefinitionProvider _definitionProvider;
-        private readonly PromotionGateService? _promotionGate;
         private readonly IRuntimeModeProvider _runtimeModeProvider;
         private readonly IDegradedModeReporter _degradedModeReporter;
 
         public LevelCatalogResolver(
             ILevelCatalogProvider catalogProvider,
             ILevelDefinitionProvider definitionProvider,
-            PromotionGateService? promotionGate = null,
             IRuntimeModeProvider? runtimeModeProvider = null,
             IDegradedModeReporter? degradedModeReporter = null)
         {
             _catalogProvider = catalogProvider;
             _definitionProvider = definitionProvider;
-            _promotionGate = promotionGate;
             _runtimeModeProvider = runtimeModeProvider ?? new UnityRuntimeModeProvider();
             _degradedModeReporter = degradedModeReporter ?? new DegradedModeReporter();
         }
@@ -174,16 +170,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
                     action: "ResolvePlan");
             }
 
-            if (!IsEnabled(definition, out string gateId))
-            {
-                DebugUtility.LogWarning<LevelCatalogResolver>(
-                    $"[LevelCatalog] Nível bloqueado por gate. levelId='{definition.LevelId}' gateId='{gateId}'.");
-                DebugUtility.LogWarning<LevelCatalogResolver>(
-                    $"[OBS][LevelCatalog] PlanRejected levelId='{definition.LevelId}' contentId='{definition.ContentId}' gateId='{gateId}' detail='GateDisabled'.");
-                plan = LevelPlan.None;
-                return false;
-            }
-
             options = definition.DefaultOptions.Clone();
             return true;
         }
@@ -262,26 +248,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
             DebugUtility.LogWarning<LevelCatalogResolver>(
                 $"[OBS][LevelCatalog] NextPlanMissing startLevelId='{levelId}' detail='NoEligibleNext'.");
             return false;
-        }
-
-        private bool IsEnabled(LevelDefinition definition, out string gateId)
-        {
-            gateId = definition.PromotionGateId;
-            if (string.IsNullOrEmpty(gateId))
-            {
-                return true;
-            }
-
-            if (_promotionGate == null)
-            {
-                DebugUtility.LogWarning<LevelCatalogResolver>(
-                    $"[LevelCatalog] PromotionGateService ausente; permitindo nível com gateId='{gateId}'.");
-                DebugUtility.LogWarning<LevelCatalogResolver>(
-                    $"[OBS][LevelCatalog] GateServiceMissing gateId='{gateId}' default='allow'.");
-                return true;
-            }
-
-            return _promotionGate.IsEnabled(gateId);
         }
 
         private bool FailOrDegrade(string reason, string detail, string action)

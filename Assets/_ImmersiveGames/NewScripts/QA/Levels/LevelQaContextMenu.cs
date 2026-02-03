@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Providers;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers;
-using _ImmersiveGames.NewScripts.Runtime.Promotion;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.Levels
@@ -31,11 +30,6 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         [ContextMenu("QA/Levels/Resolve/Definitions")]
         private void Qa_ResolveDefinitions()
         {
-            if (!EnsureGateEnabled())
-            {
-                return;
-            }
-
             var provider = ResolveGlobal<ILevelCatalogProvider>("ILevelCatalogProvider");
             var resolver = ResolveGlobal<ILevelCatalogResolver>("ILevelCatalogResolver");
             if (provider == null || resolver == null)
@@ -64,11 +58,6 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         [ContextMenu("QA/Levels/Select/Initial")]
         private void Qa_SelectInitial()
         {
-            if (!EnsureGateEnabled())
-            {
-                return;
-            }
-
             var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
             if (sessionService == null)
             {
@@ -81,11 +70,6 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         [ContextMenu("QA/Levels/Select/Next")]
         private void Qa_SelectNext()
         {
-            if (!EnsureGateEnabled())
-            {
-                return;
-            }
-
             var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
             if (sessionService == null)
             {
@@ -98,11 +82,6 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         [ContextMenu("QA/Levels/Select/Prev")]
         private void Qa_SelectPrev()
         {
-            if (!EnsureGateEnabled())
-            {
-                return;
-            }
-
             var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
             if (sessionService == null)
             {
@@ -115,11 +94,6 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         [ContextMenu("QA/Levels/ApplySelected")]
         private void Qa_ApplySelected()
         {
-            if (!EnsureGateEnabled())
-            {
-                return;
-            }
-
             var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
             if (sessionService == null)
             {
@@ -177,42 +151,8 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
             return service;
         }
 
-        private static bool EnsureGateEnabled()
-        {
-            if (DependencyManager.Provider == null)
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] DependencyManager.Provider é null (infra global não inicializada?).",
-                    ColorErr);
-                return false;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<PromotionGateService>(out var gate) || gate == null)
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] PromotionGateService ausente; prosseguindo por default.",
-                    ColorWarn);
-                return true;
-            }
-
-            if (!gate.IsEnabled(string.Empty))
-            {
-                DebugUtility.Log(typeof(LevelQaContextMenu),
-                    "[QA][LevelManager] Gate de promoção desabilitado; ação QA ignorada.",
-                    ColorWarn);
-                return false;
-            }
-
-            return true;
-        }
-
         private void GoToLevelById(string levelId, string reason)
         {
-            if (!EnsureGateEnabled())
-            {
-                return;
-            }
-
             var sessionService = ResolveGlobal<ILevelSessionService>("ILevelSessionService");
             if (sessionService != null)
             {

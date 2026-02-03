@@ -25,13 +25,10 @@
 
 ### Changed
 - Sincronizado `ADR-0017-LevelManager-Config-Catalog.md` com a versão mais recente enviada.
-- Corrigido o nome do arquivo `ADR-0018` (remoção de artefatos de encoding no filename) e sincronizado com a versão mais recente enviada.
 - Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
 - Sincronizados ADRs e Observability-Contract com snapshot canonico 2026-01-31.
 - Sincronizados ADRs e o contrato de observabilidade com o snapshot canônico 2026-01-31.
-- Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canônico 2026-01-31 (LATEST + evidência datada + auditoria) e remover duplicidades.
 - `Standards/Standards.md#observability-contract` sincronizado para apontar o snapshot 2026-01-31 (sem duplicatas).
-- Atualizados ADR-0013/0014/0015/0018/0019 para referenciarem o snapshot canonico 2026-01-31 (LATEST + evidencia datada + auditoria) e remover duplicidades.
 - `Standards/Standards.md#observability-contract` sincronizado para apontar para a evidencia 2026-01-31.
 
 ### Changed (ADR-0009 — completude)
@@ -51,8 +48,6 @@
 ## 2026-01-28
 - Archived Baseline 2.2 evidence snapshot (Boot→Menu skip, Menu→Gameplay reset+spawn+IntroStage, Level L01 InPlace pipeline).
 - ADR-0012: removida referência obsoleta a `WorldLifecycleRuntimeCoordinator` (substituído pelo driver canônico `WorldLifecycleSceneFlowResetDriver`).
-- ADR-0018: normalizada seção de evidências para exigir snapshot datado (Aceito 2026-01-18) + ponte canônica LATEST.
-- Evidence/LATEST: adicionado link do snapshot de aceitação do ADR-0018.
 - Runtime/Observability: alinhado contrato mínimo de observabilidade para WorldLifecycle (ResetRequested/ResetCompleted) e InputMode em `SceneFlow/Completed`.
 
 ## 2026-01-27
@@ -63,20 +58,13 @@
   `Docs/Standards/Standards.md#observability-contract`.
 
 ## 2026-01-21
-- ADR-0018 reescrito para formalizar a mudança semântica para ContentSwap + LevelManager e delimitar o LevelManager.
-- ADR-0019 atualizado para descrever promoção do Baseline 2.2 com escopo, gates e metodologia de evidência por data.
 - ARCHITECTURE.md e READMEs ajustados para terminologia consistente (ContentSwap vs LevelManager).
-- Arquivos alterados: `Docs/ADRs/ADR-0018-Gate-de-Promocao-Baseline2.2.md`, `Docs/ADRs/ADR-0019-Promocao-Baseline2.2.md`, `Docs/plano2.2.md`, `Docs/Overview/Overview.md`, `Docs/README.md`, `Docs/ADRs/README.md`, `README.md`.
 
 ## 2026-01-20
-- ADR-0018/ADR-0019 reescritos para formalizar ContentSwap + LevelManager.
 - Plano 2.2 reordenado com QA separado para ContentSwap (QA_ContentSwap) e Level (QA_Level).
 - Observability-Contract atualizado para ContentSwap + Level (reasons e anchors).
 
 ## 2026-01-19
-- ADR-0018 reestruturado para definir ContentSwap e observability, separando de Level/Nível.
-- ADR-0019 reescrito para Level Manager (progressão) e gates verificáveis do Baseline 2.2.
-- Plano 2.2 reordenado (ContentSwap → Level Manager → Configuração → QA/Evidências/Gate).
 - Índice de ADRs atualizado para refletir os novos escopos.
 
 ## 2026-01-18
