@@ -1,69 +1,69 @@
-# ADR-0017 — LevelManager: Config + Catalog (Single Source of Truth)
+﻿# ADR-0017 â€” LevelManager: Config + Catalog (Single Source of Truth)
 
 ## Status
 
-- Estado: Em andamento
-- Data (decisão): 2026-01-31
-- Última atualização: 2026-01-31
-- Escopo: NewScripts → Gameplay/Levels + Docs/Reports
+- Estado: Implementado
+- Data (decisÃ£o): 2026-01-31
+- Última atualização: 2026-02-03
+- Escopo: NewScripts â†’ Gameplay/Levels + Docs/Reports
 
 ## Contexto
 
-O subsistema de Levels já existe em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions). O ContentSwap é InPlace-only e é o executor técnico real; o LevelManager orquestra a mudança de conteúdo. A etapa de "start" (IntroStage/GameLoop) é tratada por módulos próprios (fora do LevelManager). Porém, **não existe** hoje uma fonte de verdade configurável para níveis (LevelDefinition/LevelCatalog): as intenções aparecem em docs (Baseline 2.2), mas não há assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronização e com o gate G-03 do ADR-0019.
+O subsistema de Levels jÃ¡ existe em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions). O ContentSwap Ã© InPlace-only e Ã© o executor tÃ©cnico real; o LevelManager orquestra a mudanÃ§a de conteÃºdo. A etapa de "start" (IntroStage/GameLoop) Ã© tratada por mÃ³dulos prÃ³prios (fora do LevelManager). PorÃ©m, **nÃ£o existe** hoje uma fonte de verdade configurÃ¡vel para nÃ­veis (LevelDefinition/LevelCatalog): as intenÃ§Ãµes aparecem em docs (Baseline 2.2), mas nÃ£o hÃ¡ assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronizaÃ§Ã£o e com o gate G-03 do ADR-0019.
 
-Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas em listas hardcoded, precisamos de uma **configuração centralizada via ScriptableObjects**, consumida pelo LevelManager/QA/resolvedor, com observabilidade alinhada ao contrato canônico.
+Para manter consistÃªncia arquitetural (SRP, DIP) e evitar dependÃªncias diretas em listas hardcoded, precisamos de uma **configuraÃ§Ã£o centralizada via ScriptableObjects**, consumida pelo LevelManager/QA/resolvedor, com observabilidade alinhada ao contrato canÃ´nico.
 
-## Decisão
+## DecisÃ£o
 
-### Objetivo de produção (sistema ideal)
+### Objetivo de produÃ§Ã£o (sistema ideal)
 
-Centralizar definição e descoberta de levels/fases via um catálogo de configs (LevelManager), evitando hardcode e permitindo evolução (fases, campanhas, playlists) sem quebrar o fluxo de produção.
+Centralizar definiÃ§Ã£o e descoberta de levels/fases via um catÃ¡logo de configs (LevelManager), evitando hardcode e permitindo evoluÃ§Ã£o (fases, campanhas, playlists) sem quebrar o fluxo de produÃ§Ã£o.
 
-### Contrato de produção (mínimo)
+### Contrato de produÃ§Ã£o (mÃ­nimo)
 
-- Catálogo é a fonte de verdade para enumerar conteúdos jogáveis (ids, metadata, configs).
-- Seleção de level/fase não depende de assets soltos; deve ser resolvida via id/config.
-- Mudança de level pode ser in-place (ContentSwap) ou via transição (SceneFlow), explicitando o modo.
-- Falhas de id/config ausente são fail-fast (não gerar level default silencioso).
+- CatÃ¡logo Ã© a fonte de verdade para enumerar conteÃºdos jogÃ¡veis (ids, metadata, configs).
+- SeleÃ§Ã£o de level/fase nÃ£o depende de assets soltos; deve ser resolvida via id/config.
+- MudanÃ§a de level pode ser in-place (ContentSwap) ou via transiÃ§Ã£o (SceneFlow), explicitando o modo.
+- Falhas de id/config ausente sÃ£o fail-fast (nÃ£o gerar level default silencioso).
 
-### Não-objetivos (resumo)
+### NÃ£o-objetivos (resumo)
 
-Ver seção **Fora de escopo**.
+Ver seÃ§Ã£o **Fora de escopo**.
 
 ## Fora de escopo
 
-- UI/UX completa de seleção de level (apenas contrato e plumbing).
+- UI/UX completa de seleÃ§Ã£o de level (apenas contrato e plumbing).
 
 - Refactor total de nomenclaturas legadas no runtime.
-- Remoção imediata de bridges legadas (ContentSwapStart*), que permanecem até migração completa.
-- Implementar um sistema de campanha completo (Campaign/Progression) além de LevelCatalog.
+- RemoÃ§Ã£o imediata de bridges legadas (ContentSwapStart*), que permanecem atÃ© migraÃ§Ã£o completa.
+- Implementar um sistema de campanha completo (Campaign/Progression) alÃ©m de LevelCatalog.
 
-## Consequências
+## ConsequÃªncias
 
-### Benefícios
-- Fonte única de verdade para níveis, eliminando hardcode em runtime.
-- Melhora o alinhamento com SRP/DIP e facilita QA/evidências.
-- Padroniza progressão de níveis no multiplayer local (determinismo).
+### BenefÃ­cios
+- Fonte Ãºnica de verdade para nÃ­veis, eliminando hardcode em runtime.
+- Melhora o alinhamento com SRP/DIP e facilita QA/evidÃªncias.
+- Padroniza progressÃ£o de nÃ­veis no multiplayer local (determinismo).
 
 ### Trade-offs / Riscos
-- Requer criação e manutenção de assets (ScriptableObjects) e seus providers/resolvers.
-- Migração incremental: enquanto assets não existirem, o LevelManager ainda dependerá de fallback/QA.
+- Requer criaÃ§Ã£o e manutenÃ§Ã£o de assets (ScriptableObjects) e seus providers/resolvers.
+- MigraÃ§Ã£o incremental: enquanto assets nÃ£o existirem, o LevelManager ainda dependerÃ¡ de fallback/QA.
 
-### Política de falhas e fallback (fail-fast)
+### PolÃ­tica de falhas e fallback (fail-fast)
 
-- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
-- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
-- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+- Em Unity, ausÃªncia de referÃªncias/configs crÃ­ticas deve **falhar cedo** (erro claro) para evitar estados invÃ¡lidos.
+- Evitar "auto-criaÃ§Ã£o em voo" (instanciar prefabs/serviÃ§os silenciosamente) em produÃ§Ã£o.
+- ExceÃ§Ãµes: apenas quando houver **config explÃ­cita** de modo degradado (ex.: HUD desabilitado) e com log Ã¢ncora indicando modo degradado.
 
 
-### Critérios de pronto (DoD)
+### CritÃ©rios de pronto (DoD)
 
-- Existe API estável para: listar levels, resolver id→config, aplicar seleção.
-- Evidência/logs para pelo menos um caminho (QA ou produção) demonstrando resolução do catálogo.
+- Existe API estÃ¡vel para: listar levels, resolver idâ†’config, aplicar seleÃ§Ã£o.
+- EvidÃªncia/logs para pelo menos um caminho (QA ou produÃ§Ã£o) demonstrando resoluÃ§Ã£o do catÃ¡logo.
 
-## Implementação (arquivos impactados)
+## ImplementaÃ§Ã£o (arquivos impactados)
 
-### Runtime / Editor (código e assets)
+### Runtime / Editor (cÃ³digo e assets)
 
 - **Assets/_ImmersiveGames/NewScripts/Gameplay**
   - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Catalogs/LevelCatalog.cs`
@@ -76,7 +76,7 @@ Ver seção **Fora de escopo**.
   - `Gameplay/Levels/LevelManager.cs`
   - `Gameplay/Levels/LevelPlan.cs`
 
-### Docs / evidências relacionadas
+### Docs / evidÃªncias relacionadas
 
 - `Docs/Reports/Evidence/LATEST.md`
 - `Evidence/LATEST.md`
@@ -84,7 +84,7 @@ Ver seção **Fora de escopo**.
 - `Reports/Evidence/LATEST.md`
 - `Standards/Standards.md`
 
-## Notas de implementação
+## Notas de implementaÃ§Ã£o
 
 - Assets sugeridos (paths):
   - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Definitions/LevelDefinition.cs`
@@ -92,34 +92,33 @@ Ver seção **Fora de escopo**.
   - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/ILevelDefinitionProvider.cs`
   - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/ILevelCatalogProvider.cs`
   - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Resolvers/LevelCatalogResolver.cs`
-- LevelManager deve consumir **apenas** abstrações (providers/resolvers), mantendo DIP.
-- Observabilidade deve reutilizar strings existentes no contrato (não criar reasons novos).
+- LevelManager deve consumir **apenas** abstraÃ§Ãµes (providers/resolvers), mantendo DIP.
+- Observabilidade deve reutilizar strings existentes no contrato (nÃ£o criar reasons novos).
 
-### Etapa 0 — Artefatos entregues (concluída)
-- ScriptableObjects `LevelDefinition` e `LevelCatalog` com campos mínimos.
+### Etapa 0 â€” Artefatos entregues (concluÃ­da)
+- ScriptableObjects `LevelDefinition` e `LevelCatalog` com campos mÃ­nimos.
 - Providers: `ResourcesLevelCatalogProvider` + `LevelDefinitionProviderFromCatalog`.
 - Resolver: `ILevelCatalogResolver` + `LevelCatalogResolver`.
 
-### Etapa 1 (planejada)
+### Etapa 1 — concluída
 - DI: registro de providers/resolver + `ILevelManager` via `LevelManager` no `GlobalBootstrap`.
 - QA: `LevelQaContextMenu` e `LevelQaInstaller`.
-- Evidência: atualização de `Docs/Reports/Evidence/LATEST.md` e snapshot dedicado com QA de Level.
+- Evidência: atualização de Docs/Reports/Evidence/LATEST.md e snapshot dedicado com QA de Level.
 
-## Evidência
+## EvidÃªncia
 
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- **Âncoras/assinaturas relevantes:**
-  - TODO: adicionar evidência/log âncora do catálogo de levels (não aparece na evidência canônica atual).
-- **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
+- **Fonte canônica atual:** [LATEST.md](../Reports/Evidence/LATEST.md)
+- **Snapshot dedicado (ADR-0017):** [ADR-0017-LevelCatalog-Evidence-2026-02-03.md](../Reports/Evidence/2026-02-03/ADR-0017-LevelCatalog-Evidence-2026-02-03.md)
+- **Contrato de observabilidade:** [Observability-Contract.md](../Standards/Standards.md#observability-contract)
 
-## Evidências
+## EvidÃªncias
 
 - Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/` com:
-  - Resolução por catálogo (`QA/Levels/Resolve/Definitions`).
-  - Mudança de nível (LevelChange + ContentSwap + IntroStage).
-- Atualização do `Docs/Reports/Evidence/LATEST.md`.
+  - ResoluÃ§Ã£o por catÃ¡logo (`QA/Levels/Resolve/Definitions`).
+  - MudanÃ§a de nÃ­vel (LevelChange + ContentSwap + IntroStage).
+- AtualizaÃ§Ã£o do `Docs/Reports/Evidence/LATEST.md`.
 
-## Referências
+## ReferÃªncias
 
 - [README.md](../README.md)
 - [Overview/Overview.md](../Overview/Overview.md)
@@ -131,3 +130,6 @@ Ver seção **Fora de escopo**.
 - [ContentSwap Change Service](../../Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs)
 - [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+
+
+

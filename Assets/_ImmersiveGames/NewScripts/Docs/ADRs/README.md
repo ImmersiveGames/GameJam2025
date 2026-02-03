@@ -23,8 +23,8 @@ Cada ADR possui 3 eixos:
 | [`ADR-0013-Ciclo-de-Vida-Jogo.md`](ADR-0013-Ciclo-de-Vida-Jogo.md) | ADR-0013 — Ciclo de Vida do Jogo (NewScripts) | Aceita | Implementada | Ativa | 2026-02-03 |
 | [`ADR-0014-GameplayReset-Targets-Grupos.md`](ADR-0014-GameplayReset-Targets-Grupos.md) | ADR-0014 â€” GameplayReset: Targets por Grupos | Aceita | Implementada | Ativa | 2026-02-01 |
 | [`ADR-0015-Baseline-2.0-Fechamento.md`](ADR-0015-Baseline-2.0-Fechamento.md) | ADR-0015 - Baseline 2.0: Fechamento | Aceita | Implementada | Ativa | 2026-02-03 |
-| [`ADR-0016-ContentSwap-WorldLifecycle.md`](ADR-0016-ContentSwap-WorldLifecycle.md) | ADR-0016 â€” ContentSwap InPlace-only (NewScripts) | Aceita | Parcial | Ativa | 2026-01-28 |
-| [`ADR-0017-LevelManager-Config-Catalog.md`](ADR-0017-LevelManager-Config-Catalog.md) | ADR-0017 â€” LevelManager: Config + Catalog (Single Source of Truth) | Aceita | Em andamento | Ativa | 2026-01-31 |
+| [`ADR-0016-ContentSwap-WorldLifecycle.md`](ADR-0016-ContentSwap-WorldLifecycle.md) | ADR-0016 — ContentSwap InPlace-only (NewScripts) | Aceita | Implementada | Ativa | 2026-02-03 |
+| [`ADR-0017-LevelManager-Config-Catalog.md`](ADR-0017-LevelManager-Config-Catalog.md) | ADR-0017 — LevelManager: Config + Catalog (Single Source of Truth) | Aceita | Implementada | Ativa | 2026-02-03 |
 | [`ADR-0018-Gate-de-Promocao-Baseline2.2.md`](ADR-0018-Gate-de-Promocao-Baseline2.2.md) | ADR-0018 - Gate de Promocao (Baseline 2.2) | Aceita | Parcial | Ativa | 2026-01-31 |
 | [`ADR-0019-Promocao-Baseline2.2.md`](ADR-0019-Promocao-Baseline2.2.md) | ADR-0019 - Promocao do Baseline 2.2 | Aceita | Parcial | Ativa | 2026-02-01 |
 

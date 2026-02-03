@@ -2,9 +2,9 @@
 
 ## Status
 
-- Estado: Aceito
+- Estado: Implementado
 - Data (decisão): 2026-01-28
-- Última atualização: 2026-01-28
+- Última atualização: 2026-02-03
 - Escopo: NewScripts → Gameplay/ContentSwap + Infrastructure (Bootstrap/QA)
 
 ## Contexto
@@ -77,7 +77,19 @@ Eventos/logs mínimos:
 
 ## Implementação (arquivos impactados)
 
-> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+### Runtime / Editor (código e assets)
+
+- `Gameplay/CoreGameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs`
+- `Gameplay/CoreGameplay/ContentSwap/ContentSwapContextService.cs`
+- `Gameplay/CoreGameplay/ContentSwap/ContentSwapEvents.cs`
+- `Gameplay/CoreGameplay/ContentSwap/ContentSwapPlan.cs`
+- `Gameplay/CoreGameplay/ContentSwap/ContentSwapOptions.cs`
+- `Runtime/Bootstrap/GlobalBootstrap.cs`
+- `Runtime/Gates/SimulationGateTokens.cs`
+
+### QA / evidência
+
+- `QA/ContentSwap/ContentSwapQaContextMenu.cs`
 
 ## Referências
 

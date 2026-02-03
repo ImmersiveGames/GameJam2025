@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Definitions;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Providers;
+using _ImmersiveGames.NewScripts.Runtime.Mode;
 using _ImmersiveGames.NewScripts.Runtime.Promotion;
 namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
 {
@@ -14,18 +15,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
     /// </summary>
     public sealed class LevelCatalogResolver : ILevelCatalogResolver
     {
+        private const string DegradedFeature = "level_catalog";
+
         private readonly ILevelCatalogProvider _catalogProvider;
         private readonly ILevelDefinitionProvider _definitionProvider;
         private readonly PromotionGateService? _promotionGate;
+        private readonly IRuntimeModeProvider _runtimeModeProvider;
+        private readonly IDegradedModeReporter _degradedModeReporter;
 
         public LevelCatalogResolver(
             ILevelCatalogProvider catalogProvider,
             ILevelDefinitionProvider definitionProvider,
-            PromotionGateService? promotionGate = null)
+            PromotionGateService? promotionGate = null,
+            IRuntimeModeProvider? runtimeModeProvider = null,
+            IDegradedModeReporter? degradedModeReporter = null)
         {
             _catalogProvider = catalogProvider;
             _definitionProvider = definitionProvider;
             _promotionGate = promotionGate;
+            _runtimeModeProvider = runtimeModeProvider ?? new UnityRuntimeModeProvider();
+            _degradedModeReporter = degradedModeReporter ?? new DegradedModeReporter();
         }
 
         public bool TryResolveInitialLevelId(out string levelId)
@@ -38,7 +47,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
                     "[LevelCatalog] Catalog ausente ao resolver nível inicial.");
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     "[OBS][LevelCatalog] CatalogMissing action='ResolveInitialLevelId'.");
-                return false;
+                return FailOrDegrade(
+                    reason: "catalog_missing",
+                    detail: "Catalog ausente ao resolver nivel inicial.",
+                    action: "ResolveInitialLevelId");
             }
 
             if (!catalog.TryResolveInitialLevelId(out levelId))
@@ -55,14 +67,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
 
         public bool TryResolveCatalog(out LevelCatalog catalog)
         {
-            catalog = _catalogProvider.GetCatalog() ?? throw new InvalidOperationException();
+            catalog = _catalogProvider.GetCatalog();
             if (catalog == null)
             {
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     "[LevelCatalog] Catalog ausente ao resolver catálogo.");
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     "[OBS][LevelCatalog] CatalogMissing action='ResolveCatalog'.");
-                return false;
+                return FailOrDegrade(
+                    reason: "catalog_missing",
+                    detail: "Catalog ausente ao resolver catalogo.",
+                    action: "ResolveCatalog");
             }
 
             return true;
@@ -86,7 +101,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
                 }
 
                 definition = null!;
-                return false;
+                return FailOrDegrade(
+                    reason: "definition_missing",
+                    detail: $"LevelDefinition ausente levelId='{levelId}'.",
+                    action: "ResolveDefinition");
             }
 
             DebugUtility.Log<LevelCatalogResolver>(
@@ -115,7 +133,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
                     "[LevelCatalog] Catalog ausente ao resolver próximo nível.");
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     "[OBS][LevelCatalog] CatalogMissing action='ResolveNextLevelId'.");
-                return false;
+                return FailOrDegrade(
+                    reason: "catalog_missing",
+                    detail: "Catalog ausente ao resolver proximo nivel.",
+                    action: "ResolveNextLevelId");
             }
 
             if (!catalog.TryResolveNextLevelId(levelId, out nextLevelId))
@@ -147,7 +168,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
                 DebugUtility.LogWarning<LevelCatalogResolver>(
                     $"[OBS][LevelCatalog] PlanInvalid levelId='{levelId}' contentId='{plan.ContentId}'.");
                 plan = LevelPlan.None;
-                return false;
+                return FailOrDegrade(
+                    reason: "plan_invalid",
+                    detail: $"LevelPlan invalido levelId='{levelId}' contentId='{plan.ContentId}'.",
+                    action: "ResolvePlan");
             }
 
             if (!IsEnabled(definition, out string gateId))
@@ -258,6 +282,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels.Resolvers
             }
 
             return _promotionGate.IsEnabled(gateId);
+        }
+
+        private bool FailOrDegrade(string reason, string detail, string action)
+        {
+            if (_runtimeModeProvider != null && _runtimeModeProvider.IsStrict)
+            {
+                DebugUtility.LogError<LevelCatalogResolver>(
+                    $"[LevelCatalog][STRICT] action='{action}' reason='{reason}'. {detail}");
+                throw new InvalidOperationException(
+                    $"[LevelCatalog] Strict failure. action='{action}' reason='{reason}'. {detail}");
+            }
+
+            _degradedModeReporter?.Report(
+                feature: DegradedFeature,
+                reason: reason,
+                detail: $"action='{action}' {detail}");
+
+            return false;
         }
 
         private static IEnumerable<string> EnumerateCandidateLevelIds(LevelCatalog catalog)
