@@ -1,21 +1,26 @@
-# ADR-0013 — Ciclo de Vida do Jogo (NewScripts)
+﻿﻿# ADR-0013 — Ciclo de Vida do Jogo (NewScripts)
 
 ## Status
 
-- Estado: Em progresso (Implementação iniciada)
+- Estado: Implementado
 - Data (decisão): 2025-12-24
-- Última atualização: 2026-02-01
+- Última atualização: 2026-02-03
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
 
 ### Status de implementação
 
-- Implementação iniciada: 2026-02-01
+- Implementação concluída: 2026-01-31 (Baseline 2.2)
 - Dono: (preencher)
-- Artefatos criados nesta etapa (stubs iniciais):
-  - `Infrastructure/Scene/SceneTransitionService.cs` (stub)
-  - `Lifecycle/World/Runtime/ResetWorldService.cs` (implementado)
-- `Gameplay/GameLoop/GameLoopManager.cs` (nova implementação mínima que substitui o stub legado)
-- `Lifecycle/World/Runtime/README.md` (coordenação de próximas tarefas)
+- Artefatos principais (produção):
+  - `Runtime/Scene/SceneTransitionService.cs`
+  - `Runtime/Scene/SceneTransitionEvents.cs`
+  - `Lifecycle/World/Runtime/ResetWorldService.cs`
+  - `Lifecycle/World/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs`
+  - `Lifecycle/World/Bridges/SceneFlow/WorldLifecycleResetCompletionGate.cs`
+  - `Gameplay/CoreGameplay/GameLoop/GameLoopService.cs`
+  - `Gameplay/CoreGameplay/GameLoop/IntroStage/*`
+  - `Gameplay/CoreGameplay/GameLoop/GameLoopSceneFlowCoordinator.cs`
+  - `Runtime/InputSystems/InputModeSceneFlowBridge.cs`
 
 ## Contexto
 
@@ -102,12 +107,12 @@ Definir um ciclo de vida único, com fases e invariantes fixos:
 
 Principais pontos (NewScripts):
 
-- **SceneFlow envelope + gates**: `Infrastructure/Scene/SceneTransitionService.cs`
-- **Fade**: ver ADR-0009 (`Infrastructure/SceneFlow/Fade/*`)
-- **Loading HUD**: ver ADR-0010 (`Infrastructure/SceneFlow/LoadingHud/*`)
+- **SceneFlow envelope + gates**: `Runtime/Scene/SceneTransitionService.cs`
+- **Fade**: ver ADR-0009 (`Runtime/SceneFlow/Fade/*`)
+- **Loading HUD**: ver ADR-0010 (`Presentation/LoadingHud/*`)
 - **Gatilho de ResetWorld em produção**: driver ligado ao `ScenesReady` (SceneFlow)
 - **WorldLifecycle reset pipeline**: `Lifecycle/World/Runtime/*`
-- **GameLoop Intro/Playing/PostGame**: `Gameplay/GameLoop/*`
+- **GameLoop Intro/Playing/PostGame**: `Gameplay/CoreGameplay/GameLoop/*`
 
 ## Observabilidade
 
@@ -130,20 +135,20 @@ Principais pontos (NewScripts):
 - [x] Invariantes descritos acima aparecem em logs canônicos (Baseline 2.x).
 - [x] Evidência datada com startup + gameplay e transições principais.
 - [x] `reason/contextSignature` presentes nas âncoras críticas (SceneFlow + ResetWorld).
-- [ ] Implementação do pipeline de `ResetWorld` (WorldLifecycle) — Em progresso
-- [ ] Integração do gatilho `ScenesReady` → `ResetWorld` (SceneFlow driver) — Em progresso
-- [ ] GameLoop (Intro/Playing/PostGame) com gates e sinais de observabilidade — Em progresso
+- [x] Implementação do pipeline de `ResetWorld` (WorldLifecycle).
+- [x] Integração do gatilho `ScenesReady` → `ResetWorld` (SceneFlow driver).
+- [x] GameLoop (Intro/Playing/PostGame) com gates e sinais de observabilidade.
 
 ## Implementação (arquivos impactados)
 
 ### Runtime / Editor (código e assets)
 
 - **Gameplay**
-  - `Gameplay/GameLoop/GameLoop.cs`
-  - `Gameplay/GameLoop/GameLoopManager.cs`
+  - `Gameplay/CoreGameplay/GameLoop/GameLoopStateMachine.cs`
+  - `Gameplay/CoreGameplay/GameLoop/GameLoopService.cs`
   - `Lifecycle/World/Runtime/ResetWorldService.cs`
 - **Infrastructure**
-  - `Infrastructure/Scene/SceneTransitionService.cs`
+  - `Runtime/Scene/SceneTransitionService.cs`
 
 ### Docs / evidências relacionadas
 
@@ -152,24 +157,11 @@ Principais pontos (NewScripts):
 
 ## Notas de implementação
 
-Nesta etapa inicial (2026-02-01) foram adicionados stubs e documentação mínima para começar a implementação técnica do ADR-0013. O objetivo é criar pontos de integração claros para o trabalho incremental.
+O pipeline está ativo em produção e segue a ordem: **SceneFlow → ScenesReady → ResetWorld → ResetCompleted → IntroStage → Playing**.
+Os pontos de integração canônicos são: `WorldLifecycleSceneFlowResetDriver` (gatilho de reset), `WorldLifecycleResetCompletionGate`
+(gate do SceneFlow), `InputModeSceneFlowBridge` (aplica input mode e dispara IntroStage) e `IntroStageCoordinator`
+(gate `sim.gameplay` e RequestStart após confirmação).
 
-O que foi criado (artefatos):
+## Evidência
 
-- `Infrastructure/Scene/SceneTransitionService.cs` — stub com API inicial para publicar `ScenesReady` e `SceneTransition` anchors. Serve como ponto de integração para o envelope visual (ADR-0009/0010).
-- `Lifecycle/World/Runtime/ResetWorldService.cs` — serviço com assinatura para `ResetWorld(reason, contextSignature)` e eventos `ResetWorldStarted`/`ResetCompleted` (a implementar).
-- `Gameplay/GameLoop/GameLoop.cs` — stub descrevendo estados (Intro, Playing, PostGame) e pontos de bloqueio (`GameplaySimulationBlocked/Unblocked`).
-- `Lifecycle/World/Runtime/README.md` — notas de coordenação e próximos passos.
-
-Próximos passos (curto prazo):
-
-1) Implementar publicação de `ScenesReady` (com `contextSignature`) no `SceneTransitionService` e garantir a correlação com o `signature` do envelope visual.
-2) Implementar `ResetWorld` pipeline (reset → spawn → rearm) no `ResetWorldService`, com publicação única de `ResetCompleted`.
-3) Implementar GameLoop IntroStage que bloqueia `sim.gameplay` até confirmação de UI; sinalizar `GameplaySimulationUnblocked` e entrar em `Playing`.
-4) Instrumentar logs/âncoras canônicas conforme `Standards.md#observability-contract`.
-5) Criar testes unitários e de integração que validem determinismo, ordering e idempotência.
-
-Critérios para mover para `Implementado`:
-- Testes de integração passarem e evidencia publicada em `Docs/Reports/Evidence/`.
-- Logs canônicos contendo `reason/contextSignature` para as âncoras críticas.
-- `ResetCompleted` comprovadamente publicado exatamente uma vez por reset.
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)

@@ -1,4 +1,4 @@
-# Auditoria de publishers — EventBus (Assets/_ImmersiveGames/NewScripts)
+﻿﻿# Auditoria de publishers — EventBus (Assets/_ImmersiveGames/NewScripts)
 
 ## Escopo
 

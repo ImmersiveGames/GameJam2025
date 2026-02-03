@@ -1,4 +1,4 @@
-# ADR-0009 — Fade + SceneFlow (NewScripts)
+﻿# ADR-0009 — Fade + SceneFlow (NewScripts)
 
 ## Status
 
@@ -41,16 +41,16 @@ Garantir que TODA transição de cena do SceneFlow tenha um envelope visual dete
 - **Strict (UNITY_EDITOR / DEVELOPMENT_BUILD)**
   - Falha explicitamente quando:
     - profile não é encontrado em Resources,
-    - `INewScriptsFadeService` não existe no DI global,
+    - `IFadeService` não existe no DI global,
     - `FadeScene` não carrega,
-    - `NewScriptsFadeController` não existe na `FadeScene`.
+    - `FadeController` não existe na `FadeScene`.
 - **Release**
   - Pode seguir sem fade **apenas** com `DEGRADED_MODE` explícito:
     - `DEGRADED_MODE feature='fade' reason='<...>' detail='<...>'`
   - Após degradar, o fade vira **no-op** (dur=0) mantendo a ordem do pipeline.
 
 3) **Não criar UI “em voo”**
-- O fade depende de `FadeScene` + `NewScriptsFadeController`.
+- O fade depende de `FadeScene` + `FadeController`.
 - O runtime não deve instanciar canvas/câmera de forma silenciosa.
 
 ## Consequências
@@ -72,16 +72,16 @@ Garantir que TODA transição de cena do SceneFlow tenha um envelope visual dete
 Arquivos (NewScripts):
 
 - Orquestração / ordem / anchors `[OBS][Fade]`:
-  - `Infrastructure/Scene/SceneTransitionService.cs`
+  - `Runtime/Scene/SceneTransitionService.cs`
 - Policy Strict/Release + degraded reporter:
-  - `Infrastructure/Runtime/IRuntimeModeProvider.cs`
-  - `Infrastructure/Runtime/UnityRuntimeModeProvider.cs`
-  - `Infrastructure/Runtime/IDegradedModeReporter.cs`
-  - `Infrastructure/Runtime/DegradedModeReporter.cs`
+  - `Runtime/Mode/IRuntimeModeProvider.cs`
+  - `Runtime/Mode/UnityRuntimeModeProvider.cs`
+  - `Runtime/Mode/IDegradedModeReporter.cs`
+  - `Runtime/Mode/DegradedModeReporter.cs`
 - Adapter (profile → config → policy):
-  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs` (`NewScriptsSceneFlowFadeAdapter`)
+  - `Runtime/SceneFlow/SceneFlowAdapters.cs` (`SceneFlowFadeAdapter`)
 - Serviço de fade (garante FadeScene + Controller; falha explícita se inválido):
-  - `Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs`
+  - `Runtime/SceneFlow/Fade/FadeService.cs`
 
 ## Observabilidade (contrato)
 
@@ -125,7 +125,7 @@ Quando o fade não pode operar em Release:
 
 2) **Fail-fast (Strict)**
 - Em Editor/Development:
-  - Remova temporariamente a `FadeScene` do Build Settings **ou** remova `NewScriptsFadeController` dela.
+  - Remova temporariamente a `FadeScene` do Build Settings **ou** remova `FadeController` dela.
 - Dispare a mesma transição e confirme:
   - exceção clara (`InvalidOperationException`) com `reason`/`detail` (sem seguir “silenciosamente”).
 
@@ -146,13 +146,13 @@ Quando o fade não pode operar em Release:
 ### Runtime / Editor (código e assets)
 
 - **Infrastructure**
-  - `Infrastructure/Runtime/DegradedModeReporter.cs`
-  - `Infrastructure/Runtime/IDegradedModeReporter.cs`
-  - `Infrastructure/Runtime/IRuntimeModeProvider.cs`
-  - `Infrastructure/Runtime/UnityRuntimeModeProvider.cs`
-  - `Infrastructure/Scene/SceneTransitionService.cs`
-  - `Infrastructure/SceneFlow/Fade/NewScriptsFadeService.cs`
-  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs`
+  - `Runtime/Mode/DegradedModeReporter.cs`
+  - `Runtime/Mode/IDegradedModeReporter.cs`
+  - `Runtime/Mode/IRuntimeModeProvider.cs`
+  - `Runtime/Mode/UnityRuntimeModeProvider.cs`
+  - `Runtime/Scene/SceneTransitionService.cs`
+  - `Runtime/SceneFlow/Fade/FadeService.cs`
+  - `Runtime/SceneFlow/SceneFlowAdapters.cs`
 
 ### Docs / evidências relacionadas
 

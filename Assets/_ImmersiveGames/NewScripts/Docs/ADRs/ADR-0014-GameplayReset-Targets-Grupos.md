@@ -1,11 +1,11 @@
-# ADR-0014 — GameplayReset: Targets por Grupos
+﻿# ADR-0014 — GameplayReset: Targets por Grupos
 
 ## Status
 
 - Estado: Implementado
 - Data (decisão): 2026-02-01
 - Última atualização: 2026-02-01
-- Escopo: `Assets/_ImmersiveGames/NewScripts/Gameplay/Reset/*`
+- Escopo: `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/*`
 
 ## Contexto
 
@@ -120,7 +120,7 @@ O binding fica no bootstrap de cena:
 
 Quando editar o reset de gameplay, revisar também:
 
-- `NewScripts/Infrastructure/Scene/SceneBootstrapper.cs` (DI)
+- `NewScripts/Runtime/Bootstrap/SceneBootstrapper.cs` (DI)
 - `NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs` (QA)
 - `NewScripts/Docs/Reports/Audits/*/ADR-Sync-Audit-NewScripts.md` (auditoria)
 
@@ -129,7 +129,7 @@ Quando editar o reset de gameplay, revisar também:
 ### Runtime / Editor (código e assets)
 
 - **NewScripts**
-  - `NewScripts/Infrastructure/Scene/SceneBootstrapper.cs`
+  - `NewScripts/Runtime/Bootstrap/SceneBootstrapper.cs`
   - `NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs`
 - **QA**
   - `QA/GameplayReset/GameplayResetRequestQaDriver.cs`

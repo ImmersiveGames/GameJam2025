@@ -1,4 +1,4 @@
-# Overview — NewScripts (Arquitetura + WorldLifecycle)
+﻿# Overview — NewScripts (Arquitetura + WorldLifecycle)
 
 Este documento consolida a visão geral do módulo **NewScripts** em um único arquivo para reduzir fragmentação.
 
@@ -30,7 +30,7 @@ O NewScripts busca um pipeline previsível e testável para:
     - `ISimulationGateService`
     - `IGameLoopService` (+ runtime driver para tick)
     - `ISceneTransitionService` (SceneFlow)
-    - `INewScriptsFadeService` (Fade)
+    - `IFadeService` (Fade)
     - `IStateDependentService` (bloqueio de ações por estado/prontidão)
 
 ### 2) GameLoop
@@ -68,9 +68,9 @@ Durante a transição:
 - O Fade e o Loading HUD (NewScripts) são executados antes/depois do carregamento.
 
 ### 6) Fade + Loading HUD ([ADR-0009](ADRs/ADR-0009-FadeSceneFlow.md), [ADR-0010](ADRs/ADR-0010-LoadingHud-SceneFlow.md))
-- `INewScriptsFadeService` controla `FadeScene` (Additive) e o `NewScriptsFadeController` (CanvasGroup).
-- `INewScriptsLoadingHudService` controla o `LoadingHudScene` (Additive).
-- `NewScriptsSceneTransitionProfile` define parâmetros (durations/curves) por **profileName**.
+- `IFadeService` controla `FadeScene` (Additive) e o `FadeController` (CanvasGroup).
+- `ILoadingHudService` controla o `LoadingHudScene` (Additive).
+- `SceneTransitionProfile` define parâmetros (durations/curves) por **profileName**.
 - Resolução por Resources:
     - `Resources/SceneFlow/Profiles/<profileName>`
 
@@ -78,7 +78,7 @@ Durante a transição:
 #### Reset por escopos vs Reset de gameplay
 
 - **WorldLifecycle (infra)**: reset determinístico do mundo (gate + hooks + spawn/despawn) e **soft reset por escopos** via `ResetScope` e `IResetScopeParticipant`.
-- **Gameplay Reset (gameplay)**: módulo em `Gameplay/Reset/` que define **alvos** (`GameplayResetTarget`) e **etapas** (`GameplayResetStep`) para resets de componentes (`IGameplayResettable`). Pode ser acionado via QA (direto) ou via bridges (ex.: `PlayersResetParticipant`).
+- **Gameplay Reset (gameplay)**: módulo em `Gameplay/CoreGameplay/Reset/` que define **alvos** (`GameplayResetTarget`) e **etapas** (`GameplayResetStep`) para resets de componentes (`IGameplayResettable`). Pode ser acionado via QA (direto) ou via bridges (ex.: `PlayersResetParticipant`).
 
 - Executa reset determinístico por escopos e etapas (despawn/spawn/hook).
 - Integrado ao Scene Flow via `WorldLifecycleSceneFlowResetDriver`:
@@ -172,7 +172,7 @@ A fonte vigente do Baseline 2.0 é o contrato de observabilidade + evidência da
 > Nota: no GameLoop, o “COMMAND” de start não é um evento separado; ele é a chamada `GameLoop.RequestStart()` feita pelo Coordinator somente quando o runtime está “ready” (TransitionCompleted + WorldLifecycleResetCompleted/SKIP).
 
 ## Evidências (log)
-- `GlobalBootstrap` registra `ISceneTransitionService`, `INewScriptsFadeService`, `IGameNavigationService`,
+- `GlobalBootstrap` registra `ISceneTransitionService`, `IFadeService`, `IGameNavigationService`,
   `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleSceneFlowResetDriver`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
   `WorldLifecycleResetCompletedEvent(reason=SceneFlow/ScenesReady)` (com log de *ignored* em profile não-gameplay).

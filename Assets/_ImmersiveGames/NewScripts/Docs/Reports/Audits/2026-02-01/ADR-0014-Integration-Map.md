@@ -1,10 +1,10 @@
-# ADR-0014 — Integration Map (GameplayReset)
+﻿# ADR-0014 — Integration Map (GameplayReset)
 
 **Objetivo:** registrar, em um único lugar, **quais arquivos** se conectam ao GameplayReset para evitar regressões quando editarmos apenas parte do conjunto.
 
 ## Contratos (fonte da verdade)
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/Reset/GameplayResetContracts.cs`
+- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/GameplayResetContracts.cs`
   - `GameplayResetRequest`
   - `GameplayResetTargets` (`Players`, `Eaters`)
   - `IGameplayResetOrchestrator`
@@ -13,22 +13,22 @@
 
 ## Implementação (runtime)
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/Reset/GameplayResetOrchestrator.cs`
+- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/GameplayResetOrchestrator.cs`
   - Constrói batches por `GameplayResetTargets`
   - Ordena determinísticamente (`ActorId`)
   - Resolve `IGameplayResetParticipant` por target
   - Tolera targets sem participante (warning) e segue
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/Reset/DefaultGameplayResetTargetClassifier.cs`
+- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/DefaultGameplayResetTargetClassifier.cs`
   - Classifica `ActorId` → `GameplayResetTargets`
   - Implementa fallback por tipo (`PlayerActor`, `EaterActor`) e por nome
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/Reset/PlayersResetParticipant.cs`
+- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/PlayersResetParticipant.cs`
   - Implementa reset do grupo `Players`
 
 ## Wiring / Bootstrap (DI)
 
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/SceneBootstrapper.cs`
+- `Assets/_ImmersiveGames/NewScripts/Runtime/Bootstrap/SceneBootstrapper.cs`
   - Registra:
     - `IGameplayResetOrchestrator` → `GameplayResetOrchestrator`
     - `IGameplayResetTargetClassifier` → `DefaultGameplayResetTargetClassifier`

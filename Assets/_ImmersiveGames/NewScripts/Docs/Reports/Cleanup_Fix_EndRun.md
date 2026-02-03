@@ -1,4 +1,4 @@
-# Fix de publisher — GameRunEndRequestedEvent
+﻿﻿# Fix de publisher — GameRunEndRequestedEvent
 
 ## Antes (publishers encontrados)
 

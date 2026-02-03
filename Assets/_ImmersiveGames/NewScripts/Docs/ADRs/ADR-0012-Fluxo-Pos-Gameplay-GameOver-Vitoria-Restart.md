@@ -1,11 +1,11 @@
-# ADR-0012 — Fluxo Pós-Gameplay (GameOver, Vitória, Restart, ExitToMenu)
+﻿# ADR-0012 — Fluxo Pós-Gameplay (GameOver, Vitória, Restart, ExitToMenu)
 
 ## Status
 
 - Estado: Fechado
 - Data (decisão): 2026-01-31
 - Última atualização: 2026-01-31
-- Escopo: `Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/` + integrações com `WorldLifecycle/SceneFlow`
+- Escopo: `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/GameLoop/` + integrações com `WorldLifecycle/SceneFlow`
 
 ---
 

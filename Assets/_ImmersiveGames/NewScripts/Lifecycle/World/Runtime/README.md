@@ -33,7 +33,7 @@ Pontos-chave:
 
 Todos os arquivos deste diretório permanecem em:
 
-- `_ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime`
+- `_ImmersiveGames.NewScripts.Lifecycle.World.Runtime`
 
 ## Notas de manutenção
 

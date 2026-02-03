@@ -1,4 +1,4 @@
-# ADR Sync Audit — NewScripts (ADR-0009..ADR-0019)
+﻿# ADR Sync Audit — NewScripts (ADR-0009..ADR-0019)
 
 > **Regra operacional:** manter **1 arquivo de evidência por dia** em `Docs/Reports/Evidence/<data>/Baseline-2.2-Evidence-YYYY-MM-DD.md` e mesclar/limpar quaisquer arquivos adicionais.
 
@@ -13,7 +13,7 @@
 
 | ADR                          | Status   | Principais Evidências (Paths)                                                                 | Principais Gaps                                                                 | Risco  |
 |------------------------------|----------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|--------|
-| ADR-0009 (Fade + SceneFlow) | OK | SceneTransitionService + FadeService + NewScriptsSceneFlowFadeAdapter + Runtime policy (IRuntimeModeProvider/IDegradedModeReporter) + logs [OBS][Fade] | Sem gaps críticos. Evidência (2026-01-31): `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` | Baixo |
+| ADR-0009 (Fade + SceneFlow) | OK | SceneTransitionService + FadeService + SceneFlowFadeAdapter + Runtime policy (IRuntimeModeProvider/IDegradedModeReporter) + logs [OBS][Fade] | Sem gaps críticos. Evidência (2026-01-31): `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` | Baixo |
 | ADR-0010 (Loading HUD + SceneFlow) | OK      | SceneFlowLoadingService + ILoadingHudService + LoadingHudService + GlobalBootstrap                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas ([OBS][LoadingHUD]) | Baixo  |
 | ADR-0011 (WorldDefinition multi-actor) | OK | WorldDefinition + SceneBootstrapper + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | Enforce em gameplay (Strict/Release) + validações mínimas (Player/Eater) | Baixo  |
 | ADR-0012 (PostGame)         | OK | Evidência canônica (2026-01-29): `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (seção F) + runtime: PostGameOverlayController + GameRunOutcomeService + GameLoopRunEndEventBridge + Restart/ExitToMenuNavigationBridge + logs [OBS][PostGame] | Sem gaps críticos no Strict/Release; gates/inputmode cobertos por bridges + evidência | Baixo  |
@@ -58,10 +58,10 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 **Implementação Encontrada:**
 - Arquivos: `SceneTransitionService` aplica FadeIn antes das operações de cena e FadeOut após completion gate, emitindo âncoras canônicas `[OBS][Fade]`.
 - `FadeService` carrega `FadeScene` (Additive), localiza `FadeController` e executa fades; falha explicitamente quando pré-condições não são atendidas.
-- `NewScriptsSceneFlowFadeAdapter` resolve profiles e configura tempos de fade, aplicando policy Strict/Release e `DEGRADED_MODE` quando necessário.
+- `SceneFlowFadeAdapter` resolve profiles e configura tempos de fade, aplicando policy Strict/Release e `DEGRADED_MODE` quando necessário.
 - Policy Runtime (Strict/Release + reporter): `IRuntimeModeProvider` / `IDegradedModeReporter`.
 - DI: `GlobalBootstrap` registra `IFadeService` e policy runtime.
-- Símbolos-chave: `IFadeService`, `FadeService`, `NewScriptsSceneFlowFadeAdapter`, `SceneTransitionService`, `IRuntimeModeProvider`, `IDegradedModeReporter`.
+- Símbolos-chave: `IFadeService`, `FadeService`, `SceneFlowFadeAdapter`, `SceneTransitionService`, `IRuntimeModeProvider`, `IDegradedModeReporter`.
 - Fluxo de produção: `SceneTransitionService` chama `FadeIn` → `ScenesReady` → gate → `BeforeFadeOut` → `FadeOut` → `Completed`.
 
 **Observabilidade:**
@@ -89,11 +89,11 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - Observabilidade: logs canônicos com `signature` + `phase` (âncoras `[OBS][LoadingHUD]`).
 
 **Arquivos-chave:**
-- `NewScripts/Infrastructure/SceneFlow/Loading/ILoadingHudService.cs`
-- `NewScripts/Infrastructure/SceneFlow/Loading/SceneFlowLoadingService.cs`
+- `NewScripts/Presentation/LoadingHud/ILoadingHudService.cs`
+- `NewScripts/Runtime/SceneFlow/SceneFlowLoadingService.cs`
 - `NewScripts/Presentation/LoadingHud/LoadingHudService.cs`
 - `NewScripts/Presentation/LoadingHud/LoadingHudController.cs`
-- `NewScripts/Infrastructure/GlobalBootstrap.cs`
+- `NewScripts/Runtime/Bootstrap/GlobalBootstrap.cs`
 
 **Evidência:**
 - `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (seção ADR-0010)

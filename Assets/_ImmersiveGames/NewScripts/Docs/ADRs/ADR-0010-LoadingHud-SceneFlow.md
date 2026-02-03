@@ -1,4 +1,4 @@
-# ADR-0010 — Loading HUD + SceneFlow (NewScripts)
+﻿# ADR-0010 — Loading HUD + SceneFlow (NewScripts)
 
 ## Status
 
@@ -39,7 +39,7 @@ Garantir que transições do SceneFlow possam opcionalmente exibir um “Loading
 2) **Strict vs Release (fail-fast + degraded)**
 - **Strict (UNITY_EDITOR / DEVELOPMENT_BUILD)**
   - Falha explicitamente quando:
-    - `INewScriptsLoadingHudService` não existe no DI global,
+    - `ILoadingHudService` não existe no DI global,
     - a cena/objeto do Loading HUD não está configurado,
     - o controller do HUD não existe/é inválido.
 - **Release**
@@ -68,11 +68,11 @@ Garantir que transições do SceneFlow possam opcionalmente exibir um “Loading
 Arquivos (NewScripts):
 
 - Orquestração / ordem / anchors `[OBS][LoadingHud]`:
-  - `Infrastructure/Scene/SceneTransitionService.cs`
-- Adapter (profile → policy/config):
-  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs` (`NewScriptsSceneFlowLoadingHudAdapter`)
+  - `Runtime/SceneFlow/SceneFlowLoadingService.cs`
+- Driver do HUD (start/ready por assinatura):
+  - `Runtime/SceneFlow/Loading/Drivers/SceneFlowLoadingHudDriver.cs`
 - Serviço de loading HUD (setup + Strict/Release + no-op em degraded):
-  - `Infrastructure/SceneFlow/LoadingHud/NewScriptsLoadingHudService.cs`
+  - `Presentation/LoadingHud/LoadingHudService.cs`
 
 ## Observabilidade (contrato)
 
@@ -80,7 +80,7 @@ Arquivos (NewScripts):
 
 ### Âncoras mínimas de Loading HUD (evidência)
 
-Emitidas por `SceneTransitionService` quando `UseLoadingHud=true`:
+Emitidas por `LoadingHudService` e `SceneFlowLoadingHudDriver` quando `UseLoadingHud=true`:
 
 - `[OBS][LoadingHud] ShowStarted ...`
 - `[OBS][LoadingHud] ShowCompleted ...`
@@ -132,9 +132,9 @@ Quando o HUD não pode operar em Release:
 ### Runtime / Editor (código e assets)
 
 - **Infrastructure**
-  - `Infrastructure/Scene/SceneTransitionService.cs`
-  - `Infrastructure/SceneFlow/LoadingHud/NewScriptsLoadingHudService.cs`
-  - `Infrastructure/SceneFlow/NewScriptsSceneFlowAdapters.cs`
+  - `Runtime/Scene/SceneTransitionService.cs`
+  - `Presentation/LoadingHud/LoadingHudService.cs`
+  - `Runtime/SceneFlow/SceneFlowAdapters.cs`
 
 ### Docs / evidências relacionadas
 
