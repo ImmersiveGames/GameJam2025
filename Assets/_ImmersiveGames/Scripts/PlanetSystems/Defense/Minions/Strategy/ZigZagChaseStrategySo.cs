@@ -1,4 +1,4 @@
-Ôªøusing _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using DG.Tweening;
 using DG.Tweening.Core;
 using DG.Tweening.Plugins.Options;
@@ -6,12 +6,12 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 {
     /// <summary>
-    /// Estrat√©gia de persegui√ß√£o em zigzag usando DOTween.
+    /// EstratÈgia de perseguiÁ„o em zigzag usando DOTween.
     ///
     /// A ideia:
-    /// - Move o minion at√© o alvo em linha reta (DOMove)
+    /// - Move o minion atÈ o alvo em linha reta (DOMove)
     /// - Ao mesmo tempo, aplica um deslocamento lateral oscilando (DOBlendableMoveBy com LoopType. Yoyo)
-    /// - O resultado √© um caminho "serpenteando" at√© o alvo.
+    /// - O resultado È um caminho "serpenteando" atÈ o alvo.
     /// </summary>
     [CreateAssetMenu(
         fileName = "ZigZagChaseStrategy",
@@ -19,17 +19,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
     public class ZigZagChaseStrategySo : MinionChaseStrategySo
     {
         [Header("Amplitude lateral")]
-        [Tooltip("Intensidade do deslocamento lateral em cada oscila√ß√£o (unidades de mundo).")]
+        [Tooltip("Intensidade do deslocamento lateral em cada oscilaÁ„o (unidades de mundo).")]
         [SerializeField, Min(0.1f)]
         private float lateralAmplitude = 2f;
 
         [Header("Quantidade de ZigZags")]
-        [Tooltip("Quantas idas/voltas laterais o minion faz at√© chegar no alvo.")]
+        [Tooltip("Quantas idas/voltas laterais o minion faz atÈ chegar no alvo.")]
         [SerializeField, Min(1)]
         private int zigZagCount = 3;
 
-        [Header("Suaviza√ß√£o da rota√ß√£o")]
-        [Tooltip("O controller j√° faz um Lerp no forward, mas podemos ajustar quanto 'distorce' o caminho.")]
+        [Header("SuavizaÁ„o da rotaÁ„o")]
+        [Tooltip("O controller j· faz um Lerp no forward, mas podemos ajustar quanto 'distorce' o caminho.")]
         [SerializeField, Range(0f, 1f)]
         private float lateralBlendFactor = 1f;
 
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
                 return null;
             }
 
-            // Dire√ß√£o principal (reta) at√© o alvo
+            // DireÁ„o principal (reta) atÈ o alvo
             var startPos = minion.position;
             var endPos   = target.position;
 
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 
             forwardDir.Normalize();
 
-            // Dire√ß√£o lateral: perpendicular ao vetor at√© o alvo
+            // DireÁ„o lateral: perpendicular ao vetor atÈ o alvo
             var lateralDir = Vector3.Cross(forwardDir, Vector3.up);
             if (lateralDir.sqrMagnitude < 0.0001f)
             {
@@ -65,16 +65,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
             }
             lateralDir.Normalize();
 
-            // Aplica o blend factor na dire√ß√£o lateral (permite "quase reto" se for baixo)
+            // Aplica o blend factor na direÁ„o lateral (permite "quase reto" se for baixo)
             lateralDir *= lateralAmplitude * Mathf.Max(0f, lateralBlendFactor);
 
-            // Tempo total baseado na dist√¢ncia / velocidade
+            // Tempo total baseado na dist‚ncia / velocidade
             float duration = distance / Mathf.Max(0.01f, speed);
 
-            // Sequ√™ncia principal
+            // SequÍncia principal
             var seq = DOTween.Sequence();
 
-            // Movimento principal at√© o alvo
+            // Movimento principal atÈ o alvo
             TweenerCore<Vector3, Vector3, VectorOptions> moveForward = minion.DOMove(endPos, duration)
                                     .SetEase(Ease.Linear);
 
@@ -94,3 +94,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
         }
     }
 }
+

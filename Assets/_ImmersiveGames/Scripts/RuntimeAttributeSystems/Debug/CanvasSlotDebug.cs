@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug

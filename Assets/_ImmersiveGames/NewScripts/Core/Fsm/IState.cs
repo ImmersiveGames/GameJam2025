@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.Runtime.Actions;
 namespace _ImmersiveGames.NewScripts.Core.Fsm
 {
     public interface IState
@@ -7,7 +6,9 @@ namespace _ImmersiveGames.NewScripts.Core.Fsm
         void FixedUpdate() { }
         void OnEnter();
         void OnExit() { }
-        bool CanPerformAction(ActionType action);
+        bool CanPerformGameplayAction(Runtime.Actions.GameplayAction action);
+        bool CanPerformUiAction(Runtime.Actions.UiAction action);
+        bool CanPerformSystemAction(Runtime.Actions.SystemAction action);
         bool IsGameActive();
     }
 }

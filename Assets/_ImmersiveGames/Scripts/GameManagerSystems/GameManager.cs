@@ -1,10 +1,11 @@
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.GameManagerSystems
@@ -24,10 +25,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         public GameConfig GameConfig => gameConfig;
 
         private EventBinding<GameStartEvent> _gameStartEvent;
-        private EventBinding<GameStartRequestedEvent> _startRequestedBinding;
+        private EventBinding<OldGameStartRequestedEvent> _startRequestedBinding;
         private EventBinding<GamePauseRequestedEvent> _pauseRequestedBinding;
-        private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
-        private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
+        private EventBinding<OldGameResumeRequestedEvent> _resumeRequestedBinding;
+        private EventBinding<OldGameResetRequestedEvent> _resetRequestedBinding;
         private EventBinding<GameReturnToMenuRequestedEvent> _returnToMenuRequestedBinding;
 
         // Debounce por frame (neutraliza double subscription / double raise no mesmo frame)
@@ -49,22 +50,22 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void Initialize()
         {
-            GameManagerStateMachine.Instance.InitializeStateMachine(this);
+            OldGameManagerStateMachine.Instance.InitializeStateMachine(this);
 
             _gameStartEvent = new EventBinding<GameStartEvent>(OnGameStart);
             EventBus<GameStartEvent>.Register(_gameStartEvent);
 
-            _startRequestedBinding = new EventBinding<GameStartRequestedEvent>(OnStartRequested);
-            EventBus<GameStartRequestedEvent>.Register(_startRequestedBinding);
+            _startRequestedBinding = new EventBinding<OldGameStartRequestedEvent>(OnStartRequested);
+            EventBus<OldGameStartRequestedEvent>.Register(_startRequestedBinding);
 
             _pauseRequestedBinding = new EventBinding<GamePauseRequestedEvent>(OnPauseRequested);
             EventBus<GamePauseRequestedEvent>.Register(_pauseRequestedBinding);
 
-            _resumeRequestedBinding = new EventBinding<GameResumeRequestedEvent>(OnResumeRequested);
-            EventBus<GameResumeRequestedEvent>.Register(_resumeRequestedBinding);
+            _resumeRequestedBinding = new EventBinding<OldGameResumeRequestedEvent>(OnResumeRequested);
+            EventBus<OldGameResumeRequestedEvent>.Register(_resumeRequestedBinding);
 
-            _resetRequestedBinding = new EventBinding<GameResetRequestedEvent>(OnResetRequested);
-            EventBus<GameResetRequestedEvent>.Register(_resetRequestedBinding);
+            _resetRequestedBinding = new EventBinding<OldGameResetRequestedEvent>(OnResetRequested);
+            EventBus<OldGameResetRequestedEvent>.Register(_resetRequestedBinding);
 
             _returnToMenuRequestedBinding = new EventBinding<GameReturnToMenuRequestedEvent>(OnReturnToMenuRequested);
             EventBus<GameReturnToMenuRequestedEvent>.Register(_returnToMenuRequestedBinding);
@@ -77,10 +78,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private void OnDestroy()
         {
             EventBus<GameStartEvent>.Unregister(_gameStartEvent);
-            EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
+            EventBus<OldGameStartRequestedEvent>.Unregister(_startRequestedBinding);
             EventBus<GamePauseRequestedEvent>.Unregister(_pauseRequestedBinding);
-            EventBus<GameResumeRequestedEvent>.Unregister(_resumeRequestedBinding);
-            EventBus<GameResetRequestedEvent>.Unregister(_resetRequestedBinding);
+            EventBus<OldGameResumeRequestedEvent>.Unregister(_resumeRequestedBinding);
+            EventBus<OldGameResetRequestedEvent>.Unregister(_resetRequestedBinding);
             EventBus<GameReturnToMenuRequestedEvent>.Unregister(_returnToMenuRequestedBinding);
         }
 
@@ -90,12 +91,12 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         public bool IsGameActive()
         {
-            return GameManagerStateMachine.Instance.CurrentState?.IsGameActive() ?? false;
+            return OldGameManagerStateMachine.Instance.CurrentState?.IsGameActive() ?? false;
         }
 
         public bool TryTriggerGameOver(string reason = null)
         {
-            if (!IsCurrentState<PlayingState>())
+            if (!IsCurrentState<OldPlayingState>())
             {
                 DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
                 return false;
@@ -108,7 +109,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         public bool TryTriggerVictory(string reason = null)
         {
-            if (!IsCurrentState<PlayingState>())
+            if (!IsCurrentState<OldPlayingState>())
             {
                 DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
                 return false;
@@ -128,12 +129,12 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             DebugUtility.LogVerbose<GameManager>("Evento de início de jogo recebido.");
         }
 
-        private void OnStartRequested(GameStartRequestedEvent _)
+        private void OnStartRequested(OldGameStartRequestedEvent _)
         {
             if (Time.frameCount == _lastStartRequestFrame)
                 return;
 
-            if (!IsCurrentState<MenuState>())
+            if (!IsCurrentState<OldMenuState>())
                 return;
 
             _lastStartRequestFrame = Time.frameCount;
@@ -147,7 +148,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             if (Time.frameCount == _lastPauseRequestFrame)
                 return;
 
-            if (!IsCurrentState<PlayingState>())
+            if (!IsCurrentState<OldPlayingState>())
                 return;
 
             _lastPauseRequestFrame = Time.frameCount;
@@ -156,12 +157,12 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             EventBus<GamePauseEvent>.Raise(new GamePauseEvent(true));
         }
 
-        private void OnResumeRequested(GameResumeRequestedEvent _)
+        private void OnResumeRequested(OldGameResumeRequestedEvent _)
         {
             if (Time.frameCount == _lastResumeRequestFrame)
                 return;
 
-            if (!IsCurrentState<PausedState>())
+            if (!IsCurrentState<OldPausedState>())
                 return;
 
             _lastResumeRequestFrame = Time.frameCount;
@@ -170,7 +171,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             EventBus<GamePauseEvent>.Raise(new GamePauseEvent(false));
         }
 
-        private void OnResetRequested(GameResetRequestedEvent _)
+        private void OnResetRequested(OldGameResetRequestedEvent _)
         {
             DebugUtility.LogVerbose<GameManager>("Solicitação de reset recebida.");
             ResetGame(); // Implementado na partial SceneFlow
@@ -191,9 +192,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         #region Internal helpers & DI
 
-        private bool IsCurrentState<T>() where T : GameStateBase
+        private bool IsCurrentState<T>() where T : OldGameStateBase
         {
-            return GameManagerStateMachine.Instance.CurrentState is T;
+            return OldGameManagerStateMachine.Instance.CurrentState is T;
         }
 
         private void ConfigureDebug()
@@ -217,9 +218,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 provider.RegisterGlobal(gameConfig, allowOverride: true);
             }
 
-            if (!provider.TryGetGlobal<GameManagerStateMachine>(out _))
+            if (!provider.TryGetGlobal<OldGameManagerStateMachine>(out _))
             {
-                provider.RegisterGlobal(GameManagerStateMachine.Instance, allowOverride: true);
+                provider.RegisterGlobal(OldGameManagerStateMachine.Instance, allowOverride: true);
             }
 
             EnsureSceneTransitionServices(); // Implementado na partial SceneFlow
@@ -248,3 +249,5 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         #endregion
     }
 }
+
+

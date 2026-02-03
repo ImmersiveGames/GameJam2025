@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.TimerSystem.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -251,3 +251,4 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         }
     }
 }
+

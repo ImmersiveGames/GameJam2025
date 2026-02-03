@@ -1,4 +1,4 @@
-ï»¿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
@@ -6,21 +6,21 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
     public class RuntimeAttributeLinkConfig : ScriptableObject
     {
         [Header("Link Settings")]
-        [Tooltip("Recurso fonte que serÃ¡ linkado")]
+        [Tooltip("Recurso fonte que será linkado")]
         public RuntimeAttributeType sourceRuntimeAttribute;
 
-        [Tooltip("Recurso alvo que receberÃ¡ o overflow")]
+        [Tooltip("Recurso alvo que receberá o overflow")]
         public RuntimeAttributeType targetRuntimeAttribute;
 
         [Header("Transfer Behavior")]
         [Tooltip("Quando transferir: Always, WhenSourceEmpty, WhenSourceBelowThreshold")]
         public readonly TransferCondition transferCondition = TransferCondition.WhenSourceEmpty;
 
-        [Tooltip("Threshold para transferÃªncia (0-1)")]
+        [Tooltip("Threshold para transferência (0-1)")]
         [Range(0f, 1f)]
         public float transferThreshold;
 
-        [Tooltip("DireÃ§Ã£o da transferÃªncia: SourceToTarget, BothWays")]
+        [Tooltip("Direção da transferência: SourceToTarget, BothWays")]
         public TransferDirection transferDirection = TransferDirection.SourceToTarget;
 
         [Header("Auto-flow Integration")]
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
         {
             if (sourceMax <= 0f)
             {
-                DebugUtility.LogWarning<RuntimeAttributeLinkConfig>($"sourceMax Ã© zero para {sourceRuntimeAttribute}. TransferÃªncia bloqueada.");
+                DebugUtility.LogWarning<RuntimeAttributeLinkConfig>($"sourceMax é zero para {sourceRuntimeAttribute}. Transferência bloqueada.");
                 return false;
             }
 

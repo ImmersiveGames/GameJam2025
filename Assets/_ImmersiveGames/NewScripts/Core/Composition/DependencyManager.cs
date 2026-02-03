@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityUtils;

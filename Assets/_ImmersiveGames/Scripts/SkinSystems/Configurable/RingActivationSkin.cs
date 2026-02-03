@@ -1,6 +1,6 @@
-ï»¿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             if (!applyOnSkinChange) return;
             
             RandomizeRing();
-            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Configured from skin: {_hasRing}, Rotation: {_currentRotation}Â°");
+            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Configured from skin: {_hasRing}, Rotation: {_currentRotation}°");
         }
 
         protected override void ApplyDynamicModifications()
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             var ringTransform = ringObject.transform;
             ringTransform.localRotation = Quaternion.Euler(0f, _currentRotation, 0f);
             
-            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Applied rotation: {_currentRotation}Â°");
+            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Applied rotation: {_currentRotation}°");
         }
         #endregion
 
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Gera uma nova configuraÃ§Ã£o aleatÃ³ria para o anel
+        /// Gera uma nova configuração aleatória para o anel
         /// </summary>
         [ContextMenu("Randomize Ring")]
         public void RandomizeRing()
@@ -132,11 +132,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             _currentRotation = enableRandomRotation ? Random.Range(rotationRange.x, rotationRange.y) : 0f;
             UpdateRingVisibility();
             
-            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Randomized - HasRing: {_hasRing}, Rotation: {_currentRotation}Â°");
+            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Randomized - HasRing: {_hasRing}, Rotation: {_currentRotation}°");
         }
 
         /// <summary>
-        /// Define uma rotaÃ§Ã£o especÃ­fica para o anel
+        /// Define uma rotação específica para o anel
         /// </summary>
         public void SetRingRotation(float rotation)
         {
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 ApplyRingRotation();
             }
             
-            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Rotation set to: {rotation}Â°");
+            if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Rotation set to: {rotation}°");
         }
 
         /// <summary>
@@ -171,7 +171,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// ObtÃ©m o estado atual do anel
+        /// Obtém o estado atual do anel
         /// </summary>
         public RingState GetRingState()
         {
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         public override string ToString()
         {
-            return $"Ring: {hasRing}, Rotation: {rotation}Â°, Visible: {isVisible}";
+            return $"Ring: {hasRing}, Rotation: {rotation}°, Visible: {isVisible}";
         }
     }
 }

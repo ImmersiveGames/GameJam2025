@@ -1,11 +1,11 @@
-Ôªøusing _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
     /// <summary>
-    /// Evento global para notificar mudan√ßas de skin individual
+    /// Evento global para notificar mudanÁas de skin individual
     /// </summary>
     public struct SkinEvents : IEvent
     {
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     }
 
     /// <summary>
-    /// Evento global para notificar mudan√ßas de cole√ß√£o de skins
+    /// Evento global para notificar mudanÁas de coleÁ„o de skins
     /// </summary>
     public struct SkinCollectionUpdateEvent : IEvent
     {
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     }
 
     /// <summary>
-    /// Evento global para notificar cria√ß√£o de inst√¢ncias de skin
+    /// Evento global para notificar criaÁ„o de inst‚ncias de skin
     /// </summary>
     public struct SkinInstancesCreatedEvent : IEvent
     {

@@ -2,8 +2,8 @@ using System;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.Predicates;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Runtime.Predicates;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -273,3 +273,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     }
 
 }
+

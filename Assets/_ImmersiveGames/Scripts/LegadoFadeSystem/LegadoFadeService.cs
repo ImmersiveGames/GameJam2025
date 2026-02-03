@@ -1,7 +1,7 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.LegaadoFadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.LegadoFadeSystem
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         private bool _isLoadingFadeScene;
         private readonly object _lock = new();
 
-        private SceneTransitionProfile _currentProfile;
+        private OldSceneTransitionProfile _currentProfile;
 
         private const float DefaultFadeInDuration = 0.5f;
         private const float DefaultFadeOutDuration = 0.5f;
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         private static readonly AnimationCurve DefaultFadeOutCurve =
             AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-        public void ConfigureFromProfile(SceneTransitionProfile profile)
+        public void ConfigureFromProfile(OldSceneTransitionProfile profile)
         {
             _currentProfile = profile;
         }
@@ -124,3 +124,4 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         }
     }
 }
+

@@ -1,8 +1,8 @@
-Ôªø
+
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 {
@@ -11,11 +11,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
     public sealed class GameplayExecutionParticipantBehaviour : MonoBehaviour, IGameplayExecutionParticipant
     {
         [Header("Execution Control")]
-        [Tooltip("Se verdadeiro, o participante come√ßa bloqueado at√© o Coordinator liberar.")]
+        [Tooltip("Se verdadeiro, o participante comeÁa bloqueado atÈ o Coordinator liberar.")]
         [SerializeField] private bool startBlocked;
 
         [Header("Components to Toggle (Manual)")]
-        [Tooltip("Lista expl√≠cita de componentes que devem ser desativados quando a execu√ß√£o estiver bloqueada.")]
+        [Tooltip("Lista explÌcita de componentes que devem ser desativados quando a execuÁ„o estiver bloqueada.")]
         [SerializeField] private List<Behaviour> behavioursToToggle = new();
 
         [Tooltip("Opcional: desativar GameObjects (ex.: sub-sistemas) quando bloqueado. Evite desativar o Root do ator.")]
@@ -25,26 +25,26 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         [Tooltip("Se verdadeiro, coleta Behaviours automaticamente quando behavioursToToggle estiver vazio (ou mescla com a lista manual, dependendo de 'mergeWithManualLists').")]
         [SerializeField] private bool autoCollectBehavioursToToggle = true;
 
-        [Tooltip("Se verdadeiro, coleta tamb√©m Behaviours nos filhos (GetComponentsInChildren).")]
+        [Tooltip("Se verdadeiro, coleta tambÈm Behaviours nos filhos (GetComponentsInChildren).")]
         [SerializeField] private bool includeChildren;
 
-        [Tooltip("Se verdadeiro, mescla a lista manual com a auto-coleta (evita duplicatas). Se falso, auto-coleta s√≥ ocorre quando a lista manual estiver vazia.")]
+        [Tooltip("Se verdadeiro, mescla a lista manual com a auto-coleta (evita duplicatas). Se falso, auto-coleta sÛ ocorre quando a lista manual estiver vazia.")]
         [SerializeField] private bool mergeWithManualLists;
 
         [Tooltip("Se verdadeiro, remove automaticamente nulos e duplicatas nas listas.")]
         [SerializeField] private bool sanitizeListsOnEnable = true;
 
         [Header("Auto Collect Filters")]
-        [Tooltip("Se verdadeiro, inclui componentes que est√£o desativados (enabled=false) durante a coleta.")]
+        [Tooltip("Se verdadeiro, inclui componentes que est„o desativados (enabled=false) durante a coleta.")]
         [SerializeField] private bool includeDisabledBehaviours = true;
 
-        [Tooltip("Nomes de tipos (simples ou full name) a serem exclu√≠dos da auto-coleta. Use para registradores e infra que n√£o devem ser desativados.")]
+        [Tooltip("Nomes de tipos (simples ou full name) a serem excluÌdos da auto-coleta. Use para registradores e infra que n„o devem ser desativados.")]
         [SerializeField] private List<string> excludedTypeNames = new()
         {
-            // Execu√ß√£o
+            // ExecuÁ„o
             nameof(GameplayExecutionParticipantBehaviour),
 
-            // Registradores / dom√≠nios (ajuste conforme seus nomes reais)
+            // Registradores / domÌnios (ajuste conforme seus nomes reais)
             "ActorAutoRegistrar",
             "PlayerAutoRegistrar",
             "EaterAutoRegistrar",
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             "GameplayManager"
         };
 
-        [Tooltip("Se verdadeiro, exclui automaticamente componentes de UI/EventSystem (evita quebrar navega√ß√£o de UI na gameplay).")]
+        [Tooltip("Se verdadeiro, exclui automaticamente componentes de UI/EventSystem (evita quebrar navegaÁ„o de UI na gameplay).")]
         [SerializeField] private bool excludeUiRelatedBehaviours = true;
 
         [Header("Diagnostics")]
@@ -253,7 +253,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
             var t = b.GetType();
 
-            // PASSO 2 (refeito): marker interface (sem reflex√£o)
+            // PASSO 2 (refeito): marker interface (sem reflex„o)
             if (b is IExecutionToggleIgnored)
             {
                 return true;
@@ -346,3 +346,4 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         }
     }
 }
+

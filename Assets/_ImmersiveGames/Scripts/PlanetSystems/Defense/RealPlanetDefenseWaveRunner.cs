@@ -6,9 +6,9 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense

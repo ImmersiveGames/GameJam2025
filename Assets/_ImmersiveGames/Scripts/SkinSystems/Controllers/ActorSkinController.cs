@@ -1,12 +1,12 @@
-ï»¿using UnityEngine;
+using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SkinSystems.Runtime;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         }
 
         /// <summary>
-        /// Permite injeÃ§Ã£o externa de um serviÃ§o de skin customizado (Ãºtil para testes).
+        /// Permite injeção externa de um serviço de skin customizado (útil para testes).
         /// </summary>
         public void SetSkinService(ISkinService skinService)
         {
@@ -62,10 +62,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             RegisterWithDependencyManager();
 
             // IMPORTANTe:
-            // Initialize() apenas configura o serviÃ§o. Para os "Configurable" receberem os dados
-            // (SkinAudioConfigurable, etc.), precisamos DISPARAR os eventos aplicando a coleÃ§Ã£o.
+            // Initialize() apenas configura o serviço. Para os "Configurable" receberem os dados
+            // (SkinAudioConfigurable, etc.), precisamos DISPARAR os eventos aplicando a coleção.
             //
-            // Rodar no Start garante que todos os Awake() jÃ¡ executaram e os SkinConfigurable jÃ¡ assinaram
+            // Rodar no Start garante que todos os Awake() já executaram e os SkinConfigurable já assinaram
             // os eventos do ActorSkinController.
             if (autoInitialize && defaultSkinCollection != null)
             {
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         private void OnGlobalSkinUpdate(SkinEvents evt)
         {
             // Reagir a eventos globais de skin update
-            // Ãštil para sincronizaÃ§Ã£o em multiplayer ou sistemas cross-actor
+            // Útil para sincronização em multiplayer ou sistemas cross-actor
         }
 
         private void OnGlobalSkinCollectionUpdate(SkinCollectionUpdateEvent evt)
@@ -410,7 +410,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             if (tracker == null)
             {
                 DebugUtility.LogWarning<ActorSkinController>(
-                    $"ActorSkinController em {name} nÃ£o encontrou SkinRuntimeStateTracker no mesmo GameObject.");
+                    $"ActorSkinController em {name} não encontrou SkinRuntimeStateTracker no mesmo GameObject.");
                 return;
             }
 
@@ -419,3 +419,4 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 #endif
     }
 }
+

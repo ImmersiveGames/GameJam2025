@@ -135,26 +135,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop
         /// - Não deve ser usado como autorização final de gameplay.
         /// - A decisão final deve ocorrer em IStateDependentService (gate-aware).
         /// </summary>
-        public bool IsActionAllowedByLoopState(ActionType action) => Current switch
+        public bool IsGameplayActionAllowedByLoopState(GameplayAction action)
+            => Current == GameLoopStateId.Playing;
+
+        public bool IsUiActionAllowedByLoopState(UiAction action) => Current switch
         {
-            GameLoopStateId.Boot =>
-                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel,
+            GameLoopStateId.Boot => true,
+            GameLoopStateId.Ready => true,
+            GameLoopStateId.IntroStage => true,
+            GameLoopStateId.Paused => true,
+            GameLoopStateId.PostPlay => true,
+            _ => false
+        };
 
-            GameLoopStateId.Ready =>
-                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
-
-            GameLoopStateId.IntroStage =>
-                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
-
-            GameLoopStateId.Playing =>
-                action is ActionType.Move or ActionType.Shoot or ActionType.Interact or ActionType.Spawn,
-
-            GameLoopStateId.Paused =>
-                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
-
-            GameLoopStateId.PostPlay =>
-                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
-
+        public bool IsSystemActionAllowedByLoopState(SystemAction action) => Current switch
+        {
+            GameLoopStateId.Boot => true,
+            GameLoopStateId.Ready => true,
+            GameLoopStateId.IntroStage => true,
+            GameLoopStateId.Paused => true,
+            GameLoopStateId.PostPlay => true,
             _ => false
         };
 

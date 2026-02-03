@@ -1,4 +1,4 @@
-﻿using DG.Tweening;
+using DG.Tweening;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation
 {
@@ -16,8 +16,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation
         [Range(0.05f, 2f)] public float residualSpeed = 0.6f;
         public Ease residualEase = Ease.OutCubic;
 
-        [Header("Color Transition")]
+        [Header("Color OldTransition")]
         [Min(0f)] public float colorTransitionDuration = 0.2f;
         public Ease colorTransitionEase = Ease.OutQuad;
     }
 }
+

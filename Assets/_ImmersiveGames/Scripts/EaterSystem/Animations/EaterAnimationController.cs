@@ -3,9 +3,9 @@ using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 {
@@ -196,3 +196,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         }
     }
 }
+

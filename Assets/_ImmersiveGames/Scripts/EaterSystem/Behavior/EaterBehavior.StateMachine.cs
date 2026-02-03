@@ -1,20 +1,20 @@
-Ôªøusing _ImmersiveGames.Scripts.EaterSystem.States;
+using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.Predicates;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Runtime.Predicates;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
     /// <summary>
-    /// Parte da implementa√ß√£o do Eater focada em m√°quina de estados:
-    /// - cria√ß√£o e registro de estados;
-    /// - configura√ß√£o de transi√ß√µes e predicados;
-    /// - menus de contexto para for√ßar troca de estado;
-    /// - manipula√ß√£o da StateMachine interna.
+    /// Parte da implementaÁ„o do Eater focada em m·quina de estados:
+    /// - criaÁ„o e registro de estados;
+    /// - configuraÁ„o de transiÁıes e predicados;
+    /// - menus de contexto para forÁar troca de estado;
+    /// - manipulaÁ„o da OldStateMachine interna.
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour
     {
-        private StateMachine _stateMachine;
+        private OldStateMachine _stateMachine;
         private DeathEventPredicate _deathPredicate;
         private ReviveEventPredicate _revivePredicate;
         private EaterWanderingState _wanderingState;
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return;
             }
 
-            var builder = new StateMachineBuilder();
+            var builder = new OldStateMachineBuilder();
 
             _wanderingState = RegisterState(builder, new EaterWanderingState());
             _hungryState = RegisterState(builder, new EaterHungryState());
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return;
             }
 
-            IState previous = _stateMachine.CurrentState;
+            OldIState previous = _stateMachine.CurrentState;
             previous?.OnExit();
 
             _stateMachine.SetState(targetState);
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             }
         }
 
-        private void ConfigureTransitions(StateMachineBuilder builder)
+        private void ConfigureTransitions(OldStateMachineBuilder builder)
         {
             IPredicate deathPredicate = EnsureDeathPredicate();
             IPredicate revivePredicate = EnsureRevivePredicate();
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             builder.At(_eatingState, _wanderingState, EnsureEatingWanderingPredicate());
         }
 
-        private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
+        private T RegisterState<T>(OldStateMachineBuilder builder, T state) where T : EaterBehaviorState
         {
             state.Attach(this);
             builder.AddState(state, out _);
@@ -264,14 +264,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             }
 
             DebugUtility.LogWarning(
-                "EaterMaster n√£o encontrado. Transi√ß√µes de morte/revive permanecer√£o desabilitadas.",
+                "EaterMaster n„o encontrado. TransiÁıes de morte/revive permanecer„o desabilitadas.",
                 this,
                 this);
 
             _missingMasterForPredicatesLogged = true;
         }
 
-        private static string GetStateName(IState state)
+        private static string GetStateName(OldIState state)
         {
             if (state is EaterBehaviorState eaterState)
             {
@@ -296,3 +296,5 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
     }
 }
+
+

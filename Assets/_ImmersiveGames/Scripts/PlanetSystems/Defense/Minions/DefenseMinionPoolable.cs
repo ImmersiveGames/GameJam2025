@@ -1,15 +1,15 @@
-Ôªøusing _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ProjectilesSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
-    /// Vers√£o especializada do BulletPoolable para minions de defesa.
+    /// Vers„o especializada do BulletPoolable para minions de defesa.
     ///
     /// Reaproveita:
     /// - Rigidbody / velocidade
-    /// - DamageDealer / colis√£o / retorno ao pool
+    /// - DamageDealer / colis„o / retorno ao pool
     /// - LifetimeManager
     /// </summary>
     public sealed class DefenseMinionPoolable : BulletPoolable
@@ -17,8 +17,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         protected override void OnActivated(Vector3 pos, Vector3? direction, IActor spawner)
         {
             // Para minions, normalmente vamos controlar o movimento via
-            // Entry/Chase (DOTween ou l√≥gica pr√≥pria), ent√£o:
-            // - chamamos base.OnActivated(pos, null, spawner) para N√ÉO dar velocidade de bullet.
+            // Entry/Chase (DOTween ou lÛgica prÛpria), ent„o:
+            // - chamamos base.OnActivated(pos, null, spawner) para N√O dar velocidade de bullet.
             base.OnActivated(pos, null, spawner);
 
             DebugUtility.LogVerbose<DefenseMinionPoolable>(
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         {
             base.OnDeactivated();
 
-            // Garantir que nenhum estado de persegui√ß√£o ou refer√™ncia residual permane√ßa ap√≥s a desativa√ß√£o
+            // Garantir que nenhum estado de perseguiÁ„o ou referÍncia residual permaneÁa apÛs a desativaÁ„o
             if (TryGetComponent<DefenseMinionController>(out var controller))
             {
                 controller.CleanupOnDeactivated();
@@ -38,3 +38,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         }
     }
 }
+

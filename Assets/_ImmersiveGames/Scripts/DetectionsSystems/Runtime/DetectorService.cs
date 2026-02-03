@@ -1,6 +1,6 @@
-ï»¿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public DetectorService(Transform origin, IDetector detector, SensorCollection collection)
         {
-            DebugUtility.Log<DetectorService>($"Criando serviÃ§o com {collection.Sensors.Count} configuraÃ§Ãµes em {origin.name}");
+            DebugUtility.Log<DetectorService>($"Criando serviço com {collection.Sensors.Count} configurações em {origin.name}");
 
             foreach (var config in collection.Sensors)
             {
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 _sensors.Add(new Sensor(origin, detector, config));
             }
 
-            DebugUtility.Log<DetectorService>($"ServiÃ§o criado com {_sensors.Count} sensores ativos em {origin.name}");
+            DebugUtility.Log<DetectorService>($"Serviço criado com {_sensors.Count} sensores ativos em {origin.name}");
         }
 
         public void Update(float deltaTime)

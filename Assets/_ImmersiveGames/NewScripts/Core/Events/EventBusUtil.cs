@@ -11,8 +11,10 @@ namespace _ImmersiveGames.NewScripts.Core.Events
     /// </summary>
     public static class EventBusUtil
     {
-        private static readonly HashSet<Type> EventTypes = new();
-        private static readonly HashSet<(Type Scope, Type Event)> FilteredEventTypes = new();
+        private static readonly HashSet<Type> _eventTypes = new();
+        private static readonly HashSet<(Type Scope, Type Event)> _filteredEventTypes = new();
+
+        public static IReadOnlyCollection<Type> EventTypes => _eventTypes;
 
 #if UNITY_EDITOR
         [InitializeOnLoadMethod]
@@ -35,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Core.Events
         {
             if (eventType != null)
             {
-                EventTypes.Add(eventType);
+                _eventTypes.Add(eventType);
             }
         }
 
@@ -43,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Core.Events
         {
             if (scopeType != null && eventType != null)
             {
-                FilteredEventTypes.Add((scopeType, eventType));
+                _filteredEventTypes.Add((scopeType, eventType));
             }
         }
 
@@ -66,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Core.Events
 
         private static void ClearEventBuses()
         {
-            foreach (Type eventType in EventTypes)
+            foreach (Type eventType in _eventTypes)
             {
                 try
                 {
@@ -83,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Core.Events
 
         private static void ClearFilteredEventBuses()
         {
-            foreach ((Type scope, Type evt) in FilteredEventTypes)
+            foreach ((Type scope, Type evt) in _filteredEventTypes)
             {
                 try
                 {

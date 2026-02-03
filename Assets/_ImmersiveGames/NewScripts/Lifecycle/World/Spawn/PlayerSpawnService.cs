@@ -119,8 +119,8 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Spawn
                 return;
             }
 
-            var input = instance.GetComponent<NewPlayerInputReader>() ?? instance.AddComponent<NewPlayerInputReader>();
-            var controller = instance.GetComponent<NewPlayerMovementController>() ?? instance.AddComponent<NewPlayerMovementController>();
+            var input = instance.GetComponent<PlayerInputReader>() ?? instance.AddComponent<PlayerInputReader>();
+            var controller = instance.GetComponent<PlayerMovementController>() ?? instance.AddComponent<PlayerMovementController>();
 
             if (controller != null && input != null)
             {
@@ -135,10 +135,11 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Spawn
                 return;
             }
 
-            if (instance.TryGetComponent(out NewPlayerMovementController controller))
+            if (instance.TryGetComponent(out PlayerMovementController controller))
             {
                 controller.InjectStateService(_stateService);
             }
         }
     }
 }
+

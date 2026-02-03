@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Events
 {

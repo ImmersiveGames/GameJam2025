@@ -1,8 +1,8 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem
@@ -213,3 +213,4 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         #endregion
     }
 }
+

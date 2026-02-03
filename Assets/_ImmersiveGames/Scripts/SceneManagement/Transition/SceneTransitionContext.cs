@@ -1,18 +1,18 @@
-Ôªøusing System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 
-namespace _ImmersiveGames.Scripts.SceneManagement.Transition
+namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
 {
     /// <summary>
-    /// Descreve o plano de uma transi√ß√£o de cenas:
+    /// Descreve o plano de uma transiÁ„o de cenas:
     /// - quais cenas carregar;
     /// - quais descarregar;
-    /// - qual ser√° a cena ativa ao final;
+    /// - qual ser· a cena ativa ao final;
     /// - se deve usar fade;
-    /// - (opcional) quais perfis/grupos de cena est√£o envolvidos.
+    /// - (opcional) quais perfis/grupos de cena est„o envolvidos.
     /// 
-    /// A estrutura √© imut√°vel (readonly) para facilitar o racioc√≠nio
-    /// e evitar altera√ß√µes durante a execu√ß√£o da transi√ß√£o.
+    /// A estrutura È imut·vel (readonly) para facilitar o raciocÌnio
+    /// e evitar alteraÁıes durante a execuÁ„o da transiÁ„o.
     /// </summary>
     public readonly struct SceneTransitionContext
     {
@@ -22,8 +22,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         public readonly string targetActiveScene;
         public readonly bool useFade;
 
-        // Novos metadados (opcionais) para integra√ß√£o com perfis/grupos
-        public readonly SceneTransitionProfile transitionProfile;
+        // Novos metadados (opcionais) para integraÁ„o com perfis/grupos
+        public readonly OldSceneTransitionProfile transitionProfile;
         private readonly SceneGroupProfile _fromGroupProfile;
         private readonly SceneGroupProfile _toGroupProfile;
 
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             bool useFade,
-            SceneTransitionProfile transitionProfile,
+            OldSceneTransitionProfile transitionProfile,
             SceneGroupProfile fromGroupProfile,
             SceneGroupProfile toGroupProfile)
         {
@@ -82,3 +82,4 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         }
     }
 }
+

@@ -1,6 +1,6 @@
-Ôªøusing _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (_actor == null)
             {
                 DebugUtility.LogWarning<PlayerAutoRegistrar>(
-                    $"Nenhum IActor encontrado em '{name}'. PlayerAutoRegistrar ser√° ignorado.",
+                    $"Nenhum IActor encontrado em '{name}'. PlayerAutoRegistrar ser· ignorado.",
                     this);
             }
         }
@@ -43,11 +43,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (_actor == null || _registered == true || _waitingForActorId == false)
                 return;
 
-            // Continua tentando at√© o ActorId existir.
+            // Continua tentando atÈ o ActorId existir.
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
                 return;
 
-            // ActorId ficou pronto ‚Äî tenta registrar.
+            // ActorId ficou pronto ó tenta registrar.
             TryRegisterNow();
         }
 
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
             {
-                // ActorId ainda n√£o foi gerado. Vamos aguardar via Update.
+                // ActorId ainda n„o foi gerado. Vamos aguardar via Update.
                 _waitingForActorId = true;
                 return;
             }
@@ -76,14 +76,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (!DependencyManager.Provider.TryGetForScene<IPlayerDomain>(sceneName, out _playerDomain) || _playerDomain == null)
             {
                 DebugUtility.LogWarning<PlayerAutoRegistrar>(
-                    $"IPlayerDomain n√£o encontrado para a cena '{sceneName}'. " +
+                    $"IPlayerDomain n„o encontrado para a cena '{sceneName}'. " +
                     $"Garanta GameplayDomainBootstrapper nessa cena e maxSceneServices adequado.",
                     this);
                 _playerDomain = null;
                 return;
             }
 
-            // Agora o ActorId j√° existe (garantido antes de chamar).
+            // Agora o ActorId j· existe (garantido antes de chamar).
             _registered = _playerDomain.RegisterPlayer(_actor);
             _waitingForActorId = !_registered;
         }
@@ -99,3 +99,4 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         }
     }
 }
+

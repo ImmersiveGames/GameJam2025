@@ -4,7 +4,7 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
@@ -284,3 +284,4 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
         #endregion
     }
 }
+

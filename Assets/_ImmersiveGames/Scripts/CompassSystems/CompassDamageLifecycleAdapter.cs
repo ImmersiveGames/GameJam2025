@@ -1,7 +1,7 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.CompassSystems
 {
@@ -201,3 +201,4 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         }
     }
 }
+

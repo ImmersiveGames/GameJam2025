@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {

@@ -1,5 +1,5 @@
 using System.Text;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             DebugUtility.LogVerbose(_builder.ToString(), instance: this);
         }
 
-        private void OnStateChanged(IState previous, IState current)
+        private void OnStateChanged(OldIState previous, OldIState current)
         {
             DebugUtility.LogVerbose($"🔄 Estado alterado: {previous} → {current}", instance: this);
         }
@@ -102,3 +102,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         }
     }
 }
+

@@ -3,9 +3,9 @@ using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.GameplaySystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -551,3 +551,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
     }
 }
+

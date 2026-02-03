@@ -1,10 +1,10 @@
-Ôªøusing System.Threading.Tasks;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -62,14 +62,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
 
-            // Servi√ßo puro; manter inst√¢ncia √© ok.
+            // ServiÁo puro; manter inst‚ncia È ok.
             _interactService = new PlanetInteractService();
 
             DependencyManager.Provider.InjectDependencies(this);
 
             if (_playerInput == null)
             {
-                DebugUtility.LogError<PlayerInteractController>($"PlayerInput n√£o encontrado em '{name}'.", this);
+                DebugUtility.LogError<PlayerInteractController>($"PlayerInput n„o encontrado em '{name}'.", this);
                 enabled = false;
                 return;
             }
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             ResolveAction();
 
             DebugUtility.LogVerbose<PlayerInteractController>(
-                $"PlayerInteractController inicializado em '{name}' com a√ß√£o '{actionName}'.",
+                $"PlayerInteractController inicializado em '{name}' com aÁ„o '{actionName}'.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
         }
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             UnbindAction();
 
             DebugUtility.LogVerbose<PlayerInteractController>(
-                $"PlayerInteractController destru√≠do em '{name}'.",
+                $"PlayerInteractController destruÌdo em '{name}'.",
                 context: this);
         }
 
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             if (_interactAction == null)
             {
                 DebugUtility.LogError<PlayerInteractController>(
-                    $"A√ß√£o '{actionName}' n√£o encontrada no InputActionMap de '{name}'.", this);
+                    $"AÁ„o '{actionName}' n„o encontrada no InputActionMap de '{name}'.", this);
             }
         }
 
@@ -157,7 +157,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             if (_actor != null && !_actor.IsActive)
                 return;
 
-            if (_stateService != null && !_stateService.CanExecuteAction(ActionType.Interact))
+            if (_stateService != null && !_stateService.CanExecuteAction(OldActionType.Interact))
                 return;
 
             _interactService.TryInteractWithPlanet(
@@ -174,7 +174,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 
         public Task Reset_CleanupAsync(ResetContext ctx)
         {
-            // Evita acumular subscription em cen√°rios de rebind/reset.
+            // Evita acumular subscription em cen·rios de rebind/reset.
             UnbindAction();
             return Task.CompletedTask;
         }
@@ -189,7 +189,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 
         public Task Reset_RebindAsync(ResetContext ctx)
         {
-            // Seguran√ßa: re-injeta depend√™ncias se necess√°rio e garante bind.
+            // SeguranÁa: re-injeta dependÍncias se necess·rio e garante bind.
             if (_stateService == null)
                 DependencyManager.Provider.InjectDependencies(this);
 
@@ -219,3 +219,5 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         #endregion
     }
 }
+
+

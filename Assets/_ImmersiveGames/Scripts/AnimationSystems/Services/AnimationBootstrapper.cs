@@ -1,5 +1,5 @@
-Ôªøusing _ImmersiveGames.Scripts.AnimationSystems.Config;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.AnimationSystems.Config;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 #endif
             var configProvider = new AnimationConfigProvider();
 
-            // Registra configs padr√£o por tipo de controller (nome da classe)
+            // Registra configs padr„o por tipo de controller (nome da classe)
             RegisterDefaultConfig(configProvider, "PlayerAnimationController", "DefaultPlayerAnimationConfig");
             RegisterDefaultConfig(configProvider, "EaterAnimationController", "DefaultEaterAnimationConfig");
             RegisterDefaultConfig(configProvider, "EnemyAnimationController", "DefaultEnemyAnimationConfig");
@@ -43,8 +43,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
             else
             {
                 DebugUtility.LogWarning<AnimationBootstrapper>(
-                    $"AnimationConfig n√£o encontrada em Resources para '{controllerTypeName}' (path: '{resourcePath}').");
+                    $"AnimationConfig n„o encontrada em Resources para '{controllerTypeName}' (path: '{resourcePath}').");
             }
         }
     }
 }
+

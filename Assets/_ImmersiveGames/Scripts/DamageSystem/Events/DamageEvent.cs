@@ -1,5 +1,5 @@
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
@@ -154,3 +154,4 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
     }
 }
+

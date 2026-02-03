@@ -1,18 +1,18 @@
-ï»¿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
     /// <summary>
-    /// Parte da implementaÃ§Ã£o do Eater focada em:
+    /// Parte da implementação do Eater focada em:
     /// - sistema de desejos (EaterDesireService / EaterDesireInfo);
-    /// - helpers de mundo: players, Ã³rbita e movimentaÃ§Ã£o utilitÃ¡ria.
+    /// - helpers de mundo: players, órbita e movimentação utilitária.
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour
     {
@@ -121,8 +121,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
 
         /// <summary>
-        /// Registra informaÃ§Ãµes sobre o Ãºltimo ponto em que a perseguiÃ§Ã£o foi interrompida.
-        /// MantÃ©m a distÃ¢ncia radial calculada a partir do centro do planeta e a separaÃ§Ã£o da superfÃ­cie.
+        /// Registra informações sobre o último ponto em que a perseguição foi interrompida.
+        /// Mantém a distância radial calculada a partir do centro do planeta e a separação da superfície.
         /// </summary>
         internal void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float surfaceStopDistance)
         {
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
 
         /// <summary>
-        /// ObtÃ©m o Ãºltimo ponto de parada registrado para o planeta informado.
+        /// Obtém o último ponto de parada registrado para o planeta informado.
         /// </summary>
         internal bool TryGetOrbitAnchor(Transform target, out float orbitRadius, out float surfaceStopDistance)
         {
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             bool suspended = _desireService.Suspend();
             if (logStateTransitions && suspended)
             {
-                DebugUtility.LogVerbose($"Desejos suspensos mantendo seleÃ§Ã£o atual ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose($"Desejos suspensos mantendo seleção atual ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             return suspended;
@@ -354,7 +354,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             {
                 if (logStateTransitions && !_missingDesireServiceLogged)
                 {
-                    DebugUtility.LogWarning("NÃ£o foi possÃ­vel inicializar o serviÃ§o de desejos (Master ou Config ausentes).", this, this);
+                    DebugUtility.LogWarning("Não foi possível inicializar o serviço de desejos (Master ou Config ausentes).", this, this);
                     _missingDesireServiceLogged = true;
                 }
 
@@ -380,3 +380,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
     }
 }
+

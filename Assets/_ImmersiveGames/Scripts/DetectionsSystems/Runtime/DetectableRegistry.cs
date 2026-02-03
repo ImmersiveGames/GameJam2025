@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {
@@ -67,3 +67,4 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         }
     }
 }
+

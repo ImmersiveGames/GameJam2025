@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -152,3 +152,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 }
+

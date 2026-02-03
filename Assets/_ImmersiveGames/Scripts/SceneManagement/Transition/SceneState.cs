@@ -1,18 +1,18 @@
-Ôªøusing System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace _ImmersiveGames.Scripts.SceneManagement.Transition
+namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
 {
     /// <summary>
     /// Representa um snapshot do estado atual de cenas no jogo.
     ///
-    /// √â usado pelo planner para decidir:
+    /// … usado pelo planner para decidir:
     /// - quais cenas devem ser carregadas;
     /// - quais podem ser descarregadas;
-    /// - qual √© a cena ativa atual.
+    /// - qual È a cena ativa atual.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneState
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         /// </summary>
         public string ActiveSceneName { get; private set; }
 
-        // Evita spam: suprime logs repetidos no MESMO frame quando o snapshot √© id√™ntico.
+        // Evita spam: suprime logs repetidos no MESMO frame quando o snapshot È idÍntico.
         private static int _lastLoggedFrame = -1;
         private static string _lastLoggedKey;
 
@@ -62,14 +62,14 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
         private static void LogSnapshotIfNeeded(SceneState state)
         {
-            // Gera uma chave determin√≠stica para comparar snapshots.
-            // Ordenar evita diferen√ßas por ordem de itera√ß√£o do HashSet.
+            // Gera uma chave determinÌstica para comparar snapshots.
+            // Ordenar evita diferenÁas por ordem de iteraÁ„o do HashSet.
             string loaded = string.Join(", ", state.LoadedScenes.OrderBy(s => s));
             string key = loaded + "|" + state.ActiveSceneName;
 
             int frame = Time.frameCount;
 
-            // Se for o mesmo frame e o snapshot √© igual, n√£o loga novamente.
+            // Se for o mesmo frame e o snapshot È igual, n„o loga novamente.
             if (_lastLoggedFrame == frame && _lastLoggedKey == key)
                 return;
 
@@ -90,3 +90,5 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         }
     }
 }
+
+

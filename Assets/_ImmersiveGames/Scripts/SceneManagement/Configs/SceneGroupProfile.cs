@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 
         [Header("Transição")]
         [Tooltip("Perfil de transição (fade, HUD, textos). Se null, será usado o perfil padrão global.")]
-        [SerializeField] private SceneTransitionProfile transitionProfile;
+        [SerializeField] private OldSceneTransitionProfile transitionProfile;
 
         [Tooltip("Se verdadeiro, força o uso de fade mesmo que o perfil esteja null.")]
         [SerializeField] private bool forceUseFade = true;
@@ -66,11 +66,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
         /// Perfil de transição associado a este grupo.
         /// Pode ser null; o planner/serviço decidirá o perfil default.
         /// </summary>
-        public SceneTransitionProfile TransitionProfile => transitionProfile;
+        public OldSceneTransitionProfile TransitionProfile => transitionProfile;
 
         /// <summary>
         /// Indica se este grupo deve usar fade por padrão.
-        /// Se houver um SceneTransitionProfile, o campo UseFade dele pode sobrepor este valor.
+        /// Se houver um OldSceneTransitionProfile, o campo UseFade dele pode sobrepor este valor.
         /// </summary>
         public bool ForceUseFade => forceUseFade;
 

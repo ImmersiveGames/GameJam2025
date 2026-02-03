@@ -1,41 +1,41 @@
-Ôªøusing System.Collections;
+using System.Collections;
 using UnityEngine;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Composition;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {
     /// <summary>
-    /// Runner de cen√°rios de teste para o sistema de √°udio.
+    /// Runner de cen·rios de teste para o sistema de ·udio.
     /// 
     /// Coloque este script em um GameObject vazio em uma cena de teste,
-    /// arraste os SoundData no Inspector e d√™ Play.
+    /// arraste os SoundData no Inspector e dÍ Play.
     /// 
-    /// - Etapa 4: testa SFX avan√ßados (spatial/non-spatial, random pitch, fade-in, stress).
+    /// - Etapa 4: testa SFX avanÁados (spatial/non-spatial, random pitch, fade-in, stress).
     /// - Etapa 5: testa BGM (play/stop, troca de faixa, pause/resume, volume).
     /// 
     /// Controles:
-    /// - T:  dispara novamente o cen√°rio completo de SFX.
-    /// - Y:  dispara novamente o cen√°rio completo de BGM.
+    /// - T:  dispara novamente o cen·rio completo de SFX.
+    /// - Y:  dispara novamente o cen·rio completo de BGM.
     /// </summary>
     public class AudioSystemScenarioTester : MonoBehaviour
     {
         [Header("SFX TEST SOUNDS (Etapa 4)")]
-        [Tooltip("Som padr√£o para teste de one-shot simples.")]
+        [Tooltip("Som padr„o para teste de one-shot simples.")]
         public SoundData basicSfx;
 
         [Tooltip("Som para testar spatial vs non-spatial (pode ser o mesmo do basic).")]
         public SoundData spatialSfx;
 
-        [Tooltip("Som curto e repet√≠vel para testar random pitch (passos, tiro, impacto).")]
+        [Tooltip("Som curto e repetÌvel para testar random pitch (passos, tiro, impacto).")]
         public SoundData randomPitchSfx;
 
-        [Tooltip("Som de dura√ß√£o > 1s para testar fade-in percept√≠vel.")]
+        [Tooltip("Som de duraÁ„o > 1s para testar fade-in perceptÌvel.")]
         public SoundData fadeInSfx;
 
-        [Tooltip("Som para teste de stress (m√∫ltiplas inst√¢ncias). Pode reutilizar o basic.")]
+        [Tooltip("Som para teste de stress (m˙ltiplas inst‚ncias). Pode reutilizar o basic.")]
         public SoundData stressSfx;
 
         [Header("BGM TEST SOUNDS (Etapa 5)")]
@@ -45,14 +45,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         [Tooltip("BGM de gameplay.")]
         public SoundData gameplayBgm;
 
-        [Header("Execu√ß√£o Autom√°tica")]
-        [Tooltip("Se verdadeiro, roda o cen√°rio de SFX automaticamente no Start.")]
+        [Header("ExecuÁ„o Autom·tica")]
+        [Tooltip("Se verdadeiro, roda o cen·rio de SFX automaticamente no Start.")]
         public bool autoRunSfxOnStart = true;
 
-        [Tooltip("Se verdadeiro, roda o cen√°rio de BGM automaticamente no Start (ap√≥s SFX).")]
+        [Tooltip("Se verdadeiro, roda o cen·rio de BGM automaticamente no Start (apÛs SFX).")]
         public bool autoRunBgmOnStart = true;
 
-        [Tooltip("Delay padr√£o entre passos de teste (em segundos).")]
+        [Tooltip("Delay padr„o entre passos de teste (em segundos).")]
         public float stepDelay = 1.0f;
 
         [Tooltip("Delay extra entre grupos de testes (em segundos).")]
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void Awake()
         {
-            // Garante que o sistema de √°udio est√° inicializado e registrado no DI
+            // Garante que o sistema de ·udio est· inicializado e registrado no DI
             AudioSystemBootstrap.EnsureAudioSystemInitialized();
 
             if (DependencyManager.Provider != null)
@@ -77,19 +77,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
             if (_sfxService == null)
             {
-                Debug.LogWarning("[AudioTest] IAudioSfxService n√£o encontrado. Verifique AudioSystemBootstrap / registro de servi√ßos.");
+                Debug.LogWarning("[AudioTest] IAudioSfxService n„o encontrado. Verifique AudioSystemBootstrap / registro de serviÁos.");
             }
 
             if (_bgmAudioService == null)
             {
-                Debug.LogWarning("[AudioTest] IBgmAudioService (BGM) n√£o encontrado. Testes de BGM ficar√£o limitados.");
+                Debug.LogWarning("[AudioTest] IBgmAudioService (BGM) n„o encontrado. Testes de BGM ficar„o limitados.");
             }
         }
 
         private void Start()
         {
             Debug.Log("[AudioTest] AudioSystemScenarioTester inicializado.");
-            Debug.Log("[AudioTest] Controles: T = rodar cen√°rio SFX, Y = rodar cen√°rio BGM.");
+            Debug.Log("[AudioTest] Controles: T = rodar cen·rio SFX, Y = rodar cen·rio BGM.");
 
             if (autoRunSfxOnStart)
             {
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
             if (autoRunBgmOnStart)
             {
-                // roda ap√≥s um pequeno atraso para n√£o conflitar com o in√≠cio dos SFX
+                // roda apÛs um pequeno atraso para n„o conflitar com o inÌcio dos SFX
                 var delay = autoRunSfxOnStart ? (stepDelay * 8f) : 0f;
                 _runningBgmScenario = StartCoroutine(RunBgmScenarioWithDelay(delay));
             }
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void Update()
         {
-            // Triggers manuais para rer rodar cen√°rios
+            // Triggers manuais para rer rodar cen·rios
             if (Input.GetKeyDown(KeyCode.T))
             {
                 if (_runningSfxScenario != null)
@@ -132,12 +132,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         {
             if (_sfxService == null)
             {
-                Debug.LogError("[AudioTest][SFX] IAudioSfxService indispon√≠vel, abortando cen√°rio de SFX.");
+                Debug.LogError("[AudioTest][SFX] IAudioSfxService indisponÌvel, abortando cen·rio de SFX.");
                 yield break;
             }
 
             Debug.Log("====================================================");
-            Debug.Log("[AudioTest][SFX] Iniciando cen√°rio de testes (Etapa 4).");
+            Debug.Log("[AudioTest][SFX] Iniciando cen·rio de testes (Etapa 4).");
             Debug.Log("====================================================");
 
             var position = transform.position;
@@ -149,22 +149,22 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             yield return RunStressTest(position);
 
             Debug.Log("====================================================");
-            Debug.Log("[AudioTest][SFX] Cen√°rio de SFX (Etapa 4) conclu√≠do.");
+            Debug.Log("[AudioTest][SFX] Cen·rio de SFX (Etapa 4) concluÌdo.");
             Debug.Log("====================================================");
         }
 
         private IEnumerator RunOneShotBasicTest()
         {
-            // 4.1 ‚Äì Teste de one-shot b√°sico
+            // 4.1 ñ Teste de one-shot b·sico
             if (basicSfx != null)
             {
-                Debug.Log("[AudioTest][SFX] 4.1 - OneShot b√°sico (non-spatial).");
+                Debug.Log("[AudioTest][SFX] 4.1 - OneShot b·sico (non-spatial).");
                 var ctx = AudioContext.NonSpatial();
                 _sfxService.PlayOneShot(basicSfx, ctx);
             }
             else
             {
-                Debug.LogWarning("[AudioTest][SFX] 4.1 - basicSfx n√£o configurado.");
+                Debug.LogWarning("[AudioTest][SFX] 4.1 - basicSfx n„o configurado.");
             }
 
             yield return new WaitForSeconds(stepDelay);
@@ -172,10 +172,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private IEnumerator RunSpatialVsNonSpatialTest(Vector3 position)
         {
-            // 4.2 ‚Äì Spatial vs. Non-Spatial
+            // 4.2 ñ Spatial vs. Non-Spatial
             if (spatialSfx != null)
             {
-                Debug.Log("[AudioTest][SFX] 4.2 - Spatial SFX (posicione a c√¢mera em volta para perceber pan/volume).");
+                Debug.Log("[AudioTest][SFX] 4.2 - Spatial SFX (posicione a c‚mera em volta para perceber pan/volume).");
                 var spatialCtx = AudioContext.Default(position, useSpatial: true);
                 _sfxService.PlayOneShot(spatialSfx, spatialCtx);
 
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
             else
             {
-                Debug.LogWarning("[AudioTest][SFX] 4.2 - spatialSfx n√£o configurado.");
+                Debug.LogWarning("[AudioTest][SFX] 4.2 - spatialSfx n„o configurado.");
             }
 
             yield return new WaitForSeconds(blockDelay);
@@ -195,10 +195,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private IEnumerator RunRandomPitchTest(Vector3 position)
         {
-            // 4.3 ‚Äì Random Pitch (m√∫ltiplas inst√¢ncias)
+            // 4.3 ñ Random Pitch (m˙ltiplas inst‚ncias)
             if (randomPitchSfx != null)
             {
-                Debug.Log("[AudioTest][SFX] 4.3 - Random Pitch (10 inst√¢ncias r√°pidas).");
+                Debug.Log("[AudioTest][SFX] 4.3 - Random Pitch (10 inst‚ncias r·pidas).");
                 for (int i = 0; i < 10; i++)
                 {
                     var ctx = AudioContext.Default(position, useSpatial: false, volMult: 1f);
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
             else
             {
-                Debug.LogWarning("[AudioTest][SFX] 4.3 - randomPitchSfx n√£o configurado.");
+                Debug.LogWarning("[AudioTest][SFX] 4.3 - randomPitchSfx n„o configurado.");
             }
 
             yield return new WaitForSeconds(blockDelay);
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private IEnumerator RunFadeInTest(Vector3 position)
         {
-            // 4.4 ‚Äì Fade-in
+            // 4.4 ñ Fade-in
             if (fadeInSfx != null)
             {
                 Debug.Log("[AudioTest][SFX] 4.4 - Fade-in SFX (0.5s).");
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
             else
             {
-                Debug.LogWarning("[AudioTest][SFX] 4.4 - fadeInSfx n√£o configurado.");
+                Debug.LogWarning("[AudioTest][SFX] 4.4 - fadeInSfx n„o configurado.");
             }
 
             yield return new WaitForSeconds(blockDelay);
@@ -233,10 +233,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private IEnumerator RunStressTest(Vector3 position)
         {
-            // 4.5 ‚Äì Stress test (m√∫ltiplos SFX em sequ√™ncia)
+            // 4.5 ñ Stress test (m˙ltiplos SFX em sequÍncia)
             if (stressSfx != null)
             {
-                Debug.Log("[AudioTest][SFX] 4.5 - Stress test (30 inst√¢ncias r√°pidas).");
+                Debug.Log("[AudioTest][SFX] 4.5 - Stress test (30 inst‚ncias r·pidas).");
                 for (int i = 0; i < 30; i++)
                 {
                     var offset = Random.insideUnitSphere * 2f;
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
             else
             {
-                Debug.LogWarning("[AudioTest][SFX] 4.5 - stressSfx n√£o configurado.");
+                Debug.LogWarning("[AudioTest][SFX] 4.5 - stressSfx n„o configurado.");
             }
         }
 
@@ -269,15 +269,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         {
             if (_bgmAudioService == null)
             {
-                Debug.LogError("[AudioTest][BGM] IBgmAudioService indispon√≠vel, abortando cen√°rio de BGM.");
+                Debug.LogError("[AudioTest][BGM] IBgmAudioService indisponÌvel, abortando cen·rio de BGM.");
                 yield break;
             }
 
             Debug.Log("====================================================");
-            Debug.Log("[AudioTest][BGM] Iniciando cen√°rio de testes (Etapa 5).");
+            Debug.Log("[AudioTest][BGM] Iniciando cen·rio de testes (Etapa 5).");
             Debug.Log("====================================================");
 
-            // 5.1 ‚Äì Play/Stop BGM de menu
+            // 5.1 ñ Play/Stop BGM de menu
             if (mainMenuBgm != null)
             {
                 Debug.Log("[AudioTest][BGM] 5.1 - Play mainMenuBgm com fade-in de 1.0s (loop ON).");
@@ -290,12 +290,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
             else
             {
-                Debug.LogWarning("[AudioTest][BGM] 5.1 - mainMenuBgm n√£o configurado.");
+                Debug.LogWarning("[AudioTest][BGM] 5.1 - mainMenuBgm n„o configurado.");
             }
 
             yield return new WaitForSeconds(blockDelay);
 
-            // 5.2 ‚Äì Troca de BGM (menu -> gameplay)
+            // 5.2 ñ Troca de BGM (menu -> gameplay)
             if (gameplayBgm != null)
             {
                 Debug.Log("[AudioTest][BGM] 5.2 - Play gameplayBgm com fade-in de 1.0s (loop ON).");
@@ -316,12 +316,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
             else
             {
-                Debug.LogWarning("[AudioTest][BGM] 5.2 - gameplayBgm n√£o configurado.");
+                Debug.LogWarning("[AudioTest][BGM] 5.2 - gameplayBgm n„o configurado.");
             }
 
             yield return new WaitForSeconds(blockDelay);
 
-            // 5.3 ‚Äì Teste simples de volume BGM
+            // 5.3 ñ Teste simples de volume BGM
             if (mainMenuBgm != null)
             {
                 Debug.Log("[AudioTest][BGM] 5.3 - Teste de volume BGM (1.0 -> 0.5 -> 0.2).");
@@ -343,14 +343,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
             else
             {
-                Debug.LogWarning("[AudioTest][BGM] 5.3 - mainMenuBgm n√£o configurado, pulando teste de volume.");
+                Debug.LogWarning("[AudioTest][BGM] 5.3 - mainMenuBgm n„o configurado, pulando teste de volume.");
             }
 
             Debug.Log("====================================================");
-            Debug.Log("[AudioTest][BGM] Cen√°rio de BGM (Etapa 5) conclu√≠do.");
+            Debug.Log("[AudioTest][BGM] Cen·rio de BGM (Etapa 5) concluÌdo.");
             Debug.Log("====================================================");
         }
 
         #endregion
     }
 }
+

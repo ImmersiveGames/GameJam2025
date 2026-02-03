@@ -1,17 +1,17 @@
-Ôªøusing _ImmersiveGames.Scripts.AnimationSystems.Base;
+using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
     /// <summary>
-    /// Parte da implementa√ß√£o do Eater focada em controladores auxiliares:
-    /// - detec√ß√£o (<see cref="EaterDetectionController"/>);
-    /// - anima√ß√£o (<see cref="EaterAnimationController"/> / <see cref="AnimationControllerBase"/>);
-    /// - √°udio (<see cref="EntityAudioEmitter"/>).
+    /// Parte da implementaÁ„o do Eater focada em controladores auxiliares:
+    /// - detecÁ„o (<see cref="EaterDetectionController"/>);
+    /// - animaÁ„o (<see cref="EaterAnimationController"/> / <see cref="AnimationControllerBase"/>);
+    /// - ·udio (<see cref="EntityAudioEmitter"/>).
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour
     {
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         private EaterAnimationController _animationController;
 
         /// <summary>
-        /// Obt√©m (e cacheia) o <see cref="EaterDetectionController"/> associado ao Eater.
+        /// ObtÈm (e cacheia) o <see cref="EaterDetectionController"/> associado ao Eater.
         /// </summary>
         internal bool TryGetDetectionController(out EaterDetectionController detectionController)
         {
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
 
         /// <summary>
-        /// Obt√©m (e cacheia) o <see cref="EaterAnimationController"/> associado ao Eater.
+        /// ObtÈm (e cacheia) o <see cref="EaterAnimationController"/> associado ao Eater.
         /// Tenta primeiro resolver via <see cref="DependencyManager"/> usando o ActorId,
         /// depois cai para GetComponent como fallback.
         /// </summary>
@@ -76,8 +76,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
 
         /// <summary>
-        /// Obt√©m (e cacheia) o <see cref="EntityAudioEmitter"/> associado ao Eater.
-        /// Tenta resolver via <see cref="DependencyManager"/> usando ActorId e, se n√£o conseguir,
+        /// ObtÈm (e cacheia) o <see cref="EntityAudioEmitter"/> associado ao Eater.
+        /// Tenta resolver via <see cref="DependencyManager"/> usando ActorId e, se n„o conseguir,
         /// procura via GetComponent.
         /// </summary>
         internal bool TryGetAudioEmitter(out EntityAudioEmitter audioEmitter)
@@ -105,3 +105,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
     }
 }
+

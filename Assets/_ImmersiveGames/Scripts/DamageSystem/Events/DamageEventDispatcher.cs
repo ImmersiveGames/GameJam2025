@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
@@ -19,3 +19,4 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
     }
 }
+

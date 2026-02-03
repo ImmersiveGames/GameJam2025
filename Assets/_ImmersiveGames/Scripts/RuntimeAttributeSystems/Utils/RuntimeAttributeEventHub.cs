@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
 {
@@ -101,3 +101,4 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
         }
     }
 }
+

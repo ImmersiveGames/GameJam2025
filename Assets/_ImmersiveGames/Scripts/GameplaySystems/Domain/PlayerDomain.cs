@@ -1,7 +1,7 @@
-Ôªøusing System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             _playerIds.Add(actor.ActorId);
             _players.Add(actor);
 
-            // Captura spawn pose inicial (somente se ainda n√£o existe)
+            // Captura spawn pose inicial (somente se ainda n„o existe)
             if (!_spawnPoses.ContainsKey(actor.ActorId) && actor.Transform != null)
             {
                 var t = actor.Transform;
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             PlayerRegistered?.Invoke(actor);
 
             DebugUtility.LogVerbose<PlayerDomain>(
-                $"Player registrado no dom√≠nio: {actor.ActorName} ({actor.ActorId}).");
+                $"Player registrado no domÌnio: {actor.ActorName} ({actor.ActorId}).");
 
             return true;
         }
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             PlayerUnregistered?.Invoke(actor);
 
             DebugUtility.LogVerbose<PlayerDomain>(
-                $"Player removido do dom√≠nio: {actor.ActorName} ({actor.ActorId}).");
+                $"Player removido do domÌnio: {actor.ActorName} ({actor.ActorId}).");
 
             return true;
         }

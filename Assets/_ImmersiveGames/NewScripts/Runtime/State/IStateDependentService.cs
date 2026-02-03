@@ -7,7 +7,9 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
     /// </summary>
     public interface IStateDependentService : IDisposable
     {
-        bool CanExecuteAction(ActionType action);
+        bool CanExecuteGameplayAction(GameplayAction action);
+        bool CanExecuteUiAction(UiAction action);
+        bool CanExecuteSystemAction(SystemAction action);
         bool IsGameActive();
     }
 }

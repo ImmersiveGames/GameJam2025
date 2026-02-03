@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.GameManagerSystems
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void InitializePlayers()
         {
-            // Lógica para inicializar jogadores (ex.: configurar controles, spawns, etc.)
+            // L�gica para inicializar jogadores (ex.: configurar controles, spawns, etc.)
             foreach (var player in players)
             {
                 if (player == null)

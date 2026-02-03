@@ -83,10 +83,11 @@ namespace _ImmersiveGames.NewScripts.Lifecycle.World.Spawn
                 return;
             }
 
-            if (instance.TryGetComponent(out NewEaterRandomMovementController controller))
+            if (instance.TryGetComponent(out EaterRandomMovementController controller))
             {
                 controller.InjectStateService(_stateService);
             }
         }
     }
 }
+

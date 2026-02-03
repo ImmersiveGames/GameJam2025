@@ -311,7 +311,7 @@ namespace _ImmersiveGames.Scripts.Utils.Diagnostics.Editor
 
             sb.AppendLine("## Próximos passos sugeridos (para a Etapa 1+)");
             sb.AppendLine();
-            sb.AppendLine("- Consolidar referências por domínio (ActorRegistry / PlayerDomain / EaterDomain).");
+            sb.AppendLine("- Consolidar referências por domínio (OldActorRegistry / PlayerDomain / EaterDomain).");
             sb.AppendLine("- Reduzir dependências em `.Instance` e `Find*` nos consumidores de gameplay.");
             sb.AppendLine("- Separar FlowState / Gate (token-based) / TimePolicy antes de implementar reset in-place.");
 

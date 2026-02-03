@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
     /// </summary>
     public static class SceneFlowAdapters
     {
-        private static readonly NewScriptsSceneTransitionProfileResolver SharedProfileResolver = new();
+        private static readonly SceneTransitionProfileResolver SharedProfileResolver = new();
 
         public static ISceneFlowLoaderAdapter CreateLoaderAdapter()
         {
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
                     "O comportamento dependerá da policy (Strict/Release).");
             }
 
-            return new NewScriptsSceneFlowFadeAdapter(
+            return new SceneFlowFadeAdapter(
                 fadeService,
                 SharedProfileResolver,
                 modeProvider,
@@ -87,10 +87,10 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
     /// - Strict: pré-condições obrigatórias (profile válido, serviço DI presente quando fade habilitado, cena/controller disponíveis).
     /// - Release: em caso de falha, reporta DEGRADED_MODE (feature='fade') e executa no-op.
     /// </summary>
-    public sealed class NewScriptsSceneFlowFadeAdapter : ISceneFlowFadeAdapter
+    public sealed class SceneFlowFadeAdapter : ISceneFlowFadeAdapter
     {
         private readonly IFadeService _fadeService;
-        private readonly NewScriptsSceneTransitionProfileResolver _profileResolver;
+        private readonly SceneTransitionProfileResolver _profileResolver;
         private readonly IRuntimeModeProvider _modeProvider;
         private readonly IDegradedModeReporter _degradedReporter;
 
@@ -104,14 +104,14 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
                 fadeInCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),
                 fadeOutCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
 
-        public NewScriptsSceneFlowFadeAdapter(
+        public SceneFlowFadeAdapter(
             IFadeService fadeService,
-            NewScriptsSceneTransitionProfileResolver profileResolver,
+            SceneTransitionProfileResolver profileResolver,
             IRuntimeModeProvider modeProvider,
             IDegradedModeReporter degradedReporter)
         {
             _fadeService = fadeService; // pode ser null
-            _profileResolver = profileResolver ?? new NewScriptsSceneTransitionProfileResolver();
+            _profileResolver = profileResolver ?? new SceneTransitionProfileResolver();
             _modeProvider = modeProvider ?? new UnityRuntimeModeProvider();
             _degradedReporter = degradedReporter ?? new DegradedModeReporter();
 
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
 
                 if (_modeProvider.IsStrict)
                 {
-                    DebugUtility.LogError<NewScriptsSceneFlowFadeAdapter>(
+                    DebugUtility.LogError<SceneFlowFadeAdapter>(
                         $"[SceneFlow][Fade] Profile ausente em Strict. {detail}");
                     throw new InvalidOperationException($"[SceneFlow][Fade] Profile ausente em Strict. {detail}");
                 }
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
                 _shouldFade = false;
                 _resolvedConfig = NoOpConfig();
 
-                DebugUtility.LogVerbose<NewScriptsSceneFlowFadeAdapter>(
+                DebugUtility.LogVerbose<SceneFlowFadeAdapter>(
                     $"[SceneFlow] Profile '{profileId}' aplicado (path='{resolvedPath}'): UseFade=false → no-op (dur=0).");
                 return;
             }
@@ -167,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
                 fadeInCurve: profile.FadeInCurve != null ? profile.FadeInCurve : DefaultConfig.FadeInCurve,
                 fadeOutCurve: profile.FadeOutCurve != null ? profile.FadeOutCurve : DefaultConfig.FadeOutCurve);
 
-            DebugUtility.LogVerbose<NewScriptsSceneFlowFadeAdapter>(
+            DebugUtility.LogVerbose<SceneFlowFadeAdapter>(
                 $"[SceneFlow] Profile '{profileId}' aplicado (path='{resolvedPath}'): " +
                 $"fadeIn={_resolvedConfig.FadeInDuration:0.###}, fadeOut={_resolvedConfig.FadeOutDuration:0.###}.");
         }
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
 
                 if (_modeProvider.IsStrict)
                 {
-                    DebugUtility.LogError<NewScriptsSceneFlowFadeAdapter>(
+                    DebugUtility.LogError<SceneFlowFadeAdapter>(
                         $"[SceneFlow][Fade] Serviço ausente em Strict. phase='{phase}' {detail}");
                     throw new InvalidOperationException(
                         $"[SceneFlow][Fade] Serviço ausente em Strict. phase='{phase}' {detail}");
@@ -227,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             {
                 if (_modeProvider.IsStrict)
                 {
-                    DebugUtility.LogError<NewScriptsSceneFlowFadeAdapter>(
+                    DebugUtility.LogError<SceneFlowFadeAdapter>(
                         $"[SceneFlow][Fade] Erro em Strict. phase='{phase}' ex={ex.GetType().Name}: {ex.Message}");
                     throw;
                 }
@@ -261,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
     /// - Se existir um asset com esse nome, mas de tipo legado (ex.: SceneTransitionProfile),
     ///   Resources.Load<SceneTransitionProfile/> retornará null. Este resolver detecta e loga isso.
     /// </summary>
-    public sealed class NewScriptsSceneTransitionProfileResolver
+    public sealed class SceneTransitionProfileResolver
     {
         private readonly Dictionary<string, SceneTransitionProfile> _cache = new();
 
@@ -315,7 +315,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             {
                 _cache[key] = resolved;
 
-                DebugUtility.LogVerbose<NewScriptsSceneTransitionProfileResolver>(
+                DebugUtility.LogVerbose<SceneTransitionProfileResolver>(
                     $"[SceneFlow] Profile resolvido: name='{key}', path='{resolvedPath}', type='{resolved.GetType().FullName}'.");
                 return resolved;
             }
@@ -326,7 +326,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
                 var anyA = Resources.Load(pathA);
                 if (anyA != null)
                 {
-                    DebugUtility.LogError<NewScriptsSceneTransitionProfileResolver>(
+                    DebugUtility.LogError<SceneTransitionProfileResolver>(
                         $"[SceneFlow] Asset encontrado em Resources no path '{pathA}', porém com TIPO incorreto: '{anyA.GetType().FullName}'. " +
                         $"Esperado: '{typeof(SceneTransitionProfile).FullName}'. " +
                         "Ação: recrie/migre o asset como SceneTransitionProfile (CreateAssetMenu NewScripts).");
@@ -337,17 +337,18 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             var anyB = Resources.Load(pathB);
             if (anyB != null)
             {
-                DebugUtility.LogError<NewScriptsSceneTransitionProfileResolver>(
+                DebugUtility.LogError<SceneTransitionProfileResolver>(
                     $"[SceneFlow] Asset encontrado em Resources no path '{pathB}', porém com TIPO incorreto: '{anyB.GetType().FullName}'. " +
                     $"Esperado: '{typeof(SceneTransitionProfile).FullName}'. " +
                     "Ação: recrie/migre o asset como SceneTransitionProfile (CreateAssetMenu NewScripts).");
                 return null;
             }
 
-            DebugUtility.LogError<NewScriptsSceneTransitionProfileResolver>(
+            DebugUtility.LogError<SceneTransitionProfileResolver>(
                 $"[SceneFlow] SceneTransitionProfile '{key}' NÃO encontrado em Resources. " +
                 $"Paths tentados: '{pathA}' e '{pathB}'. Confirme que o asset está em Resources/{SceneFlowProfilePaths.ProfilesRoot} e é do tipo SceneTransitionProfile.");
             return null;
         }
     }
 }
+

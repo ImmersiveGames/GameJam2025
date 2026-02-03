@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {
@@ -164,3 +164,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
         }
     }
 }
+

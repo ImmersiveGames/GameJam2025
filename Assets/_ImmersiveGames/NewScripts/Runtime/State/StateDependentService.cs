@@ -40,6 +40,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
         private ServiceState _state = ServiceState.Ready;
 
         private EventBinding<GameStartRequestedEvent> _gameStartRequestedBinding;
+        private EventBinding<GameRunStartedEvent> _gameRunStartedBinding;
+        private EventBinding<GameRunEndedEvent> _gameRunEndedBinding;
         private EventBinding<GamePauseCommandEvent> _gamePauseBinding;
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
         private EventBinding<GameExitToMenuRequestedEvent> _gameExitToMenuBinding;
@@ -73,12 +75,12 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
             // Clean option: NÃO logar nada no construtor (evita "Move bloqueada" no bootstrap).
         }
 
-        public bool CanExecuteAction(ActionType action)
+        public bool CanExecuteGameplayAction(GameplayAction action)
         {
             TryResolveGateService();
             TryResolveGameLoopService();
 
-            if (action == ActionType.Move)
+            if (action == GameplayAction.Move)
             {
                 _moveLoggingArmed = true;
 
@@ -87,30 +89,28 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
                 return allowed;
             }
 
-            bool infraAllows = EvaluateInfraAllowsAction(action);
-            if (!infraAllows)
+            if (!IsInfraReady())
             {
                 return false;
             }
 
+            return ResolveServiceState() == ServiceState.Playing;
+        }
+
+        public bool CanExecuteUiAction(UiAction action)
+        {
+            TryResolveGateService();
+            TryResolveGameLoopService();
+
             var state = ResolveServiceState();
+            return state == ServiceState.Playing || state == ServiceState.Ready || state == ServiceState.Paused;
+        }
 
-            return state switch
-            {
-                ServiceState.Playing => true,
-
-                ServiceState.Ready or ServiceState.Paused => action switch
-                {
-                    ActionType.Navigate => true,
-                    ActionType.UiSubmit => true,
-                    ActionType.UiCancel => true,
-                    ActionType.RequestReset => true,
-                    ActionType.RequestQuit => true,
-                    _ => false
-                },
-
-                _ => false
-            };
+        public bool CanExecuteSystemAction(SystemAction action)
+        {
+            TryResolveGateService();
+            TryResolveGameLoopService();
+            return true;
         }
 
         public bool IsGameActive()
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
             TryResolveGateService();
             TryResolveGameLoopService();
 
-            if (!EvaluateInfraAllowsAction(ActionType.Move))
+            if (!IsInfraReady())
             {
                 return false;
             }
@@ -134,6 +134,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
             }
 
             EventBus<GameStartRequestedEvent>.Unregister(_gameStartRequestedBinding);
+            EventBus<GameRunStartedEvent>.Unregister(_gameRunStartedBinding);
+            EventBus<GameRunEndedEvent>.Unregister(_gameRunEndedBinding);
             EventBus<GamePauseCommandEvent>.Unregister(_gamePauseBinding);
             EventBus<GameResumeRequestedEvent>.Unregister(_gameResumeBinding);
             EventBus<GameExitToMenuRequestedEvent>.Unregister(_gameExitToMenuBinding);
@@ -173,6 +175,18 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
                     SyncMoveDecisionLogIfChanged();
                 });
 
+                _gameRunStartedBinding = new EventBinding<GameRunStartedEvent>(_ =>
+                {
+                    SetState(ServiceState.Playing);
+                    SyncMoveDecisionLogIfChanged();
+                });
+
+                _gameRunEndedBinding = new EventBinding<GameRunEndedEvent>(_ =>
+                {
+                    SetState(ServiceState.Ready);
+                    SyncMoveDecisionLogIfChanged();
+                });
+
                 _gamePauseBinding = new EventBinding<GamePauseCommandEvent>(evt =>
                 {
                     OnGamePause(evt);
@@ -204,6 +218,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
                 });
 
                 EventBus<GameStartRequestedEvent>.Register(_gameStartRequestedBinding);
+                EventBus<GameRunStartedEvent>.Register(_gameRunStartedBinding);
+                EventBus<GameRunEndedEvent>.Register(_gameRunEndedBinding);
                 EventBus<GamePauseCommandEvent>.Register(_gamePauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_gameResumeBinding);
                 EventBus<GameExitToMenuRequestedEvent>.Register(_gameExitToMenuBinding);
@@ -275,6 +291,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
                 nameof(GameLoopStateId.Ready) => ServiceState.Ready,
                 nameof(GameLoopStateId.Boot) => ServiceState.Ready,
                 nameof(GameLoopStateId.IntroStage) => ServiceState.Ready,
+                nameof(GameLoopStateId.PostPlay) => ServiceState.Ready,
                 _ => null
             };
         }
@@ -310,31 +327,6 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
             if (_hasReadinessSnapshot && !_gameplayReady)
             {
                 return false;
-            }
-
-            return true;
-        }
-
-        private bool EvaluateInfraAllowsAction(ActionType action)
-        {
-            if (action is ActionType.RequestReset or ActionType.RequestQuit)
-            {
-                return true;
-            }
-
-            if (IsPausedOnlyByGate())
-            {
-                return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel;
-            }
-
-            if (_gateService is { IsOpen: false })
-            {
-                return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel;
-            }
-
-            if (_hasReadinessSnapshot && !_gameplayReady)
-            {
-                return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel;
             }
 
             return true;
