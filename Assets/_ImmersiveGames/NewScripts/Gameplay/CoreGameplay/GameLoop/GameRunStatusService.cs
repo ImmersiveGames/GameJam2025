@@ -80,13 +80,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop
                 return;
             }
 
-            string stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
-            bool isInActiveGameplay = string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
-
-            if (!isInActiveGameplay)
+            if (!IsInActiveGameplay(out string stateName))
             {
                 DebugUtility.LogVerbose<GameRunStatusService>(
-                    $"[GameLoop] GameRunEndedEvent recebido, mas GameLoop já está em '{stateName}'. PostGame segue sem pausa.");
+                    $"[GameLoop] GameRunEndedEvent recebido, mas GameLoop j\u00e1 est\u00e1 em '{stateName}'. PostGame segue sem pausa.");
                 return;
             }
 
@@ -143,6 +140,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop
             DebugUtility.LogVerbose<GameRunStatusService>(
                 $"[GameLoop] GameRunStatusService: nova run iniciada (state={evt?.StateId}). Resultado anterior resetado.");
         }
+
+        private bool IsInActiveGameplay(out string stateName)
+        {
+            stateName = _gameLoopService?.CurrentStateIdName ?? string.Empty;
+            return string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
+        }
+
 
         public void Dispose()
         {

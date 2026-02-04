@@ -102,10 +102,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Bridges
             }
 
             _startInProgress = true;
-            _transitionCompleted = false;
-            _worldResetCompleted = false;
-            _syncIssued = false;
-            _expectedContextSignature = null;
+            ResetStartState();
 
             DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
                 "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...");
@@ -130,17 +127,11 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Bridges
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            if (!_startInProgress)
+            if (!ShouldHandleTransition(evt.Context))
             {
                 return;
             }
 
-            if (!IsMatchingProfile(evt.Context.TransitionProfileId))
-            {
-                return;
-            }
-
-            EnsureExpectedSignatureFromContext(evt.Context);
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
                 $"[GameLoopSceneFlow] TransitionStarted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.");
@@ -148,17 +139,11 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Bridges
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            if (!_startInProgress)
+            if (!ShouldHandleTransition(evt.Context))
             {
                 return;
             }
 
-            if (!IsMatchingProfile(evt.Context.TransitionProfileId))
-            {
-                return;
-            }
-
-            EnsureExpectedSignatureFromContext(evt.Context);
 
             string ctxSig = SceneTransitionSignatureUtil.Compute(evt.Context);
             if (!string.IsNullOrEmpty(_expectedContextSignature) &&
@@ -238,6 +223,31 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Bridges
 
             _expectedContextSignature = SceneTransitionSignatureUtil.Compute(context);
         }
+
+        private void ResetStartState()
+        {
+            _transitionCompleted = false;
+            _worldResetCompleted = false;
+            _syncIssued = false;
+            _expectedContextSignature = null;
+        }
+
+        private bool ShouldHandleTransition(SceneTransitionContext context)
+        {
+            if (!_startInProgress)
+            {
+                return false;
+            }
+
+            if (!IsMatchingProfile(context.TransitionProfileId))
+            {
+                return false;
+            }
+
+            EnsureExpectedSignatureFromContext(context);
+            return true;
+        }
+
 
         private void TryIssueGameLoopSync()
         {

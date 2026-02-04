@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Predicates
         /// <summary>
         /// Garante que uma condição de estado seja verdadeira.
         /// </summary>
-        /// <param name="expression">Expressão booleana a ser avaliada.</param>
+        /// <param name="expression">Expressão boolean a ser avaliada.</param>
         /// <param name="message">Mensagem opcional para detalhar o erro.</param>
         /// <exception cref="InvalidOperationException">Lançada quando a condição é falsa.</exception>
         public static void CheckState(bool expression, string message = "Invalid state.")
@@ -41,8 +41,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Predicates
         /// <summary>
         /// Garante que uma condição de estado seja verdadeira e permite formatar a mensagem.
         /// </summary>
-        /// <param name="expression">Expressão booleana a ser avaliada.</param>
-        /// <param name="messageTemplate">Template da mensagem.</param>
+        /// <param name="expression">Expressão boolean a ser avaliada.</param>
+        /// <param name="messageTemplate">Modelo da mensagem.</param>
         /// <param name="messageArgs">Argumentos de formatação.</param>
         /// <exception cref="InvalidOperationException">Lançada quando a condição é falsa.</exception>
         public static void CheckState(bool expression, string messageTemplate, params object[] messageArgs)

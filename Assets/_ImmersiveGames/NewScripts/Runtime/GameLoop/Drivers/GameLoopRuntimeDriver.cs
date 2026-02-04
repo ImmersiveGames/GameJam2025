@@ -5,7 +5,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Drivers
 {
     /// <summary>
-    /// Runner global (DontDestroyOnLoad) respons·vel por ticker o IGameLoopService.
+    /// Runner global (DontDestroyOnLoad) respons√°vel por ticker o IGameLoopService.
     /// Criado automaticamente pelo GameLoopBootstrap.
     /// </summary>
     [DefaultExecutionOrder(-900)]
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Drivers
 
         private void OnDestroy()
         {
-            // N„o dispose aqui: o serviÁo global pertence ao DI global.
+            // N√£o dispose aqui: o servi√ßo global pertence ao DI global.
             _service = null;
         }
 
@@ -50,8 +50,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Drivers
             if (logIfMissing)
             {
                 DebugUtility.LogWarning(typeof(GameLoopRuntimeDriver),
-                    "[GameLoop] IGameLoopService n„o encontrado no DI global no Awake. " +
-                    "O GameLoopBootstrap deve registrar o serviÁo antes do primeiro tick.");
+                    "[GameLoop] IGameLoopService n√£o encontrado no DI global no Awake. " +
+                    "O GameLoopBootstrap deve registrar o servi√ßo antes do primeiro tick.");
             }
         }
     }

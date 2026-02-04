@@ -19,9 +19,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
         private int _inProgress;
 
         private bool _dependenciesResolved;
-        private ISimulationGateService _gateService;
-        private IRuntimeModeProvider _runtimeModeProvider;
-        private IDegradedModeReporter _degradedModeReporter;
+        private ISimulationGateService? _gateService;
+        private IRuntimeModeProvider? _runtimeModeProvider;
+        private IDegradedModeReporter? _degradedModeReporter;
 
         public ContentSwapChangeServiceInPlaceOnly(IContentSwapContextService contentSwapContext)
         {
@@ -49,15 +49,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 
             string normalizedReason = NormalizeReason(reason);
 
-            DebugUtility.Log<ContentSwapChangeServiceInPlaceOnly>(
-                $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode={ContentSwapMode.InPlace} contentId='{plan.ContentId}' reason='{normalizedReason}'",
-                DebugUtility.Colors.Info);
+            LogRequest(plan, normalizedReason);
 
-            if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
+            if (!TryEnterInProgress())
             {
-                DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                    "[ContentSwap] J\u00e1 existe uma troca de conte\u00fado em progresso. Ignorando (InPlace)."
-                );
                 return;
             }
 
@@ -66,31 +61,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
                 EnsureDependencies();
 
                 var normalizedOptions = NormalizeOptions(options);
-                if (normalizedOptions.UseFade || normalizedOptions.UseLoadingHud)
-                {
-                    DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                        "[ContentSwap] ContentSwap \u00e9 InPlace-only e n\u00e3o integra com SceneFlow; ignorando Fade/LoadingHUD.");
-                }
+                WarnUnsupportedOptions(normalizedOptions);
 
                 if (!await EnsureGatesOpenAsync(plan, normalizedReason, normalizedOptions))
                 {
                     return;
                 }
 
-                _contentSwapContext.SetPending(plan, normalizedReason);
-
-                if (!_contentSwapContext.TryCommitPending(normalizedReason, out _))
-                {
-                    DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                        $"[ContentSwap] TryCommitPending falhou. plan='{plan}' reason='{normalizedReason}'.");
-                }
+                CommitSwap(plan, normalizedReason);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<ContentSwapChangeServiceInPlaceOnly>(
-                    $"[ContentSwap] Falha no InPlace-only. Limpando pending por seguran\u00e7a. ex={ex}");
-
-                _contentSwapContext.ClearPending($"ContentSwap/InPlaceOnly failed: {ex.GetType().Name}");
+                HandleFailure(ex);
             }
             finally
             {
@@ -123,6 +105,54 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
                 : sanitized;
         }
 
+        private static void LogRequest(ContentSwapPlan plan, string normalizedReason)
+        {
+            DebugUtility.Log<ContentSwapChangeServiceInPlaceOnly>(
+                $"[OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode={ContentSwapMode.InPlace} contentId='{plan.contentId}' reason='{normalizedReason}'",
+                DebugUtility.Colors.Info);
+        }
+
+        private bool TryEnterInProgress()
+        {
+            if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
+            {
+                DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
+                    "[ContentSwap] J\u00e1 existe uma troca de conte\u00fado em progresso. Ignorando (InPlace)."
+                );
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void WarnUnsupportedOptions(ContentSwapOptions options)
+        {
+            if (options.UseFade || options.UseLoadingHud)
+            {
+                DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
+                    "[ContentSwap] ContentSwap \u00e9 InPlace-only e n\u00e3o integra com SceneFlow; ignorando Fade/LoadingHUD.");
+            }
+        }
+
+        private void CommitSwap(ContentSwapPlan plan, string normalizedReason)
+        {
+            _contentSwapContext.SetPending(plan, normalizedReason);
+
+            if (!_contentSwapContext.TryCommitPending(normalizedReason, out _))
+            {
+                DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
+                    $"[ContentSwap] TryCommitPending falhou. plan='{plan}' reason='{normalizedReason}'.");
+            }
+        }
+
+        private void HandleFailure(Exception ex)
+        {
+            DebugUtility.LogError<ContentSwapChangeServiceInPlaceOnly>(
+                $"[ContentSwap] Falha no InPlace-only. Limpando pending por seguran\u00e7a. ex={ex}");
+
+            _contentSwapContext.ClearPending($"ContentSwap/InPlaceOnly failed: {ex.GetType().Name}");
+        }
+
         private void EnsureDependencies()
         {
             if (_dependenciesResolved)
@@ -146,14 +176,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 
         private async Task<bool> EnsureGatesOpenAsync(ContentSwapPlan plan, string reason, ContentSwapOptions options)
         {
+            bool isStrict = _runtimeModeProvider is { IsStrict: true };
+
             if (_gateService == null)
             {
-                string detail = "ISimulationGateService ausente (DI global).";
+                const string detail = "ISimulationGateService ausente (DI global).";
 
-                if (_runtimeModeProvider.IsStrict)
+                if (isStrict)
                 {
                     DebugUtility.LogError<ContentSwapChangeServiceInPlaceOnly>(
-                        $"[ContentSwap] Gate service ausente em Strict. contentId='{plan.ContentId}' reason='{reason}'.");
+                        $"[ContentSwap] Gate service ausente em Strict. contentId='{plan.contentId}' reason='{reason}'.");
                     throw new InvalidOperationException($"[ContentSwap] Gate service ausente em Strict. {detail}");
                 }
 
@@ -163,34 +195,32 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
                     detail: detail);
 
                 DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                    $"[ContentSwap] Gate service ausente. Abortando InPlace. contentId='{plan.ContentId}' reason='{reason}'.");
+                    $"[ContentSwap] Gate service ausente. Abortando InPlace. contentId='{plan.contentId}' reason='{reason}'.");
                 return false;
             }
 
-            if (!AreBlockedTokensActive())
+            if (!TryGetBlockedTokens(out string blockedTokens))
             {
                 return true;
             }
 
-            string blockedTokens = GetBlockedTokensLabel();
-
-            if (_runtimeModeProvider.IsStrict)
+            if (isStrict)
             {
                 DebugUtility.LogError<ContentSwapChangeServiceInPlaceOnly>(
-                    $"[ContentSwap] Gate fechado em Strict. tokens='{blockedTokens}' contentId='{plan.ContentId}' reason='{reason}'.");
+                    $"[ContentSwap] Gate fechado em Strict. tokens='{blockedTokens}' contentId='{plan.contentId}' reason='{reason}'.");
                 throw new InvalidOperationException(
-                    $"[ContentSwap] Gate fechado em Strict. tokens='{blockedTokens}' contentId='{plan.ContentId}' reason='{reason}'.");
+                    $"[ContentSwap] Gate fechado em Strict. tokens='{blockedTokens}' contentId='{plan.contentId}' reason='{reason}'.");
             }
 
             int timeoutMs = options.TimeoutMs > 0 ? options.TimeoutMs : ContentSwapOptions.DefaultTimeoutMs;
 
             DebugUtility.LogWarning<ContentSwapChangeServiceInPlaceOnly>(
-                $"[ContentSwap] Gate fechado. Aguardando abertura (timeoutMs={timeoutMs}) tokens='{blockedTokens}' contentId='{plan.ContentId}' reason='{reason}'.");
+                $"[ContentSwap] Gate fechado. Aguardando abertura (timeoutMs={timeoutMs}) tokens='{blockedTokens}' contentId='{plan.contentId}' reason='{reason}'.");
 
             bool opened = await WaitForGatesToOpenAsync(timeoutMs);
             if (!opened)
             {
-                string detail = $"tokens='{blockedTokens}' timeoutMs={timeoutMs} contentId='{plan.ContentId}' reason='{reason}'";
+                string detail = $"tokens='{blockedTokens}' timeoutMs={timeoutMs} contentId='{plan.contentId}' reason='{reason}'";
 
                 _degradedModeReporter?.Report(
                     feature: DegradedFeature,
@@ -203,19 +233,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
             }
 
             DebugUtility.LogVerbose<ContentSwapChangeServiceInPlaceOnly>(
-                $"[ContentSwap] Gate liberado. Prosseguindo InPlace. contentId='{plan.ContentId}' reason='{reason}'.");
+                $"[ContentSwap] Gate liberado. Prosseguindo InPlace. contentId='{plan.contentId}' reason='{reason}'.");
             return true;
         }
 
         private bool AreBlockedTokensActive()
         {
-            if (_gateService == null)
-            {
-                return false;
-            }
-
-            return _gateService.IsTokenActive(SimulationGateTokens.SceneTransition)
-                   || _gateService.IsTokenActive(SimulationGateTokens.GameplaySimulation);
+            return TryGetBlockedTokens(out _);
         }
 
         private async Task<bool> WaitForGatesToOpenAsync(int timeoutMs)
@@ -236,27 +260,39 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
             return true;
         }
 
-        private string GetBlockedTokensLabel()
+        private bool TryGetBlockedTokens(out string blockedTokens)
         {
-            bool sceneTransition = _gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition);
-            bool gameplay = _gateService != null && _gateService.IsTokenActive(SimulationGateTokens.GameplaySimulation);
+            blockedTokens = "none";
+            if (_gateService == null)
+            {
+                return false;
+            }
+
+            bool sceneTransition = _gateService.IsTokenActive(SimulationGateTokens.SceneTransition);
+            bool gameplay = _gateService.IsTokenActive(SimulationGateTokens.GameplaySimulation);
+
+            if (!sceneTransition && !gameplay)
+            {
+                return false;
+            }
 
             if (sceneTransition && gameplay)
             {
-                return $"{SimulationGateTokens.SceneTransition},{SimulationGateTokens.GameplaySimulation}";
+                blockedTokens = $"{SimulationGateTokens.SceneTransition},{SimulationGateTokens.GameplaySimulation}";
+                return true;
             }
 
             if (sceneTransition)
             {
-                return SimulationGateTokens.SceneTransition;
+                blockedTokens = SimulationGateTokens.SceneTransition;
+                return true;
             }
 
-            return gameplay ? SimulationGateTokens.GameplaySimulation : "none";
+            blockedTokens = SimulationGateTokens.GameplaySimulation;
+            return true;
         }
 
         private static string Sanitize(string s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 }
-
-

@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.DevTools
             if (!EnsureService())
             {
                 DebugUtility.LogWarning(typeof(WorldResetRequestHotkeyBridge),
-                    "[WorldLifecycle] IWorldResetRequestService n„o disponÌvel. Hotkey ignorado.");
+                    "[WorldLifecycle] IWorldResetRequestService n√£o dispon√≠vel. Hotkey ignorado.");
                 return;
             }
 

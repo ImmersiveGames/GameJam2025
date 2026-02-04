@@ -6,18 +6,18 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Runtime.EndConditions
 {
     /// <summary>
-    /// Gatilhos mÌnimos (production-friendly) para encerrar uma run de gameplay.
+    /// Gatilhos m√≠nimos (production-friendly) para encerrar uma run de gameplay.
     ///
     /// Importante:
     /// - Este componente tenta receber IGameRunEndRequestService via [Inject],
-    ///   mas tambÈm faz fallback para resolver no DI global caso o injector n„o injete este MonoBehaviour.
-    /// - Como a GameplayScene pode N√O ser recarregada em Restart, este controller deve rearmar por GameRunStartedEvent.
-    /// - A deduplicaÁ„o/consumo È responsabilidade do consumidor (ex.: GameRunOutcomeService).
+    ///   mas tamb√©m faz fallback para resolver no DI global caso o injector n√£o injete este MonoBehaviour.
+    /// - Como a GameplayScene pode N√ÉO ser recarregada em Restart, este controller deve rearmar por GameRunStartedEvent.
+    /// - A deduplica√ß√£o/consumo √© responsabilidade do consumidor (ex.: GameRunOutcomeService).
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class GameplayEndConditionsController : MonoBehaviour
     {
-        [Header("Timeout (mÌnimo para validar produÁ„o)")]
+        [Header("Timeout (m√≠nimo para validar produ√ß√£o)")]
         [SerializeField] private bool enableTimeout = true;
 
         [Min(0.1f)]
@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.EndConditions
         [SerializeField] private string timeoutReason = "Gameplay/Timeout";
 
         [Header("Clock")]
-        [Tooltip("Se true, usa Time.unscaledTime para o timeout (n„o È afetado por pause/TimeScale).")]
+        [Tooltip("Se true, usa Time.unscaledTime para o timeout (n√£o √© afetado por pause/TimeScale).")]
         [SerializeField] private bool useUnscaledTime = true;
 
         [Header("Dev-only manual triggers (opcional)")]
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.EndConditions
             // Arm inicial (caso este objeto habilite no meio do fluxo).
             ResetLocalState("OnEnable");
 
-            // Best-effort: tenta resolver j· no enable (caso n„o tenha sido injetado).
+            // Best-effort: tenta resolver j√° no enable (caso n√£o tenha sido injetado).
             TryResolveEndRequestService();
         }
 
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.EndConditions
                 return;
             }
 
-            // Se n„o foi injetado, tenta resolver via DI global.
+            // Se n√£o foi injetado, tenta resolver via DI global.
             if (!TryResolveEndRequestService())
             {
                 return;
@@ -132,11 +132,11 @@ namespace _ImmersiveGames.NewScripts.Runtime.EndConditions
                 return;
             }
 
-            // Este È o ponto crÌtico: a GameplayScene pode n„o ser recarregada em Restart,
-            // ent„o este controller precisa rearmar aqui.
+            // Este √© o ponto cr√≠tico: a GameplayScene pode n√£o ser recarregada em Restart,
+            // ent√£o este controller precisa rearmar aqui.
             ResetLocalState("GameRunStartedEvent");
 
-            // Tenta resolver novamente (ordem de inicializaÁ„o pode variar).
+            // Tenta resolver novamente (ordem de inicializa√ß√£o pode variar).
             TryResolveEndRequestService();
 
             DebugUtility.LogVerbose<GameplayEndConditionsController>(
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.EndConditions
 
         private void OnGameRunEnded(GameRunEndedEvent evt)
         {
-            // MantÈm coerÍncia: se a run acabou por qualquer motivo, n„o disparar de novo atÈ rearm.
+            // Mant√©m coer√™ncia: se a run acabou por qualquer motivo, n√£o disparar de novo at√© rearm.
             _requested = true;
         }
 
@@ -202,13 +202,13 @@ namespace _ImmersiveGames.NewScripts.Runtime.EndConditions
                 return true;
             }
 
-            // Loga uma vez e continua tentando nos prÛximos frames (n„o ìmorreî).
+            // Loga uma vez e continua tentando nos pr√≥ximos frames (n√£o ‚Äúmorre‚Äù).
             if (!_loggedMissingService)
             {
                 _loggedMissingService = true;
                 DebugUtility.LogWarning<GameplayEndConditionsController>(
-                    "[GameplayEndConditionsController] IGameRunEndRequestService n„o disponÌvel (ainda). " +
-                    "Aguardando DI global. Se persistir, verifique se o serviÁo est· registrado e se o DependencyManager inicializou.",
+                    "[GameplayEndConditionsController] IGameRunEndRequestService n√£o dispon√≠vel (ainda). " +
+                    "Aguardando DI global. Se persistir, verifique se o servi√ßo est√° registrado e se o DependencyManager inicializou.",
                     this);
             }
 

@@ -1,22 +1,23 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset;
+using _ImmersiveGames.NewScripts.Gameplay.Reset.Domain;
+using _ImmersiveGames.NewScripts.Lifecycle.World.Reset.Domain;
+using _ImmersiveGames.NewScripts.Lifecycle.World.Reset.Policies;
 using _ImmersiveGames.NewScripts.Runtime.Actors;
 using _ImmersiveGames.NewScripts.Runtime.Mode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.Runtime.Reset
 {
     /// <summary>
     /// Orquestra GameplayReset (Cleanup/Restore/Rebind) por alvo (Players/Eater/ActorIdSet/All).
-    /// ImplementaÁ„o de gameplay (n„o infra).
+    /// Implementa√ß√£o de gameplay (n√£o infra).
     /// </summary>
     public sealed class GameplayResetOrchestrator : IGameplayResetOrchestrator
     {
@@ -33,9 +34,13 @@ namespace _ImmersiveGames.NewScripts.Runtime.Reset
         private IActorRegistry _actorRegistry;
         private IGameplayResetTargetClassifier _classifier;
 
-		private IRuntimeModeProvider _runtimeModeProvider;
-		private IDegradedModeReporter _degradedModeReporter;
-		private const string _degradedFeature = "gameplay.reset";
+        private IResetPolicy _resetPolicy;
+        private IActorDiscoveryStrategy _registryDiscovery;
+        private IActorDiscoveryStrategy _sceneScanDiscovery;
+
+        private bool _lastDiscoveryUsedSceneScan;
+        private bool _lastDiscoveryScanDisabled;
+        private bool _lastDiscoveryFallbackUsed;
 
         public bool IsResetInProgress { get; private set; }
 
@@ -68,17 +73,54 @@ namespace _ImmersiveGames.NewScripts.Runtime.Reset
 
                 BuildTargets(normalized);
 
+                if (_lastDiscoveryUsedSceneScan && _targets.Count > 0)
+                {
+                    DebugUtility.LogWarning(typeof(GameplayResetOrchestrator),
+                        $"[{ResetLogTags.Recovered}][RECOVERED] Scene scan discovery used (policy opt-in). request={normalized}");
+
+                    _resetPolicy?.ReportDegraded(
+                        ResetFeatureIds.GameplayReset,
+                        "SceneScanDiscoveryUsed",
+                        normalized.ToString());
+                }
+
+                if (_lastDiscoveryFallbackUsed && _targets.Count > 0)
+                {
+                    if (_resetPolicy != null && !_resetPolicy.AllowLegacyActorKindFallback)
+                    {
+                        DebugUtility.LogWarning(typeof(GameplayResetOrchestrator),
+                            $"[{ResetLogTags.ValidationFailed}][STRICT_VIOLATION] Legacy actor-kind fallback usado, mas policy bloqueia. request={normalized}");
+                    }
+
+                    DebugUtility.LogWarning(typeof(GameplayResetOrchestrator),
+                        $"[{ResetLogTags.Recovered}][RECOVERED] String-based fallback used for EaterOnly. request={normalized}");
+
+                    _resetPolicy?.ReportDegraded(
+                        ResetFeatureIds.GameplayReset,
+                        "EaterFallbackUsed",
+                        normalized.ToString());
+                }
+
                 if (_targets.Count == 0)
                 {
-                    string msg = $"[GameplayReset] No targets resolved. request={normalized}";
+                    string detail = _lastDiscoveryScanDisabled
+                        ? "Scene scan disabled by policy."
+                        : "No targets resolved by registry/scan.";
+                    string msg = $"[GameplayReset] No targets resolved. {detail} request={normalized}";
 
-                    if (_runtimeModeProvider != null && _runtimeModeProvider.IsStrict)
+                    if (_resetPolicy != null && _resetPolicy.IsStrict)
                     {
+                        DebugUtility.LogWarning(typeof(GameplayResetOrchestrator),
+                            $"[{ResetLogTags.ValidationFailed}][STRICT_VIOLATION] {msg}");
                         throw new InvalidOperationException(msg);
                     }
 
-                    DebugUtility.LogWarning(typeof(GameplayResetOrchestrator), msg);
-                    _degradedModeReporter?.Report(_degradedFeature, msg, reason);
+                    DebugUtility.LogWarning(typeof(GameplayResetOrchestrator),
+                        $"[{ResetLogTags.DegradedMode}][DEGRADED_MODE] {msg}");
+                    _resetPolicy?.ReportDegraded(
+                        ResetFeatureIds.GameplayReset,
+                        "GameplayReset_NoTargets",
+                        msg);
                     return true;
                 }
 
@@ -122,8 +164,16 @@ namespace _ImmersiveGames.NewScripts.Runtime.Reset
                 _classifier = new DefaultGameplayResetTargetClassifier();
             }
 
-            provider.TryGetGlobal(out _runtimeModeProvider);
-            provider.TryGetGlobal(out _degradedModeReporter);
+            provider.TryGetGlobal<IResetPolicy>(out _resetPolicy);
+            if (_resetPolicy == null)
+            {
+                provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
+                provider.TryGetGlobal<IDegradedModeReporter>(out var degradedModeReporter);
+                _resetPolicy = new ProductionResetPolicy(runtimeModeProvider, degradedModeReporter);
+            }
+
+            _registryDiscovery = new RegistryActorDiscoveryStrategy(_actorRegistry, _classifier);
+            _sceneScanDiscovery = new SceneScanActorDiscoveryStrategy(scene);
 
             _dependenciesResolved = true;
         }
@@ -141,12 +191,15 @@ namespace _ImmersiveGames.NewScripts.Runtime.Reset
         private void BuildTargets(GameplayResetRequest request)
         {
             _targets.Clear();
+            _lastDiscoveryUsedSceneScan = false;
+            _lastDiscoveryScanDisabled = false;
+            _lastDiscoveryFallbackUsed = false;
 
-            // 1) Tenta via ActorRegistry + classifier (r·pido, determinÌstico)
-            if (_actorRegistry != null)
+            // 1) Tenta via ActorRegistry + classifier (r?pido, determin?stico)
+            if (_registryDiscovery != null)
             {
                 _actorBuffer.Clear();
-                _classifier.CollectTargets(request, _actorRegistry, _actorBuffer);
+                _registryDiscovery.CollectTargets(request, _actorBuffer, out _);
 
                 if (_actorBuffer.Count > 0)
                 {
@@ -159,88 +212,36 @@ namespace _ImmersiveGames.NewScripts.Runtime.Reset
                     return;
                 }
 
-                // Importante: se registry existe, mas est· vazio (ou classifier n„o achou),
-                // fazemos fallback por scan para TODOS os objetivos.
+                // Importante: se registry existe, mas est? vazio (ou classifier n?o achou),
+                // fazemos fallback por scan somente quando a policy permitir.
             }
 
-            // 2) Fallback (sem registry ou sem dados): scan da cena por IActor.
-            CollectTargetsBySceneScan(request);
+            // 2) Fallback (sem registry ou sem dados): scan da cena por IActor (opt-in por policy).
+            if (_resetPolicy != null && _resetPolicy.AllowSceneScan && _sceneScanDiscovery != null)
+            {
+                _actorBuffer.Clear();
+                _sceneScanDiscovery.CollectTargets(request, _actorBuffer, out bool fallbackUsed);
+                _lastDiscoveryUsedSceneScan = true;
+                _lastDiscoveryFallbackUsed = fallbackUsed;
+
+                if (_actorBuffer.Count > 0)
+                {
+                    foreach (var t in _actorBuffer)
+                    {
+                        TryAddTargetFromActor(t);
+                    }
+                }
+            }
+            else
+            {
+                _lastDiscoveryScanDisabled = true;
+            }
+
             SortTargets();
         }
 
-        private void CollectTargetsBySceneScan(GameplayResetRequest request)
-        {
-            MonoBehaviour[] behaviours = Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
-            if (behaviours == null || behaviours.Length == 0)
-            {
-                return;
-            }
 
-            string sceneName = GetEffectiveSceneName();
-            bool fallbackUsed = false;
 
-            HashSet<string> ids = null;
-            if (request is { Target: GameplayResetTarget.ActorIdSet, ActorIds: { Count: > 0 } })
-            {
-                ids = new HashSet<string>(
-                    request.ActorIds.Where(id => !string.IsNullOrWhiteSpace(id)),
-                    StringComparer.Ordinal);
-            }
-
-            bool isKindTarget = request.Target == GameplayResetTarget.ByActorKind
-                || request.Target == GameplayResetTarget.PlayersOnly;
-            ActorKind requestedKind = request.Target == GameplayResetTarget.PlayersOnly
-                ? ActorKind.Player
-                : request.ActorKind;
-
-            foreach (var mb in behaviours)
-            {
-                if (mb is not IActor actor)
-                {
-                    continue;
-                }
-
-                if (mb.gameObject == null || mb.gameObject.scene.name != sceneName)
-                {
-                    continue;
-                }
-
-                if (request.Target == GameplayResetTarget.ActorIdSet)
-                {
-                    if (ids == null || !ids.Contains(actor.ActorId ?? string.Empty))
-                    {
-                        continue;
-                    }
-                }
-                else if (isKindTarget)
-                {
-                    if (!GameplayResetTargetMatching.MatchesActorKind(actor, requestedKind))
-                    {
-                        continue;
-                    }
-                }
-                else if (request.Target == GameplayResetTarget.EaterOnly)
-                {
-                    if (!GameplayResetTargetMatching.MatchesEaterKindFirstWithFallback(actor, out bool usedFallback))
-                    {
-                        continue;
-                    }
-
-                    if (usedFallback)
-                    {
-                        fallbackUsed = true;
-                    }
-                }
-
-                TryAddTargetFromActor(actor);
-            }
-
-            if (request.Target == GameplayResetTarget.EaterOnly && fallbackUsed)
-            {
-                DebugUtility.LogWarning(typeof(GameplayResetOrchestrator),
-                    $"[GameplayReset] EaterOnly using string-based fallback (EaterActor). request={request}");
-            }
-        }
 
         private void TryAddTargetFromActor(IActor actor)
         {

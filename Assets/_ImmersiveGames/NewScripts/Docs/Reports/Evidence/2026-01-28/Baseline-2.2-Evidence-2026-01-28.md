@@ -1,4 +1,4 @@
-﻿# Baseline 2.2 — Evidence Snapshot (2026-01-28)
+# Baseline 2.2 — Evidence Snapshot (2026-01-28)
 
 Este snapshot consolida evidências do run capturado em 2026-01-28 para validação do Baseline 2.2.
 Foco: SceneFlow + WorldLifecycle + InputMode + Level/ContentSwap/IntroStage.

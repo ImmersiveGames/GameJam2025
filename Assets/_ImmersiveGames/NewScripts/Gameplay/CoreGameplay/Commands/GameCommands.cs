@@ -1,5 +1,3 @@
-// Assets/_ImmersiveGames/NewScripts/Infrastructure/Gameplay/GameCommands.cs
-
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;

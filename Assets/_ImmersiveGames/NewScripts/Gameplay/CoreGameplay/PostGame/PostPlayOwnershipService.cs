@@ -95,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.PostGame
             ApplyExitInputMode(context);
         }
 
-        private void ApplyPostPlayInputMode(PostPlayOwnershipContext context)
+        private static void ApplyPostPlayInputMode(PostPlayOwnershipContext context)
         {
             var inputMode = ResolveInputModeService();
             if (inputMode == null)

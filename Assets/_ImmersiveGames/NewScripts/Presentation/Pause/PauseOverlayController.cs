@@ -333,12 +333,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Pause
             ApplyPauseInputMode();
         }
 
-        private void HideLocal(string reason)
-        {
-            HideLocal(reason, applyGameplayInputMode: true);
-        }
-
-        private void HideLocal(string reason, bool applyGameplayInputMode)
+        private void HideLocal(string reason, bool applyGameplayInputMode = true)
         {
             EnsureDependenciesInjected();
 

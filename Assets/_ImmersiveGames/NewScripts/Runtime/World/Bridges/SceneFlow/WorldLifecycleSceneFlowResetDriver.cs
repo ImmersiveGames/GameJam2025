@@ -4,8 +4,10 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Runtime.World;
+using _ImmersiveGames.NewScripts.Lifecycle.World.Reset.Application;
+using _ImmersiveGames.NewScripts.Lifecycle.World.Reset.Domain;
 using _ImmersiveGames.NewScripts.Runtime.Scene;
+using _ImmersiveGames.NewScripts.Runtime.World;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
 {
@@ -29,11 +31,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
         private readonly Dictionary<string, int> _completedTicks = new(StringComparer.Ordinal);
         private bool _disposed;
 
-        // Reasons canônicos (Contrato de Observability).
-        private const string ReasonScenesReady = "SceneFlow/ScenesReady";
-        private const string ReasonSkippedStartupOrFrontendPrefix = "Skipped_StartupOrFrontend";
-        private const string ReasonFailedNoControllerPrefix = "Failed_NoController";
-        private const string ReasonGuardDuplicatePrefix = "Guard_DuplicateScenesReady";
+        // Reasons canônicos (Contrato de Observability) em WorldResetReasons.
 
         // Janela curta para dedupe de assinatura (evita reset duplicado no mesmo frame).
         private const int DuplicateSignatureWindowMs = 750;
@@ -45,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
             EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
 
             DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                $"[WorldLifecycle] Driver registrado: SceneFlow ScenesReady -> ResetWorld -> ResetCompleted. reason='{ReasonScenesReady}'.",
+                $"[WorldLifecycle] Driver registrado: SceneFlow ScenesReady -> ResetWorld -> ResetCompleted. reason='{WorldResetReasons.SceneFlowScenesReady}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -75,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
 
             if (string.IsNullOrWhiteSpace(signature))
             {
-                // Defensivo: assinatura vazia não deve travar o SceneFlow; apenas libera.
+                // Defensivo: assinatura vazia nao deve travar o SceneFlow; apenas libera.
                 DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
                     "[WorldLifecycle] ScenesReady recebido com ContextSignature vazia. Liberando gate sem reset.");
                 LogObsResetRequested(
@@ -83,17 +81,16 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
                     sourceSignature: string.Empty,
                     profile: context.TransitionProfileName,
                     target: ResolveTargetSceneName(context),
-                    reason: ReasonScenesReady);
-                PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, ResolveTargetSceneName(context));
+                    reason: WorldResetReasons.SceneFlowScenesReady);
+                PublishResetCompleted(signature, WorldResetReasons.SceneFlowScenesReady, context.TransitionProfileName, ResolveTargetSceneName(context));
                 return;
             }
 
-            // Regra canônica: reset determinístico de WorldLifecycle só é obrigatório em profile gameplay.
-            string targetScene;
+            // Regra canonica: reset deterministico de WorldLifecycle so e obrigatorio em profile gameplay.
+            string targetScene = ResolveTargetSceneName(context);
             if (!context.TransitionProfileId.IsGameplay)
             {
-                targetScene = ResolveTargetSceneName(context);
-                string skippedReason = $"{ReasonSkippedStartupOrFrontendPrefix}:profile={context.TransitionProfileName};scene={targetScene}";
+                string skippedReason = $"{WorldResetReasons.SkippedStartupOrFrontendPrefix}:profile={context.TransitionProfileName};scene={targetScene}";
 
                 if (ShouldSkipDuplicate(signature, out string guardReason))
                 {
@@ -111,42 +108,10 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
                     reason: skippedReason);
 
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] ResetWorld SKIP (profile != gameplay). signature='{signature}', profile='{context.TransitionProfileName}', targetScene='{targetScene}'.",
+                    $"[{ResetLogTags.Skipped}] [WorldLifecycle] ResetWorld SKIP (profile != gameplay). signature='{signature}', profile='{context.TransitionProfileName}', targetScene='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 PublishResetCompleted(signature, skippedReason, context.TransitionProfileName, targetScene);
-                MarkCompleted(signature);
-                return;
-            }
-
-            targetScene = ResolveTargetSceneName(context);
-
-            if (ShouldSkipDuplicate(signature, out string duplicateReason))
-            {
-                LogDuplicateGuard(signature, context.TransitionProfileName, targetScene, duplicateReason);
-                return;
-            }
-
-            MarkInFlight(signature);
-            IReadOnlyList<WorldLifecycleController> controllers = WorldLifecycleControllerLocator.FindControllersForScene(targetScene);
-
-            if (controllers.Count == 0)
-            {
-                // Cena pode não ter WorldLifecycle (ex.: fluxo especial). Não travar o SceneFlow.
-                string failedReason = $"{ReasonFailedNoControllerPrefix}:{targetScene}";
-
-                LogObsResetRequested(
-                    signature: signature,
-                    sourceSignature: signature,
-                    profile: context.TransitionProfileName,
-                    target: targetScene,
-                    reason: failedReason);
-
-                DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] Nenhum WorldLifecycleController encontrado para reset. signature='{signature}', targetScene='{targetScene}'. Liberando gate.",
-                    DebugUtility.Colors.Info);
-
-                PublishResetCompleted(signature, failedReason, context.TransitionProfileName, targetScene);
                 MarkCompleted(signature);
                 return;
             }
@@ -157,16 +122,26 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
                 sourceSignature: signature,
                 profile: context.TransitionProfileName,
                 target: targetScene,
-                reason: ReasonScenesReady);
+                reason: WorldResetReasons.SceneFlowScenesReady);
 
             bool shouldPublishCompletion = false;
+            string completionReason = WorldResetReasons.SceneFlowScenesReady;
             try
             {
-                shouldPublishCompletion = await ExecuteResetForGameplayAsync(signature, targetScene, controllers);
+                var result = await ExecuteResetForGameplayAsync(
+                    signature,
+                    targetScene,
+                    context.TransitionProfileName);
+
+                shouldPublishCompletion = result.shouldPublishCompletion;
+                if (!string.IsNullOrWhiteSpace(result.failureReason))
+                {
+                    completionReason = result.failureReason;
+                }
             }
             catch (Exception ex)
             {
-                // Best-effort: loga, mas NÃO impede liberação do gate.
+                // Best-effort: loga, mas NAO impede liberacao do gate.
                 DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
                     $"[WorldLifecycle] Erro durante ResetWorld (ScenesReady). signature='{signature}', targetScene='{targetScene}', ex='{ex}'");
                 shouldPublishCompletion = true;
@@ -175,66 +150,53 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
             {
                 if (shouldPublishCompletion)
                 {
-                    // Fallback/SKIP: driver libera o gate quando não há ResetWorldService publicando.
-                    PublishResetCompleted(signature, ReasonScenesReady, context.TransitionProfileName, targetScene);
+                    // Fallback/SKIP: driver libera o gate quando nao ha WorldResetService publicando.
+                    PublishResetCompleted(signature, completionReason, context.TransitionProfileName, targetScene);
                 }
                 MarkCompleted(signature);
             }
         }
 
-        private static async Task<bool> ExecuteResetForGameplayAsync(string signature, string targetScene, IReadOnlyList<WorldLifecycleController> controllers)
+        private static async Task<(bool shouldPublishCompletion, string failureReason)> ExecuteResetForGameplayAsync(
+            string signature,
+            string targetScene,
+            string profileName)
         {
-            // Primeiro: se um ResetWorldService estiver registrado no DI, use-o (ponto de integração centralizado).
-            if (DependencyManager.HasInstance && DependencyManager.Provider.TryGetGlobal<IResetWorldService>(out var resetService) && resetService != null)
+            // Primeiro: se um WorldResetService estiver registrado no DI, use-o (ponto canonico).
+            if (DependencyManager.HasInstance && DependencyManager.Provider.TryGetGlobal<WorldResetService>(out var resetService) && resetService != null)
             {
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] Usando ResetWorldService (DI) para executar reset. signature='{signature}', targetScene='{targetScene}'.",
+                    $"[WorldLifecycle] Usando WorldResetService (Lifecycle) para executar reset. signature='{signature}', targetScene='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 try
                 {
-                    await resetService.TriggerResetAsync(signature, ReasonScenesReady);
+                    var request = new WorldResetRequest(
+                        contextSignature: signature,
+                        reason: WorldResetReasons.SceneFlowScenesReady,
+                        profileName: profileName,
+                        targetScene: targetScene,
+                        origin: WorldResetOrigin.SceneFlow,
+                        sourceSignature: signature,
+                        isGameplayProfile: true);
+
+                    await resetService.TriggerResetAsync(request);
                 }
                 catch (Exception ex)
                 {
                     DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
-                        $"[WorldLifecycle] ResetWorldService falhou durante TriggerResetAsync. signature='{signature}', targetScene='{targetScene}', ex='{ex}'.");
+                        $"[WorldLifecycle] WorldResetService falhou durante TriggerResetAsync. signature='{signature}', targetScene='{targetScene}', ex='{ex}'.");
                 }
 
-                return false;
+                return (false, string.Empty);
             }
 
-            // Fallback: executar ResetWorld diretamente nos controllers (determinismo/local orchestrator).
-            var filteredControllers = new List<WorldLifecycleController>(controllers.Count);
-            for (int i = 0; i < controllers.Count; i++)
-            {
-                var controller = controllers[i];
-                if (controller != null)
-                {
-                    filteredControllers.Add(controller);
-                }
-            }
+            DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
+                $"[{ResetLogTags.Failed}][DEGRADED_MODE] [WorldLifecycle] WorldResetService ausente no DI. Reset nao executado. signature='{signature}', targetScene='{targetScene}'.");
 
-            filteredControllers.Sort(static (a, b) => a.GetInstanceID().CompareTo(b.GetInstanceID()));
-
-            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                $"[WorldLifecycle] Disparando ResetWorld para {filteredControllers.Count} controller(s). signature='{signature}', targetScene='{targetScene}'.",
-                DebugUtility.Colors.Info);
-
-            var tasks = new List<Task>(filteredControllers.Count);
-            for (int i = 0; i < filteredControllers.Count; i++)
-            {
-                tasks.Add(filteredControllers[i].ResetWorldAsync(ReasonScenesReady));
-            }
-
-            await Task.WhenAll(tasks);
-
-            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                $"[WorldLifecycle] ResetWorld concluído (ScenesReady). signature='{signature}', targetScene='{targetScene}'.",
-                DebugUtility.Colors.Success);
-
-            return true;
+            return (true, WorldResetReasons.FailedNoResetService);
         }
+
 
         private static string ResolveTargetSceneName(SceneTransitionContext context)
         {
@@ -300,7 +262,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
             {
                 if (_inFlightSignatures.Contains(signature))
                 {
-                    guardReason = $"{ReasonGuardDuplicatePrefix}:in_flight";
+                    guardReason = $"{WorldResetReasons.GuardDuplicatePrefix}:in_flight";
                     return true;
                 }
 
@@ -309,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
                     int dt = unchecked(now - lastTick);
                     if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
                     {
-                        guardReason = $"{ReasonGuardDuplicatePrefix}:recent";
+                        guardReason = $"{WorldResetReasons.GuardDuplicatePrefix}:recent";
                         return true;
                     }
 
@@ -358,7 +320,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.World.Bridges.SceneFlow
         private static void LogDuplicateGuard(string signature, string profile, string target, string guardReason)
         {
             DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                $"[WorldLifecycle] ResetWorld guard: ScenesReady duplicado. signature='{signature}', profile='{profile}', targetScene='{target}', guard='{guardReason}'.");
+                $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [WorldLifecycle] ResetWorld guard: ScenesReady duplicado. signature='{signature}', profile='{profile}', targetScene='{target}', guard='{guardReason}'.");
         }
     }
 }

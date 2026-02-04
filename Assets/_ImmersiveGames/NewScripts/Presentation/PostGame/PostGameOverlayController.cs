@@ -67,8 +67,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.PostGame
         private void Start()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameRunStatusService>(out var statusService)
-                && statusService != null
-                && statusService.HasResult)
+                && statusService is { HasResult: true })
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
                     "[PostGame] Resultado pré-existente detectado na inicialização. Atualizando overlay.",
@@ -543,7 +542,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.PostGame
             DebugUtility.Log<PostGameOverlayController>(
                 "[QA][PostGame] Forçando Restart x2 (delay 0.05s).");
 
-            StartCoroutine(QaCoroutineDouble(() => OnClickRestart(), 0.05f));
+            StartCoroutine(QaCoroutineDouble(OnClickRestart, 0.05f));
         }
 
         [ContextMenu("QA/PostGame/Force ExitToMenu x2 (delay 0.05s)")]
@@ -559,7 +558,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.PostGame
             DebugUtility.Log<PostGameOverlayController>(
                 "[QA][PostGame] Forçando ExitToMenu x2 (delay 0.05s).");
 
-            StartCoroutine(QaCoroutineDouble(() => OnClickExitToMenu(), 0.05f));
+            StartCoroutine(QaCoroutineDouble(OnClickExitToMenu, 0.05f));
         }
 
         private System.Collections.IEnumerator QaCoroutineDouble(Action action, float delaySeconds)

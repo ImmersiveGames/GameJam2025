@@ -1,10 +1,11 @@
-﻿﻿# ADR-0013 — Ciclo de Vida do Jogo (NewScripts)
+# ADR-0013 — Ciclo de Vida do Jogo (NewScripts)
 
 ## Status
 
 - Estado: Implementado
 - Data (decisão): 2025-12-24
-- Última atualização: 2026-02-03
+- Última atualização: 2026-02-04
+- Tipo: Implementação
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
 
 ### Status de implementação
@@ -14,9 +15,9 @@
 - Artefatos principais (produção):
   - `Runtime/Scene/SceneTransitionService.cs`
   - `Runtime/Scene/SceneTransitionEvents.cs`
-  - `Lifecycle/World/Runtime/ResetWorldService.cs`
-  - `Lifecycle/World/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs`
-  - `Lifecycle/World/Bridges/SceneFlow/WorldLifecycleResetCompletionGate.cs`
+  - `Lifecycle/World/Reset/Application/WorldResetService.cs`
+  - `Runtime/World/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs`
+  - `Runtime/World/Bridges/SceneFlow/WorldLifecycleResetCompletionGate.cs`
   - `Gameplay/CoreGameplay/GameLoop/GameLoopService.cs`
   - `Gameplay/CoreGameplay/GameLoop/IntroStage/*`
   - `Gameplay/CoreGameplay/GameLoop/GameLoopSceneFlowCoordinator.cs`
@@ -81,6 +82,11 @@ Definir um ciclo de vida único, com fases e invariantes fixos:
 - `ENTER Playing` só ocorre após `GameplaySimulationUnblocked`.
 - PostGame deve ser idempotente (aplicar UI/estado sem duplicar efeitos).
 
+### Não-objetivos (resumo)
+
+- Alterar contratos de Fade/LoadingHUD (ver ADR-0009/0010).
+- Reescrever GameLoop/SceneFlow fora do contrato atual.
+
 ## Consequências
 
 ### Benefícios
@@ -111,7 +117,7 @@ Principais pontos (NewScripts):
 - **Fade**: ver ADR-0009 (`Runtime/SceneFlow/Fade/*`)
 - **Loading HUD**: ver ADR-0010 (`Presentation/LoadingHud/*`)
 - **Gatilho de ResetWorld em produção**: driver ligado ao `ScenesReady` (SceneFlow)
-- **WorldLifecycle reset pipeline**: `Lifecycle/World/Runtime/*`
+- **WorldLifecycle reset pipeline**: `Lifecycle/World/Reset/*`
 - **GameLoop Intro/Playing/PostGame**: `Gameplay/CoreGameplay/GameLoop/*`
 
 ## Observabilidade
@@ -123,7 +129,7 @@ Principais pontos (NewScripts):
 - `SceneTransitionStartedEvent` (fecha `flow.scene_transition`)
 - `ScenesReadyEvent` (mesma `signature`)
 - `[OBS][Fade] ...` (ADR-0009)
-- `[OBS][LoadingHud] ...` (ADR-0010)
+- `LoadingHudEnsure/Show/Hide` (ADR-0010)
 - `ResetWorldStarted` / `ResetCompleted` (WorldLifecycle)
 - `GameplaySimulationBlocked` / `GameplaySimulationUnblocked`
 - `GameLoop ENTER Playing`
@@ -146,13 +152,13 @@ Principais pontos (NewScripts):
 - **Gameplay**
   - `Gameplay/CoreGameplay/GameLoop/GameLoopStateMachine.cs`
   - `Gameplay/CoreGameplay/GameLoop/GameLoopService.cs`
-  - `Lifecycle/World/Runtime/ResetWorldService.cs`
+  - `Lifecycle/World/Reset/Application/WorldResetService.cs`
 - **Infrastructure**
   - `Runtime/Scene/SceneTransitionService.cs`
 
 ### Docs / evidências relacionadas
 
-- `Lifecycle/World/Runtime/README.md`
+- `Runtime/World/README.md`
 - `Standards/Standards.md`
 
 ## Notas de implementação
@@ -163,5 +169,7 @@ Os pontos de integração canônicos são: `WorldLifecycleSceneFlowResetDriver` 
 (gate `sim.gameplay` e RequestStart após confirmação).
 
 ## Evidência
+
+- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)

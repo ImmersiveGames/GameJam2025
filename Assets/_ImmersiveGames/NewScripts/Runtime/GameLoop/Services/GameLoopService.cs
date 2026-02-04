@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.PostGame;
 using _ImmersiveGames.NewScripts.Runtime.Scene;
 using _ImmersiveGames.NewScripts.Runtime.InputSystems;
-using _ImmersiveGames.NewScripts.Runtime.Scene;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Services
@@ -91,73 +90,15 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Services
         public void OnStateEntered(GameLoopStateId stateId, bool isActive)
         {
             var previousState = _lastStateId;
-            if (previousState == GameLoopStateId.PostPlay && stateId != GameLoopStateId.PostPlay)
-            {
-                HandlePostPlayExited(stateId);
-            }
-
-            CurrentStateIdName = stateId.ToString();
-            string logStateName = GetLogStateName(stateId);
-            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {logStateName} (active={isActive})");
-
-            if (stateId == GameLoopStateId.Boot && previousState != GameLoopStateId.Boot)
-            {
-                DebugUtility.Log<GameLoopService>(
-                    "[GameLoop] Restart->Boot confirmado (reinício determinístico).",
-                    DebugUtility.Colors.Info);
-            }
-
-            // Etapa 3: delimita o “início de run”.
-            // Regras:
-            // - Em Boot/Ready/PostPlay, consideramos que ainda não iniciou uma run ativa.
-            // - Ao entrar em Playing pela primeira vez nesta run, publicamos GameRunStartedEvent.
-            // - Em Resume (Paused -> Playing), NÃO publicamos de novo.
-            if (stateId == GameLoopStateId.Boot ||
-                stateId == GameLoopStateId.Ready ||
-                stateId == GameLoopStateId.IntroStage ||
-                stateId == GameLoopStateId.PostPlay)
-            {
-                _runStartedEmittedThisRun = false;
-            }
-
-            if (stateId == GameLoopStateId.IntroStage)
-            {
-                _signals.ClearIntroStagePending();
-            }
-            else if (stateId == GameLoopStateId.Boot ||
-                     stateId == GameLoopStateId.Ready ||
-                     stateId == GameLoopStateId.PostPlay)
-            {
-                if (!_signals.IntroStageRequested)
-                {
-                    _signals.ClearIntroStageFlags();
-                }
-            }
-
-            if (stateId == GameLoopStateId.PostPlay)
-            {
-                HandlePostPlayEntered();
-            }
-
-            if (stateId == GameLoopStateId.Playing)
-            {
-                // Garantia: StartPending nunca deve ficar “colado” após entrar em Playing.
-                _signals.ClearStartPending();
-                _signals.ClearIntroStageFlags();
-
-                ApplyGameplayInputMode();
-
-                // Correção: se já emitimos nesta run (ex.: Paused → Playing), apenas não publica novamente.
-                // Importante: NÃO gerar log extra de "resume/duplicate" para evitar ruído no baseline/smoke.
-                if (!_runStartedEmittedThisRun)
-                {
-                    _runStartedEmittedThisRun = true;
-                    EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
-                }
-            }
-
+            HandlePostPlayExitIfNeeded(previousState, stateId);
+            UpdateCurrentState(stateId, isActive, previousState);
+            UpdateRunStartedFlag(stateId);
+            SyncIntroStageFlags(stateId);
+            HandlePostPlayEnterIfNeeded(stateId);
+            HandlePlayingEnteredIfNeeded(stateId);
             _lastStateId = stateId;
         }
+
 
         public void OnStateExited(GameLoopStateId stateId) =>
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {GetLogStateName(stateId)}");
@@ -175,6 +116,95 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.Services
             EventBus<GameLoopActivityChangedEvent>.Raise(
                 new GameLoopActivityChangedEvent(currentState, isActive));
         }
+
+        private void HandlePostPlayExitIfNeeded(GameLoopStateId previousState, GameLoopStateId nextState)
+        {
+            if (previousState == GameLoopStateId.PostPlay && nextState != GameLoopStateId.PostPlay)
+            {
+                HandlePostPlayExited(nextState);
+            }
+        }
+
+        private void UpdateCurrentState(GameLoopStateId stateId, bool isActive, GameLoopStateId previousState)
+        {
+            CurrentStateIdName = stateId.ToString();
+
+            string logStateName = GetLogStateName(stateId);
+            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {logStateName} (active={isActive})");
+
+            if (stateId == GameLoopStateId.Boot && previousState != GameLoopStateId.Boot)
+            {
+            DebugUtility.Log<GameLoopService>(
+                "[GameLoop] Restart->Boot confirmado (rein\u00edcio determin\u00edstico).",
+                DebugUtility.Colors.Info);
+            }
+        }
+
+        private void UpdateRunStartedFlag(GameLoopStateId stateId)
+        {
+            // Etapa 3: delimita o inicio de run.
+            // Regras:
+            // - Em Boot/Ready/PostPlay, consideramos que ainda nao iniciou uma run ativa.
+            // - Ao entrar em Playing pela primeira vez nesta run, publicamos GameRunStartedEvent.
+            // - Em Resume (Paused -> Playing), NAO publicamos de novo.
+            if (stateId == GameLoopStateId.Boot ||
+                stateId == GameLoopStateId.Ready ||
+                stateId == GameLoopStateId.IntroStage ||
+                stateId == GameLoopStateId.PostPlay)
+            {
+                _runStartedEmittedThisRun = false;
+            }
+        }
+
+        private void SyncIntroStageFlags(GameLoopStateId stateId)
+        {
+            if (stateId == GameLoopStateId.IntroStage)
+            {
+                _signals.ClearIntroStagePending();
+                return;
+            }
+
+            if (stateId == GameLoopStateId.Boot ||
+                stateId == GameLoopStateId.Ready ||
+                stateId == GameLoopStateId.PostPlay)
+            {
+                if (!_signals.IntroStageRequested)
+                {
+                    _signals.ClearIntroStageFlags();
+                }
+            }
+        }
+
+        private void HandlePostPlayEnterIfNeeded(GameLoopStateId stateId)
+        {
+            if (stateId == GameLoopStateId.PostPlay)
+            {
+                HandlePostPlayEntered();
+            }
+        }
+
+        private void HandlePlayingEnteredIfNeeded(GameLoopStateId stateId)
+        {
+            if (stateId != GameLoopStateId.Playing)
+            {
+                return;
+            }
+
+            // Garantia: StartPending nunca deve ficar 'colado' apos entrar em Playing.
+            _signals.ClearStartPending();
+            _signals.ClearIntroStageFlags();
+
+            ApplyGameplayInputMode();
+
+            // Correcao: se ja emitimos nesta run (ex.: Paused -> Playing), apenas nao publica novamente.
+            // Importante: NAO gerar log extra de "resume/duplicate" para evitar ruido no baseline/smoke.
+            if (!_runStartedEmittedThisRun)
+            {
+                _runStartedEmittedThisRun = true;
+                EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
+            }
+        }
+
 
         private void HandlePostPlayEntered()
         {

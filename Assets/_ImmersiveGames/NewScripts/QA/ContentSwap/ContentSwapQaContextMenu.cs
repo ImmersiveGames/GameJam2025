@@ -119,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.QA.ContentSwap
             var pending = ctx.Pending;
 
             DebugUtility.Log(typeof(ContentSwapQaContextMenu),
-                $"[QA][ContentSwap] ContentSwapContext snapshot current='{current.ContentId}' pending='{pending.ContentId}'.",
+                $"[QA][ContentSwap] ContentSwapContext snapshot current='{current.contentId}' pending='{pending.contentId}'.",
                 ColorInfo);
         }
 

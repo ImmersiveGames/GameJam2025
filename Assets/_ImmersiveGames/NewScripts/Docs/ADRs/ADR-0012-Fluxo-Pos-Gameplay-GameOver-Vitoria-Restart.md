@@ -1,10 +1,11 @@
-﻿# ADR-0012 — Fluxo Pós-Gameplay (GameOver, Vitória, Restart, ExitToMenu)
+# ADR-0012 — Fluxo Pós-Gameplay (GameOver, Vitória, Restart, ExitToMenu)
 
 ## Status
 
 - Estado: Fechado
 - Data (decisão): 2026-01-31
-- Última atualização: 2026-01-31
+- Última atualização: 2026-02-04
+- Tipo: Implementação
 - Escopo: `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/GameLoop/` + integrações com `WorldLifecycle/SceneFlow`
 
 ---
@@ -39,6 +40,16 @@ Padronizar o Pós-Gameplay como um conjunto de **transições explícitas** (com
    - O reset em frontend deve ser **SKIP** (por política)
 4. **Idempotência**: PostGame deve ser protegido por “single-flight” (ou gating equivalente) para evitar reentrância/duplicação.
 
+### Não-objetivos (resumo)
+
+- Criar novos motivos além dos definidos (mudanças exigem ADR/evidência).
+- Alterar o pipeline de ResetWorld/SceneFlow.
+
+## Fora de escopo
+
+- UX/arte de overlays (apenas contrato e sinais).
+- Implementar novos estados de game loop sem ADR.
+
 ---
 
 ## Regras / Invariantes
@@ -55,6 +66,8 @@ Padronizar o Pós-Gameplay como um conjunto de **transições explícitas** (com
 ---
 
 ## Evidências (log canônico)
+
+**Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 
 **Evidência canônica (Baseline 2.2):**
 
@@ -112,4 +125,11 @@ Buscar no log:
 
 ## Implementação (arquivos impactados)
 
-> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+- `Presentation/PostGame/PostGameOverlayController.cs`
+- `Gameplay/CoreGameplay/GameLoop/GameRunOutcomeService.cs`
+- `Gameplay/CoreGameplay/GameLoop/GameRunStatusService.cs`
+- `Gameplay/CoreGameplay/GameLoop/GameRunEndRequestService.cs`
+- `Runtime/GameLoop/Bridges/GameRunOutcomeEventInputBridge.cs`
+- `Runtime/Navigation/RestartNavigationBridge.cs`
+- `Runtime/Navigation/ExitToMenuNavigationBridge.cs`
+- `Gameplay/CoreGameplay/PostGame/PostPlayOwnershipService.cs`

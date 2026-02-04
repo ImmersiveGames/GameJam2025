@@ -1,21 +1,26 @@
-# ADR-XXXX - Título
+# ADR-XXXX — Title
 
 ## Status
 
-* **Status:** Aberto | Em andamento | Concluído | Parcial | Cancelado
-* **Data:** YYYY-MM-DD
-* **Decisores:** (nomes/roles)
-* **Tags:** (ex.: SceneFlow, WorldLifecycle, Observability)
+- Estado: Aberto | Em andamento | Concluído | Parcial | Cancelado
+- Data (decisão): YYYY-MM-DD
+- Última atualização: YYYY-MM-DD
+- Tipo: Implementação
+- Escopo: (módulos/áreas afetadas)
+- Decisores: (nomes/roles)
+- Tags: (ex.: SceneFlow, WorldLifecycle, Observability)
+
+> Para ADRs de completude/governança, use `ADR-TEMPLATE-COMPLETENESS.md`.
 
 ## Contexto
 
-Descreva o problema, restrições (produção/QA), e por que isso é necessário.
+Descreva o problema, restrições (produção/QA) e por que isto é necessário.
 
 ## Decisão
 
 ### Objetivo de produção (sistema ideal)
 
-Descreva o estado ideal “production complete” — o que precisa existir para o fluxo funcionar de ponta a ponta.
+Descreva o estado ideal "production complete".
 
 ### Contrato de produção (mínimo)
 
@@ -23,7 +28,7 @@ Regras objetivas e verificáveis (ordem de eventos, invariantes, ownership, depe
 
 ### Não-objetivos (resumo)
 
-O que **não** está sendo resolvido aqui (detalhe completo em “Fora de escopo”).
+O que não está sendo resolvido aqui (detalhe completo em "Fora de escopo").
 
 ## Fora de escopo
 
@@ -37,29 +42,26 @@ Lista explícita do que fica fora (para reduzir escopo e evitar promessas implí
 
 ### Política de falhas e fallback (fail-fast)
 
-Em Unity, preferir falhar cedo para sinalizar bugs de pipeline/config, evitando “auto-criação em voo” que mascara problemas.
+Em Unity, preferir falhar cedo para sinalizar bugs de pipeline/config, evitando criação silenciosa em runtime.
 
 ### Critérios de pronto (DoD)
 
-Checklist objetiva do que precisa estar verdadeiro para considerar “feito”.
+Checklist objetiva do que precisa estar verdadeiro para considerar "feito".
 
 ## Implementação (arquivos impactados)
 
-> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+> TBD: este ADR não contém caminhos de implementação explicitados no documento atual.
 
 ## Notas de implementação (se necessário)
 
-Detalhes de arquitetura, pontos de integração, exemplos de API, etc.
+Detalhes de arquitetura, pontos de integração, exemplos de API, observabilidade, etc.
 
 ## Evidência
 
-* **Fonte canônica atual:** `Docs/Reports/Evidence/LATEST.md`
-* **Âncoras/assinaturas relevantes:** (strings ou padrões de log)
-* **Contrato de observabilidade:** `Docs/Standards/Standards.md#observability-contract`
-
-## Evidências
-
-Links para logs e relatórios datados (snapshots). Evitar “evidência viva” sem data.
+- Última evidência (log bruto): `Docs/Reports/lastlog.log`
+- Fonte canônica atual: `Docs/Reports/Evidence/LATEST.md`
+- Âncoras/assinaturas relevantes: (strings ou padrões de log)
+- Contrato de observabilidade: `Docs/Standards/Standards.md#observability-contract`
 
 ## Referências
 

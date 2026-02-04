@@ -1,10 +1,11 @@
-﻿# ADR-0010 — Loading HUD + SceneFlow (NewScripts)
+# ADR-0010 — Loading HUD + SceneFlow (NewScripts)
 
 ## Status
 
 - Estado: Implementado
 - Data (decisão): 2025-12-24
-- Última atualização: 2026-02-01
+- Última atualização: 2026-02-04
+- Tipo: Implementação
 - Escopo: SceneFlow + Loading HUD (NewScripts)
 
 ## Contexto
@@ -50,6 +51,16 @@ Garantir que transições do SceneFlow possam opcionalmente exibir um “Loading
 3) **Não criar UI “em voo”**
 - O Loading HUD é fornecido por cena/asset configurado (ou equivalente), não por instância silenciosa em runtime.
 
+### Não-objetivos (resumo)
+
+- UX/arte do HUD (layout, progressos, textos).
+- Driver paralelo fora do pipeline canônico.
+
+## Fora de escopo
+
+- Recriar HUD por instância em runtime.
+- Alterar o envelope de Fade (ver ADR-0009).
+
 ## Consequências
 
 ### Benefícios
@@ -67,12 +78,12 @@ Garantir que transições do SceneFlow possam opcionalmente exibir um “Loading
 
 Arquivos (NewScripts):
 
-- Orquestração / ordem / anchors `[OBS][LoadingHud]`:
+- Orquestração / ordem / anchors `[LoadingHud*]`:
   - `Runtime/SceneFlow/SceneFlowLoadingService.cs`
-- Driver do HUD (start/ready por assinatura):
-  - `Runtime/SceneFlow/Loading/Drivers/SceneFlowLoadingHudDriver.cs`
 - Serviço de loading HUD (setup + Strict/Release + no-op em degraded):
   - `Presentation/LoadingHud/LoadingHudService.cs`
+- Controller do HUD (visibilidade/efeito):
+  - `Presentation/LoadingHud/LoadingHudController.cs`
 
 ## Observabilidade (contrato)
 
@@ -80,12 +91,12 @@ Arquivos (NewScripts):
 
 ### Âncoras mínimas de Loading HUD (evidência)
 
-Emitidas por `LoadingHudService` e `SceneFlowLoadingHudDriver` quando `UseLoadingHud=true`:
+Emitidas por `LoadingHudService` e `SceneFlowLoadingService` quando `UseLoadingHud=true`:
 
-- `[OBS][LoadingHud] ShowStarted ...`
-- `[OBS][LoadingHud] ShowCompleted ...`
-- `[OBS][LoadingHud] HideStarted ...`
-- `[OBS][LoadingHud] HideCompleted ...`
+- `[LoadingHudEnsure] ...`
+- `[LoadingHudShow] ...`
+- `[LoadingHudHide] ...`
+- `[LoadingDegraded] ...` (fallback)
 
 ### Âncora canônica de fallback (Release)
 
@@ -100,18 +111,18 @@ Quando o HUD não pode operar em Release:
 - [x] Pontos de show/hide obedecem a ordem do “Contrato mínimo”.
 - [x] Policy Strict vs Release aplicada.
 - [x] `DEGRADED_MODE` emitido em Release quando necessário.
-- [x] Logs `[OBS][LoadingHud]` emitidos (Start/Complete por fase).
+- [x] Logs canônicos emitidos (`LoadingHudEnsure/Show/Hide` + `LoadingDegraded`).
 
 ### DoD (evidência)
 
-- [ ] Snapshot contendo uma transição com `UseLoadingHud=true` e as 4 âncoras `[OBS][LoadingHud]` na mesma `signature`.
+- [ ] Snapshot contendo uma transição com `UseLoadingHud=true` e as âncoras `LoadingHudEnsure/Show/Hide` na mesma `signature`.
 
 ## Procedimento de verificação (QA)
 
 1) **Happy path**
 - Dispare uma transição com `UseLoadingHud=true` (ex.: Menu→Gameplay em perfis que demandam HUD).
 - Confirme no log:
-  - `FadeInCompleted` → `[OBS][LoadingHud] Show...` → operações de cena → `ScenesReady` → gate → `[OBS][LoadingHud] Hide...` → `FadeOut` → `Completed`.
+  - `FadeInCompleted` → `[LoadingHudShow]` → operações de cena → `ScenesReady` → gate → `[LoadingHudHide]` → `FadeOut` → `Completed`.
 
 2) **Fail-fast (Strict)**
 - Em Editor/Development:
@@ -125,6 +136,7 @@ Quando o HUD não pode operar em Release:
 
 ## Evidência
 
+- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 
 ## Implementação (arquivos impactados)

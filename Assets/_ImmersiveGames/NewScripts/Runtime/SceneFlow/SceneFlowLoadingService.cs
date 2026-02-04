@@ -1,3 +1,4 @@
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -8,9 +9,9 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
     /// <summary>
     /// Serviço global para orquestrar HUD de loading durante o Scene Flow.
     ///
-    /// Opção A+:
-    /// - Em transições com Fade: a HUD é "ensured" no Started, mas só fica visível após FadeIn concluir.
-    /// - Em transições sem Fade: mantém o comportamento antigo (Show já no Started).
+    /// Opcao A+:
+    /// - Em transicoes com Fade: a HUD e "ensured" no Started, mas so fica visivel após FadeIn concluir.
+    /// - Em transicoes sem Fade: mantem o comportamento antigo (Show já no Started).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneFlowLoadingService
@@ -23,6 +24,9 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
         private string _pendingStep;
         private bool _pendingUseFade;
         private bool _warnedHudServiceMissingThisTransition;
+        private bool _hudVisible;
+        private string _visibleSignature;
+        private string _visibleStep;
 
         public SceneFlowLoadingService()
         {
@@ -51,23 +55,27 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             if (IsSignatureMismatch(signature))
             {
                 DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] Nova transição detectada. Substituindo pendências. old='{_pendingSignature}', new='{signature}'.");
+                    $"[Loading] Nova transicao detectada. Substituindo pendencias. old='{_pendingSignature}', new='{signature}'.");
             }
 
             _activeSignature = signature;
             _pendingSignature = signature;
-            _pendingStep = LoadingHudSteps.Started;
+            _pendingStep = LoadingHudPhases.Started;
             _pendingUseFade = evt.Context.UseFade;
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                _pendingUseFade ? $"[Loading] Started → Ensure only (Show após FadeIn). signature='{signature}'." : $"[Loading] Started → Ensure + Show (no-fade). signature='{signature}'.");
+                $"[LoadingStart] signature='{signature}' useFade={_pendingUseFade}.",
+                DebugUtility.Colors.Info);
 
-            _ = EnsureLoadedAsync(signature);
+            if (_pendingUseFade)
+            {
+                _ = EnsureLoadedAsync(signature);
+            }
 
-            // Transições sem fade mantêm o comportamento antigo.
+            // Transicoes sem fade mantem o comportamento antigo.
             if (!_pendingUseFade)
             {
-                TryShow(signature, LoadingHudSteps.Started, "started_no_fade");
+                _ = EnsureThenShowAsync(signature, LoadingHudPhases.Started, "started_no_fade");
             }
         }
 
@@ -81,12 +89,10 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             }
 
             _pendingSignature = signature;
-            _pendingStep = LoadingHudSteps.AfterFadeIn;
+            _pendingStep = LoadingHudPhases.AfterFadeIn;
 
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] FadeInCompleted → Show. signature='{signature}'.");
 
-            TryShow(signature, _pendingStep, "fade_in_completed");
+            _ = EnsureThenShowAsync(signature, _pendingStep, "fade_in_completed");
         }
 
         private void OnTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
@@ -96,18 +102,17 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             if (IsSignatureMismatch(signature))
             {
                 DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] ScenesReady com assinatura diferente. Substituindo pendências. old='{_pendingSignature}', new='{signature}'.");
+                    $"[Loading] ScenesReady com assinatura diferente. Substituindo pendencias. old='{_pendingSignature}', new='{signature}'.");
             }
 
             _activeSignature = signature;
             _pendingSignature = signature;
-            _pendingStep = LoadingHudSteps.ScenesReady;
+            _pendingStep = LoadingHudPhases.ScenesReady;
+            _pendingUseFade = evt.Context.UseFade;
 
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] ScenesReady → Update pending. signature='{signature}'.");
 
-            // Para fade, isso atualiza a etapa se já estiver visível; para no-fade, mantém idempotente.
-            TryShow(signature, _pendingStep, "scenes_ready");
+            // Para fade, isso atualiza a etapa se já estiver visivel; para no-fade, mantem idempotente.
+            _ = EnsureThenShowAsync(signature, _pendingStep, "scenes_ready");
         }
 
         private void OnTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
@@ -121,10 +126,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
 
             ClearPending();
 
-            TryHide(signature, LoadingHudSteps.BeforeFadeOut, "before_fade_out");
+            TryHide(signature, LoadingHudPhases.BeforeFadeOut, "before_fade_out");
 
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] BeforeFadeOut → Hide. signature='{signature}'.");
         }
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
@@ -138,10 +141,12 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
 
             ClearPending();
 
-            TryHide(signature, LoadingHudSteps.Completed, "completed");
+            TryHide(signature, LoadingHudPhases.Completed, "completed");
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] Completed → Safety hide. signature='{signature}'.");
+                $"[LoadingCompleted] signature='{signature}'.",
+                DebugUtility.Colors.Info);
+
         }
 
         private bool IsSignatureMismatch(string signature)
@@ -172,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             if (!string.Equals(_activeSignature, signature))
             {
                 DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] Evento ignorado (assinatura não corresponde). active='{_activeSignature}', incoming='{signature}'.");
+                    $"[Loading] Evento ignorado (assinatura nao corresponde). active='{_activeSignature}', incoming='{signature}'.");
                 return false;
             }
 
@@ -201,34 +206,70 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
 
             _warnedHudServiceMissingThisTransition = true;
 
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] HUD indisponível nesta transição. {context}.");
+            DebugUtility.LogWarning<SceneFlowLoadingService>(
+                $"[LoadingDegraded] HUD indisponivel nesta transicao. {context}.");
         }
 
         private async System.Threading.Tasks.Task EnsureLoadedAsync(string signature)
         {
             if (!TryResolveHudService())
             {
-                WarnHudMissingOnce("EnsureLoadedAsync não executado (serviço indisponível).");
+                WarnHudMissingOnce("EnsureLoadedAsync nao executado (servico indisponivel).");
                 return;
             }
 
-            await _hudService.EnsureLoadedAsync(signature);
+            try
+            {
+                await _hudService.EnsureLoadedAsync(signature);
+            }
+            catch (Exception ex)
+            {
+                WarnHudMissingOnce($"EnsureLoadedAsync falhou ({ex.GetType().Name}). {ex.Message}");
+                return;
+            }
 
-            // Se estamos em transição com Fade, só exibimos quando a etapa já avançou além do Started
+            // Se estamos em transicao com Fade, so exibimos quando a etapa já avancou além do Started
             // (FadeInCompleted/ScenesReady).
             if (_pendingUseFade)
             {
-                string step = ResolvePendingStep(signature, LoadingHudSteps.Started);
-                if (!string.Equals(step, LoadingHudSteps.Started))
+                string step = ResolvePendingStep(signature, LoadingHudPhases.Started);
+                if (!string.Equals(step, LoadingHudPhases.Started))
                 {
                     TryShow(signature, step, "ensure_loaded_after_fade");
                 }
 
-                return;
             }
 
             // Em no-fade, o Show já acontece no Started (idempotente); nada extra aqui.
+        }
+
+        private async System.Threading.Tasks.Task EnsureThenShowAsync(string signature, string step, string reason)
+        {
+            if (!TryResolveHudService())
+            {
+                WarnHudMissingOnce($"Show pendente ignorado. reason='{reason}', step='{step}'.");
+                return;
+            }
+
+            if (_hudVisible && string.Equals(_visibleSignature, signature))
+            {
+                if (string.Equals(_visibleStep, step))
+                {
+                    return;
+                }
+            }
+
+            try
+            {
+                await _hudService.EnsureLoadedAsync(signature);
+            }
+            catch (Exception ex)
+            {
+                WarnHudMissingOnce($"EnsureLoadedAsync falhou ({ex.GetType().Name}). {ex.Message}");
+                return;
+            }
+
+            TryShow(signature, step, reason);
         }
 
         private void TryShow(string signature, string step, string reason)
@@ -239,7 +280,19 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
                 return;
             }
 
+            if (_hudVisible && string.Equals(_visibleSignature, signature))
+            {
+                if (string.Equals(_visibleStep, step))
+                {
+                    return;
+                }
+            }
+
             _hudService.Show(signature, step);
+
+            _hudVisible = true;
+            _visibleSignature = signature;
+            _visibleStep = step;
         }
 
         private void TryHide(string signature, string step, string reason)
@@ -250,7 +303,16 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
                 return;
             }
 
+            if (!_hudVisible)
+            {
+                return;
+            }
+
             _hudService.Hide(signature, step);
+
+            _hudVisible = false;
+            _visibleSignature = null;
+            _visibleStep = null;
         }
 
         private bool TryResolveHudService()
@@ -282,15 +344,6 @@ namespace _ImmersiveGames.NewScripts.Runtime.SceneFlow
             }
 
             return fallback;
-        }
-
-        private static class LoadingHudSteps
-        {
-            public const string Started = "Started";
-            public const string AfterFadeIn = "AfterFadeIn";
-            public const string ScenesReady = "ScenesReady";
-            public const string BeforeFadeOut = "BeforeFadeOut";
-            public const string Completed = "Completed";
         }
     }
 }

@@ -2,7 +2,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 namespace _ImmersiveGames.NewScripts.Runtime.World
 {
     /// <summary>
-    /// Evento canônico publicado quando um ResetWorld inicia.
+    /// Evento canÃ´nico publicado quando um ResetWorld inicia.
     /// </summary>
     public readonly struct WorldLifecycleResetStartedEvent : IEvent
     {

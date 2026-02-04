@@ -20,51 +20,21 @@ namespace _ImmersiveGames.NewScripts.Core.Composition
             _cleaner = new SceneServiceCleaner(this);
         }
 
-        public override void Register<T>(string key, T service, bool allowOverride = false)
+        public override void Register<T>(string key, T service, bool allowOverride = false) where T : class
         {
-            if (string.IsNullOrEmpty(key))
-            {
-                DebugUtility.LogError(typeof(SceneServiceRegistry), "Register: sceneName é nulo ou vazio.");
-                throw new ArgumentNullException(nameof(key));
-            }
-            if (!ValidateSceneName(key))
-            {
-                DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Cena '{key}' não encontrada na build.");
-            }
-
-            if (!ValidateService(typeof(T), service, "RegisterForScene", key))
-            {
-                throw new ArgumentNullException(nameof(service), $"Serviço nulo para o tipo {typeof(T).Name} com chave {key}.");
-            }
-
-            if (!_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
-            {
-                services = GetPooledDictionary();
-                _sceneServices[key] = services;
-            }
+            ValidateKeyOrThrow(key);
+            WarnIfSceneNotInBuild(key);
 
             var type = typeof(T);
-            if (_maxSceneServices > 0)
+            ValidateServiceOrThrow(type, service, key);
+
+            Dictionary<Type, object> services = GetOrCreateServicesForScene(key);
+            if (!CanRegisterService(key, type, services, allowOverride))
             {
-                var distinctTypes = services.Keys.ToHashSet();
-                if (distinctTypes.Contains(type) && !allowOverride)
-                {
-                    DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Serviço {type.Name} já registrado para a cena {key}. Registro ignorado.");
-                    return;
-                }
-                if (!distinctTypes.Contains(type) && distinctTypes.Count >= _maxSceneServices)
-                {
-                    DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Limite de {_maxSceneServices} serviços distintos atingido para a cena {key}. Registro de {type.Name} ignorado.");
-                    return;
-                }
+                return;
             }
 
-            if (services.TryGetValue(type, out object existing) && allowOverride)
-            {
-                DisposeServiceIfNeeded(existing);
-                DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Sobrescrevendo serviço {type.Name} para a cena {key}.");
-            }
-
+            HandleOverrideIfNeeded(key, type, services, allowOverride);
             services[type] = service;
             DebugUtility.LogVerbose(
                 typeof(SceneServiceRegistry),
@@ -178,6 +148,73 @@ namespace _ImmersiveGames.NewScripts.Core.Composition
                 }
             }
             return false;
+        }
+
+        private void ValidateKeyOrThrow(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                DebugUtility.LogError(typeof(SceneServiceRegistry), "Register: sceneName é nulo ou vazio.");
+                throw new ArgumentNullException(nameof(key));
+            }
+        }
+
+        private void WarnIfSceneNotInBuild(string key)
+        {
+            if (!ValidateSceneName(key))
+            {
+                DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Cena '{key}' não encontrada na build.");
+            }
+        }
+
+        private void ValidateServiceOrThrow(Type type, object service, string key)
+        {
+            if (!ValidateService(type, service, "RegisterForScene", key))
+            {
+                throw new ArgumentNullException(nameof(service), $"Serviço nulo para o tipo {type.Name} com chave {key}.");
+            }
+        }
+
+        private Dictionary<Type, object> GetOrCreateServicesForScene(string key)
+        {
+            if (!_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
+            {
+                services = GetPooledDictionary();
+                _sceneServices[key] = services;
+            }
+            return services;
+        }
+
+        private bool CanRegisterService(string key, Type type, Dictionary<Type, object> services, bool allowOverride)
+        {
+            if (_maxSceneServices <= 0)
+            {
+                return true;
+            }
+
+            HashSet<Type> distinctTypes = services.Keys.ToHashSet();
+            if (distinctTypes.Contains(type) && !allowOverride)
+            {
+                DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Serviço {type.Name} já registrado para a cena {key}. Registro ignorado.");
+                return false;
+            }
+
+            if (!distinctTypes.Contains(type) && distinctTypes.Count >= _maxSceneServices)
+            {
+                DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Limite de {_maxSceneServices} serviços distintos atingido para a cena {key}. Registro de {type.Name} ignorado.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private void HandleOverrideIfNeeded(string key, Type type, Dictionary<Type, object> services, bool allowOverride)
+        {
+            if (services.TryGetValue(type, out object existing) && allowOverride)
+            {
+                DisposeServiceIfNeeded(existing);
+                DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Sobrescrevendo serviço {type.Name} para a cena {key}.");
+            }
         }
 
         public void Dispose()

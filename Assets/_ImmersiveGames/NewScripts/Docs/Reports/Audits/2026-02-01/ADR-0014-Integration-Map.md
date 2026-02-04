@@ -1,38 +1,39 @@
-﻿# ADR-0014 — Integration Map (GameplayReset)
+# ADR-0014 — Integration Map (GameplayReset)
 
-**Objetivo:** registrar, em um único lugar, **quais arquivos** se conectam ao GameplayReset para evitar regressões quando editarmos apenas parte do conjunto.
+**Objetivo:** registrar, em um único lugar, **quais arquivos** se conectam ao GameplayReset para evitar regressão quando editarmos apenas parte do conjunto.
 
 ## Contratos (fonte da verdade)
 
 - `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/GameplayResetContracts.cs`
+  - `GameplayResetStep`
+  - `GameplayResetTarget`
   - `GameplayResetRequest`
-  - `GameplayResetTargets` (`Players`, `Eaters`)
-  - `IGameplayResetOrchestrator`
+  - `GameplayResetContext`
+  - `IGameplayResettable` / `IGameplayResettableSync`
   - `IGameplayResetTargetClassifier`
-  - `IGameplayResetParticipant`
+  - `IGameplayResetOrchestrator`
 
 ## Implementação (runtime)
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/GameplayResetOrchestrator.cs`
-  - Constrói batches por `GameplayResetTargets`
-  - Ordena determinísticamente (`ActorId`)
-  - Resolve `IGameplayResetParticipant` por target
-  - Tolera targets sem participante (warning) e segue
+- `Assets/_ImmersiveGames/NewScripts/Runtime/Reset/GameplayResetOrchestrator.cs`
+  - Resolve targets via ActorRegistry (registry-first)
+  - Fallback de scan somente quando policy permitir
+  - Ordena determinístico por `ActorId` e por `IGameplayResetOrder`
+  - Executa etapas `Cleanup -> Restore -> Rebind`
 
 - `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/DefaultGameplayResetTargetClassifier.cs`
-  - Classifica `ActorId` → `GameplayResetTargets`
-  - Implementa fallback por tipo (`PlayerActor`, `EaterActor`) e por nome
+  - Classifica targets via registry + `GameplayResetTarget`
+  - Fallback string-based para `EaterOnly` (compatibilidade)
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/PlayersResetParticipant.cs`
-  - Implementa reset do grupo `Players`
+- `Assets/_ImmersiveGames/NewScripts/Runtime/Reset/PlayersResetParticipant.cs`
+  - Ponte WorldLifecycle (ResetScope.Players) -> GameplayReset (PlayersOnly)
 
 ## Wiring / Bootstrap (DI)
 
 - `Assets/_ImmersiveGames/NewScripts/Runtime/Bootstrap/SceneBootstrapper.cs`
   - Registra:
-    - `IGameplayResetOrchestrator` → `GameplayResetOrchestrator`
-    - `IGameplayResetTargetClassifier` → `DefaultGameplayResetTargetClassifier`
-    - `IGameplayResetParticipant` (multi-binding) → `PlayersResetParticipant`
+    - `IGameplayResetOrchestrator` -> `GameplayResetOrchestrator`
+    - `IGameplayResetTargetClassifier` -> `DefaultGameplayResetTargetClassifier`
 
 ## QA / Ferramentas
 
@@ -47,13 +48,13 @@
 > Observação: as strings abaixo são úteis para grep em logs; mantenha-as estáveis quando possível.
 
 - `GameplayResetOrchestrator`:
-  - `"Gameplay reset request completed"`
-  - `"Reset participant threw"`
-  - `"No participant registered for target"`
+  - `[GameplayReset] Start:`
+  - `[GameplayReset] Completed:`
+  - `[DEGRADED_MODE]` (fallbacks e no-targets)
 
 ## Checklist de mudança segura (quando editar qualquer peça)
 
 1. **Buscar referências** por `IGameplayResetOrchestrator` e `IGameplayResetTargetClassifier`.
 2. Validar que `SceneBootstrapper` continua registrando o conjunto completo.
-3. Garantir que o conjunto de `GameplayResetTargets` não foi expandido sem adicionar participante.
+3. Garantir que `GameplayResetTarget` não foi expandido sem atualizar classificador/consumo.
 4. Rodar QA: `GameplayResetRequestQaDriver` (ou equivalente) e confirmar logs.

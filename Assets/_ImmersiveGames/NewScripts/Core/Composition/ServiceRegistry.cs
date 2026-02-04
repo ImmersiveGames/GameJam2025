@@ -26,12 +26,12 @@ namespace _ImmersiveGames.NewScripts.Core.Composition
 
         protected Dictionary<Type, object> GetPooledDictionary()
         {
-            if (_dictionaryPool.Count > 0)
+            if (_dictionaryPool.Count <= 0)
             {
-                DebugUtility.LogVerbose(typeof(ServiceRegistry), "Dicionário obtido do pool para serviços.");
-                return _dictionaryPool.Pop();
+                return new Dictionary<Type, object>();
             }
-            return new Dictionary<Type, object>();
+            DebugUtility.LogVerbose(typeof(ServiceRegistry), "Dicionário obtido do pool para serviços.");
+            return _dictionaryPool.Pop();
         }
 
         protected void ReturnDictionaryToPool(Dictionary<Type, object> dictionary)
@@ -43,27 +43,28 @@ namespace _ImmersiveGames.NewScripts.Core.Composition
 
         protected static void DisposeServiceIfNeeded(object service)
         {
-            if (service is IDisposable disposable)
+            if (service is not IDisposable disposable)
             {
-                try
-                {
-                    disposable.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    DebugUtility.LogError(typeof(ServiceRegistry), $"Falha ao descartar serviço {service.GetType().Name}: {ex}");
-                }
+                return;
+            }
+            try
+            {
+                disposable.Dispose();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(ServiceRegistry), $"Falha ao descartar serviço {service.GetType().Name}: {ex}");
             }
         }
 
-        protected bool ValidateService(Type type, object service, string method, string key)
+        protected static bool ValidateService(Type type, object service, string method, string key)
         {
-            if (service == null)
+            if (service != null)
             {
-                DebugUtility.LogError(typeof(ServiceRegistry), $"{method}: Tentativa de registrar serviço nulo para o tipo {type.Name} com chave {key}.");
-                return false;
+                return true;
             }
-            return true;
+            DebugUtility.LogError(typeof(ServiceRegistry), $"{method}: Tentativa de registrar serviço nulo para o tipo {type.Name} com chave {key}.");
+            return false;
         }
     }
 }

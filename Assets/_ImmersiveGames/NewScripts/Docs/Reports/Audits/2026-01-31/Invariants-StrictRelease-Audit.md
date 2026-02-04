@@ -4,6 +4,8 @@ Escopo: `Assets/_ImmersiveGames/NewScripts/` (documental; refletindo estado do c
 
 **Atualização documental (2026-02-01):** ajustes menores de consistência com o ADR-Sync-Audit; nenhum resultado técnico foi alterado.
 
+**Última evidência (log bruto):** `Docs/Reports/lastlog.log`
+
 ## ✅ Tabela de PASS/FAIL (Checklist A–F)
 
 | Item | Resultado | Evidência principal |

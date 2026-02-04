@@ -4,7 +4,8 @@
 
 - Estado: Implementado
 - Data (decisão): 2025-12-28
-- Última atualização: 2026-01-31
+- Última atualização: 2026-02-04
+- Tipo: Implementação
 - Escopo: `GameplayScene`, `SceneBootstrapper`, spawn pipeline (Player/Eater), WorldLifecycle
 
 ## Contexto
@@ -15,9 +16,18 @@ Há também um requisito operacional: o projeto possui uma política **Strict/Re
 
 ## Decisão
 
+### Objetivo de produção (sistema ideal)
+
 Introduzir um asset `WorldDefinition` que descreve o conjunto de **SpawnEntries** (multi-actor) e integrá-lo ao pipeline de bootstrap/spawn da `GameplayScene`.
 
+### Contrato de produção (mínimo)
+
 A presença de `WorldDefinition` é **obrigatória em cenas classificadas como gameplay** (ex.: `GameplayScene`) e **opcional/permitida** em cenas de frontend (ex.: `MenuScene`).
+
+### Não-objetivos (resumo)
+
+- Criar um sistema de levels/catalog (ver ADR-0017).
+- Alterar o pipeline de SceneFlow/Fade/LoadingHUD.
 
 ## Detalhamento
 
@@ -62,6 +72,8 @@ Evidência canônica mostra:
 
 ## Evidência
 
+- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
+
 ### Log canônico (Baseline 2.2)
 
 - **Arquivo:** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
@@ -95,6 +107,11 @@ Evidência canônica mostra:
 
 - **Arquivo:** `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
 
+## Fora de escopo
+
+- Integração com LevelManager/ContentSwap (ver ADR-0016/0017).
+- Alterar contratos de SceneFlow ou WorldLifecycle.
+
 ## Consequências
 
 ### Positivas
@@ -124,4 +141,9 @@ Evidência canônica mostra:
 
 ## Implementação (arquivos impactados)
 
-> **TBD:** este ADR não contém caminhos de implementação explicitados no documento atual. Preencher quando o mapeamento de código/scene/prefab for consolidado.
+- `Runtime/Bootstrap/SceneBootstrapper.cs`
+- `Runtime/World/Spawn/WorldDefinition.cs`
+- `Runtime/World/Spawn/WorldSpawnServiceFactory.cs`
+- `Runtime/World/Spawn/WorldSpawnServiceRegistry.cs`
+- `Runtime/World/Spawn/PlayerSpawnService.cs`
+- `Runtime/World/Spawn/EaterSpawnService.cs`

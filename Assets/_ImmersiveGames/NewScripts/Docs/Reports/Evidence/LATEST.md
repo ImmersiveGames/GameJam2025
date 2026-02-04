@@ -1,18 +1,18 @@
-﻿# EvidÃªncia canÃ´nica (LATEST)
+# Evidência canônica (LATEST)
 
-Esta pÃ¡gina aponta para o conjunto de evidÃªncias **mais recente** aceito como referÃªncia para auditoria.
+Esta página aponta para o conjunto de evidências **mais recente** aceito como referência para auditoria.
 
 ## Snapshot atual
 
 - **Data:** 2026-02-03
 - **Baseline:** 2.2
-- **Arquivo de evidÃªncia:** [`Baseline-2.2-Evidence-2026-02-03.md`](2026-02-03/Baseline-2.2-Evidence-2026-02-03.md)
-- **Log bruto:** [`Baseline-2.2-Smoke-LastRun.log`](2026-02-03/Baseline-2.2-Smoke-LastRun.log)
+- **Arquivo de evidência:** [`Baseline-2.2-Evidence-2026-02-03.md`](2026-02-03/Baseline-2.2-Evidence-2026-02-03.md)
+- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log)
 - **Evidências adicionais:** [ADR-0017-LevelCatalog-Evidence-2026-02-03.md](2026-02-03/ADR-0017-LevelCatalog-Evidence-2026-02-03.md)
 
 ## Regras
 
-- Quando um snapshot Ã© promovido para â€œLATESTâ€, ele vira **fonte de verdade** atÃ© nova promoÃ§Ã£o.
-- AlteraÃ§Ãµes de comportamento devem atualizar o snapshot e/ou justificar divergÃªncias via ADR + evidÃªncia.
+- Quando um snapshot é promovido para “LATEST”, ele vira **fonte de verdade** até nova promoção.
+- Alterações de comportamento devem atualizar o snapshot e/ou justificar divergências via ADR + evidência.
 
 

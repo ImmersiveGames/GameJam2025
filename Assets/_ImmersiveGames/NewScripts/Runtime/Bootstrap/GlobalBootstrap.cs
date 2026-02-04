@@ -32,6 +32,8 @@ using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.PostGame;
+using _ImmersiveGames.NewScripts.Lifecycle.World.Reset.Application;
+using _ImmersiveGames.NewScripts.Lifecycle.World.Reset.Policies;
 using _ImmersiveGames.NewScripts.Runtime.GameLoop.Bootstrap;
 using _ImmersiveGames.NewScripts.Runtime.GameLoop.Bridges;
 using _ImmersiveGames.NewScripts.Runtime.GameLoop.IntroStage;
@@ -50,12 +52,10 @@ using _ImmersiveGames.NewScripts.Runtime.Gates;
 using _ImmersiveGames.NewScripts.Runtime.InputSystems;
 using _ImmersiveGames.NewScripts.Runtime.Mode;
 using _ImmersiveGames.NewScripts.Runtime.Navigation;
-using _ImmersiveGames.NewScripts.Runtime.Scene;
 using _ImmersiveGames.NewScripts.Runtime.SceneFlow;
 using _ImmersiveGames.NewScripts.Runtime.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Runtime.State;
 using UnityEngine;
-using IUniqueIdFactory = _ImmersiveGames.NewScripts.Core.Identifiers.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
 {
@@ -173,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
             RegisterSceneFlowSignatureCache();
 
             RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
-            RegisterIfMissing<IResetWorldService>(() => new ResetWorldService());
+            RegisterIfMissing(() => new WorldResetService());
             RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
 
 
@@ -253,8 +253,13 @@ namespace _ImmersiveGames.NewScripts.Runtime.Bootstrap
             RegisterIfMissing<IRuntimeModeProvider>(() => new UnityRuntimeModeProvider());
             RegisterIfMissing<IDegradedModeReporter>(() => new DegradedModeReporter());
 
+            DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
+            DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
+
+            RegisterIfMissing<IResetPolicy>(() => new ProductionResetPolicy(runtimeModeProvider, degradedReporter));
+
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter registrados no DI global.",
+                "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter + IResetPolicy registrados no DI global.",
                 DebugUtility.Colors.Info);
         }
 

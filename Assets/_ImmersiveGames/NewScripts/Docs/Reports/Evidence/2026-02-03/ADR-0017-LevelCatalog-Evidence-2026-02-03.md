@@ -1,4 +1,4 @@
-﻿# ADR-0017 — LevelCatalog Evidência (2026-02-03)
+# ADR-0017 — LevelCatalog Evidência (2026-02-03)
 
 Este snapshot valida a **resolução do LevelCatalog** e a **aplicação de nível** via LevelSession/LevelManager, usando o log bruto da pasta.
 

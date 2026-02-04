@@ -1,4 +1,4 @@
-﻿# Overview — NewScripts (Arquitetura + WorldLifecycle)
+# Overview — NewScripts (Arquitetura + WorldLifecycle)
 
 Este documento consolida a visão geral do módulo **NewScripts** em um único arquivo para reduzir fragmentação.
 
@@ -6,7 +6,7 @@ Este documento consolida a visão geral do módulo **NewScripts** em um único a
 
 - Contrato de observabilidade: `../Standards/Standards.md#observability-contract`
 - Política Strict/Release: `../Standards/Standards.md#politica-strict-vs-release`
-- Evidência vigente (ponte): `../Reports/Evidence/LATEST.md`
+- Evidência vigente: `../Reports/Evidence/LATEST.md` (log bruto mais recente: `../Reports/lastlog.log`)
 
 ---
 
@@ -137,7 +137,7 @@ Diagrama simplificado:
     - `LoadingHUD.Hide` → `FadeOut` → `SceneTransitionCompleted`.
 3. **WorldLifecycle**
     - Em `gameplay`, executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
-    - Em `startup/frontend`, SKIP (profile != gameplay) e emite `WorldLifecycleResetCompletedEvent` com reason `SceneFlow/ScenesReady` (log explicita "ScenesReady ignorado").
+    - Em `startup/frontend`, SKIP (profile != gameplay) e emite `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend:profile=<...>;scene=<...>`.
 4. **Pause / Resume / ExitToMenu**
     - `PauseOverlayController.Show()` publica `GamePauseCommandEvent` e alterna `InputMode` para `PauseOverlay`.
     - `PauseOverlayController.Hide()` publica `GameResumeRequestedEvent` e volta para `Gameplay`.
@@ -172,6 +172,7 @@ A fonte vigente do Baseline 2.0 é o contrato de observabilidade + evidência da
 > Nota: no GameLoop, o “COMMAND” de start não é um evento separado; ele é a chamada `GameLoop.RequestStart()` feita pelo Coordinator somente quando o runtime está “ready” (TransitionCompleted + WorldLifecycleResetCompleted/SKIP).
 
 ## Evidências (log)
+- **Última evidência (log bruto):** `../Reports/lastlog.log`
 - `GlobalBootstrap` registra `ISceneTransitionService`, `IFadeService`, `IGameNavigationService`,
   `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleSceneFlowResetDriver`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de

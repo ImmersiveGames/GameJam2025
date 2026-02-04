@@ -4,7 +4,8 @@
 
 - Estado: Implementado
 - Data (decisão): 2026-01-28
-- Última atualização: 2026-02-03
+- Última atualização: 2026-02-04
+- Tipo: Implementação
 - Escopo: NewScripts → Gameplay/ContentSwap + Infrastructure (Bootstrap/QA)
 
 ## Contexto
@@ -69,6 +70,8 @@ Eventos/logs mínimos:
 - Evidência mostra ContentSwap in-place com reason canônico.
 
 ## Evidência
+
+- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Âncoras/assinaturas relevantes:**

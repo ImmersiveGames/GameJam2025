@@ -4,17 +4,17 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Runtime.World.Hooks.QA
 {
     /// <summary>
-    /// Hook de lifecycle de cena para QA/dev que loga execução com menor prioridade.
+    /// Hook de lifecycle de cena para QA/dev que loga execuÃ§Ã£o com menor prioridade.
     ///
-    /// IMPORTANTE: no WorldLifecycleOrchestrator, a ordenação de hooks é ASCENDENTE (Order menor executa primeiro).
-    /// Portanto, para este logger rodar por último ("menor prioridade"), usamos um Order alto.
+    /// IMPORTANTE: no WorldLifecycleOrchestrator, a ordenaÃ§Ã£o de hooks Ã© ASCENDENTE (Order menor executa primeiro).
+    /// Portanto, para este logger rodar por Ãºltimo ("menor prioridade"), usamos um Order alto.
     /// </summary>
     public sealed class SceneLifecycleHookLoggerA : WorldLifecycleHookBase
     {
         [SerializeField]
         private string label = "SceneLifecycleHookLoggerA";
 
-        // Menor prioridade (executa por último): Order alto.
+        // Menor prioridade (executa por Ãºltimo): Order alto.
         public override int Order => 10_000;
 
         public override Task OnBeforeDespawnAsync()

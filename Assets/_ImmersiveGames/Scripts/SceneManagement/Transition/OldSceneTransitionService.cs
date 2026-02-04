@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.LegaadoFadeSystem;
 using _ImmersiveGames.Scripts.LegadoFadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -12,8 +11,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
     public interface IOldSceneTransitionService
     {
         /// <summary>
-        /// Executa uma transição completa com base no contexto recebido.
-        /// O fluxo é coordenado via Tasks (sem uso de CancellationToken).
+        /// Executa uma transiï¿½ï¿½o completa com base no contexto recebido.
+        /// O fluxo ï¿½ coordenado via Tasks (sem uso de CancellationToken).
         /// </summary>
         Task RunTransitionAsync(SceneTransitionContext context);
     }
@@ -28,13 +27,13 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
             ILegadoFadeService legadoFadeService)
         {
             _sceneLoader = sceneLoader ?? throw new ArgumentNullException(nameof(sceneLoader));
-            _legadoFadeService = legadoFadeService; // pode ser null (transição sem fade)
+            _legadoFadeService = legadoFadeService; // pode ser null (transiï¿½ï¿½o sem fade)
         }
 
         private void ConfigureFadeFromContext(SceneTransitionContext context)
         {
-            // Mantém ILegadoFadeService “limpo”, mas aproveita a capacidade do LegadoFadeService concreto.
-            // Se no futuro você quiser formalizar isso, aí sim criamos uma interface específica.
+            // Mantï¿½m ILegadoFadeService ï¿½limpoï¿½, mas aproveita a capacidade do LegadoFadeService concreto.
+            // Se no futuro vocï¿½ quiser formalizar isso, aï¿½ sim criamos uma interface especï¿½fica.
             if (_legadoFadeService is LegadoFadeService fadeServiceConcrete)
             {
                 fadeServiceConcrete.ConfigureFromProfile(context.transitionProfile);
@@ -44,7 +43,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
         public async Task RunTransitionAsync(SceneTransitionContext context)
         {
             DebugUtility.Log<OldSceneTransitionService>(
-                $"Iniciando transição...\nContexto = {context}",
+                $"Iniciando transiï¿½ï¿½o...\nContexto = {context}",
                 DebugUtility.Colors.Info);
 
             try
@@ -125,13 +124,13 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
                     new SceneTransitionCompletedEvent(context));
 
                 DebugUtility.Log<OldSceneTransitionService>(
-                    "Transição concluída.",
+                    "Transiï¿½ï¿½o concluï¿½da.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<OldSceneTransitionService>(
-                    $"Exceção durante transição de cenas: {ex}");
+                    $"Exceï¿½ï¿½o durante transiï¿½ï¿½o de cenas: {ex}");
             }
         }
 
@@ -144,14 +143,14 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
             if (!scene.IsValid())
             {
                 DebugUtility.LogWarning<OldSceneTransitionService>(
-                    $"SetActiveSceneAsync: cena '{sceneName}' não é válida.");
+                    $"SetActiveSceneAsync: cena '{sceneName}' nï¿½o ï¿½ vï¿½lida.");
                 return;
             }
 
             if (!scene.isLoaded)
             {
                 DebugUtility.LogWarning<OldSceneTransitionService>(
-                    $"SetActiveSceneAsync: cena '{sceneName}' ainda não está carregada.");
+                    $"SetActiveSceneAsync: cena '{sceneName}' ainda nï¿½o estï¿½ carregada.");
                 return;
             }
 

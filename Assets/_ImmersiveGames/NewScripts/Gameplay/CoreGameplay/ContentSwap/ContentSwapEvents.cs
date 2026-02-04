@@ -3,37 +3,37 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 {
     public readonly struct ContentSwapPendingSetEvent
     {
-        public readonly ContentSwapPlan Plan;
-        public readonly string Reason;
+        public readonly ContentSwapPlan plan;
+        public readonly string reason;
 
-        public ContentSwapPendingSetEvent(ContentSwapPlan plan, string reason)
+        public ContentSwapPendingSetEvent(ContentSwapPlan plan, string? reason)
         {
-            Plan = plan;
-            Reason = reason ?? string.Empty;
+            this.plan = plan;
+            this.reason = reason ?? string.Empty;
         }
     }
 
     public readonly struct ContentSwapPendingClearedEvent
     {
-        public readonly string Reason;
+        public readonly string reason;
 
-        public ContentSwapPendingClearedEvent(string reason)
+        public ContentSwapPendingClearedEvent(string? reason)
         {
-            Reason = reason ?? string.Empty;
+            this.reason = reason ?? string.Empty;
         }
     }
 
     public readonly struct ContentSwapCommittedEvent
     {
-        public readonly ContentSwapPlan Previous;
-        public readonly ContentSwapPlan Current;
-        public readonly string Reason;
+        public readonly ContentSwapPlan previous;
+        public readonly ContentSwapPlan current;
+        public readonly string reason;
 
-        public ContentSwapCommittedEvent(ContentSwapPlan previous, ContentSwapPlan current, string reason)
+        public ContentSwapCommittedEvent(ContentSwapPlan previous, ContentSwapPlan current, string? reason)
         {
-            Previous = previous;
-            Current = current;
-            Reason = reason ?? string.Empty;
+            this.previous = previous;
+            this.current = current;
+            this.reason = reason ?? string.Empty;
         }
     }
 

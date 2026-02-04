@@ -23,27 +23,13 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.IntroStage
             var gameLoop = ResolveGameLoop();
             var policy = ResolvePolicy(context);
 
-            if (policy == IntroStagePolicy.Disabled)
+            if (TryHandlePolicyShortCircuit(policy, context, gameLoop))
             {
-                LogSkipped("policy_disabled", context, SceneManager.GetActiveScene().name);
-                RequestStartIfNeeded(gameLoop, "policy_disabled");
                 return;
             }
 
-            if (policy == IntroStagePolicy.AutoComplete)
+            if (!TryEnterInProgress(context))
             {
-                string normalizeSignature = NormalizeSignature(context.ContextSignature);
-                string normalizedTargetScene = NormalizeValue(context.TargetScene);
-
-                LogCompletionWithReason(normalizeSignature, normalizedTargetScene, context.ProfileId.Value, "policy_autocomplete");
-                RequestStartIfNeeded(gameLoop, "policy_autocomplete");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
-            {
-                DebugUtility.LogWarning<IntroStageCoordinator>(
-                    $"[OBS][IntroStageController] IntroStageSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.");
                 return;
             }
 
@@ -191,6 +177,43 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.IntroStage
             }
 
             return null;
+        }
+
+        private static bool TryHandlePolicyShortCircuit(
+            IntroStagePolicy policy,
+            IntroStageContext context,
+            IGameLoopService? gameLoop)
+        {
+            if (policy == IntroStagePolicy.Disabled)
+            {
+                LogSkipped("policy_disabled", context, SceneManager.GetActiveScene().name);
+                RequestStartIfNeeded(gameLoop, "policy_disabled");
+                return true;
+            }
+
+            if (policy == IntroStagePolicy.AutoComplete)
+            {
+                string normalizeSignature = NormalizeSignature(context.ContextSignature);
+                string normalizedTargetScene = NormalizeValue(context.TargetScene);
+
+                LogCompletionWithReason(normalizeSignature, normalizedTargetScene, context.ProfileId.Value, "policy_autocomplete");
+                RequestStartIfNeeded(gameLoop, "policy_autocomplete");
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryEnterInProgress(IntroStageContext context)
+        {
+            if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
+            {
+                DebugUtility.LogWarning<IntroStageCoordinator>(
+                    $"[OBS][IntroStageController] IntroStageSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.");
+                return false;
+            }
+
+            return true;
         }
 
         private static IntroStagePolicy ResolvePolicy(IntroStageContext context)

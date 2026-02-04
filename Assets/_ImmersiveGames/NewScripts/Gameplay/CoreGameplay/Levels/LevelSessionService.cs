@@ -236,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels
             return false;
         }
 
-        private void ApplySelection(LevelPlan plan, LevelChangeOptions options)
+        private void ApplySelection(LevelPlan plan, LevelChangeOptions? options)
         {
             // Atualiza o estado de seleção atual de forma centralizada.
             SelectedPlan = plan;
@@ -308,7 +308,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels
             }
         }
 
-        private void AddLevels(IReadOnlyList<string> levels)
+        private void AddLevels(IReadOnlyList<string>? levels)
         {
             if (levels == null)
             {
@@ -400,7 +400,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Levels
             return string.IsNullOrWhiteSpace(levelId) ? string.Empty : levelId.Trim();
         }
 
-        private static string FormatLevels(IReadOnlyList<string> levels)
+        private static string FormatLevels(IReadOnlyList<string>? levels)
         {
             if (levels == null || levels.Count == 0)
             {

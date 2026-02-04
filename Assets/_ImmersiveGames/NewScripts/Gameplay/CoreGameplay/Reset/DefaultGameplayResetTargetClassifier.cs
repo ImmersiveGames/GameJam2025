@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
 
         /// <summary>
         /// Construtor para cen﷿rios onde o bootstrap quer injetar modo/degraded.
-        /// (O classificador atual n﷿o precisa do modo para funcionar, mas mantemos a assinatura para integra﷿﷿o.)
+        /// (O classificador atual n﷿o precisa do modo para funcionar, mas mantemos a assinatura para integração.)
         /// </summary>
         public DefaultGameplayResetTargetClassifier(IRuntimeModeProvider runtimeModeProvider, IDegradedModeReporter degradedModeReporter)
         {
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
                     if (fallbackUsed)
                     {
                         DebugUtility.LogWarning(typeof(DefaultGameplayResetTargetClassifier),
-                            "GameplayResetTarget.EaterOnly using string-based fallback (EaterActor).");
+                            $"[{ResetLogTags.DegradedMode}][DEGRADED_MODE] GameplayResetTarget.EaterOnly using string-based fallback (EaterActor).");
                     }
                     return;
 
@@ -173,4 +173,3 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
         }
     }
 }
-

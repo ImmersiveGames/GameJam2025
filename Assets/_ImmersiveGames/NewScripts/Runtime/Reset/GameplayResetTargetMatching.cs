@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Runtime.Actors;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Runtime.Reset
 {
     internal static class GameplayResetTargetMatching

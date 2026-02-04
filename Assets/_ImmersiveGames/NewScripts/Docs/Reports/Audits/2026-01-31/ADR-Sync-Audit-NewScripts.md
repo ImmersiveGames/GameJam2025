@@ -1,8 +1,10 @@
-﻿# ADR Sync Audit — NewScripts (ADR-0009..ADR-0017)
+# ADR Sync Audit — NewScripts (ADR-0009..ADR-0017)
 
 > **Regra operacional:** manter **1 arquivo de evidência por dia** em `Docs/Reports/Evidence/<data>/Baseline-2.2-Evidence-YYYY-MM-DD.md` e mesclar/limpar quaisquer arquivos adicionais.
 
 **Atualização documental (2026-02-01):** este relatório foi ajustado para refletir o **aceite do ADR-0013** e o estado atual de consistência entre ADRs e a evidência canônica. Nenhuma mudança de código é inferida aqui — somente consolidação do contrato e limpeza de inconsistências textuais.
+
+**Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 
 **Escopo:** Assets/_ImmersiveGames/NewScripts/ (primário) e pastas secundárias quando referenciadas pelos ADRs.
 **Contratos de observabilidade:** `Docs/Standards/Standards.md#observability-contract` é a fonte canônica de reasons/assinaturas; o conteúdo antigo do Reason-Map está preservado em `Docs/Standards/Standards.md#reason-map-legado`.
@@ -14,7 +16,7 @@
 | ADR                          | Status   | Principais Evidências (Paths)                                                                 | Principais Gaps                                                                 | Risco  |
 |------------------------------|----------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|--------|
 | ADR-0009 (Fade + SceneFlow) | OK | SceneTransitionService + FadeService + SceneFlowFadeAdapter + Runtime policy (IRuntimeModeProvider/IDegradedModeReporter) + logs [OBS][Fade] | Sem gaps críticos. Evidência (2026-01-31): `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` | Baixo |
-| ADR-0010 (Loading HUD + SceneFlow) | OK      | SceneFlowLoadingService + ILoadingHudService + LoadingHudService + GlobalBootstrap                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas ([OBS][LoadingHUD]) | Baixo  |
+| ADR-0010 (Loading HUD + SceneFlow) | OK      | SceneFlowLoadingService + ILoadingHudService + LoadingHudService + GlobalBootstrap                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas (LoadingHudEnsure/Show/Hide) | Baixo  |
 | ADR-0011 (WorldDefinition multi-actor) | OK | WorldDefinition + SceneBootstrapper + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | Enforce em gameplay (Strict/Release) + validações mínimas (Player/Eater) | Baixo  |
 | ADR-0012 (PostGame)         | OK | Evidência canônica (2026-01-29): `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (seção F) + runtime: PostGameOverlayController + GameRunOutcomeService + GameLoopRunEndEventBridge + Restart/ExitToMenuNavigationBridge + logs [OBS][PostGame] | Sem gaps críticos no Strict/Release; gates/inputmode cobertos por bridges + evidência | Baixo  |
 | ADR-0013 (Ciclo de vida)    | OK | SceneTransitionService + WorldLifecycleSceneFlowResetDriver + WorldLifecycleResetCompletionGate + GameLoopSceneFlowCoordinator + InputModeSceneFlowBridge | Sem gaps críticos no Strict/Release. A ordem contratual relevante é: SceneFlow→ResetWorld (gameplay)→ResetCompleted→IntroStage (gate sim.gameplay)→Playing; detalhes de `RequestStart()` não fazem parte do contrato observável (só mecanismo interno). | Baixo  |
@@ -83,7 +85,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - Política Strict/Release:
   - Strict: validação de cena em Build Settings + erro evidente (log + Break).
   - Release: fallback explícito com `DEGRADED_MODE feature='loadinghud' ...` e HUD desabilitado.
-- Observabilidade: logs canônicos com `signature` + `phase` (âncoras `[OBS][LoadingHUD]`).
+- Observabilidade: logs canônicos com `signature` + `phase` (âncoras `LoadingHudEnsure/Show/Hide`).
 
 **Arquivos-chave:**
 - `NewScripts/Presentation/LoadingHud/ILoadingHudService.cs`

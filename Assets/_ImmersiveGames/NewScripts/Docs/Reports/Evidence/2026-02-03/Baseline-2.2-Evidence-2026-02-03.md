@@ -1,4 +1,4 @@
-﻿# Baseline 2.2 — Evidência (2026-02-03)
+# Baseline 2.2 — Evidência (2026-02-03)
 
 Este snapshot consolida a evidência canônica do Baseline 2.2 usando o log bruto `Baseline-2.2-Smoke-LastRun.log`.
 

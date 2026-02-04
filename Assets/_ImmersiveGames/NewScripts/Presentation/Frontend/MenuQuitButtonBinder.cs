@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Frontend
     /// <summary>
     /// Binder (produção) para o botão "Quit" do Frontend.
     /// - OnClick() deve ser ligado no Inspector.
-    /// - Sem corrotinas.
+    /// - Sem coroutines.
     ///
     /// Em build: Application.Quit().
     /// No Editor: encerra Play Mode.

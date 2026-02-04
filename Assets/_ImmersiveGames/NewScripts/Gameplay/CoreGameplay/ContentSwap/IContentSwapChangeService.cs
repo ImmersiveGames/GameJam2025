@@ -1,5 +1,4 @@
-﻿// Assets/_ImmersiveGames/NewScripts/Gameplay/ContentSwap/IContentSwapChangeService.cs
-#nullable enable
+﻿#nullable enable
 using System.Threading.Tasks;
 namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 {
@@ -12,5 +11,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
         Task RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason);
         Task RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason, ContentSwapOptions? options);
         Task RequestContentSwapInPlaceAsync(string contentId, string reason, ContentSwapOptions? options = null);
+    }
+    /// <summary>
+    /// Modos canônicos de troca de conteúdo.
+    /// </summary>
+    public enum ContentSwapMode
+    {
+        InPlace = 0
     }
 }

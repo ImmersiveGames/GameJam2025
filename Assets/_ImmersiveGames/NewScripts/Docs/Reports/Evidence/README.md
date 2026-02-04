@@ -8,6 +8,7 @@ Este diretório guarda snapshots de evidência (logs + interpretação) usados p
 2. Abra o arquivo de evidência do snapshot (ex.: `Baseline-2.2-Evidence-2026-01-31.md`).
 3. Valide as **assinaturas-chave** e **invariantes** indicadas no documento.
 4. Use o `*.log` correspondente como fonte bruta quando houver dúvida.
+5. Para evidência rápida, use `Docs/Reports/lastlog.log`.
 
 ## Convenções
 

@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset;
 using _ImmersiveGames.NewScripts.Gameplay.Actions;
-using _ImmersiveGames.NewScripts.Runtime.Actors;
 using _ImmersiveGames.NewScripts.Runtime.Gates;
 using _ImmersiveGames.NewScripts.Runtime.State;
 using UnityEngine;

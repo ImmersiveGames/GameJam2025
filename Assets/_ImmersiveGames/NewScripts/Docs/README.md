@@ -15,10 +15,12 @@ Este diretório é o **ponto de entrada** para documentação do módulo **NewSc
 
 3) **Decisões de arquitetura (ADRs)**
 - `ADRs/README.md` (índice + guia)
-- `ADRs/ADR-TEMPLATE.md` (modelo)
+- `ADRs/ADR-TEMPLATE.md` (template — implementação)
+- `ADRs/ADR-TEMPLATE-COMPLETENESS.md` (template — completude/governança)
 
 4) **Relatórios (evidência e auditorias)**
 - `Reports/Evidence/` — evidências canônicas, incluindo `LATEST.md`.
+- `Reports/lastlog.log` — log bruto mais recente (evidência rápida).
 - `Reports/Audits/` — auditorias estáticas (ex.: sync ADR↔código, invariants, etc).
 
 5) **Guias operacionais**

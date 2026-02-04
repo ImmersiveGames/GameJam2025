@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Frontend
     /// <summary>
     /// Binder genérico para trocar painéis do Frontend (Main/Options/HowTo).
     /// - OnClick() deve ser ligado no Inspector.
-    /// - Sem corrotinas.
+    /// - Sem coroutines.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class FrontendShowPanelButtonBinder : FrontendButtonBinderBase

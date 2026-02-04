@@ -21,7 +21,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 
         public ContentSwapPlan Current
         {
-            get { lock (_lock)
+            get
+            {
+                lock (_lock)
                 {
                     return _current;
                 }
@@ -30,7 +32,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 
         public ContentSwapPlan Pending
         {
-            get { lock (_lock)
+            get
+            {
+                lock (_lock)
                 {
                     return _pending;
                 }
@@ -39,7 +43,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 
         public bool HasPending
         {
-            get { lock (_lock)
+            get
+            {
+                lock (_lock)
                 {
                     return _pending.IsValid;
                 }
@@ -66,42 +72,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 
         public bool TryCommitPending(string reason, out ContentSwapPlan committed)
         {
-            ContentSwapPlan previous;
-            ContentSwapPlan next;
-
-            lock (_lock)
+            if (!TryTakePending(out ContentSwapPlan previous, out ContentSwapPlan next))
             {
-                if (!_pending.IsValid)
-                {
-                    committed = ContentSwapPlan.None;
-                    return false;
-                }
-
-                previous = _current;
-                next = _pending;
-
-                _current = next;
-                _pending = ContentSwapPlan.None;
+                committed = ContentSwapPlan.None;
+                return false;
             }
-
-            committed = next;
 
             // Assinatura: ContentSwapCommitted
             DebugUtility.Log<ContentSwapContextService>($"[ContentSwapContext] ContentSwapCommitted prev='{previous}' current='{next}' reason='{Sanitize(reason)}'");
             EventBus<ContentSwapCommittedEvent>.Raise(new ContentSwapCommittedEvent(previous, next, reason));
+            committed = next;
             return true;
         }
 
         public void ClearPending(string reason)
         {
-            bool hadPending;
-            lock (_lock)
-            {
-                hadPending = _pending.IsValid;
-                _pending = ContentSwapPlan.None;
-            }
-
-            if (!hadPending)
+            if (!TryClearPendingInternal())
             {
                 return;
             }
@@ -112,5 +98,40 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.ContentSwap
 
         private static string Sanitize(string? s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
+
+        private bool TryTakePending(out ContentSwapPlan previous, out ContentSwapPlan next)
+        {
+            lock (_lock)
+            {
+                if (!_pending.IsValid)
+                {
+                    previous = ContentSwapPlan.None;
+                    next = ContentSwapPlan.None;
+                    return false;
+                }
+
+                previous = _current;
+                next = _pending;
+
+                _current = next;
+                _pending = ContentSwapPlan.None;
+            }
+
+            return true;
+        }
+
+        private bool TryClearPendingInternal()
+        {
+            lock (_lock)
+            {
+                if (!_pending.IsValid)
+                {
+                    return false;
+                }
+
+                _pending = ContentSwapPlan.None;
+                return true;
+            }
+        }
     }
 }

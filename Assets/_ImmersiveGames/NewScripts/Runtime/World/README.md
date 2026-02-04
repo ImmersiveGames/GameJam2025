@@ -7,7 +7,7 @@ Este diretório contém a implementação **determinística** do ciclo do mundo 
 Pontos-chave:
 
 - O reset do mundo é orquestrado por um **controller de cena** (`WorldLifecycleController`) + um **orchestrator puro** (`WorldLifecycleOrchestrator`).
-- A integração com SceneFlow ocorre via **driver** (`WorldLifecycleSceneFlowResetDriver`), que dispara reset em `ScenesReady` (apenas em `profile=gameplay`) e publica `WorldLifecycleResetCompletedEvent` para liberar o completion gate.
+- A integracao com SceneFlow ocorre via **driver** (`WorldLifecycleSceneFlowResetDriver`), que dispara reset em `ScenesReady` (apenas em `profile=gameplay`) via `WorldResetService` (Lifecycle) e publica `WorldLifecycleResetCompletedEvent` em SKIP/fallback.
 - Não existe mais `WorldLifecycleRuntimeCoordinator` (removido por obsolescência).
 
 ## Estrutura
@@ -26,8 +26,8 @@ Pontos-chave:
 
 - `WorldLifecycleSceneFlowResetDriver.cs` — Driver canônico SceneFlow → WorldLifecycle:
   - Observa `SceneTransitionScenesReadyEvent`.
-  - Em `profile=gameplay`, localiza `WorldLifecycleController` na cena alvo e dispara `ResetWorldAsync(reason)`.
-  - Publica `WorldLifecycleResetCompletedEvent(signature, reason)` **sempre** (best-effort), evitando timeout do gate.
+  - Em `profile=gameplay`, chama `WorldResetService` (Lifecycle) com `WorldResetRequest`.
+  - Publica `WorldLifecycleResetCompletedEvent(signature, reason)` apenas em SKIP/fallback (best-effort), evitando timeout do gate.
 
 ## Namespaces
 

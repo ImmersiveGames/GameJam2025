@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 #endif
             var configProvider = new AnimationConfigProvider();
 
-            // Registra configs padrão por tipo de controller (nome da classe)
+            // Registra configs padrÃ£o por tipo de controller (nome da classe)
             RegisterDefaultConfig(configProvider, "PlayerAnimationController", "DefaultPlayerAnimationConfig");
             RegisterDefaultConfig(configProvider, "EaterAnimationController", "DefaultEaterAnimationConfig");
             RegisterDefaultConfig(configProvider, "EnemyAnimationController", "DefaultEnemyAnimationConfig");
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
             else
             {
                 DebugUtility.LogWarning<AnimationBootstrapper>(
-                    $"AnimationConfig não encontrada em Resources para '{controllerTypeName}' (path: '{resourcePath}').");
+                    $"AnimationConfig nï¿½o encontrada em Resources para '{controllerTypeName}' (path: '{resourcePath}').");
             }
         }
     }

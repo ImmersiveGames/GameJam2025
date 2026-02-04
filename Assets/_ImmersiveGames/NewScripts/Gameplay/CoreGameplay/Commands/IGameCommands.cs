@@ -1,5 +1,3 @@
-// Assets/_ImmersiveGames/NewScripts/Infrastructure/Gameplay/IGameCommands.cs
-
 namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Commands
 {
     /// <summary>

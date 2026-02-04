@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop.IntroStage
         public string TargetScene { get; }
         public string Reason { get; }
 
-        public IntroStageContext(string contextSignature, SceneFlowProfileId profileId, string targetScene, string reason)
+        public IntroStageContext(string? contextSignature, SceneFlowProfileId profileId, string? targetScene, string? reason)
         {
             ContextSignature = contextSignature ?? string.Empty;
             ProfileId = profileId;
@@ -71,14 +71,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop.IntroStage
     }
 
     /// <summary>
-    /// Resultado final da IntroStageController (com razão e indicação de skip).
+    /// Resultado da IntroStageController (com razão e indicação de skip).
     /// </summary>
     public readonly struct IntroStageCompletionResult
     {
         public string Reason { get; }
         public bool WasSkipped { get; }
 
-        public IntroStageCompletionResult(string reason, bool wasSkipped)
+        public IntroStageCompletionResult(string? reason, bool wasSkipped)
         {
             Reason = reason ?? string.Empty;
             WasSkipped = wasSkipped;

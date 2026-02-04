@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Frontend
     /// <summary>
     /// Binder (produção) para o botão "Play" do Frontend.
     /// - OnClick() deve ser ligado no Inspector.
-    /// - Sem corrotinas.
+    /// - Sem coroutines.
     /// - Recomendação de produção: NÃO desabilitar o botão por tempo;
     ///   confiar no debounce/in-flight guard do GameNavigationService.
     /// </summary>

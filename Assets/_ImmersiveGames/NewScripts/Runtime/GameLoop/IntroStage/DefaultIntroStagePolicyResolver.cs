@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.IntroStage
         private const string FallbackGameplaySceneName = "GameplayScene";
         private readonly IGameplaySceneClassifier _sceneClassifier;
 
-        public DefaultIntroStagePolicyResolver(IGameplaySceneClassifier sceneClassifier)
+        public DefaultIntroStagePolicyResolver(IGameplaySceneClassifier? sceneClassifier)
         {
             _sceneClassifier = sceneClassifier ?? new DefaultGameplaySceneClassifier();
         }

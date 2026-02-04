@@ -1,10 +1,11 @@
-﻿# ADR-0009 — Fade + SceneFlow (NewScripts)
+# ADR-0009 — Fade + SceneFlow (NewScripts)
 
 ## Status
 
 - Estado: Implementado
 - Data (decisão): 2025-12-24
-- Última atualização: 2026-01-31
+- Última atualização: 2026-02-04
+- Tipo: Implementação
 - Escopo: SceneFlow + Fade (NewScripts). *(Loading HUD é ADR-0010.)*
 
 ## Contexto
@@ -52,6 +53,16 @@ Garantir que TODA transição de cena do SceneFlow tenha um envelope visual dete
 3) **Não criar UI “em voo”**
 - O fade depende de `FadeScene` + `FadeController`.
 - O runtime não deve instanciar canvas/câmera de forma silenciosa.
+
+### Não-objetivos (resumo)
+
+- Loading HUD (ver ADR-0010).
+- UX/arte fina do fade (layout, brand, animações específicas).
+
+## Fora de escopo
+
+- Alterações no pipeline de Loading HUD.
+- Refatorações fora do envelope de Fade/SceneFlow.
 
 ## Consequências
 
@@ -136,6 +147,7 @@ Quando o fade não pode operar em Release:
 
 ## Evidência
 
+- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Snapshot datado (PASS, startup + gameplay):** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
   - Contém âncoras `[OBS][Fade]` (`FadeInStarted/Completed`, `FadeOutStarted/Completed`) para `profile=startup` e `profile=gameplay` com `signature` completa.

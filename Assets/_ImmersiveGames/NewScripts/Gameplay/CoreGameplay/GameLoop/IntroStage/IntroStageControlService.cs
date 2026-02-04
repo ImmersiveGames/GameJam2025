@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop.IntroStage
             }
 
             var completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            using var registration = cancellationToken.Register(() => completionSource.TrySetResult(true));
+            await using var registration = cancellationToken.Register(() => completionSource.TrySetResult(true));
 
             if (task == await Task.WhenAny(task, completionSource.Task).ConfigureAwait(false))
             {

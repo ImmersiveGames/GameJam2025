@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.World
     /// Usado para liberar start do GameLoop após ScenesReady + Reset.
     ///
     /// Ownership (canônico):
-    /// - Publisher (produção): driver de integração WorldLifecycle/SceneFlow (ex.: WorldLifecycleSceneFlowResetDriver).
+    /// - Publisher (producao): WorldResetService (Lifecycle) / WorldResetOrchestrator (driver publica apenas em SKIP/fallback).
     /// - Consumidores (produção): WorldLifecycleResetCompletionGate (SceneFlow) e GameLoopSceneFlowCoordinator (GameLoop).
     /// </summary>
     public readonly struct WorldLifecycleResetCompletedEvent : IEvent

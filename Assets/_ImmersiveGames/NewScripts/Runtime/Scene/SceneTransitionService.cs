@@ -127,8 +127,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.Scene
         private int _lastCompletedTick;
 
         public SceneTransitionService(
-            ISceneFlowLoaderAdapter loaderAdapter,
-            ISceneFlowFadeAdapter fadeAdapter,
+            ISceneFlowLoaderAdapter? loaderAdapter,
+            ISceneFlowFadeAdapter? fadeAdapter,
             ISceneTransitionCompletionGate? completionGate = null)
         {
             _loaderAdapter = loaderAdapter ?? new SceneManagerLoaderAdapter();
@@ -265,13 +265,13 @@ namespace _ImmersiveGames.NewScripts.Runtime.Scene
             return false;
         }
 
-        private void MarkStarted(string signature)
+        private void MarkStarted(string? signature)
         {
             _lastStartedSignature = signature ?? string.Empty;
             _lastStartedTick = Environment.TickCount;
         }
 
-        private void MarkCompleted(string signature)
+        private void MarkCompleted(string? signature)
         {
             _lastCompletedSignature = signature ?? string.Empty;
             _lastCompletedTick = Environment.TickCount;
@@ -350,7 +350,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.Scene
             await UnloadScenesAsync(unloadScenes, context.TargetActiveScene);
         }
 
-        private async Task LoadScenesAsync(IReadOnlyList<string> scenesToLoad, bool forceLoad = false)
+        private async Task LoadScenesAsync(IReadOnlyList<string>? scenesToLoad, bool forceLoad = false)
         {
             if (scenesToLoad == null || scenesToLoad.Count == 0)
             {
@@ -394,7 +394,7 @@ namespace _ImmersiveGames.NewScripts.Runtime.Scene
             }
         }
 
-        private async Task UnloadScenesAsync(IReadOnlyList<string> scenesToUnload, string targetActiveScene)
+        private async Task UnloadScenesAsync(IReadOnlyList<string>? scenesToUnload, string targetActiveScene)
         {
             if (scenesToUnload == null || scenesToUnload.Count == 0)
             {
@@ -461,8 +461,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.Scene
         }
 
         private static IReadOnlyList<string> GetReloadScenes(
-            IReadOnlyList<string> scenesToLoad,
-            IReadOnlyList<string> scenesToUnload)
+            IReadOnlyList<string>? scenesToLoad,
+            IReadOnlyList<string>? scenesToUnload)
         {
             if (scenesToLoad == null || scenesToUnload == null)
             {
@@ -495,8 +495,8 @@ namespace _ImmersiveGames.NewScripts.Runtime.Scene
         }
 
         private static IReadOnlyList<string> FilterScenesExcluding(
-            IReadOnlyList<string> scenes,
-            IReadOnlyList<string> excludedScenes)
+            IReadOnlyList<string>? scenes,
+            IReadOnlyList<string>? excludedScenes)
         {
             if (scenes == null || scenes.Count == 0)
             {

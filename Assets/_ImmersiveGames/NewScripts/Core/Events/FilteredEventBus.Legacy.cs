@@ -1,4 +1,3 @@
-using System;
 namespace _ImmersiveGames.NewScripts.Core.Events
 {
     /// <summary>
