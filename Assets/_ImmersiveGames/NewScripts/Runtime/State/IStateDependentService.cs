@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.NewScripts.Runtime.Actions;
+using _ImmersiveGames.NewScripts.Gameplay.Actions;
 namespace _ImmersiveGames.NewScripts.Runtime.State
 {
     /// <summary>
@@ -13,3 +13,4 @@ namespace _ImmersiveGames.NewScripts.Runtime.State
         bool IsGameActive();
     }
 }
+

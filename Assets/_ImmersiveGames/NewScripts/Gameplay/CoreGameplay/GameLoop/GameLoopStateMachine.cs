@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Runtime.Actions;
+using _ImmersiveGames.NewScripts.Gameplay.Actions;
 namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop
 {
     public sealed class GameLoopStateMachine
@@ -172,3 +172,4 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop
         private void NotifyExit(GameLoopStateId id) => _observer?.OnStateExited(id);
     }
 }
+

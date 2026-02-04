@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 using UnityEngine;
 using UnityUtils;
 
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         public void InitializeStateMachine(GameManager gameManager)
         {
-            Preconditions.CheckNotNull(gameManager, "GameManager não pode ser nulo.");
+            Preconditions.CheckNotNull(gameManager, "GameManager nï¿½o pode ser nulo.");
             _gameManager = gameManager;
 
             BuildStateMachine();
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         public void Rebuild(GameManager gameManager)
         {
-            Preconditions.CheckNotNull(gameManager, "GameManager não pode ser nulo.");
+            Preconditions.CheckNotNull(gameManager, "GameManager nï¿½o pode ser nulo.");
             _gameManager = gameManager;
 
             BuildStateMachine();
@@ -96,14 +96,14 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             builder.At(playingState, gameOverState, _gameOverPredicate);
             builder.At(playingState, victoryState, _victoryPredicate);
 
-            // Reset: volta ao menu com semântica de "reset" (seu fluxo já existente).
+            // Reset: volta ao menu com semï¿½ntica de "reset" (seu fluxo jï¿½ existente).
             builder.At(playingState, menuState, _resetRequestedPredicate);
             builder.At(pausedState, menuState, _resetRequestedPredicate);
             builder.At(gameOverState, menuState, _resetRequestedPredicate);
             builder.At(victoryState, menuState, _resetRequestedPredicate);
 
-            // ReturnToMenu: volta ao menu sem semântica de "reset".
-            // O GameManager.SceneFlow é quem executa a transição de cenas quando recebe GameReturnToMenuRequestedEvent.
+            // ReturnToMenu: volta ao menu sem semï¿½ntica de "reset".
+            // O GameManager.SceneFlow ï¿½ quem executa a transiï¿½ï¿½o de cenas quando recebe GameReturnToMenuRequestedEvent.
             builder.At(playingState, menuState, _returnToMenuRequestedPredicate);
             builder.At(pausedState, menuState, _returnToMenuRequestedPredicate);
             builder.At(gameOverState, menuState, _returnToMenuRequestedPredicate);
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             _victoryPredicate = null;
             _stateMachine = null;
 
-            // Opcional: limpa debounce para rebuilds rápidos em debug/QA
+            // Opcional: limpa debounce para rebuilds rï¿½pidos em debug/QA
             _lastStartRequestedFrame = -1;
             _lastPauseRequestedFrame = -1;
             _lastResumeRequestedFrame = -1;
@@ -266,7 +266,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             int frame = Time.frameCount;
             if (_lastReturnToMenuRequestedFrame == frame) return;
 
-            // Se já está no menu, ignora.
+            // Se jï¿½ estï¿½ no menu, ignora.
             if (_stateMachine?.CurrentState is OldMenuState) return;
 
             _lastReturnToMenuRequestedFrame = frame;
@@ -282,7 +282,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
             if (!IsPlaying())
             {
-                DebugUtility.LogWarning<OldGameManagerStateMachine>("GameOverEvent ignorado: estado atual não é Playing.");
+                DebugUtility.LogWarning<OldGameManagerStateMachine>("GameOverEvent ignorado: estado atual nï¿½o ï¿½ Playing.");
                 return;
             }
 
@@ -299,7 +299,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
             if (!IsPlaying())
             {
-                DebugUtility.LogWarning<OldGameManagerStateMachine>("GameVictoryEvent ignorado: estado atual não é Playing.");
+                DebugUtility.LogWarning<OldGameManagerStateMachine>("GameVictoryEvent ignorado: estado atual nï¿½o ï¿½ Playing.");
                 return;
             }
 

@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -269,7 +269,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _shouldTrigger = true;
         }
-        
+
     }
 
 }

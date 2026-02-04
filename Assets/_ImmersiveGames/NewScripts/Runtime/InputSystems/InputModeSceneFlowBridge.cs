@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop.IntroStage;
-using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Scene;
+using _ImmersiveGames.NewScripts.Runtime.Scene;
 using _ImmersiveGames.NewScripts.Runtime.Scene;
 using _ImmersiveGames.NewScripts.Runtime.SceneFlow;
 using UnityEngine.SceneManagement;
@@ -294,3 +294,4 @@ namespace _ImmersiveGames.NewScripts.Runtime.InputSystems
         }
     }
 }
+

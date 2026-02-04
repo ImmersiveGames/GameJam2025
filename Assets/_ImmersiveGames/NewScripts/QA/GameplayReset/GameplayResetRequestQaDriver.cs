@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset;
+using _ImmersiveGames.NewScripts.Runtime.Reset;
 using _ImmersiveGames.NewScripts.Runtime.Actors;
 using UnityEngine;
 
@@ -221,3 +222,4 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
     }
 }
 #endif
+

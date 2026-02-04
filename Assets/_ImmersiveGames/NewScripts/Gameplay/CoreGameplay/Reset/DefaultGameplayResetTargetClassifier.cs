@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Runtime.Actors;
 using _ImmersiveGames.NewScripts.Runtime.Mode;
+using _ImmersiveGames.NewScripts.Runtime.Reset;
 namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
 {
     /// <summary>
     /// Classificador padrão de alvos de reset.
     /// - PlayersOnly: alias para ActorKind.Player.
-    /// - EaterOnly: procura por componente chamado "EaterActor" (string-based), para não acoplar compile-time.
+    /// - EaterOnly: procura por componente chamado "EaterActor" (string-based), para n﷿o acoplar compile-time.
     /// - ActorIdSet: usa ActorRegistry.TryGetActor para os ids do request.
     /// - AllActorsInScene: usa todos do registry.
     /// - ByActorKind: filtra via IActorKindProvider.
@@ -18,15 +19,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
         private readonly IDegradedModeReporter _degradedModeReporter;
 
         /// <summary>
-        /// Construtor padrão (compatibilidade). Não depende de modo em runtime.
+        /// Construtor padrão﷿o (compatibilidade). N﷿o depende de modo em runtime.
         /// </summary>
         public DefaultGameplayResetTargetClassifier() : this(null, null)
         {
         }
 
         /// <summary>
-        /// Construtor para cenários onde o bootstrap quer injetar modo/degraded.
-        /// (O classificador atual não precisa do modo para funcionar, mas mantemos a assinatura para integração.)
+        /// Construtor para cen﷿rios onde o bootstrap quer injetar modo/degraded.
+        /// (O classificador atual n﷿o precisa do modo para funcionar, mas mantemos a assinatura para integra﷿﷿o.)
         /// </summary>
         public DefaultGameplayResetTargetClassifier(IRuntimeModeProvider runtimeModeProvider, IDegradedModeReporter degradedModeReporter)
         {
@@ -172,3 +173,4 @@ namespace _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.Reset
         }
     }
 }
+

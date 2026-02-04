@@ -1,9 +1,10 @@
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 namespace _ImmersiveGames.Scripts.StateMachineSystems {
     /// <summary>
     /// Builder para criar uma OldStateMachine para o ControllerSystems de forma fluida e modular.
-    /// Permite adicionar estados, configurar transições específicas (At) e genéricas (Any),
-    /// definir o estado inicial e construir a máquina de estados.
+    /// Permite adicionar estados, configurar transiï¿½ï¿½es especï¿½ficas (At) e genï¿½ricas (Any),
+    /// definir o estado inicial e construir a mï¿½quina de estados.
     /// </summary>
     public class OldStateMachineBuilder {
         private readonly OldStateMachine _stateMachine = new();

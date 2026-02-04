@@ -275,9 +275,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 53060356}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11d3cfff126f6b240bb5d649aa24decf, type: 3}
+  m_Script: {fileID: 11500000, guid: a8bdf64ed0b2bac4ea900455ad661f39, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  requireShift: 1
 --- !u!1 &128670549
 GameObject:
   m_ObjectHideFlags: 0
@@ -780,7 +781,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1081313262}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dad434f408a044a0900f3a6a49b795c3, type: 3}
+  m_Script: {fileID: 11500000, guid: 667975ca949338b4caf32e93a7bffd8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1137477972
@@ -1310,7 +1311,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1769195218}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c7cd26368d0d4a048828f67bbf60e7ce, type: 3}
+  m_Script: {fileID: 11500000, guid: c3d82a8f76a961c4390b71721dd29dc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   overlayRoot: {fileID: 644882518}
@@ -1325,7 +1326,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1769195218}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 45b520dd841724943ac22d4219e2ef2c, type: 3}
+  m_Script: {fileID: 11500000, guid: 9136e89eec07c1f428eccee52449fbca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   rootCanvasGroup: {fileID: 40163667}

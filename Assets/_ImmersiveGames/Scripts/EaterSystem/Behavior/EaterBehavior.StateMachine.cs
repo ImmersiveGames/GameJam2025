@@ -1,16 +1,16 @@
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
     /// <summary>
-    /// Parte da implementação do Eater focada em máquina de estados:
-    /// - criação e registro de estados;
-    /// - configuração de transições e predicados;
-    /// - menus de contexto para forçar troca de estado;
-    /// - manipulação da OldStateMachine interna.
+    /// Parte da implementaï¿½ï¿½o do Eater focada em mï¿½quina de estados:
+    /// - criaï¿½ï¿½o e registro de estados;
+    /// - configuraï¿½ï¿½o de transiï¿½ï¿½es e predicados;
+    /// - menus de contexto para forï¿½ar troca de estado;
+    /// - manipulaï¿½ï¿½o da OldStateMachine interna.
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour
     {
@@ -264,7 +264,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             }
 
             DebugUtility.LogWarning(
-                "EaterMaster não encontrado. Transições de morte/revive permanecerão desabilitadas.",
+                "EaterMaster nï¿½o encontrado. Transiï¿½ï¿½es de morte/revive permanecerï¿½o desabilitadas.",
                 this,
                 this);
 

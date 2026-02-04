@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public class OldStateMachine {
         private StateNode _currentNode;
         private readonly Dictionary<Type, StateNode> _nodes = new();
         private readonly HashSet<OldTransition> _anyTransitions = new();
-        
+
         public OldIState CurrentState => _currentNode?.State;
 
         public void Update() {

@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47db2263bc42425ab692a2f764384b9b, type: 3}
   m_Name: PromotionGateConfig
   m_EditorClassIdentifier: 
-  defaultEnabled: 1
-  enabledGateIds: []
+  defaultEnabled: 0
+  enabledGateIds:
+  - promo_wave_2026_02

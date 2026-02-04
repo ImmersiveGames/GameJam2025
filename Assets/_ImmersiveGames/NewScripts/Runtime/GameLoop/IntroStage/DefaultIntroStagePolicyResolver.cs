@@ -1,0 +1,58 @@
+#nullable enable
+using System;
+using _ImmersiveGames.NewScripts.Gameplay.CoreGameplay.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Runtime.Scene;
+using _ImmersiveGames.NewScripts.Runtime.SceneFlow;
+using UnityEngine.SceneManagement;
+namespace _ImmersiveGames.NewScripts.Runtime.GameLoop.IntroStage
+{
+    /// <summary>
+    /// Resolver padrão de política da IntroStageController (preparado para produção).
+    /// </summary>
+    public sealed class DefaultIntroStagePolicyResolver : IIntroStagePolicyResolver
+    {
+        private const string FallbackGameplaySceneName = "GameplayScene";
+        private readonly IGameplaySceneClassifier _sceneClassifier;
+
+        public DefaultIntroStagePolicyResolver(IGameplaySceneClassifier sceneClassifier)
+        {
+            _sceneClassifier = sceneClassifier ?? new DefaultGameplaySceneClassifier();
+        }
+
+        public IntroStagePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason)
+        {
+            if (!profile.IsGameplay)
+            {
+                return IntroStagePolicy.Disabled;
+            }
+
+            if (!IsGameplayTargetScene(targetScene))
+            {
+                return IntroStagePolicy.Disabled;
+            }
+
+            return IntroStagePolicy.Manual;
+        }
+
+        private bool IsGameplayTargetScene(string targetScene)
+        {
+            if (string.IsNullOrWhiteSpace(targetScene))
+            {
+                return false;
+            }
+
+            var activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid()
+                && string.Equals(activeScene.name, targetScene, StringComparison.Ordinal))
+            {
+                return _sceneClassifier.IsGameplayScene();
+            }
+
+            return string.Equals(targetScene, FallbackGameplaySceneName, StringComparison.Ordinal);
+        }
+    }
+}
+
+
+
+

@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 namespace _ImmersiveGames.NewScripts.Core.Fsm
 {
     public interface ITransition
@@ -7,3 +7,4 @@ namespace _ImmersiveGames.NewScripts.Core.Fsm
         IPredicate Condition { get; }
     }
 }
+

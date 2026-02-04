@@ -6,9 +6,10 @@ namespace _ImmersiveGames.NewScripts.Core.Fsm
         void FixedUpdate() { }
         void OnEnter();
         void OnExit() { }
-        bool CanPerformGameplayAction(Runtime.Actions.GameplayAction action);
-        bool CanPerformUiAction(Runtime.Actions.UiAction action);
-        bool CanPerformSystemAction(Runtime.Actions.SystemAction action);
+        bool CanPerformGameplayAction(Gameplay.Actions.GameplayAction action);
+        bool CanPerformUiAction(Gameplay.Actions.UiAction action);
+        bool CanPerformSystemAction(Gameplay.Actions.SystemAction action);
         bool IsGameActive();
     }
 }
+

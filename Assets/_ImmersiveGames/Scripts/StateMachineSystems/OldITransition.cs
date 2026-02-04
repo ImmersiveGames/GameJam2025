@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 namespace _ImmersiveGames.Scripts.StateMachineSystems {
     public interface OldITransition {
         OldIState To { get; }

@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
-namespace _ImmersiveGames.Scripts.StateMachineSystems 
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
+namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public abstract class OldTransition {
         public OldIState To { get; protected set; }
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
     }
 
     /// <summary>
-    /// Representa um predicado que garante a execução de uma ação antes de avaliar o resultado concreto.
+    /// Representa um predicado que garante a execuï¿½ï¿½o de uma aï¿½ï¿½o antes de avaliar o resultado concreto.
     /// </summary>
     public abstract class ActionPredicate : IPredicate
     {
@@ -65,9 +65,9 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         }
 
         /// <summary>
-        /// Avaliação concreta realizada pelas classes derivadas após a execução da ação.
+        /// Avaliaï¿½ï¿½o concreta realizada pelas classes derivadas apï¿½s a execuï¿½ï¿½o da aï¿½ï¿½o.
         /// </summary>
-        /// <returns>Verdadeiro caso a transição deva ocorrer.</returns>
+        /// <returns>Verdadeiro caso a transiï¿½ï¿½o deva ocorrer.</returns>
         protected abstract bool EvaluateInternal();
     }
     public class EventTriggeredPredicate : ActionPredicate

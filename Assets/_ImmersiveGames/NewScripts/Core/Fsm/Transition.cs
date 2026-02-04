@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.NewScripts.Runtime.Predicates;
+using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 namespace _ImmersiveGames.NewScripts.Core.Fsm
 {
     public abstract class Transition
@@ -92,3 +92,4 @@ namespace _ImmersiveGames.NewScripts.Core.Fsm
         public void Trigger() => _triggered = true; // Chamado por listener de evento
     }
 }
+
