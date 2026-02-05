@@ -7,6 +7,8 @@ using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.SkinSystems.Controllers;
+using _ImmersiveGames.Scripts.SkinSystems.Events;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {

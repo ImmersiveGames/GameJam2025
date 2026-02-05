@@ -1,27 +1,27 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.LegaadoFadeSystem
+namespace _ImmersiveGames.Scripts.LegadoFadeSystem
 {
     /// <summary>
     /// Executor de fade:
-    /// - Não conhece OldSceneTransitionProfile.
-    /// - Recebe duração/curvas em tempo de execução via Configure.
+    /// - Nï¿½o conhece OldSceneTransitionProfile.
+    /// - Recebe duraï¿½ï¿½o/curvas em tempo de execuï¿½ï¿½o via Configure.
     /// - Usa AnimationCurve para interpolar alpha do CanvasGroup.
     ///
-    /// Este componente também garante ordenação de attributeCanvas para o FadeScene.
+    /// Este componente tambï¿½m garante ordenaï¿½ï¿½o de attributeCanvas para o FadeScene.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public class LegadoFadeController : MonoBehaviour
     {
-        [Header("Referências")]
+        [Header("Referï¿½ncias")]
         [SerializeField] private CanvasGroup canvasGroup;
 
         [Header("Render Order (FadeScene)")]
         [Tooltip("SortingOrder do attributeCanvas do Fade. Deve ficar abaixo do Loading HUD, mas acima de UI comum.")]
         [SerializeField] private int sortingOrder = 11000;
 
-        // Configuração de runtime (vem do LegadoFadeService).
+        // Configuraï¿½ï¿½o de runtime (vem do LegadoFadeService).
         private float _fadeInDuration  = 0.5f;
         private float _fadeOutDuration = 0.5f;
         private AnimationCurve _fadeInCurve;
@@ -38,18 +38,18 @@ namespace _ImmersiveGames.Scripts.LegaadoFadeSystem
             DebugUtility.LogVerbose<LegadoFadeController>(
                 "Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULO"));
 
-            // Garantir ordenação do Canvas do Fade
+            // Garantir ordenaï¿½ï¿½o do Canvas do Fade
             TryConfigureCanvasSorting();
 
             if (canvasGroup != null)
             {
-                // Sempre começa transparente
+                // Sempre comeï¿½a transparente
                 canvasGroup.alpha = 0f;
                 canvasGroup.blocksRaycasts = false;
                 canvasGroup.interactable = false;
             }
 
-            // Defaults internos (só usados se ninguém configurar nada).
+            // Defaults internos (sï¿½ usados se ninguï¿½m configurar nada).
             _fadeInCurve  = LinearCurve;
             _fadeOutCurve = LinearCurve;
         }
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.LegaadoFadeSystem
             if (canvas == null)
             {
                 DebugUtility.LogWarning<LegadoFadeController>(
-                    "[Fade] Nenhum Canvas encontrado no FadeScene. Ordenação não será configurada.");
+                    "[Fade] Nenhum Canvas encontrado no FadeScene. Ordenaï¿½ï¿½o nï¿½o serï¿½ configurada.");
                 return;
             }
 
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.LegaadoFadeSystem
         }
 
         /// <summary>
-        /// Define a configuração de fade a ser usada nas próximas chamadas.
+        /// Define a configuraï¿½ï¿½o de fade a ser usada nas prï¿½ximas chamadas.
         /// </summary>
         public void Configure(
             float fadeInDuration,
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.Scripts.LegaadoFadeSystem
         public Task FadeOutAsync() => FadeToAsync(0f);
 
         /// <summary>
-        /// Faz o fade até o alpha alvo usando a duração apropriada (entrada ou saída),
+        /// Faz o fade atï¿½ o alpha alvo usando a duraï¿½ï¿½o apropriada (entrada ou saï¿½da),
         /// com easing controlado por AnimationCurve.
         /// </summary>
         private async Task FadeToAsync(float targetAlpha)
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.Scripts.LegaadoFadeSystem
             canvasGroup.alpha = targetAlpha;
 
             DebugUtility.LogVerbose<LegadoFadeController>(
-                $"Fade concluído para alpha = {targetAlpha}");
+                $"Fade concluï¿½do para alpha = {targetAlpha}");
         }
 
         /// <summary>

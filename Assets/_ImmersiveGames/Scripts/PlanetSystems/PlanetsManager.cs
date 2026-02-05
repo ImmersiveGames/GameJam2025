@@ -12,6 +12,7 @@ using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.DamageSystem.Events;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {

@@ -1,14 +1,14 @@
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.AnimationStrategies;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Animation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies;
 using _ImmersiveGames.Scripts.Utils.Extensions;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 {
     public class RuntimeAttributeUISlot : MonoBehaviour
     {
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 
             ApplyBaseStyleImmediate();
 
-            // Cria estratégia a partir do perfil (ou Instant como fallback)
+            // Cria estratï¿½gia a partir do perfil (ou Instant como fallback)
             _fillStrategy = CreateStrategyFromProfile(animationProfile);
             _fillStrategy.Initialize(fillImage, pendingFillImage, animationProfile, this);
 
@@ -231,8 +231,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         }
 
         /// <summary>
-        /// Recupera a duração de transição de cor a partir do perfil de animação,
-        /// garantindo um valor padrão consistente quando nenhum perfil for atribuído.
+        /// Recupera a duraï¿½ï¿½o de transiï¿½ï¿½o de cor a partir do perfil de animaï¿½ï¿½o,
+        /// garantindo um valor padrï¿½o consistente quando nenhum perfil for atribuï¿½do.
         /// </summary>
         private float GetColorTransitionDuration()
         {
@@ -244,7 +244,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         }
 
         /// <summary>
-        /// Recupera o easing da transição de cor com fallback para o easing padrão.
+        /// Recupera o easing da transiï¿½ï¿½o de cor com fallback para o easing padrï¿½o.
         /// </summary>
         private Ease GetColorTransitionEase()
         {

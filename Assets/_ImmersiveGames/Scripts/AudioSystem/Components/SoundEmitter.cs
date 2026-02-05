@@ -5,8 +5,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityUtils;
-
-namespace _ImmersiveGames.Scripts.AudioSystem
+namespace _ImmersiveGames.Scripts.AudioSystem.Components
 {
     [RequireComponent(typeof(AudioSource))]
     public class SoundEmitter : PooledObject

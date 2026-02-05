@@ -9,6 +9,9 @@ using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.AudioSystem.Components;
+using _ImmersiveGames.Scripts.AudioSystem.System;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,19 +19,19 @@ using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 {
     /// <summary>
-    /// Controlador responsável pelo disparo do jogador.
-    /// Utiliza estratégias de spawn para instanciar projéteis via Pool.
+    /// Controlador responsï¿½vel pelo disparo do jogador.
+    /// Utiliza estratï¿½gias de spawn para instanciar projï¿½teis via Pool.
     ///
-    /// Áudio:
-    /// - O som de tiro é SEMPRE obtido da skin atual via IActorSkinAudioProvider.
-    /// - A chave de áudio vem da estratégia ativa (ISpawnStrategy.ShootAudioKey).
-    /// - Se a skin não fornecer um SoundData válido para essa chave, isso é tratado
-    ///   como erro de configuração e o som não é tocado.
+    /// ï¿½udio:
+    /// - O som de tiro ï¿½ SEMPRE obtido da skin atual via IActorSkinAudioProvider.
+    /// - A chave de ï¿½udio vem da estratï¿½gia ativa (ISpawnStrategy.ShootAudioKey).
+    /// - Se a skin nï¿½o fornecer um SoundData vï¿½lido para essa chave, isso ï¿½ tratado
+    ///   como erro de configuraï¿½ï¿½o e o som nï¿½o ï¿½ tocado.
     ///
     /// Reset:
     /// - Participa do ResetOrchestrator (Cleanup/Restore/Rebind) via IResetInterfaces.
     /// - Cleanup: remove subscriptions de input.
-    /// - Restore: reseta estado volátil (cooldown).
+    /// - Restore: reseta estado volï¿½til (cooldown).
     /// - Rebind: re-encontra a action e re-subscreve (idempotente).
     /// </summary>
     [RequireComponent(typeof(PlayerInput))]
@@ -71,8 +74,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         [Inject] private IStateDependentService _stateService;
 
         /// <summary>
-        /// Provedor de áudio baseado na skin atual (SkinAudioConfigurable).
-        /// Obrigatório para tocar som de tiro.
+        /// Provedor de ï¿½udio baseado na skin atual (SkinAudioConfigurable).
+        /// Obrigatï¿½rio para tocar som de tiro.
         /// </summary>
         private IActorSkinAudioProvider _skinAudioProvider;
 
@@ -85,7 +88,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 
         public bool ShouldParticipate(ResetScope scope)
         {
-            // Este componente só faz sentido em reset de player / all actors / set específico.
+            // Este componente sï¿½ faz sentido em reset de player / all actors / set especï¿½fico.
             return scope != ResetScope.EaterOnly;
         }
 
@@ -105,7 +108,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 
         public Task Reset_RestoreAsync(ResetContext ctx)
         {
-            // Restaura apenas estado volátil e previsível.
+            // Restaura apenas estado volï¿½til e previsï¿½vel.
             _lastShotTime = -Mathf.Infinity;
 
             if (logResetVerbose)
@@ -124,19 +127,19 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             // - Re-subscreve sem duplicar
             if (!_isInitialized)
             {
-                // Se por algum motivo ainda não inicializou (ordem de bootstrap),
-                // não tentamos forçar init aqui para não mascarar problemas.
+                // Se por algum motivo ainda nï¿½o inicializou (ordem de bootstrap),
+                // nï¿½o tentamos forï¿½ar init aqui para nï¿½o mascarar problemas.
                 if (logResetVerbose)
                 {
                     DebugUtility.LogWarning<PlayerShootController>(
-                        $"[Reset][PlayerShootController] Rebind ignorado: componente não inicializado. Actor='{_actor?.ActorName ?? name}' | {ctx}",
+                        $"[Reset][PlayerShootController] Rebind ignorado: componente nï¿½o inicializado. Actor='{_actor?.ActorName ?? name}' | {ctx}",
                         this);
                 }
 
                 return Task.CompletedTask;
             }
 
-            // Re-resolve referências críticas (caso tenham mudado durante o reset in-place).
+            // Re-resolve referï¿½ncias crï¿½ticas (caso tenham mudado durante o reset in-place).
             if (_playerInput == null) _playerInput = GetComponent<PlayerInput>();
             if (_actor == null) _actor = GetComponent<IActor>();
             if (_audioEmitter == null) _audioEmitter = GetComponent<EntityAudioEmitter>();
@@ -227,7 +230,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_playerInput == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"PlayerInput não encontrado em '{name}'.",
+                    $"PlayerInput nï¿½o encontrado em '{name}'.",
                     this);
                 return false;
             }
@@ -235,7 +238,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_actor == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"IActor não encontrado em '{name}'.",
+                    $"IActor nï¿½o encontrado em '{name}'.",
                     this);
                 return false;
             }
@@ -243,7 +246,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (poolData == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"PoolData não configurado em '{name}'.",
+                    $"PoolData nï¿½o configurado em '{name}'.",
                     this);
                 return false;
             }
@@ -251,8 +254,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_audioEmitter == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"EntityAudioEmitter não encontrado em '{name}'. " +
-                    "Sem ele, o som de tiro não será tocado.",
+                    $"EntityAudioEmitter nï¿½o encontrado em '{name}'. " +
+                    "Sem ele, o som de tiro nï¿½o serï¿½ tocado.",
                     this);
                 return false;
             }
@@ -260,8 +263,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_skinAudioProvider == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"IActorSkinAudioProvider não encontrado em '{name}' ou nos parents. " +
-                    "Adicione um SkinAudioConfigurable ao ator para fornecer áudio via skin.",
+                    $"IActorSkinAudioProvider nï¿½o encontrado em '{name}' ou nos parents. " +
+                    "Adicione um SkinAudioConfigurable ao ator para fornecer ï¿½udio via skin.",
                     this);
                 return false;
             }
@@ -283,7 +286,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             var manager = PoolManager.Instance;
             if (manager == null)
             {
-                DebugUtility.LogError<PlayerShootController>("PoolManager não encontrado na cena.", this);
+                DebugUtility.LogError<PlayerShootController>("PoolManager nï¿½o encontrado na cena.", this);
                 return false;
             }
 
@@ -291,7 +294,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_pool == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"Pool não encontrado para '{poolData.ObjectName}' em '{name}'.",
+                    $"Pool nï¿½o encontrado para '{poolData.ObjectName}' em '{name}'.",
                     this);
                 return false;
             }
@@ -304,19 +307,19 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_playerInput.actions == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"Mapa de ações não encontrado em '{name}'.",
+                    $"Mapa de aï¿½ï¿½es nï¿½o encontrado em '{name}'.",
                     this);
                 return false;
             }
 
-            // Garante que não estamos duplicando subscription
+            // Garante que nï¿½o estamos duplicando subscription
             UnsubscribeFromSpawnAction();
 
             _spawnAction = _playerInput.actions.FindAction(actionName);
             if (_spawnAction == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"Ação '{actionName}' não encontrada em '{name}'.",
+                    $"Aï¿½ï¿½o '{actionName}' nï¿½o encontrada em '{name}'.",
                     this);
                 return false;
             }
@@ -324,7 +327,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             _spawnAction.performed += OnSpawnPerformed;
 
             DebugUtility.Log<PlayerShootController>(
-                "PlayerShootController vinculado à ação de tiro.",
+                "PlayerShootController vinculado ï¿½ aï¿½ï¿½o de tiro.",
                 DebugUtility.Colors.CrucialInfo);
 
             return true;
@@ -342,7 +345,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_spawnAction == null)
             {
                 DebugUtility.LogWarning<PlayerShootController>(
-                    $"[Reset][PlayerShootController] RebindInputAction falhou: action '{actionName}' não encontrada.",
+                    $"[Reset][PlayerShootController] RebindInputAction falhou: action '{actionName}' nï¿½o encontrada.",
                     this);
                 return;
             }
@@ -425,7 +428,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         }
 
         /// <summary>
-        /// Toca o som de tiro com base na skin atual e na estratégia ativa.
+        /// Toca o som de tiro com base na skin atual e na estratï¿½gia ativa.
         /// </summary>
         private void PlayShootAudio()
         {
@@ -435,8 +438,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (_skinAudioProvider == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    "IActorSkinAudioProvider não disponível. " +
-                    "Verifique se SkinAudioConfigurable está configurado corretamente.",
+                    "IActorSkinAudioProvider nï¿½o disponï¿½vel. " +
+                    "Verifique se SkinAudioConfigurable estï¿½ configurado corretamente.",
                     this);
                 return;
             }
@@ -448,8 +451,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
                 soundToPlay.clip == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
-                    $"Som de tiro não configurado na skin atual para a chave '{key}' " +
-                    $"(estratégia '{strategyType}'). Verifique o SkinAudioConfigData da coleção desta skin.",
+                    $"Som de tiro nï¿½o configurado na skin atual para a chave '{key}' " +
+                    $"(estratï¿½gia '{strategyType}'). Verifique o SkinAudioConfigData da coleï¿½ï¿½o desta skin.",
                     this);
                 return;
             }

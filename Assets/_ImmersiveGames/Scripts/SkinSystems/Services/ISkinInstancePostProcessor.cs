@@ -1,8 +1,7 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.SkinSystems
+namespace _ImmersiveGames.Scripts.SkinSystems.Services
 {
     /// <summary>
     /// Define etapas adicionais após a criação de uma instância de skin.

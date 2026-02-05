@@ -4,6 +4,8 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.SkinSystems.Controllers;
+using _ImmersiveGames.Scripts.SkinSystems.Events;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -27,7 +29,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             Initialize();
 
-            // Importante: registrar no Awake para não perder eventos de aplicação que ocorram cedo.
+            // Importante: registrar no Awake para nï¿½o perder eventos de aplicaï¿½ï¿½o que ocorram cedo.
             if (autoRegister)
             {
                 RegisterWithSkinController();
@@ -97,7 +99,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             if (!useGlobalEvents || _ownerActor == null) return;
 
-            // Evita recriar bindings se já existirem
+            // Evita recriar bindings se jï¿½ existirem
             _skinUpdateBinding ??= new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinInstancesBinding ??= new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
 
@@ -121,7 +123,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private void OnGlobalSkinUpdate(SkinEvents evt) => OnSkinApplied(evt.SkinConfig);
         private void OnGlobalSkinInstancesCreated(SkinInstancesCreatedEvent evt) => OnSkinInstancesCreated(evt.ModelType, new List<GameObject>(evt.Instances));
 
-        // Métodos para override pelas classes derivadas
+        // Mï¿½todos para override pelas classes derivadas
         protected virtual void OnSkinApplied(ISkinConfig config)
         {
             if (config != null && config.ModelType == targetModelType)
@@ -147,12 +149,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             }
         }
 
-        // Métodos abstratos principais
+        // Mï¿½todos abstratos principais
         protected abstract void ConfigureSkin(ISkinConfig skinConfig);
         protected abstract void ApplyDynamicModifications();
         protected virtual void ConfigureSkinInstances(List<GameObject> instances) { }
 
-        // Métodos de utilidade
+        // Mï¿½todos de utilidade
         protected List<GameObject> GetSkinInstances()
         {
             return _actorSkinController?.GetSkinInstances(targetModelType);

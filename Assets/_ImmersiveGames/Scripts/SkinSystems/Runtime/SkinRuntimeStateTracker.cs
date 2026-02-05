@@ -4,29 +4,30 @@ using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 {
     /// <summary>
-    /// Acompanha um ActorSkinController e calcula o estado geométrico (Bounds reais) das skins.
+    /// Acompanha um ActorSkinController e calcula o estado geomï¿½trico (Bounds reais) das skins.
     ///
-    /// - Modo 1: usa instâncias criadas pelo sistema de skin (OnSkinInstancesCreated).
-    /// - Modo 2 (fallback opcional): calcula a partir do root do ator (útil para planetas já prontos no prefab).
+    /// - Modo 1: usa instï¿½ncias criadas pelo sistema de skin (OnSkinInstancesCreated).
+    /// - Modo 2 (fallback opcional): calcula a partir do root do ator (ï¿½til para planetas jï¿½ prontos no prefab).
     /// </summary>
     [DisallowMultipleComponent]
     public class SkinRuntimeStateTracker : MonoBehaviour
     {
         [Header("References")]
-        [Tooltip("Controller de skin dono das instâncias que serão medidas. Se não for atribuído, será buscado automaticamente no mesmo GameObject.")]
+        [Tooltip("Controller de skin dono das instï¿½ncias que serï¿½o medidas. Se nï¿½o for atribuï¿½do, serï¿½ buscado automaticamente no mesmo GameObject.")]
         [SerializeField] private ActorSkinController skinController;
 
         [Header("Dependency Injection")]
-        [Tooltip("Se verdadeiro, também registra este tracker como serviço global além do registro por objeto.")]
+        [Tooltip("Se verdadeiro, tambï¿½m registra este tracker como serviï¿½o global alï¿½m do registro por objeto.")]
         [SerializeField] private bool registerAsGlobalService;
 
-        [Header("Fallback de Medição")]
-        [Tooltip("Quando verdadeiro, se nenhuma skin tiver sido criada ainda, o tracker calcula um estado inicial a partir do root do ator (ex.: planeta já montado no prefab).")]
+        [Header("Fallback de Mediï¿½ï¿½o")]
+        [Tooltip("Quando verdadeiro, se nenhuma skin tiver sido criada ainda, o tracker calcula um estado inicial a partir do root do ator (ex.: planeta jï¿½ montado no prefab).")]
         [SerializeField] private bool computeInitialStateFromActorRoot = true;
 
         [Tooltip("ModelType usado para o estado inicial calculado a partir do root do ator.")]
@@ -38,7 +39,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
         private readonly Dictionary<ModelType, SkinRuntimeState> _states = new();
 
         /// <summary>
-        /// Últimas instâncias conhecidas por ModelType (caso queira depurar ou recalcular depois).
+        /// ï¿½ltimas instï¿½ncias conhecidas por ModelType (caso queira depurar ou recalcular depois).
         /// </summary>
         private readonly Dictionary<ModelType, List<GameObject>> _instancesByType = new();
 
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
                 if (skinController == null)
                 {
                     DebugUtility.LogError<SkinRuntimeStateTracker>(
-                        $"SkinRuntimeStateTracker em {name} não encontrou ActorSkinController no mesmo GameObject.");
+                        $"SkinRuntimeStateTracker em {name} nï¿½o encontrou ActorSkinController no mesmo GameObject.");
                 }
             }
 
@@ -72,7 +73,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         private void Start()
         {
-            // Se ainda não há estados e o fallback estiver habilitado, tenta medir a partir do root do ator
+            // Se ainda nï¿½o hï¿½ estados e o fallback estiver habilitado, tenta medir a partir do root do ator
             TryComputeInitialStateFromActorRoot();
         }
 
@@ -96,7 +97,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             if (skinController == null || skinController.OwnerActor == null)
             {
                 DebugUtility.LogWarning<SkinRuntimeStateTracker>(
-                    $"SkinRuntimeStateTracker em {name} não possui ActorSkinController/OwnerActor válido para registro por objeto.");
+                    $"SkinRuntimeStateTracker em {name} nï¿½o possui ActorSkinController/OwnerActor vï¿½lido para registro por objeto.");
                 return;
             }
 
@@ -120,12 +121,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             {
                 DependencyManager.Provider.RegisterGlobal(this);
                 DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                    $"SkinRuntimeStateTracker registrado como serviço global no DependencyManager. GameObject={name}");
+                    $"SkinRuntimeStateTracker registrado como serviï¿½o global no DependencyManager. GameObject={name}");
             }
             catch (Exception e)
             {
                 DebugUtility.LogWarning<SkinRuntimeStateTracker>(
-                    $"Falha ao registrar SkinRuntimeStateTracker como serviço global no DependencyManager: {e.Message}");
+                    $"Falha ao registrar SkinRuntimeStateTracker como serviï¿½o global no DependencyManager: {e.Message}");
             }
         }
 
@@ -135,12 +136,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             {
                 DependencyManager.Provider.RegisterForObject(objectId, this);
                 DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                    $"SkinRuntimeStateTracker registrado no DependencyManager como serviço de objeto. ActorId={objectId}, GameObject={name}");
+                    $"SkinRuntimeStateTracker registrado no DependencyManager como serviï¿½o de objeto. ActorId={objectId}, GameObject={name}");
             }
             catch (Exception e)
             {
                 DebugUtility.LogWarning<SkinRuntimeStateTracker>(
-                    $"Falha ao registrar SkinRuntimeStateTracker como serviço de objeto no DependencyManager: {e.Message}");
+                    $"Falha ao registrar SkinRuntimeStateTracker como serviï¿½o de objeto no DependencyManager: {e.Message}");
             }
         }
 
@@ -171,7 +172,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
                 return;
             }
 
-            // Guarda instâncias para depuração/recalculo posterior
+            // Guarda instï¿½ncias para depuraï¿½ï¿½o/recalculo posterior
             if (!_instancesByType.TryGetValue(type, out var storedList))
             {
                 storedList = new List<GameObject>();
@@ -187,7 +188,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             _states[type] = state;
 
             DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                $"[{name}] Atualizado SkinRuntimeState para {type}: Center={state.Center}, Size={state.Size}, Radius˜{state.ApproxRadius:F2}");
+                $"[{name}] Atualizado SkinRuntimeState para {type}: Center={state.Center}, Size={state.Size}, Radiusï¿½{state.ApproxRadius:F2}");
         }
 
         #endregion
@@ -195,8 +196,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
         #region Fallback: Actor Root
 
         /// <summary>
-        /// Se ainda não houver estados calculados e o fallback estiver ativo,
-        /// calcula um estado inicial a partir do root do ator (útil para planetas).
+        /// Se ainda nï¿½o houver estados calculados e o fallback estiver ativo,
+        /// calcula um estado inicial a partir do root do ator (ï¿½til para planetas).
         /// </summary>
         private void TryComputeInitialStateFromActorRoot()
         {
@@ -207,7 +208,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
                 return;
 
             if (_states.Count > 0)
-                return; // Já temos estados via sistema de skin
+                return; // Jï¿½ temos estados via sistema de skin
 
             if (skinController == null || skinController.OwnerActor == null)
                 return;
@@ -225,7 +226,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             _initialStateComputedFromRoot = true;
 
             DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                $"[{name}] Estado inicial calculado a partir do root do ator. ModelType={initialStateModelType}, Center={state.Center}, Size={state.Size}, Radius˜{state.ApproxRadius:F2}");
+                $"[{name}] Estado inicial calculado a partir do root do ator. ModelType={initialStateModelType}, Center={state.Center}, Size={state.Size}, Radiusï¿½{state.ApproxRadius:F2}");
         }
 
         #endregion
@@ -233,7 +234,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
         #region Bounds Calculation
 
         /// <summary>
-        /// Calcula os bounds globais englobando todas as instâncias,
+        /// Calcula os bounds globais englobando todas as instï¿½ncias,
         /// utilizando CalculateRealLength para cada raiz.
         /// </summary>
         private static Bounds CalculateWorldBoundsForInstances(IReadOnlyList<GameObject> instances)
@@ -265,7 +266,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
             if (!hasBounds)
             {
-                // Nenhuma instância com bounds válida encontrada
+                // Nenhuma instï¿½ncia com bounds vï¿½lida encontrada
                 return new Bounds(Vector3.zero, Vector3.zero);
             }
 
@@ -315,7 +316,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         public void LogAllStatesToConsole()
         {
-            // Tenta computar o fallback se ainda não houver estados
+            // Tenta computar o fallback se ainda nï¿½o houver estados
             if (_states.Count == 0)
             {
                 TryComputeInitialStateFromActorRoot();
@@ -324,7 +325,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             if (_states.Count == 0)
             {
                 DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                    $"[{name}] SkinRuntimeStateTracker não possui estados calculados ainda.");
+                    $"[{name}] SkinRuntimeStateTracker nï¿½o possui estados calculados ainda.");
                 return;
             }
 
@@ -332,7 +333,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             {
                 var state = kvp.Value;
                 DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                    $"[{name}] ModelType={state.modelType} | Center={state.Center} | Size={state.Size} | Radius˜{state.ApproxRadius:F2} | HasValidBounds={state.HasValidBounds}");
+                    $"[{name}] ModelType={state.modelType} | Center={state.Center} | Size={state.Size} | Radiusï¿½{state.ApproxRadius:F2} | HasValidBounds={state.HasValidBounds}");
             }
         }
 

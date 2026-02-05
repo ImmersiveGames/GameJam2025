@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug

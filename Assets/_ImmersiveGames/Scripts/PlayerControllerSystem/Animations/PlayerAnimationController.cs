@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.DamageSystem.Events;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
     

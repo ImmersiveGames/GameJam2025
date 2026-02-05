@@ -5,46 +5,47 @@ using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.AudioSystem.Components;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {
     /// <summary>
-    /// Auditor em runtime para o sistema de áudio.
+    /// Auditor em runtime para o sistema de ï¿½udio.
     /// 
     /// Mostra:
     /// - Estado do BGM (clip atual, volume, playing/paused).
-    /// - Estatísticas de SFX (quantidade de SoundEmitter, quantos tocando).
-    /// - Lista resumida dos SFX ativos (nome do objeto, clip, posição).
+    /// - Estatï¿½sticas de SFX (quantidade de SoundEmitter, quantos tocando).
+    /// - Lista resumida dos SFX ativos (nome do objeto, clip, posiï¿½ï¿½o).
     /// 
-    /// Use a tecla configurada (F9 por padrão) para ligar/desligar o overlay.
-    /// Opcionalmente, pode registrar um resumo periódico no Console.
+    /// Use a tecla configurada (F9 por padrï¿½o) para ligar/desligar o overlay.
+    /// Opcionalmente, pode registrar um resumo periï¿½dico no Console.
     /// </summary>
     public class AudioRuntimeDiagnostics : MonoBehaviour
     {
         [Header("Overlay")]
-        [Tooltip("Overlay de debug visível em runtime.")]
+        [Tooltip("Overlay de debug visï¿½vel em runtime.")]
         public bool overlayEnabled = true;
 
         [Tooltip("Tecla para ligar/desligar overlay.")]
         public KeyCode toggleOverlayKey = KeyCode.F9;
 
-        [Tooltip("Atualização da coleta de dados (segundos).")]
+        [Tooltip("Atualizaï¿½ï¿½o da coleta de dados (segundos).")]
         [Range(0.1f, 3f)]
         public float updateInterval = 0.5f;
 
-        [Tooltip("Máximo de emitters listados no overlay.")]
+        [Tooltip("Mï¿½ximo de emitters listados no overlay.")]
         [Range(3, 32)]
         public int maxEmittersToList = 12;
 
-        [Header("Log Periódico (opcional)")]
+        [Header("Log Periï¿½dico (opcional)")]
         [Tooltip("Se verdadeiro, registra resumo no Console periodicamente.")]
         public bool logSummaryPeriodically;
 
-        [Tooltip("Intervalo para log periódico (segundos).")]
+        [Tooltip("Intervalo para log periï¿½dico (segundos).")]
         [Range(1f, 60f)]
         public float logInterval = 10f;
 
-        [Header("Posição do Overlay")]
+        [Header("Posiï¿½ï¿½o do Overlay")]
         public Vector2 overlayPosition = new Vector2(10, 10);
         public Vector2 overlaySize = new Vector2(420, 260);
 
@@ -89,20 +90,20 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (_sfxService == null)
             {
                 DebugUtility.LogWarning<AudioRuntimeDiagnostics>(
-                    "[AudioDiagnostics] IAudioSfxService não encontrado. Estatísticas de SFX ficarão limitadas.");
+                    "[AudioDiagnostics] IAudioSfxService nï¿½o encontrado. Estatï¿½sticas de SFX ficarï¿½o limitadas.");
             }
 
             if (_bgmAudioService == null)
             {
                 DebugUtility.LogWarning<AudioRuntimeDiagnostics>(
-                    "[AudioDiagnostics] IBgmAudioService (BGM) não encontrado. Estado de BGM ficará limitado.");
+                    "[AudioDiagnostics] IBgmAudioService (BGM) nï¿½o encontrado. Estado de BGM ficarï¿½ limitado.");
             }
 
             if (_globalBgmAudioService == null)
             {
                 DebugUtility.LogVerbose<AudioRuntimeDiagnostics>(
-                    "[AudioDiagnostics] GlobalBgmAudioService concreto não encontrado via DI. " +
-                    "BGM será inspecionado apenas de forma superficial.",
+                    "[AudioDiagnostics] GlobalBgmAudioService concreto nï¿½o encontrado via DI. " +
+                    "BGM serï¿½ inspecionado apenas de forma superficial.",
                     DebugUtility.Colors.Info);
             }
         }
@@ -185,7 +186,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         private AudioSource FindFallbackBgmSource()
         {
             // Fallback: tenta encontrar qualquer AudioSource com tag/nome sugestivo,
-            // mas sem inventar muita lógica. Isso é apenas um fallback de debug.
+            // mas sem inventar muita lï¿½gica. Isso ï¿½ apenas um fallback de debug.
             AudioSource[] allSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
             return allSources.Where(src => src.isActiveAndEnabled).FirstOrDefault(src => src.loop && src.clip != null);
 
@@ -197,7 +198,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             _bgmIsPlaying = bgmSource.isPlaying;
             _bgmVolume = bgmSource.volume;
 
-            // Unity não expõe diretamente "isPaused", então inferimos:
+            // Unity nï¿½o expï¿½e diretamente "isPaused", entï¿½o inferimos:
             _bgmIsPaused = !_bgmIsPlaying && bgmSource.time > 0f && bgmSource.time < bgmSource.clip.length;
 
             _bgmStatus = $"{clipName} | Vol={_bgmVolume:0.00} | " +

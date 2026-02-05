@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
         public override string ToString()
         {
-            return $"ResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Step={currentStructs}, {Request})";
+            return $"WorldResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Step={currentStructs}, {Request})";
         }
     }
 }

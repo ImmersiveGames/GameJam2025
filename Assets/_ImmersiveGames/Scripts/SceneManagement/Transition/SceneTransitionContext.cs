@@ -1,18 +1,17 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
-
-namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
+namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
-    /// Descreve o plano de uma transição de cenas:
+    /// Descreve o plano de uma transiï¿½ï¿½o de cenas:
     /// - quais cenas carregar;
     /// - quais descarregar;
-    /// - qual será a cena ativa ao final;
+    /// - qual serï¿½ a cena ativa ao final;
     /// - se deve usar fade;
-    /// - (opcional) quais perfis/grupos de cena estão envolvidos.
+    /// - (opcional) quais perfis/grupos de cena estï¿½o envolvidos.
     /// 
-    /// A estrutura é imutável (readonly) para facilitar o raciocínio
-    /// e evitar alterações durante a execução da transição.
+    /// A estrutura ï¿½ imutï¿½vel (readonly) para facilitar o raciocï¿½nio
+    /// e evitar alteraï¿½ï¿½es durante a execuï¿½ï¿½o da transiï¿½ï¿½o.
     /// </summary>
     public readonly struct SceneTransitionContext
     {
@@ -22,7 +21,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
         public readonly string targetActiveScene;
         public readonly bool useFade;
 
-        // Novos metadados (opcionais) para integração com perfis/grupos
+        // Novos metadados (opcionais) para integraï¿½ï¿½o com perfis/grupos
         public readonly OldSceneTransitionProfile transitionProfile;
         private readonly SceneGroupProfile _fromGroupProfile;
         private readonly SceneGroupProfile _toGroupProfile;

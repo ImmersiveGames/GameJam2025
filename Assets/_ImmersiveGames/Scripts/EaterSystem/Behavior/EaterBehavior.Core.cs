@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;

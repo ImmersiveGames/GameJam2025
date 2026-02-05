@@ -3,16 +3,15 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
+namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
     /// Representa um snapshot do estado atual de cenas no jogo.
     ///
-    /// É usado pelo planner para decidir:
+    /// ï¿½ usado pelo planner para decidir:
     /// - quais cenas devem ser carregadas;
     /// - quais podem ser descarregadas;
-    /// - qual é a cena ativa atual.
+    /// - qual ï¿½ a cena ativa atual.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneState
@@ -27,7 +26,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
         /// </summary>
         public string ActiveSceneName { get; private set; }
 
-        // Evita spam: suprime logs repetidos no MESMO frame quando o snapshot é idêntico.
+        // Evita spam: suprime logs repetidos no MESMO frame quando o snapshot ï¿½ idï¿½ntico.
         private static int _lastLoggedFrame = -1;
         private static string _lastLoggedKey;
 
@@ -62,14 +61,14 @@ namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
 
         private static void LogSnapshotIfNeeded(SceneState state)
         {
-            // Gera uma chave determinística para comparar snapshots.
-            // Ordenar evita diferenças por ordem de iteração do HashSet.
+            // Gera uma chave determinï¿½stica para comparar snapshots.
+            // Ordenar evita diferenï¿½as por ordem de iteraï¿½ï¿½o do HashSet.
             string loaded = string.Join(", ", state.LoadedScenes.OrderBy(s => s));
             string key = loaded + "|" + state.ActiveSceneName;
 
             int frame = Time.frameCount;
 
-            // Se for o mesmo frame e o snapshot é igual, não loga novamente.
+            // Se for o mesmo frame e o snapshot ï¿½ igual, nï¿½o loga novamente.
             if (_lastLoggedFrame == frame && _lastLoggedKey == key)
                 return;
 

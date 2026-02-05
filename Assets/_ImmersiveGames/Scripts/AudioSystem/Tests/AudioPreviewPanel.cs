@@ -3,11 +3,12 @@ using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.AudioSystem.System;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {
     /// <summary>
-    /// Painel simples de preview de áudio em runtime.
+    /// Painel simples de preview de ï¿½udio em runtime.
     /// 
     /// - Use arrays de SoundData (SFX e BGM) configurados no Inspector.
     /// - Permite selecionar e tocar SFX via IAudioSfxService.
@@ -15,11 +16,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
     /// 
     /// Controles:
     /// - Tecla F10: liga/desliga o painel.
-    /// - Botões na UI: Anterior / Play / Próximo.
+    /// - Botï¿½es na UI: Anterior / Play / Prï¿½ximo.
     /// </summary>
     public class AudioPreviewPanel : MonoBehaviour
     {
-        [Header("Ativação")]
+        [Header("Ativaï¿½ï¿½o")]
         public bool panelVisible = true;
         public KeyCode toggleKey = KeyCode.F10;
 
@@ -64,13 +65,13 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (_sfxService == null)
             {
                 DebugUtility.LogWarning<AudioPreviewPanel>(
-                    "[AudioPreview] IAudioSfxService não encontrado. Preview de SFX indisponível.");
+                    "[AudioPreview] IAudioSfxService nï¿½o encontrado. Preview de SFX indisponï¿½vel.");
             }
 
             if (_bgmAudioService == null)
             {
                 DebugUtility.LogWarning<AudioPreviewPanel>(
-                    "[AudioPreview] IBgmAudioService (BGM) não encontrado. Preview de BGM indisponível.");
+                    "[AudioPreview] IBgmAudioService (BGM) nï¿½o encontrado. Preview de BGM indisponï¿½vel.");
             }
         }
 
@@ -155,7 +156,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (_sfxService == null || sd == null || sd.clip == null)
             {
                 DebugUtility.LogWarning<AudioPreviewPanel>(
-                    "[AudioPreview][SFX] Não é possível reproduzir SFX (serviço ou SoundData inválido).");
+                    "[AudioPreview][SFX] Nï¿½o ï¿½ possï¿½vel reproduzir SFX (serviï¿½o ou SoundData invï¿½lido).");
                 return;
             }
 
@@ -220,7 +221,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (_bgmAudioService == null || sd == null || sd.clip == null)
             {
                 DebugUtility.LogWarning<AudioPreviewPanel>(
-                    "[AudioPreview][BGM] Não é possível reproduzir BGM (serviço ou SoundData inválido).");
+                    "[AudioPreview][BGM] Nï¿½o ï¿½ possï¿½vel reproduzir BGM (serviï¿½o ou SoundData invï¿½lido).");
                 return;
             }
 

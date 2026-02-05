@@ -2,12 +2,12 @@ using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
-using _ImmersiveGames.Scripts.SceneManagement.OldTransition;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameManagerSystems
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
     {
         [Header("Scene Flow (Modern)")]
         [SerializeField]
-        [Tooltip("Mapa lógico de grupos de cena usado para Menu, Gameplay e fluxos adicionais.")]
+        [Tooltip("Mapa lï¿½gico de grupos de cena usado para Menu, Gameplay e fluxos adicionais.")]
         private SceneFlowMap sceneFlowMap;
 
         private bool _resetInProgress;
@@ -33,11 +33,11 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             if (_resetInProgress)
             {
                 DebugUtility.LogWarning<GameManager>(
-                    "Solicitação de reset ignorada: já existe um reset em andamento.");
+                    "Solicitaï¿½ï¿½o de reset ignorada: jï¿½ existe um reset em andamento.");
                 return;
             }
 
-            DebugUtility.LogVerbose<GameManager>("Resetando o jogo (pipeline moderno de transição, Task-based).");
+            DebugUtility.LogVerbose<GameManager>("Resetando o jogo (pipeline moderno de transiï¿½ï¿½o, Task-based).");
             _resetInProgress = true;
 
             _ = ResetGameAsync();
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return sceneFlowMap.GameplayGroup;
 
             DebugUtility.LogWarning<GameManager>(
-                "[SceneFlow] SceneFlowMap ou GameplayGroup não configurados.");
+                "[SceneFlow] SceneFlowMap ou GameplayGroup nï¿½o configurados.");
             return null;
         }
 
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return sceneFlowMap.MenuGroup;
 
             DebugUtility.LogWarning<GameManager>(
-                "[SceneFlow] SceneFlowMap ou MenuGroup não configurados.");
+                "[SceneFlow] SceneFlowMap ou MenuGroup nï¿½o configurados.");
             return null;
         }
 
@@ -108,20 +108,20 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private bool IsMenuReady()
         {
-            // Critério mínimo e seguro:
-            // - já estamos em OldMenuState
-            // - e a cena ativa é Menu (ou o grupo já está carregado)
+            // Critï¿½rio mï¿½nimo e seguro:
+            // - jï¿½ estamos em OldMenuState
+            // - e a cena ativa ï¿½ Menu (ou o grupo jï¿½ estï¿½ carregado)
             var current = OldGameManagerStateMachine.Instance.CurrentState;
             if (current is not OldMenuState)
                 return false;
 
             var menuGroup = GetMenuGroup();
             if (menuGroup == null)
-                return true; // se não há config, ao menos não reentra no OldMenuState.
+                return true; // se nï¿½o hï¿½ config, ao menos nï¿½o reentra no OldMenuState.
 
             SceneState state = SceneState.Capture();
 
-            // Se todas as cenas do grupo já estão carregadas, consideramos "ready".
+            // Se todas as cenas do grupo jï¿½ estï¿½o carregadas, consideramos "ready".
             if (menuGroup.SceneNames != null)
             {
                 foreach (var s in menuGroup.SceneNames)
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
                 {
                     DebugUtility.LogWarning<GameManager>(
-                        "Infra de transição de cenas não configurada; reset não alterou cenas.");
+                        "Infra de transiï¿½ï¿½o de cenas nï¿½o configurada; reset nï¿½o alterou cenas.");
                 }
                 else
                 {
@@ -174,7 +174,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                     if (targetGroup == null)
                     {
                         DebugUtility.LogError<GameManager>(
-                            "[ResetGameAsync] GameplayGroup não configurado no SceneFlowMap.");
+                            "[ResetGameAsync] GameplayGroup nï¿½o configurado no SceneFlowMap.");
                     }
                     else
                     {
@@ -192,7 +192,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
             catch (System.Exception ex)
             {
-                DebugUtility.LogError<GameManager>($"[ResetGameAsync] Exceção durante o reset: {ex}");
+                DebugUtility.LogError<GameManager>($"[ResetGameAsync] Exceï¿½ï¿½o durante o reset: {ex}");
             }
             finally
             {
@@ -209,7 +209,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
                 {
                     DebugUtility.LogWarning<GameManager>(
-                        "Infra de transição de cenas não configurada; ReturnToMenu ignorado.");
+                        "Infra de transiï¿½ï¿½o de cenas nï¿½o configurada; ReturnToMenu ignorado.");
                     return;
                 }
 
@@ -217,7 +217,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (targetGroup == null)
                 {
                     DebugUtility.LogError<GameManager>(
-                        "[ReturnToMenuAsync] MenuGroup não configurado no SceneFlowMap.");
+                        "[ReturnToMenuAsync] MenuGroup nï¿½o configurado no SceneFlowMap.");
                     return;
                 }
 
@@ -231,7 +231,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
             catch (System.Exception ex)
             {
-                DebugUtility.LogError<GameManager>($"[ReturnToMenuAsync] Exceção durante retorno ao menu: {ex}");
+                DebugUtility.LogError<GameManager>($"[ReturnToMenuAsync] Exceï¿½ï¿½o durante retorno ao menu: {ex}");
             }
         }
 
@@ -267,7 +267,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             if (_qaFlowInProgress)
             {
-                DebugUtility.LogWarning<GameManager>("[QA] Fluxo já em andamento; ignorando solicitação.");
+                DebugUtility.LogWarning<GameManager>("[QA] Fluxo jï¿½ em andamento; ignorando solicitaï¿½ï¿½o.");
                 return;
             }
 
@@ -280,21 +280,21 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
                 {
                     DebugUtility.LogWarning<GameManager>(
-                        "[QA] Infra de transição não configurada (Menu).");
+                        "[QA] Infra de transiï¿½ï¿½o nï¿½o configurada (Menu).");
                     return;
                 }
 
                 Time.timeScale = 1f;
 
-                // Idempotência: se já está em menu e as cenas já estão corretas, não faz churn.
+                // Idempotï¿½ncia: se jï¿½ estï¿½ em menu e as cenas jï¿½ estï¿½o corretas, nï¿½o faz churn.
                 if (IsMenuReady())
                 {
                     DebugUtility.LogVerbose<GameManager>(
-                        "[QA] Menu já está pronto (OldMenuState + cenas ok). Ignorando transição/rebuild.");
+                        "[QA] Menu jï¿½ estï¿½ pronto (OldMenuState + cenas ok). Ignorando transiï¿½ï¿½o/rebuild.");
                     return;
                 }
 
-                // Só rebuild se não for OldMenuState (reduz churn e token spam)
+                // Sï¿½ rebuild se nï¿½o for OldMenuState (reduz churn e token spam)
                 if (!(OldGameManagerStateMachine.Instance.CurrentState is OldMenuState))
                     OldGameManagerStateMachine.Instance.Rebuild(this);
 
@@ -302,7 +302,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (targetGroup == null)
                 {
                     DebugUtility.LogError<GameManager>(
-                        "[QA] MenuGroup não configurado no SceneFlowMap.");
+                        "[QA] MenuGroup nï¿½o configurado no SceneFlowMap.");
                     return;
                 }
 
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
             catch (System.Exception ex)
             {
-                DebugUtility.LogError<GameManager>($"[QA_GoToMenuFromAnywhereAsync] Exceção: {ex}");
+                DebugUtility.LogError<GameManager>($"[QA_GoToMenuFromAnywhereAsync] Exceï¿½ï¿½o: {ex}");
             }
             finally
             {
@@ -329,7 +329,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             if (_qaFlowInProgress)
             {
-                DebugUtility.LogWarning<GameManager>("[QA] Fluxo já em andamento; ignorando solicitação.");
+                DebugUtility.LogWarning<GameManager>("[QA] Fluxo jï¿½ em andamento; ignorando solicitaï¿½ï¿½o.");
                 return;
             }
 
@@ -342,20 +342,20 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
                 {
                     DebugUtility.LogWarning<GameManager>(
-                        "[QA] Infra de transição não configurada (Gameplay).");
+                        "[QA] Infra de transiï¿½ï¿½o nï¿½o configurada (Gameplay).");
                     return;
                 }
 
                 if (IsGameplayReady())
                 {
                     DebugUtility.LogVerbose<GameManager>(
-                        "[QA] Gameplay já está pronto (Playing/Paused). Ignorando transição.");
+                        "[QA] Gameplay jï¿½ estï¿½ pronto (Playing/Paused). Ignorando transiï¿½ï¿½o.");
                     return;
                 }
 
                 Time.timeScale = 1f;
 
-                // Só rebuild se não for OldMenuState (reduz churn e token spam)
+                // Sï¿½ rebuild se nï¿½o for OldMenuState (reduz churn e token spam)
                 if (!(OldGameManagerStateMachine.Instance.CurrentState is OldMenuState))
                     OldGameManagerStateMachine.Instance.Rebuild(this);
 
@@ -363,7 +363,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (targetGroup == null)
                 {
                     DebugUtility.LogError<GameManager>(
-                        "[QA] GameplayGroup não configurado no SceneFlowMap.");
+                        "[QA] GameplayGroup nï¿½o configurado no SceneFlowMap.");
                     return;
                 }
 
@@ -383,7 +383,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
             catch (System.Exception ex)
             {
-                DebugUtility.LogError<GameManager>($"[QA_GoToGameplayFromAnywhereAsync] Exceção: {ex}");
+                DebugUtility.LogError<GameManager>($"[QA_GoToGameplayFromAnywhereAsync] Exceï¿½ï¿½o: {ex}");
             }
             finally
             {

@@ -2,8 +2,7 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.SkinSystems
+namespace _ImmersiveGames.Scripts.SkinSystems.Services
 {
     /// <summary>
     /// Pós-processador padrão que garante a ativação de binders dinâmicos recém-instanciados.

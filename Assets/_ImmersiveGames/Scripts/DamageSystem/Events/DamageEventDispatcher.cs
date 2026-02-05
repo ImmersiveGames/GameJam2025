@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Events;
-
-namespace _ImmersiveGames.Scripts.DamageSystem
+namespace _ImmersiveGames.Scripts.DamageSystem.Events
 {
     public static class DamageEventDispatcher
     {

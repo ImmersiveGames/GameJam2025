@@ -2,8 +2,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.SkinSystems
+namespace _ImmersiveGames.Scripts.SkinSystems.Services
 {
     /// <summary>
     /// Contrato para serviços responsáveis por gerenciar a aplicação de skins.

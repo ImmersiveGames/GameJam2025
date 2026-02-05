@@ -1,0 +1,16 @@
+﻿#nullable enable
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Core;
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
+{
+    /// <summary>
+    /// Adapter para operações de fade desacopladas do legado.
+    /// </summary>
+    public interface ISceneFlowFadeAdapter
+    {
+        bool IsAvailable { get; }
+        void ConfigureFromProfile(SceneFlowProfileId profileId);
+        Task FadeInAsync();
+        Task FadeOutAsync();
+    }
+}

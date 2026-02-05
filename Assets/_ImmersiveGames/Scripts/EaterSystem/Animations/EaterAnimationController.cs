@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.DamageSystem.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 {

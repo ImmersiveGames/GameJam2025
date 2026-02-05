@@ -1,12 +1,11 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.LegadoFadeSystem;
-using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.LegadoFadeSystem;
+using _ImmersiveGames.Scripts.SceneManagement.Core;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.Scripts.SceneManagement.OldTransition
+namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     public interface IOldSceneTransitionService
     {

@@ -9,6 +9,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
