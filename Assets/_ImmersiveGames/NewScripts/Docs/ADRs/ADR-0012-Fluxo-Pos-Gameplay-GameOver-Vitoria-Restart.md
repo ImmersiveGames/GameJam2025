@@ -6,7 +6,7 @@
 - Data (decisão): 2026-01-31
 - Última atualização: 2026-02-04
 - Tipo: Implementação
-- Escopo: `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/GameLoop/` + integrações com `WorldLifecycle/SceneFlow`
+- Escopo: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/` + integrações com `WorldLifecycle/SceneFlow`
 
 ---
 
@@ -125,11 +125,11 @@ Buscar no log:
 
 ## Implementação (arquivos impactados)
 
-- `Presentation/PostGame/PostGameOverlayController.cs`
-- `Gameplay/CoreGameplay/GameLoop/GameRunOutcomeService.cs`
-- `Gameplay/CoreGameplay/GameLoop/GameRunStatusService.cs`
-- `Gameplay/CoreGameplay/GameLoop/GameRunEndRequestService.cs`
-- `Runtime/GameLoop/Bridges/GameRunOutcomeEventInputBridge.cs`
-- `Runtime/Navigation/RestartNavigationBridge.cs`
-- `Runtime/Navigation/ExitToMenuNavigationBridge.cs`
-- `Gameplay/CoreGameplay/PostGame/PostPlayOwnershipService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/PostGame/Bindings/PostGameOverlayController.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameRunOutcomeService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameRunStateService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameRunEndRequestService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameRunOutcomeCommandBridge.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/RestartNavigationBridge.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/ExitToMenuNavigationBridge.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/PostGame/PostGameOwnershipService.cs`

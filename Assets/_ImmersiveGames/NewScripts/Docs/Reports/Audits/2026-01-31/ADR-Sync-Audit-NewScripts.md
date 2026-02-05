@@ -16,20 +16,20 @@
 | ADR                          | Status   | Principais Evidências (Paths)                                                                 | Principais Gaps                                                                 | Risco  |
 |------------------------------|----------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|--------|
 | ADR-0009 (Fade + SceneFlow) | OK | SceneTransitionService + FadeService + SceneFlowFadeAdapter + Runtime policy (IRuntimeModeProvider/IDegradedModeReporter) + logs [OBS][Fade] | Sem gaps críticos. Evidência (2026-01-31): `Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` | Baixo |
-| ADR-0010 (Loading HUD + SceneFlow) | OK      | SceneFlowLoadingService + ILoadingHudService + LoadingHudService + GlobalBootstrap                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas (LoadingHudEnsure/Show/Hide) | Baixo  |
-| ADR-0011 (WorldDefinition multi-actor) | OK | WorldDefinition + SceneBootstrapper + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | Enforce em gameplay (Strict/Release) + validações mínimas (Player/Eater) | Baixo  |
+| ADR-0010 (Loading HUD + SceneFlow) | OK      | LoadingHudOrchestrator + ILoadingHudService + LoadingHudService + GlobalCompositionRoot                                    | Strict/Release implementado; Release com DEGRADED_MODE feature='loadinghud'; âncoras com signature+phase padronizadas (LoadingHudEnsure/Show/Hide) | Baixo  |
+| ADR-0011 (WorldDefinition multi-actor) | OK | WorldDefinition + SceneScopeCompositionRoot + WorldSpawnServiceFactory + WorldLifecycleOrchestrator | Enforce em gameplay (Strict/Release) + validações mínimas (Player/Eater) | Baixo  |
 | ADR-0012 (PostGame)         | OK | Evidência canônica (2026-01-29): `Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md` (seção F) + runtime: PostGameOverlayController + GameRunOutcomeService + GameLoopRunEndEventBridge + Restart/ExitToMenuNavigationBridge + logs [OBS][PostGame] | Sem gaps críticos no Strict/Release; gates/inputmode cobertos por bridges + evidência | Baixo  |
-| ADR-0013 (Ciclo de vida)    | OK | SceneTransitionService + WorldLifecycleSceneFlowResetDriver + WorldLifecycleResetCompletionGate + GameLoopSceneFlowCoordinator + InputModeSceneFlowBridge | Sem gaps críticos no Strict/Release. A ordem contratual relevante é: SceneFlow→ResetWorld (gameplay)→ResetCompleted→IntroStage (gate sim.gameplay)→Playing; detalhes de `RequestStart()` não fazem parte do contrato observável (só mecanismo interno). | Baixo  |
-| ADR-0014 (Gameplay Reset Targets/Grupos) | OK | DefaultGameplayResetTargetClassifier + GameplayResetOrchestrator + SceneBootstrapper | Fail-fast em Strict; degrade+no-op em Release | Baixo |
+| ADR-0013 (Ciclo de vida)    | OK | SceneTransitionService + WorldLifecycleSceneFlowResetDriver + WorldLifecycleResetCompletionGate + GameLoopSceneFlowCoordinator + SceneFlowInputModeBridge | Sem gaps críticos no Strict/Release. A ordem contratual relevante é: SceneFlow→ResetWorld (gameplay)→ResetCompleted→IntroStage (gate sim.gameplay)→Playing; detalhes de `RequestStart()` não fazem parte do contrato observável (só mecanismo interno). | Baixo  |
+| ADR-0014 (Gameplay Reset Targets/Grupos) | OK | DefaultRunRearmTargetClassifier + RunRearmOrchestrator + SceneScopeCompositionRoot | Fail-fast em Strict; degrade+no-op em Release | Baixo |
 | ADR-0015 (Baseline 2.0 fechamento) | OK      | Evidências e contratos em Docs/Reports/Evidence/LATEST.md e ADR                              | Não aplicável (documental)                                                      | Baixo  |
-| ADR-0016 (ContentSwap InPlace-only) | PARCIAL | ContentSwapChangeServiceInPlaceOnly + ContentSwapContextService + GlobalBootstrap            | Respeito a gates (scene_transition/sim.gameplay) não aparece no serviço         | Médio  |
+| ADR-0016 (ContentSwap InPlace-only) | PARCIAL | InPlaceContentSwapService + ContentSwapContextService + GlobalCompositionRoot            | Respeito a gates (scene_transition/sim.gameplay) não aparece no serviço         | Médio  |
 | ADR-0017 (LevelManager + Catalog) | PARCIAL | LevelManager + LevelCatalogResolver + ResourcesLevelCatalogProvider + LevelManagerInstaller + assets em Resources | Fail-fast para ID/config ausente não ocorre; evidência canônica ainda “TODO” no ADR | Médio  |
 
 ### Top Divergências / Faltas (Impacto Alto)
 - (Resolvido) Loading HUD: fluxo agora falha em modo strict quando controller faltar, e o setup final inclui `LoadingHudController` na cena correta.
 - (Fechado) Ordem IntroStage/RequestStart: não é um requisito do contrato; o contrato relevante é o gate `sim.gameplay` + transições de estado até `Playing`, conforme evidências.
-- ContentSwap sem gating: ContentSwapChangeServiceInPlaceOnly não consulta gates (scene_transition / sim.gameplay) apesar do contrato exigir respeito a gates.
-- (Resolvido) WorldDefinition em gameplay: SceneBootstrapper aplica enforce (Strict/Release) para worldDefinition ausente e valida mínimos (Player/Eater).
+- ContentSwap sem gating: InPlaceContentSwapService não consulta gates (scene_transition / sim.gameplay) apesar do contrato exigir respeito a gates.
+- (Resolvido) WorldDefinition em gameplay: SceneScopeCompositionRoot aplica enforce (Strict/Release) para worldDefinition ausente e valida mínimos (Player/Eater).
 - Level catalog fail-fast não aplicado: resolver e session logam warnings e retornam false, mas não falham; contrato pede falha explícita para IDs/config ausentes.
 
 
@@ -59,7 +59,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - `FadeService` carrega `FadeScene` (Additive), localiza `FadeController` e executa fades; falha explicitamente quando pré-condições não são atendidas.
 - `SceneFlowFadeAdapter` resolve profiles e configura tempos de fade, aplicando policy Strict/Release e `DEGRADED_MODE` quando necessário.
 - Policy Runtime (Strict/Release + reporter): `IRuntimeModeProvider` / `IDegradedModeReporter`.
-- DI: `GlobalBootstrap` registra `IFadeService` e policy runtime.
+- DI: `GlobalCompositionRoot` registra `IFadeService` e policy runtime.
 - Símbolos-chave: `IFadeService`, `FadeService`, `SceneFlowFadeAdapter`, `SceneTransitionService`, `IRuntimeModeProvider`, `IDegradedModeReporter`.
 - Fluxo de produção: `SceneTransitionService` chama `FadeIn` → `ScenesReady` → gate → `BeforeFadeOut` → `FadeOut` → `Completed`.
 
@@ -88,11 +88,11 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - Observabilidade: logs canônicos com `signature` + `phase` (âncoras `LoadingHudEnsure/Show/Hide`).
 
 **Arquivos-chave:**
-- `NewScripts/Presentation/LoadingHud/ILoadingHudService.cs`
-- `NewScripts/Runtime/SceneFlow/SceneFlowLoadingService.cs`
-- `NewScripts/Presentation/LoadingHud/LoadingHudService.cs`
-- `NewScripts/Presentation/LoadingHud/LoadingHudController.cs`
-- `NewScripts/Runtime/Bootstrap/GlobalBootstrap.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/ILoadingHudService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudOrchestrator.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Bindings/LoadingHudController.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.cs`
 
 **Evidência:**
 - `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md` (seção ADR-0010)
@@ -106,7 +106,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 - SceneFlow + Gate: SceneTransitionService aguarda completion gate antes do FadeOut.
 - Reset determinístico: WorldLifecycleSceneFlowResetDriver publica [OBS][WorldLifecycle] ResetRequested/ResetCompleted e lida com SKIP/Failed.
 - GameLoop sync: GameLoopSceneFlowCoordinator aguarda ScenesReady + ResetCompleted + Completed e em gameplay faz RequestStart().
-- InputMode + IntroStage: InputModeSceneFlowBridge aplica InputMode e dispara IntroStage em SceneFlow/Completed:Gameplay.
+- InputMode + IntroStage: SceneFlowInputModeBridge aplica InputMode e dispara IntroStage em SceneFlow/Completed:Gameplay.
 
 **Observabilidade:**
 - Esperado: logs de SceneFlow + ResetCompleted + IntroStage/Playing.
@@ -124,9 +124,9 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 **Contrato mínimo:** Targets idempotentes e ordenados; fail-fast se target ausente/config inconsistente.
 
 **Implementação Encontrada:**
-- Classifier: DefaultGameplayResetTargetClassifier usa ActorRegistry e fallback string-based para Eater.
-- Orchestrator: GameplayResetOrchestrator tenta ActorRegistry e faz fallback por scan de cena.
-- Registro de cena: SceneBootstrapper registra classifier e orchestrator por cena.
+- Classifier: DefaultRunRearmTargetClassifier usa ActorRegistry e fallback string-based para Eater.
+- Orchestrator: RunRearmOrchestrator tenta ActorRegistry e faz fallback por scan de cena.
+- Registro de cena: SceneScopeCompositionRoot registra classifier e orchestrator por cena.
 
 **Observabilidade:**
 - Esperado: logs de ResetRequested/ResetCompleted com reason canônico.
@@ -150,9 +150,9 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 **Contrato mínimo:** Logs ContentSwapRequested/Pending/Committed/Cleared.
 
 **Implementação Encontrada:**
-- Serviço: ContentSwapChangeServiceInPlaceOnly emite [OBS][ContentSwap] ContentSwapRequested e ignora Fade/LoadingHUD.
+- Serviço: InPlaceContentSwapService emite [OBS][ContentSwap] ContentSwapRequested e ignora Fade/LoadingHUD.
 - Contexto: ContentSwapContextService emite ContentSwapPendingSet, Committed, PendingCleared.
-- Registro DI: GlobalBootstrap registra IContentSwapContextService + IContentSwapChangeService.
+- Registro DI: GlobalCompositionRoot registra IContentSwapContextService + IContentSwapChangeService.
 
 **Observabilidade:**
 - Esperado: [OBS][ContentSwap] + context logs conforme contrato.

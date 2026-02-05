@@ -83,16 +83,16 @@ Garantir que TODA transição de cena do SceneFlow tenha um envelope visual dete
 Arquivos (NewScripts):
 
 - Orquestração / ordem / anchors `[OBS][Fade]`:
-  - `Runtime/Scene/SceneTransitionService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 - Policy Strict/Release + degraded reporter:
-  - `Runtime/Mode/IRuntimeModeProvider.cs`
-  - `Runtime/Mode/UnityRuntimeModeProvider.cs`
-  - `Runtime/Mode/IDegradedModeReporter.cs`
-  - `Runtime/Mode/DegradedModeReporter.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/IRuntimeModeProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/UnityRuntimeModeProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/IDegradedModeReporter.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/DegradedModeReporter.cs`
 - Adapter (profile → config → policy):
-  - `Runtime/SceneFlow/SceneFlowAdapters.cs` (`SceneFlowFadeAdapter`)
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Adapters/SceneFlowFadeAdapter.cs` (`SceneFlowFadeAdapter`)
 - Serviço de fade (garante FadeScene + Controller; falha explícita se inválido):
-  - `Runtime/SceneFlow/Fade/FadeService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Fade/Runtime/FadeService.cs`
 
 ## Observabilidade (contrato)
 
@@ -158,13 +158,13 @@ Quando o fade não pode operar em Release:
 ### Runtime / Editor (código e assets)
 
 - **Infrastructure**
-  - `Runtime/Mode/DegradedModeReporter.cs`
-  - `Runtime/Mode/IDegradedModeReporter.cs`
-  - `Runtime/Mode/IRuntimeModeProvider.cs`
-  - `Runtime/Mode/UnityRuntimeModeProvider.cs`
-  - `Runtime/Scene/SceneTransitionService.cs`
-  - `Runtime/SceneFlow/Fade/FadeService.cs`
-  - `Runtime/SceneFlow/SceneFlowAdapters.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/DegradedModeReporter.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/IDegradedModeReporter.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/IRuntimeModeProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/UnityRuntimeModeProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Fade/Runtime/FadeService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Adapters/SceneFlowFadeAdapter.cs`
 
 ### Docs / evidências relacionadas
 

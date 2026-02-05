@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
-using _ImmersiveGames.Scripts.SkinSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Composition;

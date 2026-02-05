@@ -6,7 +6,7 @@
 - Data (decisão): 2026-01-28
 - Última atualização: 2026-02-04
 - Tipo: Implementação
-- Escopo: NewScripts → Gameplay/ContentSwap + Infrastructure (Bootstrap/QA)
+- Escopo: NewScripts → Modules/ContentSwap + Infrastructure (Bootstrap/QA)
 
 ## Contexto
 
@@ -45,7 +45,7 @@ Eventos/logs mínimos:
 - `ContentSwapPendingCleared`
 
 ### Bootstrap
-- `GlobalBootstrap` registra toda a infraestrutura NewScripts necessária.
+- `GlobalCompositionRoot` registra toda a infraestrutura NewScripts necessária.
 - ContentSwap é registrado **sempre** como InPlace-only.
 
 ## Fora de escopo
@@ -82,17 +82,17 @@ Eventos/logs mínimos:
 
 ### Runtime / Editor (código e assets)
 
-- `Gameplay/CoreGameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs`
-- `Gameplay/CoreGameplay/ContentSwap/ContentSwapContextService.cs`
-- `Gameplay/CoreGameplay/ContentSwap/ContentSwapEvents.cs`
-- `Gameplay/CoreGameplay/ContentSwap/ContentSwapPlan.cs`
-- `Gameplay/CoreGameplay/ContentSwap/ContentSwapOptions.cs`
-- `Runtime/Bootstrap/GlobalBootstrap.cs`
-- `Runtime/Gates/SimulationGateTokens.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/ContentSwapContextService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/ContentSwapEvents.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/ContentSwapPlan.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/ContentSwapOptions.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gates/SimulationGateTokens.cs`
 
 ### QA / evidência
 
-- `QA/ContentSwap/ContentSwapQaContextMenu.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Dev/Bindings/ContentSwapDevContextMenu.cs`
 
 ## Referências
 

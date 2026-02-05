@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Bindings.Eater;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Bindings.Eater.Movement;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;

@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
-using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.NewScripts.Core.Logging;

@@ -13,15 +13,15 @@
 - Implementação concluída: 2026-01-31 (Baseline 2.2)
 - Dono: (preencher)
 - Artefatos principais (produção):
-  - `Runtime/Scene/SceneTransitionService.cs`
-  - `Runtime/Scene/SceneTransitionEvents.cs`
-  - `Lifecycle/World/Reset/Application/WorldResetService.cs`
-  - `Runtime/World/Bridges/SceneFlow/WorldLifecycleSceneFlowResetDriver.cs`
-  - `Runtime/World/Bridges/SceneFlow/WorldLifecycleResetCompletionGate.cs`
-  - `Gameplay/CoreGameplay/GameLoop/GameLoopService.cs`
-  - `Gameplay/CoreGameplay/GameLoop/IntroStage/*`
-  - `Gameplay/CoreGameplay/GameLoop/GameLoopSceneFlowCoordinator.cs`
-  - `Runtime/InputSystems/InputModeSceneFlowBridge.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionEvents.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Application/WorldResetService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleResetCompletionGate.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/IntroStage/Runtime/*`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/ControlModes/Interop/SceneFlowInputModeBridge.cs`
 
 ## Contexto
 
@@ -113,12 +113,12 @@ Definir um ciclo de vida único, com fases e invariantes fixos:
 
 Principais pontos (NewScripts):
 
-- **SceneFlow envelope + gates**: `Runtime/Scene/SceneTransitionService.cs`
-- **Fade**: ver ADR-0009 (`Runtime/SceneFlow/Fade/*`)
-- **Loading HUD**: ver ADR-0010 (`Presentation/LoadingHud/*`)
+- **SceneFlow envelope + gates**: `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+- **Fade**: ver ADR-0009 (`Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Fade/Runtime/*`)
+- **Loading HUD**: ver ADR-0010 (`Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/*`)
 - **Gatilho de ResetWorld em produção**: driver ligado ao `ScenesReady` (SceneFlow)
-- **WorldLifecycle reset pipeline**: `Lifecycle/World/Reset/*`
-- **GameLoop Intro/Playing/PostGame**: `Gameplay/CoreGameplay/GameLoop/*`
+- **WorldLifecycle reset pipeline**: `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/*`
+- **GameLoop Intro/Playing/PostGame**: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/*`
 
 ## Observabilidade
 
@@ -150,22 +150,22 @@ Principais pontos (NewScripts):
 ### Runtime / Editor (código e assets)
 
 - **Gameplay**
-  - `Gameplay/CoreGameplay/GameLoop/GameLoopStateMachine.cs`
-  - `Gameplay/CoreGameplay/GameLoop/GameLoopService.cs`
-  - `Lifecycle/World/Reset/Application/WorldResetService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/GameLoopStateMachine.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Application/WorldResetService.cs`
 - **Infrastructure**
-  - `Runtime/Scene/SceneTransitionService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 
 ### Docs / evidências relacionadas
 
-- `Runtime/World/README.md`
+- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/README.md`
 - `Standards/Standards.md`
 
 ## Notas de implementação
 
 O pipeline está ativo em produção e segue a ordem: **SceneFlow → ScenesReady → ResetWorld → ResetCompleted → IntroStage → Playing**.
 Os pontos de integração canônicos são: `WorldLifecycleSceneFlowResetDriver` (gatilho de reset), `WorldLifecycleResetCompletionGate`
-(gate do SceneFlow), `InputModeSceneFlowBridge` (aplica input mode e dispara IntroStage) e `IntroStageCoordinator`
+(gate do SceneFlow), `SceneFlowInputModeBridge` (aplica input mode e dispara IntroStage) e `IntroStageCoordinator`
 (gate `sim.gameplay` e RequestStart após confirmação).
 
 ## Evidência

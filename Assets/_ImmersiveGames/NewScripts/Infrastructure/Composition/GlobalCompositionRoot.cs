@@ -30,8 +30,8 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev;
-using _ImmersiveGames.NewScripts.Modules.ControlModes.Interop;
-using _ImmersiveGames.NewScripts.Modules.GameLoop;
+using _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime;
+using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
@@ -44,19 +44,19 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.View;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.Gates.Interop;
+using _ImmersiveGames.NewScripts.Modules.InputModes.Interop;
 using _ImmersiveGames.NewScripts.Modules.Levels;
 using _ImmersiveGames.NewScripts.Modules.Levels.Dev;
 using _ImmersiveGames.NewScripts.Modules.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.PostGame;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Hud;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Interop;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies;
@@ -253,19 +253,50 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterRuntimePolicyServices()
         {
-            // Comentário: policy Strict/Release + reporter canônico de DEGRADED_MODE.
-            RegisterIfMissing<IRuntimeModeProvider>(() => new UnityRuntimeModeProvider());
-            RegisterIfMissing<IDegradedModeReporter>(() => new DegradedModeReporter());
+            // RuntimeModeConfig (opcional) via Resources.
+            // Contrato: ausência de config não deve quebrar o jogo.
+            var config = RuntimeModeConfigLoader.LoadOrNull();
 
-            DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
-            DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
+            var provider = DependencyManager.Provider;
 
-            RegisterIfMissing<IWorldResetPolicy>(() => new ProductionWorldResetPolicy(runtimeModeProvider, degradedReporter));
+            // (Opcional) expõe a config no DI global para inspeção/QA.
+            // Importante: não registrar nulo.
+            if (config != null)
+            {
+                if (!provider.TryGetGlobal<RuntimeModeConfig>(out var existingConfig) || existingConfig == null)
+                {
+                    provider.RegisterGlobal(config, allowOverride: false);
+
+                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                        $"[RuntimePolicy] RuntimeModeConfig carregado (asset='{config.name}').",
+                        DebugUtility.Colors.Info);
+                }
+            }
+
+            // Provider configurável: usa o config se existir, senão cai no comportamento atual (UnityRuntimeModeProvider).
+            RegisterIfMissing<IRuntimeModeProvider>(() =>
+                new ConfigurableRuntimeModeProvider(new UnityRuntimeModeProvider(), config));
+
+            provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
+            if (runtimeModeProvider == null)
+            {
+                runtimeModeProvider = new UnityRuntimeModeProvider();
+            }
+
+            // Reporter configurável (dedupe/summary/limites via config, se existir).
+            RegisterIfMissing<IDegradedModeReporter>(() =>
+                new DegradedModeReporter(runtimeModeProvider, config));
+
+            provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
+
+            RegisterIfMissing<IWorldResetPolicy>(() =>
+                new ProductionWorldResetPolicy(runtimeModeProvider, degradedReporter));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter + IWorldResetPolicy registrados no DI global.",
                 DebugUtility.Colors.Info);
         }
+
 
 // --------------------------------------------------------------------
         // Fade / Loading
@@ -295,18 +326,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 "[Loading] ILoadingHudService registrado no DI global.",
                 DebugUtility.Colors.Info);
 
-            if (DependencyManager.Provider.TryGetGlobal<SceneFlowLoadingService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<LoadingHudOrchestrator>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Loading] SceneFlowLoadingService já registrado no DI global.",
+                    "[Loading] LoadingHudOrchestrator já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            RegisterIfMissing(() => new SceneFlowLoadingService());
+            RegisterIfMissing(() => new LoadingHudOrchestrator());
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Loading] SceneFlowLoadingService registrado no DI global.",
+                "[Loading] LoadingHudOrchestrator registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -607,8 +638,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             // Loader/Fade (NewScripts standalone)
-            var loaderAdapter = SceneFlowAdapters.CreateLoaderAdapter();
-            var fadeAdapter = SceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
+            var loaderAdapter = SceneFlowAdapterFactory.CreateLoaderAdapter();
+            var fadeAdapter = SceneFlowAdapterFactory.CreateFadeAdapter(DependencyManager.Provider);
 
             // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
             ISceneTransitionCompletionGate completionGate = null;
@@ -746,12 +777,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             try
             {
-                IntroStageQaInstaller.EnsureInstalled();
+                IntroStageDevInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][IntroStageController] Falha ao instalar IntroStageQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStageController] Falha ao instalar IntroStageDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -759,12 +790,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             try
             {
-                ContentSwapQaInstaller.EnsureInstalled();
+                ContentSwapDevInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][ContentSwap] Falha ao instalar ContentSwapQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][ContentSwap] Falha ao instalar ContentSwapDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -772,12 +803,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             try
             {
-                SceneFlowQaInstaller.EnsureInstalled();
+                SceneFlowDevInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][SceneFlow] Falha ao instalar SceneFlowQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][SceneFlow] Falha ao instalar SceneFlowDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -931,12 +962,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             try
             {
-                LevelQaInstaller.EnsureInstalled();
+                LevelDevInstaller.EnsureInstalled();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][Level] Falha ao instalar LevelQaContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][Level] Falha ao instalar LevelDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

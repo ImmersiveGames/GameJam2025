@@ -6,7 +6,7 @@
 - Data (decisão): 2025-12-28
 - Última atualização: 2026-02-04
 - Tipo: Implementação
-- Escopo: `GameplayScene`, `SceneBootstrapper`, spawn pipeline (Player/Eater), WorldLifecycle
+- Escopo: `GameplayScene`, `SceneScopeCompositionRoot`, spawn pipeline (Player/Eater), WorldLifecycle
 
 ## Contexto
 
@@ -39,13 +39,13 @@ A presença de `WorldDefinition` é **obrigatória em cenas classificadas como g
 
 ### Ponto de integração
 
-A integração acontece no `SceneBootstrapper` (nome atual observado em evidências). Ele:
+A integração acontece no `SceneScopeCompositionRoot` (nome atual observado em evidências). Ele:
 
 1. Registra serviços gerais de cena (ex.: `LoadingHudService`, `InputModeService`, etc.).
 2. **Se** houver `WorldDefinition` atribuída, registra/instancia os serviços do spawn pipeline e expõe a definição via `ISpawnDefinitionService`.
 3. **Se não** houver `WorldDefinition`, emite log explícito informando que a ausência é permitida para cenas que não fazem spawn.
 
-> Observação: versões anteriores do texto referiam “NewSceneBootstrapper”. Na evidência canônica atual, o componente observado é `SceneBootstrapper`.
+> Observação: versões anteriores do texto referiam “NewSceneBootstrapper”. Na evidência canônica atual, o componente observado é `SceneScopeCompositionRoot`.
 
 ## Política Strict/Release
 
@@ -81,18 +81,18 @@ Evidência canônica mostra:
 #### MenuScene permite ausência de WorldDefinition
 
 ```
-[SceneBootstrapper] Setup OK :: hasWorldDefinition=False :: scene='MenuScene'
-[SceneBootstrapper] WorldDefinition is null (allowed in scenes that do not spawn actors). :: scene='MenuScene'
+[SceneScopeCompositionRoot] Setup OK :: hasWorldDefinition=False :: scene='MenuScene'
+[SceneScopeCompositionRoot] WorldDefinition is null (allowed in scenes that do not spawn actors). :: scene='MenuScene'
 ```
 
 #### GameplayScene exige WorldDefinition e registra spawn services
 
 ```
-[SceneBootstrapper] Setup OK :: hasWorldDefinition=True :: scene='GameplayScene'
-[SceneBootstrapper] WorldDefinition loaded :: entries=2 :: scene='GameplayScene'
-[SceneBootstrapper] Registered IWorldSpawnContext.
-[SceneBootstrapper] Registered ISpawnDefinitionService.
-[SceneBootstrapper] Registered ISpawnRegistry.
+[SceneScopeCompositionRoot] Setup OK :: hasWorldDefinition=True :: scene='GameplayScene'
+[SceneScopeCompositionRoot] WorldDefinition loaded :: entries=2 :: scene='GameplayScene'
+[SceneScopeCompositionRoot] Registered IWorldSpawnContext.
+[SceneScopeCompositionRoot] Registered ISpawnDefinitionService.
+[SceneScopeCompositionRoot] Registered ISpawnRegistry.
 ```
 
 #### Reset executa e resulta em multi-actor
@@ -136,14 +136,14 @@ Evidência canônica mostra:
 ## Ações futuras
 
 - Garantir que o **classifier** de “cena de gameplay” seja a fonte canônica da exigência de `WorldDefinition`.
-- Se necessário, adicionar uma checagem explícita no `SceneBootstrapper`:
+- Se necessário, adicionar uma checagem explícita no `SceneScopeCompositionRoot`:
   - `if (isGameplayScene && worldDefinition == null) -> error/assert`.
 
 ## Implementação (arquivos impactados)
 
-- `Runtime/Bootstrap/SceneBootstrapper.cs`
-- `Runtime/World/Spawn/WorldDefinition.cs`
-- `Runtime/World/Spawn/WorldSpawnServiceFactory.cs`
-- `Runtime/World/Spawn/WorldSpawnServiceRegistry.cs`
-- `Runtime/World/Spawn/PlayerSpawnService.cs`
-- `Runtime/World/Spawn/EaterSpawnService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/Definitions/WorldDefinition.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceFactory.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceRegistry.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/PlayerSpawnService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/EaterSpawnService.cs`

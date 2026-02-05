@@ -56,7 +56,7 @@
 ## 2026-01-28
 - Archived Baseline 2.2 evidence snapshot (Boot→Menu skip, Menu→Gameplay reset+spawn+IntroStage, Level L01 InPlace pipeline).
 - ADR-0012: removida referência obsoleta a `WorldLifecycleRuntimeCoordinator` (substituído pelo driver canônico `WorldLifecycleSceneFlowResetDriver`).
-- Runtime/Observability: alinhado contrato mínimo de observabilidade para WorldLifecycle (ResetRequested/ResetCompleted) e InputMode em `SceneFlow/Completed`.
+- Modules/WorldLifecycle/Runtime (Observability): alinhado contrato mínimo de observabilidade para WorldLifecycle (ResetRequested/ResetCompleted) e InputMode em `SceneFlow/Completed`.
 
 ## 2026-01-27
 - Docs: Baseline 2.0 → fontes vigentes (ADR-0015 + Evidence/LATEST + Observability-Contract).
@@ -136,7 +136,7 @@
 - Checklist operacional do Baseline 2.0 consolidado em `Docs/Reports` (referência única para o último smoke).
 - Checklist do Baseline 2.0 atualizado com **assinaturas/strings exatas** do log para cada cenário (A–E) e invariantes globais.
 - Adicionada evidência explícita de **ExitToMenu** (profile `frontend`, reset SKIPPED) e **Restart** pós-PostGame (profile `gameplay`).
-- Documentado o módulo de Loading HUD (`SceneFlowLoadingService` + `ILoadingHudService`) no `WORLD_LIFECYCLE.md` com ordem de fases e assinaturas de log estáveis.
+- Documentado o módulo de Loading HUD (`LoadingHudOrchestrator` + `ILoadingHudService`) no `WORLD_LIFECYCLE.md` com ordem de fases e assinaturas de log estáveis.
 
 ### Removed
 - Duplicações de checklist de baseline espalhadas em ADRs/QA/Baseline.
@@ -174,6 +174,7 @@
 - Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status atual dos targets e correção de assinatura.
 - Updated: `ADRs/ADR-0014-GameplayReset-Targets-Grupos.md` com targets completos e evidência de QA.
 - Updated: `QA/GameplayReset-QA.md` com passos para `ActorIdSet`/`ByActorKind` e referências de QA.
+- TODO: `QA/GameplayReset-QA.md` não encontrado em Docs/Modules; confirmar doc equivalente.
 - Updated: `DECISIONS.md` alinhado ao timing real do Loading HUD (UseFade vs. Started).
 
 ## [2026-01-02]
@@ -185,7 +186,7 @@
 - Updated: `Checklist.md` com evidência do log completo (startup/menu → gameplay → pause/resume → defeat/victory → restart → exit-to-menu).
 
 ## [2026-01-01]
-- Updated: clarificado wiring de fim de run (`IGameRunEndRequestService` → `GameRunEndRequestedEvent` → `GameRunOutcomeEventInputBridge` → `IGameRunOutcomeService` → `GameRunEndedEvent`).
+- Updated: clarificado wiring de fim de run (`IGameRunEndRequestService` → `GameRunEndRequestedEvent` → `GameRunOutcomeCommandBridge` → `IGameRunOutcomeService` → `GameRunEndedEvent`).
 - Updated: `README.md` adicionando seção “Fim de Run (Vitória/Derrota)” com instruções de uso/teste (`IGameRunEndRequestService`, `GameRunEndRequestedEvent`, hotkeys F7/F6).
 - Updated: `WORLD_LIFECYCLE.md` detalhando solicitação de fim de run (request → outcome) e “Teste rápido”.
 - Updated: `ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md` (seção 5.2) substituindo placeholder por contrato explícito e guia de teste.
@@ -227,14 +228,15 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: documentação integrada de SceneFlow + WorldLifecycle + GameLoop alinhada ao fluxo de produção (startup → Menu → Gameplay → Menu → Gameplay), incluindo:
     - registro operacional do `WorldLifecycleSceneFlowResetDriver` e `WorldLifecycleResetCompletionGate` (skip vs hard reset),
     - revisão do `Reports/GameLoop.md` para alinhar `GameLoopSceneFlowCoordinator` e `InputModeSceneFlowBridge`,
-    - atualização do ADR de Fade/Loading (ADR-0009) com orquestração entre `SceneTransitionService`, `IFadeService` e `SceneFlowLoadingService`,
+    - atualização do ADR de Fade/Loading (ADR-0009) com orquestração entre `SceneTransitionService`, `IFadeService` e `LoadingHudOrchestrator`,
     - atualização do QA `GameLoop-StateFlow-QA` com cenário end-to-end (defeat/victory forçados via hotkeys).
 - Added: `ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md` com nota operacional sobre skip em frontend e reset completo em gameplay.
 - Updated: `Reports/GameLoop.md` para documentar o estado interno `PostPlay` (nome canônico: **PostGame**),
   os eventos `GameRunStartedEvent` / `GameRunEndedEvent` / `GameLoopActivityChangedEvent` e o serviço
-  `IGameRunStatusService` no fluxo de pós-game.
+  `IGameRunStateService` no fluxo de pós-game.
 - Updated: `WORLD_LIFECYCLE.md` alinhado ao fluxo de run/resultados via GameLoop.
 - Updated: caminhos de QA deprecated consolidados em `QA/Deprecated` e referências de documentação ajustadas.
+- TODO: `QA/Deprecated` não encontrado em Modules/; confirmar destino para QA legado.
 - Updated: cenas de produção/QA limpas de referências diretas aos tools de QA deprecated.
 - Added: bridge `GameResetRequestedEvent` → `RestartNavigationBridge` → reset oficial via SceneFlow/WorldLifecycle.
 - Updated: `Reports/GameLoop.md` e `WORLD_LIFECYCLE.md` com o fluxo de pós-game (Restart/Menu).
@@ -255,9 +257,9 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: debug tools/QA triggers marcados como dev-only na documentação e relatório de validação do SceneFlow.
 - Added: `Reports/SceneFlow-Production-Validation-2025-12-28.md` com checklist do fluxo de produção e evidência mínima de logs.
 - Added: `Reports/Archive/2025/SceneFlow-Gameplay-To-Menu-Report.md` com checklist e logs esperados do retorno Gameplay → Menu.
-- Updated: `Runtime/Navigation/ExitToMenuNavigationBridge.cs`, `Runtime/Bootstrap/GlobalBootstrap.cs` e `Runtime/Gameplay/Commands/GameCommands.cs` para suportar ExitToMenu em produção/dev.
+- Updated: `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/ExitToMenuNavigationBridge.cs`, `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.cs` e `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Commands/GameCommands.cs` para suportar ExitToMenu em produção/dev.
 - Added: `Reports/Archive/2025/SceneFlow-Gameplay-Blockers-Report.md` com os 3 blockers do fluxo Menu → Gameplay (erros, causa raiz, correções e evidências).
-- Updated: `Gameplay/CoreGameplay/GameLoop/GameLoopSceneFlowCoordinator.cs` e `Lifecycle/World/Spawn/PlayerSpawnService.cs` (fixes de blockers do fluxo).
+- Updated: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs` e `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/PlayerSpawnService.cs` (fixes de blockers do fluxo).
 - Updated: `README.md` e `WORLD_LIFECYCLE.md` com explicação simples do pipeline, definição de “loading real”
   e critério para remover o SKIP (decisão registrada).
 - Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` e `ARCHITECTURE_TECHNICAL.md` com formalização de

@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {

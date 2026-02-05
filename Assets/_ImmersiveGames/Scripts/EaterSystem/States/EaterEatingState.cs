@@ -1,5 +1,4 @@
 using DG.Tweening;
-using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;

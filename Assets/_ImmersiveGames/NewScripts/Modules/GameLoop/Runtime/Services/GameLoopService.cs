@@ -1,9 +1,9 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.ControlModes;
+using _ImmersiveGames.NewScripts.Modules.InputModes;
 using _ImmersiveGames.NewScripts.Modules.PostGame;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;

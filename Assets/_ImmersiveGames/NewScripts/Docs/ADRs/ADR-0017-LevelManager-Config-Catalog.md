@@ -6,11 +6,11 @@
 - Data (decisão): 2026-01-31
 - Última atualização: 2026-02-04
 - Tipo: Implementação
-- Escopo: NewScripts → Gameplay/Levels + Docs/Reports
+- Escopo: NewScripts → Modules/Levels + Docs/Reports
 
 ## Contexto
 
-O subsistema de Levels já existe em `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions). O ContentSwap é InPlace-only e é o executor técnico real; o LevelManager orquestra a mudança de conteúdo. A etapa de "start" (IntroStage/GameLoop) é tratada por módulos próprios (fora do LevelManager). Porém, **não existe** hoje uma fonte de verdade configurável para níveis (LevelDefinition/LevelCatalog): as intenções aparecem em docs (Baseline 2.2), mas não há assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronização.
+O subsistema de Levels já existe em `Assets/_ImmersiveGames/NewScripts/Modules/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions). O ContentSwap é InPlace-only e é o executor técnico real; o LevelManager orquestra a mudança de conteúdo. A etapa de "start" (IntroStage/GameLoop) é tratada por módulos próprios (fora do LevelManager). Porém, **não existe** hoje uma fonte de verdade configurável para níveis (LevelDefinition/LevelCatalog): as intenções aparecem em docs (Baseline 2.2), mas não há assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronização.
 
 Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas em listas hardcoded, precisamos de uma **configuração centralizada via ScriptableObjects**, consumida pelo LevelManager/QA/resolvedor, com observabilidade alinhada ao contrato canônico.
 
@@ -66,16 +66,16 @@ Ver seção **Fora de escopo**.
 
 ### Runtime / Editor (código e assets)
 
-- **Assets/_ImmersiveGames/NewScripts/Gameplay**
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Catalogs/LevelCatalog.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Definitions/LevelDefinition.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/ILevelCatalogProvider.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/ILevelDefinitionProvider.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Resolvers/LevelCatalogResolver.cs`
+- **Assets/_ImmersiveGames/NewScripts/Modules/Levels**
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Catalogs/LevelCatalog.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Definitions/LevelDefinition.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Providers/ILevelCatalogProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Providers/ILevelDefinitionProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Resolvers/LevelCatalogResolver.cs`
 - **Gameplay**
-  - `Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs`
-  - `Gameplay/Levels/LevelManager.cs`
-  - `Gameplay/Levels/LevelPlan.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/LevelManager.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/LevelPlan.cs`
 
 ### Docs / evidências relacionadas
 
@@ -86,11 +86,11 @@ Ver seção **Fora de escopo**.
 ## Notas de implementação
 
 - Assets sugeridos (paths):
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Definitions/LevelDefinition.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Catalogs/LevelCatalog.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/ILevelDefinitionProvider.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Providers/ILevelCatalogProvider.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/Resolvers/LevelCatalogResolver.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Definitions/LevelDefinition.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Catalogs/LevelCatalog.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Providers/ILevelDefinitionProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Providers/ILevelCatalogProvider.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Resolvers/LevelCatalogResolver.cs`
 - LevelManager deve consumir **apenas** abstrações (providers/resolvers), mantendo DIP.
 - Observabilidade deve reutilizar strings existentes no contrato (não criar reasons novos).
 
@@ -100,8 +100,8 @@ Ver seção **Fora de escopo**.
 - Resolver: `ILevelCatalogResolver` + `LevelCatalogResolver`.
 
 ### Etapa 1 — concluída
-- DI: registro de providers/resolver + `ILevelManager` via `LevelManager` no `GlobalBootstrap`.
-- QA: `LevelQaContextMenu` e `LevelQaInstaller`.
+- DI: registro de providers/resolver + `ILevelManager` via `LevelManager` no `GlobalCompositionRoot`.
+- QA: `LevelDevContextMenu` e `LevelDevInstaller`.
 - Evidência: atualização de Docs/Reports/Evidence/LATEST.md e snapshot dedicado com QA de Level.
 
 ## Evidência
@@ -123,7 +123,7 @@ Ver seção **Fora de escopo**.
 - [README.md](../README.md)
 - [Docs/Overview/Overview.md](../Docs/Overview/Overview.md)
 - [Observability-Contract.md](../Standards/Standards.md#observability-contract)
-- [LevelManager](../../Gameplay/Levels/LevelManager.cs)
-- [LevelPlan](../../Gameplay/Levels/LevelPlan.cs)
-- [ContentSwap Change Service](../../Gameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs)
+- [LevelManager](../../Modules/Levels/LevelManager.cs)
+- [LevelPlan](../../Modules/Levels/LevelPlan.cs)
+- [ContentSwap Change Service](../../Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs)
 - [LATEST.md](../Reports/Evidence/LATEST.md)

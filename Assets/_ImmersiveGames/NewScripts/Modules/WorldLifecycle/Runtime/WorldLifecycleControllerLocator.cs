@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Interop;
+using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime

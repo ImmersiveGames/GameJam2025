@@ -14,8 +14,8 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.ControlModes;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.InputModes;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 {

@@ -7,8 +7,8 @@
 - Última atualização: 2026-02-04
 - Tipo: Implementação
 - Escopo:
-  - `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/*`
-  - `Assets/_ImmersiveGames/NewScripts/Runtime/Reset/*`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/*`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/*`
 
 ## Contexto
 
@@ -29,32 +29,32 @@ O problema recorrente era o reset depender de “descobertas” dinâmicas (scan
 Introduzir um reset de gameplay **orientado por alvos**, com três peças explícitas:
 
 1) **Classificação de targets** (actor registry → lista de atores)
-2) **Participantes de reset** (componentes `IGameplayResettable` por ator)
+2) **Participantes de reset** (componentes `IRunRearmable` por ator)
 3) **Orquestração determinística** (ordenação e execução por etapas)
 
 A seleção de targets passa a ser:
 
 - **Explicitamente resolvida** a partir de fontes existentes (principalmente `IActorRegistry`),
-- **Classificada** em `GameplayResetTarget` (ex.: `PlayersOnly`, `EaterOnly`, `ByActorKind`),
-- **Executada** por componentes `IGameplayResettable` encontrados no root de cada ator.
+- **Classificada** em `RunRearmTarget` (ex.: `PlayersOnly`, `EaterOnly`, `ByActorKind`),
+- **Executada** por componentes `IRunRearmable` encontrados no root de cada ator.
 
 ### Não-objetivos (resumo)
 
-- Definir novos alvos fora de `GameplayResetTarget` sem ADR.
+- Definir novos alvos fora de `RunRearmTarget` sem ADR.
 - Substituir o WorldLifecycle reset pipeline.
 
 ## Contratos
 
-Os contratos ficam em `GameplayResetContracts.cs`:
+Os contratos ficam em `RunRearmContracts.cs`:
 
-- `GameplayResetStep` (enum)
-- `GameplayResetTarget` (enum)
-- `GameplayResetRequest` (target + reason + actorIds/kind)
-- `GameplayResetContext` (contexto do reset)
-- `IGameplayResettable` / `IGameplayResettableSync`
-- `IGameplayResetOrder` / `IGameplayResetTargetFilter`
-- `IGameplayResetTargetClassifier` (registry → lista de atores)
-- `IGameplayResetOrchestrator` (coordena o reset)
+- `RunRearmStep` (enum)
+- `RunRearmTarget` (enum)
+- `RunRearmRequest` (target + reason + actorIds/kind)
+- `RunRearmContext` (contexto do reset)
+- `IRunRearmable` / `IRunRearmableSync`
+- `IRunRearmOrder` / `IRunRearmTargetFilter`
+- `IRunRearmTargetClassifier` (registry → lista de atores)
+- `IRunRearmOrchestrator` (coordena o reset)
 
 ## Regras e invariantes
 
@@ -65,10 +65,10 @@ Os contratos ficam em `GameplayResetContracts.cs`:
 
 ### 2) Ordem determinística
 
-No `GameplayResetOrchestrator`:
+No `RunRearmOrchestrator`:
 
 - Os targets são ordenados por `ActorId` (ordenação estável).
-- Para cada target, os componentes são ordenados por `IGameplayResetOrder` e nome do tipo.
+- Para cada target, os componentes são ordenados por `IRunRearmOrder` e nome do tipo.
 - As etapas são executadas em ordem fixa: `Cleanup → Restore → Rebind`.
 
 ### 3) Fail-soft e auditabilidade
@@ -88,29 +88,29 @@ No `GameplayResetOrchestrator`:
 
 A implementação atual é intencionalmente “mínima e concreta”:
 
-- `DefaultGameplayResetTargetClassifier.cs`
-  - Resolve alvos via `IActorRegistry` conforme `GameplayResetTarget`.
+- `DefaultRunRearmTargetClassifier.cs`
+  - Resolve alvos via `IActorRegistry` conforme `RunRearmTarget`.
   - Suporta fallback string-based para `EaterOnly` (compatibilidade).
   - Não depende de enums externos além de `ActorKind`.
 
-- `PlayersResetParticipant.cs`
-  - Ponte do WorldLifecycle (ResetScope.Players) para GameplayReset (`PlayersOnly`).
+- `PlayersRunRearmWorldParticipant.cs`
+  - Ponte do WorldLifecycle (ResetScope.Players) para RunRearm (`PlayersOnly`).
 
-- `GameplayResetOrchestrator.cs`
+- `RunRearmOrchestrator.cs`
   - Resolve registry/classifier/policy via DI.
   - Usa registry-first com fallback de scan apenas quando policy permitir.
-  - Resolve componentes `IGameplayResettable` por target e executa etapas.
+  - Resolve componentes `IRunRearmable` por target e executa etapas.
 
 ### Registro no DI
 
 O binding fica no bootstrap de cena:
 
-- `SceneBootstrapper.cs`
-  - Registra `IGameplayResetOrchestrator` e `IGameplayResetTargetClassifier`.
+- `SceneScopeCompositionRoot.cs`
+  - Registra `IRunRearmOrchestrator` e `IRunRearmTargetClassifier`.
 
 ### QA Driver (opcional)
 
-- `QA/GameplayReset/GameplayResetRequestQaDriver.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs`
   - Dispara reset via `ContextMenu`.
   - Loga targets e report.
 
@@ -130,17 +130,17 @@ O binding fica no bootstrap de cena:
 - **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 
 - Compilação: todas as referências usadas por ADR-0014 existem no `output14`.
-- Integração: `SceneBootstrapper` registra os serviços; QA driver permite validar manualmente.
+- Integração: `SceneScopeCompositionRoot` registra os serviços; QA driver permite validar manualmente.
 - Auditoria: o `ADR-Sync-Audit-NewScripts.md` aponta os touchpoints.
 
 ## Touchpoints (para evitar regressões)
 
 Quando editar o reset de gameplay, revisar também:
 
-- `NewScripts/Runtime/Bootstrap/SceneBootstrapper.cs` (DI)
-- `NewScripts/Runtime/Reset/GameplayResetOrchestrator.cs` (orquestração)
-- `NewScripts/Runtime/Reset/PlayersResetParticipant.cs` (bridge WorldLifecycle)
-- `NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs` (QA)
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs` (DI)
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmOrchestrator.cs` (orquestração)
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs` (bridge WorldLifecycle)
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs` (QA)
 - `NewScripts/Docs/Reports/Audits/*/ADR-Sync-Audit-NewScripts.md` (auditoria)
 
 ## Implementação (arquivos impactados)
@@ -148,13 +148,13 @@ Quando editar o reset de gameplay, revisar também:
 ### Runtime / Editor (código e assets)
 
 - **NewScripts**
-  - `NewScripts/Gameplay/CoreGameplay/Reset/GameplayResetContracts.cs`
-  - `NewScripts/Gameplay/CoreGameplay/Reset/DefaultGameplayResetTargetClassifier.cs`
-  - `NewScripts/Runtime/Reset/GameplayResetOrchestrator.cs`
-  - `NewScripts/Runtime/Reset/GameplayResetTargetMatching.cs`
-  - `NewScripts/Runtime/Reset/PlayersResetParticipant.cs`
-  - `NewScripts/Runtime/Bootstrap/SceneBootstrapper.cs`
-  - `NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmContracts.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/DefaultRunRearmTargetClassifier.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmOrchestrator.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/ActorKindMatching.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs`
 
 ### Docs / evidências relacionadas
 

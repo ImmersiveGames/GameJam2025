@@ -734,8 +734,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1081313265}
-  - component: {fileID: 1081313263}
   - component: {fileID: 1081313268}
+  - component: {fileID: 1081313269}
   m_Layer: 0
   m_Name: InputRoot
   m_TagString: Untagged
@@ -743,20 +743,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1081313263
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1081313262}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c42ae1457dedbfb46a1f0bc294bce8f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerMapName: Player
-  menuMapName: UI
 --- !u!4 &1081313265
 Transform:
   m_ObjectHideFlags: 0
@@ -784,6 +770,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 667975ca949338b4caf32e93a7bffd8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1081313269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081313262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa9f66bffc590944abfdedd7851becaa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerMapName: Player
+  menuMapName: UI
 --- !u!1 &1137477972
 GameObject:
   m_ObjectHideFlags: 0

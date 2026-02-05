@@ -79,11 +79,11 @@ Garantir que transições do SceneFlow possam opcionalmente exibir um “Loading
 Arquivos (NewScripts):
 
 - Orquestração / ordem / anchors `[LoadingHud*]`:
-  - `Runtime/SceneFlow/SceneFlowLoadingService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudOrchestrator.cs`
 - Serviço de loading HUD (setup + Strict/Release + no-op em degraded):
-  - `Presentation/LoadingHud/LoadingHudService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudService.cs`
 - Controller do HUD (visibilidade/efeito):
-  - `Presentation/LoadingHud/LoadingHudController.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Bindings/LoadingHudController.cs`
 
 ## Observabilidade (contrato)
 
@@ -91,7 +91,7 @@ Arquivos (NewScripts):
 
 ### Âncoras mínimas de Loading HUD (evidência)
 
-Emitidas por `LoadingHudService` e `SceneFlowLoadingService` quando `UseLoadingHud=true`:
+Emitidas por `LoadingHudService` e `LoadingHudOrchestrator` quando `UseLoadingHud=true`:
 
 - `[LoadingHudEnsure] ...`
 - `[LoadingHudShow] ...`
@@ -144,9 +144,9 @@ Quando o HUD não pode operar em Release:
 ### Runtime / Editor (código e assets)
 
 - **Infrastructure**
-  - `Runtime/Scene/SceneTransitionService.cs`
-  - `Presentation/LoadingHud/LoadingHudService.cs`
-  - `Runtime/SceneFlow/SceneFlowAdapters.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Runtime/SceneFlowAdapterFactory.cs`
 
 ### Docs / evidências relacionadas
 

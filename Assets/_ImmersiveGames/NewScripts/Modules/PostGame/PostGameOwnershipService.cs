@@ -1,8 +1,8 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.ControlModes;
 using _ImmersiveGames.NewScripts.Modules.Gates;
+using _ImmersiveGames.NewScripts.Modules.InputModes;
 namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
 

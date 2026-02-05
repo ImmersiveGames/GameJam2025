@@ -1,6 +1,6 @@
 #nullable enable
 using System;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime

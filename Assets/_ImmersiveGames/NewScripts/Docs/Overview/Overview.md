@@ -78,7 +78,7 @@ Durante a transição:
 #### Reset por escopos vs Reset de gameplay
 
 - **WorldLifecycle (infra)**: reset determinístico do mundo (gate + hooks + spawn/despawn) e **soft reset por escopos** via `ResetScope` e `IResetScopeParticipant`.
-- **Gameplay Reset (gameplay)**: módulo em `Gameplay/CoreGameplay/Reset/` que define **alvos** (`GameplayResetTarget`) e **etapas** (`GameplayResetStep`) para resets de componentes (`IGameplayResettable`). Pode ser acionado via QA (direto) ou via bridges (ex.: `PlayersResetParticipant`).
+- **RunRearm (gameplay)**: módulo em `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/` que define **alvos** (`RunRearmTarget`) e **etapas** (`RunRearmStep`) para resets de componentes (`IRunRearmable`). Pode ser acionado via Dev (direto) ou via bridges (ex.: `PlayersRunRearmWorldParticipant`).
 
 - Executa reset determinístico por escopos e etapas (despawn/spawn/hook).
 - Integrado ao Scene Flow via `WorldLifecycleSceneFlowResetDriver`:
@@ -173,7 +173,7 @@ A fonte vigente do Baseline 2.0 é o contrato de observabilidade + evidência da
 
 ## Evidências (log)
 - **Última evidência (log bruto):** `../Reports/lastlog.log`
-- `GlobalBootstrap` registra `ISceneTransitionService`, `IFadeService`, `IGameNavigationService`,
+- `GlobalCompositionRoot` registra `ISceneTransitionService`, `IFadeService`, `IGameNavigationService`,
   `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleSceneFlowResetDriver`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
   `WorldLifecycleResetCompletedEvent(reason=SceneFlow/ScenesReady)` (com log de *ignored* em profile não-gameplay).

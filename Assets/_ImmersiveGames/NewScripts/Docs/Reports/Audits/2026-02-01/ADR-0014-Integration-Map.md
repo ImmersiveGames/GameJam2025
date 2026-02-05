@@ -4,57 +4,57 @@
 
 ## Contratos (fonte da verdade)
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/GameplayResetContracts.cs`
-  - `GameplayResetStep`
-  - `GameplayResetTarget`
-  - `GameplayResetRequest`
-  - `GameplayResetContext`
-  - `IGameplayResettable` / `IGameplayResettableSync`
-  - `IGameplayResetTargetClassifier`
-  - `IGameplayResetOrchestrator`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmContracts.cs`
+  - `RunRearmStep`
+  - `RunRearmTarget`
+  - `RunRearmRequest`
+  - `RunRearmContext`
+  - `IRunRearmable` / `IRunRearmableSync`
+  - `IRunRearmTargetClassifier`
+  - `IRunRearmOrchestrator`
 
 ## Implementação (runtime)
 
-- `Assets/_ImmersiveGames/NewScripts/Runtime/Reset/GameplayResetOrchestrator.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmOrchestrator.cs`
   - Resolve targets via ActorRegistry (registry-first)
   - Fallback de scan somente quando policy permitir
-  - Ordena determinístico por `ActorId` e por `IGameplayResetOrder`
+  - Ordena determinístico por `ActorId` e por `IRunRearmOrder`
   - Executa etapas `Cleanup -> Restore -> Rebind`
 
-- `Assets/_ImmersiveGames/NewScripts/Gameplay/CoreGameplay/Reset/DefaultGameplayResetTargetClassifier.cs`
-  - Classifica targets via registry + `GameplayResetTarget`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/DefaultRunRearmTargetClassifier.cs`
+  - Classifica targets via registry + `RunRearmTarget`
   - Fallback string-based para `EaterOnly` (compatibilidade)
 
-- `Assets/_ImmersiveGames/NewScripts/Runtime/Reset/PlayersResetParticipant.cs`
-  - Ponte WorldLifecycle (ResetScope.Players) -> GameplayReset (PlayersOnly)
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs`
+  - Ponte WorldLifecycle (ResetScope.Players) -> RunRearm (PlayersOnly)
 
 ## Wiring / Bootstrap (DI)
 
-- `Assets/_ImmersiveGames/NewScripts/Runtime/Bootstrap/SceneBootstrapper.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs`
   - Registra:
-    - `IGameplayResetOrchestrator` -> `GameplayResetOrchestrator`
-    - `IGameplayResetTargetClassifier` -> `DefaultGameplayResetTargetClassifier`
+    - `IRunRearmOrchestrator` -> `RunRearmOrchestrator`
+    - `IRunRearmTargetClassifier` -> `DefaultRunRearmTargetClassifier`
 
 ## QA / Ferramentas
 
-- `Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetRequestQaDriver.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs`
   - Exercita:
-    - criação de `GameplayResetRequest`
-    - classificação (`IGameplayResetTargetClassifier`)
-    - execução (`IGameplayResetOrchestrator`)
+    - criação de `RunRearmRequest`
+    - classificação (`IRunRearmTargetClassifier`)
+    - execução (`IRunRearmOrchestrator`)
 
 ## Assinaturas de log (para evidência rápida)
 
 > Observação: as strings abaixo são úteis para grep em logs; mantenha-as estáveis quando possível.
 
-- `GameplayResetOrchestrator`:
+- `RunRearmOrchestrator`:
   - `[GameplayReset] Start:`
   - `[GameplayReset] Completed:`
   - `[DEGRADED_MODE]` (fallbacks e no-targets)
 
 ## Checklist de mudança segura (quando editar qualquer peça)
 
-1. **Buscar referências** por `IGameplayResetOrchestrator` e `IGameplayResetTargetClassifier`.
-2. Validar que `SceneBootstrapper` continua registrando o conjunto completo.
-3. Garantir que `GameplayResetTarget` não foi expandido sem atualizar classificador/consumo.
-4. Rodar QA: `GameplayResetRequestQaDriver` (ou equivalente) e confirmar logs.
+1. **Buscar referências** por `IRunRearmOrchestrator` e `IRunRearmTargetClassifier`.
+2. Validar que `SceneScopeCompositionRoot` continua registrando o conjunto completo.
+3. Garantir que `RunRearmTarget` não foi expandido sem atualizar classificador/consumo.
+4. Rodar QA: `RunRearmRequestDevDriver` (ou equivalente) e confirmar logs.

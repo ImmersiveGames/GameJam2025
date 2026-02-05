@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.NewScripts.Core.Events;

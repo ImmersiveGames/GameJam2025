@@ -3,21 +3,20 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gates;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
 {
     /// <summary>
-    /// Opt-in (dev/QA) asserter para tornar o Baseline 2.0 "auto-fail":
+    /// Opt-in (dev/QA) asserter para tornar o Baseline 2.0 "autofail":
     /// valida ordem de eventos SceneFlow, emissão do ResetCompleted antes do FadeOut,
     /// coerência de tokens do SimulationGate e idempotência de fim de run.
     ///
     /// Importante:
     /// - Não é parte do pipeline de produção por padrão.
-    /// - Recomendado habilitar via define `NEWSCRIPTS_BASELINE_ASSERTS` (para "fail alto").
+    /// - Recomendado habilitar via define 'NEWSCRIPTS_BASELINE_ASSERTS' (para "fail alto").
     /// - Pode ser instalado manualmente chamando <see cref="TryInstall"/>.
     ///
     /// Nota de robustez:
@@ -265,7 +264,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             string sig = SceneTransitionSignature.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
-            if (state.Started && !state.Completed)
+            if (state.started && !state.completed)
             {
                 Fail(sig, "I2",
                     "Nova transição Started observada, mas a transição anterior não completou (estado inconsistente).",
@@ -273,8 +272,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 state.Reset();
             }
 
-            state.Started = true;
-            state.StartedFrame = UnityEngine.Time.frameCount;
+            state.started = true;
+            state.startedFrame = UnityEngine.Time.frameCount;
 
             if (!EnsureGateResolved() || !_gate.IsTokenActive(SceneTransitionToken))
             {
@@ -293,13 +292,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             string sig = SceneTransitionSignature.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
-            if (!state.Started)
+            if (!state.started)
             {
                 Fail(sig, "I2", "ScenesReady observado antes de Started (ordem inválida).", evt.Context.ToString());
             }
 
-            state.ScenesReady = true;
-            state.ScenesReadyFrame = UnityEngine.Time.frameCount;
+            state.scenesReady = true;
+            state.scenesReadyFrame = UnityEngine.Time.frameCount;
 
             DebugUtility.LogVerbose<BaselineInvariantAsserter>(
                 $"[Baseline] ScenesReady signature='{sig}'.",
@@ -322,7 +321,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             string sig = rawSig;
             var state = GetOrCreate(sig);
 
-            if (state.ResetCompleted)
+            if (state.resetCompleted)
             {
                 Fail(sig, "I3",
                     "ResetCompleted duplicado para a mesma signature (emissão duplicada).",
@@ -330,7 +329,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                     extra: evt.ToString());
             }
 
-            if (!state.ScenesReady)
+            if (!state.scenesReady)
             {
                 Fail(sig, "I3",
                     "ResetCompleted observado antes de ScenesReady (ordem inválida).",
@@ -338,9 +337,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                     extra: evt.ToString());
             }
 
-            state.ResetCompleted = true;
-            state.ResetCompletedFrame = UnityEngine.Time.frameCount;
-            state.ResetReason = evt.Reason ?? string.Empty;
+            state.resetCompleted = true;
+            state.resetCompletedFrame = UnityEngine.Time.frameCount;
+            state.resetReason = evt.Reason ?? string.Empty;
 
             DebugUtility.LogVerbose<BaselineInvariantAsserter>(
                 $"[Baseline] ResetCompleted signature='{sig}' reason='{evt.Reason}'.",
@@ -352,15 +351,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             string sig = SceneTransitionSignature.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
-            if (!state.ScenesReady)
+            if (!state.scenesReady)
             {
                 Fail(sig, "I2", "BeforeFadeOut observado antes de ScenesReady (ordem inválida).", evt.Context.ToString());
             }
 
-            state.BeforeFadeOut = true;
-            state.BeforeFadeOutFrame = UnityEngine.Time.frameCount;
+            state.beforeFadeOut = true;
+            state.beforeFadeOutFrame = UnityEngine.Time.frameCount;
 
-            if (!state.ResetCompleted)
+            if (!state.resetCompleted)
             {
                 Fail(sig, "I3", "BeforeFadeOut observado antes do ResetCompleted (gate/regra quebrada).", evt.Context.ToString());
             }
@@ -375,15 +374,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             string sig = SceneTransitionSignature.Compute(evt.Context);
             var state = GetOrCreate(sig);
 
-            if (!state.ScenesReady)
+            if (!state.scenesReady)
             {
                 Fail(sig, "I2", "Completed observado antes de ScenesReady (ordem inválida).", evt.Context.ToString());
             }
 
-            state.Completed = true;
-            state.CompletedFrame = UnityEngine.Time.frameCount;
+            state.completed = true;
+            state.completedFrame = UnityEngine.Time.frameCount;
 
-            if (!state.ResetCompleted)
+            if (!state.resetCompleted)
             {
                 Fail(sig, "I3",
                     "Completed observado antes do ResetCompleted (ordem inválida).",
@@ -560,35 +559,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
 
         private sealed class TransitionState
         {
-            public bool Started;
-            public bool ScenesReady;
-            public bool ResetCompleted;
-            public bool BeforeFadeOut;
-            public bool Completed;
+            public bool started;
+            public bool scenesReady;
+            public bool resetCompleted;
+            public bool beforeFadeOut;
+            public bool completed;
 
-            public int StartedFrame;
-            public int ScenesReadyFrame;
-            public int ResetCompletedFrame;
-            public int BeforeFadeOutFrame;
-            public int CompletedFrame;
+            public int startedFrame;
+            public int scenesReadyFrame;
+            public int resetCompletedFrame;
+            public int beforeFadeOutFrame;
+            public int completedFrame;
 
-            public string ResetReason = string.Empty;
+            public string resetReason = string.Empty;
 
             public void Reset()
             {
-                Started = false;
-                ScenesReady = false;
-                ResetCompleted = false;
-                BeforeFadeOut = false;
-                Completed = false;
+                started = false;
+                scenesReady = false;
+                resetCompleted = false;
+                beforeFadeOut = false;
+                completed = false;
 
-                StartedFrame = 0;
-                ScenesReadyFrame = 0;
-                ResetCompletedFrame = 0;
-                BeforeFadeOutFrame = 0;
-                CompletedFrame = 0;
+                startedFrame = 0;
+                scenesReadyFrame = 0;
+                resetCompletedFrame = 0;
+                beforeFadeOutFrame = 0;
+                completedFrame = 0;
 
-                ResetReason = string.Empty;
+                resetReason = string.Empty;
             }
         }
     }

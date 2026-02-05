@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Interop;
+using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Guards;
