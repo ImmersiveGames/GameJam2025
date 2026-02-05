@@ -4,7 +4,10 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Interop;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning.Definitions;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev;
@@ -75,26 +78,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // Gameplay Reset (Groups/Targets)
             // ----------------------------
             // Classificador de alvos (Players/Eater/ActorIdSet/All) para reset de gameplay.
-            if (!provider.TryGetForScene<IGameplayResetTargetClassifier>(_sceneName, out var classifier) || classifier == null)
+            if (!provider.TryGetForScene<IRunRearmTargetClassifier>(_sceneName, out var classifier) || classifier == null)
             {
                 provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
                 provider.TryGetGlobal<IDegradedModeReporter>(out var degradedModeReporter);
 
-                classifier = new DefaultGameplayResetTargetClassifier(runtimeModeProvider, degradedModeReporter);
+                classifier = new DefaultRunRearmTargetClassifier(runtimeModeProvider, degradedModeReporter);
                 provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"IGameplayResetTargetClassifier registrado para a cena '{_sceneName}'.");
+                    $"IRunRearmTargetClassifier registrado para a cena '{_sceneName}'.");
             }
 
             // Orquestrador de reset de gameplay (por fases) acionável por participantes do WorldLifecycle.
-            if (!provider.TryGetForScene<IGameplayResetOrchestrator>(_sceneName, out var gameplayReset) || gameplayReset == null)
+            if (!provider.TryGetForScene<IRunRearmOrchestrator>(_sceneName, out var gameplayReset) || gameplayReset == null)
             {
-                gameplayReset = new GameplayResetOrchestrator(_sceneName);
+                gameplayReset = new RunRearmOrchestrator(_sceneName);
                 provider.RegisterForScene(_sceneName, gameplayReset, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"IGameplayResetOrchestrator registrado para a cena '{_sceneName}'.");
+                    $"IRunRearmOrchestrator registrado para a cena '{_sceneName}'.");
             }
 
             // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
@@ -118,13 +121,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             // Ponte WorldLifecycle soft reset -> Gameplay reset
-            var playersResetParticipant = new PlayerResetParticipant();
-            provider.RegisterForScene<IGameplayResetParticipant>(
+            var playersResetParticipant = new PlayersRunRearmWorldParticipant();
+            provider.RegisterForScene<IRunRearmWorldParticipant>(
                 _sceneName,
                 playersResetParticipant,
                 allowOverride: false);
             DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"PlayerResetParticipant registrado para a cena '{_sceneName}'.");
+                $"IRunRearmWorldBridge registrado para a cena '{_sceneName}'.");
 
             RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
 

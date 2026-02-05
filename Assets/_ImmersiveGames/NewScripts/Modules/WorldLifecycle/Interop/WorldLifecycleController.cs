@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;

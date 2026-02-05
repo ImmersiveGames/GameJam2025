@@ -2,8 +2,9 @@ using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Eater;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Eater.Movement;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Bindings.Eater;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Bindings.Eater.Movement;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning

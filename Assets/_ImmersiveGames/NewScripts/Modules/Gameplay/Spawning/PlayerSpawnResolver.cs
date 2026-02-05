@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Bindings.Player;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning
 {
