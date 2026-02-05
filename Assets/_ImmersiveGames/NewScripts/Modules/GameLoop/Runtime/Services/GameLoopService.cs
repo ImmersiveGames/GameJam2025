@@ -3,8 +3,8 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ControlModes;
 using _ImmersiveGames.NewScripts.Modules.PostGame;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Core;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
@@ -282,7 +282,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
                 return;
             }
 
-            owner.OnPostPlayEntered(new PostPlayOwnershipContext(
+            owner.OnPostGameEntered(new PostGameOwnershipContext(
                 info.Signature,
                 info.SceneName,
                 info.Profile,
@@ -297,7 +297,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
                 return;
             }
 
-            owner.OnPostPlayExited(new PostPlayOwnershipExitContext(
+            owner.OnPostGameExited(new PostGameOwnershipExitContext(
                 info.Signature,
                 info.SceneName,
                 info.Profile,
@@ -330,16 +330,16 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
                 : null;
         }
 
-        private static IPostPlayOwnershipService ResolvePostPlayOwnershipService()
+        private static IPostGameOwnershipService ResolvePostPlayOwnershipService()
         {
-            return DependencyManager.Provider.TryGetGlobal<IPostPlayOwnershipService>(out var service)
+            return DependencyManager.Provider.TryGetGlobal<IPostGameOwnershipService>(out var service)
                 ? service
                 : null;
         }
 
-        private static IGameRunStatusService ResolveGameRunStatus()
+        private static IGameRunStateService ResolveGameRunStatus()
         {
-            return DependencyManager.Provider.TryGetGlobal<IGameRunStatusService>(out var status)
+            return DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var status)
                 ? status
                 : null;
         }

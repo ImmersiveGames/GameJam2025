@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
+using _ImmersiveGames.NewScripts.Core.Fsm;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
 
 namespace _ImmersiveGames.Scripts.EaterSystem

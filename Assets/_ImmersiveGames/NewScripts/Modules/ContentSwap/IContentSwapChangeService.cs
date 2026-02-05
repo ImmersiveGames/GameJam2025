@@ -12,11 +12,4 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap
         Task RequestContentSwapInPlaceAsync(ContentSwapPlan plan, string reason, ContentSwapOptions? options);
         Task RequestContentSwapInPlaceAsync(string contentId, string reason, ContentSwapOptions? options = null);
     }
-    /// <summary>
-    /// Modos canônicos de troca de conteúdo.
-    /// </summary>
-    public enum ContentSwapMode
-    {
-        InPlace = 0
-    }
 }

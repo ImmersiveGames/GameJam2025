@@ -3,7 +3,7 @@
 #nullable enable
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Mode;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap;
 using _ImmersiveGames.NewScripts.Modules.Levels.Providers;
 using _ImmersiveGames.NewScripts.Modules.Levels.Resolvers;

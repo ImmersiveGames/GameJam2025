@@ -3,7 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Mode;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.Levels.Catalogs;
 using _ImmersiveGames.NewScripts.Modules.Levels.Definitions;
 using _ImmersiveGames.NewScripts.Modules.Levels.Providers;

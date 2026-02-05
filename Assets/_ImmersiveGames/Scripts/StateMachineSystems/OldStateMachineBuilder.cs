@@ -1,5 +1,6 @@
 
-using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
+using _ImmersiveGames.NewScripts.Core.Fsm;
+using _ImmersiveGames.NewScripts.Core.Validation;
 namespace _ImmersiveGames.Scripts.StateMachineSystems {
     /// <summary>
     /// Builder para criar uma OldStateMachine para o ControllerSystems de forma fluida e modular.

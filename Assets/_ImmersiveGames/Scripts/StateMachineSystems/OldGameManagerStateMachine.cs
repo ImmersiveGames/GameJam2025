@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
+using _ImmersiveGames.NewScripts.Core.Validation;
 using UnityEngine;
 using UnityUtils;
 

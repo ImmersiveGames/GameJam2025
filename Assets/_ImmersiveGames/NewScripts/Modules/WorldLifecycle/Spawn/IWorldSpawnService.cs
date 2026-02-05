@@ -14,16 +14,5 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn
 
         Task DespawnAsync();
     }
-
-    /// <summary>
-    /// Estado opcional para implementações que precisem expor diagnósticos adicionais.
-    /// </summary>
-    public enum WorldSpawnState
-    {
-        NotSpawned,
-        Spawning,
-        Spawned,
-        Despawning
-    }
 }
 

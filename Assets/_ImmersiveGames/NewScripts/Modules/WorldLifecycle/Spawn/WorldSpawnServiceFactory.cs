@@ -4,6 +4,8 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Eater;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning.Definitions;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn
 {
     /// <summary>

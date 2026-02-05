@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 namespace _ImmersiveGames.NewScripts.Core.Fsm
 {
     public abstract class Transition
