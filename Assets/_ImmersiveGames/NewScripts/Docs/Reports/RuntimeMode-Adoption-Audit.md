@@ -13,7 +13,7 @@ após a introdução do `RuntimeModeConfig` (ADR-0008).
 - ContentSwap
 - Navigation
 - Gates
-- ControlModes
+- InputModes
 - PostGame
 
 ## Checklist por módulo

@@ -27,7 +27,7 @@ Modules/<Feature>/
 
 ## Convenções de nomes
 - Pastas: evitar termos genéricos e repetidos (`Core`, `Presentation`) e evitar palavras que causam duplicação no projeto (`Unity`, `Camera`, `Input`).
-  - Preferir: `View`, `ControlModes`, `Bindings`.
+  - Preferir: `View`, `InputModes`, `Bindings`.
 - Arquivos:
   - `I*.cs` contém **apenas a interface** (enums/structs vão para `*Contracts.cs` ou arquivo próprio).
   - Integração: `*Bridge`, `*Adapter`, `*Driver`, `*Coordinator`.
@@ -47,7 +47,7 @@ Modules/<Feature>/
 - `ContentSwap/`: troca de conteúdo (in-place) + contratos/eventos.
 - `Navigation/`: navegação Menu↔Gameplay + binders de UI.
 - `Gates/`: simulation gates e bridges.
-- `ControlModes/`: input/control modes + bridge com SceneFlow.
+- `InputModes/`: input/control modes + bridge com SceneFlow.
 - `PostGame/`: overlay + ownership do pós-jogo.
 
 ## Checklist de fechamento do módulo

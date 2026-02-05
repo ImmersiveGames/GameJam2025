@@ -21,7 +21,7 @@
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/IntroStage/Runtime/*`
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/ControlModes/Interop/SceneFlowInputModeBridge.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/InputModes/Interop/SceneFlowInputModeBridge.cs`
 
 ## Contexto
 

@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
             public const string ContentSwap = "ContentSwap";
             public const string Navigation = "Navigation";
             public const string Gates = "Gates";
-            public const string ControlModes = "ControlModes";
+            public const string InputModes = "InputModes";
             public const string PostGame = "PostGame";
             public const string Infrastructure = "Infrastructure";
         }

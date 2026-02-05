@@ -17,7 +17,7 @@
 | `Runtime/Mode/DegradedModeReporter.cs` | `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/DegradedModeReporter.cs` |
 | `Runtime/Bootstrap/GlobalBootstrap.cs` | `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.cs` |
 | `Runtime/Bootstrap/SceneBootstrapper.cs` | `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs` |
-| `Runtime/InputSystems/InputModeSceneFlowBridge.cs` | `Assets/_ImmersiveGames/NewScripts/Modules/ControlModes/Interop/SceneFlowInputModeBridge.cs` |
+| `Runtime/InputSystems/InputModeSceneFlowBridge.cs` | `Assets/_ImmersiveGames/NewScripts/Modules/InputModes/Interop/SceneFlowInputModeBridge.cs` |
 | `Runtime/Gates/SimulationGateTokens.cs` | `Assets/_ImmersiveGames/NewScripts/Modules/Gates/SimulationGateTokens.cs` |
 | `Gameplay/CoreGameplay/ContentSwap/ContentSwapChangeServiceInPlaceOnly.cs` | `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs` |
 | `Gameplay/CoreGameplay/ContentSwap/ContentSwapContextService.cs` | `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/ContentSwapContextService.cs` |
