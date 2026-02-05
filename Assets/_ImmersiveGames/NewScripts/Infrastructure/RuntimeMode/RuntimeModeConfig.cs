@@ -26,6 +26,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
         [Header("Strictness (somente em Strict)")]
         public StrictnessSettings strictness = new StrictnessSettings();
 
+        [Header("Input Modes")]
+        public InputModesSettings inputModes = new InputModesSettings();
+
         [Serializable]
         public sealed class DegradedReporterSettings
         {
@@ -59,6 +62,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 
             [Tooltip("Em Strict, permite falhar hard (exceção) em casos de degradação. Recomendado manter falso nesta fase.")]
             public bool degradedAsException = false;
+        }
+
+        [Serializable]
+        public sealed class InputModesSettings
+        {
+            [Tooltip("Habilita o módulo InputModes (registro do IInputModeService no DI global).")]
+            public bool enableInputModes = true;
+
+            [Tooltip("Nome do action map de gameplay (Player).")]
+            public string playerActionMapName = "Player";
+
+            [Tooltip("Nome do action map de menu/UI.")]
+            public string menuActionMapName = "UI";
+
+            [Tooltip("Emite logs verbosos de configuração/registro.")]
+            public bool logVerbose = true;
         }
     }
 

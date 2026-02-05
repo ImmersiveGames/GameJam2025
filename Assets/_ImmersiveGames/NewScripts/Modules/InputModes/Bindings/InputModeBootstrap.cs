@@ -6,6 +6,7 @@
 
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.InputModes.Bindings
 {
@@ -43,6 +44,25 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Bindings
                 return;
             }
 
+            var config = ResolveRuntimeConfig();
+            if (config != null)
+            {
+                var settings = config.inputModes;
+                if (!settings.enableInputModes)
+                {
+                    DebugUtility.LogVerbose(typeof(InputModeBootstrap),
+                        "[InputMode] InputModes desabilitado via RuntimeModeConfig; bootstrap ignorado.",
+                        DebugUtility.Colors.Info);
+                    ReportInputModesDegraded("disabled_by_config",
+                        "InputModes disabled by RuntimeModeConfig (bootstrap).");
+                    _initialized = true;
+                    return;
+                }
+
+                playerMapName = settings.playerActionMapName;
+                menuMapName = settings.menuActionMapName;
+            }
+
             var service = new InputModeService(playerMapName, menuMapName);
             DependencyManager.Provider.RegisterGlobal<IInputModeService>(service);
 
@@ -57,6 +77,31 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Bindings
         {
             EnsureRegistered(playerMapName, menuMapName);
             DontDestroyOnLoad(gameObject);
+        }
+
+        private static RuntimeModeConfig ResolveRuntimeConfig()
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                return null;
+            }
+
+            return DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var config) ? config : null;
+        }
+
+        private static void ReportInputModesDegraded(string reason, string detail)
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var reporter) || reporter == null)
+            {
+                return;
+            }
+
+            reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
         }
     }
 }

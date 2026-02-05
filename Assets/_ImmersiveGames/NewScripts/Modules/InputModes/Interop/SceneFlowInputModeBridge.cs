@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
@@ -62,6 +63,8 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             {
                 DebugUtility.LogWarning<SceneFlowInputModeBridge>(
                     "[InputMode] IInputModeService indisponivel; transicao ignorada.");
+                ReportInputModesDegraded("missing_service",
+                    "SceneFlowInputModeBridge could not resolve IInputModeService.");
                 return;
             }
 
@@ -263,6 +266,21 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service) ? service : null;
         }
 
+        private static void ReportInputModesDegraded(string reason, string detail)
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var reporter) || reporter == null)
+            {
+                return;
+            }
+
+            reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
+        }
+
         private static IGameLoopService ResolveGameLoopService()
         {
             if (!DependencyManager.HasInstance)
@@ -294,4 +312,3 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         }
     }
 }
-
