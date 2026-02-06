@@ -50,17 +50,21 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Bindings
                 var settings = config.inputModes;
                 if (!settings.enableInputModes)
                 {
-                    DebugUtility.LogVerbose(typeof(InputModeBootstrap),
-                        "[InputMode] InputModes desabilitado via RuntimeModeConfig; bootstrap ignorado.",
-                        DebugUtility.Colors.Info);
+                    if (settings.logVerbose)
+                    {
+                        DebugUtility.LogVerbose(typeof(InputModeBootstrap),
+                            "[InputMode] InputModes desabilitado via RuntimeModeConfig; bootstrap ignorado.",
+                            DebugUtility.Colors.Info);
+                    }
+
                     ReportInputModesDegraded("disabled_by_config",
                         "InputModes disabled by RuntimeModeConfig (bootstrap).");
                     _initialized = true;
                     return;
                 }
 
-                playerMapName = settings.playerActionMapName;
-                menuMapName = settings.menuActionMapName;
+                playerMapName = ResolveMapName(settings.playerActionMapName, playerMapName, "Player");
+                menuMapName = ResolveMapName(settings.menuActionMapName, menuMapName, "UI");
             }
 
             var service = new InputModeService(playerMapName, menuMapName);
@@ -102,6 +106,21 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Bindings
             }
 
             reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
+        }
+
+        private static string ResolveMapName(string configuredName, string fallbackName, string defaultName)
+        {
+            if (!string.IsNullOrWhiteSpace(configuredName))
+            {
+                return configuredName;
+            }
+
+            if (!string.IsNullOrWhiteSpace(fallbackName))
+            {
+                return fallbackName;
+            }
+
+            return defaultName;
         }
     }
 }
