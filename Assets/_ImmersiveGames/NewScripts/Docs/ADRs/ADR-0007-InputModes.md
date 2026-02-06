@@ -1,6 +1,6 @@
 ﻿# ADR-0007: Formalizar InputModes e responsabilidade do módulo
 
-- Status: **Proposed**
+- Status: **Implemented**
 - Data: 2026-02-05
 - Dono: NewScripts/Core
 - Tags: Input, SceneFlow, UX, Architecture
@@ -52,3 +52,14 @@ do InputModes e seus nomes de action map padrão, mantendo fallback seguro quand
 - `[OBS][InputMode] Applied mode='FrontendMenu' map='UI' ... reason='SceneFlow/Completed:Frontend'`
 - Em Gameplay: Applied mode='Gameplay' map='Gameplay' após ScenesReady/Completed conforme profile.
 - Se desabilitado por config: DEGRADED_MODE feature='InputModes' reason='disabled_by_config'.
+
+## Como validar (checklist rápido)
+
+1) No boot, validar log de registro do IInputModeService com playerMap/menuMap conforme RuntimeModeConfig.
+2) Em SceneFlow TransitionCompleted Startup/Frontend, validar:
+   - `[OBS][InputMode] Applied mode='FrontendMenu' map='UI' ... reason='SceneFlow/Completed:Frontend'`
+3) Em SceneFlow TransitionCompleted Gameplay, validar:
+   - `[OBS][InputMode] Applied mode='Gameplay' map='Gameplay' ... reason='SceneFlow/Completed:Gameplay'`
+4) Se RuntimeModeConfig.inputModes.enableInputModes=false, validar:
+   - DEGRADED_MODE feature='InputModes' reason='disabled_by_config'
+   - IInputModeService não registrado no DI global.
