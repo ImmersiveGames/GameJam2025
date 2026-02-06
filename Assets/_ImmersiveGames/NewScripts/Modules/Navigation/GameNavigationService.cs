@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
+
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     public sealed class GameNavigationService : IGameNavigationService
     {
         private readonly ISceneTransitionService _sceneFlow;
-        private readonly GameNavigationCatalog _catalog;
+        private readonly IGameNavigationCatalog _catalog;
 
         private int _navigationInProgress;
 
@@ -22,6 +23,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
 
         public GameNavigationService(ISceneTransitionService sceneFlow, GameNavigationCatalog catalog)
+            : this(sceneFlow, (IGameNavigationCatalog)catalog)
+        {
+        }
+
+        public GameNavigationService(ISceneTransitionService sceneFlow, GameNavigationCatalogAsset catalogAsset)
+            : this(sceneFlow, (IGameNavigationCatalog)catalogAsset)
+        {
+        }
+
+        public GameNavigationService(ISceneTransitionService sceneFlow, IGameNavigationCatalog catalog)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -73,9 +84,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
             catch (Exception ex)
             {
+                // Comentário: navegação é infraestrutura de fluxo; não deve derrubar o jogo.
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] Exceção ao navegar. routeId='{routeId}', ex={ex}");
-                throw;
+                    $"[Navigation] Exceção ao navegar. routeId='{routeId}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {

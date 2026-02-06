@@ -1,6 +1,7 @@
 ﻿using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 {
     /// <summary>
@@ -48,8 +49,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
                 $"[Navigation] Play solicitado. reason='{actionReason}'.",
                 DebugUtility.Colors.Info);
 
-            // Fire-and-forget: o serviço deve fazer guard de in-flight/debounce.
-            _ = _navigation.RequestGameplayAsync(actionReason);
+            // Fire-and-forget com captura de falhas.
+            NavigationTaskRunner.FireAndForget(
+                _navigation.RequestGameplayAsync(actionReason),
+                typeof(MenuPlayButtonBinder),
+                "Menu/Play");
 
             return true;
         }

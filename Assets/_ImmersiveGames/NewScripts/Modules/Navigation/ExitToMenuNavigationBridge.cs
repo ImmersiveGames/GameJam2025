@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
@@ -11,6 +12,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     /// </summary>
     public sealed class ExitToMenuNavigationBridge : IDisposable
     {
+        // Comentário: reason padrão alinhado com o fluxo de pós-game.
+        private const string ExitToMenuReason = "PostGame/ExitToMenu";
+
         private readonly EventBinding<GameExitToMenuRequestedEvent> _exitToMenuBinding;
         private bool _disposed;
 
@@ -44,13 +48,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return;
             }
 
-            string reason = evt?.Reason ?? "ExitToMenu/Unspecified";
+            string reason = evt?.Reason ?? ExitToMenuReason;
 
             DebugUtility.Log<ExitToMenuNavigationBridge>(
                 $"[Navigation] ExitToMenu recebido -> RequestMenuAsync. routeId='{GameNavigationCatalog.Routes.ToMenu}', reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            _ = navigation.RequestMenuAsync(reason);
+            NavigationTaskRunner.FireAndForget(
+                navigation.RequestMenuAsync(reason),
+                typeof(ExitToMenuNavigationBridge),
+                $"ExitToMenu -> routeId='{GameNavigationCatalog.Routes.ToMenu}'");
         }
     }
 }

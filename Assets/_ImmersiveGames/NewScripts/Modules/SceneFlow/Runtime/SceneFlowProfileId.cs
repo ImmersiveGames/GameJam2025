@@ -1,4 +1,6 @@
 using System;
+using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 {
     /// <summary>
@@ -9,26 +11,30 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
     /// - Comparação é case-insensitive.
     /// - <see cref="None"/> representa ausência de profile.
     /// </summary>
-    public readonly struct SceneFlowProfileId : IEquatable<SceneFlowProfileId>
+    [Serializable]
+    public struct SceneFlowProfileId : IEquatable<SceneFlowProfileId>
     {
-        public string Value { get; }
+        [SerializeField] private string _value;
+
+        public string Value => _value ?? string.Empty;
 
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
         public SceneFlowProfileId(string value)
         {
-            Value = Normalize(value);
+            _value = Normalize(value);
         }
 
         public static SceneFlowProfileId FromName(string name) => new(name);
 
         public static string Normalize(string value)
         {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToLowerInvariant();
-
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : value.Trim().ToLowerInvariant();
         }
 
-        public override string ToString() => Value ?? string.Empty;
+        public override string ToString() => Value;
 
         public bool Equals(SceneFlowProfileId other) =>
             string.Equals(Value, other.Value, StringComparison.OrdinalIgnoreCase);
@@ -40,6 +46,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 
         public static bool operator ==(SceneFlowProfileId left, SceneFlowProfileId right) => left.Equals(right);
         public static bool operator !=(SceneFlowProfileId left, SceneFlowProfileId right) => !left.Equals(right);
+
+        public static implicit operator SceneFlowProfileId(string value) => new(value);
+        public static implicit operator string(SceneFlowProfileId id) => id.Value;
 
         public static SceneFlowProfileId None => default;
 

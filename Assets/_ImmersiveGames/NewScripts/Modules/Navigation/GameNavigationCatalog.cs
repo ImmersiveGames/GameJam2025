@@ -2,18 +2,17 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Catálogo de rotas/plans. Um único lugar para editar nomes de cenas e combinações.
+    /// Catálogo de rotas/plans (hardcoded).
     ///
-    /// Contrato esperado pelo <see cref="GameNavigationService" />:
-    /// - expõe RouteIds (para logging)
-    /// - expõe Routes (ids canônicos)
-    /// - expõe TryGet(routeId, out request)
-    /// - expõe CreateDefaultMinimal()
+    /// Nota:
+    /// - Continua existindo como fallback mínimo e como referência canônica de ids (Routes.*).
+    /// - Para rotas configuráveis, use <see cref="GameNavigationCatalogAsset"/>.
     /// </summary>
-    public sealed class GameNavigationCatalog
+    public sealed class GameNavigationCatalog : IGameNavigationCatalog
     {
         // Scene names (Unity: SceneManager.GetActiveScene().name)
         public const string SceneMenu = "MenuScene";

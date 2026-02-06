@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
@@ -52,7 +53,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 $"[Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync. reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            _ = navigation.RequestGameplayAsync(reason);
+            NavigationTaskRunner.FireAndForget(
+                navigation.RequestGameplayAsync(reason),
+                typeof(RestartNavigationBridge),
+                $"Restart -> routeId='{GameNavigationCatalog.Routes.ToGameplay}'");
         }
     }
 }
