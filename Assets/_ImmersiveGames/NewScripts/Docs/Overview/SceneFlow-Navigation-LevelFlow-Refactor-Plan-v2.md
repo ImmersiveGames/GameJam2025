@@ -11,7 +11,7 @@
   - `GameNavigationCatalog.cs`
   - `NavigationModuleInstaller.cs`
 
-**Gap relevante (impacta o compile):** o módulo `Navigation` **referencia** tipos de `SceneFlow` e `Transition` que **não estão presentes neste zip** (ex.: `ISceneFlowService`, `SceneTransitionRequest`, `SceneFlowRoutes`, `SceneFlowProfileId`). Isso não impede o planejamento, mas implica que a Fase 1 inclui **formalizar/introduzir** esses tipos (ou ajustar a dependência) para o conjunto compilar.
+**Gap relevante (impacta o compile):** o módulo `Navigation` **referencia** tipos de `SceneFlow` e `Transition` que **não estão presentes neste zip** (ex.: `ISceneTransitionService`, `SceneFlowRoutes` — este último não existe no repo). Já existem no repo `SceneTransitionRequest` e `SceneFlowProfileId`, então a Fase 1 pode focar em **formalizar/introduzir** o que falta (ou ajustar a dependência) para o conjunto compilar.
 
 ---
 
@@ -29,7 +29,7 @@ No `GameNavigationCatalog`, o catálogo define entradas como:
 - `routeId` (string) — destino lógico
 - `profileId` (string) — estilo/parametrização do SceneFlow
 
-E o `GameNavigationService` monta um `SceneTransitionRequest(routeId, profileId)` e manda para o `ISceneFlowService`.
+E o `GameNavigationService` monta um `SceneTransitionRequest(routeId, profileId)` e manda para o `ISceneTransitionService`.
 
 Isso é aceitável **enquanto** `profileId` for estritamente “estilo de transição”. O risco começa quando `profileId` é reaproveitado para:
 - validar se uma navegação é “permitida”
@@ -121,7 +121,7 @@ Isso é aceitável **enquanto** `profileId` for estritamente “estilo de transi
   - resolve `LevelId → SceneRouteId + payload`
 
 #### SceneFlow layer
-- `ISceneFlowService`
+- `ISceneTransitionService`
   - `RequestTransitionAsync(SceneTransitionRequest)`
 
 #### Routing + Policy
@@ -139,7 +139,7 @@ Isso é aceitável **enquanto** `profileId` for estritamente “estilo de transi
    - resolve `intent → (routeId, styleId)` via `GameNavigationCatalogAsset`
    - se for `StartGameplay(levelId)`, consulta `ILevelFlowService` para substituir/parametrizar `routeId/payload`
    - cria `SceneTransitionRequest(routeId, styleId, payload, reason)`
-3. `ISceneFlowService`:
+3. `ISceneTransitionService`:
    - roda `INavigationPolicy` (bloqueia/autoriza)
    - resolve rota via `ISceneRouteResolver`
    - resolve estilo via `TransitionStyleCatalogAsset`
@@ -163,9 +163,8 @@ Isso é aceitável **enquanto** `profileId` for estritamente “estilo de transi
 **Objetivo:** ter o mínimo para compilar e medir impacto.
 
 - [ ] Inventariar no repo real (fora do zip) onde vivem hoje:
-  - `ISceneFlowService`
+  - `ISceneTransitionService`
   - `SceneTransitionRequest`
-  - `SceneFlowRoutes`
   - `SceneFlowProfileId`
 - [ ] Decidir se:
   - (A) vamos **introduzir** `SceneRouteId/TransitionStyleId` agora, ou
@@ -193,7 +192,7 @@ Isso é aceitável **enquanto** `profileId` for estritamente “estilo de transi
 #### 1.3 Ajustar Navigation module (o que está no zip)
 - [ ] `GameNavigationCatalog` passa a emitir `SceneRouteId` + `TransitionStyleId`.
 - [ ] `GameNavigationService` monta `SceneTransitionRequest(routeId, styleId, payload, reason)`.
-- [ ] Remover dependência direta de `SceneFlowRoutes` e `SceneFlowProfileId` (ou manter só como compat layer temporária).
+- [ ] Remover dependência direta de `SceneFlowProfileId` (ou manter só como compat layer temporária).
 
 #### 1.4 Compatibilidade (para não quebrar tudo de uma vez)
 - [ ] Criar um **adapter**:
