@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
@@ -30,6 +31,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("Id canônico da rota (ex.: 'to-menu', 'to-gameplay').")]
             public string routeId;
 
+            [Tooltip("SceneRouteId (novo). Se vazio, usa routeId legado via adapter.")]
+            public SceneRouteId sceneRouteId;
+
+            [Tooltip("TransitionStyleId (novo). Se vazio, usa transitionProfileId legado via adapter.")]
+            public TransitionStyleId transitionStyleId;
+
             [Tooltip("Cenas a carregar (por nome).")]
             public string[] scenesToLoad;
 
@@ -46,7 +53,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             public SceneFlowProfileId transitionProfileId = SceneFlowProfileId.Frontend;
 
             public override string ToString()
-                => $"routeId='{routeId}', active='{targetActiveScene}', useFade={useFade}, profile='{transitionProfileId}', " +
+                => $"routeId='{routeId}', sceneRouteId='{sceneRouteId}', styleId='{transitionStyleId}', " +
+                   $"active='{targetActiveScene}', useFade={useFade}, profile='{transitionProfileId}', " +
                    $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
 
             private static string FormatArray(string[] arr)
@@ -73,9 +81,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
-        public bool TryGet(string routeId, out SceneTransitionRequest request)
+        public bool TryGet(string routeId, out GameNavigationEntry entry)
         {
-            request = null;
+            entry = default;
 
             if (string.IsNullOrWhiteSpace(routeId))
             {
@@ -84,13 +92,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             EnsureCache();
 
-            if (!_cache.TryGetValue(routeId, out var entry) || entry == null)
+            if (!_cache.TryGetValue(routeId, out var cachedEntry) || cachedEntry == null)
             {
                 return false;
             }
 
-            request = BuildRequest(entry);
-            return request != null;
+            return TryBuildEntry(cachedEntry, out entry);
         }
 
         private void OnEnable()
@@ -154,15 +161,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
-        private static SceneTransitionRequest BuildRequest(RouteEntry entry)
+        private static bool TryBuildEntry(RouteEntry entry, out GameNavigationEntry resolved)
         {
+            resolved = default;
+
             if (entry == null)
             {
-                return null;
+                return false;
             }
-
-            var load = Sanitize(entry.scenesToLoad);
-            var unload = Sanitize(entry.scenesToUnload);
 
             if (string.IsNullOrWhiteSpace(entry.targetActiveScene))
             {
@@ -171,12 +177,30 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     $"[Navigation] Rota sem targetActiveScene. {entry}");
             }
 
-            return new SceneTransitionRequest(
-                scenesToLoad: load,
-                scenesToUnload: unload,
+            var payload = SceneTransitionPayload.FromLegacy(
+                scenesToLoad: Sanitize(entry.scenesToLoad),
+                scenesToUnload: Sanitize(entry.scenesToUnload),
                 targetActiveScene: entry.targetActiveScene,
                 useFade: entry.useFade,
-                transitionProfileId: entry.transitionProfileId);
+                legacyProfileId: entry.transitionProfileId);
+
+            var sceneRouteId = entry.sceneRouteId.IsValid
+                ? entry.sceneRouteId
+                : LegacyRouteStringToRouteIdAdapter.Adapt(entry.routeId);
+
+            if (!sceneRouteId.IsValid)
+            {
+                DebugUtility.LogWarning<GameNavigationCatalogAsset>(
+                    $"[Navigation] Rota sem SceneRouteId válido. {entry}");
+                return false;
+            }
+
+            var styleId = entry.transitionStyleId.IsValid
+                ? entry.transitionStyleId
+                : LegacyProfileIdToStyleIdAdapter.Adapt(entry.transitionProfileId);
+
+            resolved = new GameNavigationEntry(sceneRouteId, styleId, payload);
+            return true;
         }
 
         private static string[] Sanitize(string[] scenes)

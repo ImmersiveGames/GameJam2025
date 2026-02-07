@@ -2,7 +2,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -14,6 +17,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameNavigationCatalog _catalog;
+        private readonly ISceneRouteCatalog _sceneRouteCatalog;
+        private readonly ITransitionStyleCatalog _styleCatalog;
 
         private int _navigationInProgress;
 
@@ -33,9 +38,20 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
 
         public GameNavigationService(ISceneTransitionService sceneFlow, IGameNavigationCatalog catalog)
+            : this(sceneFlow, catalog, null, null)
+        {
+        }
+
+        public GameNavigationService(
+            ISceneTransitionService sceneFlow,
+            IGameNavigationCatalog catalog,
+            ISceneRouteCatalog sceneRouteCatalog,
+            ITransitionStyleCatalog styleCatalog)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            _sceneRouteCatalog = sceneRouteCatalog;
+            _styleCatalog = styleCatalog;
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
                 $"[Navigation] GameNavigationService inicializado. Rotas: {string.Join(", ", _catalog.RouteIds)}",
@@ -66,15 +82,27 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             try
             {
-                if (!_catalog.TryGet(routeId, out var request) || request == null)
+                if (!_catalog.TryGet(routeId, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[Navigation] Rota desconhecida ou sem request. routeId='{routeId}'.");
                     return;
                 }
 
+                var payload = ResolvePayload(entry);
+                var (profileId, useFade) = ResolveStyle(entry, payload);
+
+                var request = new SceneTransitionRequest(
+                    entry.RouteId,
+                    entry.StyleId,
+                    payload,
+                    transitionProfileId: profileId,
+                    useFade: useFade,
+                    requestedBy: reason);
+
                 DebugUtility.Log(typeof(GameNavigationService),
-                    $"[Navigation] NavigateAsync -> routeId='{routeId}', reason='{reason ?? "<null>"}', " +
+                    $"[Navigation] NavigateAsync -> intentId='{routeId}', sceneRouteId='{entry.RouteId}', " +
+                    $"styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', " +
                     $"Load=[{string.Join(", ", request.ScenesToLoad)}], " +
                     $"Unload=[{string.Join(", ", request.ScenesToUnload)}], " +
                     $"Active='{request.TargetActiveScene}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
@@ -92,6 +120,40 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             {
                 Interlocked.Exchange(ref _navigationInProgress, 0);
             }
+        }
+
+        private SceneTransitionPayload ResolvePayload(GameNavigationEntry entry)
+        {
+            var payload = entry.Payload ?? SceneTransitionPayload.Empty;
+
+            if (payload.HasSceneData)
+            {
+                return payload;
+            }
+
+            if (_sceneRouteCatalog != null && _sceneRouteCatalog.TryGet(entry.RouteId, out var routeDefinition))
+            {
+                return payload.WithSceneData(routeDefinition);
+            }
+
+            return payload;
+        }
+
+        private (SceneFlowProfileId profileId, bool useFade) ResolveStyle(
+            GameNavigationEntry entry,
+            SceneTransitionPayload payload)
+        {
+            if (_styleCatalog != null && _styleCatalog.TryGet(entry.StyleId, out var style))
+            {
+                return (style.ProfileId, style.UseFade);
+            }
+
+            if (payload.HasLegacyStyle)
+            {
+                return (payload.LegacyProfileId, payload.UseFade);
+            }
+
+            return (SceneFlowProfileId.None, true);
         }
     }
 }

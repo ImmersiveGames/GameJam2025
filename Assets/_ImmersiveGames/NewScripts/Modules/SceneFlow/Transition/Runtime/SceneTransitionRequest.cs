@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
@@ -12,6 +13,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public IReadOnlyList<string> ScenesToUnload { get; }
         public string TargetActiveScene { get; }
         public bool UseFade { get; }
+
+        public SceneRouteId RouteId { get; }
+        public TransitionStyleId StyleId { get; }
+        public SceneTransitionPayload Payload { get; }
 
         public SceneFlowProfileId TransitionProfileId { get; }
 
@@ -44,9 +49,35 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             UseFade = useFade;
             TransitionProfileId = transitionProfileId;
 
+            RouteId = SceneRouteId.None;
+            StyleId = TransitionStyleId.None;
+            Payload = SceneTransitionPayload.Empty;
+
             // Mantém propriedades não-nulas (evita NRT warnings/erros).
             ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
             RequestedBy = string.IsNullOrWhiteSpace(requestedBy) ? string.Empty : requestedBy.Trim();
+        }
+
+        public SceneTransitionRequest(
+            SceneRouteId routeId,
+            TransitionStyleId styleId,
+            SceneTransitionPayload payload,
+            SceneFlowProfileId transitionProfileId = default,
+            bool useFade = true,
+            string? contextSignature = null,
+            string? requestedBy = null)
+            : this(
+                payload?.ScenesToLoad ?? new List<string>(),
+                payload?.ScenesToUnload ?? new List<string>(),
+                payload?.TargetActiveScene ?? string.Empty,
+                useFade,
+                transitionProfileId,
+                contextSignature,
+                requestedBy)
+        {
+            RouteId = routeId;
+            StyleId = styleId;
+            Payload = payload ?? SceneTransitionPayload.Empty;
         }
     }
 }
