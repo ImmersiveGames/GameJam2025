@@ -48,11 +48,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     DebugUtility.Colors.Info);
             }
 
-            var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate);
+            INavigationPolicy navigationPolicy = null;
+            if (DependencyManager.Provider.TryGetGlobal<INavigationPolicy>(out var existingPolicy) && existingPolicy != null)
+            {
+                navigationPolicy = existingPolicy;
+            }
+            else
+            {
+                navigationPolicy = new AllowAllNavigationPolicy();
+                DependencyManager.Provider.RegisterGlobal(navigationPolicy);
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[SceneFlow] INavigationPolicy registrado (AllowAllNavigationPolicy).",
+                    DebugUtility.Colors.Info);
+            }
+
+            var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate, navigationPolicy);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
+                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}, Policy={navigationPolicy.GetType().Name}).",
                 DebugUtility.Colors.Info);
         }
 
