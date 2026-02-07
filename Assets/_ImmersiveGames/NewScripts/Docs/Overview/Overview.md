@@ -39,16 +39,16 @@ Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Pla
 - pedidos de navegação/transição (quando a camada de navigation estiver ativa),
 - e controle de “atividade” (isActive).
 
-### 3) ContentSwap vs LevelManager
+### 3) ContentSwap vs LevelManager (Legacy)
 
 - **ContentSwap** é o executor técnico de troca de conteúdo em runtime:
   - troca **in-place** (sem SceneFlow).
   - usa os contratos `IContentSwapChangeService`, `ContentSwapPlan`, `ContentSwapOptions` e `IContentSwapContextService`.
   - representa a troca de conteúdo como **troca de conteúdo**, não como progresso de nível.
-- **LevelManager** é o orquestrador de **progressão**:
-  - decide quando avançar/retroceder de nível,
-  - delega a troca de conteúdo para o ContentSwap,
-  - **sempre dispara IntroStage** ao entrar em um nível (política deste ciclo).
+- **LevelManager (legacy)** foi descontinuado no runtime:
+  - não deve coexistir com `LevelFlow`,
+  - o fluxo atual usa `LevelCatalogAsset` + `ILevelFlowService`,
+  - o bootstrap bloqueia qualquer registro de `ILevelManager` para evitar catálogos duplicados.
 
 > Referências: ADR-0016 (ContentSwap InPlace-only).
 

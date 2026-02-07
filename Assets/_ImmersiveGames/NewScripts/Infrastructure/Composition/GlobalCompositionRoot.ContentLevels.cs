@@ -3,8 +3,6 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Levels;
-using _ImmersiveGames.NewScripts.Modules.Levels.Dev;
-using _ImmersiveGames.NewScripts.Modules.Levels.Runtime;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -36,23 +34,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (provider.TryGetGlobal<ILevelManager>(out var existing) && existing != null)
             {
-                return;
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[LevelFlow] ERRO: ILevelManager encontrado no DI global. Levels legacy não pode coexistir com LevelFlow.");
+                throw new InvalidOperationException(
+                    "Levels legacy detectado. Remova o registro de ILevelManager e use LevelFlow (LevelCatalogAsset).");
             }
 
-            LevelManagerInstaller.EnsureRegistered(fromBootstrap: true);
+            DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                "[LevelFlow] Levels legacy desativado. Use LevelFlow (LevelCatalogAsset/ILevelFlowService) para seleção de níveis.");
         }
 
         private static void RegisterLevelQaInstaller()
         {
-            try
-            {
-                LevelDevInstaller.EnsureInstalled();
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][Level] Falha ao instalar LevelDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
-            }
+            DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                "[QA][Level] LevelDevContextMenu desativado junto com Levels legacy. Use ferramentas de LevelFlow.");
         }
 
     }
