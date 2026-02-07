@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
@@ -21,5 +22,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         /// Conveniência: navegar para Gameplay.
         /// </summary>
         Task RequestGameplayAsync(string reason = null);
+
+        /// <summary>
+        /// Inicia gameplay a partir de um LevelId (LevelFlow -> SceneRouteId + payload).
+        /// </summary>
+        Task StartGameplayAsync(LevelId levelId, string reason = null);
     }
 }

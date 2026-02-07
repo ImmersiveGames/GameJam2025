@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -40,11 +41,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public static GameNavigationCatalog CreateDefaultMinimal() => new();
 
         /// <summary>
-        /// Resolve uma rota canônica em um <see cref="SceneTransitionRequest"/>.
+        /// Resolve uma rota canônica em um <see cref="GameNavigationEntry"/>.
         /// </summary>
-        public bool TryGet(string routeId, out SceneTransitionRequest request)
+        public bool TryGet(string routeId, out GameNavigationEntry entry)
         {
-            request = null;
+            entry = default;
 
             if (string.IsNullOrWhiteSpace(routeId))
             {
@@ -54,13 +55,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             // StringComparer.Ordinal por estabilidade (ids canônicos em lower-hyphen).
             if (string.Equals(routeId, Routes.ToGameplay, StringComparison.Ordinal))
             {
-                request = BuildMenuToGameplay();
+                entry = BuildMenuToGameplay();
                 return true;
             }
 
             if (string.Equals(routeId, Routes.ToMenu, StringComparison.Ordinal))
             {
-                request = BuildGameplayToMenu();
+                entry = BuildGameplayToMenu();
                 return true;
             }
 
@@ -70,40 +71,55 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         /// <summary>
         /// Menu -> Gameplay.
         /// </summary>
-        public SceneTransitionRequest BuildMenuToGameplay()
+        public GameNavigationEntry BuildMenuToGameplay()
         {
-            return new SceneTransitionRequest(
+            var payload = SceneTransitionPayload.FromLegacy(
                 scenesToLoad: new[] { SceneGameplay, SceneUIGlobal },
                 scenesToUnload: new[] { SceneMenu },
                 targetActiveScene: SceneGameplay,
                 useFade: true,
-                transitionProfileId: SceneFlowProfileId.Gameplay);
+                legacyProfileId: SceneFlowProfileId.Gameplay);
+
+            return new GameNavigationEntry(
+                routeId: LegacyRouteStringToRouteIdAdapter.Adapt(Routes.ToGameplay),
+                styleId: LegacyProfileIdToStyleIdAdapter.Adapt(SceneFlowProfileId.Gameplay),
+                payload: payload);
         }
 
         /// <summary>
         /// Gameplay -> Menu.
         /// </summary>
-        public SceneTransitionRequest BuildGameplayToMenu()
+        public GameNavigationEntry BuildGameplayToMenu()
         {
-            return new SceneTransitionRequest(
+            var payload = SceneTransitionPayload.FromLegacy(
                 scenesToLoad: new[] { SceneMenu, SceneUIGlobal },
                 scenesToUnload: new[] { SceneGameplay },
                 targetActiveScene: SceneMenu,
                 useFade: true,
-                transitionProfileId: SceneFlowProfileId.Frontend);
+                legacyProfileId: SceneFlowProfileId.Frontend);
+
+            return new GameNavigationEntry(
+                routeId: LegacyRouteStringToRouteIdAdapter.Adapt(Routes.ToMenu),
+                styleId: LegacyProfileIdToStyleIdAdapter.Adapt(SceneFlowProfileId.Frontend),
+                payload: payload);
         }
 
         /// <summary>
         /// Gameplay -> Gameplay (reload).
         /// </summary>
-        public SceneTransitionRequest BuildGameplayReload()
+        public GameNavigationEntry BuildGameplayReload()
         {
-            return new SceneTransitionRequest(
+            var payload = SceneTransitionPayload.FromLegacy(
                 scenesToLoad: new[] { SceneGameplay, SceneUIGlobal },
                 scenesToUnload: new[] { SceneGameplay },
                 targetActiveScene: SceneGameplay,
                 useFade: true,
-                transitionProfileId: SceneFlowProfileId.Gameplay);
+                legacyProfileId: SceneFlowProfileId.Gameplay);
+
+            return new GameNavigationEntry(
+                routeId: LegacyRouteStringToRouteIdAdapter.Adapt(Routes.ToGameplay),
+                styleId: LegacyProfileIdToStyleIdAdapter.Adapt(SceneFlowProfileId.Gameplay),
+                payload: payload);
         }
     }
 }

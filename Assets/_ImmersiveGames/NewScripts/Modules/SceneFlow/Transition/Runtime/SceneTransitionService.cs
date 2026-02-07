@@ -23,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
         private readonly ISceneTransitionCompletionGate _completionGate;
+        private readonly INavigationPolicy _navigationPolicy;
 
         private readonly SemaphoreSlim _transitionGate = new(1, 1);
         private int _transitionInProgress;
@@ -38,11 +39,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public SceneTransitionService(
             ISceneFlowLoaderAdapter? loaderAdapter,
             ISceneFlowFadeAdapter? fadeAdapter,
-            ISceneTransitionCompletionGate? completionGate = null)
+            ISceneTransitionCompletionGate? completionGate = null,
+            INavigationPolicy? navigationPolicy = null)
         {
             _loaderAdapter = loaderAdapter ?? new SceneManagerLoaderAdapter();
             _fadeAdapter = fadeAdapter ?? new NoFadeAdapter();
             _completionGate = completionGate ?? new NoOpTransitionCompletionGate();
+            _navigationPolicy = navigationPolicy ?? new AllowAllNavigationPolicy();
         }
 
         public async Task TransitionAsync(SceneTransitionRequest request)
@@ -54,6 +57,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             var context = SceneTransitionSignature.BuildContext(request);
             string signature = SceneTransitionSignature.Compute(context);
+
+            if (!_navigationPolicy.CanTransition(request, out var denialReason))
+            {
+                DebugUtility.LogWarning<SceneTransitionService>(
+                    $"[SceneFlow] Transição bloqueada por policy. " +
+                    $"signature='{signature}', routeId='{context.RouteId}', styleId='{context.StyleId}', " +
+                    $"reason='{Sanitize(request.Reason)}', requestedBy='{Sanitize(request.RequestedBy)}', " +
+                    $"policyReason='{Sanitize(denialReason)}'.");
+                return;
+            }
 
             // Dedupe por assinatura: evita "double start" no mesmo contexto em janela curta.
             // Isto não substitui correção do caller, mas impede o pior: reentrância/interleaving.
@@ -91,7 +104,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 MarkStarted(signature);
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}' requestedBy='{Sanitize(request.RequestedBy)}' {context}",
+                    $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' " +
+                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}', " +
+                    $"reason='{Sanitize(request.Reason)}', requestedBy='{Sanitize(request.RequestedBy)}' {context}",
                     DebugUtility.Colors.Info);
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
@@ -111,7 +126,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' " +
+                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Info);
 
                 // 2) Aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
@@ -126,7 +142,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 MarkCompleted(signature);
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionCompleted id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] TransitionCompleted id={transitionId} signature='{signature}' " +
+                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)

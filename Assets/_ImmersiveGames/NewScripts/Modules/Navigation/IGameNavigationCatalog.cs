@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -12,6 +11,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     {
         IReadOnlyCollection<string> RouteIds { get; }
 
-        bool TryGet(string routeId, out SceneTransitionRequest request);
+        bool TryGet(string routeId, out GameNavigationEntry entry);
     }
 }
