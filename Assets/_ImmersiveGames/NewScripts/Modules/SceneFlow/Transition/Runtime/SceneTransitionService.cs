@@ -91,7 +91,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 MarkStarted(signature);
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}' requestedBy='{Sanitize(request.RequestedBy)}' {context}",
+                    $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' " +
+                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}', " +
+                    $"reason='{Sanitize(request.Reason)}', requestedBy='{Sanitize(request.RequestedBy)}' {context}",
                     DebugUtility.Colors.Info);
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
@@ -111,7 +113,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' " +
+                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Info);
 
                 // 2) Aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
@@ -126,7 +129,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 MarkCompleted(signature);
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionCompleted id={transitionId} signature='{signature}' profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] TransitionCompleted id={transitionId} signature='{signature}' " +
+                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)

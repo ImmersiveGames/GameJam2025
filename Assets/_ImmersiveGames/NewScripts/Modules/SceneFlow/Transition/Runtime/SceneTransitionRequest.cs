@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public SceneRouteId RouteId { get; }
         public TransitionStyleId StyleId { get; }
         public SceneTransitionPayload Payload { get; }
+        public string Reason { get; }
 
         public SceneFlowProfileId TransitionProfileId { get; }
 
@@ -41,7 +42,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             bool useFade = true,
             SceneFlowProfileId transitionProfileId = default,
             string? contextSignature = null,
-            string? requestedBy = null)
+            string? requestedBy = null,
+            string? reason = null)
         {
             ScenesToLoad = scenesToLoad;
             ScenesToUnload = scenesToUnload;
@@ -52,6 +54,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             RouteId = SceneRouteId.None;
             StyleId = TransitionStyleId.None;
             Payload = SceneTransitionPayload.Empty;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
 
             // Mantém propriedades não-nulas (evita NRT warnings/erros).
             ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
@@ -65,7 +68,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             SceneFlowProfileId transitionProfileId = default,
             bool useFade = true,
             string? contextSignature = null,
-            string? requestedBy = null)
+            string? requestedBy = null,
+            string? reason = null)
             : this(
                 payload?.ScenesToLoad ?? new List<string>(),
                 payload?.ScenesToUnload ?? new List<string>(),
@@ -73,7 +77,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 useFade,
                 transitionProfileId,
                 contextSignature,
-                requestedBy)
+                requestedBy,
+                reason)
         {
             RouteId = routeId;
             StyleId = styleId;

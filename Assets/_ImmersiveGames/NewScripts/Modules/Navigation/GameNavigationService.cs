@@ -98,7 +98,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     payload,
                     transitionProfileId: profileId,
                     useFade: useFade,
-                    requestedBy: reason);
+                    requestedBy: reason,
+                    reason: reason);
 
                 DebugUtility.Log(typeof(GameNavigationService),
                     $"[Navigation] NavigateAsync -> intentId='{routeId}', sceneRouteId='{entry.RouteId}', " +

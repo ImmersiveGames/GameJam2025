@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
@@ -19,6 +20,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public string TargetActiveScene { get; }
         public bool UseFade { get; }
 
+        public SceneRouteId RouteId { get; }
+        public TransitionStyleId StyleId { get; }
+        public string Reason { get; }
+
         public SceneFlowProfileId TransitionProfileId { get; }
 
         // Compatibilidade: logging / debug pode exibir o texto do profile.
@@ -34,6 +39,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             bool useFade,
+            SceneRouteId routeId,
+            TransitionStyleId styleId,
+            string reason,
             SceneFlowProfileId transitionProfileId,
             string contextSignature = null)
         {
@@ -41,6 +49,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             ScenesToUnload = scenesToUnload;
             TargetActiveScene = targetActiveScene;
             UseFade = useFade;
+            RouteId = routeId;
+            StyleId = styleId;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             TransitionProfileId = transitionProfileId;
 
             ContextSignature = !string.IsNullOrWhiteSpace(contextSignature)
@@ -49,6 +60,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                     scenesToLoad: ScenesToLoad,
                     scenesToUnload: ScenesToUnload,
                     targetActiveScene: TargetActiveScene,
+                    routeId: RouteId,
+                    styleId: StyleId,
                     useFade: UseFade,
                     transitionProfileId: TransitionProfileId);
         }
@@ -57,6 +70,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             IReadOnlyList<string> scenesToLoad,
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
+            SceneRouteId routeId,
+            TransitionStyleId styleId,
             bool useFade,
             SceneFlowProfileId transitionProfileId)
         {
@@ -65,10 +80,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             string load = JoinList(scenesToLoad);
             string unload = JoinList(scenesToUnload);
             string active = (targetActiveScene ?? string.Empty).Trim();
+            string route = routeId.Value ?? string.Empty;
+            string style = styleId.Value ?? string.Empty;
             string profile = transitionProfileId.Value ?? string.Empty;
             string fade = useFade ? "1" : "0";
 
-            return $"p:{profile}|a:{active}|f:{fade}|l:{load}|u:{unload}";
+            return $"r:{route}|s:{style}|p:{profile}|a:{active}|f:{fade}|l:{load}|u:{unload}";
         }
 
         private static string JoinList(IReadOnlyList<string> list)
@@ -103,7 +120,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         public override string ToString()
         {
-            return $"Load=[{string.Join(", ", ScenesToLoad)}], Unload=[{string.Join(", ", ScenesToUnload)}], Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}'";
+            return $"Route='{RouteId}', Style='{StyleId}', Reason='{Reason}', " +
+                   $"Load=[{string.Join(", ", ScenesToLoad)}], Unload=[{string.Join(", ", ScenesToUnload)}], " +
+                   $"Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}'";
         }
 
         public bool Equals(SceneTransitionContext other)
@@ -113,6 +132,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                    Equals(ScenesToUnload, other.ScenesToUnload) &&
                    TargetActiveScene == other.TargetActiveScene &&
                    UseFade == other.UseFade &&
+                   RouteId.Equals(other.RouteId) &&
+                   StyleId.Equals(other.StyleId) &&
+                   Reason == other.Reason &&
                    TransitionProfileId.Equals(other.TransitionProfileId);
         }
 
@@ -129,6 +151,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 hashCode = (hashCode * 397) ^ (ScenesToUnload != null ? ScenesToUnload.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (TargetActiveScene != null ? TargetActiveScene.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ UseFade.GetHashCode();
+                hashCode = (hashCode * 397) ^ RouteId.GetHashCode();
+                hashCode = (hashCode * 397) ^ StyleId.GetHashCode();
+                hashCode = (hashCode * 397) ^ (Reason != null ? Reason.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ TransitionProfileId.GetHashCode();
                 return hashCode;
             }
