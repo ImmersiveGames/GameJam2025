@@ -9,13 +9,27 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7cdacc728aec81746b38bd96d0b26ae3, type: 3}
-  m_Name: LevelCatalog
+  m_Script: {fileID: 11500000, guid: 0e18ee3905b91974287bf47d4b893485, type: 3}
+  m_Name: SceneRouteCatalog
   m_EditorClassIdentifier: 
-  levels:
-  - levelId:
-      _value: level.1
-    routeId:
+  routes:
+  - routeId:
+      _value: to-menu
+    scenesToLoad:
+    - MenuScene
+    - UIGlobalScene
+    scenesToUnload:
+    - GameplayScene
+    targetActiveScene: MenuScene
+  - routeId:
+      _value: to-gameplay
+    scenesToLoad:
+    - GameplayScene
+    - UIGlobalScene
+    scenesToUnload:
+    - MenuScene
+    targetActiveScene: GameplayScene
+  - routeId:
       _value: level.1
     scenesToLoad:
     - GameplayScene
@@ -23,9 +37,7 @@ MonoBehaviour:
     scenesToUnload:
     - MenuScene
     targetActiveScene: GameplayScene
-  - levelId:
-      _value: level.2
-    routeId:
+  - routeId:
       _value: level.2
     scenesToLoad:
     - GameplayScene
@@ -33,4 +45,4 @@ MonoBehaviour:
     scenesToUnload:
     - MenuScene
     targetActiveScene: GameplayScene
-  warnOnInvalidLevels: 1
+  warnOnInvalidRoutes: 1

@@ -1,6 +1,7 @@
 // Assets/_ImmersiveGames/NewScripts/Gameplay/Levels/LevelManagerInstaller.cs
 
 #nullable enable
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
@@ -24,6 +25,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Levels.Runtime
 
         public static void EnsureRegistered(bool fromBootstrap)
         {
+            DebugUtility.LogError(typeof(LevelManagerInstaller),
+                "[LevelManager] Levels legacy desativado. Use LevelFlow (LevelCatalogAsset/ILevelFlowService).");
+            throw new InvalidOperationException(
+                "Levels legacy desativado. Remova LevelManagerInstaller do bootstrap e use LevelFlow.");
+
             if (_registered)
             {
                 return;
@@ -105,6 +111,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Levels.Runtime
         }
     }
 }
-
-
 

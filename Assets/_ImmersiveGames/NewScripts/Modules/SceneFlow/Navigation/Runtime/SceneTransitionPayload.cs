@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
     /// Payload associado a uma rota de transição.
     ///
     /// Observação:
-    /// - Contém dados de compatibilidade (legacy) usados enquanto o catálogo de estilos não é obrigatório.
+    /// - Contém dados de compatibilidade (legacy) usados apenas em cenários de debug/migração.
     /// </summary>
     public sealed class SceneTransitionPayload
     {
@@ -42,19 +42,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
         }
 
         public static SceneTransitionPayload Empty { get; } =
-            new SceneTransitionPayload(Array.Empty<string>(), Array.Empty<string>(), string.Empty, true, SceneFlowProfileId.None);
+            new SceneTransitionPayload(Array.Empty<string>(), Array.Empty<string>(), string.Empty, false, SceneFlowProfileId.None);
 
-        public static SceneTransitionPayload FromLegacy(
+        public static SceneTransitionPayload CreateSceneData(
             IReadOnlyList<string> scenesToLoad,
             IReadOnlyList<string> scenesToUnload,
-            string targetActiveScene,
-            bool useFade,
-            SceneFlowProfileId legacyProfileId)
+            string targetActiveScene)
         {
             var load = SanitizeList(scenesToLoad);
             var unload = SanitizeList(scenesToUnload);
             var active = string.IsNullOrWhiteSpace(targetActiveScene) ? string.Empty : targetActiveScene.Trim();
-            return new SceneTransitionPayload(load, unload, active, useFade, legacyProfileId);
+            return new SceneTransitionPayload(load, unload, active, false, SceneFlowProfileId.None);
         }
 
         public SceneTransitionPayload WithSceneData(SceneRouteDefinition definition)

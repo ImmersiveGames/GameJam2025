@@ -1,5 +1,8 @@
 # ADR-0017 — LevelManager: Config + Catalog (Single Source of Truth)
 
+> **Status atualizado (runtime):** o fluxo de Levels (LevelManager/LevelCatalog) está **descontinuado** em favor de `LevelFlow` (`LevelCatalogAsset` + `ILevelFlowService`).  
+> O bootstrap atual bloqueia a coexistência de dois catálogos para evitar ambiguidade.
+
 ## Status
 
 - Estado: Implementado

@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -27,27 +26,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         [Tooltip("Cena que deve ficar ativa ao final da transição.")]
         public string targetActiveScene;
 
-        [Tooltip("Quando true, aplica fade (se o SceneFlow suportar).")]
-        public bool useFade = true;
-
-        [Tooltip("Profile legado do SceneFlow (fallback).")]
-        public SceneFlowProfileId legacyProfileId = SceneFlowProfileId.Gameplay;
-
         public bool IsValid => levelId.IsValid && routeId.IsValid;
 
         public SceneTransitionPayload ToPayload()
         {
-            return SceneTransitionPayload.FromLegacy(
+            return SceneTransitionPayload.CreateSceneData(
                 scenesToLoad: Sanitize(scenesToLoad),
                 scenesToUnload: Sanitize(scenesToUnload),
-                targetActiveScene: targetActiveScene,
-                useFade: useFade,
-                legacyProfileId: legacyProfileId);
+                targetActiveScene: targetActiveScene);
         }
 
         public override string ToString()
             => $"levelId='{levelId}', routeId='{routeId}', active='{targetActiveScene}', " +
-               $"useFade={useFade}, legacyProfile='{legacyProfileId}', " +
                $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
 
         private static string[] Sanitize(string[] scenes)

@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
@@ -17,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     /// - Manter um único arquivo-asset como fonte de verdade das rotas.
     ///
     /// Observação:
-    /// - Ainda existe o fallback hardcoded (<see cref="GameNavigationCatalog"/>).
+    /// - O catálogo hardcoded (<see cref="GameNavigationCatalog"/>) existe apenas para debug/local dev.
     /// </summary>
     [CreateAssetMenu(
         fileName = "GameNavigationCatalog",
@@ -31,10 +29,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("Id canônico da rota (ex.: 'to-menu', 'to-gameplay').")]
             public string routeId;
 
-            [Tooltip("SceneRouteId (novo). Se vazio, usa routeId legado via adapter.")]
+            [Tooltip("SceneRouteId obrigatório. Deve existir no SceneRouteCatalogAsset.")]
             public SceneRouteId sceneRouteId;
 
-            [Tooltip("TransitionStyleId (novo). Se vazio, usa transitionProfileId legado via adapter.")]
+            [Tooltip("TransitionStyleId obrigatório. Deve existir no TransitionStyleCatalogAsset.")]
             public TransitionStyleId transitionStyleId;
 
             [Tooltip("Cenas a carregar (por nome).")]
@@ -46,15 +44,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("Cena que deve ficar ativa ao final da transição.")]
             public string targetActiveScene;
 
-            [Tooltip("Quando true, aplica fade (se o SceneFlow suportar).")]
-            public bool useFade = true;
-
-            [Tooltip("Profile do SceneFlow (Frontend/GamePlay/etc).")]
-            public SceneFlowProfileId transitionProfileId = SceneFlowProfileId.Frontend;
-
             public override string ToString()
                 => $"routeId='{routeId}', sceneRouteId='{sceneRouteId}', styleId='{transitionStyleId}', " +
-                   $"active='{targetActiveScene}', useFade={useFade}, profile='{transitionProfileId}', " +
+                   $"active='{targetActiveScene}', " +
                    $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
 
             private static string FormatArray(string[] arr)
@@ -177,27 +169,28 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     $"[Navigation] Rota sem targetActiveScene. {entry}");
             }
 
-            var payload = SceneTransitionPayload.FromLegacy(
+            var payload = SceneTransitionPayload.CreateSceneData(
                 scenesToLoad: Sanitize(entry.scenesToLoad),
                 scenesToUnload: Sanitize(entry.scenesToUnload),
-                targetActiveScene: entry.targetActiveScene,
-                useFade: entry.useFade,
-                legacyProfileId: entry.transitionProfileId);
+                targetActiveScene: entry.targetActiveScene);
 
-            var sceneRouteId = entry.sceneRouteId.IsValid
-                ? entry.sceneRouteId
-                : LegacyRouteStringToRouteIdAdapter.Adapt(entry.routeId);
+            var sceneRouteId = entry.sceneRouteId;
 
             if (!sceneRouteId.IsValid)
             {
                 DebugUtility.LogWarning<GameNavigationCatalogAsset>(
-                    $"[Navigation] Rota sem SceneRouteId válido. {entry}");
+                    $"[Navigation] Rota sem SceneRouteId válido. routeId='{entry.routeId}'.");
                 return false;
             }
 
-            var styleId = entry.transitionStyleId.IsValid
-                ? entry.transitionStyleId
-                : LegacyProfileIdToStyleIdAdapter.Adapt(entry.transitionProfileId);
+            var styleId = entry.transitionStyleId;
+
+            if (!styleId.IsValid)
+            {
+                DebugUtility.LogWarning<GameNavigationCatalogAsset>(
+                    $"[Navigation] Rota sem TransitionStyleId válido. routeId='{entry.routeId}'.");
+                return false;
+            }
 
             resolved = new GameNavigationEntry(sceneRouteId, styleId, payload);
             return true;

@@ -4,7 +4,11 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using _ImmersiveGames.NewScripts.Modules.InputModes.Interop;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -125,38 +129,89 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             // Comentário:
-            // - Sem fallback hardcoded: se o catálogo configurável não existir, é erro de configuração (conforme docs).
+            // - Sem fallback hardcoded: se o catálogo configurável não existir, é erro de configuração (fail-fast).
             // - Resources path NÃO inclui 'Assets/Resources'. O arquivo deve estar em:
-            //   Assets/Resources/Navigation/GameNavigationCatalog.asset
-            const string catalogResourcesPath = "Navigation/GameNavigationCatalog";
+            //   Assets/Resources/<path>.asset
+            const string navigationCatalogResourcesPath = "Navigation/GameNavigationCatalog";
+            const string sceneRouteCatalogResourcesPath = "SceneFlow/SceneRouteCatalog";
+            const string transitionStyleCatalogResourcesPath = "SceneFlow/TransitionStyleCatalog";
+            const string levelCatalogResourcesPath = "NewScripts/Config/LevelCatalog";
 
-            GameNavigationCatalogAsset catalogAsset = null;
+            var catalogAsset = LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
+                navigationCatalogResourcesPath,
+                "GameNavigationCatalogAsset");
+            var sceneRouteCatalogAsset = LoadRequiredResourceAsset<SceneRouteCatalogAsset>(
+                sceneRouteCatalogResourcesPath,
+                "SceneRouteCatalogAsset");
+            var styleCatalogAsset = LoadRequiredResourceAsset<TransitionStyleCatalogAsset>(
+                transitionStyleCatalogResourcesPath,
+                "TransitionStyleCatalogAsset");
+            var levelCatalogAsset = LoadRequiredResourceAsset<LevelCatalogAsset>(
+                levelCatalogResourcesPath,
+                "LevelCatalogAsset");
+
+            RegisterGlobalIfMissing<ISceneRouteCatalog>(sceneRouteCatalogAsset, "ISceneRouteCatalog");
+            RegisterGlobalIfMissing<ITransitionStyleCatalog>(styleCatalogAsset, "ITransitionStyleCatalog");
+            RegisterGlobalIfMissing<ILevelFlowService>(levelCatalogAsset, "ILevelFlowService");
+
+            var service = new GameNavigationService(
+                sceneFlow,
+                catalogAsset,
+                sceneRouteCatalogAsset,
+                styleCatalogAsset,
+                levelCatalogAsset);
+            DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[Navigation] GameNavigationService registrado com catálogos via Resources " +
+                $"(navigation='{catalogAsset.name}', sceneRoutes='{sceneRouteCatalogAsset.name}', " +
+                $"styles='{styleCatalogAsset.name}', levels='{levelCatalogAsset.name}').",
+                DebugUtility.Colors.Info);
+        }
+
+        private static T LoadRequiredResourceAsset<T>(string resourcesPath, string assetLabel) where T : ScriptableObject
+        {
+            if (string.IsNullOrWhiteSpace(resourcesPath))
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    $"[Navigation] ERRO: resourcesPath inválido para {assetLabel}. path='{resourcesPath ?? "<null>"}'.");
+                throw new InvalidOperationException($"Resources path inválido para {assetLabel}.");
+            }
+
             try
             {
-                catalogAsset = Resources.Load<GameNavigationCatalogAsset>(catalogResourcesPath);
+                var asset = Resources.Load<T>(resourcesPath);
+                if (asset != null)
+                {
+                    return asset;
+                }
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[Navigation] ERRO: exceção ao carregar GameNavigationCatalogAsset via Resources. path='{catalogResourcesPath}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[Navigation] ERRO: exceção ao carregar {assetLabel} via Resources. " +
+                    $"path='{resourcesPath}', ex='{ex.GetType().Name}: {ex.Message}'.");
                 throw;
             }
 
-            if (catalogAsset == null)
+            var expectedPath = $"Assets/Resources/{resourcesPath}.asset";
+            DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                $"[Navigation] ERRO: {assetLabel} NÃO encontrado em Resources. path='{resourcesPath}'. " +
+                $"Esperado em '{expectedPath}'.");
+            throw new InvalidOperationException($"{assetLabel} ausente em Resources (path='{resourcesPath}'). Navegação requer configuração explícita.");
+        }
+
+        private static void RegisterGlobalIfMissing<T>(T service, string label) where T : class
+        {
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
             {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[Navigation] ERRO: GameNavigationCatalogAsset NÃO encontrado. path='{catalogResourcesPath}'. " +
-                    "Crie o asset via Create > ImmersiveGames > Navigation > Game Navigation Catalog e salve em " +
-                    "'Assets/Resources/Navigation/GameNavigationCatalog.asset'.");
-                throw new InvalidOperationException($"GameNavigationCatalogAsset ausente em Resources (path='{catalogResourcesPath}'). Navegação requer configuração explícita.");
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[Navigation] {label} já registrado no DI global. Registro ignorado.",
+                    DebugUtility.Colors.Info);
+                return;
             }
 
-            var service = new GameNavigationService(sceneFlow, catalogAsset);
-            DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[Navigation] GameNavigationService registrado (catálogo configurável='{catalogAsset.name}', path='{catalogResourcesPath}').",
-                DebugUtility.Colors.Info);
+            DependencyManager.Provider.RegisterGlobal(service);
         }
 
         private static void RegisterExitToMenuNavigationBridge()
