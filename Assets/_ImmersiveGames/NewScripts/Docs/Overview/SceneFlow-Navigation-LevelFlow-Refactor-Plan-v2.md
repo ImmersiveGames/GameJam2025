@@ -5,6 +5,8 @@
 
 **Gap relevante (impacta o compile):** o módulo `Navigation` **referencia** tipos de `SceneFlow` e `Transition` que **não estão presentes neste zip** (ex.: `ISceneTransitionService`, `SceneFlowRoutes` — este último não existe no repo). Já existem no repo `SceneTransitionRequest` e `SceneFlowProfileId`, então a Fase 1 pode focar em **formalizar/introduzir** o que falta (ou ajustar a dependência) para o conjunto compilar.
 
+**Gap relevante (impacta o compile):** o módulo `Navigation` **referencia** tipos de `SceneFlow` e `Transition` que **não estão presentes neste zip** (ex.: `ISceneTransitionService`, `SceneFlowRoutes` — este último não existe no repo). Já existem no repo `SceneTransitionRequest` e `SceneFlowProfileId`, então a Fase 1 pode focar em **formalizar/introduzir** o que falta (ou ajustar a dependência) para o conjunto compilar.
+
 ---
 
 ## 1) Problema atual e por que é arriscado
