@@ -127,6 +127,14 @@ Isso é aceitável **enquanto** `profileId` for estritamente “estilo de transi
 
 ## 4) Fluxo de trabalho de navegação (definição canônica)
 
+### 4.0 Decisão arquitetural (Atual)
+**Decisão:** manter a resolução de `SceneRouteDefinition` e `TransitionStyleDefinition` no **Navigation** (via `GameNavigationService` e catálogos), mantendo o `SceneTransitionService` focado apenas em executar a transição.  
+**Motivo:** esta abordagem reduz o acoplamento do SceneFlow com regras de intenção do jogo, preserva o SOLID (Single Responsibility) e evita que SceneFlow precise conhecer catálogos de navegação/nível. Isso também simplifica a evolução incremental: Navigation centraliza a composição do `SceneTransitionRequest`, e SceneFlow permanece um executor técnico consistente.  
+**Implicações:**  
+- `SceneTransitionRequest` permanece como envelope já resolvido (rota, estilo, payload).  
+- `GameNavigationService` continua como ponto único de resolução (catálogos + LevelFlow).  
+- Qualquer migração futura para resolução no SceneFlow exige um ADR explícito e testes de regressão de navegação/nível.
+
 ### 4.1 Pipeline de uma navegação
 1. **Caller** (UI/ContextMenu/GameLoop) chama `IGameNavigationService`.
 2. `GameNavigationService`:
