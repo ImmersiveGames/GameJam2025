@@ -1,18 +1,17 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Catálogo de rotas/plans (hardcoded).
+    /// Catálogo hardcoded de navegação.
     ///
-    /// Nota:
-    /// - Continua existindo como fallback mínimo e como referência canônica de ids (Routes.*).
-    /// - Para rotas configuráveis, use <see cref="GameNavigationCatalogAsset"/>.
+    /// Observação:
+    /// - Uso recomendado apenas para debug/local dev.
+    /// - Em produção, utilize <see cref="GameNavigationCatalogAsset"/>.
     /// </summary>
+    [Obsolete("Debug only. Use GameNavigationCatalogAsset with SceneRoute/TransitionStyle catalogs.")]
     public sealed class GameNavigationCatalog : IGameNavigationCatalog
     {
         // Scene names (Unity: SceneManager.GetActiveScene().name)
@@ -21,24 +20,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public const string SceneUIGlobal = "UIGlobalScene";
         public const string SceneNewBootstrap = "NewBootstrap";
 
-        public static class Routes
-        {
-            public const string ToMenu = "to-menu";
-            public const string ToGameplay = "to-gameplay";
-        }
-
         private static readonly IReadOnlyCollection<string> _routeIds = new[]
         {
-            Routes.ToMenu,
-            Routes.ToGameplay
+            GameNavigationIntents.ToMenu,
+            GameNavigationIntents.ToGameplay
         };
 
         public IReadOnlyCollection<string> RouteIds => _routeIds;
 
         /// <summary>
-        /// Factory padrão usada pelo GameNavigationService quando nenhum catálogo é injetado.
+        /// Factory de debug: fornece entradas mínimas hardcoded.
         /// </summary>
-        public static GameNavigationCatalog CreateDefaultMinimal() => new();
+        public static GameNavigationCatalog CreateDebugMinimal() => new();
 
         /// <summary>
         /// Resolve uma rota canônica em um <see cref="GameNavigationEntry"/>.
@@ -53,13 +46,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             // StringComparer.Ordinal por estabilidade (ids canônicos em lower-hyphen).
-            if (string.Equals(routeId, Routes.ToGameplay, StringComparison.Ordinal))
+            if (string.Equals(routeId, GameNavigationIntents.ToGameplay, StringComparison.Ordinal))
             {
                 entry = BuildMenuToGameplay();
                 return true;
             }
 
-            if (string.Equals(routeId, Routes.ToMenu, StringComparison.Ordinal))
+            if (string.Equals(routeId, GameNavigationIntents.ToMenu, StringComparison.Ordinal))
             {
                 entry = BuildGameplayToMenu();
                 return true;
@@ -73,16 +66,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         /// </summary>
         public GameNavigationEntry BuildMenuToGameplay()
         {
-            var payload = SceneTransitionPayload.FromLegacy(
+            var payload = SceneTransitionPayload.CreateSceneData(
                 scenesToLoad: new[] { SceneGameplay, SceneUIGlobal },
                 scenesToUnload: new[] { SceneMenu },
-                targetActiveScene: SceneGameplay,
-                useFade: true,
-                legacyProfileId: SceneFlowProfileId.Gameplay);
+                targetActiveScene: SceneGameplay);
 
             return new GameNavigationEntry(
-                routeId: LegacyRouteStringToRouteIdAdapter.Adapt(Routes.ToGameplay),
-                styleId: LegacyProfileIdToStyleIdAdapter.Adapt(SceneFlowProfileId.Gameplay),
+                routeId: SceneRouteId.FromName(GameNavigationIntents.ToGameplay),
+                styleId: TransitionStyleId.FromName("style.gameplay"),
                 payload: payload);
         }
 
@@ -91,16 +82,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         /// </summary>
         public GameNavigationEntry BuildGameplayToMenu()
         {
-            var payload = SceneTransitionPayload.FromLegacy(
+            var payload = SceneTransitionPayload.CreateSceneData(
                 scenesToLoad: new[] { SceneMenu, SceneUIGlobal },
                 scenesToUnload: new[] { SceneGameplay },
-                targetActiveScene: SceneMenu,
-                useFade: true,
-                legacyProfileId: SceneFlowProfileId.Frontend);
+                targetActiveScene: SceneMenu);
 
             return new GameNavigationEntry(
-                routeId: LegacyRouteStringToRouteIdAdapter.Adapt(Routes.ToMenu),
-                styleId: LegacyProfileIdToStyleIdAdapter.Adapt(SceneFlowProfileId.Frontend),
+                routeId: SceneRouteId.FromName(GameNavigationIntents.ToMenu),
+                styleId: TransitionStyleId.FromName("style.frontend"),
                 payload: payload);
         }
 
@@ -109,16 +98,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         /// </summary>
         public GameNavigationEntry BuildGameplayReload()
         {
-            var payload = SceneTransitionPayload.FromLegacy(
+            var payload = SceneTransitionPayload.CreateSceneData(
                 scenesToLoad: new[] { SceneGameplay, SceneUIGlobal },
                 scenesToUnload: new[] { SceneGameplay },
-                targetActiveScene: SceneGameplay,
-                useFade: true,
-                legacyProfileId: SceneFlowProfileId.Gameplay);
+                targetActiveScene: SceneGameplay);
 
             return new GameNavigationEntry(
-                routeId: LegacyRouteStringToRouteIdAdapter.Adapt(Routes.ToGameplay),
-                styleId: LegacyProfileIdToStyleIdAdapter.Adapt(SceneFlowProfileId.Gameplay),
+                routeId: SceneRouteId.FromName(GameNavigationIntents.ToGameplay),
+                styleId: TransitionStyleId.FromName("style.gameplay"),
                 payload: payload);
         }
     }

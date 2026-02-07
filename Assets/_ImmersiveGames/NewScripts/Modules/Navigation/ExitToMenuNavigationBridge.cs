@@ -51,13 +51,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             string reason = evt?.Reason ?? ExitToMenuReason;
 
             DebugUtility.Log<ExitToMenuNavigationBridge>(
-                $"[Navigation] ExitToMenu recebido -> RequestMenuAsync. routeId='{GameNavigationCatalog.Routes.ToMenu}', reason='{reason}'.",
+                $"[Navigation] ExitToMenu recebido -> RequestMenuAsync. routeId='{GameNavigationIntents.ToMenu}', reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             NavigationTaskRunner.FireAndForget(
                 navigation.RequestMenuAsync(reason),
                 typeof(ExitToMenuNavigationBridge),
-                $"ExitToMenu -> routeId='{GameNavigationCatalog.Routes.ToMenu}'");
+                $"ExitToMenu -> routeId='{GameNavigationIntents.ToMenu}'");
         }
     }
 }

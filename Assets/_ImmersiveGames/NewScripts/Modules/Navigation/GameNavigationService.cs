@@ -24,24 +24,32 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private int _navigationInProgress;
 
+        [Obsolete("Debug only. Use the full constructor with SceneRoute/TransitionStyle/LevelFlow services.")]
         public GameNavigationService(ISceneTransitionService sceneFlow)
-            : this(sceneFlow, GameNavigationCatalog.CreateDefaultMinimal())
         {
+            throw new InvalidOperationException(
+                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
         }
 
+        [Obsolete("Debug only. Use the full constructor with SceneRoute/TransitionStyle/LevelFlow services.")]
         public GameNavigationService(ISceneTransitionService sceneFlow, GameNavigationCatalog catalog)
-            : this(sceneFlow, (IGameNavigationCatalog)catalog)
         {
+            throw new InvalidOperationException(
+                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
         }
 
+        [Obsolete("Use o construtor completo com SceneRouteCatalog/TransitionStyleCatalog/LevelFlowService.")]
         public GameNavigationService(ISceneTransitionService sceneFlow, GameNavigationCatalogAsset catalogAsset)
-            : this(sceneFlow, (IGameNavigationCatalog)catalogAsset)
         {
+            throw new InvalidOperationException(
+                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
         }
 
+        [Obsolete("Use o construtor completo com SceneRouteCatalog/TransitionStyleCatalog/LevelFlowService.")]
         public GameNavigationService(ISceneTransitionService sceneFlow, IGameNavigationCatalog catalog)
-            : this(sceneFlow, catalog, null, null, null)
         {
+            throw new InvalidOperationException(
+                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
         }
 
         public GameNavigationService(
@@ -53,8 +61,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-            _sceneRouteCatalog = sceneRouteCatalog;
-            _styleCatalog = styleCatalog;
+            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
+            _styleCatalog = styleCatalog ?? throw new ArgumentNullException(nameof(styleCatalog));
             _levelFlowService = levelFlowService;
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
@@ -63,10 +71,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
 
         public Task RequestMenuAsync(string reason = null)
-            => NavigateAsync(GameNavigationCatalog.Routes.ToMenu, reason);
+            => NavigateAsync(GameNavigationIntents.ToMenu, reason);
 
         public Task RequestGameplayAsync(string reason = null)
-            => NavigateAsync(GameNavigationCatalog.Routes.ToGameplay, reason);
+            => NavigateAsync(GameNavigationIntents.ToGameplay, reason);
 
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
@@ -86,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             try
             {
-                if (!_catalog.TryGet(GameNavigationCatalog.Routes.ToGameplay, out var entry) || !entry.IsValid)
+                if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[Navigation] Intent padrão de gameplay não encontrado. levelId='{levelId}'.");
@@ -97,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     DebugUtility.LogWarning(typeof(GameNavigationService),
                         $"[Navigation] LevelFlow indisponível. Fallback para rota padrão. levelId='{levelId}'.");
-                    await ExecuteEntryAsync(GameNavigationCatalog.Routes.ToGameplay, entry, reason);
+                    await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, entry, reason);
                     return;
                 }
 
@@ -105,12 +113,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     DebugUtility.LogWarning(typeof(GameNavigationService),
                         $"[Navigation] LevelId não resolvido. Fallback para rota padrão. levelId='{levelId}'.");
-                    await ExecuteEntryAsync(GameNavigationCatalog.Routes.ToGameplay, entry, reason);
+                    await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, entry, reason);
                     return;
                 }
 
                 var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
-                await ExecuteEntryAsync(GameNavigationCatalog.Routes.ToGameplay, levelEntry, reason);
+                await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);
             }
             catch (Exception ex)
             {

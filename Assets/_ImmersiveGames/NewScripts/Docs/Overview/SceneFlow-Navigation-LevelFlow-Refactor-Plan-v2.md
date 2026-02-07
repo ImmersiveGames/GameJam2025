@@ -196,10 +196,8 @@ Isso é aceitável **enquanto** `profileId` for estritamente “estilo de transi
 - [ ] `GameNavigationService` monta `SceneTransitionRequest(routeId, styleId, payload, reason)`.
 - [ ] Remover dependência direta de `SceneFlowProfileId` (ou manter só como compat layer temporária).
 
-#### 1.4 Compatibilidade (para não quebrar tudo de uma vez)
-- [ ] Criar um **adapter**:
-  - `LegacyProfileIdToStyleIdAdapter`
-  - `LegacyRouteStringToRouteIdAdapter`
+#### 1.4 Compatibilidade (após validação do fluxo)
+- [x] Removidos adapters legacy do caminho principal (rota/estilo agora são obrigatórios via catálogo).
 
 **Critério de pronto:**
 - renomear/trocar `SceneTransitionProfile` **não** altera navegação.
