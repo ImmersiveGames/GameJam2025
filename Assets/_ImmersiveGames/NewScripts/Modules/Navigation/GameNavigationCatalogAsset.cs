@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
@@ -8,206 +7,163 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Catálogo configurável de navegação (setável no Inspector).
+    /// Catálogo de intents de navegação (produção).
     ///
-    /// Ideia:
-    /// - Remover hardcode de cenas/rotas do código.
-    /// - Manter um único arquivo-asset como fonte de verdade das rotas.
+    /// F3 (Route como fonte única de Scene Data):
+    /// - Este catálogo NÃO define ScenesToLoad/Unload/Active.
+    /// - A Scene Data é resolvida via SceneRouteCatalogAsset (SceneFlow.Navigation) pelo GameNavigationService.
     ///
-    /// Observação:
-    /// - O catálogo hardcoded (<see cref="GameNavigationCatalog"/>) existe apenas para debug/local dev.
+    /// Campos LEGACY permanecem apenas para migração e são ignorados (com warning).
     /// </summary>
     [CreateAssetMenu(
         fileName = "GameNavigationCatalog",
-        menuName = "ImmersiveGames/Navigation/Game Navigation Catalog",
-        order = 50)]
+        menuName = "ImmersiveGames/NewScripts/Navigation/GameNavigationCatalog",
+        order = 0)]
     public sealed class GameNavigationCatalogAsset : ScriptableObject, IGameNavigationCatalog
     {
         [Serializable]
         public sealed class RouteEntry
         {
-            [Tooltip("Id canônico da rota (ex.: 'to-menu', 'to-gameplay').")]
+            [Tooltip("Identificador canônico do intent de navegação (ex.: 'nav.menu', 'nav.gameplay').")]
             public string routeId;
 
-            [Tooltip("SceneRouteId obrigatório. Deve existir no SceneRouteCatalogAsset.")]
+            [Tooltip("SceneRouteId que fornece a Scene Data (ScenesToLoad/Unload/Active) para esta navegação.")]
             public SceneRouteId sceneRouteId;
 
-            [Tooltip("TransitionStyleId obrigatório. Deve existir no TransitionStyleCatalogAsset.")]
-            public TransitionStyleId transitionStyleId;
+            [Tooltip("TransitionStyleId que define ProfileId/UseFade (SceneFlow) usado nesta navegação.")]
+            public TransitionStyleId styleId;
 
-            [Tooltip("Cenas a carregar (por nome).")]
-            public string[] scenesToLoad;
+            [Header("LEGACY (ignored) — use SceneRouteCatalogAsset")]
+            [Tooltip("LEGACY: cenas a carregar. Ignorado a partir da F3.")]
+            [HideInInspector]
+            public List<string> scenesToLoad;
 
-            [Tooltip("Cenas a descarregar (por nome).")]
-            public string[] scenesToUnload;
+            [Tooltip("LEGACY: cenas a descarregar. Ignorado a partir da F3.")]
+            [HideInInspector]
+            public List<string> scenesToUnload;
 
-            [Tooltip("Cena que deve ficar ativa ao final da transição.")]
+            [Tooltip("LEGACY: cena ativa ao final da transição. Ignorado a partir da F3.")]
+            [HideInInspector]
             public string targetActiveScene;
-
-            public override string ToString()
-                => $"routeId='{routeId}', sceneRouteId='{sceneRouteId}', styleId='{transitionStyleId}', " +
-                   $"active='{targetActiveScene}', " +
-                   $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
-
-            private static string FormatArray(string[] arr)
-                => arr == null ? "" : string.Join(", ", arr.Where(s => !string.IsNullOrWhiteSpace(s)));
         }
 
-        [Header("Routes")]
-        [SerializeField] private List<RouteEntry> routes = new();
+        [SerializeField] private List<RouteEntry> _routes = new();
 
-        [Header("Validation")]
-        [Tooltip("Quando true, registra warning se houver rotas inválidas/duplicadas.")]
-        [SerializeField] private bool warnOnInvalidRoutes = true;
+        private readonly Dictionary<string, GameNavigationEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
+        private bool _built;
 
-        private readonly Dictionary<string, RouteEntry> _cache = new(StringComparer.Ordinal);
-        private IReadOnlyCollection<string> _routeIds = Array.Empty<string>();
-        private bool _cacheBuilt;
+        private static bool _warnedLegacySceneDataIgnored;
 
         public IReadOnlyCollection<string> RouteIds
         {
             get
             {
-                EnsureCache();
-                return _routeIds;
+                EnsureBuilt();
+                return _cache.Keys;
             }
         }
 
         public bool TryGet(string routeId, out GameNavigationEntry entry)
         {
-            entry = default;
-
             if (string.IsNullOrWhiteSpace(routeId))
             {
+                entry = default;
                 return false;
             }
 
-            EnsureCache();
+            EnsureBuilt();
 
-            if (!_cache.TryGetValue(routeId, out var cachedEntry) || cachedEntry == null)
-            {
+            if (!_cache.TryGetValue(routeId.Trim(), out entry))
                 return false;
-            }
 
-            return TryBuildEntry(cachedEntry, out entry);
-        }
-
-        private void OnEnable()
-        {
-            // Reconstrói cache ao (re)carregar asset.
-            _cacheBuilt = false;
-        }
-
-        private void OnValidate()
-        {
-            // Ajuda a detectar problemas durante edição no Inspector.
-            _cacheBuilt = false;
-            EnsureCache();
-        }
-
-        private void EnsureCache()
-        {
-            if (_cacheBuilt)
+            if (!_warnedLegacySceneDataIgnored && TryGetLegacySceneData(routeId, out var legacyDetail))
             {
-                return;
+                _warnedLegacySceneDataIgnored = true;
+                DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
+                    "[OBS] GameNavigationCatalogAsset contém Scene Data LEGACY (ScenesToLoad/Unload/Active), " +
+                    "mas a política atual (F3) ignora esses campos: a Scene Data deve vir do SceneRouteCatalogAsset. " +
+                    legacyDetail);
             }
 
-            _cacheBuilt = true;
-            _cache.Clear();
-
-            if (routes == null || routes.Count == 0)
-            {
-                _routeIds = Array.Empty<string>();
-                return;
-            }
-
-            int invalidCount = 0;
-            foreach (var entry in routes)
-            {
-                if (entry == null || string.IsNullOrWhiteSpace(entry.routeId))
-                {
-                    invalidCount++;
-                    continue;
-                }
-
-                if (_cache.ContainsKey(entry.routeId))
-                {
-                    invalidCount++;
-                    if (warnOnInvalidRoutes)
-                    {
-                        DebugUtility.LogWarning<GameNavigationCatalogAsset>(
-                            $"[Navigation] Rota duplicada no catálogo configurável. routeId='{entry.routeId}'. Apenas a primeira será usada.");
-                    }
-                    continue;
-                }
-
-                _cache.Add(entry.routeId, entry);
-            }
-
-            _routeIds = _cache.Keys.ToArray();
-
-            if (warnOnInvalidRoutes && invalidCount > 0)
-            {
-                DebugUtility.LogWarning<GameNavigationCatalogAsset>(
-                    $"[Navigation] Catálogo configurável possui entradas inválidas/duplicadas. invalidCount={invalidCount}.");
-            }
-        }
-
-        private static bool TryBuildEntry(RouteEntry entry, out GameNavigationEntry resolved)
-        {
-            resolved = default;
-
-            if (entry == null)
-            {
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(entry.targetActiveScene))
-            {
-                // Comentário: sem cena ativa, a transição pode terminar em estado ambíguo.
-                DebugUtility.LogWarning<GameNavigationCatalogAsset>(
-                    $"[Navigation] Rota sem targetActiveScene. {entry}");
-            }
-
-            var payload = SceneTransitionPayload.CreateSceneData(
-                scenesToLoad: Sanitize(entry.scenesToLoad),
-                scenesToUnload: Sanitize(entry.scenesToUnload),
-                targetActiveScene: entry.targetActiveScene);
-
-            var sceneRouteId = entry.sceneRouteId;
-
-            if (!sceneRouteId.IsValid)
-            {
-                DebugUtility.LogWarning<GameNavigationCatalogAsset>(
-                    $"[Navigation] Rota sem SceneRouteId válido. routeId='{entry.routeId}'.");
-                return false;
-            }
-
-            var styleId = entry.transitionStyleId;
-
-            if (!styleId.IsValid)
-            {
-                DebugUtility.LogWarning<GameNavigationCatalogAsset>(
-                    $"[Navigation] Rota sem TransitionStyleId válido. routeId='{entry.routeId}'.");
-                return false;
-            }
-
-            resolved = new GameNavigationEntry(sceneRouteId, styleId, payload);
             return true;
         }
 
-        private static string[] Sanitize(string[] scenes)
+        private void EnsureBuilt()
         {
-            if (scenes == null || scenes.Length == 0)
+            if (_built)
+                return;
+
+            _built = true;
+            _cache.Clear();
+
+            if (_routes == null)
+                return;
+
+            foreach (var r in _routes)
             {
-                return Array.Empty<string>();
+                if (!TryBuildEntry(r, out var e))
+                    continue;
+
+                _cache[r.routeId.Trim()] = e;
+            }
+        }
+
+        private static bool TryBuildEntry(RouteEntry r, out GameNavigationEntry entry)
+        {
+            entry = default;
+
+            if (r == null)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(r.routeId))
+                return false;
+
+            if (!r.sceneRouteId.IsValid)
+                return false;
+
+            if (!r.styleId.IsValid)
+                return false;
+
+            var payload = SceneTransitionPayload.Empty;
+
+            entry = new GameNavigationEntry(
+                r.sceneRouteId,
+                r.styleId,
+                payload);
+
+            return true;
+        }
+
+        private bool TryGetLegacySceneData(string routeId, out string detail)
+        {
+            detail = string.Empty;
+
+            if (_routes == null)
+                return false;
+
+            for (int i = 0; i < _routes.Count; i++)
+            {
+                var r = _routes[i];
+                if (r == null)
+                    continue;
+
+                if (!string.Equals(r.routeId?.Trim(), routeId?.Trim(), StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                bool hasLegacy =
+                    (r.scenesToLoad != null && r.scenesToLoad.Count > 0) ||
+                    (r.scenesToUnload != null && r.scenesToUnload.Count > 0) ||
+                    !string.IsNullOrWhiteSpace(r.targetActiveScene);
+
+                if (!hasLegacy)
+                    return false;
+
+                detail =
+                    $"(routeId='{r.routeId}', sceneRouteId='{r.sceneRouteId}', styleId='{r.styleId}')";
+                return true;
             }
 
-            return scenes
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
+            return false;
         }
     }
 }

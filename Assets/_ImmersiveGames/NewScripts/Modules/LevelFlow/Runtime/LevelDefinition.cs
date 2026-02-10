@@ -1,12 +1,19 @@
 using System;
-using System.Linq;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     /// <summary>
-    /// Definição de um nível e sua rota/payload padrão.
+    /// Definição de um nível e sua rota.
+    ///
+    /// F3 (Route como fonte única de Scene Data):
+    /// - Este asset só referencia <see cref="SceneRouteId"/>.
+    /// - Dados de cena (ScenesToLoad/Unload/Active) são resolvidos via <see cref="SceneRouteCatalogAsset"/>
+    ///   dentro do fluxo de navegação.
+    ///
+    /// Campos LEGACY existem apenas para migração e são ignorados (com warning).
     /// </summary>
     [Serializable]
     public sealed class LevelDefinition
@@ -17,44 +24,56 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         [Tooltip("SceneRouteId associado ao nível.")]
         public SceneRouteId routeId;
 
-        [Tooltip("Cenas a carregar (por nome).")]
+        [Header("LEGACY (ignored) — use SceneRouteCatalogAsset")]
+        [Tooltip("LEGACY: cenas a carregar (por nome). Ignorado a partir da F3.")]
+        [HideInInspector]
         public string[] scenesToLoad;
 
-        [Tooltip("Cenas a descarregar (por nome).")]
+        [Tooltip("LEGACY: cenas a descarregar (por nome). Ignorado a partir da F3.")]
+        [HideInInspector]
         public string[] scenesToUnload;
 
-        [Tooltip("Cena que deve ficar ativa ao final da transição.")]
+        [Tooltip("LEGACY: cena que deve ficar ativa ao final da transição. Ignorado a partir da F3.")]
+        [HideInInspector]
         public string targetActiveScene;
+
+        private static bool _warnedLegacySceneData;
 
         public bool IsValid => levelId.IsValid && routeId.IsValid;
 
+        /// <summary>
+        /// Retorna o payload do nível.
+        ///
+        /// A partir da F3, o payload NÃO carrega Scene Data.
+        /// </summary>
         public SceneTransitionPayload ToPayload()
         {
-            return SceneTransitionPayload.CreateSceneData(
-                scenesToLoad: Sanitize(scenesToLoad),
-                scenesToUnload: Sanitize(scenesToUnload),
-                targetActiveScene: targetActiveScene);
+            WarnIfLegacySceneDataIsPopulated();
+            return SceneTransitionPayload.Empty;
         }
 
         public override string ToString()
-            => $"levelId='{levelId}', routeId='{routeId}', active='{targetActiveScene}', " +
-               $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
+            => $"levelId='{levelId}', routeId='{routeId}'";
 
-        private static string[] Sanitize(string[] scenes)
+        private void WarnIfLegacySceneDataIsPopulated()
         {
-            if (scenes == null || scenes.Length == 0)
-            {
-                return Array.Empty<string>();
-            }
+            if (_warnedLegacySceneData)
+                return;
 
-            return scenes
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim())
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
+            bool hasLegacy =
+                (scenesToLoad != null && scenesToLoad.Length > 0) ||
+                (scenesToUnload != null && scenesToUnload.Length > 0) ||
+                !string.IsNullOrWhiteSpace(targetActiveScene);
+
+            if (!hasLegacy)
+                return;
+
+            _warnedLegacySceneData = true;
+
+            DebugUtility.LogWarning(typeof(LevelDefinition),
+                "[OBS] LevelDefinition contém Scene Data LEGACY (ScenesToLoad/Unload/Active), " +
+                "mas a política atual (F3) ignora esses campos: a rota (SceneRouteId) é a fonte única de Scene Data. " +
+                $"(levelId='{levelId}', routeId='{routeId}')");
         }
-
-        private static string FormatArray(string[] arr)
-            => arr == null ? "" : string.Join(", ", arr.Where(s => !string.IsNullOrWhiteSpace(s)));
     }
 }

@@ -1,32 +1,35 @@
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 {
-    /// <summary>
-    /// Paths canônicos para resolver assets de SceneFlow via Resources.
-    ///
-    /// Observação:
-    /// - O uso de Resources permanece textual, mas a escolha de profile deve ser tipada via <see cref="SceneFlowProfileId"/>.
-    /// - Evita espalhar "SceneFlow/Profiles/" no código.
-    /// </summary>
     public static class SceneFlowProfilePaths
     {
         public const string ProfilesRoot = "SceneFlow/Profiles";
 
-        private static string For(string profileName)
+        public static string For(SceneFlowProfileId profileId) => For(profileId, ProfilesRoot);
+
+        public static string For(SceneFlowProfileId profileId, string basePath)
         {
-            string normalized = Normalize(profileName);
-            return string.IsNullOrEmpty(normalized) ? string.Empty : $"{ProfilesRoot}/{normalized}";
+            if (!profileId.IsValid)
+                return string.Empty;
+
+            var root = NormalizeBasePath(basePath);
+            var id = profileId.Value; // already normalized by SceneFlowProfileId
+
+            if (string.IsNullOrWhiteSpace(root))
+                return id;
+
+            return $"{root}/{id}";
         }
 
-        public static string For(SceneFlowProfileId profileId)
-        {
-            return For(profileId.Value);
-        }
-        private static string Normalize(string value)
-        {
-            // Mantém normalização local (trim + lower) para paths.
-            // A normalização oficial do ID está em SceneFlowProfileId.Normalize.
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToLowerInvariant();
+        public static string For(string profileName) => For(new SceneFlowProfileId(profileName), ProfilesRoot);
 
+        public static string For(string profileName, string basePath) => For(new SceneFlowProfileId(profileName), basePath);
+
+        private static string NormalizeBasePath(string basePath)
+        {
+            if (string.IsNullOrWhiteSpace(basePath))
+                return ProfilesRoot;
+
+            return basePath.Trim().TrimEnd('/');
         }
     }
 }

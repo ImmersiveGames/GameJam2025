@@ -1,107 +1,108 @@
-﻿using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
     /// <summary>
-    /// Resolve SceneTransitionProfile por ID, via Resources.
-    /// Padrão de paths:
-    /// - "SceneFlow/Profiles/<profileId.Value/>"
-    /// - "<profileId.Value/>"
+    /// Resolve um <see cref="SceneTransitionProfile"/> a partir de um <see cref="SceneFlowProfileId"/>.
     ///
-    /// Observação importante:
-    /// - Se existir um asset com esse nome, mas de tipo legado (ex.: SceneTransitionProfile),
-    ///   Resources.Load<SceneTransitionProfile/> retornará null. Este resolver detecta e loga isso.
+    /// Ordem de resolução:
+    /// 1) <see cref="SceneTransitionProfileCatalogAsset"/> (quando fornecido/registrado)
+    /// 2) Fallback legado via <see cref="Resources.Load{T}(string)"/> (opcional, controlado pelo catálogo)
     /// </summary>
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneTransitionProfileResolver
     {
-        private readonly Dictionary<string, SceneTransitionProfile> _cache = new();
+        private readonly SceneTransitionProfileCatalogAsset _catalog;
+        private readonly bool _allowLegacyResourcesFallback;
+        private readonly string _legacyResourcesBasePath;
 
-        public SceneTransitionProfile Resolve(SceneFlowProfileId profileId)
+        private bool _warnedNoCatalog;
+        private bool _warnedUsingLegacyFallback;
+
+        public SceneTransitionProfileResolver(SceneTransitionProfileCatalogAsset catalog = null)
         {
-            return Resolve(profileId, out _);
+            _catalog = catalog;
+
+            if (catalog != null)
+            {
+                _allowLegacyResourcesFallback = catalog.AllowLegacyResourcesFallback;
+                _legacyResourcesBasePath = string.IsNullOrWhiteSpace(catalog.LegacyResourcesBasePath)
+                    ? SceneFlowProfilePaths.ProfilesRoot
+                    : catalog.LegacyResourcesBasePath.Trim().TrimEnd('/');
+            }
+            else
+            {
+                // Comportamento padrão: mantém compatibilidade com o projeto atual.
+                _allowLegacyResourcesFallback = true;
+                _legacyResourcesBasePath = SceneFlowProfilePaths.ProfilesRoot;
+            }
         }
 
-        public SceneTransitionProfile Resolve(SceneFlowProfileId profileId, out string resolvedPath)
+        /// <summary>
+        /// Resolve um profile e retorna também o path (ou a origem) usado para diagnóstico.
+        /// - Quando vem do catálogo, resolvedPath = "catalog".
+        /// - Quando vem de Resources, resolvedPath = o resourcePath completo.
+        /// </summary>
+        public SceneTransitionProfile Resolve(SceneFlowProfileId profileId, out string resolvedPath, string contextSignature = null)
         {
             resolvedPath = string.Empty;
 
             if (!profileId.IsValid)
+                return null;
+
+            if (_catalog != null && _catalog.TryGetProfile(profileId, out var catalogProfile))
             {
+                resolvedPath = "catalog";
+                return catalogProfile;
+            }
+
+            if (_catalog == null && !_warnedNoCatalog)
+            {
+                _warnedNoCatalog = true;
+                DebugUtility.LogVerbose(typeof(SceneTransitionProfileResolver),
+                    $"[OBS] SceneTransitionProfileCatalogAsset não registrado; usando fallback legado via Resources. " +
+                    $"(profileId='{profileId}', context='{contextSignature ?? ""}')");
+            }
+
+            if (!_allowLegacyResourcesFallback)
+            {
+                DebugUtility.LogError(typeof(SceneTransitionProfileResolver),
+                    $"[ERR] SceneTransitionProfile ausente no catálogo e fallback legado desabilitado. " +
+                    $"(profileId='{profileId}', context='{contextSignature ?? ""}')");
                 return null;
             }
 
-            // O value do ID já é normalizado (trim + lower) em SceneFlowProfileId.
-            string key = profileId.Value;
-            if (_cache.TryGetValue(key, out var cached) && cached != null)
+            if (!_warnedUsingLegacyFallback)
             {
-                resolvedPath = "<cache>";
-                return cached;
+                _warnedUsingLegacyFallback = true;
+                DebugUtility.LogWarning(typeof(SceneTransitionProfileResolver),
+                    $"[OBS] Resolução de SceneTransitionProfile via Resources está ativa (legado). " +
+                    $"Recomenda-se registrar SceneTransitionProfileCatalogAsset e popular o catálogo. " +
+                    $"(basePath='{_legacyResourcesBasePath}')");
             }
 
-            string pathA = SceneFlowProfilePaths.For(profileId);
-            string pathB = key;
+            resolvedPath = SceneFlowProfilePaths.For(profileId, _legacyResourcesBasePath);
+            var loaded = Resources.Load<SceneTransitionProfile>(resolvedPath);
 
-            // 1) Tentativa principal (tipo correto).
-            var resolved = !string.IsNullOrEmpty(pathA)
-                ? Resources.Load<SceneTransitionProfile>(pathA)
-                : null;
-
-            if (resolved != null)
+            if (loaded == null)
             {
-                resolvedPath = pathA;
-            }
-            else
-            {
-                resolved = Resources.Load<SceneTransitionProfile>(pathB);
-                if (resolved != null)
-                {
-                    resolvedPath = pathB;
-                }
+                DebugUtility.LogError(typeof(SceneTransitionProfileResolver),
+                    $"[ERR] SceneTransitionProfile não encontrado via Resources. " +
+                    $"(profileId='{profileId}', path='{resolvedPath}', context='{contextSignature ?? ""}')");
             }
 
-            // 2) Sem fallback de case aqui: o ID já é normalizado (lower). Se existir um asset com casing
-            // diferente no path, ele deve ser corrigido no projeto/Resources.
+            return loaded;
+        }
 
-            if (resolved != null)
-            {
-                _cache[key] = resolved;
-
-                DebugUtility.LogVerbose<SceneTransitionProfileResolver>(
-                    $"[SceneFlow] Profile resolvido: name='{key}', path='{resolvedPath}', type='{resolved.GetType().FullName}'.");
-                return resolved;
-            }
-
-            // 3) Diagnóstico de tipo incorreto (sem fallback funcional).
-            if (!string.IsNullOrEmpty(pathA))
-            {
-                var anyA = Resources.Load(pathA);
-                if (anyA != null)
-                {
-                    DebugUtility.LogError<SceneTransitionProfileResolver>(
-                        $"[SceneFlow] Asset encontrado em Resources no path '{pathA}', porém com TIPO incorreto: '{anyA.GetType().FullName}'. " +
-                        $"Esperado: '{typeof(SceneTransitionProfile).FullName}'. " +
-                        "Ação: recrie/migre o asset como SceneTransitionProfile (CreateAssetMenu NewScripts).");
-                    return null;
-                }
-            }
-
-            var anyB = Resources.Load(pathB);
-            if (anyB != null)
-            {
-                DebugUtility.LogError<SceneTransitionProfileResolver>(
-                    $"[SceneFlow] Asset encontrado em Resources no path '{pathB}', porém com TIPO incorreto: '{anyB.GetType().FullName}'. " +
-                    $"Esperado: '{typeof(SceneTransitionProfile).FullName}'. " +
-                    "Ação: recrie/migre o asset como SceneTransitionProfile (CreateAssetMenu NewScripts).");
-                return null;
-            }
-
-            DebugUtility.LogError<SceneTransitionProfileResolver>(
-                $"[SceneFlow] SceneTransitionProfile '{key}' NÃO encontrado em Resources. " +
-                $"Paths tentados: '{pathA}' e '{pathB}'. Confirme que o asset está em Resources/{SceneFlowProfilePaths.ProfilesRoot} e é do tipo SceneTransitionProfile.");
-            return null;
+        /// <summary>
+        /// Resolve um profile; quando precisar do path/origem use o overload com out resolvedPath.
+        /// </summary>
+        public SceneTransitionProfile Resolve(SceneFlowProfileId profileId, string contextSignature = null)
+        {
+            return Resolve(profileId, out _, contextSignature);
         }
     }
 }

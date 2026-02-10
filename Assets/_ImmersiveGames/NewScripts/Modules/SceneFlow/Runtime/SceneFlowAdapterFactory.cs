@@ -4,7 +4,9 @@ using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 {
     /// <summary>
@@ -13,13 +15,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
     /// Regras:
     /// - Fade: somente IFadeService (sem fallback legado).
     /// - Loader: enquanto não migra, usa SceneManagerLoaderAdapter como fallback.
-    /// - Profile: usa SceneTransitionProfile (ScriptableObject) em Resources.
+    /// - Profile: prefere resolver via catálogo (se disponível) e mantém fallback legado via Resources (controlado pelo catálogo).
     /// - Strict/Release: policy via IRuntimeModeProvider + DEGRADED_MODE via IDegradedModeReporter.
     /// </summary>
     public static class SceneFlowAdapterFactory
     {
-        private static readonly SceneTransitionProfileResolver SharedProfileResolver = new();
-
         public static ISceneFlowLoaderAdapter CreateLoaderAdapter()
         {
             DebugUtility.LogVerbose(typeof(SceneFlowAdapterFactory),
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 
         public static ISceneFlowFadeAdapter CreateFadeAdapter(IDependencyProvider provider)
         {
-            // Comentário: o adapter é responsável por aplicar política Strict/Release e por reportar DEGRADED_MODE.
+            // Comentário: o adapter é responsável por aplicar policy Strict/Release e por reportar DEGRADED_MODE.
             // O serviço de Fade deve ser “duro”: se pré-condições não são atendidas, ele falha explicitamente.
             ResolveOrCreatePolicy(provider, out var modeProvider, out var degradedReporter);
 
@@ -52,9 +52,34 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
                     "O comportamento dependerá da policy (Strict/Release).");
             }
 
+            // Preferência: resolver global já configurado (catálogo + flags + paths).
+            SceneTransitionProfileResolver profileResolver = null;
+            if (provider != null && provider.TryGetGlobal(out profileResolver) && profileResolver != null)
+            {
+                DebugUtility.LogVerbose(typeof(SceneFlowAdapterFactory),
+                    "[SceneFlow] Usando SceneTransitionProfileResolver via DI global.");
+            }
+            else
+            {
+                // Fallback: tenta obter catálogo e instanciar um resolver local.
+                SceneTransitionProfileCatalogAsset profileCatalog = null;
+                if (provider != null)
+                {
+                    provider.TryGetGlobal(out profileCatalog);
+                }
+
+                profileResolver = new SceneTransitionProfileResolver(profileCatalog);
+
+                DebugUtility.LogVerbose(typeof(SceneFlowAdapterFactory),
+                    profileCatalog != null
+                        ? "[SceneFlow] SceneTransitionProfileResolver criado localmente (catálogo via DI)."
+                        : "[SceneFlow] SceneTransitionProfileResolver criado localmente (sem catálogo; fallback legado pode ocorrer)."
+                );
+            }
+
             return new SceneFlowFadeAdapter(
                 fadeService,
-                SharedProfileResolver,
+                profileResolver,
                 modeProvider,
                 degradedReporter);
         }
@@ -77,6 +102,4 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
             degradedReporter ??= new DegradedModeReporter();
         }
     }
-
 }
-
