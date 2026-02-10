@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameNavigationCatalog _catalog;
-        private readonly ISceneRouteCatalog _sceneRouteCatalog;
+        private readonly ISceneRouteResolver _sceneRouteResolver;
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly ILevelFlowService _levelFlowService;
 
@@ -55,13 +55,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public GameNavigationService(
             ISceneTransitionService sceneFlow,
             IGameNavigationCatalog catalog,
-            ISceneRouteCatalog sceneRouteCatalog,
+            ISceneRouteResolver sceneRouteResolver,
             ITransitionStyleCatalog styleCatalog,
             ILevelFlowService levelFlowService)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
+            _sceneRouteResolver = sceneRouteResolver ?? throw new ArgumentNullException(nameof(sceneRouteResolver));
             _styleCatalog = styleCatalog ?? throw new ArgumentNullException(nameof(styleCatalog));
             _levelFlowService = levelFlowService;
 
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return payload;
             }
 
-            if (_sceneRouteCatalog != null && _sceneRouteCatalog.TryGet(entry.RouteId, out var routeDefinition))
+            if (_sceneRouteResolver != null && _sceneRouteResolver.TryResolve(entry.RouteId, out var routeDefinition))
             {
                 return payload.WithSceneData(routeDefinition);
             }

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
@@ -24,6 +25,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
         private readonly ISceneTransitionCompletionGate _completionGate;
         private readonly INavigationPolicy _navigationPolicy;
+        private readonly ISceneRouteResolver? _routeResolver;
+        private readonly IRouteGuard _routeGuard;
 
         private readonly SemaphoreSlim _transitionGate = new(1, 1);
         private int _transitionInProgress;
@@ -40,12 +43,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             ISceneFlowLoaderAdapter? loaderAdapter,
             ISceneFlowFadeAdapter? fadeAdapter,
             ISceneTransitionCompletionGate? completionGate = null,
-            INavigationPolicy? navigationPolicy = null)
+            INavigationPolicy? navigationPolicy = null,
+            ISceneRouteResolver? routeResolver = null,
+            IRouteGuard? routeGuard = null)
         {
             _loaderAdapter = loaderAdapter ?? new SceneManagerLoaderAdapter();
             _fadeAdapter = fadeAdapter ?? new NoFadeAdapter();
             _completionGate = completionGate ?? new NoOpTransitionCompletionGate();
             _navigationPolicy = navigationPolicy ?? new AllowAllNavigationPolicy();
+            _routeResolver = routeResolver;
+            _routeGuard = routeGuard ?? new AllowAllRouteGuard();
         }
 
         public async Task TransitionAsync(SceneTransitionRequest request)
@@ -55,16 +62,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var context = SceneTransitionSignature.BuildContext(request);
+            var hydratedRequest = ResolveRoutePayloadIfNeeded(request, out var routeDefinition);
+            var context = SceneTransitionSignature.BuildContext(hydratedRequest);
             string signature = SceneTransitionSignature.Compute(context);
 
-            if (!_navigationPolicy.CanTransition(request, out var denialReason))
+            if (!_navigationPolicy.CanTransition(hydratedRequest, out var denialReason))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
                     $"[SceneFlow] Transição bloqueada por policy. " +
                     $"signature='{signature}', routeId='{context.RouteId}', styleId='{context.StyleId}', " +
-                    $"reason='{Sanitize(request.Reason)}', requestedBy='{Sanitize(request.RequestedBy)}', " +
+                    $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', " +
                     $"policyReason='{Sanitize(denialReason)}'.");
+                return;
+            }
+
+            if (routeDefinition.HasValue && !_routeGuard.CanTransitionRoute(hydratedRequest, routeDefinition.Value, out denialReason))
+            {
+                DebugUtility.LogWarning<SceneTransitionService>(
+                    $"[SceneFlow] Transição bloqueada por route guard. " +
+                    $"signature='{signature}', routeId='{context.RouteId}', kind='{routeDefinition.Value.RouteKind}', " +
+                    $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', " +
+                    $"guardReason='{Sanitize(denialReason)}'.");
                 return;
             }
 
@@ -74,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
                     $"[SceneFlow] Dedupe: TransitionAsync ignorado (signature repetida em janela curta). " +
-                    $"signature='{signature}', requestedBy='{Sanitize(request.RequestedBy)}'.");
+                    $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
                 return;
             }
 
@@ -83,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
                     $"[SceneFlow] Uma transição já está em andamento (_transitionInProgress ativo). Ignorando solicitação concorrente. " +
-                    $"signature='{signature}', requestedBy='{Sanitize(request.RequestedBy)}'.");
+                    $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
                 return;
             }
 
@@ -92,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
                     $"[SceneFlow] Uma transição já está em andamento. Ignorando solicitação concorrente. " +
-                    $"signature='{signature}', requestedBy='{Sanitize(request.RequestedBy)}'.");
+                    $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 return;
             }
@@ -106,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 DebugUtility.Log<SceneTransitionService>(
                     $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' " +
                     $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}', " +
-                    $"reason='{Sanitize(request.Reason)}', requestedBy='{Sanitize(request.RequestedBy)}' {context}",
+                    $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}' {context}",
                     DebugUtility.Colors.Info);
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
@@ -157,6 +175,37 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 _transitionGate.Release();
             }
+        }
+
+
+        private SceneTransitionRequest ResolveRoutePayloadIfNeeded(
+            SceneTransitionRequest request,
+            out SceneRouteDefinition? routeDefinition)
+        {
+            routeDefinition = null;
+
+            if (request.Payload.HasSceneData || !request.RouteId.IsValid || _routeResolver == null)
+            {
+                return request;
+            }
+
+            if (!_routeResolver.TryResolve(request.RouteId, out var resolvedRoute))
+            {
+                return request;
+            }
+
+            routeDefinition = resolvedRoute;
+            var payload = request.Payload.WithSceneData(resolvedRoute);
+
+            return new SceneTransitionRequest(
+                request.RouteId,
+                request.StyleId,
+                payload,
+                request.TransitionProfileId,
+                request.UseFade,
+                request.ContextSignature,
+                request.RequestedBy,
+                request.Reason);
         }
 
         private bool ShouldDedupe(string signature)
