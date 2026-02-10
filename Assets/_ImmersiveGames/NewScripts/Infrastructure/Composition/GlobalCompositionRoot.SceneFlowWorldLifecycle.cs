@@ -1,11 +1,14 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -135,18 +138,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) && routeCatalog != null)
             {
-                var resolver = new SceneRouteCatalogResolver(routeCatalog);
-                DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolver);
+                var resolverFromDiCatalog = new SceneRouteCatalogResolver(routeCatalog);
+                DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolverFromDiCatalog);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[OBS][SceneFlow] ISceneRouteResolver não estava registrado; criado automaticamente a partir de ISceneRouteCatalog.",
                     DebugUtility.Colors.Info);
 
-                return resolver;
+                return resolverFromDiCatalog;
+            }
+
+            const string sceneRouteCatalogResourcesPath = "SceneFlow/SceneRouteCatalog";
+            var catalogFromResources = Resources.Load<SceneRouteCatalogAsset>(sceneRouteCatalogResourcesPath);
+
+            if (catalogFromResources != null)
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out routeCatalog) || routeCatalog == null)
+                {
+                    routeCatalog = catalogFromResources;
+                    DependencyManager.Provider.RegisterGlobal<ISceneRouteCatalog>(routeCatalog);
+                }
+
+                var resolverFromResources = new SceneRouteCatalogResolver(routeCatalog);
+                DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolverFromResources);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][SceneFlow] ISceneRouteCatalog/ISceneRouteResolver carregados via Resources antes do Navigation " +
+                    $"(path='{sceneRouteCatalogResourcesPath}').",
+                    DebugUtility.Colors.Info);
+
+                return resolverFromResources;
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][SceneFlow] ISceneRouteResolver ausente durante bootstrap do SceneFlow; " +
+                "[OBS][SceneFlow] ISceneRouteResolver ausente durante bootstrap do SceneFlow e catálogo não encontrado via Resources; " +
                 "SceneTransitionService seguirá sem hidratação de payload por rota até o resolver estar disponível.",
                 DebugUtility.Colors.Info);
 
