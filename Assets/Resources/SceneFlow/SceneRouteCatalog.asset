@@ -21,6 +21,7 @@ MonoBehaviour:
     scenesToUnload:
     - GameplayScene
     targetActiveScene: MenuScene
+    routeKind: 1
   - routeId:
       _value: to-gameplay
     scenesToLoad:
@@ -29,6 +30,7 @@ MonoBehaviour:
     scenesToUnload:
     - MenuScene
     targetActiveScene: GameplayScene
+    routeKind: 2
   - routeId:
       _value: level.1
     scenesToLoad:
@@ -37,6 +39,7 @@ MonoBehaviour:
     scenesToUnload:
     - MenuScene
     targetActiveScene: GameplayScene
+    routeKind: 2
   - routeId:
       _value: level.2
     scenesToLoad:
@@ -45,4 +48,5 @@ MonoBehaviour:
     scenesToUnload:
     - MenuScene
     targetActiveScene: GameplayScene
+    routeKind: 2
   warnOnInvalidRoutes: 1

@@ -77,6 +77,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 
             int unspecifiedCount = 0;
             var relevant = new List<RouteDumpItem>();
+            var unspecifiedRelevant = new List<string>();
 
             foreach (var route in routes)
             {
@@ -88,6 +89,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 if (IsRelevant(route.RouteId))
                 {
                     relevant.Add(route);
+                    if (route.RouteKind == SceneRouteKind.Unspecified)
+                    {
+                        unspecifiedRelevant.Add(route.RouteId);
+                    }
                 }
             }
 
@@ -100,6 +105,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
                     $"[OBS][SceneFlow] Route routeId='{route.RouteId}', routeKind='{route.RouteKind}', targetActiveScene='{route.TargetActiveScene}'.",
                     ColorInfo);
+            }
+
+            if (unspecifiedRelevant.Count > 0)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    $"[OBS][SceneFlow] Rotas relevantes ainda com routeKind=Unspecified: {string.Join(", ", unspecifiedRelevant)}.",
+                    ColorErr);
             }
         }
 
