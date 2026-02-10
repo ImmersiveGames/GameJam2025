@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
@@ -62,11 +63,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     DebugUtility.Colors.Info);
             }
 
-            var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate, navigationPolicy);
+            IRouteGuard routeGuard = null;
+            if (DependencyManager.Provider.TryGetGlobal<IRouteGuard>(out var existingRouteGuard) && existingRouteGuard != null)
+            {
+                routeGuard = existingRouteGuard;
+            }
+            else
+            {
+                routeGuard = new AllowAllRouteGuard();
+                DependencyManager.Provider.RegisterGlobal(routeGuard);
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[SceneFlow] IRouteGuard registrado (AllowAllRouteGuard).",
+                    DebugUtility.Colors.Info);
+            }
+
+            ISceneRouteResolver routeResolver = null;
+            DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out routeResolver);
+
+            var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate, navigationPolicy, routeResolver, routeGuard);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}, Policy={navigationPolicy.GetType().Name}).",
+                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}, Policy={navigationPolicy.GetType().Name}, RouteResolver={(routeResolver == null ? "None" : routeResolver.GetType().Name)}, RouteGuard={routeGuard.GetType().Name}).",
                 DebugUtility.Colors.Info);
         }
 

@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Modules.InputModes.Interop;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
@@ -154,10 +155,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterGlobalIfMissing<ITransitionStyleCatalog>(styleCatalogAsset, "ITransitionStyleCatalog");
             RegisterGlobalIfMissing<ILevelFlowService>(levelCatalogAsset, "ILevelFlowService");
 
+            var sceneRouteResolver = ResolveOrRegisterSceneRouteResolver(sceneRouteCatalogAsset);
+
             var service = new GameNavigationService(
                 sceneFlow,
                 catalogAsset,
-                sceneRouteCatalogAsset,
+                sceneRouteResolver,
                 styleCatalogAsset,
                 levelCatalogAsset);
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
@@ -167,6 +170,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"(navigation='{catalogAsset.name}', sceneRoutes='{sceneRouteCatalogAsset.name}', " +
                 $"styles='{styleCatalogAsset.name}', levels='{levelCatalogAsset.name}').",
                 DebugUtility.Colors.Info);
+        }
+
+        private static ISceneRouteResolver ResolveOrRegisterSceneRouteResolver(ISceneRouteCatalog routeCatalog)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var existingResolver) && existingResolver != null)
+            {
+                return existingResolver;
+            }
+
+            var resolver = new SceneRouteCatalogResolver(routeCatalog);
+            DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolver);
+            return resolver;
         }
 
         private static T LoadRequiredResourceAsset<T>(string resourcesPath, string assetLabel) where T : ScriptableObject
