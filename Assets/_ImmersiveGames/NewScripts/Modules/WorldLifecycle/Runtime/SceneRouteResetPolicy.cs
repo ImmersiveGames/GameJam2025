@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
@@ -10,6 +9,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
     /// </summary>
     public sealed class SceneRouteResetPolicy : IRouteResetPolicy
     {
+        private readonly ISceneRouteResolver _routeResolver;
+
+        public SceneRouteResetPolicy(ISceneRouteResolver routeResolver = null)
+        {
+            _routeResolver = routeResolver;
+        }
+
         public RouteResetDecision Resolve(SceneRouteId routeId, SceneTransitionContext context)
         {
             if (TryResolveRouteKindDecision(routeId, out var routeDecision))
@@ -26,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     : $"{WorldResetReasons.SkippedStartupOrFrontendPrefix}:profile={context.TransitionProfileName};route={routeId.Value}");
         }
 
-        private static bool TryResolveRouteKindDecision(SceneRouteId routeId, out RouteResetDecision decision)
+        private bool TryResolveRouteKindDecision(SceneRouteId routeId, out RouteResetDecision decision)
         {
             decision = default;
 
@@ -35,17 +41,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 return false;
             }
 
-            if (!DependencyManager.HasInstance)
+            if (_routeResolver == null)
             {
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) || routeCatalog == null)
-            {
-                return false;
-            }
-
-            if (!routeCatalog.TryGet(routeId, out var routeDefinition))
+            if (!_routeResolver.TryResolve(routeId, out var routeDefinition))
             {
                 return false;
             }
