@@ -31,8 +31,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             [Tooltip("Cena que deve ficar ativa ao final da transição.")]
             public string targetActiveScene;
 
+            [Tooltip("Metadado de política para decisões de lifecycle (ex.: reset de mundo por rota).")]
+            public SceneRouteKind routeKind = SceneRouteKind.Unspecified;
+
             public override string ToString()
-                => $"routeId='{routeId}', active='{targetActiveScene}', " +
+                => $"routeId='{routeId}', kind='{routeKind}', active='{targetActiveScene}', " +
                    $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
 
             private static string FormatArray(string[] arr)
@@ -128,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             var load = Sanitize(entry.scenesToLoad);
             var unload = Sanitize(entry.scenesToUnload);
             var active = string.IsNullOrWhiteSpace(entry.targetActiveScene) ? string.Empty : entry.targetActiveScene.Trim();
-            return new SceneRouteDefinition(load, unload, active);
+            return new SceneRouteDefinition(load, unload, active, entry.routeKind);
         }
 
         private static string[] Sanitize(string[] scenes)

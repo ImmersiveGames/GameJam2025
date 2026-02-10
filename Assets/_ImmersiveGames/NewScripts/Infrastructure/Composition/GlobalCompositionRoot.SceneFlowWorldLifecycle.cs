@@ -88,6 +88,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterSceneFlowRouteResetPolicy()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IRouteResetPolicy>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[SceneFlow] IRouteResetPolicy já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IRouteResetPolicy>(
+                new SceneRouteResetPolicy());
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[SceneFlow] IRouteResetPolicy registrado (SceneRouteResetPolicy).",
+                DebugUtility.Colors.Info);
+        }
+
         // --------------------------------------------------------------------
     }
 }
