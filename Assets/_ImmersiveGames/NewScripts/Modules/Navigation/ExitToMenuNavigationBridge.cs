@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             EventBus<GameExitToMenuRequestedEvent>.Register(_exitToMenuBinding);
 
             DebugUtility.LogVerbose<ExitToMenuNavigationBridge>(
-                "[Navigation] ExitToMenuNavigationBridge registrado (GameExitToMenuRequestedEvent -> RequestMenuAsync).",
+                "[Navigation] ExitToMenuNavigationBridge registrado (GameExitToMenuRequestedEvent -> ExitToMenuAsync).",
                 DebugUtility.Colors.Info);
         }
 
@@ -51,11 +51,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             string reason = evt?.Reason ?? ExitToMenuReason;
 
             DebugUtility.Log<ExitToMenuNavigationBridge>(
-                $"[Navigation] ExitToMenu recebido -> RequestMenuAsync. routeId='{GameNavigationIntents.ToMenu}', reason='{reason}'.",
+                $"[Navigation] ExitToMenu recebido -> ExitToMenuAsync. routeId='{GameNavigationIntents.ToMenu}', reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             NavigationTaskRunner.FireAndForget(
-                navigation.RequestMenuAsync(reason),
+                navigation.ExitToMenuAsync(reason),
                 typeof(ExitToMenuNavigationBridge),
                 $"ExitToMenu -> routeId='{GameNavigationIntents.ToMenu}'");
         }

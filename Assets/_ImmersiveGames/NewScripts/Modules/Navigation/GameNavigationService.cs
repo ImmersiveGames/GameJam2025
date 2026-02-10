@@ -70,11 +70,22 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 DebugUtility.Colors.Info);
         }
 
-        public Task RequestMenuAsync(string reason = null)
-            => NavigateAsync(GameNavigationIntents.ToMenu, reason);
+        public Task GoToMenuAsync(string reason = null)
+            => ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
 
+        public Task RestartAsync(string reason = null)
+            => ExecuteIntentAsync(GameNavigationIntents.ToGameplay, reason);
+
+        public Task ExitToMenuAsync(string reason = null)
+            => ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
+
+        [Obsolete("Use GoToMenuAsync(reason).")]
+        public Task RequestMenuAsync(string reason = null)
+            => GoToMenuAsync(reason);
+
+        [Obsolete("Use RestartAsync(reason) ou StartGameplayAsync(levelId, reason).")]
         public Task RequestGameplayAsync(string reason = null)
-            => NavigateAsync(GameNavigationIntents.ToGameplay, reason);
+            => RestartAsync(reason);
 
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
@@ -131,7 +142,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
+        [Obsolete("Use métodos explícitos: GoToMenuAsync, RestartAsync, ExitToMenuAsync ou StartGameplayAsync(levelId, reason).")]
         public async Task NavigateAsync(string routeId, string reason = null)
+            => await ExecuteIntentAsync(routeId, reason);
+
+        private async Task ExecuteIntentAsync(string routeId, string reason = null)
         {
             if (string.IsNullOrWhiteSpace(routeId))
             {

@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 
             // Fire-and-forget com captura de falhas.
             NavigationTaskRunner.FireAndForget(
-                _navigation.RequestGameplayAsync(actionReason),
+                _navigation.RestartAsync(actionReason),
                 typeof(MenuPlayButtonBinder),
                 "Menu/Play");
 
