@@ -52,6 +52,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
             RegisterSceneFlowSignatureCache();
+            RegisterSceneFlowRouteResetPolicy();
 
             RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
             RegisterIfMissing(() => new WorldResetService());
