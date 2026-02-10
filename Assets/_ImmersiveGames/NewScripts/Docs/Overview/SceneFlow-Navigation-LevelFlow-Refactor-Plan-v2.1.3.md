@@ -6,8 +6,19 @@
 
 - **Não existe `SceneTransitionProfileId`** no código atual.
 - O identificador tipado hoje é **`SceneFlowProfileId`** (ex.: `startup`, `frontend`, `gameplay`).
+- O identificador navegável de estilo é **`TransitionStyleId`**. No fluxo alvo:
+  - `TransitionStyleId` → resolve **`SceneFlowProfileId` + `UseFade`**.
 - Portanto, qualquer passo do plano que mencione “profile id” deve ler como:
-  - `SceneFlowProfileId` → resolve um `SceneTransitionProfile`.
+  - `SceneFlowProfileId` permanece o **ID tipado do profile de transição** e resolve um `SceneTransitionProfile`.
+
+## As-Is vs Target
+
+| Campo | As-Is (estado atual) | Target (estado desejado) |
+| --- | --- | --- |
+| `routeId` | Existe como `SceneRouteId`, mas ainda convive com duplicação de dados de cena em pontos adjacentes (Navigation/LevelFlow). | `SceneRouteId` vira fonte única de scene data (load/unload/active) e demais módulos só referenciam a rota. |
+| `styleId` | `TransitionStyleId` já existe, mas sua semântica ainda não está explícita em todo o plano/documentação. | `TransitionStyleId` é contrato navegável e resolve deterministicamente `SceneFlowProfileId` + `UseFade`. |
+| `profileId` | `SceneFlowProfileId` já é o ID tipado real; ainda há risco de confusão textual com o nome antigo (`SceneTransitionProfileId`). | `SceneFlowProfileId` permanece ID tipado do profile de transição, sem ambiguidade de nomenclatura. |
+| `levelId` | Presente no LevelFlow, mas trilho end-to-end ainda não é o único caminho operacional (fluxos paralelos sobrevivem). | `levelId` entra pelo trilho oficial `StartGameplayAsync(levelId)`, com QA/Dev operando no mesmo caminho de produção. |
 
 ## Correções aplicadas nesta revisão (v2.1.3)
 
@@ -57,11 +68,17 @@ Introduzir um **catálogo de profiles por referência direta** (ScriptableObject
 
 ---
 
-## Próximos passos (inalterados)
+## Status do plano (v2.1.3)
 
-- **F3:** Rota como fonte única de “scene data” (ScenesToLoad/Unload/Active só na rota; LevelDefinition referencia RouteId; Navigation não duplica).
-- **F2:** Decisão de Reset/WorldLifecycle por rota/policy (RouteKind/RequiresWorldReset no SceneRouteDefinition; driver usa isso).
-- **F4:** LevelFlow end-to-end (StartGameplayAsync(levelId) como trilho oficial; QA/Dev usa só ele).
-- **F5:** Hardening (logs [OBS] em Navigation/LevelFlow + ContextMenu QA para Start/Restart/ExitToMenu).
+- ✅ **F1 (concluído no escopo principal):** catálogo de profiles por referência direta + fallback legado controlável.
+- 🟨 **F3 (parcial):** base de rota como fonte de verdade avançou, mas ainda restam pontos de duplicação a eliminar.
+- ⏳ **Pendências reais:** **F2**, **F4** e **F5**.
+
+## Próximos passos (atualizado)
+
+- **F3 (fechar pendências):** Rota como fonte única de “scene data” (ScenesToLoad/Unload/Active só na rota; LevelDefinition referencia RouteId; Navigation não duplica).
+- **F2 (pendente):** Decisão de Reset/WorldLifecycle por rota/policy (RouteKind/RequiresWorldReset no SceneRouteDefinition; driver usa isso).
+- **F4 (pendente):** LevelFlow end-to-end (StartGameplayAsync(levelId) como trilho oficial; QA/Dev usa só ele).
+- **F5 (pendente):** Hardening (logs [OBS] em Navigation/LevelFlow + ContextMenu QA para Start/Restart/ExitToMenu).
 
 **Ordem recomendada permanece:** F1 → F3 → F2 → F4 → F5.
