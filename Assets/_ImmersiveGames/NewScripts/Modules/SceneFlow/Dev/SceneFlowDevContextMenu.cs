@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 "[QA][SceneFlow] Solicitação de transição Menu -> Gameplay enviada.",
                 ColorInfo);
 
-            _ = navigation.RequestGameplayAsync(ReasonEnterGameplay);
+            _ = navigation.RestartAsync(ReasonEnterGameplay);
         }
 
         [ContextMenu("QA/WorldLifecycle/ForceResetWorld (TC: Manual ResetWorld)")]

@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             EventBus<GameResetRequestedEvent>.Register(_resetBinding);
 
             DebugUtility.LogVerbose<RestartNavigationBridge>(
-                "[Navigation] RestartNavigationBridge registrado (GameResetRequestedEvent -> RequestGameplayAsync).",
+                "[Navigation] RestartNavigationBridge registrado (GameResetRequestedEvent -> RestartAsync).",
                 DebugUtility.Colors.Info);
         }
 
@@ -50,11 +50,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             string reason = evt?.Reason ?? RestartReason;
 
             DebugUtility.Log<RestartNavigationBridge>(
-                $"[Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync. reason='{reason}'.",
+                $"[Navigation] GameResetRequestedEvent recebido -> RestartAsync. reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             NavigationTaskRunner.FireAndForget(
-                navigation.RequestGameplayAsync(reason),
+                navigation.RestartAsync(reason),
                 typeof(RestartNavigationBridge),
                 $"Restart -> routeId='{GameNavigationIntents.ToGameplay}'");
         }
