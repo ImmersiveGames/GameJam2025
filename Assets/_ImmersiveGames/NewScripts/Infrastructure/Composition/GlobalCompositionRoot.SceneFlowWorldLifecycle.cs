@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
@@ -77,8 +78,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     DebugUtility.Colors.Info);
             }
 
-            ISceneRouteResolver routeResolver = null;
-            DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out routeResolver);
+            var routeResolver = ResolveOrRegisterRouteResolverBestEffort();
 
             var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate, navigationPolicy, routeResolver, routeGuard);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
@@ -116,12 +116,41 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
+            var routeResolver = ResolveOrRegisterRouteResolverBestEffort();
+
             DependencyManager.Provider.RegisterGlobal<IRouteResetPolicy>(
-                new SceneRouteResetPolicy());
+                new SceneRouteResetPolicy(routeResolver));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[SceneFlow] IRouteResetPolicy registrado (SceneRouteResetPolicy).",
                 DebugUtility.Colors.Info);
+        }
+
+        private static ISceneRouteResolver ResolveOrRegisterRouteResolverBestEffort()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var existingResolver) && existingResolver != null)
+            {
+                return existingResolver;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) && routeCatalog != null)
+            {
+                var resolver = new SceneRouteCatalogResolver(routeCatalog);
+                DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolver);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][SceneFlow] ISceneRouteResolver não estava registrado; criado automaticamente a partir de ISceneRouteCatalog.",
+                    DebugUtility.Colors.Info);
+
+                return resolver;
+            }
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][SceneFlow] ISceneRouteResolver ausente durante bootstrap do SceneFlow; " +
+                "SceneTransitionService seguirá sem hidratação de payload por rota até o resolver estar disponível.",
+                DebugUtility.Colors.Info);
+
+            return null;
         }
 
         // --------------------------------------------------------------------
