@@ -316,7 +316,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
 
             var info = BuildSignatureInfo();
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][InputMode] Apply mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' " +
+                $"[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' " +
                 $"signature='{info.Signature}' scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
@@ -444,5 +444,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         }
     }
 }
-
 
