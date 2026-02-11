@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
             }
 
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[Navigation] Play solicitado via LevelFlow. levelId='{LevelId.Normalize(startLevelId)}', reason='{actionReason}'.",
+                $"[OBS][Navigation] MenuPlay -> StartGameplayAsync levelId='{LevelId.Normalize(startLevelId)}' reason='{actionReason}'.",
                 DebugUtility.Colors.Info);
 
             // Fire-and-forget com captura de falhas.
