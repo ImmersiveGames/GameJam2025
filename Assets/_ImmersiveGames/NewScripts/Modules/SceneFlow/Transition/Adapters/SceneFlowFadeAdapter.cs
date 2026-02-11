@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 $"fadeIn={_resolvedConfig.FadeInDuration:0.###}, fadeOut={_resolvedConfig.FadeOutDuration:0.###}.");
         }
 
-        public async Task FadeInAsync(string contextSignature = null)
+        public async Task FadeInAsync(string? contextSignature = null)
         {
             if (!_shouldFade || _resolvedConfig.FadeInDuration <= 0f)
             {
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 run: () => _fadeService.FadeInAsync(contextSignature));
         }
 
-        public async Task FadeOutAsync(string contextSignature = null)
+        public async Task FadeOutAsync(string? contextSignature = null)
         {
             if (!_shouldFade || _resolvedConfig.FadeOutDuration <= 0f)
             {

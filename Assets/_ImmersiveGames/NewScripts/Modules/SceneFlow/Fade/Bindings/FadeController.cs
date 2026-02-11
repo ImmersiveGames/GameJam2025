@@ -28,14 +28,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
         private static readonly AnimationCurve LinearCurve =
             AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
-        private string _lastContextSignature;
-        private string _activeContextSignature;
+        private string? _lastContextSignature;
+        private string? _activeContextSignature;
 
         // Evento para integração com SceneFlow
         public event Action<string> OnFadeComplete;
 
         // Permite que adaptadores/SceneTransitionService definam explicitamente a signature antes do fade.
-        public void SetContextSignature(string contextSignature)
+        public void SetContextSignature(string? contextSignature)
         {
             if (!string.IsNullOrEmpty(contextSignature) && contextSignature != "no-signature")
                 _lastContextSignature = contextSignature;
@@ -109,10 +109,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
         public Task FadeOutAsync() => FadeOutAsync("no-signature");
 
         // Novas assinaturas com contextSignature (propagação)
-        public Task FadeInAsync(string contextSignature) => FadeToAsync(1f, contextSignature);
-        public Task FadeOutAsync(string contextSignature) => FadeToAsync(0f, contextSignature);
+        public Task FadeInAsync(string? contextSignature) => FadeToAsync(1f, contextSignature);
+        public Task FadeOutAsync(string? contextSignature) => FadeToAsync(0f, contextSignature);
 
-        private async Task FadeToAsync(float targetAlpha, string contextSignature)
+        private async Task FadeToAsync(float targetAlpha, string? contextSignature)
         {
             if (canvasGroup == null) return;
 
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
             }
         }
 
-        private string ResolveContextSignature(string contextSignature)
+        private string ResolveContextSignature(string? contextSignature)
         {
             string resolved = contextSignature;
             if (string.IsNullOrWhiteSpace(resolved) || string.Equals(resolved, "no-signature", StringComparison.Ordinal))
