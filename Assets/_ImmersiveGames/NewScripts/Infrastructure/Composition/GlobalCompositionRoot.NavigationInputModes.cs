@@ -135,8 +135,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             //   Assets/Resources/<path>.asset
             const string navigationCatalogResourcesPath = "Navigation/GameNavigationCatalog";
             const string sceneRouteCatalogResourcesPath = "SceneFlow/SceneRouteCatalog";
-            const string transitionStyleCatalogResourcesPath = "SceneFlow/TransitionStyleCatalog";
-            const string levelCatalogResourcesPath = "NewScripts/Config/LevelCatalog";
+            const string transitionStyleCatalogResourcesPath = "Navigation/TransitionStyleCatalog";
+            const string levelCatalogResourcesPath = "Navigation/LevelCatalog";
 
             var catalogAsset = LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
                 navigationCatalogResourcesPath,
@@ -176,8 +176,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[Navigation] GameNavigationService registrado com catálogos via Resources " +
-                $"(navigation='{catalogAsset.name}', sceneRoutes='{sceneRouteCatalogAsset.name}', " +
-                $"styles='{styleCatalogAsset.name}', levels='{levelCatalogAsset.name}').",
+                $"(navigation='{navigationCatalogResourcesPath}', sceneRoutes='{sceneRouteCatalogResourcesPath}', " +
+                $"styles='{transitionStyleCatalogResourcesPath}', levels='{levelCatalogResourcesPath}').",
                 DebugUtility.Colors.Info);
         }
 

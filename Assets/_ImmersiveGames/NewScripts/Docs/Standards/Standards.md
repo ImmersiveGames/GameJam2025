@@ -11,6 +11,19 @@ Este arquivo consolida referências canônicas que antes estavam separadas em v�
 
 ---
 
+
+## Layout canônico de Resources (Navigation)
+
+Assets carregados via `Resources` devem ficar em subpastas nomeadas e documentadas (não na raiz de `Resources`).
+
+Paths canônicos de Navigation:
+- `Navigation/GameNavigationCatalog`
+- `Navigation/TransitionStyleCatalog`
+- `Navigation/LevelCatalog`
+
+Quando houver exceção intencional (ex.: domínio SceneFlow com catálogo próprio), o path deve ser explicitado no plano/ADR correspondente.
+
+---
 ## Observability Contract
 <a id="observability-contract"></a>
 
