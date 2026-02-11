@@ -185,6 +185,18 @@ O contrato para Level Manager é definido em ADR-0017.
 - Recomendações para QA (prefixos estáveis):
     - `QA/Levels/InPlace/<...>`
 
+#### Navigation (GameNavigation)
+
+Eventos/anchors mínimos:
+
+- `[OBS][Navigation] Catalog boot snapshot: resourcePath='...', assetName='...', rawRoutesCount=..., builtRouteIdsCount=..., hasToGameplay=...`
+    - Emitido no bootstrap (GlobalCompositionRoot) após carregar `GameNavigationCatalogAsset`.
+    - Objetivo: detectar **catálogo vazio** ou **mismatch de schema/snapshot** antes do usuário clicar Play.
+- `[Navigation] GameNavigationService inicializado. Entries: [...]`
+    - Lista de `routeId` resolvidos pelo catálogo (após migração/EnsureBuilt).
+- `[Navigation] Rota desconhecida ou sem request. routeId='...'` + `Entries disponíveis: [...]`
+    - Erro determinístico quando o intent não existe no catálogo ou quando o catálogo está vazio.
+
 #### IntroStage
 
 Reasons canônicos:
