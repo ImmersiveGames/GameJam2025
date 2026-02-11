@@ -2,7 +2,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+#if UNITY_EDITOR
 using System.Reflection;
+#endif
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
@@ -90,6 +92,28 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             _ = resetService.RequestResetAsync(ReasonForceReset);
         }
 
+        private static T? ResolveGlobal<T>(string label) where T : class
+        {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    "[QA][SceneFlow] DependencyManager.Provider é null (infra global não inicializada?).",
+                    ColorErr);
+                return null;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    $"[QA][SceneFlow] Serviço global ausente: {label}.",
+                    ColorErr);
+                return null;
+            }
+
+            return service;
+        }
+
+#if UNITY_EDITOR
         [ContextMenu("QA/SceneFlow/Dump Route Catalog (RouteKind)")]
         private void Qa_DumpRouteCatalogRouteKind()
         {
@@ -152,27 +176,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
         }
 
-        private static T? ResolveGlobal<T>(string label) where T : class
-        {
-            if (DependencyManager.Provider == null)
-            {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[QA][SceneFlow] DependencyManager.Provider é null (infra global não inicializada?).",
-                    ColorErr);
-                return null;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
-            {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[QA][SceneFlow] Serviço global ausente: {label}.",
-                    ColorErr);
-                return null;
-            }
-
-            return service;
-        }
-
         // Leitura por reflexão para manter o helper DEV sem acoplamento no caminho crítico.
         private static bool TryReadRoutes(SceneRouteCatalogAsset catalog, out List<RouteDumpItem> routes)
         {
@@ -225,6 +228,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             return true;
         }
 
+#endif
+
+#if UNITY_EDITOR
         private static bool IsRelevant(string routeId)
         {
             if (string.IsNullOrWhiteSpace(routeId))
@@ -257,5 +263,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             public SceneRouteKind RouteKind { get; }
             public string TargetActiveScene { get; }
         }
+#endif
     }
 }

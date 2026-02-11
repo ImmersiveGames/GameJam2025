@@ -242,6 +242,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             string assetLabel)
             where T : ScriptableObject
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (canonicalAsset == null)
             {
                 return;
@@ -277,6 +278,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"assetLabel='{assetLabel}', canonicalPath='{canonicalResourcesPath}', assetName='{canonicalAsset.name}', " +
                 $"sameNameCount={sameNameCount}, totalAssetsOfType={allAssetsOfType.Length}. " +
                 "Mantenha apenas um catálogo canônico por nome para evitar ambiguidade de setup.");
+#endif
         }
 
         private static void RegisterGlobalIfMissing<T>(T service, string label) where T : class
