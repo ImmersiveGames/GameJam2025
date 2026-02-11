@@ -110,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _pendingUseFade = evt.Context.UseFade;
 
 
-            // Para fade, isso atualiza a etapa se já estiver visivel; para no-fade, mantem idempotente.
+            // Para fade/no-fade: Show e idempotente por assinatura quando a HUD ja estiver visivel.
             _ = EnsureThenShowAsync(signature, _pendingStep, "scenes_ready");
         }
 
@@ -244,18 +244,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private async System.Threading.Tasks.Task EnsureThenShowAsync(string signature, string step, string reason)
         {
+            if (_hudVisible && string.Equals(_visibleSignature, signature))
+            {
+                string visiblePhase = string.IsNullOrWhiteSpace(_visibleStep) ? "(null)" : _visibleStep;
+                DebugUtility.LogVerbose<LoadingHudOrchestrator>(
+                    $"[LoadingHudShow] skipped (already visible). signature='{signature}' requestedPhase='{step}' visiblePhase='{visiblePhase}'.");
+                return;
+            }
+
             if (!TryResolveHudService())
             {
                 WarnHudMissingOnce($"Show pendente ignorado. reason='{reason}', step='{step}'.");
                 return;
-            }
-
-            if (_hudVisible && string.Equals(_visibleSignature, signature))
-            {
-                if (string.Equals(_visibleStep, step))
-                {
-                    return;
-                }
             }
 
             try
@@ -281,10 +281,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
             if (_hudVisible && string.Equals(_visibleSignature, signature))
             {
-                if (string.Equals(_visibleStep, step))
-                {
-                    return;
-                }
+                DebugUtility.LogVerbose<LoadingHudOrchestrator>(
+                    $"[LoadingHudShow] skipped (already visible). signature='{signature}' requestedPhase='{step}' visiblePhase='{_visibleStep}'.");
+                return;
             }
 
             _hudService.Show(signature, step);

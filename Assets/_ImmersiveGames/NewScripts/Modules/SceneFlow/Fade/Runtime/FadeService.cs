@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             _config = config;
         }
 
-        public async Task FadeInAsync()
+        public async Task FadeInAsync(string? contextSignature = null)
         {
             if (IsNoOpFadeIn())
             {
@@ -61,10 +61,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             await EnsureControllerAsync();
 
             _controller.Configure(_config);
-            await _controller.FadeInAsync();
+            await _controller.FadeInAsync(contextSignature);
         }
 
-        public async Task FadeOutAsync()
+        public async Task FadeOutAsync(string? contextSignature = null)
         {
             if (IsNoOpFadeOut())
             {
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             await EnsureControllerAsync();
 
             _controller.Configure(_config);
-            await _controller.FadeOutAsync();
+            await _controller.FadeOutAsync(contextSignature);
         }
 
         private bool IsNoOpFadeIn()

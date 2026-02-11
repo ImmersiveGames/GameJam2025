@@ -124,14 +124,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
         {
             ReleaseGateHandle();
 
-            // Semântica correta: GameplayReady só deve subir em profile gameplay.
-            _gameplayReady = evt.Context.TransitionProfileId.IsGameplay;
+            // Semântica correta: GameplayReady só deve subir em transição de gameplay.
+            bool isGameplayTransition = evt.Context.TransitionProfileId.IsGameplay;
+            _gameplayReady = isGameplayTransition;
+
+            string readinessPhase = isGameplayTransition
+                ? "GameplayReady"
+                : "NonGameplayReady";
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. " +
+                $"[Readiness] SceneTransitionCompleted → gate liberado e fase {readinessPhase} marcada. " +
                 $"gameplayReady={_gameplayReady}. Context={evt.Context}");
 
-            PublishSnapshot("scene_transition_completed", force: true);
+            PublishSnapshot(
+                isGameplayTransition
+                    ? "scene_transition_completed_gameplay"
+                    : "scene_transition_completed_non_gameplay",
+                force: true);
         }
 
         private void OnGateChanged(bool isOpen)

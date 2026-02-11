@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 $"fadeIn={_resolvedConfig.FadeInDuration:0.###}, fadeOut={_resolvedConfig.FadeOutDuration:0.###}.");
         }
 
-        public async Task FadeInAsync()
+        public async Task FadeInAsync(string? contextSignature = null)
         {
             if (!_shouldFade || _resolvedConfig.FadeInDuration <= 0f)
             {
@@ -109,10 +109,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
             await ExecuteFadeAsync(
                 phase: "fade_in",
-                run: () => _fadeService.FadeInAsync());
+                run: () => _fadeService.FadeInAsync(contextSignature));
         }
 
-        public async Task FadeOutAsync()
+        public async Task FadeOutAsync(string? contextSignature = null)
         {
             if (!_shouldFade || _resolvedConfig.FadeOutDuration <= 0f)
             {
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
             await ExecuteFadeAsync(
                 phase: "fade_out",
-                run: () => _fadeService.FadeOutAsync());
+                run: () => _fadeService.FadeOutAsync(contextSignature));
         }
 
         private async Task ExecuteFadeAsync(string phase, Func<Task> run)

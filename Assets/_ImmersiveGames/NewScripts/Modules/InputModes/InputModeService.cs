@@ -41,6 +41,29 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
 
             bool isRepeat = _currentMode == mode;
             _currentMode = mode;
+            PlayerInput[] preResolvedInputs = null;
+
+            // Idempotência explícita para evitar ruído no Frontend em SceneFlow/Completed:
+            // se o modo já está ativo, não reaplica nem tenta resolver PlayerInput.
+            if (isRepeat && IsFrontendCompletedReason(resolvedReason))
+            {
+                DebugUtility.LogVerbose<InputModeService>(
+                    $"[InputMode] Modo '{mode}' ja ativo. Skip reapply ({resolvedReason}).",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (isRepeat && mode != InputMode.Gameplay)
+            {
+                preResolvedInputs = FindActivePlayerInputs();
+                if (preResolvedInputs.Length == 0)
+                {
+                    DebugUtility.LogVerbose<InputModeService>(
+                        $"[InputMode] Modo '{mode}' ja ativo e sem PlayerInput ativo. Skip reapply ({resolvedReason}).",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+            }
 
             if (isRepeat)
             {
@@ -59,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
             string targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
 
             // Multiplayer-safe: aplica em todos os PlayerInput ativos.
-            PlayerInput[] inputs = FindActivePlayerInputs();
+            PlayerInput[] inputs = preResolvedInputs ?? FindActivePlayerInputs();
             if (inputs.Length == 0)
             {
                 DebugUtility.LogVerbose<InputModeService>(
@@ -165,6 +188,16 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
         }
 
         private static bool ShouldUseMenuMap(InputMode mode) => mode != InputMode.Gameplay;
+
+        private static bool IsFrontendCompletedReason(string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return false;
+            }
+
+            return reason.StartsWith("SceneFlow/Completed:Frontend", StringComparison.OrdinalIgnoreCase);
+        }
 
         private enum InputMode
         {

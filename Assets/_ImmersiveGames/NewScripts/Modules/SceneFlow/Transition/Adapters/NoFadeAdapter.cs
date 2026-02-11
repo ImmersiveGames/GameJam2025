@@ -12,8 +12,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
         public void ConfigureFromProfile(SceneFlowProfileId profileId) { }
 
-        public Task FadeInAsync() => Task.CompletedTask;
+        public Task FadeInAsync(string? contextSignature = null) => Task.CompletedTask;
 
-        public Task FadeOutAsync() => Task.CompletedTask;
+        public Task FadeOutAsync(string? contextSignature = null) => Task.CompletedTask;
     }
 }

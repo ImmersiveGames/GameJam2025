@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             }
 
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' " +
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' " +
                 $"signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
 
@@ -119,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             string mapName = applyGameplay ? "Player" : "UI";
 
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Apply mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='PostGame/{context.Reason}' " +
+                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='PostGame/{context.Reason}' " +
                 $"signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
 

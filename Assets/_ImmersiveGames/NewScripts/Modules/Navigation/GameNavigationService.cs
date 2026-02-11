@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             _levelFlowService = levelFlowService;
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[Navigation] GameNavigationService inicializado. Rotas: {string.Join(", ", _catalog.RouteIds)}",
+                $"[Navigation] GameNavigationService inicializado. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
                 DebugUtility.Colors.Info);
         }
 
@@ -108,7 +108,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[Navigation] Intent padrão de gameplay não encontrado. levelId='{levelId}'.");
+                        $"[Navigation] Intent padrão de gameplay não encontrado ou inválido. " +
+                        $"intentId='{GameNavigationIntents.ToGameplay}', levelId='{levelId}'. " +
+                        $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}]");
                     return;
                 }
 
@@ -146,38 +148,39 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public async Task NavigateAsync(string routeId, string reason = null)
             => await ExecuteIntentAsync(routeId, reason);
 
-        private async Task ExecuteIntentAsync(string routeId, string reason = null)
+        private async Task ExecuteIntentAsync(string intentId, string reason = null)
         {
-            if (string.IsNullOrWhiteSpace(routeId))
+            if (string.IsNullOrWhiteSpace(intentId))
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    "[Navigation] NavigateAsync chamado com routeId vazio. Abortando.");
+                    "[Navigation] NavigateAsync chamado com id vazio. Abortando.");
                 return;
             }
 
             if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[Navigation] Navegação já em progresso. Ignorando rota='{routeId}'.");
+                    $"[Navigation] Navegação já em progresso. Ignorando id='{intentId}'.");
                 return;
             }
 
             try
             {
-                if (!_catalog.TryGet(routeId, out var entry) || !entry.IsValid)
+                if (!_catalog.TryGet(intentId, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[Navigation] Rota desconhecida ou sem request. routeId='{routeId}'.");
+                        $"[Navigation] Intent/rota desconhecida ou sem request. id='{intentId}'. " +
+                        $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}].");
                     return;
                 }
 
-                await ExecuteEntryAsync(routeId, entry, reason);
+                await ExecuteEntryAsync(intentId, entry, reason);
             }
             catch (Exception ex)
             {
                 // Comentário: navegação é infraestrutura de fluxo; não deve derrubar o jogo.
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] Exceção ao navegar. routeId='{routeId}', reason='{reason ?? "<null>"}', ex={ex}");
+                    $"[Navigation] Exceção ao navegar. id='{intentId}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {

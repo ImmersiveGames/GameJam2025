@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             }
 
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
-                $"[OBS][InputMode] Apply mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}'.",
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}' (delegated).",
                 DebugUtility.Colors.Info);
 
             inputMode.SetFrontendMenu("IntroStageController/ConfirmToStart");
@@ -174,5 +174,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
     }
 }
-
 

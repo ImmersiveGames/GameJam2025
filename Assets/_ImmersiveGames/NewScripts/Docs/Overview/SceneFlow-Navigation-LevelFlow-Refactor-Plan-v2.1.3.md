@@ -60,6 +60,26 @@ Introduzir um **catálogo de profiles por referência direta** (ScriptableObject
 - Quando estiver 100% coberto pelo catálogo, desligar legado:
   - `SceneTransitionProfileCatalogAsset.AllowLegacyResourcesFallback = false`
 
+
+## Resources layout canônico (Navigation)
+
+Fonte de verdade para assets carregados via `Resources.Load` no fluxo de navegação:
+
+- **GameNavigationCatalog**
+  - Asset: `Assets/Resources/Navigation/GameNavigationCatalog.asset`
+  - Load path: `"Navigation/GameNavigationCatalog"`
+- **TransitionStyleCatalog**
+  - Asset: `Assets/Resources/Navigation/TransitionStyleCatalog.asset`
+  - Load path: `"Navigation/TransitionStyleCatalog"`
+- **LevelCatalog (LevelFlow)**
+  - Asset: `Assets/Resources/Navigation/LevelCatalog.asset`
+  - Load path: `"Navigation/LevelCatalog"`
+- **SceneRouteCatalog** (mantido como definido atualmente no docs/código)
+  - Asset: `Assets/Resources/SceneFlow/SceneRouteCatalog.asset`
+  - Load path: `"SceneFlow/SceneRouteCatalog"`
+
+Regra: nenhum asset de Navigation deve ficar na raiz de `Resources/`.
+
 ### Evidência (logs)
 - Quando resolver via catálogo:
   - `resolvedPath='catalog'`

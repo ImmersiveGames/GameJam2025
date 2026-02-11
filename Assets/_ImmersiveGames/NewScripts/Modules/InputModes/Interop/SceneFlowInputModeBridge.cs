@@ -250,9 +250,9 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             string scene,
             string profile)
         {
-            // Observabilidade canônica (Contrato): Applied mode/map/reason/signature/scene/profile.
+            // Observabilidade canônica (Contrato): Request mode/map/reason/signature/scene/profile.
             DebugUtility.LogVerbose(typeof(SceneFlowInputModeBridge),
-                $"[OBS][InputMode] Applied mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' profile='{profile ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+                $"[OBS][InputMode] Requested mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' profile='{profile ?? string.Empty}' reason='{reason ?? string.Empty}' (delegated).",
                 DebugUtility.Colors.Info);
         }
 

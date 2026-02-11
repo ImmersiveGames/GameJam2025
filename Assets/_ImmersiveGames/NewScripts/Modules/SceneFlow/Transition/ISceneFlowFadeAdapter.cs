@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
     {
         bool IsAvailable { get; }
         void ConfigureFromProfile(SceneFlowProfileId profileId);
-        Task FadeInAsync();
-        Task FadeOutAsync();
+        Task FadeInAsync(string? contextSignature = null);
+        Task FadeOutAsync(string? contextSignature = null);
     }
 }

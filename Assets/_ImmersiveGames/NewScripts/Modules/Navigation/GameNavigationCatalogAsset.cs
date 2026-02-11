@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using UnityEngine.Serialization;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
@@ -30,6 +31,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("SceneRouteId que fornece a Scene Data (ScenesToLoad/Unload/Active) para esta navegação.")]
             public SceneRouteId sceneRouteId;
 
+            [FormerlySerializedAs("transitionStyleId")]
             [Tooltip("TransitionStyleId que define ProfileId/UseFade (SceneFlow) usado nesta navegação.")]
             public TransitionStyleId styleId;
 
@@ -47,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             public string targetActiveScene;
         }
 
+        [FormerlySerializedAs("routes")]
         [SerializeField] private List<RouteEntry> _routes = new();
 
         private readonly Dictionary<string, GameNavigationEntry> _cache = new(StringComparer.OrdinalIgnoreCase);

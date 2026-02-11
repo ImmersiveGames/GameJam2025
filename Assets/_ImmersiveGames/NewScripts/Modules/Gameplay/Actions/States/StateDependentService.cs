@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States
 {
     /// <summary>
@@ -62,6 +63,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States
         private MoveDecision _lastMoveDecision = MoveDecision.Allowed;
         private ServiceState _lastResolvedState = ServiceState.Ready;
         private string _lastLoopStateName = string.Empty;
+
+        private const float NonGameplayBlockedLogCooldownSeconds = 1f;
+        private float _lastNonGameplayBlockedLogTimestamp = float.NegativeInfinity;
+        private string _lastNonGameplayBlockedLogKey = string.Empty;
 
         public StateDependentService(ISimulationGateService gateService = null)
         {
@@ -402,6 +407,29 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States
             int activeTokens = _gateService?.ActiveTokenCount ?? 0;
             bool pausedOnly = IsPausedOnlyByGate();
             bool gameplayReady = !_hasReadinessSnapshot || _gameplayReady;
+            bool isNonGameplayContext = !gameplayReady || !string.Equals(_lastLoopStateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
+
+            if (isNonGameplayContext && decision != MoveDecision.Allowed)
+            {
+                float now = Time.unscaledTime;
+                string effectiveCauseKey = $"{decision}|gate={gateIsOpen}|paused={pausedOnly}|state={resolvedState}|loop={_lastLoopStateName}";
+                bool sameCauseWithinCooldown =
+                    string.Equals(effectiveCauseKey, _lastNonGameplayBlockedLogKey, StringComparison.Ordinal)
+                    && (now - _lastNonGameplayBlockedLogTimestamp) < NonGameplayBlockedLogCooldownSeconds;
+
+                if (sameCauseWithinCooldown)
+                {
+                    return;
+                }
+
+                _lastNonGameplayBlockedLogKey = effectiveCauseKey;
+                _lastNonGameplayBlockedLogTimestamp = now;
+            }
+            else if (decision == MoveDecision.Allowed)
+            {
+                _lastNonGameplayBlockedLogKey = string.Empty;
+                _lastNonGameplayBlockedLogTimestamp = float.NegativeInfinity;
+            }
 
             DebugUtility.LogVerbose<StateDependentService>(
                 decision == MoveDecision.Allowed

@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
     public interface IFadeService
     {
         void Configure(FadeConfig config);
-        Task FadeInAsync();
-        Task FadeOutAsync();
+        Task FadeInAsync(string? contextSignature = null);
+        Task FadeOutAsync(string? contextSignature = null);
     }
 }
