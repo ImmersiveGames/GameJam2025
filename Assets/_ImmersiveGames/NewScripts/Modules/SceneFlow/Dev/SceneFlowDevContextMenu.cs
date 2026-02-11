@@ -20,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 
         private const string ReasonEnterGameplay = "QA/SceneFlow/EnterGameplay";
         private const string QaStartLevelId = "level.1";
+        private const string ReasonQaRestart = "QA/Navigation/Restart";
+        private const string ReasonQaExitToMenu = "QA/Navigation/ExitToMenu";
         private const string ReasonForceReset = "QA/WorldLifecycle/ForceResetWorld";
         private static readonly string[] RelevantRouteTokens = { "menu", "gameplay", "postgame", "restart", "exit" };
 
@@ -37,6 +39,39 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 ColorInfo);
 
             _ = navigation.StartGameplayAsync(LevelId.FromName(QaStartLevelId), ReasonEnterGameplay);
+        }
+
+
+        [ContextMenu("QA/Navigation/Restart (TC: Restart Route)")]
+        private void Qa_RestartNavigation()
+        {
+            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
+            if (navigation == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[OBS][Navigation] QA restart solicitado. reason='{ReasonQaRestart}'.",
+                ColorInfo);
+
+            _ = navigation.RestartAsync(ReasonQaRestart);
+        }
+
+        [ContextMenu("QA/Navigation/ExitToMenu (TC: Frontend Route)")]
+        private void Qa_ExitToMenuNavigation()
+        {
+            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
+            if (navigation == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[OBS][Navigation] QA exit-to-menu solicitado. reason='{ReasonQaExitToMenu}'.",
+                ColorInfo);
+
+            _ = navigation.ExitToMenuAsync(ReasonQaExitToMenu);
         }
 
         [ContextMenu("QA/WorldLifecycle/ForceResetWorld (TC: Manual ResetWorld)")]
