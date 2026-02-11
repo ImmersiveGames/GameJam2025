@@ -156,6 +156,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterGlobalIfMissing<ILevelFlowService>(levelCatalogAsset, "ILevelFlowService");
 
             var sceneRouteResolver = ResolveOrRegisterSceneRouteResolver(sceneRouteCatalogAsset);
+            var gameplayProbeResolved = sceneRouteResolver.TryResolve(GameNavigationIntents.ToGameplay, out var gameplayProbeRoute);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][Navigation] Runtime wiring check: " +
+                $"catalogType='{sceneRouteCatalogAsset.GetType().FullName}', " +
+                $"resolverType='{sceneRouteResolver.GetType().FullName}', " +
+                $"tryResolve('to-gameplay')={gameplayProbeResolved}, " +
+                $"resolvedRoute='{(gameplayProbeResolved ? gameplayProbeRoute.RouteId.ToString() : "<null>")}'.",
+                DebugUtility.Colors.Info);
 
             var service = new GameNavigationService(
                 sceneFlow,
