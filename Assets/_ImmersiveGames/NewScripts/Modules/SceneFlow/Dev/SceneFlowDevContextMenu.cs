@@ -113,22 +113,21 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         [ContextMenu("QA/SceneFlow/Dump Route Catalog (RouteKind)")]
         private void Qa_DumpRouteCatalogRouteKind()
         {
-            if (!TryGetRouteCatalog(out var routeCatalog, out var sourceLabel))
+            if (!TryGetRouteCatalogAsset(out var routeCatalogAsset, out var sourceLabel))
             {
                 return;
             }
 
+            var routes = routeCatalogAsset.DebugGetRoutesSnapshot();
             int unspecifiedCount = 0;
             int totalRoutes = 0;
             var relevant = new List<RouteDumpItem>();
             var unspecifiedRelevant = new List<string>();
 
-            foreach (var routeId in routeCatalog.RouteIds)
+            for (int i = 0; i < routes.Count; i++)
             {
-                if (!routeCatalog.TryGet(routeId, out var routeDefinition))
-                {
-                    continue;
-                }
+                var routeId = routes[i].RouteId;
+                var routeDefinition = routes[i].RouteDefinition;
 
                 totalRoutes++;
                 if (routeDefinition.RouteKind == SceneRouteKind.Unspecified)
@@ -165,17 +164,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
         }
 
-        private static bool TryGetRouteCatalog(out ISceneRouteCatalog routeCatalog, out string sourceLabel)
+        private static bool TryGetRouteCatalogAsset(out SceneRouteCatalogAsset routeCatalogAsset, out string sourceLabel)
         {
-            routeCatalog = null;
+            routeCatalogAsset = null;
             sourceLabel = string.Empty;
 
             if (DependencyManager.Provider != null &&
                 DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var catalogFromDi) &&
-                catalogFromDi != null)
+                catalogFromDi is SceneRouteCatalogAsset catalogAssetFromDi)
             {
-                routeCatalog = catalogFromDi;
-                sourceLabel = "DI/ISceneRouteCatalog";
+                routeCatalogAsset = catalogAssetFromDi;
+                sourceLabel = "DI/ISceneRouteCatalog(SceneRouteCatalogAsset)";
                 return true;
             }
 
@@ -183,13 +182,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             var catalogFromResources = Resources.Load<SceneRouteCatalogAsset>(resourcesPath);
             if (catalogFromResources != null)
             {
-                routeCatalog = catalogFromResources;
+                routeCatalogAsset = catalogFromResources;
                 sourceLabel = $"Resources/{resourcesPath}";
                 return true;
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): catálogo não encontrado via DI nem Resources (path='{resourcesPath}').",
+                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): SceneRouteCatalogAsset não encontrado via DI cast nem Resources (path='{resourcesPath}').",
                 ColorErr);
             return false;
         }

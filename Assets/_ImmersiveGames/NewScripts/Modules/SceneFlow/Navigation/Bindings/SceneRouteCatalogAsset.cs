@@ -42,6 +42,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 => arr == null ? "" : string.Join(", ", arr.Where(s => !string.IsNullOrWhiteSpace(s)));
         }
 
+#if UNITY_EDITOR
+        public readonly struct DebugRouteItem
+        {
+            public DebugRouteItem(SceneRouteId routeId, SceneRouteDefinition routeDefinition)
+            {
+                RouteId = routeId;
+                RouteDefinition = routeDefinition;
+            }
+
+            public SceneRouteId RouteId { get; }
+            public SceneRouteDefinition RouteDefinition { get; }
+        }
+#endif
+
         [Header("Routes")]
         [SerializeField] private List<RouteEntry> routes = new();
 
@@ -51,15 +65,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
         private readonly Dictionary<SceneRouteId, SceneRouteDefinition> _cache = new();
         private bool _cacheBuilt;
-
-        public IEnumerable<SceneRouteId> RouteIds
-        {
-            get
-            {
-                EnsureCache();
-                return _cache.Keys;
-            }
-        }
 
         public bool TryGet(SceneRouteId routeId, out SceneRouteDefinition route)
         {
@@ -73,6 +78,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             EnsureCache();
             return _cache.TryGetValue(routeId, out route);
         }
+
+#if UNITY_EDITOR
+        public IReadOnlyList<DebugRouteItem> DebugGetRoutesSnapshot()
+        {
+            EnsureCache();
+            var snapshot = new List<DebugRouteItem>(_cache.Count);
+            foreach (var pair in _cache)
+            {
+                snapshot.Add(new DebugRouteItem(pair.Key, pair.Value));
+            }
+
+            return snapshot;
+        }
+#endif
 
         private void OnEnable()
         {
