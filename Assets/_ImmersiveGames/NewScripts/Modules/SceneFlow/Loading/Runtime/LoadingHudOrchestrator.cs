@@ -246,6 +246,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         {
             if (_hudVisible && string.Equals(_visibleSignature, signature))
             {
+                string visiblePhase = string.IsNullOrWhiteSpace(_visibleStep) ? "(null)" : _visibleStep;
+                DebugUtility.LogVerbose<LoadingHudOrchestrator>(
+                    $"[LoadingHudShow] skipped (already visible). signature='{signature}' requestedPhase='{step}' visiblePhase='{visiblePhase}'.");
                 return;
             }
 
