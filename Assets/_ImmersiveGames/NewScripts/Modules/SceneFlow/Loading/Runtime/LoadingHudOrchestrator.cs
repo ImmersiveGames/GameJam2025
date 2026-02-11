@@ -244,18 +244,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private async System.Threading.Tasks.Task EnsureThenShowAsync(string signature, string step, string reason)
         {
+            if (_hudVisible && string.Equals(_visibleSignature, signature))
+            {
+                DebugUtility.LogVerbose<LoadingHudOrchestrator>(
+                    $"[LoadingHudShow] skipped (already visible). signature='{signature}' requestedPhase='{step}' visiblePhase='{_visibleStep}'.");
+                return;
+            }
+
             if (!TryResolveHudService())
             {
                 WarnHudMissingOnce($"Show pendente ignorado. reason='{reason}', step='{step}'.");
                 return;
-            }
-
-            if (_hudVisible && string.Equals(_visibleSignature, signature))
-            {
-                if (string.Equals(_visibleStep, step))
-                {
-                    return;
-                }
             }
 
             try
