@@ -17,3 +17,10 @@ Este diretório guarda snapshots de evidência (logs + interpretação) usados p
   - `Baseline-<versão>-Smoke-LastRun.log`
 - **Omissões de log:** usar `[...trecho omitido...]` quando necessário (evitar “...” solto).
 - **Promoção:** ao promover um snapshot para LATEST, atualizar `LATEST.md` e registrar o motivo em um ADR (quando aplicável).
+
+
+## Política de retenção
+
+- Manter **LATEST** + **as 2 evidências anteriores** em `Reports/Evidence/`.
+- Manter **as 3 auditorias mais recentes** em `Reports/Audits/`.
+- Material antigo deve ser removido (o histórico segue no Git).

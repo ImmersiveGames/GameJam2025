@@ -86,6 +86,9 @@ Regra: nenhum asset de Navigation deve ficar na raiz de `Resources/`.
 - Quando cair no legado (apenas 1x por sessão):
   - `[OBS] ... usando fallback legado via Resources ...`
 
+- Boot (antes do clique Play):
+  - `[OBS][Navigation] Catalog boot snapshot: ... rawRoutesCount=... builtRouteIdsCount=... hasToGameplay=...`
+
 ---
 
 ## Status do plano (v2.1.3)

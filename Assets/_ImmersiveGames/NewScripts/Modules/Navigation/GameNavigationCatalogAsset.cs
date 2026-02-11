@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         fileName = "GameNavigationCatalog",
         menuName = "ImmersiveGames/NewScripts/Navigation/GameNavigationCatalog",
         order = 0)]
-    public sealed class GameNavigationCatalogAsset : ScriptableObject, IGameNavigationCatalog
+    public sealed class GameNavigationCatalogAsset : ScriptableObject, IGameNavigationCatalog, ISerializationCallbackReceiver
     {
         [Serializable]
         public sealed class RouteEntry
@@ -35,6 +35,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("TransitionStyleId que define ProfileId/UseFade (SceneFlow) usado nesta navegação.")]
             public TransitionStyleId styleId;
 
+            [FormerlySerializedAs("styleId")]
+            [HideInInspector]
+            [SerializeField]
+            private TransitionStyleId _legacyTransitionStyleId;
+
             [Header("LEGACY (ignored) — use SceneRouteCatalogAsset")]
             [Tooltip("LEGACY: cenas a carregar. Ignorado a partir da F3.")]
             [HideInInspector]
@@ -47,10 +52,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("LEGACY: cena ativa ao final da transição. Ignorado a partir da F3.")]
             [HideInInspector]
             public string targetActiveScene;
+
+            public void MigrateLegacy()
+            {
+                routeId = routeId?.Trim();
+
+                if (!styleId.IsValid && _legacyTransitionStyleId.IsValid)
+                {
+                    styleId = _legacyTransitionStyleId;
+                }
+            }
         }
 
-        [FormerlySerializedAs("routes")]
-        [SerializeField] private List<RouteEntry> _routes = new();
+        [SerializeField]
+        [FormerlySerializedAs("_routes")]
+        private List<RouteEntry> routes = new();
 
         private readonly Dictionary<string, GameNavigationEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
         private bool _built;
@@ -91,47 +107,78 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return true;
         }
 
+        public void GetObservabilitySnapshot(out int rawRoutesCount, out int builtRouteIdsCount, out bool hasToGameplay)
+        {
+            EnsureBuilt();
+            rawRoutesCount = routes?.Count ?? 0;
+            builtRouteIdsCount = _cache.Count;
+            hasToGameplay = _cache.ContainsKey(GameNavigationIntents.ToGameplay);
+        }
+
+        public void OnBeforeSerialize()
+        {
+        }
+
+        public void OnAfterDeserialize()
+        {
+            ApplyRouteMigration();
+            _built = false;
+        }
+
         private void EnsureBuilt()
         {
             if (_built)
                 return;
 
+            ApplyRouteMigration();
+
             _built = true;
             _cache.Clear();
 
-            if (_routes == null)
+            if (routes == null)
                 return;
 
-            foreach (var r in _routes)
+            foreach (var route in routes)
             {
-                if (!TryBuildEntry(r, out var e))
+                if (!TryBuildEntry(route, out var entry))
                     continue;
 
-                _cache[r.routeId.Trim()] = e;
+                _cache[route.routeId.Trim()] = entry;
             }
         }
 
-        private static bool TryBuildEntry(RouteEntry r, out GameNavigationEntry entry)
+        private void ApplyRouteMigration()
+        {
+            if (routes == null)
+                return;
+
+            foreach (var route in routes)
+            {
+                route?.MigrateLegacy();
+            }
+        }
+
+        private static bool TryBuildEntry(RouteEntry route, out GameNavigationEntry entry)
         {
             entry = default;
 
-            if (r == null)
+            if (route == null)
                 return false;
 
-            if (string.IsNullOrWhiteSpace(r.routeId))
+            if (string.IsNullOrWhiteSpace(route.routeId))
                 return false;
 
-            if (!r.sceneRouteId.IsValid)
+            if (!route.sceneRouteId.IsValid)
                 return false;
 
-            if (!r.styleId.IsValid)
+            if (!route.styleId.IsValid)
                 return false;
 
             var payload = SceneTransitionPayload.Empty;
 
             entry = new GameNavigationEntry(
-                r.sceneRouteId,
-                r.styleId,
+                route.sceneRouteId,
+                route.styleId,
                 payload);
 
             return true;
@@ -141,28 +188,28 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             detail = string.Empty;
 
-            if (_routes == null)
+            if (routes == null)
                 return false;
 
-            for (int i = 0; i < _routes.Count; i++)
+            for (int i = 0; i < routes.Count; i++)
             {
-                var r = _routes[i];
-                if (r == null)
+                var route = routes[i];
+                if (route == null)
                     continue;
 
-                if (!string.Equals(r.routeId?.Trim(), routeId?.Trim(), StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(route.routeId?.Trim(), routeId?.Trim(), StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 bool hasLegacy =
-                    (r.scenesToLoad != null && r.scenesToLoad.Count > 0) ||
-                    (r.scenesToUnload != null && r.scenesToUnload.Count > 0) ||
-                    !string.IsNullOrWhiteSpace(r.targetActiveScene);
+                    (route.scenesToLoad != null && route.scenesToLoad.Count > 0) ||
+                    (route.scenesToUnload != null && route.scenesToUnload.Count > 0) ||
+                    !string.IsNullOrWhiteSpace(route.targetActiveScene);
 
                 if (!hasLegacy)
                     return false;
 
                 detail =
-                    $"(routeId='{r.routeId}', sceneRouteId='{r.sceneRouteId}', styleId='{r.styleId}')";
+                    $"(routeId='{route.routeId}', sceneRouteId='{route.sceneRouteId}', styleId='{route.styleId}')";
                 return true;
             }
 

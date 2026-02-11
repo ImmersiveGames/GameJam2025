@@ -7,7 +7,7 @@ Esta página aponta para o conjunto de evidências **mais recente** aceito como 
 - **Data:** 2026-02-03
 - **Baseline:** 2.2
 - **Arquivo de evidência:** [`Baseline-2.2-Evidence-2026-02-03.md`](2026-02-03/Baseline-2.2-Evidence-2026-02-03.md)
-- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log)
+- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log) *(atualizado em 2026-02-11)*
 - **Evidências adicionais:** [ADR-0017-LevelCatalog-Evidence-2026-02-03.md](2026-02-03/ADR-0017-LevelCatalog-Evidence-2026-02-03.md)
 
 ## Regras
