@@ -130,6 +130,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     return;
                 }
 
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[Navigation] LevelFlow resolvido. levelId='{levelId}', resolvedRouteId='{resolvedRouteId}', styleId='{entry.StyleId}', reason='{reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+
                 var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
                 await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);
             }

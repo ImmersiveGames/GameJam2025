@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -18,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         private const string ColorErr = "#F44336";
 
         private const string ReasonEnterGameplay = "QA/SceneFlow/EnterGameplay";
+        private const string QaStartLevelId = "level.1";
         private const string ReasonForceReset = "QA/WorldLifecycle/ForceResetWorld";
         private static readonly string[] RelevantRouteTokens = { "menu", "gameplay", "postgame", "restart", "exit" };
 
@@ -31,10 +33,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                "[QA][SceneFlow] Solicitação de transição Menu -> Gameplay enviada.",
+                $"[QA][SceneFlow] Solicitação de transição Menu -> Gameplay via LevelFlow enviada. levelId='{LevelId.Normalize(QaStartLevelId)}'.",
                 ColorInfo);
 
-            _ = navigation.RestartAsync(ReasonEnterGameplay);
+            _ = navigation.StartGameplayAsync(LevelId.FromName(QaStartLevelId), ReasonEnterGameplay);
         }
 
         [ContextMenu("QA/WorldLifecycle/ForceResetWorld (TC: Manual ResetWorld)")]
@@ -222,4 +224,3 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         }
     }
 }
-
