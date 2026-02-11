@@ -1,10 +1,9 @@
 #nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -18,6 +17,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         private const string ColorErr = "#F44336";
 
         private const string ReasonEnterGameplay = "QA/SceneFlow/EnterGameplay";
+        private const string QaStartLevelId = "level.1";
+        private const string ReasonQaRestart = "QA/PostGame/Restart";
+        private const string ReasonQaExitToMenu = "QA/PostGame/ExitToMenu";
         private const string ReasonForceReset = "QA/WorldLifecycle/ForceResetWorld";
         private static readonly string[] RelevantRouteTokens = { "menu", "gameplay", "postgame", "restart", "exit" };
 
@@ -31,10 +33,43 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                "[QA][SceneFlow] Solicitação de transição Menu -> Gameplay enviada.",
+                $"[OBS][Navigation] QA EnterGameplay -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonEnterGameplay}'.",
                 ColorInfo);
 
-            _ = navigation.RestartAsync(ReasonEnterGameplay);
+            _ = navigation.StartGameplayAsync(LevelId.FromName(QaStartLevelId), ReasonEnterGameplay);
+        }
+
+
+        [ContextMenu("QA/PostGame/Restart (TC: Restart Route)")]
+        private void Qa_RestartNavigation()
+        {
+            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
+            if (navigation == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[OBS][Navigation] QA Restart -> RestartAsync reason='{ReasonQaRestart}'.",
+                ColorInfo);
+
+            _ = navigation.RestartAsync(ReasonQaRestart);
+        }
+
+        [ContextMenu("QA/PostGame/ExitToMenu (TC: Frontend Route)")]
+        private void Qa_ExitToMenuNavigation()
+        {
+            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
+            if (navigation == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[OBS][Navigation] QA ExitToMenu -> ExitToMenuAsync reason='{ReasonQaExitToMenu}'.",
+                ColorInfo);
+
+            _ = navigation.ExitToMenuAsync(ReasonQaExitToMenu);
         }
 
         [ContextMenu("QA/WorldLifecycle/ForceResetWorld (TC: Manual ResetWorld)")]
@@ -51,68 +86,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 ColorInfo);
 
             _ = resetService.RequestResetAsync(ReasonForceReset);
-        }
-
-        [ContextMenu("QA/SceneFlow/Dump Route Catalog (RouteKind)")]
-        private void Qa_DumpRouteCatalogRouteKind()
-        {
-            const string resourcesPath = "SceneFlow/SceneRouteCatalog";
-            var catalog = Resources.Load<SceneRouteCatalogAsset>(resourcesPath);
-
-            if (catalog == null)
-            {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): asset não encontrado via Resources (path='{resourcesPath}').",
-                    ColorErr);
-                return;
-            }
-
-            if (!TryReadRoutes(catalog, out var routes))
-            {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[OBS][SceneFlow] Dump Route Catalog (RouteKind): falha ao inspecionar lista de rotas no asset.",
-                    ColorErr);
-                return;
-            }
-
-            int unspecifiedCount = 0;
-            var relevant = new List<RouteDumpItem>();
-            var unspecifiedRelevant = new List<string>();
-
-            foreach (var route in routes)
-            {
-                if (route.RouteKind == SceneRouteKind.Unspecified)
-                {
-                    unspecifiedCount++;
-                }
-
-                if (IsRelevant(route.RouteId))
-                {
-                    relevant.Add(route);
-                    if (route.RouteKind == SceneRouteKind.Unspecified)
-                    {
-                        unspecifiedRelevant.Add(route.RouteId);
-                    }
-                }
-            }
-
-            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): totalRoutes={routes.Count}, unspecified={unspecifiedCount}, resourcesPath='{resourcesPath}'.",
-                ColorInfo);
-
-            foreach (var route in relevant)
-            {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[OBS][SceneFlow] Route routeId='{route.RouteId}', routeKind='{route.RouteKind}', targetActiveScene='{route.TargetActiveScene}'.",
-                    ColorInfo);
-            }
-
-            if (unspecifiedRelevant.Count > 0)
-            {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[OBS][SceneFlow] Rotas relevantes ainda com routeKind=Unspecified: {string.Join(", ", unspecifiedRelevant)}.",
-                    ColorErr);
-            }
         }
 
         private static T? ResolveGlobal<T>(string label) where T : class
@@ -136,56 +109,88 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             return service;
         }
 
-        // Leitura por reflexão para manter o helper DEV sem acoplamento no caminho crítico.
-        private static bool TryReadRoutes(SceneRouteCatalogAsset catalog, out List<RouteDumpItem> routes)
+#if UNITY_EDITOR
+        [ContextMenu("QA/SceneFlow/Dump Route Catalog (RouteKind)")]
+        private void Qa_DumpRouteCatalogRouteKind()
         {
-            routes = new List<RouteDumpItem>();
-            if (catalog == null)
+            if (!TryGetRouteCatalogAsset(out var routeCatalogAsset, out var sourceLabel))
             {
-                return false;
+                return;
             }
 
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var routesField = typeof(SceneRouteCatalogAsset).GetField("routes", flags);
-            if (routesField == null)
-            {
-                return false;
-            }
+            var routes = routeCatalogAsset.DebugGetRoutesSnapshot();
+            int unspecifiedCount = 0;
+            int totalRoutes = 0;
+            var relevant = new List<RouteDumpItem>();
+            var unspecifiedRelevant = new List<string>();
 
-            if (routesField.GetValue(catalog) is not IEnumerable enumerable)
+            for (int i = 0; i < routes.Count; i++)
             {
-                return false;
-            }
+                var routeId = routes[i].RouteId;
+                var routeDefinition = routes[i].RouteDefinition;
 
-            foreach (var entry in enumerable)
-            {
-                if (entry == null)
+                totalRoutes++;
+                if (routeDefinition.RouteKind == SceneRouteKind.Unspecified)
                 {
-                    continue;
+                    unspecifiedCount++;
                 }
 
-                var entryType = entry.GetType();
-                var routeIdField = entryType.GetField("routeId", flags);
-                var routeKindField = entryType.GetField("routeKind", flags);
-                var targetActiveSceneField = entryType.GetField("targetActiveScene", flags);
-
-                var routeId = routeIdField?.GetValue(entry)?.ToString() ?? string.Empty;
-                var targetActiveScene = targetActiveSceneField?.GetValue(entry)?.ToString() ?? string.Empty;
-
-                var routeKind = SceneRouteKind.Unspecified;
-                if (routeKindField?.GetValue(entry) is SceneRouteKind parsedRouteKind)
+                if (IsRelevant(routeId.Value))
                 {
-                    routeKind = parsedRouteKind;
+                    relevant.Add(new RouteDumpItem(routeId.Value, routeDefinition.RouteKind, routeDefinition.TargetActiveScene));
+                    if (routeDefinition.RouteKind == SceneRouteKind.Unspecified)
+                    {
+                        unspecifiedRelevant.Add(routeId.Value);
+                    }
                 }
-                else if (routeKindField?.GetValue(entry) is int rawKind && Enum.IsDefined(typeof(SceneRouteKind), rawKind))
-                {
-                    routeKind = (SceneRouteKind)rawKind;
-                }
-
-                routes.Add(new RouteDumpItem(routeId, routeKind, targetActiveScene));
             }
 
-            return true;
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): totalRoutes={totalRoutes}, unspecified={unspecifiedCount}, source='{sourceLabel}'.",
+                ColorInfo);
+
+            foreach (var route in relevant)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    $"[OBS][SceneFlow] Route routeId='{route.RouteId}', routeKind='{route.RouteKind}', targetActiveScene='{route.TargetActiveScene}'.",
+                    ColorInfo);
+            }
+
+            if (unspecifiedRelevant.Count > 0)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    $"[OBS][SceneFlow] Rotas relevantes ainda com routeKind=Unspecified: {string.Join(", ", unspecifiedRelevant)}.",
+                    ColorErr);
+            }
+        }
+
+        private static bool TryGetRouteCatalogAsset(out SceneRouteCatalogAsset routeCatalogAsset, out string sourceLabel)
+        {
+            routeCatalogAsset = null;
+            sourceLabel = string.Empty;
+
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var catalogFromDi) &&
+                catalogFromDi is SceneRouteCatalogAsset catalogAssetFromDi)
+            {
+                routeCatalogAsset = catalogAssetFromDi;
+                sourceLabel = "DI/ISceneRouteCatalog(SceneRouteCatalogAsset)";
+                return true;
+            }
+
+            const string resourcesPath = "SceneFlow/SceneRouteCatalog";
+            var catalogFromResources = Resources.Load<SceneRouteCatalogAsset>(resourcesPath);
+            if (catalogFromResources != null)
+            {
+                routeCatalogAsset = catalogFromResources;
+                sourceLabel = $"Resources/{resourcesPath}";
+                return true;
+            }
+
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): SceneRouteCatalogAsset não encontrado via DI cast nem Resources (path='{resourcesPath}').",
+                ColorErr);
+            return false;
         }
 
         private static bool IsRelevant(string routeId)
@@ -220,6 +225,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             public SceneRouteKind RouteKind { get; }
             public string TargetActiveScene { get; }
         }
+#endif
     }
 }
-

@@ -71,13 +71,28 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
 
         public Task GoToMenuAsync(string reason = null)
-            => ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
+        {
+            DebugUtility.LogVerbose(typeof(GameNavigationService),
+                $"[OBS][Navigation] GoToMenuRequested reason='{reason ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
+            return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
+        }
 
         public Task RestartAsync(string reason = null)
-            => ExecuteIntentAsync(GameNavigationIntents.ToGameplay, reason);
+        {
+            DebugUtility.LogVerbose(typeof(GameNavigationService),
+                $"[OBS][Navigation] RestartRequested reason='{reason ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
+            return ExecuteIntentAsync(GameNavigationIntents.ToGameplay, reason);
+        }
 
         public Task ExitToMenuAsync(string reason = null)
-            => ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
+        {
+            DebugUtility.LogVerbose(typeof(GameNavigationService),
+                $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
+            return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
+        }
 
         [Obsolete("Use GoToMenuAsync(reason).")]
         public Task RequestMenuAsync(string reason = null)
@@ -105,6 +120,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             try
             {
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' reason='{reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+
                 if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
@@ -129,6 +148,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, entry, reason);
                     return;
                 }
+
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[Navigation] LevelFlow resolvido. levelId='{levelId}', resolvedRouteId='{resolvedRouteId}', styleId='{entry.StyleId}', reason='{reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
 
                 var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
                 await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);

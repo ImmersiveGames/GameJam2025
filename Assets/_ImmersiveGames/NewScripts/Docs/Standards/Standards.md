@@ -23,6 +23,12 @@ Paths canônicos de Navigation:
 
 Quando houver exceção intencional (ex.: domínio SceneFlow com catálogo próprio), o path deve ser explicitado no plano/ADR correspondente.
 
+### Regra F3 — Route como fonte única de Scene Data
+
+- `ScenesToLoad`/`ScenesToUnload`/`TargetActiveScene` devem ser definidos no `SceneRouteCatalog` (SceneFlow).
+- `Navigation` e `LevelFlow` não devem carregar scene data local em runtime; devem resolver por `SceneRouteId`.
+- Campos LEGACY em catálogos/definitions podem permanecer apenas para migração, desde que sejam ignorados funcionalmente e emitam warning observável quando preenchidos.
+
 ---
 ## Observability Contract
 <a id="observability-contract"></a>

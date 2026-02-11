@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
                 }
 
                 DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
-                try { OnFadeComplete?.Invoke(usedSignature); } catch { }
+                SafeNotifyFadeComplete(usedSignature);
                 _activeContextSignature = null;
                 return;
             }
@@ -174,11 +174,28 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
                 }
 
                 DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
-                try { OnFadeComplete?.Invoke(usedSignature); } catch { }
+                SafeNotifyFadeComplete(usedSignature);
             }
             finally
             {
                 _activeContextSignature = null;
+            }
+        }
+
+        private void SafeNotifyFadeComplete(string signature)
+        {
+            var handler = OnFadeComplete;
+            if (handler == null)
+            {
+                return;
+            }
+
+            try
+            {
+                handler(signature);
+            }
+            catch
+            {
             }
         }
 

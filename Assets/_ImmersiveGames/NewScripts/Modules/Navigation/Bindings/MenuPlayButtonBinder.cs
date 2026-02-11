@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
@@ -14,6 +15,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
     [DisallowMultipleComponent]
     public sealed class MenuPlayButtonBinder : FrontendButtonBinderBase
     {
+        [Header("LevelFlow")]
+        [SerializeField]
+        [Tooltip("LevelId canônico para iniciar gameplay via trilho oficial StartGameplayAsync(levelId).")]
+        private string startLevelId = "level.1";
+
         private IGameNavigationService _navigation;
 
         protected override void Awake()
@@ -46,14 +52,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
             }
 
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[Navigation] Play solicitado. reason='{actionReason}'.",
+                $"[OBS][Navigation] MenuPlay -> StartGameplayAsync levelId='{LevelId.Normalize(startLevelId)}' reason='{actionReason}'.",
                 DebugUtility.Colors.Info);
 
             // Fire-and-forget com captura de falhas.
             NavigationTaskRunner.FireAndForget(
-                _navigation.RestartAsync(actionReason),
+                _navigation.StartGameplayAsync(LevelId.FromName(startLevelId), actionReason),
                 typeof(MenuPlayButtonBinder),
-                "Menu/Play");
+                $"Menu/Play levelId='{LevelId.Normalize(startLevelId)}'");
 
             return true;
         }

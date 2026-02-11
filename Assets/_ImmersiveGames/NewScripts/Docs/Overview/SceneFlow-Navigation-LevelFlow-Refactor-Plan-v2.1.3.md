@@ -94,14 +94,16 @@ Regra: nenhum asset de Navigation deve ficar na raiz de `Resources/`.
 ## Status do plano (v2.1.3)
 
 - ✅ **F1 (concluído no escopo principal):** catálogo de profiles por referência direta + fallback legado controlável.
-- 🟨 **F3 (parcial):** base de rota como fonte de verdade avançou, mas ainda restam pontos de duplicação a eliminar.
-- ⏳ **Pendências reais:** **F2**, **F4** e **F5**.
+- ✅ **F3 (concluído):** rota é a fonte única de scene data (ScenesToLoad/Unload/Active); Navigation e LevelFlow não duplicam dados em runtime.
+- ⏳ **Pendências reais:** **F2** e **F5** (F3 e F4 concluídos).
 
 ## Próximos passos (atualizado)
 
-- **F3 (fechar pendências):** Rota como fonte única de “scene data” (ScenesToLoad/Unload/Active só na rota; LevelDefinition referencia RouteId; Navigation não duplica).
+- **F3 (status atual):** concluído no código atual — SceneRouteCatalog é a fonte única de Scene Data; LevelDefinition/GameNavigationCatalogAsset mantêm apenas campos LEGACY ignorados com warning de observabilidade.
 - **F2 (pendente):** Decisão de Reset/WorldLifecycle por rota/policy (RouteKind/RequiresWorldReset no SceneRouteDefinition; driver usa isso).
-- **F4 (pendente):** LevelFlow end-to-end (StartGameplayAsync(levelId) como trilho oficial; QA/Dev usa só ele).
+- **F4 (concluído):** LevelFlow end-to-end pelo trilho oficial `StartGameplayAsync(levelId)` para entrada inicial de gameplay (Menu Play e QA usando o mesmo caminho de produção).
 - **F5 (pendente):** Hardening (logs [OBS] em Navigation/LevelFlow + ContextMenu QA para Start/Restart/ExitToMenu).
+- **Evidência F4:** `MenuPlayButtonBinder` chama `StartGameplayAsync(LevelId.FromName(startLevelId), reason)` com log `[OBS][Navigation] MenuPlay -> StartGameplayAsync ...`.
+- **Evidência F4:** `SceneFlowDevContextMenu` QA usa `StartGameplayAsync(level.1)` e expõe ações explícitas para `RestartAsync`/`ExitToMenuAsync` com logs `[OBS][Navigation]`.
 
 **Ordem recomendada permanece:** F1 → F3 → F2 → F4 → F5.
