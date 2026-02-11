@@ -1,10 +1,6 @@
 #nullable enable
 using System;
-using System.Collections;
 using System.Collections.Generic;
-#if UNITY_EDITOR
-using System.Reflection;
-#endif
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
@@ -117,48 +113,41 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         [ContextMenu("QA/SceneFlow/Dump Route Catalog (RouteKind)")]
         private void Qa_DumpRouteCatalogRouteKind()
         {
-            const string resourcesPath = "SceneFlow/SceneRouteCatalog";
-            var catalog = Resources.Load<SceneRouteCatalogAsset>(resourcesPath);
-
-            if (catalog == null)
+            if (!TryGetRouteCatalog(out var routeCatalog, out var sourceLabel))
             {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): asset não encontrado via Resources (path='{resourcesPath}').",
-                    ColorErr);
-                return;
-            }
-
-            if (!TryReadRoutes(catalog, out var routes))
-            {
-                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[OBS][SceneFlow] Dump Route Catalog (RouteKind): falha ao inspecionar lista de rotas no asset.",
-                    ColorErr);
                 return;
             }
 
             int unspecifiedCount = 0;
+            int totalRoutes = 0;
             var relevant = new List<RouteDumpItem>();
             var unspecifiedRelevant = new List<string>();
 
-            foreach (var route in routes)
+            foreach (var routeId in routeCatalog.RouteIds)
             {
-                if (route.RouteKind == SceneRouteKind.Unspecified)
+                if (!routeCatalog.TryGet(routeId, out var routeDefinition))
+                {
+                    continue;
+                }
+
+                totalRoutes++;
+                if (routeDefinition.RouteKind == SceneRouteKind.Unspecified)
                 {
                     unspecifiedCount++;
                 }
 
-                if (IsRelevant(route.RouteId))
+                if (IsRelevant(routeId.Value))
                 {
-                    relevant.Add(route);
-                    if (route.RouteKind == SceneRouteKind.Unspecified)
+                    relevant.Add(new RouteDumpItem(routeId.Value, routeDefinition.RouteKind, routeDefinition.TargetActiveScene));
+                    if (routeDefinition.RouteKind == SceneRouteKind.Unspecified)
                     {
-                        unspecifiedRelevant.Add(route.RouteId);
+                        unspecifiedRelevant.Add(routeId.Value);
                     }
                 }
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): totalRoutes={routes.Count}, unspecified={unspecifiedCount}, resourcesPath='{resourcesPath}'.",
+                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): totalRoutes={totalRoutes}, unspecified={unspecifiedCount}, source='{sourceLabel}'.",
                 ColorInfo);
 
             foreach (var route in relevant)
@@ -176,61 +165,35 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
         }
 
-        // Leitura por reflexão para manter o helper DEV sem acoplamento no caminho crítico.
-        private static bool TryReadRoutes(SceneRouteCatalogAsset catalog, out List<RouteDumpItem> routes)
+        private static bool TryGetRouteCatalog(out ISceneRouteCatalog routeCatalog, out string sourceLabel)
         {
-            routes = new List<RouteDumpItem>();
-            if (catalog == null)
+            routeCatalog = null;
+            sourceLabel = string.Empty;
+
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var catalogFromDi) &&
+                catalogFromDi != null)
             {
-                return false;
+                routeCatalog = catalogFromDi;
+                sourceLabel = "DI/ISceneRouteCatalog";
+                return true;
             }
 
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var routesField = typeof(SceneRouteCatalogAsset).GetField("routes", flags);
-            if (routesField == null)
+            const string resourcesPath = "SceneFlow/SceneRouteCatalog";
+            var catalogFromResources = Resources.Load<SceneRouteCatalogAsset>(resourcesPath);
+            if (catalogFromResources != null)
             {
-                return false;
+                routeCatalog = catalogFromResources;
+                sourceLabel = $"Resources/{resourcesPath}";
+                return true;
             }
 
-            if (routesField.GetValue(catalog) is not IEnumerable enumerable)
-            {
-                return false;
-            }
-
-            foreach (var entry in enumerable)
-            {
-                if (entry == null)
-                {
-                    continue;
-                }
-
-                var entryType = entry.GetType();
-                var routeIdField = entryType.GetField("routeId", flags);
-                var routeKindField = entryType.GetField("routeKind", flags);
-                var targetActiveSceneField = entryType.GetField("targetActiveScene", flags);
-
-                var routeId = routeIdField?.GetValue(entry)?.ToString() ?? string.Empty;
-                var targetActiveScene = targetActiveSceneField?.GetValue(entry)?.ToString() ?? string.Empty;
-
-                var routeKind = SceneRouteKind.Unspecified;
-                if (routeKindField?.GetValue(entry) is SceneRouteKind parsedRouteKind)
-                {
-                    routeKind = parsedRouteKind;
-                }
-                else if (routeKindField?.GetValue(entry) is int rawKind && Enum.IsDefined(typeof(SceneRouteKind), rawKind))
-                {
-                    routeKind = (SceneRouteKind)rawKind;
-                }
-
-                routes.Add(new RouteDumpItem(routeId, routeKind, targetActiveScene));
-            }
-
-            return true;
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): catálogo não encontrado via DI nem Resources (path='{resourcesPath}').",
+                ColorErr);
+            return false;
         }
 
-#endif
-
-#if UNITY_EDITOR
         private static bool IsRelevant(string routeId)
         {
             if (string.IsNullOrWhiteSpace(routeId))

@@ -52,6 +52,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         private readonly Dictionary<SceneRouteId, SceneRouteDefinition> _cache = new();
         private bool _cacheBuilt;
 
+        public IEnumerable<SceneRouteId> RouteIds
+        {
+            get
+            {
+                EnsureCache();
+                return _cache.Keys;
+            }
+        }
+
         public bool TryGet(SceneRouteId routeId, out SceneRouteDefinition route)
         {
             route = default;

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
 {
     /// <summary>
@@ -5,6 +7,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
     /// </summary>
     public interface ISceneRouteCatalog
     {
+        IEnumerable<SceneRouteId> RouteIds { get; }
+
         bool TryGet(SceneRouteId routeId, out SceneRouteDefinition route);
     }
 }
