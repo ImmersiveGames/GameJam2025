@@ -117,6 +117,12 @@ Reasons canônicos de WorldLifecycle:
 - `Skipped_StartupOrFrontend:profile=<profile>;scene=<scene>`
 - `Failed_NoController:<scene>`
 
+### Regra F2 — Reset/WorldLifecycle por rota/policy
+
+- **Fonte de verdade da decisão:** metadado de rota (`SceneRouteDefinition.RouteKind`) + `IRouteResetPolicy.Resolve(...) -> RouteResetDecision`, aplicada pelo `WorldLifecycleSceneFlowResetDriver`.
+- O driver aplica a decisão da policy e **não deve duplicar regra** de decisão de reset no próprio handler.
+- Ao decidir/aplicar reset, os anchors canônicos `[OBS][WorldLifecycle]` devem carregar no mínimo: `signature`, `routeId`, `profile`, `target`, `decisionSource`, `reason` (em `ResetRequested` e `ResetCompleted`).
+
 #### GameLoop
 
 Estados observáveis (mínimo):

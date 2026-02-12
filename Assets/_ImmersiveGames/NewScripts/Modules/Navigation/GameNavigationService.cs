@@ -225,9 +225,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 requestedBy: reason,
                 reason: reason);
 
+            var signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
+
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[Navigation] NavigateAsync -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
+                $"[OBS][Navigation] NavigateAsync -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
                 $"styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', " +
+                $"signature='{signature}', " +
                 $"Load=[{string.Join(", ", request.ScenesToLoad)}], " +
                 $"Unload=[{string.Join(", ", request.ScenesToUnload)}], " +
                 $"Active='{request.TargetActiveScene}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
