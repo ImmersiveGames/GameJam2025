@@ -18,21 +18,15 @@ MonoBehaviour:
       _value: to-menu
     transitionStyleId:
       _value: style.frontend
-    scenesToLoad:
-    - MenuScene
-    - UIGlobalScene
-    scenesToUnload:
-    - GameplayScene
-    targetActiveScene: MenuScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: 
   - routeId: to-gameplay
     sceneRouteId:
       _value: to-gameplay
     transitionStyleId:
       _value: style.gameplay
-    scenesToLoad:
-    - GameplayScene
-    - UIGlobalScene
-    scenesToUnload:
-    - MenuScene
-    targetActiveScene: GameplayScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: 
   warnOnInvalidRoutes: 1
