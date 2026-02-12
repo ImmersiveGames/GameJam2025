@@ -95,15 +95,16 @@ Regra: nenhum asset de Navigation deve ficar na raiz de `Resources/`.
 
 - ✅ **F1 (concluído no escopo principal):** catálogo de profiles por referência direta + fallback legado controlável.
 - ✅ **F3 (concluído):** rota é a fonte única de scene data (ScenesToLoad/Unload/Active); Navigation e LevelFlow não duplicam dados em runtime.
-- ⏳ **Pendências reais:** **F2** e **F5** (F3 e F4 concluídos).
+- ⏳ **Pendências reais:** **F2** (F3, F4 e F5 concluídos).
 
 ## Próximos passos (atualizado)
 
 - **F3 (status atual):** concluído no código atual — SceneRouteCatalog é a fonte única de Scene Data; LevelDefinition/GameNavigationCatalogAsset mantêm apenas campos LEGACY ignorados com warning de observabilidade.
 - **F2 (pendente):** Decisão de Reset/WorldLifecycle por rota/policy (RouteKind/RequiresWorldReset no SceneRouteDefinition; driver usa isso).
 - **F4 (concluído):** LevelFlow end-to-end pelo trilho oficial `StartGameplayAsync(levelId)` para entrada inicial de gameplay (Menu Play e QA usando o mesmo caminho de produção).
-- **F5 (pendente):** Hardening (logs [OBS] em Navigation/LevelFlow + ContextMenu QA para Start/Restart/ExitToMenu).
+- **F5 (concluído):** Hardening fechado com logs canônicos `[OBS][Navigation]` nos trilhos explícitos (`StartGameplayAsync`, `RestartAsync`, `ExitToMenuAsync`, `GoToMenuAsync/Navigate`) e ContextMenus QA operáveis para `StartGameplayAsync(levelId)`, `RestartAsync` e `ExitToMenuAsync`.
 - **Evidência F4:** `MenuPlayButtonBinder` chama `StartGameplayAsync(LevelId.FromName(startLevelId), reason)` com log `[OBS][Navigation] MenuPlay -> StartGameplayAsync ...`.
 - **Evidência F4:** `SceneFlowDevContextMenu` QA usa `StartGameplayAsync(level.1)` e expõe ações explícitas para `RestartAsync`/`ExitToMenuAsync` com logs `[OBS][Navigation]`.
+- **Evidência F5:** `GameNavigationService.ExecuteEntryAsync(...)` publica anchor canônico `[OBS][Navigation] NavigateAsync -> ...` com `intentId`, `sceneRouteId`, `styleId`, `reason` e `signature`.
 
 **Ordem recomendada permanece:** F1 → F3 → F2 → F4 → F5.
