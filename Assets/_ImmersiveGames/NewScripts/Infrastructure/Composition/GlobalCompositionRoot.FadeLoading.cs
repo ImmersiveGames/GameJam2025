@@ -39,14 +39,33 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"Required fade scene invalid. FadeSceneName='{requiredFadeSceneName}', FadeScenePath='{requiredFadeScenePath}', BuildIndex={fadeBuildIndex}.");
             }
 
-            var fadeScene = SceneManager.GetSceneByName(requiredFadeSceneName);
-            if (!fadeScene.IsValid() || !fadeScene.isLoaded)
+            bool isLoaded = false;
+            for (int i = 0; i < SceneManager.sceneCount; i++)
             {
-                SceneManager.LoadScene(fadeBuildIndex, LoadSceneMode.Additive);
-                fadeScene = SceneManager.GetSceneByName(requiredFadeSceneName);
+                var loadedScene = SceneManager.GetSceneAt(i);
+                if (loadedScene.IsValid() && loadedScene.isLoaded && loadedScene.buildIndex == fadeBuildIndex)
+                {
+                    isLoaded = true;
+                    break;
+                }
             }
 
-            if (!fadeScene.IsValid() || !fadeScene.isLoaded)
+            if (!isLoaded)
+            {
+                SceneManager.LoadScene(fadeBuildIndex, LoadSceneMode.Additive);
+
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    var loadedScene = SceneManager.GetSceneAt(i);
+                    if (loadedScene.IsValid() && loadedScene.isLoaded && loadedScene.buildIndex == fadeBuildIndex)
+                    {
+                        isLoaded = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!isLoaded)
             {
                 throw RuntimeFailFastUtility.FailFastAndCreateException(
                     "Fade",
