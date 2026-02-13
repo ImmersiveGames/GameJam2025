@@ -24,34 +24,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private int _navigationInProgress;
 
-        [Obsolete("Debug only. Use the full constructor with SceneRoute/TransitionStyle/LevelFlow services.")]
-        public GameNavigationService(ISceneTransitionService sceneFlow)
-        {
-            throw new InvalidOperationException(
-                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
-        }
-
-        [Obsolete("Debug only. Use the full constructor with SceneRoute/TransitionStyle/LevelFlow services.")]
-        public GameNavigationService(ISceneTransitionService sceneFlow, GameNavigationCatalog catalog)
-        {
-            throw new InvalidOperationException(
-                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
-        }
-
-        [Obsolete("Use o construtor completo com SceneRouteCatalog/TransitionStyleCatalog/LevelFlowService.")]
-        public GameNavigationService(ISceneTransitionService sceneFlow, GameNavigationCatalogAsset catalogAsset)
-        {
-            throw new InvalidOperationException(
-                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
-        }
-
-        [Obsolete("Use o construtor completo com SceneRouteCatalog/TransitionStyleCatalog/LevelFlowService.")]
-        public GameNavigationService(ISceneTransitionService sceneFlow, IGameNavigationCatalog catalog)
-        {
-            throw new InvalidOperationException(
-                "GameNavigationService requer SceneRouteCatalog e TransitionStyleCatalog. Use o construtor completo.");
-        }
-
         public GameNavigationService(
             ISceneTransitionService sceneFlow,
             IGameNavigationCatalog catalog,

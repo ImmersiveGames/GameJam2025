@@ -23,7 +23,7 @@
 | ADR-0014 (Gameplay Reset Targets/Grupos) | OK | DefaultRunRearmTargetClassifier + RunRearmOrchestrator + SceneScopeCompositionRoot | Fail-fast em Strict; degrade+no-op em Release | Baixo |
 | ADR-0015 (Baseline 2.0 fechamento) | OK      | Evidências e contratos em Docs/Reports/Evidence/LATEST.md e ADR                              | Não aplicável (documental)                                                      | Baixo  |
 | ADR-0016 (ContentSwap InPlace-only) | PARCIAL | InPlaceContentSwapService + ContentSwapContextService + GlobalCompositionRoot            | Respeito a gates (scene_transition/sim.gameplay) não aparece no serviço         | Médio  |
-| ADR-0017 (LevelManager + Catalog) | PARCIAL | LevelManager + LevelCatalogResolver + ResourcesLevelCatalogProvider + LevelManagerInstaller + assets em Resources | Fail-fast para ID/config ausente não ocorre; evidência canônica ainda “TODO” no ADR | Médio  |
+| ADR-0017 (LevelManager + Catalog) | PARCIAL | LevelManager + LevelCatalogResolver + ResourcesLevelCatalogProvider + (legacy) LevelManagerInstaller + assets em Resources | Fail-fast para ID/config ausente não ocorre; evidência canônica ainda “TODO” no ADR | Médio  |
 
 ### Top Divergências / Faltas (Impacto Alto)
 - (Resolvido) Loading HUD: fluxo agora falha em modo strict quando controller faltar, e o setup final inclui `LoadingHudController` na cena correta.
@@ -172,7 +172,7 @@ Formato: cada ADR contém objetivo/contrato (docs), implementação encontrada, 
 **Implementação Encontrada:**
 - Código: LevelManager emite [OBS][Level] + usa ContentSwap.
 - Resolver + Providers: LevelCatalogResolver, ResourcesLevelCatalogProvider.
-- DI: LevelManagerInstaller registra providers/resolver/manager/session.
+- DI: (histórico) LevelManagerInstaller registrava providers/resolver/manager/session; legado removido e superseded por LevelFlow.
 - Assets: LevelCatalog.asset e LevelDefinition_level.1/level.2 em Resources.
 
 **Observabilidade:**
