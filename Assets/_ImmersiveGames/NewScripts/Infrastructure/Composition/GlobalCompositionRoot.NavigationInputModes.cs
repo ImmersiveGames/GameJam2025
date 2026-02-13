@@ -141,9 +141,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             GameNavigationCatalogAsset catalogAsset;
             bool navigationFromLegacyResources = false;
+            string navigationVia;
             if (bootstrapConfig != null && bootstrapConfig.NavigationCatalog != null)
             {
                 catalogAsset = bootstrapConfig.NavigationCatalog;
+                navigationVia = "Bootstrap";
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     $"[OBS][Config] CatalogResolvedVia=Bootstrap field=navigationCatalog asset={catalogAsset.name}",
                     DebugUtility.Colors.Info);
@@ -151,6 +153,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             else
             {
                 navigationFromLegacyResources = true;
+                navigationVia = "LegacyResources";
                 catalogAsset = LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
                     navigationCatalogResourcesPath,
                     "GameNavigationCatalogAsset");
@@ -161,9 +164,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             TransitionStyleCatalogAsset styleCatalogAsset;
             bool styleFromLegacyResources = false;
+            string stylesVia;
             if (bootstrapConfig != null && bootstrapConfig.TransitionStyleCatalog != null)
             {
                 styleCatalogAsset = bootstrapConfig.TransitionStyleCatalog;
+                stylesVia = "Bootstrap";
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     $"[OBS][Config] CatalogResolvedVia=Bootstrap field=transitionStyleCatalog asset={styleCatalogAsset.name}",
                     DebugUtility.Colors.Info);
@@ -171,6 +176,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             else
             {
                 styleFromLegacyResources = true;
+                stylesVia = "LegacyResources";
                 styleCatalogAsset = LoadRequiredResourceAsset<TransitionStyleCatalogAsset>(
                     transitionStyleCatalogResourcesPath,
                     "TransitionStyleCatalogAsset");
@@ -181,9 +187,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             LevelCatalogAsset levelCatalogAsset;
             bool levelFromLegacyResources = false;
+            string levelsVia;
             if (bootstrapConfig != null && bootstrapConfig.LevelCatalog != null)
             {
                 levelCatalogAsset = bootstrapConfig.LevelCatalog;
+                levelsVia = "Bootstrap";
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     $"[OBS][Config] CatalogResolvedVia=Bootstrap field=levelCatalog asset={levelCatalogAsset.name}",
                     DebugUtility.Colors.Info);
@@ -191,6 +199,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             else
             {
                 levelFromLegacyResources = true;
+                levelsVia = "LegacyResources";
                 levelCatalogAsset = LoadRequiredResourceAsset<LevelCatalogAsset>(
                     levelCatalogResourcesPath,
                     "LevelCatalogAsset");
@@ -238,8 +247,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Navigation] Catalog boot snapshot: " +
-                $"resourcePath='{navigationCatalogResourcesPath}', " +
-                $"assetName='{catalogAsset.name}', " +
+                $"navigationVia={navigationVia} navigationAsset={catalogAsset.name}, " +
+                $"stylesVia={stylesVia} stylesAsset={styleCatalogAsset.name}, " +
+                $"levelsVia={levelsVia} levelsAsset={levelCatalogAsset.name}, " +
                 $"rawRoutesCount={rawRoutesCount}, " +
                 $"builtRouteIdsCount={builtRouteIdsCount}, " +
                 $"hasToGameplay={hasToGameplay}.",
@@ -254,8 +264,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][Navigation] GameNavigationService registrado com catálogos via Resources " +
-                $"(navigation='{navigationCatalogResourcesPath}', styles='{transitionStyleCatalogResourcesPath}', levels='{levelCatalogResourcesPath}').",
+                "[OBS][Navigation] GameNavigationService registrado. " +
+                $"navigationVia={navigationVia} stylesVia={stylesVia} levelsVia={levelsVia} " +
+                $"(assets: navigation={catalogAsset.name}, styles={styleCatalogAsset.name}, levels={levelCatalogAsset.name}).",
                 DebugUtility.Colors.Info);
         }
 

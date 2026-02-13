@@ -60,7 +60,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (routeCatalog == null)
             {
                 throw new InvalidOperationException(
-                    $"SceneRouteCatalogAsset obrigatório ausente. Configure o asset em 'Assets/Resources/{SceneRouteCatalogResourcesPath}.asset'.");
+                    "SceneRouteCatalogAsset obrigatório ausente. Configure uma das opções: " +
+                    "(a) NewScriptsBootstrapConfigAsset.sceneRouteCatalog, ou " +
+                    $"(b) Resources em 'Assets/Resources/{SceneRouteCatalogResourcesPath}.asset'.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

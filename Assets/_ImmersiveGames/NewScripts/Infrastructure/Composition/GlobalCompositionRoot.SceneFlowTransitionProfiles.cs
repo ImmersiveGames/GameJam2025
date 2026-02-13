@@ -36,8 +36,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     if (catalog == null)
                     {
                         throw new InvalidOperationException(
-                            $"SceneTransitionProfileCatalogAsset obrigatório e não encontrado. " +
-                            $"Crie/configure o asset em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
+                            "SceneTransitionProfileCatalogAsset obrigatório e não encontrado. Configure uma das opções: " +
+                            "(a) NewScriptsBootstrapConfigAsset.transitionProfileCatalog, ou " +
+                            $"(b) Resources em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
                     }
 
                     DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
@@ -89,7 +90,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 throw new InvalidOperationException(
                     $"SceneTransitionProfileCatalogAsset incompleto. Profiles obrigatórios ausentes: [{string.Join(", ", missing)}]. " +
-                    $"Asset esperado em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
+                    "Forneça um catálogo válido por uma das opções: " +
+                    "(a) NewScriptsBootstrapConfigAsset.transitionProfileCatalog, ou " +
+                    $"(b) Resources em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
