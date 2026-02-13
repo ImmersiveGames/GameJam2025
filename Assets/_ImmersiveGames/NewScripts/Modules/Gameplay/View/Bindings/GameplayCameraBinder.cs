@@ -17,12 +17,24 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.View.Bindings
 
         private void Awake()
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                DebugUtility.LogVerbose<GameplayCameraBinder>("[OBS][Boot] Aborting camera binder Awake due to fatal latch.", DebugUtility.Colors.Info);
+                return;
+            }
+
             _camera = GetComponent<Camera>();
             EnsureRequiredDependenciesOrThrow();
         }
 
         private void OnEnable()
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                DebugUtility.LogVerbose<GameplayCameraBinder>("[OBS][Boot] Aborting camera binder OnEnable due to fatal latch.", DebugUtility.Colors.Info);
+                return;
+            }
+
             RegisterCameraIfNeeded();
         }
 

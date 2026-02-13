@@ -87,6 +87,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private void OnStartRequestedCommon()
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                    "[OBS][Boot] Aborting start request handling due to fatal latch.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             if (_startPlan == null)
             {
                 DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
@@ -112,6 +120,15 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private async Task StartTransitionAsync()
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                    "[OBS][Boot] Aborting transition start due to fatal latch.",
+                    DebugUtility.Colors.Info);
+                _startInProgress = false;
+                return;
+            }
+
             try
             {
                 await _sceneFlow.TransitionAsync(_startPlan);
@@ -127,6 +144,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                return;
+            }
+
             if (!ShouldHandleTransition(evt.Context))
             {
                 return;
@@ -139,6 +161,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                return;
+            }
+
             if (!ShouldHandleTransition(evt.Context))
             {
                 return;
@@ -165,6 +192,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private void OnWorldResetCompleted(WorldLifecycleResetCompletedEvent evt)
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                return;
+            }
+
             if (!_startInProgress)
             {
                 return;

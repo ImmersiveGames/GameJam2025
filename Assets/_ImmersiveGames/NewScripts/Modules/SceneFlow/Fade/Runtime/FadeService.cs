@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class FadeService : IFadeService
     {
-        private const string FadeSceneName = "FadeScene";
+        public const string RequiredFadeSceneName = "FadeScene";
 
         private FadeController _controller;
         private FadeConfig _config;
@@ -43,6 +43,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 
         public async Task FadeInAsync(string? contextSignature = null)
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                DebugUtility.LogVerbose<FadeService>("[OBS][Boot] Aborting fade request due to fatal latch.", DebugUtility.Colors.Info);
+                return;
+            }
+
             if (IsNoOpFadeIn())
             {
                 return;
@@ -56,6 +62,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 
         public async Task FadeOutAsync(string? contextSignature = null)
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                DebugUtility.LogVerbose<FadeService>("[OBS][Boot] Aborting fade request due to fatal latch.", DebugUtility.Colors.Info);
+                return;
+            }
+
             if (IsNoOpFadeOut())
             {
                 return;
@@ -85,12 +97,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                 return;
             }
 
-            var fadeScene = SceneManager.GetSceneByName(FadeSceneName);
+            var fadeScene = SceneManager.GetSceneByName(RequiredFadeSceneName);
             if (!fadeScene.IsValid() || !fadeScene.isLoaded)
             {
                 FailFast(
                     reason: "fade_scene_not_loaded",
-                    detail: $"Required FadeScene '{FadeSceneName}' is not loaded.");
+                    detail: $"Required FadeScene '{RequiredFadeSceneName}' is not loaded.");
             }
 
             _controller = FindControllerInScene(fadeScene);
@@ -98,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             {
                 FailFast(
                     reason: "fade_controller_missing",
-                    detail: $"No {nameof(FadeController)} found in required FadeScene '{FadeSceneName}'.");
+                    detail: $"No {nameof(FadeController)} found in required FadeScene '{RequiredFadeSceneName}'.");
             }
 
             DebugUtility.LogVerbose<FadeService>(

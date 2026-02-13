@@ -75,10 +75,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             InitializeLogging();
             EnsureDependencyProvider();
+
+            if (AbortBootstrapIfFatalLatched("Initialize.beforePipeline"))
+            {
+                return;
+            }
+
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Config] Plan=StringsToDirectRefs v1",
                 DebugUtility.Colors.Info);
-            RegisterEssentialServicesOnly();
+
+            try
+            {
+                RegisterEssentialServicesOnly();
+            }
+            catch (System.Exception ex)
+            {
+                RuntimeFailFastUtility.FailFast("Boot", $"Unhandled bootstrap exception. ex='{ex.GetType().Name}: {ex.Message}'");
+                throw;
+            }
+
+            if (AbortBootstrapIfFatalLatched("Initialize.afterPipeline"))
+            {
+                return;
+            }
 
             DebugUtility.Log(
                 typeof(GlobalCompositionRoot),

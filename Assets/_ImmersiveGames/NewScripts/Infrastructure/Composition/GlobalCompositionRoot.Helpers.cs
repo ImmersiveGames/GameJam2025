@@ -118,5 +118,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"BootstrapConfig invalid: missing field '{fieldName}' asset='{assetName}'.");
         }
 
+        private static bool AbortBootstrapIfFatalLatched(string step)
+        {
+            if (!RuntimeFailFastUtility.IsFatalLatched)
+            {
+                return false;
+            }
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Boot] Aborting bootstrap due to fatal latch. step='{step}'.",
+                DebugUtility.Colors.Info);
+            return true;
+        }
+
     }
 }

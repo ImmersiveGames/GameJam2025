@@ -16,6 +16,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterEssentialServicesOnly()
         {
+            if (AbortBootstrapIfFatalLatched("RegisterEssentialServicesOnly.begin"))
+            {
+                return;
+            }
+
             PrimeEventSystems();
 
             RegisterRuntimePolicyServices();
@@ -29,6 +34,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             // Comentário: bootstrap central obrigatório deve ser resolvido antes de qualquer registro de SceneFlow/transição.
             GetRequiredBootstrapConfig();
+            if (AbortBootstrapIfFatalLatched("RegisterEssentialServicesOnly.afterBootstrapConfig"))
+            {
+                return;
+            }
+
+            PreloadRequiredFadeScene();
+            if (AbortBootstrapIfFatalLatched("RegisterEssentialServicesOnly.afterFadePreload"))
+            {
+                return;
+            }
 
             // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
             RegisterSceneFlowFadeModule();
@@ -91,6 +106,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
 #endif
+
+            if (AbortBootstrapIfFatalLatched("RegisterEssentialServicesOnly.beforeReadiness"))
+            {
+                return;
+            }
 
             InitializeReadinessGate(gateService);
             RegisterGameLoopSceneFlowCoordinatorIfAvailable();

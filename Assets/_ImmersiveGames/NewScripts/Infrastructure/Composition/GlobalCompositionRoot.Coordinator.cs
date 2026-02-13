@@ -13,6 +13,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterGameLoopSceneFlowCoordinatorIfAvailable()
         {
+            if (AbortBootstrapIfFatalLatched("RegisterGameLoopSceneFlowCoordinatorIfAvailable.begin"))
+            {
+                return;
+            }
+
             if (_sceneFlowCoordinator != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
