@@ -20,7 +20,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (!provider.TryGetGlobal<SceneTransitionProfileCatalogAsset>(out var catalog) || catalog == null)
             {
-                catalog = Resources.Load<SceneTransitionProfileCatalogAsset>(SceneTransitionProfileCatalogAsset.DefaultResourcesPath);
+                TryGetBootstrapConfig(out var bootstrapConfig);
+                if (bootstrapConfig != null && bootstrapConfig.TransitionProfileCatalog != null)
+                {
+                    catalog = bootstrapConfig.TransitionProfileCatalog;
+                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                        $"[OBS][Config] CatalogResolvedVia=Bootstrap field='transitionProfileCatalog' asset='{catalog.name}'.",
+                        DebugUtility.Colors.Info);
+                }
+                else
+                {
+                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                        "[OBS][Config] CatalogResolvedVia=LegacyResources path='SceneFlow/SceneTransitionProfileCatalog'.",
+                        DebugUtility.Colors.Info);
+
+                    catalog = Resources.Load<SceneTransitionProfileCatalogAsset>(SceneTransitionProfileCatalogAsset.DefaultResourcesPath);
+                }
 
                 if (catalog == null)
                 {
@@ -29,8 +44,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                         $"Crie/configure o asset em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
                 }
 
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][SceneFlow] SceneTransitionProfileCatalogAsset carregado via Resources: '{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'.");
+                if (bootstrapConfig == null || bootstrapConfig.TransitionProfileCatalog == null)
+                {
+                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                        $"[OBS][SceneFlow] SceneTransitionProfileCatalogAsset carregado via Resources: '{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'.");
+                }
 
                 provider.RegisterGlobal(catalog);
             }
