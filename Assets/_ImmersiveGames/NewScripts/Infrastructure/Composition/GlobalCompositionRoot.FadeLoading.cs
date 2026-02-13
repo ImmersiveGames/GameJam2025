@@ -26,35 +26,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var fadeSceneReference = bootstrapConfig.EssentialScenes.FadeScene;
             var requiredFadeScenePath = fadeSceneReference.GetPathOrNameForLoad();
             var requiredFadeSceneName = fadeSceneReference.SceneName;
+            var fadeBuildIndex = SceneUtility.GetBuildIndexByScenePath(requiredFadeScenePath);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[OBS][Fade] Preloading FadeScenePath='{requiredFadeScenePath}' ...",
+                $"[OBS][Fade] Preloading FadeSceneName='{requiredFadeSceneName}', FadeScenePath='{requiredFadeScenePath}', BuildIndex={fadeBuildIndex} ...",
                 DebugUtility.Colors.Info);
 
-            var fadeBuildIndex = SceneUtility.GetBuildIndexByScenePath(requiredFadeScenePath);
             if (fadeBuildIndex < 0)
             {
                 throw RuntimeFailFastUtility.FailFastAndCreateException(
                     "Fade",
-                    $"Required FadeScenePath='{requiredFadeScenePath}' not found in Build Settings.");
+                    $"Required fade scene invalid. FadeSceneName='{requiredFadeSceneName}', FadeScenePath='{requiredFadeScenePath}', BuildIndex={fadeBuildIndex}.");
             }
 
-            var fadeScene = SceneManager.GetSceneByPath(requiredFadeScenePath);
+            var fadeScene = SceneManager.GetSceneByName(requiredFadeSceneName);
             if (!fadeScene.IsValid() || !fadeScene.isLoaded)
             {
-                SceneManager.LoadScene(requiredFadeScenePath, LoadSceneMode.Additive);
-                fadeScene = SceneManager.GetSceneByPath(requiredFadeScenePath);
+                SceneManager.LoadScene(fadeBuildIndex, LoadSceneMode.Additive);
+                fadeScene = SceneManager.GetSceneByName(requiredFadeSceneName);
             }
 
             if (!fadeScene.IsValid() || !fadeScene.isLoaded)
             {
                 throw RuntimeFailFastUtility.FailFastAndCreateException(
                     "Fade",
-                    $"Failed to preload required FadeScenePath='{requiredFadeScenePath}'.");
+                    $"Failed to preload fade scene. FadeSceneName='{requiredFadeSceneName}', FadeScenePath='{requiredFadeScenePath}', BuildIndex={fadeBuildIndex}.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[OBS][Fade] FadeScene loaded OK. FadeScenePath='{requiredFadeScenePath}', sceneName='{requiredFadeSceneName}'.",
+                $"[OBS][Fade] FadeScene loaded OK. FadeSceneName='{requiredFadeSceneName}', FadeScenePath='{requiredFadeScenePath}', BuildIndex={fadeBuildIndex}.",
                 DebugUtility.Colors.Info);
         }
 

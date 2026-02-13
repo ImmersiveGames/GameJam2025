@@ -29,9 +29,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static NewScriptsBootstrapConfigAsset GetRequiredBootstrapConfig()
         {
+            if (RuntimeFailFastUtility.IsFatalLatched)
+            {
+                throw new InvalidOperationException("Bootstrap resolution aborted because fatal latch is active.");
+            }
+
             if (_bootstrapConfigCache != null)
             {
-                ValidateRequiredBootstrapConfigFields(_bootstrapConfigCache);
                 return _bootstrapConfigCache;
             }
 
