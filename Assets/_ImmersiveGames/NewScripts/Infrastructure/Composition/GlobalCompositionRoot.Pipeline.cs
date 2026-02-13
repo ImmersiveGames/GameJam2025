@@ -50,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterPostPlayOwnershipService();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
+            RegisterSceneFlowTransitionProfiles();
             RegisterSceneFlowNative();
             RegisterSceneFlowSignatureCache();
             RegisterSceneFlowRouteResetPolicy();

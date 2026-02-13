@@ -54,6 +54,44 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings
 
             public SceneFlowProfileId ProfileId => _profileId;
             public SceneTransitionProfile Profile => _profile;
+
+            internal void Set(SceneFlowProfileId profileId, SceneTransitionProfile profile)
+            {
+                _profileId = profileId;
+                _profile = profile;
+            }
+
+            internal static Entry Create(SceneFlowProfileId profileId, SceneTransitionProfile profile)
+            {
+                var entry = new Entry();
+                entry.Set(profileId, profile);
+                return entry;
+            }
+        }
+
+
+        public bool SetOrAddProfile(SceneFlowProfileId id, SceneTransitionProfile profile)
+        {
+            if (!id.IsValid || profile == null)
+                return false;
+
+            _entries ??= new List<Entry>();
+
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var e = _entries[i];
+                if (e == null)
+                    continue;
+
+                if (e.ProfileId == id)
+                {
+                    e.Set(id, profile);
+                    return true;
+                }
+            }
+
+            _entries.Add(Entry.Create(id, profile));
+            return true;
         }
 
         public bool TryGetProfile(SceneFlowProfileId id, out SceneTransitionProfile profile)
