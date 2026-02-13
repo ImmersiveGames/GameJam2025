@@ -22,35 +22,39 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            var requiredFadeSceneName = FadeService.RequiredFadeSceneName;
+            var bootstrapConfig = GetRequiredBootstrapConfig();
+            var fadeSceneReference = bootstrapConfig.EssentialScenes.FadeScene;
+            var requiredFadeScenePath = fadeSceneReference.GetPathOrNameForLoad();
+            var requiredFadeSceneName = fadeSceneReference.SceneName;
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[OBS][Fade] Preloading FadeScene '{requiredFadeSceneName}' ...",
+                $"[OBS][Fade] Preloading FadeScenePath='{requiredFadeScenePath}' ...",
                 DebugUtility.Colors.Info);
 
-            if (!Application.CanStreamedLevelBeLoaded(requiredFadeSceneName))
+            var fadeBuildIndex = SceneUtility.GetBuildIndexByScenePath(requiredFadeScenePath);
+            if (fadeBuildIndex < 0)
             {
                 throw RuntimeFailFastUtility.FailFastAndCreateException(
                     "Fade",
-                    $"Required FadeScene '{requiredFadeSceneName}' is not present in Build Settings.");
+                    $"Required FadeScenePath='{requiredFadeScenePath}' not found in Build Settings.");
             }
 
-            var fadeScene = SceneManager.GetSceneByName(requiredFadeSceneName);
+            var fadeScene = SceneManager.GetSceneByPath(requiredFadeScenePath);
             if (!fadeScene.IsValid() || !fadeScene.isLoaded)
             {
-                SceneManager.LoadScene(requiredFadeSceneName, LoadSceneMode.Additive);
-                fadeScene = SceneManager.GetSceneByName(requiredFadeSceneName);
+                SceneManager.LoadScene(requiredFadeScenePath, LoadSceneMode.Additive);
+                fadeScene = SceneManager.GetSceneByPath(requiredFadeScenePath);
             }
 
             if (!fadeScene.IsValid() || !fadeScene.isLoaded)
             {
                 throw RuntimeFailFastUtility.FailFastAndCreateException(
                     "Fade",
-                    $"Failed to preload required FadeScene '{requiredFadeSceneName}'.");
+                    $"Failed to preload required FadeScenePath='{requiredFadeScenePath}'.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[OBS][Fade] FadeScene loaded OK. scene='{requiredFadeSceneName}'.",
+                $"[OBS][Fade] FadeScene loaded OK. FadeScenePath='{requiredFadeScenePath}', sceneName='{requiredFadeSceneName}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -61,11 +65,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
+            var bootstrapConfig = GetRequiredBootstrapConfig();
+            var requiredFadeSceneName = bootstrapConfig.EssentialScenes.FadeScene.SceneName;
+
             // Registra o serviço de fade NewScripts no DI global.
-            RegisterIfMissing<IFadeService>(() => new FadeService());
+            RegisterIfMissing<IFadeService>(() => new FadeService(requiredFadeSceneName));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Fade] IFadeService registrado no DI global.",
+                $"[Fade] IFadeService registrado no DI global (requiredFadeScene='{requiredFadeSceneName}').",
                 DebugUtility.Colors.Info);
         }
 

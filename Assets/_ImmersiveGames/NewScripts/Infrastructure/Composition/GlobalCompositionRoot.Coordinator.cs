@@ -34,12 +34,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
+            var bootstrapConfig = GetRequiredBootstrapConfig();
+            var essentialScenes = bootstrapConfig.EssentialScenes;
+
+            var menuSceneName = essentialScenes.MenuScene.SceneName;
+            var uiGlobalSceneName = essentialScenes.UiGlobalScene.SceneName;
+            var bootEntrySceneName = essentialScenes.BootEntryScene.SceneName;
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] EssentialScenes startPlan menuPath='{essentialScenes.MenuScene.ScenePath}', uiGlobalPath='{essentialScenes.UiGlobalScene.ScenePath}', bootEntryPath='{essentialScenes.BootEntryScene.ScenePath}'.",
+                DebugUtility.Colors.Info);
+
             // Plano de produção:
-            // NewBootstrap -> (Fade) -> Load(Menu + UIGlobal) -> Active=Menu -> Unload(NewBootstrap) -> (FadeOut) -> Completed
+            // bootEntry -> (Fade) -> Load(menu + uiGlobal) -> Active=menu -> Unload(bootEntry) -> (FadeOut) -> Completed
             var startPlan = new SceneTransitionRequest(
-                scenesToLoad: new[] { SceneMenu, SceneUIGlobal },
-                scenesToUnload: new[] { SceneNewBootstrap },
-                targetActiveScene: SceneMenu,
+                scenesToLoad: new[] { menuSceneName, uiGlobalSceneName },
+                scenesToUnload: new[] { bootEntrySceneName },
+                targetActiveScene: menuSceneName,
                 useFade: true,
                 transitionProfileId: StartProfileId);
 

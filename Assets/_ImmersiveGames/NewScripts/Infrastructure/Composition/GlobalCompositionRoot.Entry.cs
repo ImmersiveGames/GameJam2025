@@ -49,11 +49,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // Profile fixo do start (para filtrar ScenesReady/ResetCompleted).
         private static readonly SceneFlowProfileId StartProfileId = SceneFlowProfileId.Startup;
 
-        // Scene names (Unity: SceneManager.GetActiveScene().name)
-        private const string SceneNewBootstrap = "NewBootstrap";
-        private const string SceneMenu = "MenuScene";
-        private const string SceneUIGlobal = "UIGlobalScene";
-
         // --------------------------------------------------------------------
         // Entry
         // --------------------------------------------------------------------

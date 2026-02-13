@@ -2,6 +2,8 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -99,6 +101,51 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 ReportMissingBootstrapField(GetBootstrapAssetName(config), "transitionProfileCatalog");
             }
+
+            ValidateRequiredEssentialScenes(config);
+        }
+
+        private static void ValidateRequiredEssentialScenes(NewScriptsBootstrapConfigAsset config)
+        {
+            var essential = config.EssentialScenes;
+            if (essential == null)
+            {
+                throw RuntimeFailFastUtility.FailFastAndCreateException(
+                    "Config",
+                    $"BootstrapConfig invalid: missing field 'essentialScenes' asset='{GetBootstrapAssetName(config)}'.");
+            }
+
+            ValidateRequiredSceneReference(config, "essentialScenes.fadeScene", essential.FadeScene);
+            ValidateRequiredSceneReference(config, "essentialScenes.uiGlobalScene", essential.UiGlobalScene);
+            ValidateRequiredSceneReference(config, "essentialScenes.menuScene", essential.MenuScene);
+            ValidateRequiredSceneReference(config, "essentialScenes.bootEntryScene", essential.BootEntryScene);
+        }
+
+        private static void ValidateRequiredSceneReference(
+            NewScriptsBootstrapConfigAsset config,
+            string fieldName,
+            SceneReference sceneReference)
+        {
+            if (sceneReference == null || !sceneReference.IsAssigned)
+            {
+                throw RuntimeFailFastUtility.FailFastAndCreateException(
+                    "Config",
+                    $"BootstrapConfig invalid: missing field '{fieldName}' asset='{GetBootstrapAssetName(config)}'.");
+            }
+
+            var scenePath = sceneReference.ScenePath;
+            var buildIndex = SceneUtility.GetBuildIndexByScenePath(scenePath);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] EssentialScenes field='{fieldName}' path='{scenePath}' BuildIndexByScenePath={buildIndex}.",
+                DebugUtility.Colors.Info);
+
+            if (buildIndex < 0)
+            {
+                throw RuntimeFailFastUtility.FailFastAndCreateException(
+                    "Config",
+                    $"BootstrapConfig invalid: scene '{fieldName}' path='{scenePath}' not found in Build Settings.");
+            }
         }
 
         private static string GetBootstrapAssetName(NewScriptsBootstrapConfigAsset config)
@@ -130,6 +177,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
             return true;
         }
-
     }
 }

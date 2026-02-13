@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class FadeService : IFadeService
     {
-        public const string RequiredFadeSceneName = "FadeScene";
+        private readonly string _requiredFadeSceneName;
 
         private FadeController _controller;
         private FadeConfig _config;
@@ -31,8 +31,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                 fadeInCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),
                 fadeOutCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
 
-        public FadeService()
+        public FadeService(string requiredFadeSceneName)
         {
+            if (string.IsNullOrWhiteSpace(requiredFadeSceneName))
+            {
+                throw RuntimeFailFastUtility.FailFastAndCreateException(
+                    "Fade",
+                    "FadeService requires a valid requiredFadeSceneName.");
+            }
+
+            _requiredFadeSceneName = requiredFadeSceneName;
             _config = DefaultConfig;
         }
 
@@ -97,12 +105,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                 return;
             }
 
-            var fadeScene = SceneManager.GetSceneByName(RequiredFadeSceneName);
+            var fadeScene = SceneManager.GetSceneByName(_requiredFadeSceneName);
             if (!fadeScene.IsValid() || !fadeScene.isLoaded)
             {
                 FailFast(
                     reason: "fade_scene_not_loaded",
-                    detail: $"Required FadeScene '{RequiredFadeSceneName}' is not loaded.");
+                    detail: $"Required FadeScene '{_requiredFadeSceneName}' is not loaded.");
             }
 
             _controller = FindControllerInScene(fadeScene);
@@ -110,11 +118,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             {
                 FailFast(
                     reason: "fade_controller_missing",
-                    detail: $"No {nameof(FadeController)} found in required FadeScene '{RequiredFadeSceneName}'.");
+                    detail: $"No {nameof(FadeController)} found in required FadeScene '{_requiredFadeSceneName}'.");
             }
 
             DebugUtility.LogVerbose<FadeService>(
-                "[OBS][Fade] FadeController resolved from required FadeScene.");
+                $"[OBS][Fade] FadeController resolved from required FadeScene '{_requiredFadeSceneName}'.");
         }
 
         private static FadeController FindControllerInScene(Scene scene)
