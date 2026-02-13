@@ -20,17 +20,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (!provider.TryGetGlobal<SceneTransitionProfileCatalogAsset>(out var catalog) || catalog == null)
             {
-                catalog = Resources.Load<SceneTransitionProfileCatalogAsset>(SceneTransitionProfileCatalogAsset.DefaultResourcesPath);
+                TryResolveBootstrapConfig(out var bootstrapConfig, out _);
 
-                if (catalog == null)
+                if (bootstrapConfig != null && bootstrapConfig.TransitionProfileCatalog != null)
                 {
-                    throw new InvalidOperationException(
-                        $"SceneTransitionProfileCatalogAsset obrigatório e não encontrado. " +
-                        $"Crie/configure o asset em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
+                    catalog = bootstrapConfig.TransitionProfileCatalog;
+                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                        $"[OBS][Config] CatalogResolvedVia=Bootstrap field=transitionProfileCatalog asset={catalog.name}",
+                        DebugUtility.Colors.Info);
                 }
+                else
+                {
+                    catalog = Resources.Load<SceneTransitionProfileCatalogAsset>(SceneTransitionProfileCatalogAsset.DefaultResourcesPath);
 
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][SceneFlow] SceneTransitionProfileCatalogAsset carregado via Resources: '{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'.");
+                    if (catalog == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"SceneTransitionProfileCatalogAsset obrigatório e não encontrado. " +
+                            $"Crie/configure o asset em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
+                    }
+
+                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                        $"[OBS][Config] CatalogResolvedVia=LegacyResources path={SceneTransitionProfileCatalogAsset.DefaultResourcesPath} asset={catalog.name}",
+                        DebugUtility.Colors.Info);
+                }
 
                 provider.RegisterGlobal(catalog);
             }

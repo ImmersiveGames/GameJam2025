@@ -137,19 +137,82 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             const string transitionStyleCatalogResourcesPath = "Navigation/TransitionStyleCatalog";
             const string levelCatalogResourcesPath = "Navigation/LevelCatalog";
 
-            var catalogAsset = LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
-                navigationCatalogResourcesPath,
-                "GameNavigationCatalogAsset");
-            var styleCatalogAsset = LoadRequiredResourceAsset<TransitionStyleCatalogAsset>(
-                transitionStyleCatalogResourcesPath,
-                "TransitionStyleCatalogAsset");
-            var levelCatalogAsset = LoadRequiredResourceAsset<LevelCatalogAsset>(
-                levelCatalogResourcesPath,
-                "LevelCatalogAsset");
+            TryResolveBootstrapConfig(out var bootstrapConfig, out _);
 
-            LogPotentialDuplicateResourcesAsset(navigationCatalogResourcesPath, catalogAsset, "GameNavigationCatalogAsset");
-            LogPotentialDuplicateResourcesAsset(transitionStyleCatalogResourcesPath, styleCatalogAsset, "TransitionStyleCatalogAsset");
-            LogPotentialDuplicateResourcesAsset(levelCatalogResourcesPath, levelCatalogAsset, "LevelCatalogAsset");
+            GameNavigationCatalogAsset catalogAsset;
+            bool navigationFromLegacyResources = false;
+            if (bootstrapConfig != null && bootstrapConfig.NavigationCatalog != null)
+            {
+                catalogAsset = bootstrapConfig.NavigationCatalog;
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field=navigationCatalog asset={catalogAsset.name}",
+                    DebugUtility.Colors.Info);
+            }
+            else
+            {
+                navigationFromLegacyResources = true;
+                catalogAsset = LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
+                    navigationCatalogResourcesPath,
+                    "GameNavigationCatalogAsset");
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=LegacyResources path={navigationCatalogResourcesPath} asset={catalogAsset.name}",
+                    DebugUtility.Colors.Info);
+            }
+
+            TransitionStyleCatalogAsset styleCatalogAsset;
+            bool styleFromLegacyResources = false;
+            if (bootstrapConfig != null && bootstrapConfig.TransitionStyleCatalog != null)
+            {
+                styleCatalogAsset = bootstrapConfig.TransitionStyleCatalog;
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field=transitionStyleCatalog asset={styleCatalogAsset.name}",
+                    DebugUtility.Colors.Info);
+            }
+            else
+            {
+                styleFromLegacyResources = true;
+                styleCatalogAsset = LoadRequiredResourceAsset<TransitionStyleCatalogAsset>(
+                    transitionStyleCatalogResourcesPath,
+                    "TransitionStyleCatalogAsset");
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=LegacyResources path={transitionStyleCatalogResourcesPath} asset={styleCatalogAsset.name}",
+                    DebugUtility.Colors.Info);
+            }
+
+            LevelCatalogAsset levelCatalogAsset;
+            bool levelFromLegacyResources = false;
+            if (bootstrapConfig != null && bootstrapConfig.LevelCatalog != null)
+            {
+                levelCatalogAsset = bootstrapConfig.LevelCatalog;
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field=levelCatalog asset={levelCatalogAsset.name}",
+                    DebugUtility.Colors.Info);
+            }
+            else
+            {
+                levelFromLegacyResources = true;
+                levelCatalogAsset = LoadRequiredResourceAsset<LevelCatalogAsset>(
+                    levelCatalogResourcesPath,
+                    "LevelCatalogAsset");
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=LegacyResources path={levelCatalogResourcesPath} asset={levelCatalogAsset.name}",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (navigationFromLegacyResources)
+            {
+                LogPotentialDuplicateResourcesAsset(navigationCatalogResourcesPath, catalogAsset, "GameNavigationCatalogAsset");
+            }
+
+            if (styleFromLegacyResources)
+            {
+                LogPotentialDuplicateResourcesAsset(transitionStyleCatalogResourcesPath, styleCatalogAsset, "TransitionStyleCatalogAsset");
+            }
+
+            if (levelFromLegacyResources)
+            {
+                LogPotentialDuplicateResourcesAsset(levelCatalogResourcesPath, levelCatalogAsset, "LevelCatalogAsset");
+            }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             levelCatalogAsset.GetLegacySceneDataStats(out int dirtyLegacyCount, out int totalLevels);
