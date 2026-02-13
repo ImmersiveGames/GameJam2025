@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             if (catalog == null)
             {
-                throw new InvalidOperationException("SceneTransitionProfileCatalogAsset é null durante validação de cobertura obrigatória.");
+                FailFast("SceneTransitionProfileCatalogAsset é null durante validação de cobertura obrigatória.");
             }
 
             var requiredProfileIds = new[]
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (missing != null && missing.Count > 0)
             {
-                throw new InvalidOperationException(
+                FailFast(
                     $"SceneTransitionProfileCatalogAsset incompleto. Profiles obrigatórios ausentes: [{string.Join(", ", missing)}]. " +
                     "Forneça um catálogo válido em NewScriptsBootstrapConfigAsset.transitionProfileCatalog.");
             }
