@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using UnityEditor;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Editor.Navigation
 {
