@@ -75,6 +75,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             InitializeLogging();
             EnsureDependencyProvider();
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][Config] Plan=StringsToDirectRefs v1",
+                DebugUtility.Colors.Info);
             RegisterEssentialServicesOnly();
 
             DebugUtility.Log(
