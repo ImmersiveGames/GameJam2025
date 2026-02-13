@@ -49,6 +49,36 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             return true;
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public void GetLegacySceneDataStats(out int dirty, out int total)
+        {
+            EnsureCache();
+
+            dirty = 0;
+            total = 0;
+
+            if (levels == null || levels.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < levels.Count; i++)
+            {
+                var entry = levels[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                total++;
+                if (entry.HasLegacySceneData())
+                {
+                    dirty++;
+                }
+            }
+        }
+#endif
+
         private void OnEnable()
         {
             _cacheBuilt = false;

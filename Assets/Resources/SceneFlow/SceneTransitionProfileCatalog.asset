@@ -12,4 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a91686d301889a3f48f2f2e2e40ac10, type: 3}
   m_Name: SceneTransitionProfileCatalog
   m_EditorClassIdentifier: 
-  _entries: []
+  _entries:
+  - _profileId:
+      _value: gameplay
+    _profile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+  - _profileId:
+      _value: startup
+    _profile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+  - _profileId:
+      _value: frontend
+    _profile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}

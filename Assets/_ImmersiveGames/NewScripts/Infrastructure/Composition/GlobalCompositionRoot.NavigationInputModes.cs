@@ -134,16 +134,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // - Resources path NÃO inclui 'Assets/Resources'. O arquivo deve estar em:
             //   Assets/Resources/<path>.asset
             const string navigationCatalogResourcesPath = "Navigation/GameNavigationCatalog";
-            const string sceneRouteCatalogResourcesPath = "SceneFlow/SceneRouteCatalog";
             const string transitionStyleCatalogResourcesPath = "Navigation/TransitionStyleCatalog";
             const string levelCatalogResourcesPath = "Navigation/LevelCatalog";
 
             var catalogAsset = LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
                 navigationCatalogResourcesPath,
                 "GameNavigationCatalogAsset");
-            var sceneRouteCatalogAsset = LoadRequiredResourceAsset<SceneRouteCatalogAsset>(
-                sceneRouteCatalogResourcesPath,
-                "SceneRouteCatalogAsset");
             var styleCatalogAsset = LoadRequiredResourceAsset<TransitionStyleCatalogAsset>(
                 transitionStyleCatalogResourcesPath,
                 "TransitionStyleCatalogAsset");
@@ -152,15 +148,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 "LevelCatalogAsset");
 
             LogPotentialDuplicateResourcesAsset(navigationCatalogResourcesPath, catalogAsset, "GameNavigationCatalogAsset");
-            LogPotentialDuplicateResourcesAsset(sceneRouteCatalogResourcesPath, sceneRouteCatalogAsset, "SceneRouteCatalogAsset");
             LogPotentialDuplicateResourcesAsset(transitionStyleCatalogResourcesPath, styleCatalogAsset, "TransitionStyleCatalogAsset");
             LogPotentialDuplicateResourcesAsset(levelCatalogResourcesPath, levelCatalogAsset, "LevelCatalogAsset");
 
-            RegisterGlobalIfMissing<ISceneRouteCatalog>(sceneRouteCatalogAsset, "ISceneRouteCatalog");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            levelCatalogAsset.GetLegacySceneDataStats(out int dirtyLegacyCount, out int totalLevels);
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][Navigation] LevelDefinitions legacy scene data: " +
+                $"dirty={dirtyLegacyCount} / total={totalLevels}. " +
+                "Use Tools/NewScripts/Navigation/Clear Legacy Scene Data in LevelDefinitions para limpar.",
+                DebugUtility.Colors.Info);
+#endif
+
             RegisterGlobalIfMissing<ITransitionStyleCatalog>(styleCatalogAsset, "ITransitionStyleCatalog");
             RegisterGlobalIfMissing<ILevelFlowService>(levelCatalogAsset, "ILevelFlowService");
 
-            var sceneRouteResolver = ResolveOrRegisterSceneRouteResolver(sceneRouteCatalogAsset);
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var sceneRouteResolver) || sceneRouteResolver == null)
+            {
+                throw new InvalidOperationException("ISceneRouteResolver obrigatório ausente no DI global. Garanta RegisterSceneFlowRoutesRequired no pipeline antes de RegisterGameNavigationService.");
+            }
 
             catalogAsset.GetObservabilitySnapshot(
                 out var rawRoutesCount,
@@ -186,21 +192,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Navigation] GameNavigationService registrado com catálogos via Resources " +
-                $"(navigation='{navigationCatalogResourcesPath}', sceneRoutes='{sceneRouteCatalogResourcesPath}', " +
-                $"styles='{transitionStyleCatalogResourcesPath}', levels='{levelCatalogResourcesPath}').",
+                $"(navigation='{navigationCatalogResourcesPath}', styles='{transitionStyleCatalogResourcesPath}', levels='{levelCatalogResourcesPath}').",
                 DebugUtility.Colors.Info);
-        }
-
-        private static ISceneRouteResolver ResolveOrRegisterSceneRouteResolver(ISceneRouteCatalog routeCatalog)
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var existingResolver) && existingResolver != null)
-            {
-                return existingResolver;
-            }
-
-            var resolver = new SceneRouteCatalogResolver(routeCatalog);
-            DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolver);
-            return resolver;
         }
 
         private static T LoadRequiredResourceAsset<T>(string resourcesPath, string assetLabel) where T : ScriptableObject
