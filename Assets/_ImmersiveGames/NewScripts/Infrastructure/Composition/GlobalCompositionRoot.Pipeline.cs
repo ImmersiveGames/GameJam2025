@@ -82,10 +82,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
-            RegisterLevelServices();
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterLevelQaInstaller();
-#endif
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
