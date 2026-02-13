@@ -54,29 +54,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
         {
             var profile = _profileResolver.Resolve(profileId, out string resolvedPath);
 
-            if (profile == null)
-            {
-                string detail =
-                    $"profileId='{profileId}' catalogPath='{_ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings.SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'";
-
-                if (_modeProvider.IsStrict)
-                {
-                    DebugUtility.LogError<SceneFlowFadeAdapter>(
-                        $"[SceneFlow][Fade] Profile ausente em Strict. {detail}");
-                    throw new InvalidOperationException($"[SceneFlow][Fade] Profile ausente em Strict. {detail}");
-                }
-
-                // Release: política explícita -> desabilitar fade (no-op) e reportar DEGRADED_MODE.
-                _degradedReporter.Report(
-                    feature: "fade",
-                    reason: "profile_missing",
-                    detail: detail);
-
-                _shouldFade = false;
-                _resolvedConfig = NoOpConfig();
-                return;
-            }
-
             if (!profile.UseFade)
             {
                 _shouldFade = false;

@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
     /// Regras:
     /// - Fade: somente IFadeService (sem fallback legado).
     /// - Loader: enquanto não migra, usa SceneManagerLoaderAdapter como fallback.
-    /// - Profile: prefere resolver via catálogo (se disponível) e mantém fallback legado via Resources (controlado pelo catálogo).
+    /// - Profile: exige resolver registrado em DI (configurado no bootstrap fail-fast).
     /// - Strict/Release: policy via IRuntimeModeProvider + DEGRADED_MODE via IDegradedModeReporter.
     /// </summary>
     public static class SceneFlowAdapterFactory
