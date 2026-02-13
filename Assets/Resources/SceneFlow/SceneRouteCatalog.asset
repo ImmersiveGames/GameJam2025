@@ -15,38 +15,50 @@ MonoBehaviour:
   routes:
   - routeId:
       _value: to-menu
-    scenesToLoad:
-    - MenuScene
-    - UIGlobalScene
-    scenesToUnload:
-    - GameplayScene
-    targetActiveScene: MenuScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: ''
+    scenesToLoadKeys:
+    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
+    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
+    scenesToUnloadKeys:
+    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
+    targetActiveSceneKey: {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
     routeKind: 1
   - routeId:
       _value: to-gameplay
-    scenesToLoad:
-    - GameplayScene
-    - UIGlobalScene
-    scenesToUnload:
-    - MenuScene
-    targetActiveScene: GameplayScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: ''
+    scenesToLoadKeys:
+    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
+    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
+    scenesToUnloadKeys:
+    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
+    targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
     routeKind: 2
   - routeId:
       _value: level.1
-    scenesToLoad:
-    - GameplayScene
-    - UIGlobalScene
-    scenesToUnload:
-    - MenuScene
-    targetActiveScene: GameplayScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: ''
+    scenesToLoadKeys:
+    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
+    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
+    scenesToUnloadKeys:
+    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
+    targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
     routeKind: 2
   - routeId:
       _value: level.2
-    scenesToLoad:
-    - GameplayScene
-    - UIGlobalScene
-    scenesToUnload:
-    - MenuScene
-    targetActiveScene: GameplayScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: ''
+    scenesToLoadKeys:
+    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
+    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
+    scenesToUnloadKeys:
+    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
+    targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
     routeKind: 2
   warnOnInvalidRoutes: 1

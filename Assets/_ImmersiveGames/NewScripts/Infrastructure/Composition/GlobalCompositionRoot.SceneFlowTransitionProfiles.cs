@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -17,22 +16,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void RegisterSceneFlowTransitionProfiles()
         {
             var provider = DependencyManager.Provider;
+            var bootstrap = GetRequiredBootstrapConfig(out _);
+
+            var bootstrapCatalog = bootstrap.TransitionProfileCatalog;
+            if (bootstrapCatalog == null)
+            {
+                FailFast("Missing required NewScriptsBootstrapConfigAsset.transitionProfileCatalog (SceneTransitionProfileCatalogAsset).");
+            }
 
             if (!provider.TryGetGlobal<SceneTransitionProfileCatalogAsset>(out var catalog) || catalog == null)
             {
-                catalog = Resources.Load<SceneTransitionProfileCatalogAsset>(SceneTransitionProfileCatalogAsset.DefaultResourcesPath);
-
-                if (catalog == null)
-                {
-                    throw new InvalidOperationException(
-                        $"SceneTransitionProfileCatalogAsset obrigatório e não encontrado. " +
-                        $"Crie/configure o asset em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
-                }
-
+                catalog = bootstrapCatalog;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][SceneFlow] SceneTransitionProfileCatalogAsset carregado via Resources: '{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'.");
-
+                    $"[OBS][Config] CatalogResolvedVia=BootstrapConfig field=transitionProfileCatalog asset={catalog.name}",
+                    DebugUtility.Colors.Info);
                 provider.RegisterGlobal(catalog);
+            }
+            else if (!ReferenceEquals(catalog, bootstrapCatalog))
+            {
+                FailFast($"SceneTransitionProfileCatalog mismatch: DI has {catalog.name} but BootstrapConfig has {bootstrapCatalog.name}.");
             }
 
             EnsureRequiredProfilesCoverage(catalog);
@@ -48,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             if (catalog == null)
             {
-                throw new InvalidOperationException("SceneTransitionProfileCatalogAsset é null durante validação de cobertura obrigatória.");
+                FailFast("SceneTransitionProfileCatalogAsset é null durante validação de cobertura obrigatória.");
             }
 
             var requiredProfileIds = new[]
@@ -74,9 +76,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (missing != null && missing.Count > 0)
             {
-                throw new InvalidOperationException(
+                FailFast(
                     $"SceneTransitionProfileCatalogAsset incompleto. Profiles obrigatórios ausentes: [{string.Join(", ", missing)}]. " +
-                    $"Asset esperado em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
+                    "Forneça um catálogo válido em NewScriptsBootstrapConfigAsset.transitionProfileCatalog.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

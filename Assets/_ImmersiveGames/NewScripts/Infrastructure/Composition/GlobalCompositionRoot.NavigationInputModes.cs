@@ -129,27 +129,45 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 throw new InvalidOperationException("IGameNavigationService requer ISceneTransitionService. Verifique o registro do SceneFlow no GlobalCompositionRoot.");
             }
 
-            // Comentário:
-            // - Sem fallback hardcoded: se o catálogo configurável não existir, é erro de configuração (fail-fast).
-            // - Resources path NÃO inclui 'Assets/Resources'. O arquivo deve estar em:
-            //   Assets/Resources/<path>.asset
-            const string navigationCatalogResourcesPath = "Navigation/GameNavigationCatalog";
-            const string transitionStyleCatalogResourcesPath = "Navigation/TransitionStyleCatalog";
-            const string levelCatalogResourcesPath = "Navigation/LevelCatalog";
+            var bootstrapConfig = GetRequiredBootstrapConfig(out var bootstrapVia);
 
-            var catalogAsset = LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
-                navigationCatalogResourcesPath,
-                "GameNavigationCatalogAsset");
-            var styleCatalogAsset = LoadRequiredResourceAsset<TransitionStyleCatalogAsset>(
-                transitionStyleCatalogResourcesPath,
-                "TransitionStyleCatalogAsset");
-            var levelCatalogAsset = LoadRequiredResourceAsset<LevelCatalogAsset>(
-                levelCatalogResourcesPath,
-                "LevelCatalogAsset");
+            var catalogAsset = bootstrapConfig.NavigationCatalog;
+            if (catalogAsset == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required GameNavigationCatalogAsset in NewScriptsBootstrapConfigAsset.navigationCatalog.");
+                throw new InvalidOperationException(
+                    "Missing required NewScriptsBootstrapConfigAsset.navigationCatalog (GameNavigationCatalogAsset).");
+            }
 
-            LogPotentialDuplicateResourcesAsset(navigationCatalogResourcesPath, catalogAsset, "GameNavigationCatalogAsset");
-            LogPotentialDuplicateResourcesAsset(transitionStyleCatalogResourcesPath, styleCatalogAsset, "TransitionStyleCatalogAsset");
-            LogPotentialDuplicateResourcesAsset(levelCatalogResourcesPath, levelCatalogAsset, "LevelCatalogAsset");
+            var styleCatalogAsset = bootstrapConfig.TransitionStyleCatalog;
+            if (styleCatalogAsset == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required TransitionStyleCatalogAsset in NewScriptsBootstrapConfigAsset.transitionStyleCatalog.");
+                throw new InvalidOperationException(
+                    "Missing required NewScriptsBootstrapConfigAsset.transitionStyleCatalog (TransitionStyleCatalogAsset).");
+            }
+
+            var levelCatalogAsset = bootstrapConfig.LevelCatalog;
+            if (levelCatalogAsset == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required LevelCatalogAsset in NewScriptsBootstrapConfigAsset.levelCatalog.");
+                throw new InvalidOperationException(
+                    "Missing required NewScriptsBootstrapConfigAsset.levelCatalog (LevelCatalogAsset).");
+            }
+
+            const string catalogsVia = "BootstrapConfig";
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=navigationCatalog asset={catalogAsset.name}",
+                DebugUtility.Colors.Info);
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=transitionStyleCatalog asset={styleCatalogAsset.name}",
+                DebugUtility.Colors.Info);
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=levelCatalog asset={levelCatalogAsset.name}",
+                DebugUtility.Colors.Info);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             levelCatalogAsset.GetLegacySceneDataStats(out int dirtyLegacyCount, out int totalLevels);
@@ -175,8 +193,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Navigation] Catalog boot snapshot: " +
-                $"resourcePath='{navigationCatalogResourcesPath}', " +
-                $"assetName='{catalogAsset.name}', " +
+                $"bootstrapVia={bootstrapVia}, " +
+                $"navigationVia={catalogsVia} navigationAsset={catalogAsset.name}, " +
+                $"stylesVia={catalogsVia} stylesAsset={styleCatalogAsset.name}, " +
+                $"levelsVia={catalogsVia} levelsAsset={levelCatalogAsset.name}, " +
                 $"rawRoutesCount={rawRoutesCount}, " +
                 $"builtRouteIdsCount={builtRouteIdsCount}, " +
                 $"hasToGameplay={hasToGameplay}.",
@@ -191,8 +211,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][Navigation] GameNavigationService registrado com catálogos via Resources " +
-                $"(navigation='{navigationCatalogResourcesPath}', styles='{transitionStyleCatalogResourcesPath}', levels='{levelCatalogResourcesPath}').",
+                "[OBS][Navigation] GameNavigationService registrado. " +
+                $"bootstrapVia={bootstrapVia} navigationVia={catalogsVia} stylesVia={catalogsVia} levelsVia={catalogsVia} " +
+                $"(assets: navigation={catalogAsset.name}, styles={styleCatalogAsset.name}, levels={levelCatalogAsset.name}).",
                 DebugUtility.Colors.Info);
         }
 
