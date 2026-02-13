@@ -151,6 +151,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             LogPotentialDuplicateResourcesAsset(transitionStyleCatalogResourcesPath, styleCatalogAsset, "TransitionStyleCatalogAsset");
             LogPotentialDuplicateResourcesAsset(levelCatalogResourcesPath, levelCatalogAsset, "LevelCatalogAsset");
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            levelCatalogAsset.GetLegacySceneDataStats(out int dirtyLegacyCount, out int totalLevels);
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][Navigation] LevelDefinitions legacy scene data: " +
+                $"dirty={dirtyLegacyCount} / total={totalLevels}. " +
+                "Use Tools/NewScripts/Navigation/Clear Legacy Scene Data in LevelDefinitions para limpar.",
+                DebugUtility.Colors.Info);
+#endif
+
             RegisterGlobalIfMissing<ITransitionStyleCatalog>(styleCatalogAsset, "ITransitionStyleCatalog");
             RegisterGlobalIfMissing<ILevelFlowService>(levelCatalogAsset, "ILevelFlowService");
 

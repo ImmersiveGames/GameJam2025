@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     /// - Dados de cena (ScenesToLoad/Unload/Active) são resolvidos via <see cref="SceneRouteCatalogAsset"/>
     ///   dentro do fluxo de navegação.
     ///
-    /// Campos LEGACY existem apenas para migração e são ignorados (com warning).
+    /// Campos LEGACY existem apenas para migração e são ignorados.
     /// </summary>
     [Serializable]
     public sealed class LevelDefinition
@@ -55,25 +55,32 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public override string ToString()
             => $"levelId='{levelId}', routeId='{routeId}'";
 
+        public bool HasLegacySceneData()
+        {
+            return (scenesToLoad != null && scenesToLoad.Length > 0) ||
+                   (scenesToUnload != null && scenesToUnload.Length > 0) ||
+                   !string.IsNullOrWhiteSpace(targetActiveScene);
+        }
+
         private void WarnIfLegacySceneDataIsPopulated()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (_warnedLegacySceneData)
                 return;
 
-            bool hasLegacy =
-                (scenesToLoad != null && scenesToLoad.Length > 0) ||
-                (scenesToUnload != null && scenesToUnload.Length > 0) ||
-                !string.IsNullOrWhiteSpace(targetActiveScene);
+            bool hasLegacy = HasLegacySceneData();
 
             if (!hasLegacy)
                 return;
 
             _warnedLegacySceneData = true;
 
-            DebugUtility.LogWarning(typeof(LevelDefinition),
+            DebugUtility.LogVerbose(typeof(LevelDefinition),
                 "[OBS] LevelDefinition contém Scene Data LEGACY (ScenesToLoad/Unload/Active), " +
                 "mas a política atual (F3) ignora esses campos: a rota (SceneRouteId) é a fonte única de Scene Data. " +
+                "Use Tools/NewScripts/Navigation/Clear Legacy Scene Data in LevelDefinitions para limpar os assets. " +
                 $"(levelId='{levelId}', routeId='{routeId}')");
+#endif
         }
     }
 }
