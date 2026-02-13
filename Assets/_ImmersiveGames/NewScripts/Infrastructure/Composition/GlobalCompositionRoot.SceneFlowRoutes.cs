@@ -9,38 +9,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private const string SceneRouteCatalogResourcesPath = "SceneFlow/SceneRouteCatalog";
-
         private static void RegisterSceneFlowRoutesRequired()
         {
             var provider = DependencyManager.Provider;
 
             if (!provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) || routeCatalog == null)
             {
-                TryResolveBootstrapConfig(out var bootstrapConfig, out _);
+                var bootstrapConfig = GetRequiredBootstrapConfig(out _);
 
-                SceneRouteCatalogAsset routeCatalogAsset;
-                if (bootstrapConfig != null && bootstrapConfig.SceneRouteCatalog != null)
+                var routeCatalogAsset = bootstrapConfig.SceneRouteCatalog;
+                if (routeCatalogAsset == null)
                 {
-                    routeCatalogAsset = bootstrapConfig.SceneRouteCatalog;
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[OBS][Config] CatalogResolvedVia=Bootstrap field=sceneRouteCatalog asset={routeCatalogAsset.name}",
-                        DebugUtility.Colors.Info);
+                    DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                        "[FATAL][Config] Missing required SceneRouteCatalogAsset in NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
+                    throw new InvalidOperationException(
+                        "Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
                 }
-                else
-                {
-                    routeCatalogAsset = LoadRequiredResourceAsset<SceneRouteCatalogAsset>(
-                        SceneRouteCatalogResourcesPath,
-                        "SceneRouteCatalogAsset");
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[OBS][Config] CatalogResolvedVia=LegacyResources path={SceneRouteCatalogResourcesPath} asset={routeCatalogAsset.name}",
-                        DebugUtility.Colors.Info);
 
-                    LogPotentialDuplicateResourcesAsset(
-                        SceneRouteCatalogResourcesPath,
-                        routeCatalogAsset,
-                        "SceneRouteCatalogAsset");
-                }
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=BootstrapConfig field=sceneRouteCatalog asset={routeCatalogAsset.name}",
+                    DebugUtility.Colors.Info);
 
                 routeCatalog = routeCatalogAsset;
                 provider.RegisterGlobal<ISceneRouteCatalog>(routeCatalog);
@@ -60,9 +48,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (routeCatalog == null)
             {
                 throw new InvalidOperationException(
-                    "SceneRouteCatalogAsset obrigatório ausente. Configure uma das opções: " +
-                    "(a) NewScriptsBootstrapConfigAsset.sceneRouteCatalog, ou " +
-                    $"(b) Resources em 'Assets/Resources/{SceneRouteCatalogResourcesPath}.asset'.");
+                    "SceneRouteCatalogAsset obrigatório ausente. Configure NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

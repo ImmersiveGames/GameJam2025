@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static NewScriptsBootstrapConfigAsset cachedBootstrapConfig;
         private static string cachedBootstrapConfigVia = "None";
 
-        private static bool TryResolveBootstrapConfig(out NewScriptsBootstrapConfigAsset config, out string via)
+        private static NewScriptsBootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
         {
             if (!bootstrapConfigResolutionAttempted)
             {
@@ -29,30 +30,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     if (resourcesConfig != null)
                     {
                         cachedBootstrapConfig = resourcesConfig;
-                        cachedBootstrapConfigVia = "LegacyResources";
+                        cachedBootstrapConfigVia = "ResourcesRoot";
                         DependencyManager.Provider.RegisterGlobal(resourcesConfig);
                     }
                     else
                     {
-                        cachedBootstrapConfig = null;
-                        cachedBootstrapConfigVia = "None";
+                        DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                            $"[FATAL][Config] Missing NewScriptsBootstrapConfigAsset. path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}");
+                        throw new InvalidOperationException(
+                            "Missing required NewScriptsBootstrapConfigAsset. " +
+                            $"Create/configure it at Resources path '{NewScriptsBootstrapConfigAsset.DefaultResourcesPath}' " +
+                            "or pre-register it in global DI.");
                     }
                 }
             }
 
-            config = cachedBootstrapConfig;
             via = cachedBootstrapConfigVia;
 
             if (!bootstrapConfigResolutionLogged)
             {
                 bootstrapConfigResolutionLogged = true;
-                var assetName = config != null ? config.name : "<null>";
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={assetName} path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}",
+                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={cachedBootstrapConfig.name} path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}",
                     DebugUtility.Colors.Info);
             }
 
-            return config != null;
+            return cachedBootstrapConfig;
         }
     }
 }
