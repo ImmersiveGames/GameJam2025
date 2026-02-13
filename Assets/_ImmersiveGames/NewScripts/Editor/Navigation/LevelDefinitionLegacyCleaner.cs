@@ -1,8 +1,7 @@
 #if UNITY_EDITOR
-using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using UnityEditor;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Editor.Navigation
 {
@@ -27,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Editor.Navigation
                     continue;
                 }
 
-                var catalogAsset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetPath);
+                var catalogAsset = AssetDatabase.LoadAssetAtPath<LevelCatalogAsset>(assetPath);
                 if (catalogAsset == null)
                 {
                     continue;
