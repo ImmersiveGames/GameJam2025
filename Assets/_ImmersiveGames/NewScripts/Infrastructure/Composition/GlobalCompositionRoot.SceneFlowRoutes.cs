@@ -12,26 +12,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void RegisterSceneFlowRoutesRequired()
         {
             var provider = DependencyManager.Provider;
+            var bootstrap = GetRequiredBootstrapConfig(out _);
+
+            var bootstrapRouteCatalog = bootstrap.SceneRouteCatalog;
+            if (bootstrapRouteCatalog == null)
+            {
+                FailFast("Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
+            }
 
             if (!provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) || routeCatalog == null)
             {
-                var bootstrapConfig = GetRequiredBootstrapConfig(out _);
-
-                var routeCatalogAsset = bootstrapConfig.SceneRouteCatalog;
-                if (routeCatalogAsset == null)
-                {
-                    DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                        "[FATAL][Config] Missing required SceneRouteCatalogAsset in NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
-                    throw new InvalidOperationException(
-                        "Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
-                }
-
+                routeCatalog = bootstrapRouteCatalog;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] CatalogResolvedVia=BootstrapConfig field=sceneRouteCatalog asset={routeCatalogAsset.name}",
+                    $"[OBS][Config] CatalogResolvedVia=BootstrapConfig field=sceneRouteCatalog asset={bootstrapRouteCatalog.name}",
                     DebugUtility.Colors.Info);
-
-                routeCatalog = routeCatalogAsset;
                 provider.RegisterGlobal<ISceneRouteCatalog>(routeCatalog);
+            }
+            else if (!ReferenceEquals(routeCatalog, bootstrapRouteCatalog))
+            {
+                var diAssetName = routeCatalog is UnityEngine.Object diObject ? diObject.name : routeCatalog.GetType().Name;
+                FailFast($"SceneRouteCatalog mismatch: DI has {diAssetName} but BootstrapConfig has {bootstrapRouteCatalog.name}.");
             }
 
             ValidateSceneFlowRouteCatalogRequired(routeCatalog);

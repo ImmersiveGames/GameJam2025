@@ -16,25 +16,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void RegisterSceneFlowTransitionProfiles()
         {
             var provider = DependencyManager.Provider;
+            var bootstrap = GetRequiredBootstrapConfig(out _);
+
+            var bootstrapCatalog = bootstrap.TransitionProfileCatalog;
+            if (bootstrapCatalog == null)
+            {
+                FailFast("Missing required NewScriptsBootstrapConfigAsset.transitionProfileCatalog (SceneTransitionProfileCatalogAsset).");
+            }
 
             if (!provider.TryGetGlobal<SceneTransitionProfileCatalogAsset>(out var catalog) || catalog == null)
             {
-                var bootstrapConfig = GetRequiredBootstrapConfig(out _);
-
-                catalog = bootstrapConfig.TransitionProfileCatalog;
-                if (catalog == null)
-                {
-                    DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                        "[FATAL][Config] Missing required SceneTransitionProfileCatalogAsset in NewScriptsBootstrapConfigAsset.transitionProfileCatalog.");
-                    throw new InvalidOperationException(
-                        "Missing required NewScriptsBootstrapConfigAsset.transitionProfileCatalog (SceneTransitionProfileCatalogAsset).");
-                }
-
+                catalog = bootstrapCatalog;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     $"[OBS][Config] CatalogResolvedVia=BootstrapConfig field=transitionProfileCatalog asset={catalog.name}",
                     DebugUtility.Colors.Info);
-
                 provider.RegisterGlobal(catalog);
+            }
+            else if (!ReferenceEquals(catalog, bootstrapCatalog))
+            {
+                FailFast($"SceneTransitionProfileCatalog mismatch: DI has {catalog.name} but BootstrapConfig has {bootstrapCatalog.name}.");
             }
 
             EnsureRequiredProfilesCoverage(catalog);

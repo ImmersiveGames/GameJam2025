@@ -13,6 +13,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static NewScriptsBootstrapConfigAsset cachedBootstrapConfig;
         private static string cachedBootstrapConfigVia = "None";
 
+
+        private static void FailFast(string message)
+        {
+            DebugUtility.LogError(typeof(GlobalCompositionRoot), $"[FATAL][Config] {message}");
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+            if (!Application.isEditor)
+            {
+                Application.Quit();
+            }
+
+            throw new InvalidOperationException(message);
+        }
+
         private static NewScriptsBootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
         {
             if (!bootstrapConfigResolutionAttempted)
@@ -35,12 +50,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     }
                     else
                     {
-                        DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                            $"[FATAL][Config] Missing NewScriptsBootstrapConfigAsset. path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}");
-                        throw new InvalidOperationException(
-                            "Missing required NewScriptsBootstrapConfigAsset. " +
-                            $"Create/configure it at Resources path '{NewScriptsBootstrapConfigAsset.DefaultResourcesPath}' " +
-                            "or pre-register it in global DI.");
+                        FailFast(
+                            $"Missing NewScriptsBootstrapConfigAsset. path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}");
                     }
                 }
             }
