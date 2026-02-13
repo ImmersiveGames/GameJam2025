@@ -40,7 +40,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // State / Constants
         // --------------------------------------------------------------------
 
-        private static bool _initialized;
+        private static bool _phase0Initialized;
+        private static bool _phase1Initialized;
         private static GameReadinessService _gameReadinessService;
 
         // Opção B: mantém referência viva do coordinator (evita GC / descarte prematuro).
@@ -54,24 +55,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // --------------------------------------------------------------------
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Initialize()
+        private static void InitializePhase0()
         {
 #if !NEWSCRIPTS_MODE
             DebugUtility.Log(typeof(GlobalCompositionRoot),
                 "NEWSCRIPTS_MODE desativado: GlobalCompositionRoot ignorado.");
             return;
 #else
-            if (_initialized)
+            if (_phase0Initialized)
             {
                 return;
             }
 
-            _initialized = true;
+            _phase0Initialized = true;
 
             InitializeLogging();
             EnsureDependencyProvider();
 
-            if (AbortBootstrapIfFatalLatched("Initialize.beforePipeline"))
+            if (AbortBootstrapIfFatalLatched("InitializePhase0.beforeBootstrapConfig"))
             {
                 return;
             }
@@ -82,15 +83,46 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             try
             {
+                // Fase 0: apenas bootstrap config/DI; sem SceneManager.LoadScene*.
+                GetRequiredBootstrapConfig();
+            }
+            catch (System.Exception ex)
+            {
+                RuntimeFailFastUtility.FailFast("Boot", $"Unhandled phase-0 bootstrap exception. ex='{ex.GetType().Name}: {ex.Message}'");
+                throw;
+            }
+#endif
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void InitializePhase1()
+        {
+#if !NEWSCRIPTS_MODE
+            return;
+#else
+            if (_phase1Initialized)
+            {
+                return;
+            }
+
+            _phase1Initialized = true;
+
+            if (AbortBootstrapIfFatalLatched("InitializePhase1.beforePipeline"))
+            {
+                return;
+            }
+
+            try
+            {
                 RegisterEssentialServicesOnly();
             }
             catch (System.Exception ex)
             {
-                RuntimeFailFastUtility.FailFast("Boot", $"Unhandled bootstrap exception. ex='{ex.GetType().Name}: {ex.Message}'");
+                RuntimeFailFastUtility.FailFast("Boot", $"Unhandled phase-1 bootstrap exception. ex='{ex.GetType().Name}: {ex.Message}'");
                 throw;
             }
 
-            if (AbortBootstrapIfFatalLatched("Initialize.afterPipeline"))
+            if (AbortBootstrapIfFatalLatched("InitializePhase1.afterPipeline"))
             {
                 return;
             }
