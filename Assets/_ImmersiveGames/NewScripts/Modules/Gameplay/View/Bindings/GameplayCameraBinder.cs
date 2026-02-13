@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
@@ -41,18 +40,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.View.Bindings
         {
             if (_camera == null)
             {
-                DebugUtility.LogError<GameplayCameraBinder>(
-                    "[FATAL][DI] GameplayCameraBinder requires a Camera component on the same GameObject.",
+                throw RuntimeFailFastUtility.FailFastAndCreateException(
+                    "DI",
+                    "GameplayCameraBinder requires a Camera component on the same GameObject.",
                     this);
-                throw new InvalidOperationException("GameplayCameraBinder requires a Camera component.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal(out _resolver) || _resolver == null)
             {
-                DebugUtility.LogError<GameplayCameraBinder>(
-                    "[FATAL][DI] Missing required ICameraResolver in global DI during GameplayCameraBinder bootstrap.",
+                throw RuntimeFailFastUtility.FailFastAndCreateException(
+                    "DI",
+                    "Missing required ICameraResolver in global DI during GameplayCameraBinder bootstrap.",
                     this);
-                throw new InvalidOperationException("ICameraResolver is required for GameplayCameraBinder but was not found in global DI.");
             }
 
             DebugUtility.LogVerbose<GameplayCameraBinder>(

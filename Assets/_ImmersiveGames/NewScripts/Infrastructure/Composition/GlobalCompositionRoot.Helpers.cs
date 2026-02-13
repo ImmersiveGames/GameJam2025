@@ -33,44 +33,46 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return _bootstrapConfigCache;
             }
 
-            if (DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var globalConfig) && globalConfig != null)
-            {
-                ValidateRequiredBootstrapConfigFields(globalConfig);
-                _bootstrapConfigCache = globalConfig;
-                return globalConfig;
-            }
-
             var loadedConfig = Resources.Load<NewScriptsBootstrapConfigAsset>(NewScriptsBootstrapConfigAsset.DefaultResourcesPath);
-            if (loadedConfig == null)
+            if (loadedConfig != null)
             {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[FATAL][Config] Missing required BootstrapConfig at Resources path='{NewScriptsBootstrapConfigAsset.DefaultResourcesPath}'.");
-                throw new InvalidOperationException(
-                    $"Required NewScriptsBootstrapConfigAsset not found at 'Assets/Resources/{NewScriptsBootstrapConfigAsset.DefaultResourcesPath}.asset'.");
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] BootstrapConfigResolvedVia=Resources path='{NewScriptsBootstrapConfigAsset.DefaultResourcesPath}' assetName='{loadedConfig.name}'.",
+                    DebugUtility.Colors.Info);
+
+                ValidateRequiredBootstrapConfigFields(loadedConfig);
+
+                if (!DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var existing) || existing == null)
+                {
+                    DependencyManager.Provider.RegisterGlobal(loadedConfig);
+                }
+
+                _bootstrapConfigCache = loadedConfig;
+                return loadedConfig;
             }
 
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[OBS][Config] BootstrapConfigResolvedVia=Resources path='{NewScriptsBootstrapConfigAsset.DefaultResourcesPath}' assetName='{loadedConfig.name}'.",
-                DebugUtility.Colors.Info);
-
-            ValidateRequiredBootstrapConfigFields(loadedConfig);
-
-            if (!DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var existing) || existing == null)
+            if (DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var harnessConfig) && harnessConfig != null)
             {
-                DependencyManager.Provider.RegisterGlobal(loadedConfig);
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] BootstrapConfigResolvedVia=DI assetName='{harnessConfig.name}'.",
+                    DebugUtility.Colors.Info);
+
+                ValidateRequiredBootstrapConfigFields(harnessConfig);
+                _bootstrapConfigCache = harnessConfig;
+                return harnessConfig;
             }
 
-            _bootstrapConfigCache = loadedConfig;
-            return loadedConfig;
+            const string fatalMessage = "Missing required BootstrapConfig at Resources path='Config/NewScriptsBootstrapConfig'.";
+            throw RuntimeFailFastUtility.FailFastAndCreateException("Config", fatalMessage);
         }
 
         private static void ValidateRequiredBootstrapConfigFields(NewScriptsBootstrapConfigAsset config)
         {
             if (config == null)
             {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    "[FATAL][Config] BootstrapConfig invalid: missing field 'asset' asset='NewScriptsBootstrapConfig'.");
-                throw new InvalidOperationException("NewScriptsBootstrapConfigAsset reference is null during bootstrap validation.");
+                throw RuntimeFailFastUtility.FailFastAndCreateException(
+                    "Config",
+                    "BootstrapConfig invalid: missing field 'asset' asset='NewScriptsBootstrapConfig'.");
             }
 
             if (config.NavigationCatalog == null)
@@ -111,10 +113,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void ReportMissingBootstrapField(string assetName, string fieldName)
         {
-            DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                $"[FATAL][Config] BootstrapConfig invalid: missing field '{fieldName}' asset='{assetName}'.");
-            throw new InvalidOperationException(
-                $"NewScriptsBootstrapConfigAsset is invalid. Missing required field '{fieldName}' in asset '{assetName}'.");
+            throw RuntimeFailFastUtility.FailFastAndCreateException(
+                "Config",
+                $"BootstrapConfig invalid: missing field '{fieldName}' asset='{assetName}'.");
         }
 
     }

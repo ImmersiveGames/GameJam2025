@@ -122,10 +122,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 
         private static void FailFast(string reason, string detail)
         {
-            DebugUtility.LogError<FadeService>(
-                $"[FATAL][Fade] Required fade dependency missing. reason='{reason}' detail='{detail}'.");
-            throw new InvalidOperationException(
-                $"[FATAL][Fade] Required fade dependency missing. reason='{reason}' detail='{detail}'.");
+            throw RuntimeFailFastUtility.FailFastAndCreateException(
+                "Fade",
+                $"Required fade dependency missing. reason='{reason}' detail='{detail}'.");
         }
     }
 }
