@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
@@ -10,13 +12,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     public static partial class GlobalCompositionRoot
     {
         /// <summary>
-        /// F1: ponto único para configurar a resolução de perfis de transição do SceneFlow.
-        ///
-        /// Comportamento:
-        /// - Se existir um <see cref="SceneTransitionProfileCatalogAsset"/> em DI, usa ele.
-        /// - Caso contrário, tenta carregar o catálogo via Resources (path padrão do catálogo).
-        /// - Se não existir asset, cria um catálogo em runtime e hidrata startup/frontend/gameplay.
-        /// - O fallback legado continua habilitável por flag, mas com catálogo populado a origem preferencial vira "catalog".
+        /// F1.1: configuração fail-fast da resolução de perfis de transição do SceneFlow.
         /// </summary>
         private static void RegisterSceneFlowTransitionProfiles()
         {
@@ -26,22 +22,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 catalog = Resources.Load<SceneTransitionProfileCatalogAsset>(SceneTransitionProfileCatalogAsset.DefaultResourcesPath);
 
-                if (catalog != null)
+                if (catalog == null)
                 {
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[SceneFlow] SceneTransitionProfileCatalogAsset carregado via Resources: '{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'.");
+                    throw new InvalidOperationException(
+                        $"SceneTransitionProfileCatalogAsset obrigatório e não encontrado. " +
+                        $"Crie/configure o asset em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
                 }
-                else
-                {
-                    catalog = ScriptableObject.CreateInstance<SceneTransitionProfileCatalogAsset>();
-                    DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                        "[SceneFlow] SceneTransitionProfileCatalogAsset ausente; criando catálogo runtime com bootstrap explícito de profiles obrigatórios.");
-                }
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][SceneFlow] SceneTransitionProfileCatalogAsset carregado via Resources: '{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'.");
 
                 provider.RegisterGlobal(catalog);
             }
 
-            EnsureProfileCatalogCoverage(catalog);
+            EnsureRequiredProfilesCoverage(catalog);
 
             if (!provider.TryGetGlobal<SceneTransitionProfileResolver>(out var resolver) || resolver == null)
             {
@@ -50,11 +44,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
         }
 
-        private static void EnsureProfileCatalogCoverage(SceneTransitionProfileCatalogAsset catalog)
+        private static void EnsureRequiredProfilesCoverage(SceneTransitionProfileCatalogAsset catalog)
         {
             if (catalog == null)
             {
-                return;
+                throw new InvalidOperationException("SceneTransitionProfileCatalogAsset é null durante validação de cobertura obrigatória.");
             }
 
             var requiredProfileIds = new[]
@@ -64,38 +58,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 SceneFlowProfileId.Gameplay
             };
 
-            int hydrated = 0;
-            int missing = 0;
+            List<string> missing = null;
 
             for (int i = 0; i < requiredProfileIds.Length; i++)
             {
                 var profileId = requiredProfileIds[i];
-
-                if (catalog.TryGetProfile(profileId, out var existing) && existing != null)
+                if (catalog.TryGetProfile(profileId, out var profile) && profile != null)
                 {
                     continue;
                 }
 
-                var path = SceneFlowProfilePaths.For(profileId, catalog.LegacyResourcesBasePath);
-                var loaded = Resources.Load<SceneTransitionProfile>(path);
+                missing ??= new List<string>();
+                missing.Add(profileId.ToString());
+            }
 
-                if (loaded == null)
-                {
-                    missing++;
-                    DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                        $"[SceneFlow] Profile obrigatório não encontrado para bootstrap do catálogo. profileId='{profileId}', path='{path}'.");
-                    continue;
-                }
-
-                if (catalog.SetOrAddProfile(profileId, loaded))
-                {
-                    hydrated++;
-                }
+            if (missing != null && missing.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"SceneTransitionProfileCatalogAsset incompleto. Profiles obrigatórios ausentes: [{string.Join(", ", missing)}]. " +
+                    $"Asset esperado em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[SceneFlow] SceneTransitionProfileCatalog pronto. source='catalog', hydrated={hydrated}, missing={missing}, allowLegacyFallback={catalog.AllowLegacyResourcesFallback}.");
+                "[OBS][SceneFlow] SceneTransitionProfileCatalog validado com cobertura mínima obrigatória (startup, frontend, gameplay).");
         }
-
     }
 }

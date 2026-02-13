@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
             IDegradedModeReporter degradedReporter)
         {
             _fadeService = fadeService; // pode ser null
-            _profileResolver = profileResolver ?? new SceneTransitionProfileResolver();
+            _profileResolver = profileResolver ?? throw new InvalidOperationException("SceneTransitionProfileResolver é obrigatório no SceneFlowFadeAdapter.");
             _modeProvider = modeProvider ?? new UnityRuntimeModeProvider();
             _degradedReporter = degradedReporter ?? new DegradedModeReporter();
 
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
             if (profile == null)
             {
                 string detail =
-                    $"profileId='{profileId}' paths='{SceneFlowProfilePaths.For(profileId)}|{profileId.Value}'";
+                    $"profileId='{profileId}' catalogPath='{_ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings.SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'";
 
                 if (_modeProvider.IsStrict)
                 {
