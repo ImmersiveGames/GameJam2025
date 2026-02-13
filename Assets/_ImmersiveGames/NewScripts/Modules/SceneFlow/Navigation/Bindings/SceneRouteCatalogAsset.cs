@@ -22,14 +22,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             [Tooltip("Id canônico da rota (SceneRouteId).")]
             public SceneRouteId routeId;
 
-            [Tooltip("Cenas a carregar (por nome).")]
+            [Tooltip("LEGACY — migrar para scenesToLoadKeys.")]
             public string[] scenesToLoad;
 
-            [Tooltip("Cenas a descarregar (por nome).")]
+            [Tooltip("LEGACY — migrar para scenesToUnloadKeys.")]
             public string[] scenesToUnload;
 
-            [Tooltip("Cena que deve ficar ativa ao final da transição.")]
+            [Tooltip("LEGACY — migrar para targetActiveSceneKey.")]
             public string targetActiveScene;
+
+            [Tooltip("Cenas a carregar via SceneKeyAsset.")]
+            public SceneKeyAsset[] scenesToLoadKeys;
+
+            [Tooltip("Cenas a descarregar via SceneKeyAsset.")]
+            public SceneKeyAsset[] scenesToUnloadKeys;
+
+            [Tooltip("Cena ativa final via SceneKeyAsset.")]
+            public SceneKeyAsset targetActiveSceneKey;
 
             [Tooltip("Metadado de política para decisões de lifecycle (ex.: reset de mundo por rota).")]
             public SceneRouteKind routeKind = SceneRouteKind.Unspecified;
@@ -116,16 +125,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             if (routes == null || routes.Count == 0)
             {
+                DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
+                    "[OBS][Config] SceneRouteCatalogSceneDataVia=SceneKeyAsset routesTotal=0 routesUsingKeys=0 routesUsingLegacy=0 invalidRoutes=0",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
             int invalidCount = 0;
+            int routesUsingKeys = 0;
+            int routesUsingLegacy = 0;
+
             foreach (var entry in routes)
             {
                 if (entry == null || !entry.routeId.IsValid)
                 {
                     invalidCount++;
                     continue;
+                }
+
+                if (HasLegacyData(entry))
+                {
+                    routesUsingLegacy++;
                 }
 
                 if (_cache.ContainsKey(entry.routeId))
@@ -139,6 +159,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                     continue;
                 }
 
+                if (HasKeys(entry))
+                {
+                    routesUsingKeys++;
+                }
+
                 _cache.Add(entry.routeId, BuildDefinition(entry));
             }
 
@@ -147,6 +172,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 DebugUtility.LogWarning<SceneRouteCatalogAsset>(
                     $"[SceneFlow] SceneRouteCatalog possui entradas inválidas/duplicadas. invalidCount={invalidCount}.");
             }
+
+            DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
+                "[OBS][Config] SceneRouteCatalogSceneDataVia=SceneKeyAsset " +
+                $"routesTotal={routes.Count} routesUsingKeys={routesUsingKeys} routesUsingLegacy={routesUsingLegacy} invalidRoutes={invalidCount}",
+                DebugUtility.Colors.Info);
         }
 
         private static SceneRouteDefinition BuildDefinition(RouteEntry entry)
@@ -156,24 +186,120 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 return default;
             }
 
-            var load = Sanitize(entry.scenesToLoad);
-            var unload = Sanitize(entry.scenesToUnload);
-            var active = string.IsNullOrWhiteSpace(entry.targetActiveScene) ? string.Empty : entry.targetActiveScene.Trim();
-            return new SceneRouteDefinition(load, unload, active, entry.routeKind);
+            if (HasKeys(entry))
+            {
+                var load = ResolveKeys(
+                    entry.scenesToLoadKeys,
+                    entry.routeId,
+                    nameof(RouteEntry.scenesToLoadKeys));
+                var unload = ResolveKeys(
+                    entry.scenesToUnloadKeys,
+                    entry.routeId,
+                    nameof(RouteEntry.scenesToUnloadKeys));
+                var active = ResolveSingleKey(
+                    entry.targetActiveSceneKey,
+                    entry.routeId,
+                    nameof(RouteEntry.targetActiveSceneKey));
+
+                if (HasLegacyData(entry))
+                {
+                    DebugUtility.LogWarning<SceneRouteCatalogAsset>(
+                        $"[SceneFlow] routeId='{entry.routeId}': dados LEGACY ignorados porque *Keys estão configuradas.");
+                }
+
+                return new SceneRouteDefinition(load, unload, active, entry.routeKind);
+            }
+
+            if (HasLegacyData(entry))
+            {
+                if (entry.scenesToLoad != null && entry.scenesToLoad.Any(s => !string.IsNullOrWhiteSpace(s)))
+                {
+                    FailFast($"routeId='{entry.routeId}' usa LEGACY '{nameof(RouteEntry.scenesToLoad)}'. Migre para '{nameof(RouteEntry.scenesToLoadKeys)}'.");
+                }
+
+                if (entry.scenesToUnload != null && entry.scenesToUnload.Any(s => !string.IsNullOrWhiteSpace(s)))
+                {
+                    FailFast($"routeId='{entry.routeId}' usa LEGACY '{nameof(RouteEntry.scenesToUnload)}'. Migre para '{nameof(RouteEntry.scenesToUnloadKeys)}'.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(entry.targetActiveScene))
+                {
+                    FailFast($"routeId='{entry.routeId}' usa LEGACY '{nameof(RouteEntry.targetActiveScene)}'. Migre para '{nameof(RouteEntry.targetActiveSceneKey)}'.");
+                }
+            }
+
+            return new SceneRouteDefinition(Array.Empty<string>(), Array.Empty<string>(), string.Empty, entry.routeKind);
         }
 
-        private static string[] Sanitize(string[] scenes)
+        private static string[] ResolveKeys(SceneKeyAsset[] keys, SceneRouteId routeId, string fieldName)
         {
-            if (scenes == null || scenes.Length == 0)
+            if (keys == null || keys.Length == 0)
             {
                 return Array.Empty<string>();
             }
 
-            return scenes
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim())
+            var resolved = new List<string>(keys.Length);
+            for (int i = 0; i < keys.Length; i++)
+            {
+                var key = keys[i];
+                if (key == null)
+                {
+                    FailFast($"routeId='{routeId}' possui key null em '{fieldName}[{i}]'.");
+                }
+
+                if (string.IsNullOrWhiteSpace(key.SceneName))
+                {
+                    FailFast($"routeId='{routeId}' possui SceneKeyAsset inválido em '{fieldName}[{i}]' (SceneName vazio). asset='{key.name}'.");
+                }
+
+                resolved.Add(key.SceneName.Trim());
+            }
+
+            return resolved
                 .Distinct(StringComparer.Ordinal)
                 .ToArray();
+        }
+
+        private static string ResolveSingleKey(SceneKeyAsset key, SceneRouteId routeId, string fieldName)
+        {
+            if (key == null)
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(key.SceneName))
+            {
+                FailFast($"routeId='{routeId}' possui SceneKeyAsset inválido em '{fieldName}' (SceneName vazio). asset='{key.name}'.");
+            }
+
+            return key.SceneName.Trim();
+        }
+
+        private static bool HasKeys(RouteEntry entry)
+        {
+            return entry != null &&
+                   (entry.targetActiveSceneKey != null ||
+                    (entry.scenesToLoadKeys != null && entry.scenesToLoadKeys.Length > 0) ||
+                    (entry.scenesToUnloadKeys != null && entry.scenesToUnloadKeys.Length > 0));
+        }
+
+        private static bool HasLegacyData(RouteEntry entry)
+        {
+            if (entry == null)
+            {
+                return false;
+            }
+
+            bool hasLoad = entry.scenesToLoad != null && entry.scenesToLoad.Any(s => !string.IsNullOrWhiteSpace(s));
+            bool hasUnload = entry.scenesToUnload != null && entry.scenesToUnload.Any(s => !string.IsNullOrWhiteSpace(s));
+            bool hasActive = !string.IsNullOrWhiteSpace(entry.targetActiveScene);
+            return hasLoad || hasUnload || hasActive;
+        }
+
+        private static void FailFast(string message)
+        {
+            DebugUtility.LogError(typeof(SceneRouteCatalogAsset), $"[FATAL][Config] {message}");
+            throw new InvalidOperationException(message);
         }
     }
 }
