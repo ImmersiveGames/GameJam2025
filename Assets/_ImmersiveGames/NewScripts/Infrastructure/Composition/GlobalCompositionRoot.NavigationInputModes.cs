@@ -11,7 +11,6 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -130,74 +129,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             // Comentário:
-            // - Sem fallback hardcoded: se o catálogo configurável não existir, é erro de configuração (fail-fast).
-            // - Resources path NÃO inclui 'Assets/Resources'. O arquivo deve estar em:
-            //   Assets/Resources/<path>.asset
-            const string navigationCatalogResourcesPath = "Navigation/GameNavigationCatalog";
-            const string transitionStyleCatalogResourcesPath = "Navigation/TransitionStyleCatalog";
-            const string levelCatalogResourcesPath = "Navigation/LevelCatalog";
+            // - BootstrapConfig é obrigatório no boot e já validado como completo.
+            // - Sem fallback legado para Resources nesta etapa.
+            var bootstrapConfig = GetRequiredBootstrapConfig();
 
-            TryGetBootstrapConfig(out var bootstrapConfig);
+            var catalogAsset = bootstrapConfig.NavigationCatalog;
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] CatalogResolvedVia=Bootstrap field='navigationCatalog' asset='{catalogAsset.name}'.",
+                DebugUtility.Colors.Info);
 
-            var catalogAsset = bootstrapConfig != null && bootstrapConfig.NavigationCatalog != null
-                ? bootstrapConfig.NavigationCatalog
-                : LoadRequiredResourceAsset<GameNavigationCatalogAsset>(
-                    navigationCatalogResourcesPath,
-                    "GameNavigationCatalogAsset");
-            var navSource = bootstrapConfig != null && bootstrapConfig.NavigationCatalog != null ? "Bootstrap" : "Legacy";
-            if (navSource == "Bootstrap")
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field='navigationCatalog' asset='{catalogAsset.name}'.",
-                    DebugUtility.Colors.Info);
-            }
-            else
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] CatalogResolvedVia=LegacyResources path='{navigationCatalogResourcesPath}' type='{nameof(GameNavigationCatalogAsset)}'.",
-                    DebugUtility.Colors.Info);
-                LogPotentialDuplicateResourcesAsset(navigationCatalogResourcesPath, catalogAsset, "GameNavigationCatalogAsset");
-            }
+            var styleCatalogAsset = bootstrapConfig.TransitionStyleCatalog;
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] CatalogResolvedVia=Bootstrap field='transitionStyleCatalog' asset='{styleCatalogAsset.name}'.",
+                DebugUtility.Colors.Info);
 
-            var styleCatalogAsset = bootstrapConfig != null && bootstrapConfig.TransitionStyleCatalog != null
-                ? bootstrapConfig.TransitionStyleCatalog
-                : LoadRequiredResourceAsset<TransitionStyleCatalogAsset>(
-                    transitionStyleCatalogResourcesPath,
-                    "TransitionStyleCatalogAsset");
-            var stylesSource = bootstrapConfig != null && bootstrapConfig.TransitionStyleCatalog != null ? "Bootstrap" : "Legacy";
-            if (stylesSource == "Bootstrap")
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field='transitionStyleCatalog' asset='{styleCatalogAsset.name}'.",
-                    DebugUtility.Colors.Info);
-            }
-            else
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] CatalogResolvedVia=LegacyResources path='{transitionStyleCatalogResourcesPath}' type='{nameof(TransitionStyleCatalogAsset)}'.",
-                    DebugUtility.Colors.Info);
-                LogPotentialDuplicateResourcesAsset(transitionStyleCatalogResourcesPath, styleCatalogAsset, "TransitionStyleCatalogAsset");
-            }
-
-            var levelCatalogAsset = bootstrapConfig != null && bootstrapConfig.LevelCatalog != null
-                ? bootstrapConfig.LevelCatalog
-                : LoadRequiredResourceAsset<LevelCatalogAsset>(
-                    levelCatalogResourcesPath,
-                    "LevelCatalogAsset");
-            var levelsSource = bootstrapConfig != null && bootstrapConfig.LevelCatalog != null ? "Bootstrap" : "Legacy";
-            if (levelsSource == "Bootstrap")
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field='levelCatalog' asset='{levelCatalogAsset.name}'.",
-                    DebugUtility.Colors.Info);
-            }
-            else
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] CatalogResolvedVia=LegacyResources path='{levelCatalogResourcesPath}' type='{nameof(LevelCatalogAsset)}'.",
-                    DebugUtility.Colors.Info);
-                LogPotentialDuplicateResourcesAsset(levelCatalogResourcesPath, levelCatalogAsset, "LevelCatalogAsset");
-            }
+            var levelCatalogAsset = bootstrapConfig.LevelCatalog;
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] CatalogResolvedVia=Bootstrap field='levelCatalog' asset='{levelCatalogAsset.name}'.",
+                DebugUtility.Colors.Info);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             levelCatalogAsset.GetLegacySceneDataStats(out int dirtyLegacyCount, out int totalLevels);
@@ -223,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Navigation] Catalog boot snapshot: " +
-                $"resourcePath='{navigationCatalogResourcesPath}', " +
+                $"resourcePath='BootstrapConfig', " +
                 $"assetName='{catalogAsset.name}', " +
                 $"rawRoutesCount={rawRoutesCount}, " +
                 $"builtRouteIdsCount={builtRouteIdsCount}, " +
@@ -239,89 +188,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][Navigation] GameNavigationService registrado. Sources: " +
-                $"nav={navSource}, styles={stylesSource}, levels={levelsSource}.",
+                "[OBS][Navigation] GameNavigationService registrado. Sources: nav=Bootstrap, styles=Bootstrap, levels=Bootstrap.",
                 DebugUtility.Colors.Info);
         }
-
-        private static T LoadRequiredResourceAsset<T>(string resourcesPath, string assetLabel) where T : ScriptableObject
-        {
-            if (string.IsNullOrWhiteSpace(resourcesPath))
-            {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[Navigation] ERRO: resourcesPath inválido para {assetLabel}. path='{resourcesPath ?? "<null>"}'.");
-                throw new InvalidOperationException($"Resources path inválido para {assetLabel}.");
-            }
-
-            try
-            {
-                var asset = Resources.Load<T>(resourcesPath);
-                if (asset != null)
-                {
-                    return asset;
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[Navigation] ERRO: exceção ao carregar {assetLabel} via Resources. " +
-                    $"path='{resourcesPath}', ex='{ex.GetType().Name}: {ex.Message}'.");
-                throw;
-            }
-
-            var expectedPath = $"Assets/Resources/{resourcesPath}.asset";
-            DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                $"[Navigation] ERRO: {assetLabel} NÃO encontrado em Resources. path='{resourcesPath}'. " +
-                $"Esperado em '{expectedPath}'.");
-            throw new InvalidOperationException($"{assetLabel} ausente em Resources (path='{resourcesPath}'). Navegação requer configuração explícita.");
-        }
-
-
-        private static void LogPotentialDuplicateResourcesAsset<T>(
-            string canonicalResourcesPath,
-            T canonicalAsset,
-            string assetLabel)
-            where T : ScriptableObject
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (canonicalAsset == null)
-            {
-                return;
-            }
-
-            var allAssetsOfType = Resources.LoadAll<T>(string.Empty);
-            if (allAssetsOfType == null || allAssetsOfType.Length <= 1)
-            {
-                return;
-            }
-
-            int sameNameCount = 0;
-            for (int i = 0; i < allAssetsOfType.Length; i++)
-            {
-                if (allAssetsOfType[i] == null)
-                {
-                    continue;
-                }
-
-                if (string.Equals(allAssetsOfType[i].name, canonicalAsset.name, StringComparison.Ordinal))
-                {
-                    sameNameCount++;
-                }
-            }
-
-            if (sameNameCount <= 1)
-            {
-                return;
-            }
-
-            DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                "[OBS][Navigation] Possível duplicata de catálogo em Resources detectada. " +
-                $"assetLabel='{assetLabel}', canonicalPath='{canonicalResourcesPath}', assetName='{canonicalAsset.name}', " +
-                $"sameNameCount={sameNameCount}, totalAssetsOfType={allAssetsOfType.Length}. " +
-                "Mantenha apenas um catálogo canônico por nome para evitar ambiguidade de setup.");
-#endif
-        }
-
         private static void RegisterGlobalIfMissing<T>(T service, string label) where T : class
         {
             if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)

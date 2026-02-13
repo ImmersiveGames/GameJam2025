@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -20,35 +19,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (!provider.TryGetGlobal<SceneTransitionProfileCatalogAsset>(out var catalog) || catalog == null)
             {
-                TryGetBootstrapConfig(out var bootstrapConfig);
-                if (bootstrapConfig != null && bootstrapConfig.TransitionProfileCatalog != null)
-                {
-                    catalog = bootstrapConfig.TransitionProfileCatalog;
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[OBS][Config] CatalogResolvedVia=Bootstrap field='transitionProfileCatalog' asset='{catalog.name}'.",
-                        DebugUtility.Colors.Info);
-                }
-                else
-                {
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        "[OBS][Config] CatalogResolvedVia=LegacyResources path='SceneFlow/SceneTransitionProfileCatalog'.",
-                        DebugUtility.Colors.Info);
+                var bootstrapConfig = GetRequiredBootstrapConfig();
+                catalog = bootstrapConfig.TransitionProfileCatalog;
 
-                    catalog = Resources.Load<SceneTransitionProfileCatalogAsset>(SceneTransitionProfileCatalogAsset.DefaultResourcesPath);
-                }
-
-                if (catalog == null)
-                {
-                    throw new InvalidOperationException(
-                        $"SceneTransitionProfileCatalogAsset obrigatório e não encontrado. " +
-                        $"Crie/configure o asset em 'Assets/Resources/{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}.asset'.");
-                }
-
-                if (bootstrapConfig == null || bootstrapConfig.TransitionProfileCatalog == null)
-                {
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[OBS][SceneFlow] SceneTransitionProfileCatalogAsset carregado via Resources: '{SceneTransitionProfileCatalogAsset.DefaultResourcesPath}'.");
-                }
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field='transitionProfileCatalog' asset='{catalog.name}'.",
+                    DebugUtility.Colors.Info);
 
                 provider.RegisterGlobal(catalog);
             }

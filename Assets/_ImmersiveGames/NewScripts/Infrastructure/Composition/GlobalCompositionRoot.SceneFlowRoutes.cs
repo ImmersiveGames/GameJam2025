@@ -17,31 +17,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (!provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) || routeCatalog == null)
             {
-                TryGetBootstrapConfig(out var bootstrapConfig);
+                var bootstrapConfig = GetRequiredBootstrapConfig();
+                var routeCatalogAsset = bootstrapConfig.SceneRouteCatalog;
 
-                SceneRouteCatalogAsset routeCatalogAsset;
-                if (bootstrapConfig != null && bootstrapConfig.SceneRouteCatalog != null)
-                {
-                    routeCatalogAsset = bootstrapConfig.SceneRouteCatalog;
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[OBS][Config] CatalogResolvedVia=Bootstrap field='sceneRouteCatalog' asset='{routeCatalogAsset.name}'.",
-                        DebugUtility.Colors.Info);
-                }
-                else
-                {
-                    routeCatalogAsset = LoadRequiredResourceAsset<SceneRouteCatalogAsset>(
-                        SceneRouteCatalogResourcesPath,
-                        "SceneRouteCatalogAsset");
-
-                    DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[OBS][Config] CatalogResolvedVia=LegacyResources path='{SceneRouteCatalogResourcesPath}' type='{nameof(SceneRouteCatalogAsset)}'.",
-                        DebugUtility.Colors.Info);
-
-                    LogPotentialDuplicateResourcesAsset(
-                        SceneRouteCatalogResourcesPath,
-                        routeCatalogAsset,
-                        "SceneRouteCatalogAsset");
-                }
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Config] CatalogResolvedVia=Bootstrap field='sceneRouteCatalog' asset='{routeCatalogAsset.name}'.",
+                    DebugUtility.Colors.Info);
 
                 routeCatalog = routeCatalogAsset;
                 provider.RegisterGlobal<ISceneRouteCatalog>(routeCatalog);
