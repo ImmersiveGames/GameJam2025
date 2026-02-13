@@ -136,44 +136,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 return existingResolver;
             }
-
-            if (DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) && routeCatalog != null)
-            {
-                var resolverFromDiCatalog = new SceneRouteCatalogResolver(routeCatalog);
-                DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolverFromDiCatalog);
-
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][SceneFlow] ISceneRouteResolver não estava registrado; criado automaticamente a partir de ISceneRouteCatalog.",
-                    DebugUtility.Colors.Info);
-
-                return resolverFromDiCatalog;
-            }
-
-            const string sceneRouteCatalogResourcesPath = "SceneFlow/SceneRouteCatalog";
-            var catalogFromResources = Resources.Load<SceneRouteCatalogAsset>(sceneRouteCatalogResourcesPath);
-
-            if (catalogFromResources != null)
-            {
-                if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out routeCatalog) || routeCatalog == null)
-                {
-                    routeCatalog = catalogFromResources;
-                    DependencyManager.Provider.RegisterGlobal<ISceneRouteCatalog>(routeCatalog);
-                }
-
-                var resolverFromResources = new SceneRouteCatalogResolver(routeCatalog);
-                DependencyManager.Provider.RegisterGlobal<ISceneRouteResolver>(resolverFromResources);
-
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][SceneFlow] ISceneRouteCatalog/ISceneRouteResolver carregados via Resources antes do Navigation " +
-                    $"(path='{sceneRouteCatalogResourcesPath}').",
-                    DebugUtility.Colors.Info);
-
-                return resolverFromResources;
-            }
-
             throw new InvalidOperationException(
-                "[SceneFlow] ISceneRouteCatalog/ISceneRouteResolver obrigatório ausente no bootstrap. " +
-                "Configure o asset em 'Assets/Resources/SceneFlow/SceneRouteCatalog.asset' ou registre ISceneRouteCatalog antes de RegisterSceneFlowNative.");
+                "[SceneFlow] ISceneRouteResolver obrigatório ausente no DI global. " +
+                "Garanta a execução de RegisterSceneFlowRoutesRequired no pipeline antes de RegisterSceneFlowNative.");
         }
 
         // --------------------------------------------------------------------
