@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
             IDegradedModeReporter degradedReporter)
         {
             _fadeService = fadeService; // pode ser null
-            _profileResolver = profileResolver ?? new SceneTransitionProfileResolver();
+            _profileResolver = profileResolver ?? throw new InvalidOperationException("SceneTransitionProfileResolver é obrigatório no SceneFlowFadeAdapter.");
             _modeProvider = modeProvider ?? new UnityRuntimeModeProvider();
             _degradedReporter = degradedReporter ?? new DegradedModeReporter();
 
@@ -53,29 +53,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
         public void ConfigureFromProfile(SceneFlowProfileId profileId)
         {
             var profile = _profileResolver.Resolve(profileId, out string resolvedPath);
-
-            if (profile == null)
-            {
-                string detail =
-                    $"profileId='{profileId}' paths='{SceneFlowProfilePaths.For(profileId)}|{profileId.Value}'";
-
-                if (_modeProvider.IsStrict)
-                {
-                    DebugUtility.LogError<SceneFlowFadeAdapter>(
-                        $"[SceneFlow][Fade] Profile ausente em Strict. {detail}");
-                    throw new InvalidOperationException($"[SceneFlow][Fade] Profile ausente em Strict. {detail}");
-                }
-
-                // Release: política explícita -> desabilitar fade (no-op) e reportar DEGRADED_MODE.
-                _degradedReporter.Report(
-                    feature: "fade",
-                    reason: "profile_missing",
-                    detail: detail);
-
-                _shouldFade = false;
-                _resolvedConfig = NoOpConfig();
-                return;
-            }
 
             if (!profile.UseFade)
             {

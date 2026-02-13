@@ -50,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterPostPlayOwnershipService();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
+            RegisterSceneFlowTransitionProfiles();
             RegisterSceneFlowNative();
             RegisterSceneFlowSignatureCache();
             RegisterSceneFlowRouteResetPolicy();
@@ -82,10 +83,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
-            RegisterLevelServices();
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterLevelQaInstaller();
-#endif
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();

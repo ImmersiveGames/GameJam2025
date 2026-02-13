@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
@@ -81,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     DebugUtility.Colors.Info);
             }
 
-            var routeResolver = ResolveOrRegisterRouteResolverBestEffort();
+            var routeResolver = ResolveOrRegisterRouteResolverRequired();
 
             var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate, navigationPolicy, routeResolver, routeGuard);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
@@ -119,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            var routeResolver = ResolveOrRegisterRouteResolverBestEffort();
+            var routeResolver = ResolveOrRegisterRouteResolverRequired();
 
             DependencyManager.Provider.RegisterGlobal<IRouteResetPolicy>(
                 new SceneRouteResetPolicy(routeResolver));
@@ -129,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
-        private static ISceneRouteResolver ResolveOrRegisterRouteResolverBestEffort()
+        private static ISceneRouteResolver ResolveOrRegisterRouteResolverRequired()
         {
             if (DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var existingResolver) && existingResolver != null)
             {
@@ -170,12 +171,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return resolverFromResources;
             }
 
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][SceneFlow] ISceneRouteResolver ausente durante bootstrap do SceneFlow e catálogo não encontrado via Resources; " +
-                "SceneTransitionService seguirá sem hidratação de payload por rota até o resolver estar disponível.",
-                DebugUtility.Colors.Info);
-
-            return null;
+            throw new InvalidOperationException(
+                "[SceneFlow] ISceneRouteCatalog/ISceneRouteResolver obrigatório ausente no bootstrap. " +
+                "Configure o asset em 'Assets/Resources/SceneFlow/SceneRouteCatalog.asset' ou registre ISceneRouteCatalog antes de RegisterSceneFlowNative.");
         }
 
         // --------------------------------------------------------------------
