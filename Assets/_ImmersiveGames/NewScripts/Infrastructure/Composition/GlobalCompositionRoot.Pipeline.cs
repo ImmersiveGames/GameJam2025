@@ -27,6 +27,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // Resolve ISimulationGateService UMA vez para os consumidores (reduz repetição de TryGetGlobal).
             DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
 
+            // Comentário: bootstrap central obrigatório deve ser resolvido antes de qualquer registro de SceneFlow/transição.
+            GetRequiredBootstrapConfig();
+
             // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
             RegisterSceneFlowFadeModule();
 

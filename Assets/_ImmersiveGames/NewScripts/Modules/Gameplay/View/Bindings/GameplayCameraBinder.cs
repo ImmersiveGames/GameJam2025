@@ -1,13 +1,8 @@
-/*
- * ChangeLog
- * - Mantido registro/desregistro idempotente, evitando logs repetitivos ao resolver indisponível.
- * - Mantido retry em Awake/Start/OnEnable, com log único quando o resolver aparece após falha.
- * - Garantido desregistro também em OnDestroy (cobre casos de teardown/Domain reload).
- */
-
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.View.Bindings
 {
     [DisallowMultipleComponent]
@@ -20,31 +15,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.View.Bindings
         private ICameraResolver _resolver;
 
         private bool _registered;
-        private bool _warnedMissingResolver;
 
         private void Awake()
         {
             _camera = GetComponent<Camera>();
-            TryResolveResolver("Awake");
-        }
-
-        private void Start()
-        {
-            TryResolveResolver("Start");
-            TryRegisterCamera("Start");
+            EnsureRequiredDependenciesOrThrow();
         }
 
         private void OnEnable()
         {
-            TryRegisterCamera("OnEnable");
-        }
-
-        private void Update()
-        {
-            if (!_registered)
-            {
-                TryRegisterCamera("Update");
-            }
+            RegisterCameraIfNeeded();
         }
 
         private void OnDisable()
@@ -57,53 +37,32 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.View.Bindings
             TryUnregisterCamera();
         }
 
-        private bool TryResolveResolver(string context)
+        private void EnsureRequiredDependenciesOrThrow()
         {
-            if (_resolver != null)
-            {
-                return true;
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal(out _resolver) && _resolver != null)
-            {
-                string message = _warnedMissingResolver
-                    ? $"ICameraResolver resolvido após indisponibilidade em {context}."
-                    : $"ICameraResolver resolved in {context}.";
-
-                DebugUtility.LogVerbose<GameplayCameraBinder>(message, DebugUtility.Colors.Info);
-
-                _warnedMissingResolver = false;
-                return true;
-            }
-
-            if (!_warnedMissingResolver)
-            {
-                _warnedMissingResolver = true;
-
-                DebugUtility.LogWarning<GameplayCameraBinder>(
-                    $"ICameraResolver não encontrado no DI global durante {context}. Vou tentar novamente automaticamente.",
-                    this);
-            }
-
-            return false;
-        }
-
-        private void TryRegisterCamera(string context)
-        {
-            if (_registered)
-            {
-                return;
-            }
-
             if (_camera == null)
             {
                 DebugUtility.LogError<GameplayCameraBinder>(
-                    "GameplayCameraBinder requer um componente Camera no mesmo GameObject.",
+                    "[FATAL][DI] GameplayCameraBinder requires a Camera component on the same GameObject.",
                     this);
-                return;
+                throw new InvalidOperationException("GameplayCameraBinder requires a Camera component.");
             }
 
-            if (!TryResolveResolver(context))
+            if (!DependencyManager.Provider.TryGetGlobal(out _resolver) || _resolver == null)
+            {
+                DebugUtility.LogError<GameplayCameraBinder>(
+                    "[FATAL][DI] Missing required ICameraResolver in global DI during GameplayCameraBinder bootstrap.",
+                    this);
+                throw new InvalidOperationException("ICameraResolver is required for GameplayCameraBinder but was not found in global DI.");
+            }
+
+            DebugUtility.LogVerbose<GameplayCameraBinder>(
+                "ICameraResolver resolved during GameplayCameraBinder bootstrap.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void RegisterCameraIfNeeded()
+        {
+            if (_registered)
             {
                 return;
             }
@@ -112,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.View.Bindings
             _registered = true;
 
             DebugUtility.Log<GameplayCameraBinder>(
-                $"Gameplay camera registrada (playerId={playerId}): {_camera.name}.",
+                $"Gameplay camera registered (playerId={playerId}): {_camera.name}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -123,13 +82,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.View.Bindings
                 return;
             }
 
-            if (_resolver != null && _camera != null)
-            {
-                _resolver.UnregisterCamera(playerId, _camera);
-            }
-
+            _resolver.UnregisterCamera(playerId, _camera);
             _registered = false;
         }
     }
 }
-

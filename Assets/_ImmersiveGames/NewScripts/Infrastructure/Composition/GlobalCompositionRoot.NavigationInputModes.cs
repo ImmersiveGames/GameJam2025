@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             // Comentário:
             // - BootstrapConfig é obrigatório no boot e já validado como completo.
-            // - Sem fallback legado para Resources nesta etapa.
+            // - Sem caminho legado para Resources nesta etapa.
             var bootstrapConfig = GetRequiredBootstrapConfig();
 
             var catalogAsset = bootstrapConfig.NavigationCatalog;
