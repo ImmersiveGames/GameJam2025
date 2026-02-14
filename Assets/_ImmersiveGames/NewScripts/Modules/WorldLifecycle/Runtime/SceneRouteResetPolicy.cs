@@ -104,9 +104,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         {
             resolved = default;
 
-            if (routeDefinition != null)
+            if (routeDefinition is { } def)
             {
-                resolved = routeDefinition;
+                resolved = def;
                 return true;
             }
 
