@@ -70,6 +70,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             var hydratedRequest = BuildRequestFromRouteDefinition(request, out var routeDefinition);
             EnsureTransitionProfileOrFailFast(hydratedRequest);
+            LogResolvedRouteForObservability(hydratedRequest);
             var context = BuildContextWithResetDecision(hydratedRequest, routeDefinition);
             string signature = SceneTransitionSignature.Compute(context);
 
@@ -206,6 +207,29 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 #endif
             throw new InvalidOperationException(message);
         }
+
+        private static void FailFastTransitionRequest(SceneTransitionRequest request, string detail)
+        {
+            string message =
+                $"[FATAL][Config] {detail} requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
+
+            DebugUtility.LogError<SceneTransitionService>(message);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+            throw new InvalidOperationException(message);
+        }
+
+        private static void LogResolvedRouteForObservability(SceneTransitionRequest request)
+        {
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow] RouteApplied routeId='{request.RouteId}', scenesToLoadCount={request.ScenesToLoad.Count}, " +
+                $"activeScene='{request.TargetActiveScene}', transitionProfile='{request.TransitionProfileName}'.",
+                DebugUtility.Colors.Info);
+        }
+
         private SceneTransitionContext BuildContextWithResetDecision(SceneTransitionRequest request, SceneRouteDefinition? routeDefinition)
         {
             SceneTransitionContext context = SceneTransitionSignature.BuildContext(request);
@@ -253,76 +277,49 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             if (!request.RouteId.IsValid)
             {
-                HandleInvalidRouteId(request, "RouteId ausente/inválido.");
+                if (request.HasInlineSceneData)
+                {
+                    routeDefinition = null;
+                    return request;
+                }
+
+                FailFastTransitionRequest(request, "RouteId ausente/inválido.");
                 return request;
             }
 
             if (_routeResolver == null)
             {
-                HandleMissingRouteResolver(request);
+                FailFastTransitionRequest(request, $"ISceneRouteResolver indisponível para routeId='{request.RouteId}'.");
                 return request;
             }
 
             if (!_routeResolver.TryResolve(request.RouteId, out var resolvedRoute))
             {
-                HandleRouteResolutionFailure(request);
+                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' não encontrado no catálogo de rotas.");
                 return request;
             }
 
             routeDefinition = resolvedRoute;
 
-            var payload = request.Payload.WithSceneData(resolvedRoute);
+            if (string.IsNullOrWhiteSpace(resolvedRoute.TargetActiveScene))
+            {
+                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' com TargetActiveScene vazio.");
+                return request;
+            }
+
             return new SceneTransitionRequest(
+                resolvedRoute.ScenesToLoad,
+                resolvedRoute.ScenesToUnload,
+                resolvedRoute.TargetActiveScene,
                 request.RouteId,
                 request.StyleId,
-                payload,
+                request.Payload,
                 request.TransitionProfile,
-                request.TransitionProfileId,
                 request.UseFade,
+                request.TransitionProfileId,
                 request.ContextSignature,
                 request.RequestedBy,
                 request.Reason);
-        }
-
-        private static void HandleInvalidRouteId(SceneTransitionRequest request, string detail)
-        {
-            string message =
-                $"[FATAL][Config] {detail} requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            DebugUtility.LogWarning<SceneTransitionService>($"{message} Usando fallback degradado de SceneData do request.");
-#else
-            DebugUtility.LogError<SceneTransitionService>(message);
-            throw new InvalidOperationException(message);
-#endif
-        }
-
-        private static void HandleMissingRouteResolver(SceneTransitionRequest request)
-        {
-            string message =
-                $"[FATAL][Config] ISceneRouteResolver indisponível para routeId='{request.RouteId}'. " +
-                $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            DebugUtility.LogWarning<SceneTransitionService>($"{message} Usando fallback degradado de SceneData do request.");
-#else
-            DebugUtility.LogError<SceneTransitionService>(message);
-            throw new InvalidOperationException(message);
-#endif
-        }
-
-        private static void HandleRouteResolutionFailure(SceneTransitionRequest request)
-        {
-            string message =
-                $"[FATAL][Config] routeId='{request.RouteId}' não encontrado no catálogo de rotas. " +
-                $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            DebugUtility.LogWarning<SceneTransitionService>($"{message} Usando fallback degradado de SceneData do request.");
-#else
-            DebugUtility.LogError<SceneTransitionService>(message);
-            throw new InvalidOperationException(message);
-#endif
         }
 
         private bool ShouldDedupe(string signature)

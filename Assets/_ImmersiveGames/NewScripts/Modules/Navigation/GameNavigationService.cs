@@ -210,9 +210,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             // F3 Plan-v2:
             // - SceneRouteDefinition é a fonte única de Scene Data.
-            // - Navigation NÃO injeta ScenesToLoad/Unload/Active no payload.
+            // - Navigation não injeta dados de cena no payload.
             var payload = entry.Payload ?? SceneTransitionPayload.Empty;
-            var (profile, profileId, useFade) = ResolveStyle(entry, payload);
+            var (profile, profileId, useFade) = ResolveStyle(entry);
 
             var request = new SceneTransitionRequest(
                 entry.RouteId,
@@ -229,18 +229,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             DebugUtility.Log(typeof(GameNavigationService),
                 $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
                 $"styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', " +
-                $"signature='{signature}', " +
-                $"Load=[{string.Join(", ", request.ScenesToLoad)}], " +
-                $"Unload=[{string.Join(", ", request.ScenesToUnload)}], " +
-                $"Active='{request.TargetActiveScene}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
+                $"signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
         }
 
         private (SceneTransitionProfile profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(
-            GameNavigationEntry entry,
-            SceneTransitionPayload payload)
+            GameNavigationEntry entry)
         {
             if (_styleCatalog != null && _styleCatalog.TryGet(entry.StyleId, out var style))
             {
