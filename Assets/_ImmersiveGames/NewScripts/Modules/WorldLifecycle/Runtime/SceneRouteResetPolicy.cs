@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
             if (TryResolveDefinition(routeId, routeDefinition, out var resolvedDefinition))
             {
-                return ResolveFromRouteDefinition(routeId, resolvedDefinition.Value, context);
+                return ResolveFromRouteDefinition(routeId, resolvedDefinition, context);
             }
 
             return ResolveForMissingRoute(routeId, context);
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private RouteResetDecision ResolveForInvalidRouteId(SceneTransitionContext context)
         {
-            bool canSkip = context.TransitionProfileId.IsStartup || context.TransitionProfileId.IsFrontend;
+            bool canSkip = IsStartupOrFrontendProfile(context.TransitionProfileId.Value);
             if (canSkip)
             {
                 return new RouteResetDecision(
@@ -104,9 +104,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         {
             resolved = default;
 
-            if (routeDefinition.HasValue)
+            if (routeDefinition != null)
             {
-                resolved = routeDefinition.Value;
+                resolved = routeDefinition;
                 return true;
             }
 
@@ -116,6 +116,19 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
 
             return _routeResolver.TryResolve(routeId, out resolved);
+        }
+
+
+
+        private static bool IsStartupOrFrontendProfile(string profileId)
+        {
+            if (string.IsNullOrWhiteSpace(profileId))
+            {
+                return false;
+            }
+
+            return string.Equals(profileId, "startup", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(profileId, "frontend", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool InferFallbackForUnknownRouteKind(SceneTransitionContext context)
