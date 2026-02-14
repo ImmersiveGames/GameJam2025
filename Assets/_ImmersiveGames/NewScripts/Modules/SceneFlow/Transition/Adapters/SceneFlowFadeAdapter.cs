@@ -125,8 +125,26 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
             }
 
             _degradedLogged = true;
-            DebugUtility.LogError<SceneFlowFadeAdapter>(
-                $"[DEGRADED][Fade] phase='{phase}', profileId='{_lastProfileId}'. {detail}");
+
+            if (ShouldDegradeFadeInRuntime())
+            {
+                DebugUtility.LogError<SceneFlowFadeAdapter>(
+                    $"[DEGRADED][Fade] phase='{phase}', profileId='{_lastProfileId}'. {detail}");
+                return;
+            }
+
+            string message = $"[FATAL][Fade] phase='{phase}', profileId='{_lastProfileId}'. {detail}";
+            DebugUtility.LogError<SceneFlowFadeAdapter>(message);
+            throw new InvalidOperationException(message);
+        }
+
+        private static bool ShouldDegradeFadeInRuntime()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return false;
+#endif
         }
 
         private static FadeConfig NoOpConfig()

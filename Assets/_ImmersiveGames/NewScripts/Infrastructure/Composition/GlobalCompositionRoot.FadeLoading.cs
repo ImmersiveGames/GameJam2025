@@ -19,14 +19,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void RegisterSceneFlowFadeModule()
         {
             var bootstrap = GetRequiredBootstrapConfig(out _);
-            var fadeSceneName = TryResolveFadeSceneName(bootstrap, out var degradeReason);
+            var fadeSceneName = TryResolveFadeSceneName(bootstrap, out var failureReason);
 
             if (string.IsNullOrWhiteSpace(fadeSceneName))
             {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[ERROR][DEGRADED][Fade] {degradeReason}");
-
-                RegisterIfMissing<IFadeService>(() => new DegradedFadeService(degradeReason));
+                HandleFadeBootstrapFailure(failureReason);
                 return;
             }
 
@@ -42,37 +39,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
             else
             {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    "[ERROR][DEGRADED][Fade] IFadeService could not be resolved after registration. Using degraded service.");
-                RegisterIfMissing<IFadeService>(() => new DegradedFadeService("fade_service_resolve_failed"));
+                HandleFadeBootstrapFailure("IFadeService could not be resolved after registration.");
             }
         }
 
-        private static string TryResolveFadeSceneName(NewScriptsBootstrapConfigAsset bootstrap, out string degradeReason)
+        private static string TryResolveFadeSceneName(NewScriptsBootstrapConfigAsset bootstrap, out string failureReason)
         {
             var fadeSceneKey = bootstrap.FadeSceneKey;
             if (fadeSceneKey == null)
             {
-                degradeReason = $"Missing fadeSceneKey. asset='{bootstrap.name}', field='fadeSceneKey'.";
+                failureReason = $"Missing fadeSceneKey. asset='{bootstrap.name}', field='fadeSceneKey'.";
                 return string.Empty;
             }
 
             var fadeSceneName = (fadeSceneKey.SceneName ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(fadeSceneName))
             {
-                degradeReason =
+                failureReason =
                     $"Invalid fadeSceneKey SceneName. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}'.";
                 return string.Empty;
             }
 
             if (!Application.CanStreamedLevelBeLoaded(fadeSceneName))
             {
-                degradeReason =
+                failureReason =
                     $"Fade scene is not available in Build Settings. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', scene='{fadeSceneName}'.";
                 return string.Empty;
             }
 
-            degradeReason = string.Empty;
+            failureReason = string.Empty;
             return fadeSceneName;
         }
 
@@ -87,12 +82,62 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
             catch (System.Exception ex)
             {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[ERROR][DEGRADED][Fade] Failed to preload FadeScene '{fadeSceneName}'. ex='{ex.GetType().Name}: {ex.Message}'");
+                HandleFadeRuntimeFailure(
+                    $"Failed to preload FadeScene '{fadeSceneName}'. ex='{ex.GetType().Name}: {ex.Message}'",
+                    "fade_preload_failed");
+            }
+        }
 
-                RegisterIfMissing<IFadeService>(() => new DegradedFadeService("fade_preload_failed"));
+        private static void HandleFadeBootstrapFailure(string reason)
+        {
+            if (ShouldDegradeFadeInRuntime())
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    $"[ERROR][DEGRADED][Fade] {reason}");
+
+                DependencyManager.Provider.RegisterGlobal<IFadeService>(
+                    new DegradedFadeService(reason),
+                    allowOverride: true);
                 return;
             }
+
+            HandleFadeRuntimeFailure(reason, "fade_bootstrap_invalid", isConfigFatal: true);
+        }
+
+        private static void HandleFadeRuntimeFailure(string reason, string degradedReason, bool isConfigFatal = false)
+        {
+            if (ShouldDegradeFadeInRuntime())
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    $"[ERROR][DEGRADED][Fade] {reason}");
+
+                DependencyManager.Provider.RegisterGlobal<IFadeService>(
+                    new DegradedFadeService(degradedReason),
+                    allowOverride: true);
+                return;
+            }
+
+            var tag = isConfigFatal ? "[FATAL][Config][Fade]" : "[FATAL][Fade]";
+            DebugUtility.LogError(typeof(GlobalCompositionRoot), $"{tag} {reason}");
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+            if (!Application.isEditor)
+            {
+                Application.Quit();
+            }
+
+            throw new System.InvalidOperationException($"{tag} {reason}");
+        }
+
+        private static bool ShouldDegradeFadeInRuntime()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return false;
+#endif
         }
 
         private static void RegisterSceneFlowLoadingIfAvailable()
