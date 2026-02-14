@@ -43,11 +43,20 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 return false;
             }
 
-            routeId = definition.routeId;
+            routeId = definition.ResolveRouteId();
+            if (!routeId.IsValid)
+            {
+                return false;
+            }
+
+            string via = definition.routeRef != null ? "AssetRef" : "RouteId";
+            DebugUtility.LogVerbose<LevelCatalogAsset>(
+                $"[OBS][Config] RouteResolvedVia={via} levelId='{levelId}', routeId='{routeId}'.",
+                DebugUtility.Colors.Info);
+
             payload = definition.ToPayload();
             return true;
         }
-
 
         private void OnEnable()
         {

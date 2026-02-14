@@ -8,7 +8,8 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
     /// <summary>
-    /// Catálogo configurável de rotas do SceneFlow (SceneRouteId -> cenas).
+    /// Catálogo configurável de rotas do SceneFlow (SceneRouteId -> SceneRouteDefinition).
+    /// Suporta wiring por referência direta de assets de rota e fallback por entrada inline.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneRouteCatalog",
@@ -21,15 +22,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             [Tooltip("Id canônico da rota (SceneRouteId).")]
             public SceneRouteId routeId;
-
-            [Tooltip("LEGACY — migrar para scenesToLoadKeys.")]
-            public string[] scenesToLoad;
-
-            [Tooltip("LEGACY — migrar para scenesToUnloadKeys.")]
-            public string[] scenesToUnload;
-
-            [Tooltip("LEGACY — migrar para targetActiveSceneKey.")]
-            public string targetActiveScene;
 
             [Tooltip("Cenas a carregar via SceneKeyAsset.")]
             public SceneKeyAsset[] scenesToLoadKeys;
@@ -45,13 +37,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             [Tooltip("Decisão explícita de reset de mundo para a rota (fonte de verdade em runtime).")]
             public bool requiresWorldReset;
-
-            public override string ToString()
-                => $"routeId='{routeId}', kind='{routeKind}', requiresWorldReset={requiresWorldReset}, active='{targetActiveScene}', " +
-                   $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
-
-            private static string FormatArray(string[] arr)
-                => arr == null ? "" : string.Join(", ", arr.Where(s => !string.IsNullOrWhiteSpace(s)));
         }
 
 #if UNITY_EDITOR
@@ -68,7 +53,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         }
 #endif
 
-        [Header("Routes")]
+        [Header("Routes (Direct References)")]
+        [SerializeField] private List<SceneRouteDefinitionAsset> routeDefinitions = new();
+
+        [Header("Routes (Inline Fallback)")]
         [SerializeField] private List<RouteEntry> routes = new();
 
         [Header("Validation")]
@@ -126,48 +114,69 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             _cacheBuilt = true;
             _cache.Clear();
 
-            if (routes == null || routes.Count == 0)
+            int invalidCount = 0;
+            int viaAssetRefCount = 0;
+            int viaInlineIdCount = 0;
+
+            if (routeDefinitions != null)
             {
-                DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
-                    "[OBS][Config] SceneRouteCatalogSceneDataVia=SceneKeyAsset routesTotal=0 routesUsingKeys=0 routesUsingLegacy=0 invalidRoutes=0",
-                    DebugUtility.Colors.Info);
-                return;
+                for (int i = 0; i < routeDefinitions.Count; i++)
+                {
+                    var routeAsset = routeDefinitions[i];
+                    if (!TryBuildFromAsset(routeAsset, out var routeId, out var routeDefinition))
+                    {
+                        invalidCount++;
+                        continue;
+                    }
+
+                    if (_cache.ContainsKey(routeId))
+                    {
+                        invalidCount++;
+                        if (warnOnInvalidRoutes)
+                        {
+                            DebugUtility.LogWarning<SceneRouteCatalogAsset>(
+                                $"[SceneFlow] Rota duplicada no SceneRouteCatalog (asset ref). routeId='{routeId}'. Apenas a primeira será usada.");
+                        }
+                        continue;
+                    }
+
+                    viaAssetRefCount++;
+                    _cache.Add(routeId, routeDefinition);
+
+                    DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
+                        $"[OBS][Config] RouteResolvedVia=AssetRef routeId='{routeId}' asset='{routeAsset.name}'.",
+                        DebugUtility.Colors.Info);
+                }
             }
 
-            int invalidCount = 0;
-            int routesUsingKeys = 0;
-            int routesUsingLegacy = 0;
-
-            foreach (var entry in routes)
+            if (routes != null)
             {
-                if (entry == null || !entry.routeId.IsValid)
+                foreach (var entry in routes)
                 {
-                    invalidCount++;
-                    continue;
-                }
-
-                if (HasLegacyData(entry))
-                {
-                    routesUsingLegacy++;
-                }
-
-                if (_cache.ContainsKey(entry.routeId))
-                {
-                    invalidCount++;
-                    if (warnOnInvalidRoutes)
+                    if (!TryBuildFromEntry(entry, out var routeId, out var routeDefinition))
                     {
-                        DebugUtility.LogWarning<SceneRouteCatalogAsset>(
-                            $"[SceneFlow] Rota duplicada no SceneRouteCatalog. routeId='{entry.routeId}'. Apenas a primeira será usada.");
+                        invalidCount++;
+                        continue;
                     }
-                    continue;
-                }
 
-                if (HasKeys(entry))
-                {
-                    routesUsingKeys++;
-                }
+                    if (_cache.ContainsKey(routeId))
+                    {
+                        invalidCount++;
+                        if (warnOnInvalidRoutes)
+                        {
+                            DebugUtility.LogWarning<SceneRouteCatalogAsset>(
+                                $"[SceneFlow] Rota duplicada no SceneRouteCatalog (inline). routeId='{routeId}'. Apenas a primeira será usada.");
+                        }
+                        continue;
+                    }
 
-                _cache.Add(entry.routeId, BuildDefinition(entry));
+                    viaInlineIdCount++;
+                    _cache.Add(routeId, routeDefinition);
+
+                    DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
+                        $"[OBS][Config] RouteResolvedVia=RouteId routeId='{routeId}'.",
+                        DebugUtility.Colors.Info);
+                }
             }
 
             if (warnOnInvalidRoutes && invalidCount > 0)
@@ -177,61 +186,55 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             }
 
             DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
-                "[OBS][Config] SceneRouteCatalogSceneDataVia=SceneKeyAsset " +
-                $"routesTotal={routes.Count} routesUsingKeys={routesUsingKeys} routesUsingLegacy={routesUsingLegacy} invalidRoutes={invalidCount}",
+                "[OBS][Config] SceneRouteCatalogBuild " +
+                $"routesResolved={_cache.Count} viaAssetRef={viaAssetRefCount} viaRouteId={viaInlineIdCount} invalidRoutes={invalidCount}",
                 DebugUtility.Colors.Info);
         }
 
-        private static SceneRouteDefinition BuildDefinition(RouteEntry entry)
+        private static bool TryBuildFromAsset(
+            SceneRouteDefinitionAsset routeAsset,
+            out SceneRouteId routeId,
+            out SceneRouteDefinition routeDefinition)
         {
-            if (entry == null)
+            routeId = SceneRouteId.None;
+            routeDefinition = default;
+
+            if (routeAsset == null)
             {
-                return default;
+                return false;
             }
 
-            if (HasKeys(entry))
+            routeId = routeAsset.RouteId;
+            if (!routeId.IsValid)
             {
-                var load = ResolveKeys(
-                    entry.scenesToLoadKeys,
-                    entry.routeId,
-                    nameof(RouteEntry.scenesToLoadKeys));
-                var unload = ResolveKeys(
-                    entry.scenesToUnloadKeys,
-                    entry.routeId,
-                    nameof(RouteEntry.scenesToUnloadKeys));
-                var active = ResolveSingleKey(
-                    entry.targetActiveSceneKey,
-                    entry.routeId,
-                    nameof(RouteEntry.targetActiveSceneKey));
-
-                if (HasLegacyData(entry))
-                {
-                    DebugUtility.LogWarning<SceneRouteCatalogAsset>(
-                        $"[SceneFlow] routeId='{entry.routeId}': dados LEGACY ignorados porque *Keys estão configuradas.");
-                }
-
-                return new SceneRouteDefinition(load, unload, active, entry.routeKind, entry.requiresWorldReset);
+                return false;
             }
 
-            if (HasLegacyData(entry))
+            routeDefinition = routeAsset.ToDefinition();
+            return true;
+        }
+
+        private static bool TryBuildFromEntry(
+            RouteEntry entry,
+            out SceneRouteId routeId,
+            out SceneRouteDefinition routeDefinition)
+        {
+            routeId = SceneRouteId.None;
+            routeDefinition = default;
+
+            if (entry == null || !entry.routeId.IsValid)
             {
-                if (entry.scenesToLoad != null && entry.scenesToLoad.Any(s => !string.IsNullOrWhiteSpace(s)))
-                {
-                    FailFast($"routeId='{entry.routeId}' usa LEGACY '{nameof(RouteEntry.scenesToLoad)}'. Migre para '{nameof(RouteEntry.scenesToLoadKeys)}'.");
-                }
-
-                if (entry.scenesToUnload != null && entry.scenesToUnload.Any(s => !string.IsNullOrWhiteSpace(s)))
-                {
-                    FailFast($"routeId='{entry.routeId}' usa LEGACY '{nameof(RouteEntry.scenesToUnload)}'. Migre para '{nameof(RouteEntry.scenesToUnloadKeys)}'.");
-                }
-
-                if (!string.IsNullOrWhiteSpace(entry.targetActiveScene))
-                {
-                    FailFast($"routeId='{entry.routeId}' usa LEGACY '{nameof(RouteEntry.targetActiveScene)}'. Migre para '{nameof(RouteEntry.targetActiveSceneKey)}'.");
-                }
+                return false;
             }
 
-            return new SceneRouteDefinition(Array.Empty<string>(), Array.Empty<string>(), string.Empty, entry.routeKind, entry.requiresWorldReset);
+            routeId = entry.routeId;
+
+            var load = ResolveKeys(entry.scenesToLoadKeys, routeId, nameof(RouteEntry.scenesToLoadKeys));
+            var unload = ResolveKeys(entry.scenesToUnloadKeys, routeId, nameof(RouteEntry.scenesToUnloadKeys));
+            var active = ResolveSingleKey(entry.targetActiveSceneKey, routeId, nameof(RouteEntry.targetActiveSceneKey));
+
+            routeDefinition = new SceneRouteDefinition(load, unload, active, entry.routeKind, entry.requiresWorldReset);
+            return true;
         }
 
         private static string[] ResolveKeys(SceneKeyAsset[] keys, SceneRouteId routeId, string fieldName)
@@ -276,27 +279,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             }
 
             return key.SceneName.Trim();
-        }
-
-        private static bool HasKeys(RouteEntry entry)
-        {
-            return entry != null &&
-                   (entry.targetActiveSceneKey != null ||
-                    (entry.scenesToLoadKeys != null && entry.scenesToLoadKeys.Length > 0) ||
-                    (entry.scenesToUnloadKeys != null && entry.scenesToUnloadKeys.Length > 0));
-        }
-
-        private static bool HasLegacyData(RouteEntry entry)
-        {
-            if (entry == null)
-            {
-                return false;
-            }
-
-            bool hasLoad = entry.scenesToLoad != null && entry.scenesToLoad.Any(s => !string.IsNullOrWhiteSpace(s));
-            bool hasUnload = entry.scenesToUnload != null && entry.scenesToUnload.Any(s => !string.IsNullOrWhiteSpace(s));
-            bool hasActive = !string.IsNullOrWhiteSpace(entry.targetActiveScene);
-            return hasLoad || hasUnload || hasActive;
         }
 
         private static void FailFast(string message)
