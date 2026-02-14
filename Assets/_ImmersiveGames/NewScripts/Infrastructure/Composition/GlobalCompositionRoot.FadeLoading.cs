@@ -1,9 +1,12 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -17,12 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             // Config canônica obrigatória para FadeScene.
             var bootstrap = GetRequiredBootstrapConfig(out _);
-            var fadeSceneName = (bootstrap.FadeSceneName ?? string.Empty).Trim();
-
-            if (string.IsNullOrWhiteSpace(fadeSceneName))
-            {
-                FailFast("Missing required NewScriptsBootstrapConfigAsset.fadeSceneName.");
-            }
+            var fadeSceneKey = bootstrap.FadeSceneKey;
+            var fadeSceneName = ResolveRequiredFadeSceneName(bootstrap, fadeSceneKey);
 
             RegisterIfMissing<IFadeService>(() => new FadeService(fadeSceneName));
 
@@ -38,6 +37,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 FailFast("IFadeService could not be resolved after registration.");
             }
+        }
+
+        private static string ResolveRequiredFadeSceneName(NewScriptsBootstrapConfigAsset bootstrap, SceneKeyAsset fadeSceneKey)
+        {
+            if (fadeSceneKey == null)
+            {
+                FailFast($"[FATAL][Fade] Missing required SceneKeyAsset. asset='{bootstrap.name}', field='fadeSceneKey'.");
+            }
+
+            var fadeSceneName = (fadeSceneKey.SceneName ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(fadeSceneName))
+            {
+                FailFast($"[FATAL][Fade] Invalid SceneKeyAsset. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', reason='SceneName is empty'.");
+            }
+
+            return fadeSceneName;
         }
 
         private static async System.Threading.Tasks.Task PreloadFadeSceneAsync(FadeService fadeService, string fadeSceneName)
