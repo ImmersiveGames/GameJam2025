@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         }
 
 #if UNITY_EDITOR
-        [MenuItem("Tools/NewScripts/QA/Levels/Select QA_Level Object", priority = 10)]
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/Levels/Select QA_Level Object", priority = 1290)]
         private static void SelectQaObject()
         {
             var obj = GameObject.Find("QA_Level");
@@ -74,6 +74,13 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
                     "[QA][Level] QA_Level não encontrado no Hierarchy (Play Mode).",
                     ColorWarn);
             }
+        }
+
+        // Mantém o comando habilitado apenas durante o Play Mode.
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/Levels/Select QA_Level Object", true, 1290)]
+        private static bool ValidateSelectQaObject()
+        {
+            return Application.isPlaying;
         }
 #endif
 

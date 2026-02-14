@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
         // Editor convenience (MenuItem)
         // ----------------------------
 #if UNITY_EDITOR
-        [MenuItem("Tools/NewScripts/QA/ContentSwap/Select QA_ContentSwap Object", priority = 10)]
+        [MenuItem("ImmersiveGames/NewScripts/QA/SceneFlow/ContentSwap/Select QA_ContentSwap Object", priority = 1190)]
         private static void SelectQaObject()
         {
             var obj = GameObject.Find("QA_ContentSwap");
@@ -82,6 +82,13 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
             {
                 DebugUtility.Log(typeof(PhaseQaContextMenu), "[QA][ContentSwap] QA_ContentSwap não encontrado no Hierarchy (Play Mode).", ColorWarn);
             }
+        }
+
+        // Mantém o comando visível apenas quando o projeto está em Play Mode.
+        [MenuItem("ImmersiveGames/NewScripts/QA/SceneFlow/ContentSwap/Select QA_ContentSwap Object", true, 1190)]
+        private static bool ValidateSelectQaObject()
+        {
+            return Application.isPlaying;
         }
 #endif
 

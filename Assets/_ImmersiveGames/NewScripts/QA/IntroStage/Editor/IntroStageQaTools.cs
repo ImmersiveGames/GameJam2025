@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.QA.Editor
     {
         private const string QaGameObjectName = "QA_IntroStage";
 
-        [MenuItem("Tools/NewScripts/QA/Select QA_IntroStage")]
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/IntroStage/Select QA_IntroStage Object", priority = 1290)]
         private static void SelectQaIntroStage()
         {
             if (!Application.isPlaying)
@@ -25,5 +25,13 @@ namespace _ImmersiveGames.NewScripts.QA.Editor
 
             Selection.activeObject = go;
         }
+
+        // Mantém o comando habilitado apenas durante o Play Mode.
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/IntroStage/Select QA_IntroStage Object", true, 1290)]
+        private static bool ValidateSelectQaIntroStage()
+        {
+            return Application.isPlaying;
+        }
+
     }
 }

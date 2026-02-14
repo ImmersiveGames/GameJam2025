@@ -2,12 +2,13 @@ using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEditor;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.IntroStage.Editor
 {
     public static class IntroStageQaMenuItems
     {
-        [MenuItem("Tools/NewScripts/QA/IntroStage/Complete (Force)")]
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/IntroStage/Complete (Force)", priority = 1200)]
         private static void CompleteIntroStage()
         {
             if (!UnityEditor.EditorApplication.isPlaying)
@@ -30,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage.Editor
                 DebugUtility.Colors.Info);
         }
 
-        [MenuItem("Tools/NewScripts/QA/IntroStage/Skip (Force)")]
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/IntroStage/Skip (Force)", priority = 1201)]
         private static void SkipIntroStage()
         {
             if (!UnityEditor.EditorApplication.isPlaying)
@@ -52,5 +53,20 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage.Editor
                 "[QA][IntroStage] MenuItem SkipIntroStage solicitado.",
                 DebugUtility.Colors.Info);
         }
+
+        // Mantém o comando habilitado apenas durante o Play Mode.
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/IntroStage/Complete (Force)", true, 1200)]
+        private static bool ValidateCompleteIntroStage()
+        {
+            return Application.isPlaying;
+        }
+
+        // Mantém o comando habilitado apenas durante o Play Mode.
+        [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/IntroStage/Skip (Force)", true, 1201)]
+        private static bool ValidateSkipIntroStage()
+        {
+            return Application.isPlaying;
+        }
+
     }
 }
