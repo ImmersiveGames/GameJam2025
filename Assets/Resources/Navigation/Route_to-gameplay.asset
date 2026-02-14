@@ -13,9 +13,12 @@ MonoBehaviour:
   m_Name: Route_to-gameplay
   m_EditorClassIdentifier: 
   routeId:
-    _value: to-menu
-  scenesToLoadKeys: []
-  scenesToUnloadKeys: []
-  targetActiveSceneKey: {fileID: 0}
-  routeKind: 0
-  requiresWorldReset: 0
+    _value: to-gameplay
+  scenesToLoadKeys:
+  - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
+  - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
+  scenesToUnloadKeys:
+  - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
+  targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
+  routeKind: 2
+  requiresWorldReset: 1

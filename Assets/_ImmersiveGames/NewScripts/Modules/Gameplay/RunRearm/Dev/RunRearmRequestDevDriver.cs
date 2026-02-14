@@ -9,6 +9,10 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Runtime;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
 {
     /// <summary>
@@ -18,19 +22,17 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
     public sealed class RunRearmRequestDevDriver : MonoBehaviour
     {
         [Header("Request Config")]
-        [SerializeField]
-        private List<string> actorIds = new();
+        [SerializeField] private List<string> actorIds = new();
 
-        [SerializeField]
-        private ActorKind fillKind = ActorKind.Player;
+        [SerializeField] private ActorKind fillKind = ActorKind.Player;
 
-        [SerializeField]
-        private bool verboseLogs = true;
+        [SerializeField] private bool verboseLogs = true;
 
         private string _sceneName;
         private IActorRegistry _actorRegistry;
         private IRunRearmOrchestrator _orchestrator;
         private IRunRearmTargetClassifier _classifier;
+
         private readonly List<IActor> _actorBuffer = new(16);
         private readonly List<IActor> _resolvedTargets = new(16);
         private readonly IRunRearmTargetClassifier _fallbackClassifier = new DefaultRunRearmTargetClassifier();
@@ -43,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
         [ContextMenu("QA/RunRearmRequest/Fill ActorIds From Registry (Kind)")]
         public void QA_FillActorIdsFromRegistry()
         {
-            const string reason = "QA/Gameplay/GameplayReset/Fill ActorIds From Registry (Kind)";
+            const string reason = "QA/RunRearmRequest/FillActorIdsFromRegistry(Kind)";
             if (!GuardContextMenuCommand("Fill ActorIds From Registry (Kind)", reason))
             {
                 return;
@@ -99,24 +101,36 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
         [ContextMenu("QA/RunRearmRequest/Run AllActorsInScene")]
         public void QA_RunAllActorsInScene()
         {
+            const string reason = "QA/RunRearmRequest/RunAllActorsInScene";
+            if (!GuardContextMenuCommand("Run AllActorsInScene", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(new RunRearmRequest(
                 RunRearmTarget.AllActorsInScene,
-                reason: "QA/RunRearmRequestAllActors"));
+                reason: reason));
         }
 
         [ContextMenu("QA/RunRearmRequest/Run PlayersOnly")]
         public void QA_RunPlayersOnly()
         {
+            const string reason = "QA/RunRearmRequest/RunPlayersOnly";
+            if (!GuardContextMenuCommand("Run PlayersOnly", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(new RunRearmRequest(
                 RunRearmTarget.PlayersOnly,
-                reason: "QA/RunRearmRequestPlayersOnly",
+                reason: reason,
                 actorKind: ActorKind.Player));
         }
 
         [ContextMenu("QA/RunRearmRequest/Run EaterOnly")]
         public void QA_RunEaterOnly()
         {
-            const string reason = "QA/Gameplay/GameplayReset/Run EaterOnly";
+            const string reason = "QA/RunRearmRequest/RunEaterOnly";
             if (!GuardContextMenuCommand("Run EaterOnly", reason))
             {
                 return;
@@ -125,25 +139,69 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
             // IMPORTANT: explicitar ActorKind para não cair no default do enum (ex.: Player).
             _ = RunResetAsync(new RunRearmRequest(
                 RunRearmTarget.EaterOnly,
-                reason: "QA/RunRearmRequestEaterOnly",
+                reason: reason,
                 actorKind: ActorKind.Eater));
         }
 
         [ContextMenu("QA/RunRearmRequest/Run ActorIdSet")]
         public void QA_RunActorIdSet()
         {
+            const string reason = "QA/RunRearmRequest/RunActorIdSet";
+            if (!GuardContextMenuCommand("Run ActorIdSet", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(new RunRearmRequest(
                 RunRearmTarget.ActorIdSet,
-                reason: "QA/RunRearmRequestActorIdSet",
+                reason: reason,
                 actorIds: actorIds));
         }
 
         [ContextMenu("QA/RunRearmRequest/Run ByActorKind (FillKind)")]
         public void QA_RunByActorKind()
         {
+            const string reason = "QA/RunRearmRequest/RunByActorKind(FillKind)";
+            if (!GuardContextMenuCommand("Run ByActorKind (FillKind)", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(RunRearmRequest.ByActorKind(
                 fillKind,
-                reason: "QA/RunRearmRequestByActorKind"));
+                reason: reason));
+        }
+
+        private bool GuardContextMenuCommand(string commandName, string reason)
+        {
+            // Comentário: ContextMenu deve ser executado apenas em Play Mode para evitar alterações no Editor.
+            if (!Application.isPlaying)
+            {
+                DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
+                    $"[WARN][{reason}] Comando '{commandName}' requer Play Mode.");
+                return false;
+            }
+
+#if UNITY_EDITOR
+            // Comentário: confirmação explícita no Editor para evitar resets acidentais.
+            if (!EditorUtility.DisplayDialog(
+                    "QA Command",
+                    $"{commandName}: pode resetar/rearm atores e estado de gameplay.\n\nReason: {reason}\n\nDeseja continuar?",
+                    "Continuar",
+                    "Cancelar"))
+            {
+                DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
+                    $"[WARN][{reason}] Comando cancelado pelo usuário.");
+                return false;
+            }
+#else
+            DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
+                $"[WARN][{reason}] Build sem diálogo de confirmação; executando comando.");
+#endif
+
+            DebugUtility.Log(typeof(RunRearmRequestDevDriver),
+                $"[QA][RunRearmRequest] Executando comando '{commandName}'. reason='{reason}'.");
+            return true;
         }
 
         private async Task RunResetAsync(RunRearmRequest request)
@@ -231,9 +289,9 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
             provider.TryGetForScene(_sceneName, out _actorRegistry);
             provider.TryGetForScene(_sceneName, out _orchestrator);
             provider.TryGetForScene(_sceneName, out _classifier);
+
             _classifier ??= _fallbackClassifier;
         }
     }
 }
 #endif
-
