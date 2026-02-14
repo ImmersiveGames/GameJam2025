@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
 
@@ -8,12 +9,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     /// <summary>
     /// Definição de um nível e sua rota.
     ///
-    /// F3 (Route como fonte única de Scene Data):
-    /// - Este asset só referencia <see cref="SceneRouteId"/>.
-    /// - Dados de cena (ScenesToLoad/Unload/Active) são resolvidos via <see cref="SceneRouteCatalogAsset"/>
-    ///   dentro do fluxo de navegação.
-    ///
-    /// Campos LEGACY existem apenas para migração e são ignorados.
+    /// F3/Fase 3 (Route como fonte única de Scene Data):
+    /// - Este asset referencia a rota por id e/ou por referência direta opcional (<see cref="routeRef"/>).
+    /// - Quando <see cref="routeRef"/> está setado, ele é a fonte de verdade para RouteId.
     /// </summary>
     [Serializable]
     public sealed class LevelDefinition
@@ -21,65 +19,58 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         [Tooltip("Id canônico do nível.")]
         public LevelId levelId;
 
-        [Tooltip("SceneRouteId associado ao nível.")]
+        [Tooltip("SceneRouteId associado ao nível (fallback quando routeRef não está setado).")]
         public SceneRouteId routeId;
 
-        [Header("LEGACY (ignored) — use SceneRouteCatalogAsset")]
-        [Tooltip("LEGACY: cenas a carregar (por nome). Ignorado a partir da F3.")]
-        [HideInInspector]
-        public string[] scenesToLoad;
+        [Tooltip("Referência direta opcional para a rota canônica.")]
+        public SceneRouteDefinitionAsset routeRef;
 
-        [Tooltip("LEGACY: cenas a descarregar (por nome). Ignorado a partir da F3.")]
-        [HideInInspector]
-        public string[] scenesToUnload;
+        public bool IsValid => levelId.IsValid && ResolveRouteId().IsValid;
 
-        [Tooltip("LEGACY: cena que deve ficar ativa ao final da transição. Ignorado a partir da F3.")]
-        [HideInInspector]
-        public string targetActiveScene;
+        public SceneRouteId ResolveRouteId()
+        {
+            if (routeRef != null)
+            {
+                var routeRefId = routeRef.RouteId;
+                if (!routeRefId.IsValid)
+                {
+                    return SceneRouteId.None;
+                }
 
-        private static bool _warnedLegacySceneData;
+                if (routeId.IsValid && routeId != routeRefId)
+                {
+                    HandleRouteMismatch(levelId, routeId, routeRefId);
+                }
 
-        public bool IsValid => levelId.IsValid && routeId.IsValid;
+                return routeRefId;
+            }
+
+            return routeId;
+        }
 
         /// <summary>
-        /// Retorna o payload do nível.
+        /// Retorna o payload adicional do nível.
         ///
-        /// A partir da F3, o payload NÃO carrega Scene Data.
+        /// F3 Plan-v2: Scene Data não é parte do LevelDefinition.
         /// </summary>
         public SceneTransitionPayload ToPayload()
-        {
-            WarnIfLegacySceneDataIsPopulated();
-            return SceneTransitionPayload.Empty;
-        }
+            => SceneTransitionPayload.Empty;
 
         public override string ToString()
-            => $"levelId='{levelId}', routeId='{routeId}'";
+            => $"levelId='{levelId}', routeId='{ResolveRouteId()}'";
 
-        public bool HasLegacySceneData()
+        private static void HandleRouteMismatch(LevelId levelId, SceneRouteId routeId, SceneRouteId routeRefId)
         {
-            return (scenesToLoad != null && scenesToLoad.Length > 0) ||
-                   (scenesToUnload != null && scenesToUnload.Length > 0) ||
-                   !string.IsNullOrWhiteSpace(targetActiveScene);
-        }
+            string message =
+                $"[FATAL][Config] LevelDefinition com routeId divergente de routeRef. " +
+                $"levelId='{levelId}', routeId='{routeId}', routeRef.routeId='{routeRefId}'.";
 
-        private void WarnIfLegacySceneDataIsPopulated()
-        {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (_warnedLegacySceneData)
-                return;
-
-            bool hasLegacy = HasLegacySceneData();
-
-            if (!hasLegacy)
-                return;
-
-            _warnedLegacySceneData = true;
-
-            DebugUtility.LogVerbose(typeof(LevelDefinition),
-                "[OBS] LevelDefinition contém Scene Data LEGACY (ScenesToLoad/Unload/Active), " +
-                "mas a política atual (F3) ignora esses campos: a rota (SceneRouteId) é a fonte única de Scene Data. " +
-                "Use Tools/NewScripts/Navigation/Clear Legacy Scene Data in LevelDefinitions para limpar os assets. " +
-                $"(levelId='{levelId}', routeId='{routeId}')");
+            DebugUtility.LogWarning(typeof(LevelDefinition),
+                $"{message} Em editor/dev, routeRef terá prioridade (RouteResolvedVia=AssetRef).");
+#else
+            DebugUtility.LogError(typeof(LevelDefinition), message);
+            throw new InvalidOperationException(message);
 #endif
         }
     }

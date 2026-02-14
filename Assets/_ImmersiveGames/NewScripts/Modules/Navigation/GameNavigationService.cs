@@ -18,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameNavigationCatalog _catalog;
-        private readonly ISceneRouteResolver _sceneRouteResolver;
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly ILevelFlowService _levelFlowService;
 
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-            _sceneRouteResolver = sceneRouteResolver ?? throw new ArgumentNullException(nameof(sceneRouteResolver));
+            _ = sceneRouteResolver ?? throw new ArgumentNullException(nameof(sceneRouteResolver));
             _styleCatalog = styleCatalog ?? throw new ArgumentNullException(nameof(styleCatalog));
             _levelFlowService = levelFlowService;
 
@@ -185,7 +184,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private async Task ExecuteEntryAsync(string intentId, GameNavigationEntry entry, string reason)
         {
-            var payload = ResolvePayload(entry);
+            // F3 Plan-v2:
+            // - SceneRouteDefinition é a fonte única de Scene Data.
+            // - Navigation NÃO injeta ScenesToLoad/Unload/Active no payload.
+            var payload = entry.Payload ?? SceneTransitionPayload.Empty;
             var (profileId, useFade) = ResolveStyle(entry, payload);
 
             var request = new SceneTransitionRequest(
@@ -209,23 +211,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
-        }
-
-        private SceneTransitionPayload ResolvePayload(GameNavigationEntry entry)
-        {
-            var payload = entry.Payload ?? SceneTransitionPayload.Empty;
-
-            if (payload.HasSceneData)
-            {
-                return payload;
-            }
-
-            if (_sceneRouteResolver != null && _sceneRouteResolver.TryResolve(entry.RouteId, out var routeDefinition))
-            {
-                return payload.WithSceneData(routeDefinition);
-            }
-
-            return payload;
         }
 
         private (SceneFlowProfileId profileId, bool useFade) ResolveStyle(

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine.Serialization;
 using UnityEngine;
@@ -10,11 +11,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     /// <summary>
     /// Catálogo de intents de navegação (produção).
     ///
-    /// F3 (Route como fonte única de Scene Data):
-    /// - Este catálogo NÃO define ScenesToLoad/Unload/Active.
-    /// - A Scene Data é resolvida via SceneRouteCatalogAsset (SceneFlow.Navigation) pelo GameNavigationService.
-    ///
-    /// Campos LEGACY permanecem apenas para migração e são ignorados (com warning).
+    /// F3/Fase 3:
+    /// - Catálogo não define Scene Data.
+    /// - Rota pode ser resolvida por referência direta opcional (routeRef) ou por SceneRouteId.
     /// </summary>
     [CreateAssetMenu(
         fileName = "GameNavigationCatalog",
@@ -28,39 +27,66 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("Identificador canônico do intent de navegação (ex.: 'nav.menu', 'nav.gameplay').")]
             public string routeId;
 
-            [Tooltip("SceneRouteId que fornece a Scene Data (ScenesToLoad/Unload/Active) para esta navegação.")]
+            [Tooltip("SceneRouteId associado ao intent (fallback quando routeRef não está setado).")]
             public SceneRouteId sceneRouteId;
+
+            [Tooltip("Referência direta opcional para a rota canônica.")]
+            public SceneRouteDefinitionAsset routeRef;
 
             [FormerlySerializedAs("transitionStyleId")]
             [Tooltip("TransitionStyleId que define ProfileId/UseFade (SceneFlow) usado nesta navegação.")]
             public TransitionStyleId styleId;
 
-            [FormerlySerializedAs("styleId")]
-            [HideInInspector]
-            [SerializeField]
-            private TransitionStyleId _legacyTransitionStyleId;
+            public SceneRouteId ResolveRouteId(string owner)
+            {
+                if (routeRef != null)
+                {
+                    var routeRefId = routeRef.RouteId;
+                    if (!routeRefId.IsValid)
+                    {
+                        return SceneRouteId.None;
+                    }
 
-            [Header("LEGACY (ignored) — use SceneRouteCatalogAsset")]
-            [Tooltip("LEGACY: cenas a carregar. Ignorado a partir da F3.")]
-            [HideInInspector]
-            public List<string> scenesToLoad;
+                    if (sceneRouteId.IsValid && sceneRouteId != routeRefId)
+                    {
+                        HandleRouteMismatch(owner, routeId, sceneRouteId, routeRefId);
+                    }
 
-            [Tooltip("LEGACY: cenas a descarregar. Ignorado a partir da F3.")]
-            [HideInInspector]
-            public List<string> scenesToUnload;
+                    DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
+                        $"[OBS][Config] RouteResolvedVia=AssetRef owner='{owner}', intentId='{routeId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
+                        DebugUtility.Colors.Info);
 
-            [Tooltip("LEGACY: cena ativa ao final da transição. Ignorado a partir da F3.")]
-            [HideInInspector]
-            public string targetActiveScene;
+                    return routeRefId;
+                }
+
+                if (sceneRouteId.IsValid)
+                {
+                    DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
+                        $"[OBS][Config] RouteResolvedVia=RouteId owner='{owner}', intentId='{routeId}', routeId='{sceneRouteId}'.",
+                        DebugUtility.Colors.Info);
+                }
+
+                return sceneRouteId;
+            }
 
             public void MigrateLegacy()
             {
                 routeId = routeId?.Trim();
+            }
 
-                if (!styleId.IsValid && _legacyTransitionStyleId.IsValid)
-                {
-                    styleId = _legacyTransitionStyleId;
-                }
+            private static void HandleRouteMismatch(string owner, string intentId, SceneRouteId sceneRouteId, SceneRouteId routeRefId)
+            {
+                string message =
+                    $"[FATAL][Config] GameNavigationCatalog routeId divergente de routeRef. " +
+                    $"owner='{owner}', intentId='{intentId}', sceneRouteId='{sceneRouteId}', routeRef.routeId='{routeRefId}'.";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
+                    $"{message} Em editor/dev, routeRef terá prioridade (RouteResolvedVia=AssetRef).");
+#else
+                DebugUtility.LogError(typeof(GameNavigationCatalogAsset), message);
+                throw new InvalidOperationException(message);
+#endif
             }
         }
 
@@ -70,8 +96,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private readonly Dictionary<string, GameNavigationEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
         private bool _built;
-
-        private static bool _warnedLegacySceneDataIgnored;
 
         public IReadOnlyCollection<string> RouteIds
         {
@@ -91,20 +115,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             EnsureBuilt();
-
-            if (!_cache.TryGetValue(routeId.Trim(), out entry))
-                return false;
-
-            if (!_warnedLegacySceneDataIgnored && TryGetLegacySceneData(routeId, out var legacyDetail))
-            {
-                _warnedLegacySceneDataIgnored = true;
-                DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
-                    "[OBS] GameNavigationCatalogAsset contém Scene Data LEGACY (ScenesToLoad/Unload/Active), " +
-                    "mas a política atual (F3) ignora esses campos: a Scene Data deve vir do SceneRouteCatalogAsset. " +
-                    legacyDetail);
-            }
-
-            return true;
+            return _cache.TryGetValue(routeId.Trim(), out entry);
         }
 
         public void GetObservabilitySnapshot(out int rawRoutesCount, out int builtRouteIdsCount, out bool hasToGameplay)
@@ -158,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
-        private static bool TryBuildEntry(RouteEntry route, out GameNavigationEntry entry)
+        private bool TryBuildEntry(RouteEntry route, out GameNavigationEntry entry)
         {
             entry = default;
 
@@ -168,52 +179,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (string.IsNullOrWhiteSpace(route.routeId))
                 return false;
 
-            if (!route.sceneRouteId.IsValid)
+            var resolvedRouteId = route.ResolveRouteId(name);
+            if (!resolvedRouteId.IsValid)
                 return false;
 
             if (!route.styleId.IsValid)
                 return false;
 
-            var payload = SceneTransitionPayload.Empty;
-
             entry = new GameNavigationEntry(
-                route.sceneRouteId,
+                resolvedRouteId,
                 route.styleId,
-                payload);
+                SceneTransitionPayload.Empty);
 
             return true;
-        }
-
-        private bool TryGetLegacySceneData(string routeId, out string detail)
-        {
-            detail = string.Empty;
-
-            if (routes == null)
-                return false;
-
-            for (int i = 0; i < routes.Count; i++)
-            {
-                var route = routes[i];
-                if (route == null)
-                    continue;
-
-                if (!string.Equals(route.routeId?.Trim(), routeId?.Trim(), StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                bool hasLegacy =
-                    (route.scenesToLoad != null && route.scenesToLoad.Count > 0) ||
-                    (route.scenesToUnload != null && route.scenesToUnload.Count > 0) ||
-                    !string.IsNullOrWhiteSpace(route.targetActiveScene);
-
-                if (!hasLegacy)
-                    return false;
-
-                detail =
-                    $"(routeId='{route.routeId}', sceneRouteId='{route.sceneRouteId}', styleId='{route.styleId}')";
-                return true;
-            }
-
-            return false;
         }
     }
 }

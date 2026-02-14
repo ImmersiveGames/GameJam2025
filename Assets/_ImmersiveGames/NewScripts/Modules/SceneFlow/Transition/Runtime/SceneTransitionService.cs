@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 throw new ArgumentNullException(nameof(request));
             }
 
-            var hydratedRequest = ResolveRoutePayloadIfNeeded(request, out var routeDefinition);
+            var hydratedRequest = BuildRequestFromRouteDefinition(request, out var routeDefinition);
             var context = BuildContextWithResetDecision(hydratedRequest, routeDefinition);
             string signature = SceneTransitionSignature.Compute(context);
 
@@ -224,25 +224,33 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             return false;
         }
 
-        private SceneTransitionRequest ResolveRoutePayloadIfNeeded(
+        private SceneTransitionRequest BuildRequestFromRouteDefinition(
             SceneTransitionRequest request,
             out SceneRouteDefinition? routeDefinition)
         {
             routeDefinition = null;
 
-            if (request.Payload.HasSceneData || !request.RouteId.IsValid || _routeResolver == null)
+            if (!request.RouteId.IsValid)
             {
+                HandleInvalidRouteId(request, "RouteId ausente/inválido.");
+                return request;
+            }
+
+            if (_routeResolver == null)
+            {
+                HandleMissingRouteResolver(request);
                 return request;
             }
 
             if (!_routeResolver.TryResolve(request.RouteId, out var resolvedRoute))
             {
+                HandleRouteResolutionFailure(request);
                 return request;
             }
 
             routeDefinition = resolvedRoute;
-            var payload = request.Payload.WithSceneData(resolvedRoute);
 
+            var payload = request.Payload.WithSceneData(resolvedRoute);
             return new SceneTransitionRequest(
                 request.RouteId,
                 request.StyleId,
@@ -252,6 +260,47 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 request.ContextSignature,
                 request.RequestedBy,
                 request.Reason);
+        }
+
+        private static void HandleInvalidRouteId(SceneTransitionRequest request, string detail)
+        {
+            string message =
+                $"[FATAL][Config] {detail} requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugUtility.LogWarning<SceneTransitionService>($"{message} Usando fallback degradado de SceneData do request.");
+#else
+            DebugUtility.LogError<SceneTransitionService>(message);
+            throw new InvalidOperationException(message);
+#endif
+        }
+
+        private static void HandleMissingRouteResolver(SceneTransitionRequest request)
+        {
+            string message =
+                $"[FATAL][Config] ISceneRouteResolver indisponível para routeId='{request.RouteId}'. " +
+                $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugUtility.LogWarning<SceneTransitionService>($"{message} Usando fallback degradado de SceneData do request.");
+#else
+            DebugUtility.LogError<SceneTransitionService>(message);
+            throw new InvalidOperationException(message);
+#endif
+        }
+
+        private static void HandleRouteResolutionFailure(SceneTransitionRequest request)
+        {
+            string message =
+                $"[FATAL][Config] routeId='{request.RouteId}' não encontrado no catálogo de rotas. " +
+                $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugUtility.LogWarning<SceneTransitionService>($"{message} Usando fallback degradado de SceneData do request.");
+#else
+            DebugUtility.LogError<SceneTransitionService>(message);
+            throw new InvalidOperationException(message);
+#endif
         }
 
         private bool ShouldDedupe(string signature)
