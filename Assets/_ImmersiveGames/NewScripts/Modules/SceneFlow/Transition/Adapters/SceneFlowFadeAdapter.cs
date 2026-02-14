@@ -5,11 +5,12 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 {
     /// <summary>
     /// Adapter NewScripts: aplica profileId (SceneFlowProfileId) → SceneTransitionProfile → FadeConfig.
-    /// Política: dependências obrigatórias em runtime (fail-fast, sem degraded/no-op quando UseFade=true).
+    /// Em runtime, falhas de fade degradam para skip sem interromper a transição.
     /// </summary>
     public sealed class SceneFlowFadeAdapter : ISceneFlowFadeAdapter
     {
@@ -17,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
         private readonly SceneTransitionProfileResolver _profileResolver;
 
         private bool _shouldFade;
+        private bool _degradedLogged;
         private FadeConfig _resolvedConfig;
         private string _lastProfileId;
 
@@ -36,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
             _resolvedConfig = DefaultConfig;
             _shouldFade = true;
+            _degradedLogged = false;
             _lastProfileId = "<unset>";
         }
 
@@ -43,6 +46,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
         public void ConfigureFromProfile(SceneFlowProfileId profileId)
         {
+            _degradedLogged = false;
+
             var profile = _profileResolver.Resolve(profileId, out string resolvedPath);
             _lastProfileId = profileId.ToString();
 
@@ -97,9 +102,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
         {
             if (_fadeService == null)
             {
-                throw CreateMandatoryDependencyException(
-                    phase,
-                    "IFadeService ausente no DI global com UseFade=true.");
+                LogDegradedOnce(phase, "IFadeService is not available.");
+                return;
             }
 
             try
@@ -109,28 +113,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
             }
             catch (Exception ex)
             {
-                throw CreateMandatoryDependencyException(
-                    phase,
-                    $"Exceção durante execução do fade. ex='{ex.GetType().Name}: {ex.Message}'",
-                    ex);
+                LogDegradedOnce(phase, $"Exception while running fade. ex='{ex.GetType().Name}: {ex.Message}'");
             }
         }
 
-        private InvalidOperationException CreateMandatoryDependencyException(string phase, string detail, Exception innerException = null)
+        private void LogDegradedOnce(string phase, string detail)
         {
-            string signature = phase == "fade_in"
-                ? "FadeInAsync"
-                : phase == "fade_out"
-                    ? "FadeOutAsync"
-                    : "Unknown";
+            if (_degradedLogged)
+            {
+                return;
+            }
 
-            string message =
-                $"[SceneFlow][Fade] Dependência obrigatória violada. phase='{phase}', signature='{signature}', profileId='{_lastProfileId}'. {detail}";
-
-            DebugUtility.LogError<SceneFlowFadeAdapter>(message);
-            return innerException == null
-                ? new InvalidOperationException(message)
-                : new InvalidOperationException(message, innerException);
+            _degradedLogged = true;
+            DebugUtility.LogError<SceneFlowFadeAdapter>(
+                $"[DEGRADED][Fade] phase='{phase}', profileId='{_lastProfileId}'. {detail}");
         }
 
         private static FadeConfig NoOpConfig()

@@ -17,9 +17,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
     /// - Quando o fade é solicitado (dur > 0), ausência de cena/controller é tratada como falha.
     ///
     /// Observação:
-    /// - Política Strict/Release e DEGRADED_MODE são responsabilidades do adapter/orquestrador
-    ///   (ex.: SceneTransitionService + ISceneFlowFadeAdapter). Este serviço apenas expõe
-    ///   uma execução determinística e falha de forma explícita quando pré-condições não são atendidas.
+    /// - Política de degraded é responsabilidade da camada de orquestração.
+    ///   Este serviço apenas marca indisponibilidade e lança erro explícito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class FadeService : IFadeService
@@ -111,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             if (_isPermanentlyUnavailable)
             {
                 throw new InvalidOperationException(
-                    $"[Fade] Fade indisponível: {_permanentFailureDetail}");
+                    $"[ERROR][DEGRADED][Fade] Fade unavailable: {_permanentFailureDetail}");
             }
 
             // Garantir que apenas uma tentativa ocorra por vez.
@@ -128,10 +127,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                 if (_isPermanentlyUnavailable)
                 {
                     throw new InvalidOperationException(
-                        $"[Fade] Fade indisponível: {_permanentFailureDetail}");
+                        $"[ERROR][DEGRADED][Fade] Fade unavailable: {_permanentFailureDetail}");
                 }
 
-                // Se ainda não temos controller, caímos para uma tentativa "normal".
                 await _ensureGate.WaitAsync();
             }
 
@@ -162,7 +160,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                         await Task.Yield();
                     }
 
-                    // Um yield extra para garantir que objetos estejam prontos.
                     await Task.Yield();
 
                     fadeScene = SceneManager.GetSceneByName(_fadeSceneName);
@@ -222,18 +219,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             _permanentFailureDetail = $"reason='{reason}' detail='{detail}'";
 
             DebugUtility.LogError<FadeService>(
-                $"[FATAL][Fade] Fade bootstrap failed. {_permanentFailureDetail}");
-
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#endif
-            if (!Application.isEditor)
-            {
-                Application.Quit();
-            }
+                $"[ERROR][DEGRADED][Fade] Fade unavailable. {_permanentFailureDetail}");
 
             throw new InvalidOperationException(
-                $"[FATAL][Fade] Required FadeScene/FadeController unavailable. {_permanentFailureDetail}");
+                $"[ERROR][DEGRADED][Fade] Fade unavailable. {_permanentFailureDetail}");
         }
     }
 }

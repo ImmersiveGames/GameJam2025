@@ -18,10 +18,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterSceneFlowFadeModule()
         {
-            // Config canônica obrigatória para FadeScene.
             var bootstrap = GetRequiredBootstrapConfig(out _);
-            var fadeSceneKey = bootstrap.FadeSceneKey;
-            var fadeSceneName = ResolveRequiredFadeSceneName(bootstrap, fadeSceneKey);
+            var fadeSceneName = TryResolveFadeSceneName(bootstrap, out var degradeReason);
+
+            if (string.IsNullOrWhiteSpace(fadeSceneName))
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    $"[ERROR][DEGRADED][Fade] {degradeReason}");
+
+                RegisterIfMissing<IFadeService>(() => new DegradedFadeService(degradeReason));
+                return;
+            }
 
             RegisterIfMissing<IFadeService>(() => new FadeService(fadeSceneName));
 
@@ -35,28 +42,37 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
             else
             {
-                FailFast("IFadeService could not be resolved after registration.");
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[ERROR][DEGRADED][Fade] IFadeService could not be resolved after registration. Using degraded service.");
+                RegisterIfMissing<IFadeService>(() => new DegradedFadeService("fade_service_resolve_failed"));
             }
         }
 
-        private static string ResolveRequiredFadeSceneName(NewScriptsBootstrapConfigAsset bootstrap, SceneKeyAsset fadeSceneKey)
+        private static string TryResolveFadeSceneName(NewScriptsBootstrapConfigAsset bootstrap, out string degradeReason)
         {
+            var fadeSceneKey = bootstrap.FadeSceneKey;
             if (fadeSceneKey == null)
             {
-                FailFast($"[FATAL][Fade] Missing required SceneKeyAsset. asset='{bootstrap.name}', field='fadeSceneKey'.");
+                degradeReason = $"Missing fadeSceneKey. asset='{bootstrap.name}', field='fadeSceneKey'.";
+                return string.Empty;
             }
 
             var fadeSceneName = (fadeSceneKey.SceneName ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(fadeSceneName))
             {
-                FailFast($"[FATAL][Fade] Invalid SceneKeyAsset. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', reason='SceneName is empty'.");
+                degradeReason =
+                    $"Invalid fadeSceneKey SceneName. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}'.";
+                return string.Empty;
             }
 
             if (!Application.CanStreamedLevelBeLoaded(fadeSceneName))
             {
-                FailFast($"[FATAL][Fade] Scene is not available in Build Settings. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', scene='{fadeSceneName}'.");
+                degradeReason =
+                    $"Fade scene is not available in Build Settings. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', scene='{fadeSceneName}'.";
+                return string.Empty;
             }
 
+            degradeReason = string.Empty;
             return fadeSceneName;
         }
 
@@ -72,15 +88,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             catch (System.Exception ex)
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[FATAL][Fade] Failed to preload FadeScene '{fadeSceneName}'. ex='{ex.GetType().Name}: {ex.Message}'");
-#if UNITY_EDITOR
-                UnityEditor.EditorApplication.isPlaying = false;
-#endif
-                if (!Application.isEditor)
-                {
-                    Application.Quit();
-                }
+                    $"[ERROR][DEGRADED][Fade] Failed to preload FadeScene '{fadeSceneName}'. ex='{ex.GetType().Name}: {ex.Message}'");
 
+                RegisterIfMissing<IFadeService>(() => new DegradedFadeService("fade_preload_failed"));
                 return;
             }
         }
