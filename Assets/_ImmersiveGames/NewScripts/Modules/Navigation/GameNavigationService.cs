@@ -91,37 +91,33 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             try
             {
-                DebugUtility.LogVerbose(typeof(GameNavigationService),
-                    $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' reason='{reason ?? "<null>"}'.",
-                    DebugUtility.Colors.Info);
-
                 if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[Navigation] Intent padrão de gameplay não encontrado ou inválido. " +
+                        $"[FATAL][Config] Missing gameplay intent entry. " +
                         $"intentId='{GameNavigationIntents.ToGameplay}', levelId='{levelId}'. " +
-                        $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}]");
-                    return;
+                        $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}].");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config] Missing gameplay intent entry '{GameNavigationIntents.ToGameplay}'.");
                 }
 
                 if (_levelFlowService == null)
                 {
-                    DebugUtility.LogWarning(typeof(GameNavigationService),
-                        $"[Navigation] LevelFlow indisponível. Fallback para rota padrão. levelId='{levelId}'.");
-                    await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, entry, reason);
-                    return;
+                    DebugUtility.LogError(typeof(GameNavigationService),
+                        $"[FATAL][Config] Missing ILevelFlowService. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
+                    throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService.");
                 }
 
-                if (!_levelFlowService.TryResolve(levelId, out var resolvedRouteId, out var payload))
+                if (!_levelFlowService.TryResolve(levelId, out var resolvedRouteId, out var payload) || !resolvedRouteId.IsValid)
                 {
-                    DebugUtility.LogWarning(typeof(GameNavigationService),
-                        $"[Navigation] LevelId não resolvido. Fallback para rota padrão. levelId='{levelId}'.");
-                    await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, entry, reason);
-                    return;
+                    DebugUtility.LogError(typeof(GameNavigationService),
+                        $"[FATAL][Config] LevelId unresolved in ILevelFlowService. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config] LevelId unresolved in ILevelFlowService. levelId='{levelId}'.");
                 }
 
-                DebugUtility.Log(typeof(GameNavigationService),
-                    $"[Navigation] LevelFlow resolvido. levelId='{levelId}', resolvedRouteId='{resolvedRouteId}', styleId='{entry.StyleId}', reason='{reason ?? "<null>"}'.",
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
 
                 var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
@@ -131,6 +127,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
                     $"[Navigation] Exceção ao iniciar gameplay. levelId='{levelId}', reason='{reason ?? "<null>"}', ex={ex}");
+                throw;
             }
             finally
             {
