@@ -142,8 +142,8 @@ Evidência canônica mostra:
 ## Implementação (arquivos impactados)
 
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/Definitions/WorldDefinition.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/Definitions/WorldDefinition.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceFactory.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceRegistry.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/PlayerSpawnService.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/EaterSpawnService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/PlayerSpawnService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/EaterSpawnService.cs`

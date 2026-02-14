@@ -7,8 +7,8 @@
 - Última atualização: 2026-02-04
 - Tipo: Implementação
 - Escopo:
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/*`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/*`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/*`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/*`
 
 ## Contexto
 
@@ -110,7 +110,7 @@ O binding fica no bootstrap de cena:
 
 ### QA Driver (opcional)
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Editor/RunRearm/RunRearmRequestDevDriver.cs`
   - Dispara reset via `ContextMenu`.
   - Loga targets e report.
 
@@ -138,9 +138,9 @@ O binding fica no bootstrap de cena:
 Quando editar o reset de gameplay, revisar também:
 
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs` (DI)
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmOrchestrator.cs` (orquestração)
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs` (bridge WorldLifecycle)
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs` (QA)
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/RunRearmOrchestrator.cs` (orquestração)
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs` (bridge WorldLifecycle)
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Editor/RunRearm/RunRearmRequestDevDriver.cs` (QA)
 - `NewScripts/Docs/Reports/Audits/*/ADR-Sync-Audit-NewScripts.md` (auditoria)
 
 ## Implementação (arquivos impactados)
@@ -148,13 +148,13 @@ Quando editar o reset de gameplay, revisar também:
 ### Runtime / Editor (código e assets)
 
 - **NewScripts**
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmContracts.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/DefaultRunRearmTargetClassifier.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmOrchestrator.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/ActorKindMatching.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/RunRearmContracts.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/DefaultRunRearmTargetClassifier.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/RunRearmOrchestrator.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/ActorKindMatching.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs`
   - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Editor/RunRearm/RunRearmRequestDevDriver.cs`
 
 ### Docs / evidências relacionadas
 

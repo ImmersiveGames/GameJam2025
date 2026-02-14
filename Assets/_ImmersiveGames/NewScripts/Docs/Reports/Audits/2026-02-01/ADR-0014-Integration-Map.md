@@ -4,7 +4,7 @@
 
 ## Contratos (fonte da verdade)
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmContracts.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/RunRearmContracts.cs`
   - `RunRearmStep`
   - `RunRearmTarget`
   - `RunRearmRequest`
@@ -15,17 +15,17 @@
 
 ## Implementação (runtime)
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/RunRearmOrchestrator.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/RunRearmOrchestrator.cs`
   - Resolve targets via ActorRegistry (registry-first)
   - Fallback de scan somente quando policy permitir
   - Ordena determinístico por `ActorId` e por `IRunRearmOrder`
   - Executa etapas `Cleanup -> Restore -> Rebind`
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/DefaultRunRearmTargetClassifier.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/DefaultRunRearmTargetClassifier.cs`
   - Classifica targets via registry + `RunRearmTarget`
   - Fallback string-based para `EaterOnly` (compatibilidade)
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Interop/PlayersRunRearmWorldParticipant.cs`
   - Ponte WorldLifecycle (ResetScope.Players) -> RunRearm (PlayersOnly)
 
 ## Wiring / Bootstrap (DI)
@@ -37,7 +37,7 @@
 
 ## QA / Ferramentas
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Dev/RunRearmRequestDevDriver.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Editor/RunRearm/RunRearmRequestDevDriver.cs`
   - Exercita:
     - criação de `RunRearmRequest`
     - classificação (`IRunRearmTargetClassifier`)
