@@ -3,15 +3,11 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// Descreve o plano efetivo de uma transição de cena no pipeline NewScripts.
-    ///
-    /// Importante:
-    /// - <see cref="ContextSignature"/> é a assinatura canônica usada para correlação entre sistemas
-    ///   (por exemplo SceneFlow <-> WorldLifecycle).
-    /// - <see cref="ToString"/> é destinado a debug/log e não deve ser utilizado como assinatura.
     /// </summary>
     public readonly struct SceneTransitionContext : IEquatable<SceneTransitionContext>
     {
@@ -25,13 +21,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public string Reason { get; }
 
         public SceneFlowProfileId TransitionProfileId { get; }
-
-        // Compatibilidade: logging / debug pode exibir o texto do profile.
         public string TransitionProfileName => TransitionProfileId.Value;
 
         /// <summary>
-        /// Assinatura canônica de correlação para esta transição.
+        /// Decisão de reset propagada pela transição para os consumidores de eventos.
         /// </summary>
+        public bool RequiresWorldReset { get; }
+        public string ResetDecisionSource { get; }
+        public string ResetDecisionReason { get; }
+
         public string ContextSignature { get; }
 
         public SceneTransitionContext(
@@ -43,6 +41,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             TransitionStyleId styleId,
             string reason,
             SceneFlowProfileId transitionProfileId,
+            bool requiresWorldReset = false,
+            string resetDecisionSource = null,
+            string resetDecisionReason = null,
             string contextSignature = null)
         {
             ScenesToLoad = scenesToLoad;
@@ -53,6 +54,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             StyleId = styleId;
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             TransitionProfileId = transitionProfileId;
+            RequiresWorldReset = requiresWorldReset;
+            ResetDecisionSource = string.IsNullOrWhiteSpace(resetDecisionSource) ? string.Empty : resetDecisionSource.Trim();
+            ResetDecisionReason = string.IsNullOrWhiteSpace(resetDecisionReason) ? string.Empty : resetDecisionReason.Trim();
 
             ContextSignature = !string.IsNullOrWhiteSpace(contextSignature)
                 ? contextSignature.Trim()
@@ -66,6 +70,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                     transitionProfileId: TransitionProfileId);
         }
 
+        public SceneTransitionContext WithRouteResetDecision(bool requiresWorldReset, string decisionSource, string decisionReason)
+        {
+            return new SceneTransitionContext(
+                scenesToLoad: ScenesToLoad,
+                scenesToUnload: ScenesToUnload,
+                targetActiveScene: TargetActiveScene,
+                useFade: UseFade,
+                routeId: RouteId,
+                styleId: StyleId,
+                reason: Reason,
+                transitionProfileId: TransitionProfileId,
+                requiresWorldReset: requiresWorldReset,
+                resetDecisionSource: decisionSource,
+                resetDecisionReason: decisionReason,
+                contextSignature: ContextSignature);
+        }
+
         private static string ComputeSignature(
             IReadOnlyList<string> scenesToLoad,
             IReadOnlyList<string> scenesToUnload,
@@ -75,8 +96,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             bool useFade,
             SceneFlowProfileId transitionProfileId)
         {
-            // Formato estável, sem depender de ToString().
-            // Nota: não fazemos escaping; nomes de cenas/profiles no projeto não contêm '|'.
             string load = JoinList(scenesToLoad);
             string unload = JoinList(scenesToUnload);
             string active = (targetActiveScene ?? string.Empty).Trim();
@@ -95,7 +114,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return string.Empty;
             }
 
-            // Evita LINQ para reduzir alocações em runtime.
             string result = string.Empty;
             for (int i = 0; i < list.Count; i++)
             {
@@ -105,14 +123,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                     continue;
                 }
 
-                if (result.Length == 0)
-                {
-                    result = entry;
-                }
-                else
-                {
-                    result += "|" + entry;
-                }
+                result = result.Length == 0 ? entry : result + "|" + entry;
             }
 
             return result;
@@ -122,12 +133,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             return $"Route='{RouteId}', Style='{StyleId}', Reason='{Reason}', " +
                    $"Load=[{string.Join(", ", ScenesToLoad)}], Unload=[{string.Join(", ", ScenesToUnload)}], " +
-                   $"Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}'";
+                   $"Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}', " +
+                   $"RequiresWorldReset={RequiresWorldReset}, DecisionSource='{ResetDecisionSource}', DecisionReason='{ResetDecisionReason}'";
         }
 
         public bool Equals(SceneTransitionContext other)
         {
-            // Compare por campos essenciais; ContextSignature é derivado e não precisa ser comparado.
             return Equals(ScenesToLoad, other.ScenesToLoad) &&
                    Equals(ScenesToUnload, other.ScenesToUnload) &&
                    TargetActiveScene == other.TargetActiveScene &&

@@ -43,8 +43,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             [Tooltip("Metadado de política para decisões de lifecycle (ex.: reset de mundo por rota).")]
             public SceneRouteKind routeKind = SceneRouteKind.Unspecified;
 
+            [Tooltip("Decisão explícita de reset de mundo para a rota (fonte de verdade em runtime).")]
+            public bool requiresWorldReset;
+
             public override string ToString()
-                => $"routeId='{routeId}', kind='{routeKind}', active='{targetActiveScene}', " +
+                => $"routeId='{routeId}', kind='{routeKind}', requiresWorldReset={requiresWorldReset}, active='{targetActiveScene}', " +
                    $"load=[{FormatArray(scenesToLoad)}], unload=[{FormatArray(scenesToUnload)}]";
 
             private static string FormatArray(string[] arr)
@@ -207,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                         $"[SceneFlow] routeId='{entry.routeId}': dados LEGACY ignorados porque *Keys estão configuradas.");
                 }
 
-                return new SceneRouteDefinition(load, unload, active, entry.routeKind);
+                return new SceneRouteDefinition(load, unload, active, entry.routeKind, entry.requiresWorldReset);
             }
 
             if (HasLegacyData(entry))
@@ -228,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 }
             }
 
-            return new SceneRouteDefinition(Array.Empty<string>(), Array.Empty<string>(), string.Empty, entry.routeKind);
+            return new SceneRouteDefinition(Array.Empty<string>(), Array.Empty<string>(), string.Empty, entry.routeKind, entry.requiresWorldReset);
         }
 
         private static string[] ResolveKeys(SceneKeyAsset[] keys, SceneRouteId routeId, string fieldName)
