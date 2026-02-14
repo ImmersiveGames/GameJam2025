@@ -75,11 +75,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         [Obsolete("Use GoToMenuAsync(reason).")]
         public Task RequestMenuAsync(string reason = null)
-            => GoToMenuAsync(reason);
+        {
+            DebugUtility.LogError(typeof(GameNavigationService),
+                "[FATAL][Config] Obsolete navigation API called: RequestMenuAsync. Use the non-obsolete API.");
+            throw new InvalidOperationException("Obsolete navigation API called: RequestMenuAsync. Use GoToMenuAsync(reason).");
+        }
 
         [Obsolete("Use RestartAsync(reason) ou StartGameplayAsync(levelId, reason).")]
         public Task RequestGameplayAsync(string reason = null)
-            => RestartAsync(reason);
+        {
+            DebugUtility.LogError(typeof(GameNavigationService),
+                "[FATAL][Config] Obsolete navigation API called: RequestGameplayAsync. Use the non-obsolete API.");
+            throw new InvalidOperationException("Obsolete navigation API called: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayAsync(levelId, reason).");
+        }
 
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
@@ -146,8 +154,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
 
         [Obsolete("Use métodos explícitos: GoToMenuAsync, RestartAsync, ExitToMenuAsync ou StartGameplayAsync(levelId, reason).")]
-        public async Task NavigateAsync(string routeId, string reason = null)
-            => await ExecuteIntentAsync(routeId, reason);
+        public Task NavigateAsync(string routeId, string reason = null)
+        {
+            DebugUtility.LogError(typeof(GameNavigationService),
+                "[FATAL][Config] Obsolete navigation API called: NavigateAsync. Use the non-obsolete API.");
+            throw new InvalidOperationException("Obsolete navigation API called: NavigateAsync. Use GoToMenuAsync(reason), RestartAsync(reason), ExitToMenuAsync(reason), or StartGameplayAsync(levelId, reason).");
+        }
 
         private async Task ExecuteIntentAsync(string intentId, string reason = null)
         {
