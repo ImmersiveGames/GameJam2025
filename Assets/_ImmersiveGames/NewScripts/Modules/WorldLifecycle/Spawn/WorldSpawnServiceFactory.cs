@@ -1,11 +1,11 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actions.States;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Bindings.Eater;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning.Definitions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Eater;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn
 {
     /// <summary>
