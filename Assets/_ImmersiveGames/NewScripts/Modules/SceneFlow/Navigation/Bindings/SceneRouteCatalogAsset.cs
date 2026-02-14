@@ -193,6 +193,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             routeDefinition = routeAsset.ToDefinition();
             EnsureActiveScenePolicy(routeId, routeDefinition.RouteKind, routeDefinition.TargetActiveScene, "assetRef");
+            EnsureResetPolicyConsistency(routeId, routeDefinition.RouteKind, routeDefinition.RequiresWorldReset, "assetRef");
         }
 
         private static void BuildFromEntry(
@@ -221,6 +222,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             var active = ResolveSingleKey(entry.targetActiveSceneKey, routeId, nameof(RouteEntry.targetActiveSceneKey));
 
             EnsureActiveScenePolicy(routeId, entry.routeKind, active, "routeId");
+            EnsureResetPolicyConsistency(routeId, entry.routeKind, entry.requiresWorldReset, "routeId");
             routeDefinition = new SceneRouteDefinition(load, unload, active, entry.routeKind, entry.requiresWorldReset);
         }
 
@@ -238,6 +240,25 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             // Regra explícita: rotas de gameplay devem sempre definir cena ativa alvo.
             return routeKind == SceneRouteKind.Gameplay;
+        }
+
+
+        private static void EnsureResetPolicyConsistency(SceneRouteId routeId, SceneRouteKind routeKind, bool requiresWorldReset, string source)
+        {
+            if (routeKind == SceneRouteKind.Unspecified)
+            {
+                FailFast($"routeId='{routeId}' resolvida via {source} possui RouteKind='{SceneRouteKind.Unspecified}' (inválido para policy de reset).");
+            }
+
+            if (routeKind == SceneRouteKind.Gameplay && !requiresWorldReset)
+            {
+                FailFast($"routeId='{routeId}' resolvida via {source} exige requiresWorldReset=true para RouteKind='{SceneRouteKind.Gameplay}'.");
+            }
+
+            if (routeKind == SceneRouteKind.Frontend && requiresWorldReset)
+            {
+                FailFast($"routeId='{routeId}' resolvida via {source} exige requiresWorldReset=false para RouteKind='{SceneRouteKind.Frontend}'.");
+            }
         }
 
         private static string[] ResolveKeys(SceneKeyAsset[] keys, SceneRouteId routeId, string fieldName)

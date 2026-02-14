@@ -74,6 +74,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             var context = BuildContextWithResetDecision(hydratedRequest, routeDefinition);
             string signature = SceneTransitionSignature.Compute(context);
 
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow] RouteAppliedPolicy routeId='{context.RouteId}', requiresWorldReset={context.RequiresWorldReset}, " +
+                $"decisionSource='{context.ResetDecisionSource}', decisionReason='{context.ResetDecisionReason}', signature='{signature}'.",
+                DebugUtility.Colors.Info);
+
             if (!_navigationPolicy.CanTransition(hydratedRequest, out var denialReason))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(

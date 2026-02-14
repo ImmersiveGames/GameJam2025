@@ -4,6 +4,9 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
@@ -29,10 +32,61 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
         public SceneRouteDefinition ToDefinition()
         {
+            EnsureValidRoutePolicy();
+
             var load = ResolveKeys(scenesToLoadKeys, nameof(scenesToLoadKeys));
             var unload = ResolveKeys(scenesToUnloadKeys, nameof(scenesToUnloadKeys));
             var active = ResolveSingleKey(targetActiveSceneKey, nameof(targetActiveSceneKey));
             return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset);
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            ValidateRoutePolicyEditorOnly();
+        }
+
+        private void ValidateRoutePolicyEditorOnly()
+        {
+            string validationError = GetRoutePolicyValidationError();
+            if (string.IsNullOrWhiteSpace(validationError))
+            {
+                return;
+            }
+
+            string assetPath = AssetDatabase.GetAssetPath(this);
+            DebugUtility.LogError(typeof(SceneRouteDefinitionAsset),
+                $"[FATAL][Config] {validationError} asset='{assetPath}', routeId='{routeId}', routeKind='{routeKind}', requiresWorldReset={requiresWorldReset}.");
+        }
+#endif
+
+        private void EnsureValidRoutePolicy()
+        {
+            string validationError = GetRoutePolicyValidationError();
+            if (!string.IsNullOrWhiteSpace(validationError))
+            {
+                FailFast(validationError);
+            }
+        }
+
+        private string GetRoutePolicyValidationError()
+        {
+            if (routeKind == SceneRouteKind.Unspecified)
+            {
+                return $"routeId='{routeId}' com RouteKind='{SceneRouteKind.Unspecified}' é inválido para policy de reset.";
+            }
+
+            if (routeKind == SceneRouteKind.Gameplay && !requiresWorldReset)
+            {
+                return $"routeId='{routeId}' Gameplay exige requiresWorldReset=true.";
+            }
+
+            if (routeKind == SceneRouteKind.Frontend && requiresWorldReset)
+            {
+                return $"routeId='{routeId}' Frontend/Menu exige requiresWorldReset=false.";
+            }
+
+            return string.Empty;
         }
 
         private static string[] ResolveKeys(SceneKeyAsset[] keys, string fieldName)

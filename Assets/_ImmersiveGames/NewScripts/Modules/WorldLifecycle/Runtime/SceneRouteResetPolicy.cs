@@ -1,9 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
@@ -21,133 +19,39 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         {
             if (!routeId.IsValid)
             {
-                return ResolveForInvalidRouteId(context);
+                HandleFatalConfig("routeId vazio/inválido para RouteResetPolicy.");
+                return default;
             }
 
-            if (TryResolveDefinition(routeId, routeDefinition, out var resolvedDefinition))
+            if (!TryResolveDefinition(routeId, routeDefinition, out var resolvedDefinition))
             {
-                return ResolveFromRouteDefinition(routeId, resolvedDefinition, context);
+                HandleFatalConfig($"routeId='{routeId.Value}' não foi resolvida no catálogo para RouteResetPolicy.");
+                return default;
             }
 
-            return ResolveForMissingRoute(routeId, context);
-        }
-
-        private RouteResetDecision ResolveFromRouteDefinition(SceneRouteId routeId, SceneRouteDefinition routeDefinition, SceneTransitionContext context)
-        {
-            if (routeDefinition.RouteKind == SceneRouteKind.Unspecified)
+            if (resolvedDefinition.RouteKind == SceneRouteKind.Unspecified)
             {
-                string detail = $"routeId='{routeId.Value}' com RouteKind='{SceneRouteKind.Unspecified}' é inválido para RouteResetPolicy.";
-                if (ShouldDegradeForConfigError())
-                {
-                    bool fallbackReset = InferFallbackForUnknownRouteKind(context);
-                    DebugUtility.LogError<SceneRouteResetPolicy>(
-                        $"[ERROR][DEGRADED][Config] {detail} Fallback requiresWorldReset={fallbackReset}.");
-
-                    return new RouteResetDecision(
-                        fallbackReset,
-                        decisionSource: "routeKind:Unknown",
-                        reason: "UnknownRouteKind");
-                }
-
-                HandleFatalConfig(detail);
+                HandleFatalConfig($"routeId='{routeId.Value}' com RouteKind='{SceneRouteKind.Unspecified}' é inválido para RouteResetPolicy.");
+                return default;
             }
 
             return new RouteResetDecision(
-                routeDefinition.RequiresWorldReset,
-                decisionSource: $"routeKind:{routeDefinition.RouteKind}",
+                shouldReset: resolvedDefinition.RequiresWorldReset,
+                decisionSource: $"routePolicy:{resolvedDefinition.RouteKind}",
                 reason: "RoutePolicy");
-        }
-
-        private RouteResetDecision ResolveForInvalidRouteId(SceneTransitionContext context)
-        {
-            bool canSkip = IsStartupOrFrontendProfile(context.TransitionProfileId);
-            if (canSkip)
-            {
-                return new RouteResetDecision(
-                    shouldReset: false,
-                    decisionSource: "routeId:empty",
-                    reason: "RouteIdEmptyStartupFrontend");
-            }
-
-            if (ShouldDegradeForConfigError())
-            {
-                DebugUtility.LogError<SceneRouteResetPolicy>(
-                    "[ERROR][DEGRADED][Config] routeId vazio/inválido fora de startup/frontend. Fallback requiresWorldReset=true.");
-                return new RouteResetDecision(
-                    shouldReset: true,
-                    decisionSource: "routeId:empty",
-                    reason: "RouteIdEmptyDegradedFallback");
-            }
-
-            HandleFatalConfig("routeId vazio/inválido fora de startup/frontend.");
-            return default;
-        }
-
-        private RouteResetDecision ResolveForMissingRoute(SceneRouteId routeId, SceneTransitionContext context)
-        {
-            string detail = $"routeId='{routeId.Value}' não foi resolvida no catálogo.";
-            if (ShouldDegradeForConfigError())
-            {
-                bool fallbackReset = InferFallbackForUnknownRouteKind(context);
-                DebugUtility.LogError<SceneRouteResetPolicy>(
-                    $"[ERROR][DEGRADED][Config] {detail} Fallback requiresWorldReset={fallbackReset}.");
-                return new RouteResetDecision(
-                    fallbackReset,
-                    decisionSource: "route:missing",
-                    reason: "RouteNotFound");
-            }
-
-            HandleFatalConfig(detail);
-            return default;
         }
 
         private bool TryResolveDefinition(SceneRouteId routeId, SceneRouteDefinition? routeDefinition, out SceneRouteDefinition resolved)
         {
             resolved = default;
 
-            if (routeDefinition is { } def)
+            if (routeDefinition is { } direct)
             {
-                resolved = def;
+                resolved = direct;
                 return true;
             }
 
-            if (_routeResolver == null)
-            {
-                return false;
-            }
-
-            return _routeResolver.TryResolve(routeId, out resolved);
-        }
-
-        private static bool IsStartupOrFrontendProfile(SceneFlowProfileId profileId)
-        {
-            string value = profileId.Value;
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return false;
-            }
-
-            return string.Equals(value, "startup", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(value, "frontend", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool InferFallbackForUnknownRouteKind(SceneTransitionContext context)
-        {
-            if (context.TransitionProfileId.IsGameplay)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private static bool ShouldDegradeForConfigError()
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            return true;
-#else
-            return false;
-#endif
+            return _routeResolver != null && _routeResolver.TryResolve(routeId, out resolved);
         }
 
         private static void HandleFatalConfig(string detail)
@@ -157,12 +61,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
 #endif
-            if (!Application.isEditor)
-            {
-                Application.Quit();
-            }
-
             throw new InvalidOperationException(message);
         }
     }
