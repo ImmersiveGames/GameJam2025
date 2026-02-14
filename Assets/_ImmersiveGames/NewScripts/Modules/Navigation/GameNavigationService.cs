@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (string.IsNullOrWhiteSpace(intentId))
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    "[Navigation] NavigateAsync chamado com id vazio. Abortando.");
+                    "[Navigation] ExecuteIntentAsync chamado com id vazio. Abortando.");
                 return;
             }
 
@@ -221,7 +221,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             var signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] NavigateAsync -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
+                $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
                 $"styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', " +
                 $"signature='{signature}', " +
                 $"Load=[{string.Join(", ", request.ScenesToLoad)}], " +
