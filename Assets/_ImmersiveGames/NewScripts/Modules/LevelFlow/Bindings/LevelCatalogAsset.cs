@@ -123,9 +123,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 _cache.Add(entry.levelId, entry);
 
                 SceneRouteId resolvedRouteId = entry.ResolveRouteId();
-                if (resolvedRouteId.IsValid && !_routeToLevelCache.ContainsKey(resolvedRouteId))
+                if (resolvedRouteId.IsValid)
                 {
-                    _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
+                    if (_routeToLevelCache.TryGetValue(resolvedRouteId, out var existingLevelId) && existingLevelId != entry.levelId)
+                    {
+                        FailFast(
+                            $"[FATAL][Config] RouteId duplicado mapeado para múltiplos LevelId no LevelCatalog. routeId='{resolvedRouteId}', firstLevelId='{existingLevelId}', duplicatedLevelId='{entry.levelId}'.");
+                    }
+
+                    if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
+                    {
+                        _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
+                    }
                 }
             }
 
@@ -134,6 +143,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 DebugUtility.LogWarning<LevelCatalogAsset>(
                     $"[LevelFlow] LevelCatalog possui entradas inválidas/duplicadas. invalidCount={invalidCount}.");
             }
+        }
+
+        private static void FailFast(string message)
+        {
+            DebugUtility.LogError(typeof(LevelCatalogAsset), message);
+            throw new InvalidOperationException(message);
         }
     }
 }
