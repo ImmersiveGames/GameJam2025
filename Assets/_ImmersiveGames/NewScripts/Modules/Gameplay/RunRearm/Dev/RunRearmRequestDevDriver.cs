@@ -9,11 +9,7 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Runtime;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
-namespace _ImmersiveGames.NewScripts.QA.GameplayReset
+namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
 {
     /// <summary>
     /// Driver de QA para exercitar variações de RunRearmRequest.
@@ -44,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
             _sceneName = gameObject.scene.name;
         }
 
-        [ContextMenu("QA/Gameplay/GameplayReset/Fill ActorIds From Registry (Kind)")]
+        [ContextMenu("QA/RunRearmRequest/Fill ActorIds From Registry (Kind)")]
         public void QA_FillActorIdsFromRegistry()
         {
             const string reason = "QA/Gameplay/GameplayReset/Fill ActorIds From Registry (Kind)";
@@ -100,36 +96,24 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
             }
         }
 
-        [ContextMenu("QA/Gameplay/GameplayReset/Run AllActorsInScene")]
+        [ContextMenu("QA/RunRearmRequest/Run AllActorsInScene")]
         public void QA_RunAllActorsInScene()
         {
-            const string reason = "QA/Gameplay/GameplayReset/Run AllActorsInScene";
-            if (!GuardContextMenuCommand("Run AllActorsInScene", reason))
-            {
-                return;
-            }
-
-            _ = RunResetAsync(new GameplayResetRequest(
-                GameplayResetTarget.AllActorsInScene,
-                reason: "QA/GameplayResetRequestAllActors"));
+            _ = RunResetAsync(new RunRearmRequest(
+                RunRearmTarget.AllActorsInScene,
+                reason: "QA/RunRearmRequestAllActors"));
         }
 
-        [ContextMenu("QA/Gameplay/GameplayReset/Run PlayersOnly")]
+        [ContextMenu("QA/RunRearmRequest/Run PlayersOnly")]
         public void QA_RunPlayersOnly()
         {
-            const string reason = "QA/Gameplay/GameplayReset/Run PlayersOnly";
-            if (!GuardContextMenuCommand("Run PlayersOnly", reason))
-            {
-                return;
-            }
-
-            _ = RunResetAsync(new GameplayResetRequest(
-                GameplayResetTarget.PlayersOnly,
-                reason: "QA/GameplayResetRequestPlayersOnly",
+            _ = RunResetAsync(new RunRearmRequest(
+                RunRearmTarget.PlayersOnly,
+                reason: "QA/RunRearmRequestPlayersOnly",
                 actorKind: ActorKind.Player));
         }
 
-        [ContextMenu("QA/Gameplay/GameplayReset/Run EaterOnly")]
+        [ContextMenu("QA/RunRearmRequest/Run EaterOnly")]
         public void QA_RunEaterOnly()
         {
             const string reason = "QA/Gameplay/GameplayReset/Run EaterOnly";
@@ -141,70 +125,28 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
             // IMPORTANT: explicitar ActorKind para não cair no default do enum (ex.: Player).
             _ = RunResetAsync(new RunRearmRequest(
                 RunRearmTarget.EaterOnly,
-                reason: "QA/GameplayResetRequestEaterOnly",
+                reason: "QA/RunRearmRequestEaterOnly",
                 actorKind: ActorKind.Eater));
         }
 
-        [ContextMenu("QA/Gameplay/GameplayReset/Run ActorIdSet")]
+        [ContextMenu("QA/RunRearmRequest/Run ActorIdSet")]
         public void QA_RunActorIdSet()
         {
-            const string reason = "QA/Gameplay/GameplayReset/Run ActorIdSet";
-            if (!GuardContextMenuCommand("Run ActorIdSet", reason))
-            {
-                return;
-            }
-
-            _ = RunResetAsync(new GameplayResetRequest(
-                GameplayResetTarget.ActorIdSet,
-                reason: "QA/GameplayResetRequestActorIdSet",
+            _ = RunResetAsync(new RunRearmRequest(
+                RunRearmTarget.ActorIdSet,
+                reason: "QA/RunRearmRequestActorIdSet",
                 actorIds: actorIds));
         }
 
-        [ContextMenu("QA/Gameplay/GameplayReset/Run ByActorKind (FillKind)")]
+        [ContextMenu("QA/RunRearmRequest/Run ByActorKind (FillKind)")]
         public void QA_RunByActorKind()
         {
-            const string reason = "QA/Gameplay/GameplayReset/Run ByActorKind (FillKind)";
-            if (!GuardContextMenuCommand("Run ByActorKind (FillKind)", reason))
-            {
-                return;
-            }
-
-            _ = RunResetAsync(GameplayResetRequest.ByActorKind(
+            _ = RunResetAsync(RunRearmRequest.ByActorKind(
                 fillKind,
-                reason: "QA/GameplayResetRequestByActorKind"));
+                reason: "QA/RunRearmRequestByActorKind"));
         }
 
-        private bool GuardContextMenuCommand(string commandName, string reason)
-        {
-            if (!Application.isPlaying)
-            {
-                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
-                    $"[WARN][{reason}] Comando '{commandName}' requer Play Mode.");
-                return false;
-            }
-
-#if UNITY_EDITOR
-            if (!EditorUtility.DisplayDialog(
-                    "QA Command",
-                    $"{commandName}: pode resetar atores/estado de gameplay.\n\nReason: {reason}\n\nDeseja continuar?",
-                    "Continuar",
-                    "Cancelar"))
-            {
-                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
-                    $"[WARN][{reason}] Comando cancelado pelo usuário.");
-                return false;
-            }
-#else
-            DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
-                $"[WARN][{reason}] Build sem diálogo de confirmação; executando comando.");
-#endif
-
-            DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
-                $"[QA][GameplayReset] Executando comando '{commandName}'. reason='{reason}'.");
-            return true;
-        }
-
-        private async Task RunResetAsync(GameplayResetRequest request)
+        private async Task RunResetAsync(RunRearmRequest request)
         {
             EnsureDependencies();
 
@@ -235,6 +177,9 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 
         private void LogResolvedTargets(RunRearmRequest request)
         {
+            EnsureDependencies();
+            _classifier ??= _fallbackClassifier;
+
             if (_actorRegistry == null)
             {
                 DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
