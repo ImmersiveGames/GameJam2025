@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private RouteResetDecision ResolveForInvalidRouteId(SceneTransitionContext context)
         {
-            bool canSkip = IsStartupOrFrontendProfile(context.TransitionProfileId.Value);
+            bool canSkip = IsStartupOrFrontendProfile(context.TransitionProfileId);
             if (canSkip)
             {
                 return new RouteResetDecision(
@@ -120,15 +120,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
 
 
-        private static bool IsStartupOrFrontendProfile(string profileId)
+        private static bool IsStartupOrFrontendProfile(SceneFlowProfileId profileId)
         {
-            if (string.IsNullOrWhiteSpace(profileId))
+            string value = profileId.Value;
+            if (string.IsNullOrWhiteSpace(value))
             {
                 return false;
             }
 
-            return string.Equals(profileId, "startup", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(profileId, "frontend", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(value, "startup", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(value, "frontend", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool InferFallbackForUnknownRouteKind(SceneTransitionContext context)
