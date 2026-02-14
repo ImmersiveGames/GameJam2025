@@ -52,6 +52,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 FailFast($"[FATAL][Fade] Invalid SceneKeyAsset. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', reason='SceneName is empty'.");
             }
 
+            if (!Application.CanStreamedLevelBeLoaded(fadeSceneName))
+            {
+                FailFast($"[FATAL][Fade] Scene is not available in Build Settings. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', scene='{fadeSceneName}'.");
+            }
+
             return fadeSceneName;
         }
 

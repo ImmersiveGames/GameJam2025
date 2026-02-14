@@ -28,6 +28,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         public SceneTransitionProfileCatalogAsset TransitionProfileCatalog => transitionProfileCatalog;
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
 
-        public string FadeSceneName => fadeSceneKey.SceneName;
     }
 }
