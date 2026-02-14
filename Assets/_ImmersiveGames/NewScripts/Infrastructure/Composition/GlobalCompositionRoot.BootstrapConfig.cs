@@ -12,10 +12,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static bool bootstrapConfigResolutionLogged;
         private static NewScriptsBootstrapConfigAsset cachedBootstrapConfig;
         private static string cachedBootstrapConfigVia = "None";
+        private static bool fatalAbortRequested;
 
 
         private static void FailFast(string message)
         {
+            fatalAbortRequested = true;
+
             DebugUtility.LogError(typeof(GlobalCompositionRoot), $"[FATAL][Config] {message}");
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -25,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 Application.Quit();
             }
 
-            throw new InvalidOperationException(message);
+            throw new InvalidOperationException($"[FATAL][Config] {message}");
         }
 
         private static NewScriptsBootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
@@ -64,6 +67,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={cachedBootstrapConfig.name} path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}",
                     DebugUtility.Colors.Info);
+            }
+
+            if (cachedBootstrapConfig == null || fatalAbortRequested)
+            {
+                throw new InvalidOperationException("[FATAL][Config] Bootstrap config resolution aborted.");
             }
 
             return cachedBootstrapConfig;

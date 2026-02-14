@@ -17,3 +17,4 @@ MonoBehaviour:
   levelCatalog: {fileID: 11400000, guid: be509bdd7186b7742847d1c1022eac54, type: 2}
   sceneRouteCatalog: {fileID: 11400000, guid: 8f3d4c84c7f482241a6978dbc890c1cf, type: 2}
   transitionProfileCatalog: {fileID: 11400000, guid: 7da079f7b1949914d81899fd4cec6813, type: 2}
+  fadeSceneKey: {fileID: 11400000, guid: 7983f5c5a711411887b7d73dd12c6702, type: 2}

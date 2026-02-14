@@ -3,10 +3,12 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 {
     /// <summary>
@@ -114,6 +116,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         {
             try
             {
+                if (_startPlan.UseFade)
+                {
+                    await EnsureFadeReadyForStartTransitionAsync();
+                }
+
                 await _sceneFlow.TransitionAsync(_startPlan);
             }
             catch (Exception ex)
@@ -123,6 +130,56 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
                 _startInProgress = false;
             }
+        }
+
+        private static async Task EnsureFadeReadyForStartTransitionAsync()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IFadeService>(out var fadeService) || fadeService == null)
+            {
+                HandleFadeStartFailure("IFadeService is not available in global DI before start transition.");
+                return;
+            }
+
+            try
+            {
+                await fadeService.EnsureReadyAsync();
+            }
+            catch (Exception ex)
+            {
+                HandleFadeStartFailure($"EnsureReadyAsync failed before start transition. ex='{ex.GetType().Name}: {ex.Message}'");
+            }
+        }
+
+        private static void HandleFadeStartFailure(string detail)
+        {
+            if (ShouldDegradeFadeInRuntime())
+            {
+                DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
+                    $"[DEGRADED][Fade] {detail} Continuing without fade.");
+                return;
+            }
+
+            string message = $"[FATAL][Fade] {detail}";
+            DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator), message);
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+            if (!Application.isEditor)
+            {
+                Application.Quit();
+            }
+
+            throw new InvalidOperationException(message);
+        }
+
+        private static bool ShouldDegradeFadeInRuntime()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return false;
+#endif
         }
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
