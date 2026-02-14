@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
 
         private Coroutine? _autoCompleteRoutine;
 
-        [ContextMenu("QA/IntroStageController/Run Optional (TestCase: IntroStageOptional)")]
+        [ContextMenu("QA/LevelFlow/IntroStage/Run Optional (TestCase: IntroStageOptional)")]
         private async void QA_RunIntroStageOptional()
         {
             var coordinator = ResolveCoordinator();
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
             }
         }
 
-        [ContextMenu("QA/IntroStageController/Complete Active (Force)")]
+        [ContextMenu("QA/LevelFlow/IntroStage/Complete Active (Force)")]
         private void QA_CompleteActiveIntroStage_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/IntroStageController/Skip Active (Force)")]
+        [ContextMenu("QA/LevelFlow/IntroStage/Skip Active (Force)")]
         private void QA_SkipActiveIntroStage_Force()
         {
             CancelAutoCompleteIfRunning();
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/IntroStageController/Auto-Complete in 0.5s (Force)")]
+        [ContextMenu("QA/LevelFlow/IntroStage/Auto-Complete in 0.5s (Force)")]
         private void QA_AutoCompleteActiveIntroStage_Force()
         {
             CancelAutoCompleteIfRunning();

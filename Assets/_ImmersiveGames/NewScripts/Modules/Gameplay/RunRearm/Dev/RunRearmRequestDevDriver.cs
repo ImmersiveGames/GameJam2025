@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Dev
             _sceneName = gameObject.scene.name;
         }
 
-        [ContextMenu("QA/RunRearmRequest/Fill ActorIds From Registry (Kind)")]
+        [ContextMenu("QA/Gameplay/GameplayReset/Fill ActorIds From Registry (Kind)")]
         public void QA_FillActorIdsFromRegistry()
         {
             EnsureDependencies();
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Dev
             }
         }
 
-        [ContextMenu("QA/RunRearmRequest/Run AllActorsInScene")]
+        [ContextMenu("QA/Gameplay/GameplayReset/Run AllActorsInScene")]
         public void QA_RunAllActorsInScene()
         {
             _ = RunResetAsync(new RunRearmRequest(
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Dev
                 reason: "QA/GameplayResetRequestAllActors"));
         }
 
-        [ContextMenu("QA/RunRearmRequest/Run PlayersOnly")]
+        [ContextMenu("QA/Gameplay/GameplayReset/Run PlayersOnly")]
         public void QA_RunPlayersOnly()
         {
             _ = RunResetAsync(new RunRearmRequest(
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Dev
                 actorKind: ActorKind.Player));
         }
 
-        [ContextMenu("QA/RunRearmRequest/Run EaterOnly")]
+        [ContextMenu("QA/Gameplay/GameplayReset/Run EaterOnly")]
         public void QA_RunEaterOnly()
         {
             // IMPORTANT: explicitar ActorKind para não cair no default do enum (ex.: Player).
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Dev
                 actorKind: ActorKind.Eater));
         }
 
-        [ContextMenu("QA/RunRearmRequest/Run ActorIdSet")]
+        [ContextMenu("QA/Gameplay/GameplayReset/Run ActorIdSet")]
         public void QA_RunActorIdSet()
         {
             _ = RunResetAsync(new RunRearmRequest(
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.RunRearm.Dev
                 actorIds: actorIds));
         }
 
-        [ContextMenu("QA/RunRearmRequest/Run ByActorKind (FillKind)")]
+        [ContextMenu("QA/Gameplay/GameplayReset/Run ByActorKind (FillKind)")]
         public void QA_RunByActorKind()
         {
             _ = RunResetAsync(RunRearmRequest.ByActorKind(

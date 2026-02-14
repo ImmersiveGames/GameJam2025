@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             }
         }
 
-        [ContextMenu("Debug/Apply Settings")]
+        [ContextMenu("Dev/Debug/Apply Settings")]
         public void ApplyConfiguration()
         {
             if (settings == null)
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 $"[DebugManagerConfig] Settings aplicados (Editor={isEditor}). Global={globalEnabled}, Verbose={verboseEnabled}, Fallbacks={fallbacksEnabled}, RepeatedVerbose={repeatedVerboseEnabled}, DefaultLevel={defaultLevel}.");
         }
 
-        [ContextMenu("Debug/Print Current Debug State")]
+        [ContextMenu("Dev/Debug/Print Current Debug State")]
         public void PrintCurrentDebugState()
         {
             DebugUtility.Log(typeof(DebugManagerConfig),
