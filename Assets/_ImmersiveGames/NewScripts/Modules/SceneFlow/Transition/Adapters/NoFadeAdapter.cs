@@ -1,6 +1,6 @@
 ﻿#nullable enable
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 {
     /// <summary>
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
     {
         public bool IsAvailable => false;
 
-        public void ConfigureFromProfile(SceneFlowProfileId profileId) { }
+        public void ConfigureFromProfile(SceneTransitionProfile profile, string profileLabel) { }
 
         public Task FadeInAsync(string? contextSignature = null) => Task.CompletedTask;
 

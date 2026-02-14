@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -211,12 +212,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             // - SceneRouteDefinition é a fonte única de Scene Data.
             // - Navigation NÃO injeta ScenesToLoad/Unload/Active no payload.
             var payload = entry.Payload ?? SceneTransitionPayload.Empty;
-            var (profileId, useFade) = ResolveStyle(entry, payload);
+            var (profile, profileId, useFade) = ResolveStyle(entry, payload);
 
             var request = new SceneTransitionRequest(
                 entry.RouteId,
                 entry.StyleId,
                 payload,
+                profile,
                 transitionProfileId: profileId,
                 useFade: useFade,
                 requestedBy: reason,
@@ -236,21 +238,23 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             await _sceneFlow.TransitionAsync(request);
         }
 
-        private (SceneFlowProfileId profileId, bool useFade) ResolveStyle(
+        private (SceneTransitionProfile profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(
             GameNavigationEntry entry,
             SceneTransitionPayload payload)
         {
             if (_styleCatalog != null && _styleCatalog.TryGet(entry.StyleId, out var style))
             {
-                return (style.ProfileId, style.UseFade);
+                if (style.Profile == null)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config] TransitionStyle sem referência de SceneTransitionProfile. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
+                }
+
+                return (style.Profile, style.ProfileId, style.UseFade);
             }
 
-            if (payload.HasLegacyStyle)
-            {
-                return (payload.LegacyProfileId, payload.UseFade);
-            }
-
-            return (SceneFlowProfileId.None, true);
+            throw new InvalidOperationException(
+                $"[FATAL][Config] TransitionStyleId sem resolução no catálogo. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
     /// <summary>
@@ -20,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public string Reason { get; }
 
         public SceneFlowProfileId TransitionProfileId { get; }
+        public SceneTransitionProfile TransitionProfile { get; }
 
         // Compatibilidade: logging / debug pode exibir o texto do profile.
         public string TransitionProfileName => TransitionProfileId.Value;
@@ -39,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             IReadOnlyList<string> scenesToLoad,
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
+            SceneTransitionProfile transitionProfile,
             bool useFade = true,
             SceneFlowProfileId transitionProfileId = default,
             string? contextSignature = null,
@@ -49,6 +53,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             ScenesToUnload = scenesToUnload;
             TargetActiveScene = targetActiveScene;
             UseFade = useFade;
+            TransitionProfile = transitionProfile ?? throw new InvalidOperationException("[FATAL][Config] SceneTransitionRequest exige SceneTransitionProfile não nulo.");
             TransitionProfileId = transitionProfileId;
 
             RouteId = SceneRouteId.None;
@@ -65,6 +70,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             SceneRouteId routeId,
             TransitionStyleId styleId,
             SceneTransitionPayload payload,
+            SceneTransitionProfile transitionProfile,
             SceneFlowProfileId transitionProfileId = default,
             bool useFade = true,
             string? contextSignature = null,
@@ -74,6 +80,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 payload?.ScenesToLoad ?? new List<string>(),
                 payload?.ScenesToUnload ?? new List<string>(),
                 payload?.TargetActiveScene ?? string.Empty,
+                transitionProfile,
                 useFade,
                 transitionProfileId,
                 contextSignature,

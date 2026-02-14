@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
@@ -23,8 +26,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             [Tooltip("Id canônico do estilo (TransitionStyleId).")]
             public TransitionStyleId styleId;
 
-            [Tooltip("Profile do SceneFlow (Frontend/Gameplay/etc).")]
+            [Tooltip("Profile canônico do SceneFlow (id semântico para regras de runtime).")]
             public SceneFlowProfileId profileId = SceneFlowProfileId.Frontend;
+
+            [Tooltip("Referência direta ao SceneTransitionProfile usado pela transição.")]
+            public SceneTransitionProfile transitionProfile;
 
             [Tooltip("Quando true, aplica fade (se o SceneFlow suportar).")]
             public bool useFade = true;
@@ -65,6 +71,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             _cacheBuilt = false;
             EnsureCache();
+            ValidateTransitionProfileReferences();
         }
 
         private void EnsureCache()
@@ -102,7 +109,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                     continue;
                 }
 
-                _cache.Add(entry.styleId, new TransitionStyleDefinition(entry.profileId, entry.useFade));
+                if (entry.transitionProfile == null)
+                {
+                    invalidCount++;
+                    if (warnOnInvalidStyles)
+                    {
+                        DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
+                            $"[FATAL][Config] TransitionStyle sem SceneTransitionProfile. styleId='{entry.styleId}'.");
+                    }
+
+                    continue;
+                }
+
+                _cache.Add(entry.styleId, new TransitionStyleDefinition(entry.transitionProfile, entry.profileId, entry.useFade));
             }
 
             if (warnOnInvalidStyles && invalidCount > 0)
@@ -111,5 +130,31 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                     $"[SceneFlow] TransitionStyleCatalog possui entradas inválidas/duplicadas. invalidCount={invalidCount}.");
             }
         }
+
+#if UNITY_EDITOR
+        [ContextMenu("Validate Transition Profiles")]
+        private void ValidateTransitionProfileReferences()
+        {
+            string assetPath = AssetDatabase.GetAssetPath(this);
+            if (styles == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < styles.Count; i++)
+            {
+                var entry = styles[i];
+                if (entry == null || entry.transitionProfile != null)
+                {
+                    continue;
+                }
+
+                DebugUtility.LogError<TransitionStyleCatalogAsset>(
+                    $"[FATAL][Config] TransitionStyleCatalog com referência nula de SceneTransitionProfile. asset='{assetPath}', index={i}, styleId='{entry.styleId}'.");
+            }
+        }
+#else
+        private void ValidateTransitionProfileReferences() { }
+#endif
     }
 }

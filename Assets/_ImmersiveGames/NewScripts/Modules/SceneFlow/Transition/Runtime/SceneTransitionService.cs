@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
@@ -68,6 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
 
             var hydratedRequest = BuildRequestFromRouteDefinition(request, out var routeDefinition);
+            EnsureTransitionProfileOrFailFast(hydratedRequest);
             var context = BuildContextWithResetDecision(hydratedRequest, routeDefinition);
             string signature = SceneTransitionSignature.Compute(context);
 
@@ -185,6 +187,25 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
 
 
+
+        private static void EnsureTransitionProfileOrFailFast(SceneTransitionRequest request)
+        {
+            if (request.TransitionProfile != null)
+            {
+                return;
+            }
+
+            string message =
+                $"[FATAL][Config] SceneTransitionProfile ausente na request. routeId='{request.RouteId}', styleId='{request.StyleId}', requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
+
+            DebugUtility.LogError<SceneTransitionService>(message);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+            throw new InvalidOperationException(message);
+        }
         private SceneTransitionContext BuildContextWithResetDecision(SceneTransitionRequest request, SceneRouteDefinition? routeDefinition)
         {
             SceneTransitionContext context = SceneTransitionSignature.BuildContext(request);
@@ -255,6 +276,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 request.RouteId,
                 request.StyleId,
                 payload,
+                request.TransitionProfile,
                 request.TransitionProfileId,
                 request.UseFade,
                 request.ContextSignature,
@@ -374,7 +396,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return;
             }
 
-            _fadeAdapter.ConfigureFromProfile(context.TransitionProfileId);
+            _fadeAdapter.ConfigureFromProfile(context.TransitionProfile, context.TransitionProfileName);
 
             var fadeInTask = _fadeAdapter.FadeInAsync(signature);
             LogObsFade("FadeInStarted", transitionId, signature, context.TransitionProfileName);

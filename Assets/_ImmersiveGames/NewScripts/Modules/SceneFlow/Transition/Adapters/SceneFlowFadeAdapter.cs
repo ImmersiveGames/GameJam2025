@@ -2,25 +2,23 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 {
     /// <summary>
-    /// Adapter NewScripts: aplica profileId (SceneFlowProfileId) → SceneTransitionProfile → FadeConfig.
-    /// Em runtime, falhas de fade degradam para skip sem interromper a transição.
+    /// Adapter NewScripts: aplica referência direta de SceneTransitionProfile em FadeConfig.
     /// </summary>
     public sealed class SceneFlowFadeAdapter : ISceneFlowFadeAdapter
     {
         private readonly IFadeService _fadeService;
-        private readonly SceneTransitionProfileResolver _profileResolver;
 
         private bool _shouldFade;
         private bool _degradedLogged;
         private FadeConfig _resolvedConfig;
-        private string _lastProfileId;
+        private string _lastProfileLabel;
 
         private static readonly FadeConfig DefaultConfig =
             new(
@@ -29,27 +27,28 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 fadeInCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),
                 fadeOutCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
 
-        public SceneFlowFadeAdapter(
-            IFadeService fadeService,
-            SceneTransitionProfileResolver profileResolver)
+        public SceneFlowFadeAdapter(IFadeService fadeService)
         {
             _fadeService = fadeService;
-            _profileResolver = profileResolver ?? throw new InvalidOperationException("SceneTransitionProfileResolver é obrigatório no SceneFlowFadeAdapter.");
 
             _resolvedConfig = DefaultConfig;
             _shouldFade = true;
             _degradedLogged = false;
-            _lastProfileId = "<unset>";
+            _lastProfileLabel = "<unset>";
         }
 
         public bool IsAvailable => true;
 
-        public void ConfigureFromProfile(SceneFlowProfileId profileId)
+        public void ConfigureFromProfile(SceneTransitionProfile profile, string profileLabel)
         {
             _degradedLogged = false;
 
-            var profile = _profileResolver.Resolve(profileId, out string resolvedPath);
-            _lastProfileId = profileId.ToString();
+            if (profile == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config] SceneTransitionProfile nulo no fade adapter. profile='{profileLabel}'.");
+            }
+
+            _lastProfileLabel = string.IsNullOrWhiteSpace(profileLabel) ? profile.name : profileLabel.Trim();
 
             if (!profile.UseFade)
             {
@@ -57,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 _resolvedConfig = NoOpConfig();
 
                 DebugUtility.LogVerbose<SceneFlowFadeAdapter>(
-                    $"[SceneFlow] Profile '{profileId}' aplicado (path='{resolvedPath}'): UseFade=false → no-op (dur=0).");
+                    $"[SceneFlow] Profile '{_lastProfileLabel}' aplicado: UseFade=false → no-op (dur=0).");
                 return;
             }
 
@@ -70,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 fadeOutCurve: profile.FadeOutCurve != null ? profile.FadeOutCurve : DefaultConfig.FadeOutCurve);
 
             DebugUtility.LogVerbose<SceneFlowFadeAdapter>(
-                $"[SceneFlow] Profile '{profileId}' aplicado (path='{resolvedPath}'): " +
+                $"[SceneFlow] Profile '{_lastProfileLabel}' aplicado: " +
                 $"fadeIn={_resolvedConfig.FadeInDuration:0.###}, fadeOut={_resolvedConfig.FadeOutDuration:0.###}.");
         }
 
@@ -129,11 +128,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
             if (ShouldDegradeFadeInRuntime())
             {
                 DebugUtility.LogError<SceneFlowFadeAdapter>(
-                    $"[DEGRADED][Fade] phase='{phase}', profileId='{_lastProfileId}'. {detail}");
+                    $"[DEGRADED][Fade] phase='{phase}', profile='{_lastProfileLabel}'. {detail}");
                 return;
             }
 
-            string message = $"[FATAL][Fade] phase='{phase}', profileId='{_lastProfileId}'. {detail}";
+            string message = $"[FATAL][Fade] phase='{phase}', profile='{_lastProfileLabel}'. {detail}";
             DebugUtility.LogError<SceneFlowFadeAdapter>(message);
             throw new InvalidOperationException(message);
         }
