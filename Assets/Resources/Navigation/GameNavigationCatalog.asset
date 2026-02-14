@@ -16,17 +16,12 @@ MonoBehaviour:
   - routeId: to-menu
     sceneRouteId:
       _value: to-menu
-    transitionStyleId:
+    routeRef: {fileID: 11400000, guid: 67128f7ad33915f499ed01d864770c8a, type: 2}
+    styleId:
       _value: style.frontend
-    scenesToLoad: []
-    scenesToUnload: []
-    targetActiveScene: 
   - routeId: to-gameplay
     sceneRouteId:
       _value: to-gameplay
-    transitionStyleId:
+    routeRef: {fileID: 11400000, guid: 2916481ee95bc964bb299d7fc9d38abd, type: 2}
+    styleId:
       _value: style.gameplay
-    scenesToLoad: []
-    scenesToUnload: []
-    targetActiveScene: 
-  warnOnInvalidRoutes: 1
