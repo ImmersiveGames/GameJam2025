@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         /// Inicia gameplay a partir de um LevelId (LEGACY).
         /// Preferir ILevelFlowRuntimeService.StartGameplayAsync(string, ...).
         /// </summary>
-        [System.Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct).") ]
+        [System.Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
         Task StartGameplayAsync(LevelId levelId, string reason = null);
 
 

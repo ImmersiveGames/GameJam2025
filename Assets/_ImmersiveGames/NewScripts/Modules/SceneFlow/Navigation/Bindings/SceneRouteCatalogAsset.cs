@@ -4,6 +4,9 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
@@ -101,7 +104,21 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         private void OnValidate()
         {
             _cacheBuilt = false;
-            EnsureCache();
+
+            try
+            {
+                EnsureCache();
+            }
+            catch (Exception ex)
+            {
+#if UNITY_EDITOR
+                string assetPath = AssetDatabase.GetAssetPath(this);
+#else
+                string assetPath = name;
+#endif
+                DebugUtility.LogError(typeof(SceneRouteCatalogAsset),
+                    $"[FATAL][Config] SceneRouteCatalogAsset inválido durante OnValidate. asset='{assetPath}', detail='{ex.Message}'.");
+            }
         }
 
         private void EnsureCache()

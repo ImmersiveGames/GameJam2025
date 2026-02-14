@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             throw new InvalidOperationException("Obsolete navigation API called: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayAsync(levelId, reason).");
         }
 
-        [Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct).") ]
+        [Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
             if (!levelId.IsValid)
