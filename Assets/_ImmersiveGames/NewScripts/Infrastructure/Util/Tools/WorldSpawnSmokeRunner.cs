@@ -8,6 +8,10 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace _ImmersiveGames.Tools
 {
     // Small smoke test runner to exercise WorldSpawnServiceFactory and spawn/despawn flow.
@@ -24,6 +28,9 @@ namespace _ImmersiveGames.Tools
         private IDependencyProvider _provider;
         private IActorRegistry _actorRegistry;
         private readonly List<IWorldSpawnService> _services = new();
+
+        // Guard rail para impedir reentrada em comandos Tools de risco.
+        private bool _toolsGuardBusy;
 
         private void Awake()
         {
@@ -101,17 +108,83 @@ namespace _ImmersiveGames.Tools
             Debug.Log($"SmokeRunner: despawn complete. Registry count: {_actorRegistry.Count}");
         }
 
-        [ContextMenu("Tools/WorldLifecycle/Smoke/Spawn All")]
-        private void SpawnAllContext()
+
+
+        private bool BeginToolsRiskCommand(string commandName, string reason)
         {
-            // fire-and-forget; intended for editor context menu use
-            _ = SpawnAllAsync();
+            if (!Application.isPlaying)
+            {
+                Debug.LogWarning($"[WARN][{reason}] Comando '{commandName}' requer Play Mode.");
+                return false;
+            }
+
+#if UNITY_EDITOR
+            if (!EditorUtility.DisplayDialog(
+                    "QA Command",
+                    $"{commandName}: altera ciclo de vida/spawn do mundo.\n\nReason: {reason}\n\nDeseja continuar?",
+                    "Continuar",
+                    "Cancelar"))
+            {
+                Debug.LogWarning($"[WARN][{reason}] Comando cancelado pelo usuário.");
+                return false;
+            }
+#else
+            Debug.LogWarning($"[WARN][{reason}] Build sem diálogo de confirmação; executando comando.");
+#endif
+
+            if (_toolsGuardBusy)
+            {
+                Debug.LogWarning($"[WARN][{reason}] Comando ignorado por reentrância (_toolsGuardBusy=true).");
+                return false;
+            }
+
+            _toolsGuardBusy = true;
+            Debug.Log($"[Tools][WorldLifecycle] Executando comando '{commandName}'. reason='{reason}'.");
+            return true;
+        }
+
+        private void EndToolsRiskCommand(string reason)
+        {
+            _toolsGuardBusy = false;
+            Debug.Log($"[Tools][WorldLifecycle] Guard liberado. reason='{reason}'.");
+        }
+
+        [ContextMenu("Tools/WorldLifecycle/Smoke/Spawn All")]
+        private async void SpawnAllContext()
+        {
+            const string reason = "Tools/WorldLifecycle/Smoke/Spawn All";
+            if (!BeginToolsRiskCommand("Spawn All", reason))
+            {
+                return;
+            }
+
+            try
+            {
+                await SpawnAllAsync();
+            }
+            finally
+            {
+                EndToolsRiskCommand(reason);
+            }
         }
 
         [ContextMenu("Tools/WorldLifecycle/Smoke/Despawn All")]
-        private void DespawnAllContext()
+        private async void DespawnAllContext()
         {
-            _ = DespawnAllAsync();
+            const string reason = "Tools/WorldLifecycle/Smoke/Despawn All";
+            if (!BeginToolsRiskCommand("Despawn All", reason))
+            {
+                return;
+            }
+
+            try
+            {
+                await DespawnAllAsync();
+            }
+            finally
+            {
+                EndToolsRiskCommand(reason);
+            }
         }
 
         // Minimal in-file test implementations to avoid coupling to project DI.

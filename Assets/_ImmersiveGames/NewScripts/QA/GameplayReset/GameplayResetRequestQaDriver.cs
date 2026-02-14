@@ -9,6 +9,10 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 {
     /// <summary>
@@ -43,6 +47,12 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [ContextMenu("QA/Gameplay/GameplayReset/Fill ActorIds From Registry (Kind)")]
         public void QA_FillActorIdsFromRegistry()
         {
+            const string reason = "QA/Gameplay/GameplayReset/Fill ActorIds From Registry (Kind)";
+            if (!GuardContextMenuCommand("Fill ActorIds From Registry (Kind)", reason))
+            {
+                return;
+            }
+
             EnsureDependencies();
 
             if (_actorRegistry == null)
@@ -93,6 +103,12 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [ContextMenu("QA/Gameplay/GameplayReset/Run AllActorsInScene")]
         public void QA_RunAllActorsInScene()
         {
+            const string reason = "QA/Gameplay/GameplayReset/Run AllActorsInScene";
+            if (!GuardContextMenuCommand("Run AllActorsInScene", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(new GameplayResetRequest(
                 GameplayResetTarget.AllActorsInScene,
                 reason: "QA/GameplayResetRequestAllActors"));
@@ -101,6 +117,12 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [ContextMenu("QA/Gameplay/GameplayReset/Run PlayersOnly")]
         public void QA_RunPlayersOnly()
         {
+            const string reason = "QA/Gameplay/GameplayReset/Run PlayersOnly";
+            if (!GuardContextMenuCommand("Run PlayersOnly", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(new GameplayResetRequest(
                 GameplayResetTarget.PlayersOnly,
                 reason: "QA/GameplayResetRequestPlayersOnly",
@@ -110,6 +132,12 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [ContextMenu("QA/Gameplay/GameplayReset/Run EaterOnly")]
         public void QA_RunEaterOnly()
         {
+            const string reason = "QA/Gameplay/GameplayReset/Run EaterOnly";
+            if (!GuardContextMenuCommand("Run EaterOnly", reason))
+            {
+                return;
+            }
+
             // IMPORTANT: explicitar ActorKind para não cair no default do enum (ex.: Player).
             _ = RunResetAsync(new GameplayResetRequest(
                 GameplayResetTarget.EaterOnly,
@@ -120,6 +148,12 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [ContextMenu("QA/Gameplay/GameplayReset/Run ActorIdSet")]
         public void QA_RunActorIdSet()
         {
+            const string reason = "QA/Gameplay/GameplayReset/Run ActorIdSet";
+            if (!GuardContextMenuCommand("Run ActorIdSet", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(new GameplayResetRequest(
                 GameplayResetTarget.ActorIdSet,
                 reason: "QA/GameplayResetRequestActorIdSet",
@@ -129,9 +163,45 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [ContextMenu("QA/Gameplay/GameplayReset/Run ByActorKind (FillKind)")]
         public void QA_RunByActorKind()
         {
+            const string reason = "QA/Gameplay/GameplayReset/Run ByActorKind (FillKind)";
+            if (!GuardContextMenuCommand("Run ByActorKind (FillKind)", reason))
+            {
+                return;
+            }
+
             _ = RunResetAsync(GameplayResetRequest.ByActorKind(
                 fillKind,
                 reason: "QA/GameplayResetRequestByActorKind"));
+        }
+
+        private bool GuardContextMenuCommand(string commandName, string reason)
+        {
+            if (!Application.isPlaying)
+            {
+                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
+                    $"[WARN][{reason}] Comando '{commandName}' requer Play Mode.");
+                return false;
+            }
+
+#if UNITY_EDITOR
+            if (!EditorUtility.DisplayDialog(
+                    "QA Command",
+                    $"{commandName}: pode resetar atores/estado de gameplay.\n\nReason: {reason}\n\nDeseja continuar?",
+                    "Continuar",
+                    "Cancelar"))
+            {
+                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
+                    $"[WARN][{reason}] Comando cancelado pelo usuário.");
+                return false;
+            }
+#else
+            DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
+                $"[WARN][{reason}] Build sem diálogo de confirmação; executando comando.");
+#endif
+
+            DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
+                $"[QA][GameplayReset] Executando comando '{commandName}'. reason='{reason}'.");
+            return true;
         }
 
         private async Task RunResetAsync(GameplayResetRequest request)
