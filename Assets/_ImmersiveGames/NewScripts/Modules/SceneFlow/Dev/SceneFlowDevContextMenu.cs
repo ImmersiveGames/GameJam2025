@@ -16,47 +16,47 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         private const string ColorInfo = "#A8DEED";
         private const string ColorErr = "#F44336";
 
-        private const string ReasonEnterGameplay = "QA/SceneFlow/EnterGameplay";
+        private const string ReasonEnterGameplay = "QA/StartGameplay";
         private const string QaStartLevelId = "level.1";
-        private const string ReasonQaRestart = "QA/PostGame/Restart";
-        private const string ReasonQaExitToMenu = "QA/PostGame/ExitToMenu";
+        private const string ReasonQaRestart = "QA/RestartGameplay";
+        private const string ReasonQaExitToMenu = "QA/ExitToMenu";
         private const string ReasonForceReset = "QA/WorldLifecycle/ForceResetWorld";
         private static readonly string[] RelevantRouteTokens = { "menu", "gameplay", "postgame", "restart", "exit" };
 
-        [ContextMenu("QA/SceneFlow/EnterGameplay (TC: Menu->Gameplay ResetWorld)")]
+        [ContextMenu("QA/StartGameplay (levelId)")]
         private void Qa_EnterGameplay()
         {
-            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
-            if (navigation == null)
+            var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
+            if (levelFlow == null)
             {
                 return;
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][Navigation] QA EnterGameplay -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonEnterGameplay}'.",
+                $"[OBS][LevelFlow] QA EnterGameplay -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonEnterGameplay}'.",
                 ColorInfo);
 
-            _ = navigation.StartGameplayAsync(LevelId.FromName(QaStartLevelId), ReasonEnterGameplay);
+            _ = levelFlow.StartGameplayAsync(QaStartLevelId, ReasonEnterGameplay);
         }
 
 
-        [ContextMenu("QA/PostGame/Restart (TC: Restart Route)")]
+        [ContextMenu("QA/RestartGameplay (levelId)")]
         private void Qa_RestartNavigation()
         {
-            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
-            if (navigation == null)
+            var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
+            if (levelFlow == null)
             {
                 return;
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][Navigation] QA Restart -> RestartAsync reason='{ReasonQaRestart}'.",
+                $"[OBS][LevelFlow] QA Restart -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonQaRestart}'.",
                 ColorInfo);
 
-            _ = navigation.RestartAsync(ReasonQaRestart);
+            _ = levelFlow.StartGameplayAsync(QaStartLevelId, ReasonQaRestart);
         }
 
-        [ContextMenu("QA/PostGame/ExitToMenu (TC: Frontend Route)")]
+        [ContextMenu("QA/ExitToMenu")]
         private void Qa_ExitToMenuNavigation()
         {
             var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");

@@ -8,6 +8,24 @@ Este snapshot consolida a evidência canônica do Baseline 2.2 usando o log brut
 - **Perfis exercitados:** `startup` → `gameplay` → `frontend`
 - **Pontos validados:** SceneFlow, WorldLifecycle (reset determinístico + spawn Player/Eater), IntroStage + gate `sim.gameplay`, ContentSwap in-place (QA), Pause/Resume (`state.pause`), PostGame (Victory/Defeat), Restart e ExitToMenu.
 
+## Canonical Observability (F0)
+
+Assinaturas canônicas esperadas (sem payload completo):
+
+- `[OBS][LevelFlow] StartGameplayRequested levelId routeId reason`
+- `[OBS][LevelFlow] StartGameplayDispatched routeId styleId profile profileAsset reason`
+- `[OBS][SceneFlow] RouteApplied routeId scenesToLoadCount activeScene transitionProfile signature`
+- `[OBS][SceneFlow] RouteAppliedPolicy routeId requiresWorldReset decisionSource decisionReason signature`
+- `[OBS][WorldLifecycle] ResetPolicy routeId requiresWorldReset signature reason decisionSource`
+
+### Checklist rápida A–E (critérios de PASS)
+
+- **A) Boot -> Menu:** deve conter `RouteApplied`, `RouteAppliedPolicy` e `ResetPolicy` com `requiresWorldReset=false`.
+- **B) Menu -> Gameplay:** deve conter `StartGameplayRequested`, `StartGameplayDispatched`, `RouteApplied`, `RouteAppliedPolicy` e `ResetPolicy` com `requiresWorldReset=true`.
+- **C) Restart Gameplay:** deve conter novamente `StartGameplayRequested`, `StartGameplayDispatched`, `RouteApplied`, `RouteAppliedPolicy` e `ResetPolicy` com `requiresWorldReset=true`.
+- **D) ExitToMenu:** deve conter `RouteApplied`, `RouteAppliedPolicy` e `ResetPolicy` com `requiresWorldReset=false`.
+- **E) Fail-fast de config:** quando houver config inválida (route/profile/active scene), deve aparecer `[FATAL][Config]` e a execução deve abortar conforme policy (Editor stop playmode / build quit).
+
 ## Resumo de cobertura
 
 ### A) Boot → Menu (startup) — reset SKIP

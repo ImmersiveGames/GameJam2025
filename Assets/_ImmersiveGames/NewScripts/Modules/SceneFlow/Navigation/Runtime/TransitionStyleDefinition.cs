@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
 {
@@ -7,11 +8,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
     /// </summary>
     public readonly struct TransitionStyleDefinition
     {
+        public SceneTransitionProfile Profile { get; }
         public SceneFlowProfileId ProfileId { get; }
         public bool UseFade { get; }
 
-        public TransitionStyleDefinition(SceneFlowProfileId profileId, bool useFade)
+        public TransitionStyleDefinition(SceneTransitionProfile profile, SceneFlowProfileId profileId, bool useFade)
         {
+            Profile = profile;
             ProfileId = profileId;
             UseFade = useFade;
         }

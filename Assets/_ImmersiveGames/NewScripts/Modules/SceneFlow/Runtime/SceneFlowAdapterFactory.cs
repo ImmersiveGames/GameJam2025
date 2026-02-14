@@ -1,10 +1,8 @@
-using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 {
@@ -28,19 +26,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
                 fadeService = resolved;
             }
 
-            if (provider == null || !provider.TryGetGlobal(out SceneTransitionProfileResolver profileResolver) || profileResolver == null)
-            {
-                throw new InvalidOperationException(
-                    "SceneTransitionProfileResolver não encontrado no DI global. " +
-                    "Garanta que RegisterSceneFlowTransitionProfiles seja executado antes de RegisterSceneFlowNative.");
-            }
-
             DebugUtility.LogVerbose(typeof(SceneFlowAdapterFactory),
-                "[SceneFlow] Usando SceneTransitionProfileResolver via DI global.");
+                "[SceneFlow] Usando SceneFlowFadeAdapter com SceneTransitionProfile direto (sem resolver por id).");
 
-            return new SceneFlowFadeAdapter(
-                fadeService,
-                profileResolver);
+            return new SceneFlowFadeAdapter(fadeService);
         }
     }
 }

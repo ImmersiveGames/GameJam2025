@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
@@ -24,9 +25,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         Task ExitToMenuAsync(string reason = null);
 
         /// <summary>
-        /// Inicia gameplay a partir de um LevelId (LevelFlow -> SceneRouteId + payload).
+        /// Inicia gameplay a partir de um LevelId (LEGACY).
+        /// Preferir ILevelFlowRuntimeService.StartGameplayAsync(string, ...).
         /// </summary>
+        [System.Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
         Task StartGameplayAsync(LevelId levelId, string reason = null);
+
+
+        /// <summary>
+        /// Inicia gameplay a partir de um SceneRouteId já resolvido pelo LevelFlow.
+        /// </summary>
+        Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null);
+
 
         /// <summary>
         /// Compatibilidade temporária: navegar por id de intent/rota.

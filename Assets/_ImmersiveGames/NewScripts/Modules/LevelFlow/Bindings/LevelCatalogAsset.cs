@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         [SerializeField] private bool warnOnInvalidLevels = true;
 
         private readonly Dictionary<LevelId, LevelDefinition> _cache = new();
+        private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
         private bool _cacheBuilt;
 
         public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
@@ -58,6 +59,20 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             return true;
         }
 
+
+        public bool TryResolveLevelId(SceneRouteId routeId, out LevelId levelId)
+        {
+            levelId = LevelId.None;
+
+            if (!routeId.IsValid)
+            {
+                return false;
+            }
+
+            EnsureCache();
+            return _routeToLevelCache.TryGetValue(routeId, out levelId) && levelId.IsValid;
+        }
+
         private void OnEnable()
         {
             _cacheBuilt = false;
@@ -66,7 +81,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private void OnValidate()
         {
             _cacheBuilt = false;
-            EnsureCache();
+
+            try
+            {
+                EnsureCache();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(LevelCatalogAsset),
+                    $"[FATAL][Config] LevelCatalogAsset inválido durante OnValidate. detail='{ex.Message}'.");
+            }
         }
 
         private void EnsureCache()
@@ -78,6 +102,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             _cacheBuilt = true;
             _cache.Clear();
+            _routeToLevelCache.Clear();
 
             if (levels == null || levels.Count == 0)
             {
@@ -105,6 +130,23 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
 
                 _cache.Add(entry.levelId, entry);
+
+                SceneRouteId resolvedRouteId = entry.ResolveRouteId();
+                if (resolvedRouteId.IsValid)
+                {
+                    if (_routeToLevelCache.TryGetValue(resolvedRouteId, out var existingLevelId) && existingLevelId != entry.levelId)
+                    {
+                        if (!HandleDuplicateRouteMappingConfigError(resolvedRouteId, existingLevelId, entry.levelId))
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
+                    {
+                        _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
+                    }
+                }
             }
 
             if (warnOnInvalidLevels && invalidCount > 0)
@@ -112,6 +154,24 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 DebugUtility.LogWarning<LevelCatalogAsset>(
                     $"[LevelFlow] LevelCatalog possui entradas inválidas/duplicadas. invalidCount={invalidCount}.");
             }
+        }
+
+        private static bool HandleDuplicateRouteMappingConfigError(SceneRouteId routeId, LevelId firstLevelId, LevelId duplicatedLevelId)
+        {
+            string message =
+                $"[FATAL][Config] RouteId duplicado mapeado para múltiplos LevelId no LevelCatalog. routeId='{routeId}', firstLevelId='{firstLevelId}', duplicatedLevelId='{duplicatedLevelId}'.";
+
+            if (Application.isPlaying)
+            {
+                DebugUtility.LogError(typeof(LevelCatalogAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
+            DebugUtility.LogError(typeof(LevelCatalogAsset), message);
+            DebugUtility.LogVerbose<LevelCatalogAsset>(
+                $"[OBS][Config] DuplicateRouteIdIgnored routeId='{routeId}', firstLevelId='{firstLevelId}', ignoredLevelId='{duplicatedLevelId}', mode='editor'.",
+                DebugUtility.Colors.Warning);
+            return false;
         }
     }
 }

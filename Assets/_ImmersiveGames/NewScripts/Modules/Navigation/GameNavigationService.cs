@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private readonly ILevelFlowService _levelFlowService;
 
         private LevelId _lastStartedGameplayLevelId;
+        private SceneRouteId _lastGameplayRouteId;
+        private string _lastNavigationIntentId = string.Empty;
         private int _navigationInProgress;
 
         public GameNavigationService(
@@ -50,25 +53,55 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
         }
 
-        public Task RestartAsync(string reason = null)
+        public async Task RestartAsync(string reason = null)
         {
-            if (_lastStartedGameplayLevelId.IsValid)
+            if (!_lastStartedGameplayLevelId.IsValid)
             {
-                DebugUtility.LogVerbose(typeof(GameNavigationService),
-                    $"[OBS][Navigation] RestartRequested lastLevelId='{_lastStartedGameplayLevelId}' reason='{reason ?? "<null>"}'.",
-                    DebugUtility.Colors.Info);
-                return StartGameplayAsync(_lastStartedGameplayLevelId, reason ?? "Restart");
+                string lastRouteId = _lastGameplayRouteId.IsValid ? _lastGameplayRouteId.ToString() : "<none>";
+                string lastIntent = string.IsNullOrWhiteSpace(_lastNavigationIntentId) ? "<none>" : _lastNavigationIntentId;
+
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId. lastRouteId='{lastRouteId}', lastIntent='{lastIntent}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException($"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId. lastRouteId='{lastRouteId}', lastIntent='{lastIntent}'.");
             }
 
-            DebugUtility.LogError(typeof(GameNavigationService),
-                $"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId. reason='{reason ?? "<null>"}'.");
-            throw new InvalidOperationException("[FATAL][Config] Restart called before StartGameplayAsync; no last levelId.");
+            if (_levelFlowService == null)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Missing ILevelFlowService for Restart. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for Restart.");
+            }
+
+            if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out var resolvedRouteId, out var payload) || !resolvedRouteId.IsValid)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Restart unresolved LevelId in ILevelFlowService. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] Restart unresolved LevelId in ILevelFlowService.");
+            }
+
+            string resolvedReason = reason ?? "Restart";
+            DebugUtility.Log(typeof(GameNavigationService),
+                $"[OBS][Navigation] RestartRequested levelId='{_lastStartedGameplayLevelId}', routeId='{resolvedRouteId}', reason='{resolvedReason}'.",
+                DebugUtility.Colors.Info);
+
+            await StartGameplayRouteAsync(resolvedRouteId, payload, resolvedReason);
         }
 
         public Task ExitToMenuAsync(string reason = null)
         {
-            DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}'.",
+            string styleLabel = "<unknown>";
+            string profileLabel = "<unknown>";
+            if (_catalog.TryGet(GameNavigationIntents.ToMenu, out var menuEntry) && menuEntry.IsValid)
+            {
+                styleLabel = menuEntry.StyleId.ToString();
+                if (_styleCatalog != null && _styleCatalog.TryGet(menuEntry.StyleId, out var style))
+                {
+                    profileLabel = style.ProfileId.ToString();
+                }
+            }
+
+            DebugUtility.Log(typeof(GameNavigationService),
+                $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}', styleId='{styleLabel}', profile='{profileLabel}'.",
                 DebugUtility.Colors.Info);
             return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
         }
@@ -89,6 +122,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             throw new InvalidOperationException("Obsolete navigation API called: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayAsync(levelId, reason).");
         }
 
+        [Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
             if (!levelId.IsValid)
@@ -136,10 +170,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
 
-                _lastStartedGameplayLevelId = levelId;
-
-                var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
-                await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);
+                UpdateLastLevelId(levelId, resolvedRouteId, source: "LegacyStartGameplayAsync", reason: reason);
+                await StartGameplayRouteAsync(resolvedRouteId, payload, reason);
 
                 DebugUtility.LogVerbose(typeof(GameNavigationService),
                     $"[OBS][Navigation] StartGameplayCompleted levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
@@ -155,6 +187,48 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             {
                 Interlocked.Exchange(ref _navigationInProgress, 0);
             }
+        }
+
+        public async Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null)
+        {
+            if (!routeId.IsValid)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] StartGameplayRouteAsync com RouteId inválido. routeId='{routeId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] StartGameplayRouteAsync with invalid RouteId.");
+            }
+
+            if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Missing gameplay intent entry for StartGameplayRouteAsync. intentId='{GameNavigationIntents.ToGameplay}'.");
+                throw new InvalidOperationException("[FATAL][Config] Missing gameplay intent entry.");
+            }
+
+            if (_levelFlowService == null)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Missing ILevelFlowService for StartGameplayRouteAsync. routeId='{routeId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for StartGameplayRouteAsync.");
+            }
+
+            if (!_levelFlowService.TryResolveLevelId(routeId, out var resolvedLevelId) || !resolvedLevelId.IsValid)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] StartGameplayRouteAsync routeId sem mapeamento para levelId no LevelFlow. routeId='{routeId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException($"[FATAL][Config] StartGameplayRouteAsync routeId sem mapeamento para levelId. routeId='{routeId}'.");
+            }
+
+            UpdateLastLevelId(resolvedLevelId, routeId, source: "StartGameplayRouteAsync", reason: reason);
+
+            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleId, payload ?? SceneTransitionPayload.Empty);
+
+            var (profile, profileId, _) = ResolveStyle(routeEntry);
+            DebugUtility.Log(typeof(GameNavigationService),
+                $"[OBS][Navigation] StartGameplayRouteRequested routeId='{routeId}', reason='{reason ?? "<null>"}', styleId='{routeEntry.StyleId}', profile='{profileId}', profileAsset='{(profile != null ? profile.name : "<null>")}'.",
+                DebugUtility.Colors.Info);
+
+            await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, routeEntry, reason);
         }
 
         [Obsolete("Use métodos explícitos: GoToMenuAsync, RestartAsync, ExitToMenuAsync ou StartGameplayAsync(levelId, reason).")]
@@ -209,14 +283,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             // F3 Plan-v2:
             // - SceneRouteDefinition é a fonte única de Scene Data.
-            // - Navigation NÃO injeta ScenesToLoad/Unload/Active no payload.
+            // - Navigation não injeta dados de cena no payload.
             var payload = entry.Payload ?? SceneTransitionPayload.Empty;
-            var (profileId, useFade) = ResolveStyle(entry, payload);
+            var (profile, profileId, useFade) = ResolveStyle(entry);
+
+            _lastNavigationIntentId = intentId ?? string.Empty;
+            _lastGameplayRouteId = entry.RouteId;
 
             var request = new SceneTransitionRequest(
                 entry.RouteId,
                 entry.StyleId,
                 payload,
+                profile,
                 transitionProfileId: profileId,
                 useFade: useFade,
                 requestedBy: reason,
@@ -227,30 +305,39 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             DebugUtility.Log(typeof(GameNavigationService),
                 $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
                 $"styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', " +
-                $"signature='{signature}', " +
-                $"Load=[{string.Join(", ", request.ScenesToLoad)}], " +
-                $"Unload=[{string.Join(", ", request.ScenesToUnload)}], " +
-                $"Active='{request.TargetActiveScene}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
+                $"signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
         }
 
-        private (SceneFlowProfileId profileId, bool useFade) ResolveStyle(
-            GameNavigationEntry entry,
-            SceneTransitionPayload payload)
+
+        private void UpdateLastLevelId(LevelId levelId, SceneRouteId routeId, string source, string reason)
+        {
+            _lastStartedGameplayLevelId = levelId;
+            _lastGameplayRouteId = routeId;
+
+            DebugUtility.Log(typeof(GameNavigationService),
+                $"[OBS][Navigation] LastLevelIdUpdated levelId='{levelId}' source='{source}' reason='{reason ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private (SceneTransitionProfile profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(
+            GameNavigationEntry entry)
         {
             if (_styleCatalog != null && _styleCatalog.TryGet(entry.StyleId, out var style))
             {
-                return (style.ProfileId, style.UseFade);
+                if (style.Profile == null)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config] TransitionStyle sem referência de SceneTransitionProfile. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
+                }
+
+                return (style.Profile, style.ProfileId, style.UseFade);
             }
 
-            if (payload.HasLegacyStyle)
-            {
-                return (payload.LegacyProfileId, payload.UseFade);
-            }
-
-            return (SceneFlowProfileId.None, true);
+            throw new InvalidOperationException(
+                $"[FATAL][Config] TransitionStyleId sem resolução no catálogo. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
         }
     }
 }

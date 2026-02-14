@@ -100,6 +100,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string decisionSource = string.IsNullOrWhiteSpace(context.ResetDecisionSource) ? "context:missingDecisionSource" : context.ResetDecisionSource;
             string decisionReason = string.IsNullOrWhiteSpace(context.ResetDecisionReason) ? "context:missingDecisionReason" : context.ResetDecisionReason;
 
+            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
+                $"[OBS][WorldLifecycle] ResetPolicy routeId='{routeId}' requiresWorldReset={requiresWorldReset} signature='{signature}' reason='{decisionReason}' decisionSource='{decisionSource}'.",
+                DebugUtility.Colors.Info);
+
             if (!requiresWorldReset)
             {
                 string skippedReason = string.IsNullOrWhiteSpace(decisionReason)
@@ -132,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 return;
             }
 
-            // Reset real (profile=gameplay).
+            // Reset real (policy requiresWorldReset=true).
             LogObsResetRequested(
                 signature: signature,
                 sourceSignature: signature,
@@ -146,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string completionReason = WorldResetReasons.SceneFlowScenesReady;
             try
             {
-                var result = await ExecuteResetForGameplayAsync(
+                var result = await ExecuteResetWhenRequiredAsync(
                     signature,
                     targetScene,
                     context.TransitionProfileName,
@@ -176,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
         }
 
-        private static async Task<(bool shouldPublishCompletion, string failureReason)> ExecuteResetForGameplayAsync(
+        private static async Task<(bool shouldPublishCompletion, string failureReason)> ExecuteResetWhenRequiredAsync(
             string signature,
             string targetScene,
             string profileName,
