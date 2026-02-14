@@ -8,5 +8,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     public interface ILevelFlowService
     {
         bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload);
+        bool TryResolveLevelId(SceneRouteId routeId, out LevelId levelId);
     }
 }

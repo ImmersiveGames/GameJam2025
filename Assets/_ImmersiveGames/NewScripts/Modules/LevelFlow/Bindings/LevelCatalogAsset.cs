@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         [SerializeField] private bool warnOnInvalidLevels = true;
 
         private readonly Dictionary<LevelId, LevelDefinition> _cache = new();
+        private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
         private bool _cacheBuilt;
 
         public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
@@ -58,6 +59,20 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             return true;
         }
 
+
+        public bool TryResolveLevelId(SceneRouteId routeId, out LevelId levelId)
+        {
+            levelId = LevelId.None;
+
+            if (!routeId.IsValid)
+            {
+                return false;
+            }
+
+            EnsureCache();
+            return _routeToLevelCache.TryGetValue(routeId, out levelId) && levelId.IsValid;
+        }
+
         private void OnEnable()
         {
             _cacheBuilt = false;
@@ -78,6 +93,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             _cacheBuilt = true;
             _cache.Clear();
+            _routeToLevelCache.Clear();
 
             if (levels == null || levels.Count == 0)
             {
@@ -105,6 +121,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
 
                 _cache.Add(entry.levelId, entry);
+
+                SceneRouteId resolvedRouteId = entry.ResolveRouteId();
+                if (resolvedRouteId.IsValid && !_routeToLevelCache.ContainsKey(resolvedRouteId))
+                {
+                    _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
+                }
             }
 
             if (warnOnInvalidLevels && invalidCount > 0)
