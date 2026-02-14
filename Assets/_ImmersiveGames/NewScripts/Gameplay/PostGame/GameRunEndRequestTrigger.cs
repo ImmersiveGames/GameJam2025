@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         public void RequestDefeat(string reason) => Request(GameRunOutcome.Defeat, reason);
 
-        [ContextMenu("QA/Test3 - ForcePostPlay")]
+        [ContextMenu("QA/Gameplay/PostGame/Test3/Force PostPlay")]
         private void QA_ForcePostPlay()
         {
             DebugUtility.Log<GameRunEndRequestTrigger>(
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             Request(GameRunOutcome.Victory, "QA/Test3/ForcePostPlay");
         }
 
-        [ContextMenu("QA/PostGame/Trigger after phase change")]
+        [ContextMenu("QA/Gameplay/PostGame/Trigger After Phase Change")]
         private void QA_PostGame_AfterPhaseChange()
         {
             DebugUtility.Log<GameRunEndRequestTrigger>(

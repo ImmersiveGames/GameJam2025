@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
 {
     public sealed class IntroStageQaContextMenu : MonoBehaviour
     {
-        [ContextMenu("QA/IntroStage/Complete (Force)")]
+        [ContextMenu("QA/LevelFlow/IntroStage/Complete (Force)")]
         private void CompleteIntroStage()
         {
             var controlService = ResolveControlService();
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.QA.IntroStage
                 DebugUtility.Colors.Info);
         }
 
-        [ContextMenu("QA/IntroStage/Skip (Force)")]
+        [ContextMenu("QA/LevelFlow/IntroStage/Skip (Force)")]
         private void SkipIntroStage()
         {
             var controlService = ResolveControlService();

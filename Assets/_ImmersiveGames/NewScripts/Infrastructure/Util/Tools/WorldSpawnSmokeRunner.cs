@@ -101,14 +101,14 @@ namespace _ImmersiveGames.Tools
             Debug.Log($"SmokeRunner: despawn complete. Registry count: {_actorRegistry.Count}");
         }
 
-        [ContextMenu("Spawn All (smoke)")]
+        [ContextMenu("Tools/WorldLifecycle/Smoke/Spawn All")]
         private void SpawnAllContext()
         {
             // fire-and-forget; intended for editor context menu use
             _ = SpawnAllAsync();
         }
 
-        [ContextMenu("Despawn All (smoke)")]
+        [ContextMenu("Tools/WorldLifecycle/Smoke/Despawn All")]
         private void DespawnAllContext()
         {
             _ = DespawnAllAsync();

@@ -48,19 +48,19 @@ namespace _ImmersiveGames.NewScripts.QA.Phases
         // Public QA Actions (ContextMenu)
         // ----------------------------
 
-        [ContextMenu("QA/ContentSwap/G01 - InPlace (NoVisuals)")]
+        [ContextMenu("QA/SceneFlow/ContentSwap/G01 - InPlace (NoVisuals)")]
         private void Qa_G01_InPlace_NoVisuals()
         {
             _ = RunG01InPlaceAsync(useFadeOpt: false, useLoadingHudOpt: false, reason: ReasonG01);
         }
 
-        [ContextMenu("QA/ContentSwap/G02 - WithTransition (SingleClick)")]
+        [ContextMenu("QA/SceneFlow/ContentSwap/G02 - WithTransition (SingleClick)")]
         private void Qa_G02_WithTransition_SingleClick()
         {
             _ = RunG02WithTransitionAsync(withTransitionPhaseId, ReasonG02);
         }
 
-        [ContextMenu("QA/ContentSwap/Dump - PhaseContext Snapshot")]
+        [ContextMenu("QA/SceneFlow/ContentSwap/Dump PhaseContext Snapshot")]
         private void Qa_Dump_PhaseContext()
         {
             DumpPhaseContext();

@@ -47,13 +47,13 @@ namespace _ImmersiveGames.NewScripts.QA.Levels
         private const string ReasonWithTransition = "QA/Levels/WithTransition/DefaultIntroStage";
         private const string RequestedBy = "QA/Levels/LevelQaContextMenu";
 
-        [ContextMenu("QA/Levels/L01-GoToLevel (InPlace + IntroStage)")]
+        [ContextMenu("QA/LevelFlow/Levels/L01 GoToLevel (InPlace + IntroStage)")]
         private void Qa_L01_InPlace()
         {
             _ = RunInPlaceAsync();
         }
 
-        [ContextMenu("QA/Levels/L02-GoToLevel (WithTransition + IntroStage)")]
+        [ContextMenu("QA/LevelFlow/Levels/L02 GoToLevel (WithTransition + IntroStage)")]
         private void Qa_L02_WithTransition()
         {
             _ = RunWithTransitionAsync();

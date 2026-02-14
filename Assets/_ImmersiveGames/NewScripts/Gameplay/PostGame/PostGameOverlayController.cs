@@ -389,7 +389,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         // QA / Context Menu (Editor + DevBuild)
         // --------------------------------------------------------------------
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        [ContextMenu("QA/PostGame/Force Restart x2 (same frame)")]
+        [ContextMenu("QA/Gameplay/PostGame/Force Restart x2 (same frame)")]
         private void QaForceRestartDoubleSameFrame()
         {
             if (!Application.isPlaying)
@@ -407,7 +407,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             OnClickRestart();
         }
 
-        [ContextMenu("QA/PostGame/Force ExitToMenu x2 (same frame)")]
+        [ContextMenu("QA/Gameplay/PostGame/Force ExitToMenu x2 (same frame)")]
         private void QaForceExitToMenuDoubleSameFrame()
         {
             if (!Application.isPlaying)
@@ -424,7 +424,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             OnClickExitToMenu();
         }
 
-        [ContextMenu("QA/PostGame/Force Restart x2 (delay 0.05s)")]
+        [ContextMenu("QA/Gameplay/PostGame/Force Restart x2 (delay 0.05s)")]
         private void QaForceRestartDoubleWithDelay()
         {
             if (!Application.isPlaying)
@@ -440,7 +440,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             StartCoroutine(QaCoroutineDouble(() => OnClickRestart(), 0.05f));
         }
 
-        [ContextMenu("QA/PostGame/Force ExitToMenu x2 (delay 0.05s)")]
+        [ContextMenu("QA/Gameplay/PostGame/Force ExitToMenu x2 (delay 0.05s)")]
         private void QaForceExitToMenuDoubleWithDelay()
         {
             if (!Application.isPlaying)
