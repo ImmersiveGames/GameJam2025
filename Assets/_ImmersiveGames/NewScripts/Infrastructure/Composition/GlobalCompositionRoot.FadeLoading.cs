@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -14,12 +15,54 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterSceneFlowFadeModule()
         {
-            // Registra o serviço de fade NewScripts no DI global.
-            RegisterIfMissing<IFadeService>(() => new FadeService());
+            // Config canônica obrigatória para FadeScene.
+            var bootstrap = GetRequiredBootstrapConfig(out _);
+            var fadeSceneName = (bootstrap.FadeSceneName ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(fadeSceneName))
+            {
+                FailFast("Missing required NewScriptsBootstrapConfigAsset.fadeSceneName.");
+            }
+
+            RegisterIfMissing<IFadeService>(() => new FadeService(fadeSceneName));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Fade] IFadeService registrado no DI global.",
+                $"[Fade] IFadeService registered in global DI (scene='{fadeSceneName}').",
                 DebugUtility.Colors.Info);
+
+            if (DependencyManager.Provider.TryGetGlobal<IFadeService>(out var fadeService) && fadeService is FadeService concrete)
+            {
+                _ = PreloadFadeSceneAsync(concrete, fadeSceneName);
+            }
+            else
+            {
+                FailFast("IFadeService could not be resolved after registration.");
+            }
+        }
+
+        private static async System.Threading.Tasks.Task PreloadFadeSceneAsync(FadeService fadeService, string fadeSceneName)
+        {
+            try
+            {
+                await fadeService.EnsureReadyAsync();
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][Fade] FadeScene ready (source=Config/Bootstrap, scene='{fadeSceneName}').",
+                    DebugUtility.Colors.Success);
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    $"[FATAL][Fade] Failed to preload FadeScene '{fadeSceneName}'. ex='{ex.GetType().Name}: {ex.Message}'");
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#endif
+                if (!Application.isEditor)
+                {
+                    Application.Quit();
+                }
+
+                throw;
+            }
         }
 
         private static void RegisterSceneFlowLoadingIfAvailable()

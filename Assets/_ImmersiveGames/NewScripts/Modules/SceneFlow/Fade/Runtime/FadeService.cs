@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 {
     /// <summary>
@@ -23,9 +24,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class FadeService : IFadeService
     {
-        private const string FadeSceneName = "FadeScene";
-
         private readonly SemaphoreSlim _ensureGate = new(1, 1);
+        private readonly string _fadeSceneName;
 
         private FadeController _controller;
         private bool _isPermanentlyUnavailable;
@@ -41,9 +41,22 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                 fadeInCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),
                 fadeOutCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
 
-        public FadeService()
+        public FadeService(string fadeSceneName)
         {
+            _fadeSceneName = (fadeSceneName ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(_fadeSceneName))
+            {
+                AbortAsFatal(
+                    "fade_scene_name_missing",
+                    "Fade scene name is required in bootstrap config.");
+            }
+
             _config = DefaultConfig;
+        }
+
+        public Task EnsureReadyAsync()
+        {
+            return EnsureControllerAsync();
         }
 
         public void Configure(FadeConfig config)
@@ -129,20 +142,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                     return;
                 }
 
-                var fadeScene = SceneManager.GetSceneByName(FadeSceneName);
+                var fadeScene = SceneManager.GetSceneByName(_fadeSceneName);
 
                 if (!fadeScene.IsValid() || !fadeScene.isLoaded)
                 {
                     DebugUtility.LogVerbose<FadeService>(
-                        $"[Fade] Garantindo FadeScene '{FadeSceneName}' (Additive)...",
-                        isFallback: true);
+                        $"[Fade] Ensuring FadeScene '{_fadeSceneName}' (Additive)...");
 
-                    var loadOp = SceneManager.LoadSceneAsync(FadeSceneName, LoadSceneMode.Additive);
+                    var loadOp = SceneManager.LoadSceneAsync(_fadeSceneName, LoadSceneMode.Additive);
                     if (loadOp == null)
                     {
-                        MarkPermanentlyUnavailable(
+                        AbortAsFatal(
                             reason: "load_scene_async_null",
-                            detail: $"LoadSceneAsync retornou null para '{FadeSceneName}'. Verifique Build Settings.");
+                            detail: $"LoadSceneAsync returned null for '{_fadeSceneName}'. Check Build Settings.");
                     }
 
                     while (!loadOp.isDone)
@@ -153,27 +165,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                     // Um yield extra para garantir que objetos estejam prontos.
                     await Task.Yield();
 
-                    fadeScene = SceneManager.GetSceneByName(FadeSceneName);
+                    fadeScene = SceneManager.GetSceneByName(_fadeSceneName);
                 }
 
                 if (!fadeScene.IsValid() || !fadeScene.isLoaded)
                 {
-                    MarkPermanentlyUnavailable(
+                    AbortAsFatal(
                         reason: "fade_scene_not_loaded",
-                        detail: $"FadeScene '{FadeSceneName}' não está carregada após LoadSceneAsync.");
+                        detail: $"FadeScene '{_fadeSceneName}' is not loaded after LoadSceneAsync.");
                 }
 
                 _controller = FindControllerInScene(fadeScene);
 
                 if (_controller == null)
                 {
-                    MarkPermanentlyUnavailable(
+                    AbortAsFatal(
                         reason: "fade_controller_missing",
-                        detail: $"Nenhum {nameof(FadeController)} encontrado na FadeScene '{FadeSceneName}'.");
+                        detail: $"No {nameof(FadeController)} found in FadeScene '{_fadeSceneName}'.");
                 }
 
                 DebugUtility.LogVerbose<FadeService>(
-                    "[Fade] FadeController localizado com sucesso.");
+                    $"[OBS][Fade] FadeScene ready (source=Config/Bootstrap, scene='{_fadeSceneName}').");
             }
             finally
             {
@@ -204,16 +216,24 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             return null;
         }
 
-        private void MarkPermanentlyUnavailable(string reason, string detail)
+        private void AbortAsFatal(string reason, string detail)
         {
             _isPermanentlyUnavailable = true;
             _permanentFailureDetail = $"reason='{reason}' detail='{detail}'";
 
             DebugUtility.LogError<FadeService>(
-                $"[Fade] Falha ao garantir FadeScene/controller. {_permanentFailureDetail}");
+                $"[FATAL][Fade] Fade bootstrap failed. {_permanentFailureDetail}");
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+            if (!Application.isEditor)
+            {
+                Application.Quit();
+            }
 
             throw new InvalidOperationException(
-                $"[Fade] Pré-condição inválida. {_permanentFailureDetail}");
+                $"[FATAL][Fade] Required FadeScene/FadeController unavailable. {_permanentFailureDetail}");
         }
     }
 }
