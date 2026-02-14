@@ -81,7 +81,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private void OnValidate()
         {
             _cacheBuilt = false;
-            EnsureCache();
+
+            try
+            {
+                EnsureCache();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(LevelCatalogAsset),
+                    $"[FATAL][Config] LevelCatalogAsset inválido durante OnValidate. detail='{ex.Message}'.");
+            }
         }
 
         private void EnsureCache()
@@ -127,8 +136,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 {
                     if (_routeToLevelCache.TryGetValue(resolvedRouteId, out var existingLevelId) && existingLevelId != entry.levelId)
                     {
-                        FailFast(
-                            $"[FATAL][Config] RouteId duplicado mapeado para múltiplos LevelId no LevelCatalog. routeId='{resolvedRouteId}', firstLevelId='{existingLevelId}', duplicatedLevelId='{entry.levelId}'.");
+                        if (!HandleDuplicateRouteMappingConfigError(resolvedRouteId, existingLevelId, entry.levelId))
+                        {
+                            continue;
+                        }
                     }
 
                     if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
@@ -145,10 +156,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
         }
 
-        private static void FailFast(string message)
+        private static bool HandleDuplicateRouteMappingConfigError(SceneRouteId routeId, LevelId firstLevelId, LevelId duplicatedLevelId)
         {
+            string message =
+                $"[FATAL][Config] RouteId duplicado mapeado para múltiplos LevelId no LevelCatalog. routeId='{routeId}', firstLevelId='{firstLevelId}', duplicatedLevelId='{duplicatedLevelId}'.";
+
+            if (Application.isPlaying)
+            {
+                DebugUtility.LogError(typeof(LevelCatalogAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
             DebugUtility.LogError(typeof(LevelCatalogAsset), message);
-            throw new InvalidOperationException(message);
+            DebugUtility.LogVerbose<LevelCatalogAsset>(
+                $"[OBS][Config] DuplicateRouteIdIgnored routeId='{routeId}', firstLevelId='{firstLevelId}', ignoredLevelId='{duplicatedLevelId}', mode='editor'.",
+                DebugUtility.Colors.Warning);
+            return false;
         }
     }
 }
