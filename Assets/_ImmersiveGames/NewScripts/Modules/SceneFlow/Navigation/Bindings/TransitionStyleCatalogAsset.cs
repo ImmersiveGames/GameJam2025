@@ -12,9 +12,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
     /// Catálogo configurável de estilos de transição (TransitionStyleId -> profile/fade).
     /// </summary>
     [CreateAssetMenu(
-        fileName = "TransitionStyleCatalog",
-        menuName = "ImmersiveGames/NewScripts/SceneFlow/Transition Style Catalog",
-        order = 16)]
+        fileName = "TransitionStyleCatalogAsset",
+        menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Catalogs/TransitionStyleCatalogAsset",
+        order = 30)]
     public sealed class TransitionStyleCatalogAsset : ScriptableObject, ITransitionStyleCatalog
     {
         [Serializable]

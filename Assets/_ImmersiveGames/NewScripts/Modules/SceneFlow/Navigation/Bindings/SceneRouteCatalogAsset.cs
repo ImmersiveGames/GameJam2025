@@ -12,9 +12,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
     /// Suporta wiring por referência direta de assets de rota e fallback por entrada inline.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "SceneRouteCatalog",
-        menuName = "ImmersiveGames/NewScripts/SceneFlow/Scene Route Catalog",
-        order = 15)]
+        fileName = "SceneRouteCatalogAsset",
+        menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Catalogs/SceneRouteCatalogAsset",
+        order = 30)]
     public sealed class SceneRouteCatalogAsset : ScriptableObject, ISceneRouteCatalog
     {
         [Serializable]

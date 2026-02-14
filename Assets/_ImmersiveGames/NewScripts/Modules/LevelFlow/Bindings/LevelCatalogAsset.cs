@@ -11,9 +11,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
     /// Catálogo configurável de níveis (LevelId -> SceneRouteId + payload).
     /// </summary>
     [CreateAssetMenu(
-        fileName = "LevelCatalog",
-        menuName = "ImmersiveGames/NewScripts/LevelFlow/Level Catalog",
-        order = 20)]
+        fileName = "LevelCatalogAsset",
+        menuName = "ImmersiveGames/NewScripts/Modules/LevelFlow/Catalogs/LevelCatalogAsset",
+        order = 30)]
     public sealed class LevelCatalogAsset : ScriptableObject, ILevelFlowService
     {
         [Header("Levels")]

@@ -6,9 +6,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings
     /// Neste passo cobre apenas Fade (ADR-0009). Loading fica para ADR separado.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "startup",
-        menuName = "ImmersiveGames/NewScripts/SceneFlow/Transition Profile",
-        order = 10)]
+        fileName = "SceneTransitionProfile",
+        menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Profiles/SceneTransitionProfile",
+        order = 30)]
     public sealed class SceneTransitionProfile : ScriptableObject
     {
         [Header("Fade")]

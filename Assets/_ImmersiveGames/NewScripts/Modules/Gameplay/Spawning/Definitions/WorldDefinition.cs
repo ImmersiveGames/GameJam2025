@@ -9,8 +9,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawning.Definitions
     /// </summary>
     [CreateAssetMenu(
         fileName = "WorldDefinition",
-        menuName = "ImmersiveGames/World Definition",
-        order = 0)]
+        menuName = "ImmersiveGames/NewScripts/Modules/Gameplay/Definitions/WorldDefinition",
+        order = 30)]
     public sealed class WorldDefinition : ScriptableObject
     {
         [SerializeField]

@@ -8,9 +8,9 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
     [CreateAssetMenu(
-        fileName = "SceneRouteDefinition",
-        menuName = "ImmersiveGames/NewScripts/SceneFlow/Scene Route Definition",
-        order = 16)]
+        fileName = "SceneRouteDefinitionAsset",
+        menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Definitions/SceneRouteDefinitionAsset",
+        order = 30)]
     public sealed class SceneRouteDefinitionAsset : ScriptableObject
     {
         [Header("Identity")]

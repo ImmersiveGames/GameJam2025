@@ -7,9 +7,9 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 {
     [CreateAssetMenu(
-        fileName = "NewScriptsBootstrapConfig",
-        menuName = "Immersive Games/NewScripts/Bootstrap Config",
-        order = 100)]
+        fileName = "NewScriptsBootstrapConfigAsset",
+        menuName = "ImmersiveGames/NewScripts/Infrastructure/Config/Configs/NewScriptsBootstrapConfigAsset",
+        order = 20)]
     public sealed class NewScriptsBootstrapConfigAsset : ScriptableObject
     {
         public const string DefaultResourcesPath = "NewScriptsBootstrapConfig";
