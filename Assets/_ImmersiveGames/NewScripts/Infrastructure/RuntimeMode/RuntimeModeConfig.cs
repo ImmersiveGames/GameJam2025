@@ -12,8 +12,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
     /// </summary>
     [CreateAssetMenu(
         fileName = "RuntimeModeConfig",
-        menuName = "ImmersiveGames/Runtime Mode Config",
-        order = 0)]
+        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/Configs/RuntimeModeConfig",
+        order = 20)]
     public sealed class RuntimeModeConfig : ScriptableObject
     {
         [Header("Modo")]

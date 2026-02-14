@@ -16,9 +16,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     /// - Rota pode ser resolvida por referência direta opcional (routeRef) ou por SceneRouteId.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "GameNavigationCatalog",
-        menuName = "ImmersiveGames/NewScripts/Navigation/GameNavigationCatalog",
-        order = 0)]
+        fileName = "GameNavigationCatalogAsset",
+        menuName = "ImmersiveGames/NewScripts/Modules/Navigation/Catalogs/GameNavigationCatalogAsset",
+        order = 30)]
     public sealed class GameNavigationCatalogAsset : ScriptableObject, IGameNavigationCatalog, ISerializationCallbackReceiver
     {
         [Serializable]

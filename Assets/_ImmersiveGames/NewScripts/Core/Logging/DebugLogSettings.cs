@@ -5,8 +5,9 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
     /// Definições persistentes para o DebugUtility, permitindo configurar comportamento em editor ou player.
     /// </summary>
     [CreateAssetMenu(
-        menuName = "ImmersiveGames/Debug/DebugLog Settings",
-        fileName = "DebugLogSettings")]
+        menuName = "ImmersiveGames/NewScripts/Core/Logging/Configs/DebugLogSettings",
+        fileName = "DebugLogSettings",
+        order = 10)]
     public sealed class DebugLogSettings : ScriptableObject
     {
         [Header("Flags globais")]

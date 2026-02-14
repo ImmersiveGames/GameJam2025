@@ -10,9 +10,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings
     /// Fonte única para resolução de profiles no SceneFlow.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "SceneTransitionProfileCatalog",
-        menuName = "ImmersiveGames/SceneFlow/SceneTransitionProfileCatalog",
-        order = 10)]
+        fileName = "SceneTransitionProfileCatalogAsset",
+        menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Catalogs/SceneTransitionProfileCatalogAsset",
+        order = 30)]
     public sealed class SceneTransitionProfileCatalogAsset : ScriptableObject
     {
         /// <summary>
