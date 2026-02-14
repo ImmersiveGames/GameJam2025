@@ -279,10 +279,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return;
             }
 
-            LogObsFade("FadeInStarted", transitionId, signature, context.TransitionProfileName);
-
             _fadeAdapter.ConfigureFromProfile(context.TransitionProfileId);
-            await _fadeAdapter.FadeInAsync(signature);
+
+            var fadeInTask = _fadeAdapter.FadeInAsync(signature);
+            LogObsFade("FadeInStarted", transitionId, signature, context.TransitionProfileName);
+            await fadeInTask;
 
             LogObsFade("FadeInCompleted", transitionId, signature, context.TransitionProfileName);
         }

@@ -3,10 +3,12 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 {
     /// <summary>
@@ -114,6 +116,16 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         {
             try
             {
+                if (_startPlan.UseFade)
+                {
+                    bool ready = await EnsureFadeReadyForStartTransitionAsync();
+                    if (!ready)
+                    {
+                        _startInProgress = false;
+                        return;
+                    }
+                }
+
                 await _sceneFlow.TransitionAsync(_startPlan);
             }
             catch (Exception ex)
@@ -122,6 +134,40 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
                     $"[GameLoopSceneFlow] Falha ao executar TransitionAsync(startPlan). ex={ex}");
 
                 _startInProgress = false;
+            }
+        }
+
+        private static async Task<bool> EnsureFadeReadyForStartTransitionAsync()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IFadeService>(out var fadeService) || fadeService == null)
+            {
+                AbortFadeAsFatal("IFadeService is not available in global DI before start transition.");
+                return false;
+            }
+
+            try
+            {
+                await fadeService.EnsureReadyAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AbortFadeAsFatal($"EnsureReadyAsync failed before start transition. ex='{ex.GetType().Name}: {ex.Message}'");
+                return false;
+            }
+        }
+
+        private static void AbortFadeAsFatal(string detail)
+        {
+            DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
+                $"[FATAL][Fade] {detail}");
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
+            if (!Application.isEditor)
+            {
+                Application.Quit();
             }
         }
 

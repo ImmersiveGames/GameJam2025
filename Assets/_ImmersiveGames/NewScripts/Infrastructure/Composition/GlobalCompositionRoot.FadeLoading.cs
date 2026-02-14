@@ -29,9 +29,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"[Fade] IFadeService registered in global DI (scene='{fadeSceneName}').",
                 DebugUtility.Colors.Info);
 
-            if (DependencyManager.Provider.TryGetGlobal<IFadeService>(out var fadeService) && fadeService is FadeService concrete)
+            if (DependencyManager.Provider.TryGetGlobal<IFadeService>(out var fadeService) && fadeService != null)
             {
-                _ = PreloadFadeSceneAsync(concrete, fadeSceneName);
+                _ = PreloadFadeSceneAsync(fadeService, fadeSceneName);
             }
             else
             {
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return fadeSceneName;
         }
 
-        private static async System.Threading.Tasks.Task PreloadFadeSceneAsync(FadeService fadeService, string fadeSceneName)
+        private static async System.Threading.Tasks.Task PreloadFadeSceneAsync(IFadeService fadeService, string fadeSceneName)
         {
             try
             {
