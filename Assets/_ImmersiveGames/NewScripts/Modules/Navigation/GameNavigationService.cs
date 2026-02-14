@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly ILevelFlowService _levelFlowService;
 
+        private LevelId _lastStartedGameplayLevelId;
         private int _navigationInProgress;
 
         public GameNavigationService(
@@ -51,10 +52,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         public Task RestartAsync(string reason = null)
         {
-            DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[OBS][Navigation] RestartRequested reason='{reason ?? "<null>"}'.",
-                DebugUtility.Colors.Info);
-            return ExecuteIntentAsync(GameNavigationIntents.ToGameplay, reason);
+            if (_lastStartedGameplayLevelId.IsValid)
+            {
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] RestartRequested lastLevelId='{_lastStartedGameplayLevelId}' reason='{reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+                return StartGameplayAsync(_lastStartedGameplayLevelId, reason ?? "Restart");
+            }
+
+            DebugUtility.LogError(typeof(GameNavigationService),
+                $"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId. reason='{reason ?? "<null>"}'.");
+            throw new InvalidOperationException("[FATAL][Config] Restart called before StartGameplayAsync; no last levelId.");
         }
 
         public Task ExitToMenuAsync(string reason = null)
@@ -67,11 +75,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         [Obsolete("Use GoToMenuAsync(reason).")]
         public Task RequestMenuAsync(string reason = null)
-            => GoToMenuAsync(reason);
+        {
+            DebugUtility.LogError(typeof(GameNavigationService),
+                "[FATAL][Config] Obsolete navigation API called: RequestMenuAsync. Use the non-obsolete API.");
+            throw new InvalidOperationException("Obsolete navigation API called: RequestMenuAsync. Use GoToMenuAsync(reason).");
+        }
 
         [Obsolete("Use RestartAsync(reason) ou StartGameplayAsync(levelId, reason).")]
         public Task RequestGameplayAsync(string reason = null)
-            => RestartAsync(reason);
+        {
+            DebugUtility.LogError(typeof(GameNavigationService),
+                "[FATAL][Config] Obsolete navigation API called: RequestGameplayAsync. Use the non-obsolete API.");
+            throw new InvalidOperationException("Obsolete navigation API called: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayAsync(levelId, reason).");
+        }
 
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
@@ -91,46 +107,49 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             try
             {
-                DebugUtility.LogVerbose(typeof(GameNavigationService),
-                    $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' reason='{reason ?? "<null>"}'.",
-                    DebugUtility.Colors.Info);
-
                 if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[Navigation] Intent padrão de gameplay não encontrado ou inválido. " +
+                        $"[FATAL][Config] Missing gameplay intent entry. " +
                         $"intentId='{GameNavigationIntents.ToGameplay}', levelId='{levelId}'. " +
-                        $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}]");
-                    return;
+                        $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}].");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config] Missing gameplay intent entry '{GameNavigationIntents.ToGameplay}'.");
                 }
 
                 if (_levelFlowService == null)
                 {
-                    DebugUtility.LogWarning(typeof(GameNavigationService),
-                        $"[Navigation] LevelFlow indisponível. Fallback para rota padrão. levelId='{levelId}'.");
-                    await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, entry, reason);
-                    return;
+                    DebugUtility.LogError(typeof(GameNavigationService),
+                        $"[FATAL][Config] Missing ILevelFlowService. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
+                    throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService.");
                 }
 
-                if (!_levelFlowService.TryResolve(levelId, out var resolvedRouteId, out var payload))
+                if (!_levelFlowService.TryResolve(levelId, out var resolvedRouteId, out var payload) || !resolvedRouteId.IsValid)
                 {
-                    DebugUtility.LogWarning(typeof(GameNavigationService),
-                        $"[Navigation] LevelId não resolvido. Fallback para rota padrão. levelId='{levelId}'.");
-                    await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, entry, reason);
-                    return;
+                    DebugUtility.LogError(typeof(GameNavigationService),
+                        $"[FATAL][Config] LevelId unresolved in ILevelFlowService. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config] LevelId unresolved in ILevelFlowService. levelId='{levelId}'.");
                 }
 
-                DebugUtility.Log(typeof(GameNavigationService),
-                    $"[Navigation] LevelFlow resolvido. levelId='{levelId}', resolvedRouteId='{resolvedRouteId}', styleId='{entry.StyleId}', reason='{reason ?? "<null>"}'.",
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
+
+                _lastStartedGameplayLevelId = levelId;
 
                 var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
                 await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);
+
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] StartGameplayCompleted levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
                     $"[Navigation] Exceção ao iniciar gameplay. levelId='{levelId}', reason='{reason ?? "<null>"}', ex={ex}");
+                throw;
             }
             finally
             {
@@ -139,15 +158,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
 
         [Obsolete("Use métodos explícitos: GoToMenuAsync, RestartAsync, ExitToMenuAsync ou StartGameplayAsync(levelId, reason).")]
-        public async Task NavigateAsync(string routeId, string reason = null)
-            => await ExecuteIntentAsync(routeId, reason);
+        public Task NavigateAsync(string routeId, string reason = null)
+        {
+            DebugUtility.LogError(typeof(GameNavigationService),
+                "[FATAL][Config] Obsolete navigation API called: NavigateAsync. Use the non-obsolete API.");
+            throw new InvalidOperationException("Obsolete navigation API called: NavigateAsync. Use GoToMenuAsync(reason), RestartAsync(reason), ExitToMenuAsync(reason), or StartGameplayAsync(levelId, reason).");
+        }
 
         private async Task ExecuteIntentAsync(string intentId, string reason = null)
         {
             if (string.IsNullOrWhiteSpace(intentId))
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    "[Navigation] NavigateAsync chamado com id vazio. Abortando.");
+                    "[Navigation] ExecuteIntentAsync chamado com id vazio. Abortando.");
                 return;
             }
 
@@ -202,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             var signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] NavigateAsync -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
+                $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
                 $"styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', " +
                 $"signature='{signature}', " +
                 $"Load=[{string.Join(", ", request.ScenesToLoad)}], " +
