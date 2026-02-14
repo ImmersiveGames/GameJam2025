@@ -118,8 +118,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             return _routeResolver.TryResolve(routeId, out resolved);
         }
 
-
-
         private static bool IsStartupOrFrontendProfile(SceneFlowProfileId profileId)
         {
             string value = profileId.Value;
