@@ -140,6 +140,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
                 var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
                 await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);
+
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] StartGameplayCompleted levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
