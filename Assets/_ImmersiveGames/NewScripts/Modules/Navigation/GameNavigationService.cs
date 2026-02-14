@@ -90,6 +90,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             throw new InvalidOperationException("Obsolete navigation API called: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayAsync(levelId, reason).");
         }
 
+        [Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct).") ]
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
             if (!levelId.IsValid)
@@ -138,9 +139,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     DebugUtility.Colors.Info);
 
                 _lastStartedGameplayLevelId = levelId;
-
-                var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
-                await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);
+                await StartGameplayRouteAsync(resolvedRouteId, payload, reason);
 
                 DebugUtility.LogVerbose(typeof(GameNavigationService),
                     $"[OBS][Navigation] StartGameplayCompleted levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
@@ -156,6 +155,26 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             {
                 Interlocked.Exchange(ref _navigationInProgress, 0);
             }
+        }
+
+        public async Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null)
+        {
+            if (!routeId.IsValid)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] StartGameplayRouteAsync com RouteId inválido. routeId='{routeId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] StartGameplayRouteAsync with invalid RouteId.");
+            }
+
+            if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Missing gameplay intent entry for StartGameplayRouteAsync. intentId='{GameNavigationIntents.ToGameplay}'.");
+                throw new InvalidOperationException("[FATAL][Config] Missing gameplay intent entry.");
+            }
+
+            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleId, payload ?? SceneTransitionPayload.Empty);
+            await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, routeEntry, reason);
         }
 
         [Obsolete("Use métodos explícitos: GoToMenuAsync, RestartAsync, ExitToMenuAsync ou StartGameplayAsync(levelId, reason).")]

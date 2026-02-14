@@ -206,6 +206,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"bootstrapVia={bootstrapVia} navigationVia={catalogsVia} stylesVia={catalogsVia} levelsVia={catalogsVia} " +
                 $"(assets: navigation={catalogAsset.name}, styles={styleCatalogAsset.name}, levels={levelCatalogAsset.name}).",
                 DebugUtility.Colors.Info);
+
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
+            {
+                levelFlowRuntime = new LevelFlowRuntimeService(levelCatalogAsset, service);
+                DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(levelFlowRuntime);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private static T LoadRequiredResourceAsset<T>(string resourcesPath, string assetLabel) where T : ScriptableObject

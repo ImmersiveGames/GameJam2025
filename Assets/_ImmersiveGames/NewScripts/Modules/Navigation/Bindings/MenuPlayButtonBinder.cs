@@ -20,44 +20,44 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
         [Tooltip("LevelId canônico para iniciar gameplay via trilho oficial StartGameplayAsync(levelId).")]
         private string startLevelId = "level.1";
 
-        private IGameNavigationService _navigation;
+        private ILevelFlowRuntimeService _levelFlow;
 
         protected override void Awake()
         {
             base.Awake();
 
             // Tentativa early: se não estiver pronto ainda, tentamos de novo no clique.
-            DependencyManager.Provider.TryGetGlobal(out _navigation);
+            DependencyManager.Provider.TryGetGlobal(out _levelFlow);
 
-            if (_navigation == null)
+            if (_levelFlow == null)
             {
                 DebugUtility.LogWarning<MenuPlayButtonBinder>(
-                    "[Navigation] IGameNavigationService indisponível no Awake. Verifique se o GlobalCompositionRoot registrou antes do Frontend.");
+                    "[LevelFlow] ILevelFlowRuntimeService indisponível no Awake. Verifique se o GlobalCompositionRoot registrou antes do Frontend.");
             }
         }
 
         protected override bool OnClickCore(string actionReason)
         {
-            if (_navigation == null)
+            if (_levelFlow == null)
             {
-                DependencyManager.Provider.TryGetGlobal(out _navigation);
+                DependencyManager.Provider.TryGetGlobal(out _levelFlow);
             }
 
-            if (_navigation == null)
+            if (_levelFlow == null)
             {
                 DebugUtility.LogWarning<MenuPlayButtonBinder>(
-                    "[Navigation] Clique ignorado: IGameNavigationService indisponível.");
+                    "[LevelFlow] Clique ignorado: ILevelFlowRuntimeService indisponível.");
                 // Se a base estiver configurada para desabilitar durante ação, isso garante reabilitar.
                 return false;
             }
 
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[OBS][Navigation] MenuPlay -> StartGameplayAsync levelId='{LevelId.Normalize(startLevelId)}' reason='{actionReason}'.",
+                $"[OBS][LevelFlow] MenuPlay -> StartGameplayAsync levelId='{LevelId.Normalize(startLevelId)}' reason='{actionReason}'.",
                 DebugUtility.Colors.Info);
 
             // Fire-and-forget com captura de falhas.
             NavigationTaskRunner.FireAndForget(
-                _navigation.StartGameplayAsync(LevelId.FromName(startLevelId), actionReason),
+                _levelFlow.StartGameplayAsync(startLevelId, actionReason),
                 typeof(MenuPlayButtonBinder),
                 $"Menu/Play levelId='{LevelId.Normalize(startLevelId)}'");
 

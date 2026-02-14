@@ -26,34 +26,34 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         [ContextMenu("QA/SceneFlow/EnterGameplay (TC: Menu->Gameplay ResetWorld)")]
         private void Qa_EnterGameplay()
         {
-            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
-            if (navigation == null)
+            var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
+            if (levelFlow == null)
             {
                 return;
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][Navigation] QA EnterGameplay -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonEnterGameplay}'.",
+                $"[OBS][LevelFlow] QA EnterGameplay -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonEnterGameplay}'.",
                 ColorInfo);
 
-            _ = navigation.StartGameplayAsync(LevelId.FromName(QaStartLevelId), ReasonEnterGameplay);
+            _ = levelFlow.StartGameplayAsync(QaStartLevelId, ReasonEnterGameplay);
         }
 
 
         [ContextMenu("QA/PostGame/Restart (TC: Restart Route)")]
         private void Qa_RestartNavigation()
         {
-            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
-            if (navigation == null)
+            var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
+            if (levelFlow == null)
             {
                 return;
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][Navigation] QA Restart -> RestartAsync reason='{ReasonQaRestart}'.",
+                $"[OBS][LevelFlow] QA Restart -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonQaRestart}'.",
                 ColorInfo);
 
-            _ = navigation.RestartAsync(ReasonQaRestart);
+            _ = levelFlow.StartGameplayAsync(QaStartLevelId, ReasonQaRestart);
         }
 
         [ContextMenu("QA/PostGame/ExitToMenu (TC: Frontend Route)")]
