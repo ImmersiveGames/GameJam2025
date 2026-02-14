@@ -210,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
             {
-                levelFlowRuntime = new LevelFlowRuntimeService(levelCatalogAsset, service);
+                levelFlowRuntime = new LevelFlowRuntimeService(levelCatalogAsset, service, catalogAsset, styleCatalogAsset);
                 DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(levelFlowRuntime);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

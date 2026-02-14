@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string decisionReason = string.IsNullOrWhiteSpace(context.ResetDecisionReason) ? "context:missingDecisionReason" : context.ResetDecisionReason;
 
             DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                $"[OBS][WorldLifecycle] ResetPolicy routeId='{routeId}', requiresWorldReset={requiresWorldReset}, signature='{signature}', reason='{decisionReason}', decisionSource='{decisionSource}'.",
+                $"[OBS][WorldLifecycle] ResetPolicy routeId='{routeId}' requiresWorldReset={requiresWorldReset} signature='{signature}' reason='{decisionReason}' decisionSource='{decisionSource}'.",
                 DebugUtility.Colors.Info);
 
             if (!requiresWorldReset)

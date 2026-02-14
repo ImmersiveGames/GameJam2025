@@ -19,13 +19,19 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     {
         private readonly ILevelFlowService _levelResolver;
         private readonly IGameNavigationService _navigationService;
+        private readonly IGameNavigationCatalog _navigationCatalog;
+        private readonly ITransitionStyleCatalog _styleCatalog;
 
         public LevelFlowRuntimeService(
             ILevelFlowService levelResolver,
-            IGameNavigationService navigationService)
+            IGameNavigationService navigationService,
+            IGameNavigationCatalog navigationCatalog = null,
+            ITransitionStyleCatalog styleCatalog = null)
         {
             _levelResolver = levelResolver ?? throw new ArgumentNullException(nameof(levelResolver));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _navigationCatalog = navigationCatalog;
+            _styleCatalog = styleCatalog;
         }
 
         public async Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default)
@@ -45,18 +51,44 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
+            var (styleId, profileId, profileAsset) = ResolveGameplayStyleObservability();
+
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}', routeId='{resolvedRouteId}', reason='{reason ?? "<null>"}', signature='<pending>'.",
+                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
             await _navigationService.StartGameplayRouteAsync(resolvedRouteId, payload, reason);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayDispatched routeId='{resolvedRouteId}', reason='{reason ?? "<null>"}', signature='<from-navigation>'.",
+                $"[OBS][LevelFlow] StartGameplayDispatched routeId='{resolvedRouteId}' styleId='{styleId}' profile='{profileId}' profileAsset='{profileAsset}' reason='{reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
+        }
+
+
+        private (string styleId, string profileId, string profileAsset) ResolveGameplayStyleObservability()
+        {
+            if (_navigationCatalog == null || _styleCatalog == null)
+            {
+                return ("<unknown>", "<unknown>", "<unknown>");
+            }
+
+            if (!_navigationCatalog.TryGet(GameNavigationIntents.ToGameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
+            {
+                return ("<unknown>", "<unknown>", "<unknown>");
+            }
+
+            string styleId = gameplayEntry.StyleId.ToString();
+            if (!_styleCatalog.TryGet(gameplayEntry.StyleId, out var style))
+            {
+                return (styleId, "<unknown>", "<unknown>");
+            }
+
+            string profileId = style.ProfileId.ToString();
+            string profileAsset = style.Profile != null ? style.Profile.name : "<null>";
+            return (styleId, profileId, profileAsset);
         }
 
         private static void FailFastConfig(string detail)
