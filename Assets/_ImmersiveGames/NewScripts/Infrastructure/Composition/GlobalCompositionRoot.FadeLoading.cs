@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 await fadeService.EnsureReadyAsync();
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Fade] FadeScene ready (source=Config/Bootstrap, scene='{fadeSceneName}').",
+                    $"[OBS][Fade] FadeScene ready (source=GlobalCompositionRoot/Preload, scene='{fadeSceneName}').",
                     DebugUtility.Colors.Success);
             }
             catch (System.Exception ex)
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     Application.Quit();
                 }
 
-                throw;
+                return;
             }
         }
 

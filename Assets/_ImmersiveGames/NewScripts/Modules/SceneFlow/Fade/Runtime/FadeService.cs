@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                 }
 
                 DebugUtility.LogVerbose<FadeService>(
-                    $"[OBS][Fade] FadeScene ready (source=Config/Bootstrap, scene='{_fadeSceneName}').");
+                    $"[OBS][Fade] FadeScene ready (source=FadeService/EnsureController, scene='{_fadeSceneName}').");
             }
             finally
             {

@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private LevelCatalogAsset levelCatalog;
         [SerializeField] private SceneRouteCatalogAsset sceneRouteCatalog;
         [SerializeField] private SceneTransitionProfileCatalogAsset transitionProfileCatalog;
-        [SerializeField] private string fadeSceneName = "FadeScene";
+        [SerializeField] private string fadeSceneName;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
         public TransitionStyleCatalogAsset TransitionStyleCatalog => transitionStyleCatalog;
