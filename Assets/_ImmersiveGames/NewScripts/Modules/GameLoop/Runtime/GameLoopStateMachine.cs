@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime
 {
     public sealed class GameLoopStateMachine

@@ -2,7 +2,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.View;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
