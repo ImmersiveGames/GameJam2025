@@ -51,6 +51,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             ct.ThrowIfCancellationRequested();
             await _navigationService.StartGameplayRouteAsync(resolvedRouteId, payload, reason);
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][LevelFlow] StartGameplayDispatched routeId='{resolvedRouteId}', reason='{reason ?? "<null>"}', signature='<from-navigation>'.",
+                DebugUtility.Colors.Info);
+
             ct.ThrowIfCancellationRequested();
         }
 

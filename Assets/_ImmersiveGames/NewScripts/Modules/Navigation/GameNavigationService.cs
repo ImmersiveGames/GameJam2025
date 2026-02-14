@@ -51,25 +51,52 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
         }
 
-        public Task RestartAsync(string reason = null)
+        public async Task RestartAsync(string reason = null)
         {
-            if (_lastStartedGameplayLevelId.IsValid)
+            if (!_lastStartedGameplayLevelId.IsValid)
             {
-                DebugUtility.LogVerbose(typeof(GameNavigationService),
-                    $"[OBS][Navigation] RestartRequested lastLevelId='{_lastStartedGameplayLevelId}' reason='{reason ?? "<null>"}'.",
-                    DebugUtility.Colors.Info);
-                return StartGameplayAsync(_lastStartedGameplayLevelId, reason ?? "Restart");
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId. reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] Restart called before StartGameplayAsync; no last levelId.");
             }
 
-            DebugUtility.LogError(typeof(GameNavigationService),
-                $"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId. reason='{reason ?? "<null>"}'.");
-            throw new InvalidOperationException("[FATAL][Config] Restart called before StartGameplayAsync; no last levelId.");
+            if (_levelFlowService == null)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Missing ILevelFlowService for Restart. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for Restart.");
+            }
+
+            if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out var resolvedRouteId, out var payload) || !resolvedRouteId.IsValid)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Config] Restart unresolved LevelId in ILevelFlowService. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                throw new InvalidOperationException("[FATAL][Config] Restart unresolved LevelId in ILevelFlowService.");
+            }
+
+            string resolvedReason = reason ?? "Restart";
+            DebugUtility.Log(typeof(GameNavigationService),
+                $"[OBS][Navigation] RestartRequested levelId='{_lastStartedGameplayLevelId}', routeId='{resolvedRouteId}', reason='{resolvedReason}'.",
+                DebugUtility.Colors.Info);
+
+            await StartGameplayRouteAsync(resolvedRouteId, payload, resolvedReason);
         }
 
         public Task ExitToMenuAsync(string reason = null)
         {
-            DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}'.",
+            string styleLabel = "<unknown>";
+            string profileLabel = "<unknown>";
+            if (_catalog.TryGet(GameNavigationIntents.ToMenu, out var menuEntry) && menuEntry.IsValid)
+            {
+                styleLabel = menuEntry.StyleId.ToString();
+                if (_styleCatalog != null && _styleCatalog.TryGet(menuEntry.StyleId, out var style))
+                {
+                    profileLabel = style.ProfileId.ToString();
+                }
+            }
+
+            DebugUtility.Log(typeof(GameNavigationService),
+                $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}', styleId='{styleLabel}', profile='{profileLabel}'.",
                 DebugUtility.Colors.Info);
             return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
         }
@@ -174,6 +201,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleId, payload ?? SceneTransitionPayload.Empty);
+
+            var (profile, profileId, _) = ResolveStyle(routeEntry);
+            DebugUtility.Log(typeof(GameNavigationService),
+                $"[OBS][Navigation] StartGameplayRouteRequested routeId='{routeId}', reason='{reason ?? "<null>"}', styleId='{routeEntry.StyleId}', profile='{profileId}', profileAsset='{(profile != null ? profile.name : "<null>")}'.",
+                DebugUtility.Colors.Info);
+
             await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, routeEntry, reason);
         }
 
