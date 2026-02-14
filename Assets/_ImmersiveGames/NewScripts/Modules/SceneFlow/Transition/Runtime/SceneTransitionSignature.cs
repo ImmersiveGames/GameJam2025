@@ -27,15 +27,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             IReadOnlyList<string> loadList = NormalizeList(request.ScenesToLoad);
             IReadOnlyList<string> unloadList = NormalizeList(request.ScenesToUnload);
             return new SceneTransitionContext(
-                loadList,
-                unloadList,
-                request.TargetActiveScene,
-                request.UseFade,
-                request.RouteId,
-                request.StyleId,
-                request.Reason,
-                request.TransitionProfileId,
-                request.ContextSignature);
+                scenesToLoad: loadList,
+                scenesToUnload: unloadList,
+                targetActiveScene: request.TargetActiveScene,
+                useFade: request.UseFade,
+                routeId: request.RouteId,
+                styleId: request.StyleId,
+                reason: request.Reason,
+                transitionProfileId: request.TransitionProfileId,
+                contextSignature: request.ContextSignature);
         }
 
         private static IReadOnlyList<string> NormalizeList(IReadOnlyList<string> source)

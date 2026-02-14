@@ -3,10 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
+using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
@@ -27,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         private readonly INavigationPolicy _navigationPolicy;
         private readonly ISceneRouteResolver? _routeResolver;
         private readonly IRouteGuard _routeGuard;
+        private readonly IRouteResetPolicy? _routeResetPolicy;
 
         private readonly SemaphoreSlim _transitionGate = new(1, 1);
         private int _transitionInProgress;
@@ -45,7 +48,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             ISceneTransitionCompletionGate? completionGate = null,
             INavigationPolicy? navigationPolicy = null,
             ISceneRouteResolver? routeResolver = null,
-            IRouteGuard? routeGuard = null)
+            IRouteGuard? routeGuard = null,
+            IRouteResetPolicy? routeResetPolicy = null)
         {
             _loaderAdapter = loaderAdapter ?? new SceneManagerLoaderAdapter();
             _fadeAdapter = fadeAdapter ?? new NoFadeAdapter();
@@ -53,6 +57,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             _navigationPolicy = navigationPolicy ?? new AllowAllNavigationPolicy();
             _routeResolver = routeResolver;
             _routeGuard = routeGuard ?? new AllowAllRouteGuard();
+            _routeResetPolicy = routeResetPolicy;
         }
 
         public async Task TransitionAsync(SceneTransitionRequest request)
@@ -63,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
 
             var hydratedRequest = ResolveRoutePayloadIfNeeded(request, out var routeDefinition);
-            var context = SceneTransitionSignature.BuildContext(hydratedRequest);
+            var context = BuildContextWithResetDecision(hydratedRequest, routeDefinition);
             string signature = SceneTransitionSignature.Compute(context);
 
             if (!_navigationPolicy.CanTransition(hydratedRequest, out var denialReason))
@@ -177,6 +182,47 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
         }
 
+
+
+
+        private SceneTransitionContext BuildContextWithResetDecision(SceneTransitionRequest request, SceneRouteDefinition? routeDefinition)
+        {
+            SceneTransitionContext context = SceneTransitionSignature.BuildContext(request);
+
+            if (!TryResolveRouteResetPolicy(out var policy) || policy == null)
+            {
+                return context.WithRouteResetDecision(
+                    requiresWorldReset: false,
+                    decisionSource: "policy:missing",
+                    decisionReason: "RouteResetPolicyMissing");
+            }
+
+            RouteResetDecision resetDecision = policy.Resolve(context.RouteId, routeDefinition, context);
+            return context.WithRouteResetDecision(
+                requiresWorldReset: resetDecision.ShouldReset,
+                decisionSource: resetDecision.DecisionSource,
+                decisionReason: resetDecision.Reason);
+        }
+
+        private bool TryResolveRouteResetPolicy(out IRouteResetPolicy? policy)
+        {
+            if (_routeResetPolicy != null)
+            {
+                policy = _routeResetPolicy;
+                return true;
+            }
+
+            if (DependencyManager.HasInstance &&
+                DependencyManager.Provider.TryGetGlobal<IRouteResetPolicy>(out var resolved) &&
+                resolved != null)
+            {
+                policy = resolved;
+                return true;
+            }
+
+            policy = null;
+            return false;
+        }
 
         private SceneTransitionRequest ResolveRoutePayloadIfNeeded(
             SceneTransitionRequest request,

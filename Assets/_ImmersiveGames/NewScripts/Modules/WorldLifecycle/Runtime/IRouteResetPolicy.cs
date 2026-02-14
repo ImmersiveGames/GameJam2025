@@ -3,12 +3,9 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
-    /// <summary>
-    /// Resolve de política de reset para transições do SceneFlow.
-    /// </summary>
     public interface IRouteResetPolicy
     {
-        RouteResetDecision Resolve(SceneRouteId routeId, SceneTransitionContext context);
+        RouteResetDecision Resolve(SceneRouteId routeId, SceneRouteDefinition? routeDefinition, SceneTransitionContext context);
     }
 
     public readonly struct RouteResetDecision
