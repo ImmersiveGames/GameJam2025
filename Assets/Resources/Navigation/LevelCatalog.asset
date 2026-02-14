@@ -17,20 +17,14 @@ MonoBehaviour:
       _value: level.1
     routeId:
       _value: level.1
-    scenesToLoad:
-    - GameplayScene
-    - UIGlobalScene
-    scenesToUnload:
-    - MenuScene
-    targetActiveScene: GameplayScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: ''
   - levelId:
       _value: level.2
     routeId:
       _value: level.2
-    scenesToLoad:
-    - GameplayScene
-    - UIGlobalScene
-    scenesToUnload:
-    - MenuScene
-    targetActiveScene: GameplayScene
+    scenesToLoad: []
+    scenesToUnload: []
+    targetActiveScene: ''
   warnOnInvalidLevels: 1

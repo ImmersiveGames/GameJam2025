@@ -17,7 +17,7 @@ MonoBehaviour:
       _value: to-menu
     scenesToLoad: []
     scenesToUnload: []
-    targetActiveScene: ''
+    targetActiveScene: 
     scenesToLoadKeys:
     - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
     - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
@@ -29,7 +29,7 @@ MonoBehaviour:
       _value: to-gameplay
     scenesToLoad: []
     scenesToUnload: []
-    targetActiveScene: ''
+    targetActiveScene: 
     scenesToLoadKeys:
     - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
     - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
@@ -41,7 +41,7 @@ MonoBehaviour:
       _value: level.1
     scenesToLoad: []
     scenesToUnload: []
-    targetActiveScene: ''
+    targetActiveScene: 
     scenesToLoadKeys:
     - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
     - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
@@ -53,7 +53,7 @@ MonoBehaviour:
       _value: level.2
     scenesToLoad: []
     scenesToUnload: []
-    targetActiveScene: ''
+    targetActiveScene: 
     scenesToLoadKeys:
     - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
     - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
