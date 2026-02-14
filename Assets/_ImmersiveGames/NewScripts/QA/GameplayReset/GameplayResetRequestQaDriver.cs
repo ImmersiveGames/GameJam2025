@@ -9,13 +9,13 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.QA.GameplayReset
+namespace _ImmersiveGames.NewScripts.QA.GameplayRearm
 {
     /// <summary>
-    /// Driver de QA para exercitar variações de GameplayResetRequest.
+    /// Driver de QA para exercitar variações de RunRearmRequest.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class GameplayResetRequestQaDriver : MonoBehaviour
+    public sealed class RunRearmRequestDevDriver : MonoBehaviour
     {
         [Header("Request Config")]
         [SerializeField]
@@ -29,26 +29,26 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 
         private string _sceneName;
         private IActorRegistry _actorRegistry;
-        private IGameplayResetOrchestrator _orchestrator;
-        private IGameplayResetTargetClassifier _classifier;
+        private IRunRearmOrchestrator _orchestrator;
+        private IRunRearmTargetClassifier _classifier;
         private readonly List<IActor> _actorBuffer = new(16);
         private readonly List<IActor> _resolvedTargets = new(16);
-        private readonly IGameplayResetTargetClassifier _fallbackClassifier = new DefaultGameplayResetTargetClassifier();
+        private readonly IRunRearmTargetClassifier _fallbackClassifier = new DefaultRunRearmTargetClassifier();
 
         private void Awake()
         {
             _sceneName = gameObject.scene.name;
         }
 
-        [ContextMenu("QA/GameplayResetRequest/Fill ActorIds From Registry (Kind)")]
+        [ContextMenu("QA/RunRearmRequest/Fill ActorIds From Registry (Kind)")]
         public void QA_FillActorIdsFromRegistry()
         {
             EnsureDependencies();
 
             if (_actorRegistry == null)
             {
-                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
-                    "[QA][GameplayResetRequest] IActorRegistry ausente; não foi possível preencher ActorIds.");
+                DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
+                    "[QA][RunRearmRequest] IActorRegistry ausente; não foi possível preencher ActorIds.");
                 return;
             }
 
@@ -80,95 +80,98 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 
             if (verboseLogs)
             {
-                DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
-                    $"[QA][GameplayResetRequest] ActorIds preenchidos (kind={fillKind}, count={actorIds.Count}).");
+                DebugUtility.Log(typeof(RunRearmRequestDevDriver),
+                    $"[QA][RunRearmRequest] ActorIds preenchidos (kind={fillKind}, count={actorIds.Count}).");
             }
             else
             {
-                DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
-                    $"[QA][GameplayResetRequest] ActorIds preenchidos (count={actorIds.Count}).");
+                DebugUtility.Log(typeof(RunRearmRequestDevDriver),
+                    $"[QA][RunRearmRequest] ActorIds preenchidos (count={actorIds.Count}).");
             }
         }
 
-        [ContextMenu("QA/GameplayResetRequest/Run AllActorsInScene")]
+        [ContextMenu("QA/RunRearmRequest/Run AllActorsInScene")]
         public void QA_RunAllActorsInScene()
         {
-            _ = RunResetAsync(new GameplayResetRequest(
-                GameplayResetTarget.AllActorsInScene,
-                reason: "QA/GameplayResetRequestAllActors"));
+            _ = RunResetAsync(new RunRearmRequest(
+                RunRearmTarget.AllActorsInScene,
+                reason: "QA/RunRearmRequestAllActors"));
         }
 
-        [ContextMenu("QA/GameplayResetRequest/Run PlayersOnly")]
+        [ContextMenu("QA/RunRearmRequest/Run PlayersOnly")]
         public void QA_RunPlayersOnly()
         {
-            _ = RunResetAsync(new GameplayResetRequest(
-                GameplayResetTarget.PlayersOnly,
-                reason: "QA/GameplayResetRequestPlayersOnly",
+            _ = RunResetAsync(new RunRearmRequest(
+                RunRearmTarget.PlayersOnly,
+                reason: "QA/RunRearmRequestPlayersOnly",
                 actorKind: ActorKind.Player));
         }
 
-        [ContextMenu("QA/GameplayResetRequest/Run EaterOnly")]
+        [ContextMenu("QA/RunRearmRequest/Run EaterOnly")]
         public void QA_RunEaterOnly()
         {
             // IMPORTANT: explicitar ActorKind para não cair no default do enum (ex.: Player).
-            _ = RunResetAsync(new GameplayResetRequest(
-                GameplayResetTarget.EaterOnly,
-                reason: "QA/GameplayResetRequestEaterOnly",
+            _ = RunResetAsync(new RunRearmRequest(
+                RunRearmTarget.EaterOnly,
+                reason: "QA/RunRearmRequestEaterOnly",
                 actorKind: ActorKind.Eater));
         }
 
-        [ContextMenu("QA/GameplayResetRequest/Run ActorIdSet")]
+        [ContextMenu("QA/RunRearmRequest/Run ActorIdSet")]
         public void QA_RunActorIdSet()
         {
-            _ = RunResetAsync(new GameplayResetRequest(
-                GameplayResetTarget.ActorIdSet,
-                reason: "QA/GameplayResetRequestActorIdSet",
+            _ = RunResetAsync(new RunRearmRequest(
+                RunRearmTarget.ActorIdSet,
+                reason: "QA/RunRearmRequestActorIdSet",
                 actorIds: actorIds));
         }
 
-        [ContextMenu("QA/GameplayResetRequest/Run ByActorKind (FillKind)")]
+        [ContextMenu("QA/RunRearmRequest/Run ByActorKind (FillKind)")]
         public void QA_RunByActorKind()
         {
-            _ = RunResetAsync(GameplayResetRequest.ByActorKind(
+            _ = RunResetAsync(RunRearmRequest.ByActorKind(
                 fillKind,
-                reason: "QA/GameplayResetRequestByActorKind"));
+                reason: "QA/RunRearmRequestByActorKind"));
         }
 
-        private async Task RunResetAsync(GameplayResetRequest request)
+        private async Task RunResetAsync(RunRearmRequest request)
         {
             EnsureDependencies();
 
-            DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
-                $"[QA][GameplayResetRequest] Request => {request} (scene='{_sceneName}')");
+            DebugUtility.Log(typeof(RunRearmRequestDevDriver),
+                $"[QA][RunRearmRequest] Request => {request} (scene='{_sceneName}')");
 
             LogResolvedTargets(request);
 
             if (_orchestrator == null)
             {
-                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
-                    $"[QA][GameplayResetRequest] IGameplayResetOrchestrator não encontrado na cena '{_sceneName}'.");
+                DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
+                    $"[QA][RunRearmRequest] IRunRearmOrchestrator não encontrado na cena '{_sceneName}'.");
                 return;
             }
 
             try
             {
                 await _orchestrator.RequestResetAsync(request);
-                DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
-                    $"[QA][GameplayResetRequest] Completed => {request} (scene='{_sceneName}')");
+                DebugUtility.Log(typeof(RunRearmRequestDevDriver),
+                    $"[QA][RunRearmRequest] Completed => {request} (scene='{_sceneName}')");
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(GameplayResetRequestQaDriver),
-                    $"[QA][GameplayResetRequest] Failed => {request}. ex={ex}");
+                DebugUtility.LogError(typeof(RunRearmRequestDevDriver),
+                    $"[QA][RunRearmRequest] Failed => {request}. ex={ex}");
             }
         }
 
-        private void LogResolvedTargets(GameplayResetRequest request)
+        private void LogResolvedTargets(RunRearmRequest request)
         {
+            EnsureDependencies();
+            _classifier ??= _fallbackClassifier;
+
             if (_actorRegistry == null)
             {
-                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
-                    "[QA][GameplayResetRequest] IActorRegistry ausente; não foi possível resolver targets.");
+                DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
+                    "[QA][RunRearmRequest] IActorRegistry ausente; não foi possível resolver targets.");
                 return;
             }
 
@@ -177,8 +180,8 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 
             if (_resolvedTargets.Count == 0)
             {
-                DebugUtility.LogWarning(typeof(GameplayResetRequestQaDriver),
-                    $"[QA][GameplayResetRequest] Resolved targets: 0 (target={request.Target}).");
+                DebugUtility.LogWarning(typeof(RunRearmRequestDevDriver),
+                    $"[QA][RunRearmRequest] Resolved targets: 0 (target={request.Target}).");
                 return;
             }
 
@@ -201,8 +204,8 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 
             string labelText = labels.Count > 0 ? string.Join(", ", labels) : "<none>";
 
-            DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
-                $"[QA][GameplayResetRequest] Resolved targets: {_resolvedTargets.Count} => {labelText}");
+            DebugUtility.Log(typeof(RunRearmRequestDevDriver),
+                $"[QA][RunRearmRequest] Resolved targets: {_resolvedTargets.Count} => {labelText}");
         }
 
         private void EnsureDependencies()
