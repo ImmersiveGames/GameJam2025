@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly ILevelFlowService _levelFlowService;
 
+        private LevelId _lastStartedGameplayLevelId;
         private int _navigationInProgress;
 
         public GameNavigationService(
@@ -51,10 +52,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         public Task RestartAsync(string reason = null)
         {
-            DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[OBS][Navigation] RestartRequested reason='{reason ?? "<null>"}'.",
-                DebugUtility.Colors.Info);
-            return ExecuteIntentAsync(GameNavigationIntents.ToGameplay, reason);
+            if (_lastStartedGameplayLevelId.IsValid)
+            {
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] RestartRequested lastLevelId='{_lastStartedGameplayLevelId}' reason='{reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+                return StartGameplayAsync(_lastStartedGameplayLevelId, reason ?? "Restart");
+            }
+
+            DebugUtility.LogError(typeof(GameNavigationService),
+                $"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId. reason='{reason ?? "<null>"}'.");
+            throw new InvalidOperationException("[FATAL][Config] Restart called before StartGameplayAsync; no last levelId.");
         }
 
         public Task ExitToMenuAsync(string reason = null)
@@ -119,6 +127,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 DebugUtility.LogVerbose(typeof(GameNavigationService),
                     $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
+
+                _lastStartedGameplayLevelId = levelId;
 
                 var levelEntry = new GameNavigationEntry(resolvedRouteId, entry.StyleId, payload);
                 await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, levelEntry, reason);
