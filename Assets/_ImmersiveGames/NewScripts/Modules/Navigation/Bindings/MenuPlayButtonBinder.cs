@@ -1,5 +1,7 @@
-﻿using _ImmersiveGames.NewScripts.Core.Composition;
+using System;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using UnityEngine;
 
@@ -15,16 +17,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
     [DisallowMultipleComponent]
     public sealed class MenuPlayButtonBinder : FrontendButtonBinderBase
     {
-        [Header("LevelFlow")]
-        [SerializeField]
-        [Tooltip("LevelId canônico para iniciar gameplay via trilho oficial StartGameplayAsync(levelId).")]
-        private string startLevelId = "level.1";
-
         private ILevelFlowRuntimeService _levelFlow;
+        private LevelId _startLevelId;
 
         protected override void Awake()
         {
             base.Awake();
+
+            ResolveConfiguredStartLevelOrFail();
 
             // Tentativa early: se não estiver pronto ainda, tentamos de novo no clique.
             DependencyManager.Provider.TryGetGlobal(out _levelFlow);
@@ -51,17 +51,44 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
                 return false;
             }
 
+            string normalizedLevelId = _startLevelId.Value;
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[OBS][LevelFlow] MenuPlay -> StartGameplayAsync levelId='{LevelId.Normalize(startLevelId)}' reason='{actionReason}'.",
+                $"[OBS][LevelFlow] MenuPlay -> StartGameplayAsync levelId='{normalizedLevelId}' reason='{actionReason}'.",
                 DebugUtility.Colors.Info);
 
             // Fire-and-forget com captura de falhas.
             NavigationTaskRunner.FireAndForget(
-                _levelFlow.StartGameplayAsync(startLevelId, actionReason),
+                _levelFlow.StartGameplayAsync(normalizedLevelId, actionReason),
                 typeof(MenuPlayButtonBinder),
-                $"Menu/Play levelId='{LevelId.Normalize(startLevelId)}'");
+                $"Menu/Play levelId='{normalizedLevelId}'");
 
             return true;
+        }
+
+        private void ResolveConfiguredStartLevelOrFail()
+        {
+            if (DependencyManager.Provider == null)
+            {
+                FailFastConfig("DependencyManager.Provider está null ao resolver start level do MenuPlayButtonBinder.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var bootstrapConfig) || bootstrapConfig == null)
+            {
+                FailFastConfig("NewScriptsBootstrapConfigAsset indisponível no escopo global para resolver start level do MenuPlayButtonBinder.");
+            }
+
+            _startLevelId = bootstrapConfig.StartGameplayLevelId;
+            if (!_startLevelId.IsValid)
+            {
+                FailFastConfig($"NewScriptsBootstrapConfigAsset.StartGameplayLevelId inválido. asset='{bootstrapConfig.name}', value='{_startLevelId}'.");
+            }
+        }
+
+        private static void FailFastConfig(string detail)
+        {
+            string message = $"[FATAL][Config] {detail}";
+            DebugUtility.LogError<MenuPlayButtonBinder>(message);
+            throw new InvalidOperationException(message);
         }
     }
 }
