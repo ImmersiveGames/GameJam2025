@@ -68,6 +68,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [Tooltip("Quando true, registra warning se houver rotas inválidas/duplicadas.")]
         [SerializeField] private bool warnOnInvalidRoutes = true;
 
+        private static readonly HashSet<string> CriticalRouteIds = new(StringComparer.Ordinal)
+        {
+            "to-menu",
+            "to-gameplay",
+            "level.1",
+            "level.2"
+        };
+
         private readonly Dictionary<SceneRouteId, SceneRouteDefinition> _cache = new();
         private bool _cacheBuilt;
 
@@ -236,6 +244,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             routeId = entry.routeId;
 
+            if (IsCriticalRoute(routeId))
+            {
+                FailFast($"routeId crítico='{routeId}' não pode ser resolvido via inline legacy. Configure routeDefinitions (AssetRef) no catálogo canônico.");
+            }
+
             var load = ResolveKeys(entry.scenesToLoadKeys, routeId, nameof(RouteEntry.scenesToLoadKeys));
             var unload = ResolveKeys(entry.scenesToUnloadKeys, routeId, nameof(RouteEntry.scenesToUnloadKeys));
             var active = ResolveSingleKey(entry.targetActiveSceneKey, routeId, nameof(RouteEntry.targetActiveSceneKey));
@@ -403,6 +416,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             }
 
             return key.SceneName.Trim();
+        }
+
+        private static bool IsCriticalRoute(SceneRouteId routeId)
+        {
+            return routeId.IsValid && CriticalRouteIds.Contains(routeId.Value);
         }
 
         private static void FailFast(string message)
