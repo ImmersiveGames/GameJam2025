@@ -284,7 +284,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 {
                     DebugUtility.LogWarning<SceneTransitionService>(
                         $"[OBS][Deprecated] Inline scene data foi detectado sem RouteId. " +
-                        $"Esse modo legado não é mais suportado no SceneFlow e será ignorado. " +
+                        $"Fluxo legado desativado; request será abortada. " +
                         $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.");
                 }
 

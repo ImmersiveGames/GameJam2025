@@ -50,9 +50,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 return false;
             }
 
-            string via = definition.routeRef != null ? "AssetRef" : "RouteId";
+            string routeResolvedVia = definition.routeRef != null ? "AssetRef" : "RouteId";
             DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][SceneFlow] RouteResolvedVia={via} levelId='{levelId}', routeId='{routeId}'.",
+                $"[OBS][SceneFlow] RouteResolvedVia={routeResolvedVia} levelId='{levelId}', routeId='{routeId}'.",
                 DebugUtility.Colors.Info);
 
             payload = definition.ToPayload();

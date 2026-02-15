@@ -62,9 +62,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.LogVerbose(typeof(LevelDefinition),
                     $"[OBS][SceneFlow] RouteResolvedVia=RouteId levelId='{levelId}', routeId='{routeId}'.",
                     DebugUtility.Colors.Info);
+
+                return routeId;
             }
 
-            return routeId;
+            return SceneRouteId.None;
         }
 
         /// <summary>

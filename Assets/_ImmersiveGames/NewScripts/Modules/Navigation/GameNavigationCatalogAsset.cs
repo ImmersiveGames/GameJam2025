@@ -72,9 +72,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
                         $"[OBS][SceneFlow] RouteResolvedVia=RouteId owner='{owner}', intentId='{routeId}', routeId='{sceneRouteId}'.",
                         DebugUtility.Colors.Info);
+
+                    return sceneRouteId;
                 }
 
-                return sceneRouteId;
+                return SceneRouteId.None;
             }
 
             public void MigrateLegacy()
