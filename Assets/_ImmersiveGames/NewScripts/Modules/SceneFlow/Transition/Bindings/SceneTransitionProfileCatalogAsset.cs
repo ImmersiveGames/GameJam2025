@@ -16,8 +16,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings
     public sealed class SceneTransitionProfileCatalogAsset : ScriptableObject
     {
         /// <summary>
-        /// Caminho esperado para Resources.Load do catálogo.
-        /// (Ex.: Assets/Resources/SceneFlow/SceneTransitionProfileCatalog.asset)
+        /// Identificador legado de catálogo (compatibilidade de configuração/editor).
+        /// Em runtime, a resolução oficial usa referências diretas via BootstrapConfig/DI.
         /// </summary>
         public const string DefaultResourcesPath = "SceneFlow/SceneTransitionProfileCatalog";
 

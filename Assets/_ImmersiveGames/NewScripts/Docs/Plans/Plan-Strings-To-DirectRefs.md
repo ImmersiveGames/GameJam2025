@@ -18,7 +18,7 @@
 ## Escopo do problema (estado histórico + estado atual)
 Historicamente, o “wiring” dependia de **strings** em dois pontos principais:
 
-1) **Resources.Load por path (múltiplos)**
+1) **[Histórico] Resources.Load por path (múltiplos)**
 - `GlobalCompositionRoot.NavigationInputModes.cs` carregava 3 assets por Resources:
   - `Navigation/GameNavigationCatalog`
   - `Navigation/TransitionStyleCatalog`

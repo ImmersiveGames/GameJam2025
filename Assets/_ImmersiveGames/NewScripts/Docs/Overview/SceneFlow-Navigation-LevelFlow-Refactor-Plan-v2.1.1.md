@@ -11,26 +11,25 @@
 
 ---
 
-## F1 (PRIORIDADE AGORA): Profiles sem `Resources.Load`
+## F1 (HISTÓRICO): migração de Profiles para resolver sem `Resources.Load`
 
-### Problema atual
-O `SceneTransitionProfileResolver` resolve profiles via `Resources.Load(profileId.Value)`.
-Isso acopla o ID a um path e obriga a manter assets em `Resources/`.
+### Problema (histórico)
+Na versão original deste plano, o `SceneTransitionProfileResolver` ainda resolvia profiles via `Resources.Load(profileId.Value)`, acoplando ID a path.
 
 ### Decisão
-Introduzir um **catálogo de profiles por referência direta** (ScriptableObject), e fazer o resolver usar esse catálogo **antes** de cair no fallback legado.
+Introduzir **catálogo de profiles por referência direta** (ScriptableObject) e migrar o runtime para BootstrapConfig/DI como trilho oficial.
 
 ### Resultado esperado
-- Transições passam a usar **referência direta** para `SceneTransitionProfile` (via catálogo), sem `Resources.Load` na operação normal.
-- Mantém fallback legado para não quebrar projetos que ainda estejam com profiles em `Resources/`.
+- Runtime oficial usa **referência direta** para `SceneTransitionProfile` (via catálogo + BootstrapConfig/DI).
+- Menções a fallback por `Resources` nesta versão devem ser lidas como contexto **legado/histórico**.
 
 ### Implementação (patch incluído)
 1. **Novo asset:** `SceneTransitionProfileCatalogAsset` (mapeia `SceneFlowProfileId` → `SceneTransitionProfile`).
-2. **Update:** `SceneTransitionProfileResolver` tenta catálogo primeiro; se não achar, usa `Resources` (logando warning 1x por profile).
+2. **Update (histórico):** `SceneTransitionProfileResolver` chegou a tentar catálogo primeiro e manter fallback por `Resources` durante janela de migração.
 3. **Update:** `SceneFlowAdapterFactory` tenta obter o catálogo via `IDependencyProvider.TryGetGlobal<SceneTransitionProfileCatalogAsset>()` e injeta no resolver.
 
 ### Configuração (no projeto)
-- Criar profiles (`SceneTransitionProfile`) normalmente (fora de `Resources/`).
+- Criar profiles (`SceneTransitionProfile`) normalmente (direct-ref; sem dependência de `Resources/` no runtime principal).
 - Criar 1 catálogo (`SceneTransitionProfileCatalogAsset`) e registrar:
   - entradas mínimas: `startup`, `frontend`, `gameplay`.
 - Garantir que o catálogo esteja registrado como **global** no seu composition/bootstrap (mesmo padrão dos outros *CatalogAsset*).
