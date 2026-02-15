@@ -42,12 +42,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [Header("Styles")]
         [SerializeField] private List<StyleEntry> styles = new();
 
+        [Header("Profile Catalog (Consistency Validation)")]
+        [Tooltip("Catálogo canônico usado para validar consistência entre profileId (legado) e transitionProfile (AssetRef).")]
+        [SerializeField] private SceneTransitionProfileCatalogAsset transitionProfileCatalog;
+
         [Header("Validation")]
         [Tooltip("Quando true, registra warning se houver estilos inválidos/duplicados.")]
         [SerializeField] private bool warnOnInvalidStyles = true;
 
         private readonly Dictionary<TransitionStyleId, TransitionStyleDefinition> _cache = new();
         private bool _cacheBuilt;
+        private static readonly TransitionStyleId CriticalGameplayStyleId = TransitionStyleId.FromName("style.gameplay");
 
         public bool TryGet(TransitionStyleId styleId, out TransitionStyleDefinition style)
         {
@@ -86,49 +91,89 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             if (styles == null || styles.Count == 0)
             {
-                return;
+                FailFast("TransitionStyleCatalog sem estilos configurados.");
             }
 
-            int invalidCount = 0;
-            foreach (var entry in styles)
+            for (int i = 0; i < styles.Count; i++)
             {
-                if (entry == null || !entry.styleId.IsValid)
+                var entry = styles[i];
+                if (entry == null)
                 {
-                    invalidCount++;
-                    continue;
+                    FailFast($"StyleEntry nulo em styles[{i}].");
+                }
+
+                if (!entry.styleId.IsValid)
+                {
+                    FailFast($"StyleEntry inválido em styles[{i}] (styleId vazio/inválido).");
                 }
 
                 if (_cache.ContainsKey(entry.styleId))
                 {
-                    invalidCount++;
-                    if (warnOnInvalidStyles)
-                    {
-                        DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
-                            $"[SceneFlow] Estilo duplicado no TransitionStyleCatalog. styleId='{entry.styleId}'. Apenas o primeiro será usado.");
-                    }
-                    continue;
+                    FailFast($"Estilo duplicado no TransitionStyleCatalog. styleId='{entry.styleId}', index={i}.");
                 }
 
                 if (entry.transitionProfile == null)
                 {
-                    invalidCount++;
-                    if (warnOnInvalidStyles)
+                    if (entry.styleId == CriticalGameplayStyleId)
                     {
-                        DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
-                            $"[FATAL][Config] TransitionStyle sem SceneTransitionProfile. styleId='{entry.styleId}'.");
+                        FailFast($"Style crítico exige AssetRef de SceneTransitionProfile. styleId='{entry.styleId}' não permite resolução via profileId/string.");
                     }
 
-                    continue;
+                    FailFast($"TransitionStyle sem SceneTransitionProfile. styleId='{entry.styleId}'.");
                 }
 
+                ValidateProfileIdConsistency(entry);
+
                 _cache.Add(entry.styleId, new TransitionStyleDefinition(entry.transitionProfile, entry.profileId, entry.useFade));
+
+                DebugUtility.LogVerbose<TransitionStyleCatalogAsset>(
+                    $"[OBS][Config] StyleResolvedVia=AssetRef styleId='{entry.styleId}' profileId='{entry.profileId}' asset='{entry.transitionProfile.name}' useFade={entry.useFade}.",
+                    DebugUtility.Colors.Info);
             }
 
-            if (warnOnInvalidStyles && invalidCount > 0)
+            if (warnOnInvalidStyles)
             {
-                DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
-                    $"[SceneFlow] TransitionStyleCatalog possui entradas inválidas/duplicadas. invalidCount={invalidCount}.");
+                DebugUtility.LogVerbose<TransitionStyleCatalogAsset>(
+                    $"[OBS][Config] TransitionStyleCatalogBuild stylesResolved={_cache.Count} invalidStyles=0",
+                    DebugUtility.Colors.Info);
             }
+        }
+
+        private void ValidateProfileIdConsistency(StyleEntry entry)
+        {
+            if (!entry.profileId.IsValid)
+            {
+                if (entry.styleId == CriticalGameplayStyleId)
+                {
+                    FailFast($"Style crítico exige profileId válido para validação de consistência. styleId='{entry.styleId}'.");
+                }
+
+                return;
+            }
+
+            if (transitionProfileCatalog == null)
+            {
+                FailFast($"TransitionStyleCatalog sem referência ao SceneTransitionProfileCatalogAsset para validar consistência id/ref. styleId='{entry.styleId}', profileId='{entry.profileId}'.");
+            }
+
+            if (!transitionProfileCatalog.TryGetProfile(entry.profileId, out var profileFromCatalog) || profileFromCatalog == null)
+            {
+                FailFast($"profileId não encontrado no SceneTransitionProfileCatalogAsset. styleId='{entry.styleId}', profileId='{entry.profileId}'.");
+            }
+
+            if (profileFromCatalog != entry.transitionProfile)
+            {
+                FailFast(
+                    $"Inconsistência entre profileId e transitionProfile. styleId='{entry.styleId}', profileId='{entry.profileId}', " +
+                    $"catalogProfile='{profileFromCatalog.name}', directProfile='{entry.transitionProfile.name}'.");
+            }
+        }
+
+        private static void FailFast(string detail)
+        {
+            string message = $"[FATAL][Config] {detail}";
+            DebugUtility.LogError<TransitionStyleCatalogAsset>(message);
+            throw new InvalidOperationException(message);
         }
 
 #if UNITY_EDITOR

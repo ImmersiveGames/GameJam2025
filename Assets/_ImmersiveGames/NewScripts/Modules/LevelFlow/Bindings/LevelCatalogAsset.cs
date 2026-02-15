@@ -16,6 +16,20 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         order = 30)]
     public sealed class LevelCatalogAsset : ScriptableObject, ILevelFlowService
     {
+        private readonly struct LevelResolution
+        {
+            public LevelResolution(LevelDefinition definition, SceneRouteId routeId, SceneTransitionPayload payload)
+            {
+                Definition = definition;
+                RouteId = routeId;
+                Payload = payload;
+            }
+
+            public LevelDefinition Definition { get; }
+            public SceneRouteId RouteId { get; }
+            public SceneTransitionPayload Payload { get; }
+        }
+
         [Header("Levels")]
         [SerializeField] private List<LevelDefinition> levels = new();
 
@@ -23,9 +37,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         [Tooltip("Quando true, registra warning se houver níveis inválidos/duplicados.")]
         [SerializeField] private bool warnOnInvalidLevels = true;
 
-        private readonly Dictionary<LevelId, LevelDefinition> _cache = new();
+        private readonly Dictionary<LevelId, LevelResolution> _cache = new();
         private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
+        private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
+        private int _lastLoggedFrame = int.MinValue;
 
         public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
         {
@@ -39,26 +55,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             EnsureCache();
 
-            if (!_cache.TryGetValue(levelId, out var definition) || definition == null || !definition.IsValid)
+            if (!_cache.TryGetValue(levelId, out var resolution))
             {
                 return false;
             }
 
-            routeId = definition.ResolveRouteId();
-            if (!routeId.IsValid)
-            {
-                return false;
-            }
-
-            string routeResolvedVia = definition.routeRef != null ? "AssetRef" : "RouteId";
-            DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][SceneFlow] RouteResolvedVia={routeResolvedVia} levelId='{levelId}', routeId='{routeId}'.",
-                DebugUtility.Colors.Info);
-
-            payload = definition.ToPayload();
+            routeId = resolution.RouteId;
+            payload = resolution.Payload;
+            LogResolutionDedupePerFrame(levelId, resolution);
             return true;
         }
-
 
         public bool TryResolveLevelId(SceneRouteId routeId, out LevelId levelId)
         {
@@ -76,6 +82,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private void OnEnable()
         {
             _cacheBuilt = false;
+            _loggedLevelsThisFrame.Clear();
+            _lastLoggedFrame = int.MinValue;
         }
 
         private void OnValidate()
@@ -106,72 +114,93 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             if (levels == null || levels.Count == 0)
             {
-                return;
+                FailFast("LevelCatalog sem níveis configurados.");
             }
 
-            int invalidCount = 0;
-            foreach (var entry in levels)
+            for (int i = 0; i < levels.Count; i++)
             {
-                if (entry == null || !entry.IsValid)
+                var entry = levels[i];
+                if (entry == null)
                 {
-                    invalidCount++;
-                    continue;
+                    FailFast($"LevelDefinition nulo em levels[{i}].");
+                }
+
+                if (!entry.levelId.IsValid)
+                {
+                    FailFast($"LevelDefinition inválido em levels[{i}] (levelId vazio/inválido).");
                 }
 
                 if (_cache.ContainsKey(entry.levelId))
                 {
-                    invalidCount++;
-                    if (warnOnInvalidLevels)
-                    {
-                        DebugUtility.LogWarning<LevelCatalogAsset>(
-                            $"[LevelFlow] Level duplicado no catálogo. levelId='{entry.levelId}'. Apenas o primeiro será usado.");
-                    }
-                    continue;
+                    FailFast($"LevelId duplicado no LevelCatalog. levelId='{entry.levelId}', index={i}.");
                 }
-
-                _cache.Add(entry.levelId, entry);
 
                 SceneRouteId resolvedRouteId = entry.ResolveRouteId();
-                if (resolvedRouteId.IsValid)
+                if (!resolvedRouteId.IsValid)
                 {
-                    if (_routeToLevelCache.TryGetValue(resolvedRouteId, out var existingLevelId) && existingLevelId != entry.levelId)
-                    {
-                        if (!HandleDuplicateRouteMappingConfigError(resolvedRouteId, existingLevelId, entry.levelId))
-                        {
-                            continue;
-                        }
-                    }
-
-                    if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
-                    {
-                        _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
-                    }
+                    FailFast($"Rota inválida ao resolver levelId='{entry.levelId}' em levels[{i}].");
                 }
+
+                if (_routeToLevelCache.TryGetValue(resolvedRouteId, out var existingLevelId) && existingLevelId != entry.levelId)
+                {
+                    HandleDuplicateRouteMappingConfigError(resolvedRouteId, existingLevelId, entry.levelId);
+                }
+
+                if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
+                {
+                    _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
+                }
+
+                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload()));
             }
 
-            if (warnOnInvalidLevels && invalidCount > 0)
+            if (warnOnInvalidLevels)
             {
-                DebugUtility.LogWarning<LevelCatalogAsset>(
-                    $"[LevelFlow] LevelCatalog possui entradas inválidas/duplicadas. invalidCount={invalidCount}.");
+                DebugUtility.LogVerbose<LevelCatalogAsset>(
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0",
+                    DebugUtility.Colors.Info);
             }
         }
 
-        private static bool HandleDuplicateRouteMappingConfigError(SceneRouteId routeId, LevelId firstLevelId, LevelId duplicatedLevelId)
+        private void LogResolutionDedupePerFrame(LevelId levelId, LevelResolution resolution)
         {
-            string message =
-                $"[FATAL][Config] RouteId duplicado mapeado para múltiplos LevelId no LevelCatalog. routeId='{routeId}', firstLevelId='{firstLevelId}', duplicatedLevelId='{duplicatedLevelId}'.";
-
-            if (Application.isPlaying)
+            int currentFrame = Time.frameCount;
+            if (currentFrame != _lastLoggedFrame)
             {
-                DebugUtility.LogError(typeof(LevelCatalogAsset), message);
-                throw new InvalidOperationException(message);
+                _loggedLevelsThisFrame.Clear();
+                _lastLoggedFrame = currentFrame;
             }
 
-            DebugUtility.LogError(typeof(LevelCatalogAsset), message);
+            if (!_loggedLevelsThisFrame.Add(levelId))
+            {
+                return;
+            }
+
+            LevelDefinition definition = resolution.Definition;
+            if (definition.routeRef != null)
+            {
+                DebugUtility.LogVerbose<LevelCatalogAsset>(
+                    $"[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='{levelId}' routeId='{resolution.RouteId}' asset='{definition.routeRef.name}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][Config] DuplicateRouteIdIgnored routeId='{routeId}', firstLevelId='{firstLevelId}', ignoredLevelId='{duplicatedLevelId}', mode='editor'.",
-                DebugUtility.Colors.Warning);
-            return false;
+                $"[OBS][SceneFlow] RouteResolvedVia=RouteId levelId='{levelId}' routeId='{resolution.RouteId}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void HandleDuplicateRouteMappingConfigError(SceneRouteId routeId, LevelId firstLevelId, LevelId duplicatedLevelId)
+        {
+            FailFast(
+                $"RouteId duplicado mapeado para múltiplos LevelId no LevelCatalog. routeId='{routeId}', firstLevelId='{firstLevelId}', duplicatedLevelId='{duplicatedLevelId}'.");
+        }
+
+        private static void FailFast(string detail)
+        {
+            string message = $"[FATAL][Config] {detail}";
+            DebugUtility.LogError(typeof(LevelCatalogAsset), message);
+            throw new InvalidOperationException(message);
         }
     }
 }
