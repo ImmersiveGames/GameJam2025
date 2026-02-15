@@ -426,10 +426,65 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 $"[OBS][Fade] {phase} id={transitionId} signature='{signature}' profile='{profile}'.");
         }
 
+        private static void LogLoadedScenesSnapshot(string stage)
+        {
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow] LoadedScenesSnapshot stage='{stage}' sceneCount={SceneManager.sceneCount} scenes=[{DescribeLoadedScenes()}].",
+                DebugUtility.Colors.Info);
+        }
+
+        private static string DescribeLoadedScenes()
+        {
+            if (SceneManager.sceneCount <= 0)
+            {
+                return "<none>";
+            }
+
+            var scenes = new List<string>(SceneManager.sceneCount);
+            Scene activeScene = SceneManager.GetActiveScene();
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                scenes.Add(
+                    $"name='{scene.name}', isLoaded={scene.isLoaded}, buildIndex={scene.buildIndex}, isActive={scene == activeScene}");
+            }
+
+            return string.Join(" | ", scenes);
+        }
+
+        private static void LogRouteExecutionPlan(
+            SceneTransitionContext context,
+            IReadOnlyList<string> loadScenes,
+            IReadOnlyList<string> unloadScenes,
+            IReadOnlyList<string> reloadScenes)
+        {
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow] RouteExecutionPlan routeId='{context.RouteId}' activeScene='{context.TargetActiveScene}' " +
+                $"toLoad=[{FormatSceneList(loadScenes)}] toUnload=[{FormatSceneList(unloadScenes)}] reload=[{FormatSceneList(reloadScenes)}].",
+                DebugUtility.Colors.Info);
+        }
+
+        private static string FormatSceneList(IReadOnlyList<string>? scenes)
+        {
+            if (scenes == null || scenes.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(", ", scenes);
+        }
+
         private async Task RunSceneOperationsAsync(SceneTransitionContext context)
         {
+            LogLoadedScenesSnapshot("before_apply_route");
+
             IReadOnlyList<string> reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
             IReadOnlyList<string> loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
+            IReadOnlyList<string> unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
+
+            LogRouteExecutionPlan(context, loadScenes, unloadScenes, reloadScenes);
+
             await LoadScenesAsync(loadScenes);
 
             if (reloadScenes.Count > 0)
@@ -438,9 +493,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
 
             await SetActiveSceneAsync(context.TargetActiveScene);
-
-            IReadOnlyList<string> unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
             await UnloadScenesAsync(unloadScenes, context.TargetActiveScene);
+
+            LogLoadedScenesSnapshot("after_apply_route");
         }
 
         private async Task LoadScenesAsync(IReadOnlyList<string>? scenesToLoad, bool forceLoad = false)
@@ -496,17 +551,28 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             foreach (string sceneName in scenesToUnload)
             {
+                Scene scene = SceneManager.GetSceneByName(sceneName);
+                bool exists = scene.IsValid();
+                bool isLoaded = exists && scene.isLoaded;
+                bool isActiveScene = exists && scene == SceneManager.GetActiveScene();
+
+                DebugUtility.Log<SceneTransitionService>(
+                    $"[OBS][SceneFlow] UnloadCandidate scene='{sceneName}' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene} targetActiveScene='{targetActiveScene}'.",
+                    DebugUtility.Colors.Info);
+
                 if (string.Equals(sceneName, targetActiveScene, StringComparison.Ordinal))
                 {
-                    DebugUtility.LogVerbose<SceneTransitionService>(
-                        $"[SceneFlow] Ignorando unload da cena alvo ativa '{sceneName}'.");
+                    DebugUtility.Log<SceneTransitionService>(
+                        $"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='target_active_scene' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.",
+                        DebugUtility.Colors.Info);
                     continue;
                 }
 
                 if (!_loaderAdapter.IsSceneLoaded(sceneName))
                 {
-                    DebugUtility.LogVerbose<SceneTransitionService>(
-                        $"[SceneFlow] Cena '{sceneName}' já está descarregada. Pulando unload.");
+                    DebugUtility.Log<SceneTransitionService>(
+                        $"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='already_unloaded' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.",
+                        DebugUtility.Colors.Info);
                     continue;
                 }
 
