@@ -17,10 +17,10 @@ MonoBehaviour:
       _value: level.1
     routeId:
       _value: level.1
-    routeRef: {fileID: 0}
+    routeRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
   - levelId:
       _value: level.2
     routeId:
       _value: level.2
-    routeRef: {fileID: 0}
+    routeRef: {fileID: 11400000, guid: 26626e420f9344b2b95d9ccacac64d20, type: 2}
   warnOnInvalidLevels: 1
