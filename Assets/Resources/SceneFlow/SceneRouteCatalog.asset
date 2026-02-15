@@ -12,50 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e18ee3905b91974287bf47d4b893485, type: 3}
   m_Name: SceneRouteCatalog
   m_EditorClassIdentifier: 
-  routeDefinitions: []
-  routes:
-  - routeId:
-      _value: to-menu
-    scenesToLoadKeys:
-    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
-    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
-    scenesToUnloadKeys:
-    - {fileID: 11400000, guid: f9cac371e22e64c428a4ad390b70ebc7, type: 2}
-    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
-    targetActiveSceneKey: {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
-    routeKind: 1
-    requiresWorldReset: 0
-  - routeId:
-      _value: to-gameplay
-    scenesToLoadKeys:
-    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
-    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
-    scenesToUnloadKeys:
-    - {fileID: 11400000, guid: f9cac371e22e64c428a4ad390b70ebc7, type: 2}
-    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
-    targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
-    routeKind: 2
-    requiresWorldReset: 1
-  - routeId:
-      _value: level.1
-    scenesToLoadKeys:
-    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
-    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
-    scenesToUnloadKeys:
-    - {fileID: 11400000, guid: f9cac371e22e64c428a4ad390b70ebc7, type: 2}
-    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
-    targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
-    routeKind: 2
-    requiresWorldReset: 1
-  - routeId:
-      _value: level.2
-    scenesToLoadKeys:
-    - {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
-    - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
-    scenesToUnloadKeys:
-    - {fileID: 11400000, guid: f9cac371e22e64c428a4ad390b70ebc7, type: 2}
-    - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
-    targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
-    routeKind: 2
-    requiresWorldReset: 1
+  routeDefinitions:
+  - {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
+  - {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
+  - {fileID: 11400000, guid: aa3dd0a46d43421fbdf9a88646712be3, type: 2}
+  - {fileID: 11400000, guid: faf45737dcad4b2fb3f95da915195b1a, type: 2}
+  routes: []
   warnOnInvalidRoutes: 1

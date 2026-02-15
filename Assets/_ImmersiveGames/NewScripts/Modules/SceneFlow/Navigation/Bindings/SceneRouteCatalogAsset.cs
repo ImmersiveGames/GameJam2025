@@ -71,6 +71,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         private readonly Dictionary<SceneRouteId, SceneRouteDefinition> _cache = new();
         private bool _cacheBuilt;
 
+        private static readonly SceneRouteId[] CriticalRouteIds =
+        {
+            new SceneRouteId("to-menu"),
+            new SceneRouteId("to-gameplay"),
+            new SceneRouteId("level.1"),
+            new SceneRouteId("level.2")
+        };
+
         public bool TryGet(SceneRouteId routeId, out SceneRouteDefinition route)
         {
             route = default;
@@ -162,6 +170,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 for (int i = 0; i < routes.Count; i++)
                 {
                     var entry = routes[i];
+                    ValidateInlineCriticalRouteOrFail(entry, i);
                     BuildFromEntry(entry, out var routeId, out var routeDefinition, index: i);
 
                     if (_cache.ContainsKey(routeId))
@@ -245,6 +254,37 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             EnsureActiveScenePolicy(routeId, entry.routeKind, active, "routeId");
             EnsureResetPolicyConsistency(routeId, entry.routeKind, entry.requiresWorldReset, "routeId");
             routeDefinition = new SceneRouteDefinition(load, unload, active, entry.routeKind, entry.requiresWorldReset);
+        }
+
+        private static void ValidateInlineCriticalRouteOrFail(RouteEntry entry, int index)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            if (IsCriticalRouteId(entry.routeId))
+            {
+                FailFast($"Rota crítica não pode ser definida inline. routeId='{entry.routeId}', index={index}, source='routes'. Use routeDefinitions (AssetRef).");
+            }
+        }
+
+        private static bool IsCriticalRouteId(SceneRouteId routeId)
+        {
+            if (!routeId.IsValid)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < CriticalRouteIds.Length; i++)
+            {
+                if (routeId == CriticalRouteIds[i])
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void LogResolvedRouteSceneList(SceneRouteId routeId, string fieldName, IReadOnlyList<string> resolved)
