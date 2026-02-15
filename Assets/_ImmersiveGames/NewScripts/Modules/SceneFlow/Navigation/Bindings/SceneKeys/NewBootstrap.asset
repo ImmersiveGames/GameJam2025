@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91bb4f809670486184f06300327f5bde, type: 3}
   m_Name: NewBootstrap
   m_EditorClassIdentifier: 
-  sceneName: GameplayScene
+  sceneName: NewBootstrap
