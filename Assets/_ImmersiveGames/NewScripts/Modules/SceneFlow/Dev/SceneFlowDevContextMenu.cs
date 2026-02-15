@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -166,6 +167,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             sourceLabel = string.Empty;
 
             if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<SceneRouteCatalogAsset>(out var routeCatalogAssetFromGlobal) &&
+                routeCatalogAssetFromGlobal != null)
+            {
+                sourceLabel = "DI/SceneRouteCatalogAsset";
+                return routeCatalogAssetFromGlobal;
+            }
+
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var bootstrapConfig) &&
+                bootstrapConfig != null &&
+                bootstrapConfig.SceneRouteCatalog != null)
+            {
+                sourceLabel = "DI/NewScriptsBootstrapConfigAsset.SceneRouteCatalog";
+                return bootstrapConfig.SceneRouteCatalog;
+            }
+
+            if (DependencyManager.Provider != null &&
                 DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var catalogFromDi) &&
                 catalogFromDi is SceneRouteCatalogAsset catalogAssetFromDi)
             {
@@ -175,7 +193,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 
             const string errorMessage =
                 "[OBS][Config] Dump Route Catalog (RouteKind): SceneRouteCatalogAsset indisponível (DI-only). " +
-                "Configure NewScriptsBootstrapConfigAsset.SceneRouteCatalog e garanta o registro de ISceneRouteCatalog no GlobalCompositionRoot.";
+                "Configure NewScriptsBootstrapConfigAsset.SceneRouteCatalog e garanta o registro de SceneRouteCatalogAsset, " +
+                "NewScriptsBootstrapConfigAsset ou ISceneRouteCatalog no GlobalCompositionRoot.";
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu), errorMessage, ColorErr);
             throw new InvalidOperationException(errorMessage);
