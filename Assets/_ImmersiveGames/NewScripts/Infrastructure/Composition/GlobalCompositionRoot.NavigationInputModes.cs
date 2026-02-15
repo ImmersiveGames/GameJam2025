@@ -11,7 +11,6 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -217,84 +216,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
                     DebugUtility.Colors.Info);
             }
-        }
-
-        private static T LoadRequiredResourceAsset<T>(string resourcesPath, string assetLabel) where T : ScriptableObject
-        {
-            if (string.IsNullOrWhiteSpace(resourcesPath))
-            {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[Navigation] ERRO: resourcesPath inválido para {assetLabel}. path='{resourcesPath ?? "<null>"}'.");
-                throw new InvalidOperationException($"Resources path inválido para {assetLabel}.");
-            }
-
-            try
-            {
-                var asset = Resources.Load<T>(resourcesPath);
-                if (asset != null)
-                {
-                    return asset;
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    $"[Navigation] ERRO: exceção ao carregar {assetLabel} via Resources. " +
-                    $"path='{resourcesPath}', ex='{ex.GetType().Name}: {ex.Message}'.");
-                throw;
-            }
-
-            var expectedPath = $"Assets/Resources/{resourcesPath}.asset";
-            DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                $"[Navigation] ERRO: {assetLabel} NÃO encontrado em Resources. path='{resourcesPath}'. " +
-                $"Esperado em '{expectedPath}'.");
-            throw new InvalidOperationException($"{assetLabel} ausente em Resources (path='{resourcesPath}'). Navegação requer configuração explícita.");
-        }
-
-
-        private static void LogPotentialDuplicateResourcesAsset<T>(
-            string canonicalResourcesPath,
-            T canonicalAsset,
-            string assetLabel)
-            where T : ScriptableObject
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (canonicalAsset == null)
-            {
-                return;
-            }
-
-            var allAssetsOfType = Resources.LoadAll<T>(string.Empty);
-            if (allAssetsOfType == null || allAssetsOfType.Length <= 1)
-            {
-                return;
-            }
-
-            int sameNameCount = 0;
-            for (int i = 0; i < allAssetsOfType.Length; i++)
-            {
-                if (allAssetsOfType[i] == null)
-                {
-                    continue;
-                }
-
-                if (string.Equals(allAssetsOfType[i].name, canonicalAsset.name, StringComparison.Ordinal))
-                {
-                    sameNameCount++;
-                }
-            }
-
-            if (sameNameCount <= 1)
-            {
-                return;
-            }
-
-            DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                "[OBS][Navigation] Possível duplicata de catálogo em Resources detectada. " +
-                $"assetLabel='{assetLabel}', canonicalPath='{canonicalResourcesPath}', assetName='{canonicalAsset.name}', " +
-                $"sameNameCount={sameNameCount}, totalAssetsOfType={allAssetsOfType.Length}. " +
-                "Mantenha apenas um catálogo canônico por nome para evitar ambiguidade de setup.");
-#endif
         }
 
         private static void RegisterGlobalIfMissing<T>(T service, string label) where T : class

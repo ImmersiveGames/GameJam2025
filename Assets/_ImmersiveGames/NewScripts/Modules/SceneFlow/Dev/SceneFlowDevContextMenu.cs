@@ -113,10 +113,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         [ContextMenu("QA/SceneFlow/Dump Route Catalog (RouteKind)")]
         private void Qa_DumpRouteCatalogRouteKind()
         {
-            if (!TryGetRouteCatalogAsset(out var routeCatalogAsset, out var sourceLabel))
-            {
-                return;
-            }
+            var routeCatalogAsset = GetRouteCatalogAssetOrFail(out var sourceLabel);
 
             var routes = routeCatalogAsset.DebugGetRoutesSnapshot();
             int unspecifiedCount = 0;
@@ -164,33 +161,24 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
         }
 
-        private static bool TryGetRouteCatalogAsset(out SceneRouteCatalogAsset routeCatalogAsset, out string sourceLabel)
+        private static SceneRouteCatalogAsset GetRouteCatalogAssetOrFail(out string sourceLabel)
         {
-            routeCatalogAsset = null;
             sourceLabel = string.Empty;
 
             if (DependencyManager.Provider != null &&
                 DependencyManager.Provider.TryGetGlobal<ISceneRouteCatalog>(out var catalogFromDi) &&
                 catalogFromDi is SceneRouteCatalogAsset catalogAssetFromDi)
             {
-                routeCatalogAsset = catalogAssetFromDi;
                 sourceLabel = "DI/ISceneRouteCatalog(SceneRouteCatalogAsset)";
-                return true;
+                return catalogAssetFromDi;
             }
 
-            const string resourcesPath = "SceneFlow/SceneRouteCatalog";
-            var catalogFromResources = Resources.Load<SceneRouteCatalogAsset>(resourcesPath);
-            if (catalogFromResources != null)
-            {
-                routeCatalogAsset = catalogFromResources;
-                sourceLabel = $"Resources/{resourcesPath}";
-                return true;
-            }
+            const string errorMessage =
+                "[OBS][Config] Dump Route Catalog (RouteKind): SceneRouteCatalogAsset indisponível (DI-only). " +
+                "Configure NewScriptsBootstrapConfigAsset.SceneRouteCatalog e garanta o registro de ISceneRouteCatalog no GlobalCompositionRoot.";
 
-            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): SceneRouteCatalogAsset não encontrado via DI cast nem Resources (path='{resourcesPath}').",
-                ColorErr);
-            return false;
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu), errorMessage, ColorErr);
+            throw new InvalidOperationException(errorMessage);
         }
 
         private static bool IsRelevant(string routeId)
