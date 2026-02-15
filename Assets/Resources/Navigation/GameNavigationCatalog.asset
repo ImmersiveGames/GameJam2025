@@ -15,13 +15,13 @@ MonoBehaviour:
   routes:
   - routeId: to-menu
     sceneRouteId:
-      _value: 
+      _value: to-menu
     routeRef: {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
     styleId:
       _value: style.frontend
   - routeId: to-gameplay
     sceneRouteId:
-      _value: 
+      _value: to-gameplay
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     styleId:
       _value: style.gameplay

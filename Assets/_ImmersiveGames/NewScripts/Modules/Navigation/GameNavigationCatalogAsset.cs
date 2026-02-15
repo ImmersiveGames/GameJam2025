@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine.Serialization;
 using UnityEngine;
 
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             public string routeId;
 
             [Tooltip("SceneRouteId associado ao intent (fallback quando routeRef não está setado).")]
+            [SceneFlowAllowEmptyId]
             public SceneRouteId sceneRouteId;
 
             [Tooltip("Referência direta opcional para a rota canônica.")]
@@ -211,11 +213,43 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     "routeRef obrigatório e não configurado para intent crítico.");
             }
 
-            if (route.sceneRouteId.IsValid)
+            if (!route.sceneRouteId.IsValid)
             {
-                FailFastCriticalRouteConfig(route.routeId,
-                    $"sceneRouteId legado deve estar vazio para intent crítico quando routeRef é usado. sceneRouteId='{route.sceneRouteId}'.");
+                return;
             }
+
+            var routeRefId = route.routeRef.RouteId;
+            if (!routeRefId.IsValid)
+            {
+                return;
+            }
+
+            if (route.sceneRouteId != routeRefId)
+            {
+                HandleCriticalRouteMismatch(route.routeId, route.sceneRouteId, routeRefId);
+                return;
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
+                $"[WARN][Config] GameNavigationCatalog redundância tolerada. intentId='{route.routeId}', sceneRouteId='{route.sceneRouteId}' igual ao routeRef.RouteId.");
+#endif
+        }
+
+
+        private void HandleCriticalRouteMismatch(string intentId, SceneRouteId sceneRouteId, SceneRouteId routeRefId)
+        {
+            string message =
+                $"[FATAL][Config] GameNavigationCatalog routeId divergente de routeRef. " +
+                $"owner='{name}', intentId='{intentId}', sceneRouteId='{sceneRouteId}', routeRef.routeId='{routeRefId}'.";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
+                $"{message} Em editor/dev, routeRef terá prioridade (RouteResolvedVia=AssetRef). ");
+#else
+            DebugUtility.LogError(typeof(GameNavigationCatalogAsset), message);
+            throw new InvalidOperationException(message);
+#endif
         }
 
         private static bool IsCriticalIntent(string intentId)
