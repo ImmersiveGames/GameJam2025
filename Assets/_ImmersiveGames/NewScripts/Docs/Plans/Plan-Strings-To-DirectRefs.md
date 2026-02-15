@@ -1,37 +1,49 @@
 # Plano de Execução (Incremental): **Strings → Referências Diretas** (SOs + Enums)
 **Projeto:** Unity 6 / `NewScripts` (SceneFlow + Navigation + LevelFlow)
 **Data:** 2026-02-13
-**Status:** visão geral (uma fase por vez; prompts do Codex são isolados por fase).
+**Status:** em andamento (alinhado ao estado real de runtime + tooling)
 
-## Escopo do problema (no repo atual)
-Hoje o “wiring” ainda depende de **strings** principalmente em dois pontos:
+## Status atual (2026-02-15)
+
+| Fase | Status | Resumo objetivo |
+|---|---|---|
+| **F0** | **DONE** | Documento no repositório e âncora de observabilidade ativa no boot (`Plan=StringsToDirectRefs v1`). |
+| **F1** | **DONE (Strict)** | Bootstrap root único implementado; política oficial em runtime é **strict fail-fast** quando bootstrap/root obrigatório está ausente. |
+| **F2** | **DONE** | `SceneKeyAsset` em uso no fluxo de rotas, com resolução para nomes de cena no boundary com API da Unity. |
+| **F3** | **PARTIAL** | Estratégia **direct-ref-first** implementada de forma incremental (`routeRef`), porém IDs tipados (`routeId`) ainda existem como compatibilidade temporária. |
+| **F4** | **PARTIAL** | Hardening avançado, mas ainda há resíduos legados em tooling/dev e APIs `[Obsolete]` aguardando janela de remoção. |
+
+---
+
+## Escopo do problema (estado histórico + estado atual)
+Historicamente, o “wiring” dependia de **strings** em dois pontos principais:
 
 1) **Resources.Load por path (múltiplos)**
-- `GlobalCompositionRoot.NavigationInputModes.cs` carrega 3 assets por Resources:
-    - `Navigation/GameNavigationCatalog`
-    - `Navigation/TransitionStyleCatalog`
-    - `Navigation/LevelCatalog`
-- `GlobalCompositionRoot.SceneFlowRoutes.cs` carrega:
-    - `SceneFlow/SceneRouteCatalog`
-- `GlobalCompositionRoot.SceneFlowTransitionProfiles.cs` carrega:
-    - `SceneFlow/SceneTransitionProfileCatalog` (via `SceneTransitionProfileCatalogAsset.DefaultResourcesPath`)
+- `GlobalCompositionRoot.NavigationInputModes.cs` carregava 3 assets por Resources:
+  - `Navigation/GameNavigationCatalog`
+  - `Navigation/TransitionStyleCatalog`
+  - `Navigation/LevelCatalog`
+- `GlobalCompositionRoot.SceneFlowRoutes.cs` carregava:
+  - `SceneFlow/SceneRouteCatalog`
+- `GlobalCompositionRoot.SceneFlowTransitionProfiles.cs` carregava:
+  - `SceneFlow/SceneTransitionProfileCatalog` (via `SceneTransitionProfileCatalogAsset.DefaultResourcesPath`)
 
 2) **Dados de cena por string (nomes de cenas)**
-- `SceneRouteCatalogAsset` guarda `scenesToLoad/scenesToUnload/targetActiveScene` como string.
+- `SceneRouteCatalogAsset` mantinha campos string legacy (`scenesToLoad/scenesToUnload/targetActiveScene`).
 
-> Observação: o domínio já está bem encaminhado com ids tipados (`LevelId`, `SceneRouteId`, `TransitionStyleId`) e com “F3: Route como fonte única de Scene Data” (LevelDefinition legacy ignorado).
+> Situação atual: o domínio já opera com ids tipados (`LevelId`, `SceneRouteId`, `TransitionStyleId`), `SceneKeyAsset` e hardening em fail-fast no pipeline principal.
 
 ---
 
 ## Objetivos (fechado =)
 1. Substituir ligações por string por **referências diretas** entre ScriptableObjects onde for seguro.
-2. Criar um **SO raiz** de configuração para o bootstrap (single-load) que referencia:
-    - `GameNavigationCatalogAsset`
-    - `TransitionStyleCatalogAsset`
-    - `LevelCatalogAsset`
-    - `SceneRouteCatalogAsset`
-    - `SceneTransitionProfileCatalogAsset`
-3. Migração gradual com **fallback temporário** + logs `[OBS]` (evidência).
+2. Manter um **SO raiz** de configuração para o bootstrap (single-load) que referencia:
+   - `GameNavigationCatalogAsset`
+   - `TransitionStyleCatalogAsset`
+   - `LevelCatalogAsset`
+   - `SceneRouteCatalogAsset`
+   - `SceneTransitionProfileCatalogAsset`
+3. Operar com política explícita de **strict fail-fast** para dependências obrigatórias de configuração.
 4. Isolar strings inevitáveis (nome de cena) dentro de `SceneKeyAsset` para reduzir typo.
 
 **Não-objetivo:** Addressables (fora; apenas preparar terreno).
@@ -44,104 +56,105 @@ Hoje o “wiring” ainda depende de **strings** principalmente em dois pontos:
 |---|---|---|
 | Nome da cena | Unity runtime carrega por nome/path (sem Addressables) | encapsular em `SceneKeyAsset` |
 | `reason` / anchors | contrato de evidência/baseline | manter string (não renomear) |
-| `routeId` (intents) | UI/Bindings já usam strings canônicas (`to-menu`, `to-gameplay`) | manter como constantes (`GameNavigationIntents`) |
+| `routeId` (intents) | UI/Bindings já usam strings canônicas (`to-menu`, `to-gameplay`) | manter como constantes (`GameNavigationIntents`) enquanto durar compatibilidade |
 
 ---
 
 ## Fases (uma por vez)
 
 ### Fase 0 — Documentação + “âncora” de observabilidade (zero risco)
-**Objetivo:** colocar o plano dentro do repo e imprimir 1 log âncora de versão (para rastrear execução).
-
-**Mudanças**
-- Adicionar este documento em:
-  `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Strings-To-DirectRefs.md`
-- Adicionar 1 log no boot:
-  `"[OBS][Config] Plan=StringsToDirectRefs v1"` (uma vez, verbose)
+**Objetivo:** manter plano no repo e log âncora de versão para rastrear execução.
 
 **Aceite**
 - Compila.
-- Nenhuma mudança funcional; apenas doc + 1 linha de log.
+- Nenhuma mudança funcional; apenas doc + log de evidência.
 
 ---
 
-### Fase 1 — SO raiz “single-load” + fallback (reduz Resources.Load múltiplos)
-**Objetivo:** introduzir `NewScriptsBootstrapConfigAsset` e usar **preferência por referência direta** no bootstrap.
+### Fase 1 — SO raiz “single-load” com política strict fail-fast
+**Objetivo:** usar `NewScriptsBootstrapConfigAsset` como root único de config em runtime.
 
-**Criar**
-- `NewScriptsBootstrapConfigAsset` (ScriptableObject) com campos:
-    - `GameNavigationCatalogAsset navigationCatalog`
-    - `TransitionStyleCatalogAsset transitionStyleCatalog`
-    - `LevelCatalogAsset levelCatalog`
-    - `SceneRouteCatalogAsset sceneRouteCatalog`
-    - `SceneTransitionProfileCatalogAsset transitionProfileCatalog`
+**Política oficial (atualizada)**
+- Para dependências obrigatórias do bootstrap/root, a política é **strict fail-fast**.
+- Se bootstrap/root obrigatório faltar, o sistema **não** entra em fallback silencioso para múltiplos `Resources.Load` de produção.
 
-**Alterar (mínimo)**
-- `GlobalCompositionRoot.NavigationInputModes.cs`
-    - `RegisterGameNavigationService()` deve:
-        1) tentar obter `NewScriptsBootstrapConfigAsset` (via Resources path único ou via `RuntimeModeConfig` se você preferir)
-        2) se existir e os campos estiverem setados: usar referências diretas
-        3) senão: fallback para Resources paths atuais (com `[OBS]`)
-- `GlobalCompositionRoot.SceneFlowRoutes.cs`
-    - idem: preferir `sceneRouteCatalog` do bootstrap config
-- `GlobalCompositionRoot.SceneFlowTransitionProfiles.cs`
-    - idem: preferir `transitionProfileCatalog` do bootstrap config
-
-**Logs `[OBS]`**
+**Logs `[OBS]` esperados**
 - `[OBS][Config] BootstrapConfigResolvedVia=... asset=...`
 - `[OBS][Config] CatalogResolvedVia=Bootstrap field=<x>`
-- `[OBS][Config] CatalogResolvedVia=LegacyResources path=<x>`
 
 **Aceite**
-- Se o bootstrap config não existir, nada quebra (fallback).
-- Se existir, reduz recursos loads para **1** (o root config).
+- Com bootstrap válido: catálogos resolvidos por referência direta.
+- Sem bootstrap obrigatório: erro explícito (fail-fast), com diagnóstico por log.
 
 ---
 
 ### Fase 2 — `SceneKeyAsset`: encapsular nome de cena (sem Addressables)
-**Objetivo:** parar de usar string solta para cena em rotas (mas ainda carregar por string internamente).
-
-**Criar**
-- `SceneKeyAsset` com `string sceneName` (validação Editor opcional depois)
-
-**Alterar**
-- `SceneRouteCatalogAsset.RouteEntry`: trocar `string[]` por `SceneKeyAsset[]` (e `SceneKeyAsset activeScene`)
-- `SceneRouteDefinition`: expor `IReadOnlyList<string>` ainda (por enquanto), mas construído a partir de `SceneKeyAsset.SceneName`.
-- Manter campos string legados temporários (se necessário) com fallback + `[OBS]`
+**Objetivo:** evitar string solta para cena em rotas, mantendo boundary string apenas no carregamento Unity.
 
 **Aceite**
-- Rotas principais migradas (pelo menos frontend e gameplay).
-- Logs confirmam resolução via `SceneKeyAsset`.
+- Rotas principais migradas para `SceneKeyAsset`.
+- Resolução de `SceneRouteDefinition` baseada em referências, sem regressão de fluxo.
 
 ---
 
-### Fase 3 — “Referência direta” entre assets (reduzir ids tipados no wiring)
-**Objetivo:** onde fizer sentido, preferir referência direta a SO em vez de `SceneRouteId`/`LevelId`.
+### Fase 3 — “Direct-ref-first” entre assets (com compatibilidade temporária por IDs)
+**Objetivo:** consolidar modelo **direct-ref-first** no wiring de conteúdo.
 
-**Exemplos (incrementais)**
-- `LevelDefinition` pode ganhar `SceneRouteDefinitionAsset routeRef` (se você criar um SO por rota)
-  *OU* manter `SceneRouteId` como está (já é tipado e razoável).
-- `GameNavigationCatalogAsset.RouteEntry` pode referenciar diretamente uma “RouteAsset” (em vez de `SceneRouteId`) — opcional.
+**Diretriz**
+- Referências diretas (`routeRef`/SO) devem ser priorizadas em novos conteúdos e fluxos críticos.
+- IDs tipados (`SceneRouteId`, `LevelId`) permanecem como **compatibilidade temporária**, com plano de retirada progressiva.
 
-> Esta fase é opcional; só vale a pena se os ids estiverem causando churn. O maior ganho prático vem das Fases 1 e 2.
+**Critério de saída (DONE)**
+1. `routeRef` obrigatório para rotas críticas (ex.: Menu e Gameplay) nos assets relevantes.
+2. Validação de Editor impedindo configuração incompleta para essas rotas críticas.
+3. Logs `[OBS]` confirmando resolução via direct-ref no caminho principal.
+4. Ausência de fallback degradado em runtime para rotas críticas.
 
 ---
 
-### Fase 4 — Hardening (remover legado quando evidência estiver sólida)
-**Objetivo:** remover paths/resources e campos legacy onde já não são usados em produção.
+### Fase 4 — Hardening (remoção de legado remanescente)
+**Objetivo:** fechar resíduos de legado após estabilização de evidências.
 
-**Aceite**
-- Baseline passa.
-- Nenhum log `[OBS] ...Via=LegacyResources` nos fluxos de produção.
+**Itens restantes (exatos)**
+1. Remover fallback `Resources` do tooling dev em `SceneFlowDevContextMenu`.
+2. Remover/encapsular helpers legados de `Resources` em `GlobalCompositionRoot.NavigationInputModes`.
+3. Planejar remoção das APIs `[Obsolete]` após janela de migração.
+
+**Critério para remoção de `[Obsolete]`**
+- Todos os consumidores migrados para trilhos oficiais (`ILevelFlowRuntimeService` / APIs canônicas).
+- Janela de compatibilidade encerrada e registrada em changelog.
+- Smoke/baseline sem chamadas aos métodos obsoletos.
+
+---
+
+## Evidências canônicas
+
+### Logs `[OBS]`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.BootstrapConfig.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs`
+
+### Arquivos-chave de configuração e catálogo
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Config/NewScriptsBootstrapConfigAsset.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Bindings/SceneRouteCatalogAsset.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Bindings/TransitionStyleCatalogAsset.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/GameNavigationCatalogAsset.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Runtime/LevelDefinition.cs`
+
+### Tooling/legado em hardening
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Dev/SceneFlowDevContextMenu.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/IGameNavigationService.cs`
 
 ---
 
 ## Operação com Codex
 - **1 prompt por fase** (não misturar).
-- Sempre pedir:
-    - fallback temporário
-    - logs `[OBS]`
-    - evitar tocar em GameLoop/WorldLifecycle
+- Solicitar sempre:
+  - logs `[OBS]`
+  - validação explícita de fail-fast em configurações obrigatórias
+  - evitar tocar em GameLoop/WorldLifecycle fora do escopo da fase
 
 ---
 
