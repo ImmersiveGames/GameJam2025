@@ -282,8 +282,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             {
                 if (request.HasInlineSceneData)
                 {
-                    routeDefinition = null;
-                    return request;
+                    DebugUtility.LogWarning<SceneTransitionService>(
+                        $"[OBS][Deprecated] Inline scene data foi detectado sem RouteId. " +
+                        $"Esse modo legado não é mais suportado no SceneFlow e será ignorado. " +
+                        $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.");
                 }
 
                 FailFastTransitionRequest(request, "RouteId ausente/inválido.");
@@ -301,6 +303,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 FailFastTransitionRequest(request, $"routeId='{request.RouteId}' não encontrado no catálogo de rotas.");
                 return request;
             }
+
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow] RouteResolvedVia=RouteId routeId='{request.RouteId}' source='ISceneRouteResolver'.",
+                DebugUtility.Colors.Info);
 
             routeDefinition = resolvedRoute;
 

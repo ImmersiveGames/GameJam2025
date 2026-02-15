@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             string via = definition.routeRef != null ? "AssetRef" : "RouteId";
             DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][Config] RouteResolvedVia={via} levelId='{levelId}', routeId='{routeId}'.",
+                $"[OBS][SceneFlow] RouteResolvedVia={via} levelId='{levelId}', routeId='{routeId}'.",
                 DebugUtility.Colors.Info);
 
             payload = definition.ToPayload();
