@@ -200,8 +200,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return;
             }
 
+            if (!request.UseFade)
+            {
+                return;
+            }
+
             string message =
-                $"[FATAL][Config] SceneTransitionProfile ausente na request. routeId='{request.RouteId}', styleId='{request.StyleId}', requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
+                $"[FATAL][Config] SceneTransitionProfile ausente na request com UseFade=true. routeId='{request.RouteId}', styleId='{request.StyleId}', requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
 
             DebugUtility.LogError<SceneTransitionService>(message);
 #if UNITY_EDITOR
@@ -397,7 +402,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private async Task RunFadeInIfNeeded(SceneTransitionContext context, long transitionId, string signature)
         {
-            if (!context.UseFade)
+            if (!context.UseFade || context.TransitionProfile == null)
             {
                 return;
             }

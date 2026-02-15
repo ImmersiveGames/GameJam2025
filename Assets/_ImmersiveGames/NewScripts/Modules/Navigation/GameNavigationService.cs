@@ -322,15 +322,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 DebugUtility.Colors.Info);
         }
 
-        private (SceneTransitionProfile profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(
+        private (SceneTransitionProfile? profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(
             GameNavigationEntry entry)
         {
             if (_styleCatalog != null && _styleCatalog.TryGet(entry.StyleId, out var style))
             {
                 if (style.Profile == null)
                 {
-                    throw new InvalidOperationException(
-                        $"[FATAL][Config] TransitionStyle sem referência de SceneTransitionProfile. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
+                    DebugUtility.LogWarning(typeof(GameNavigationService),
+                        $"[WARN][Degraded] TransitionStyle sem SceneTransitionProfile. styleId='{entry.StyleId}', routeId='{entry.RouteId}'. Fallback=no-fade (dur=0).");
+
+                    return (null, style.ProfileId, false);
                 }
 
                 return (style.Profile, style.ProfileId, style.UseFade);
