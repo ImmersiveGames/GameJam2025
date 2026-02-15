@@ -34,57 +34,39 @@ Correções para compilar sem “gambiarras” e alinhar contratos entre módulo
 
 ---
 
-## F1 (PRIORIDADE AGORA): Profiles por referência, com fallback controlado
+## F1 (ATUAL): Profiles por referência direta (fallback por Resources é histórico)
 
-### Problema atual
-Hoje, quando não há referência direta, o resolver precisa buscar um `SceneTransitionProfile` por **path** (tipicamente via `Resources.Load`).
-Isso acopla o ID a um path e obriga a manter assets em `Resources/`.
+### Problema (histórico)
+Durante a migração, quando faltava referência direta, o resolver podia buscar `SceneTransitionProfile` por path (`Resources.Load`).
+No estado atual, o runtime principal está alinhado em catálogo/referências via BootstrapConfig/DI.
 
 ### Decisão
 Introduzir um **catálogo de profiles por referência direta** (ScriptableObject), e fazer o resolver:
 1. Tentar **catálogo** primeiro.
-2. Se não houver catálogo (ou não houver entrada), usar **fallback legado** (opcional / controlável) via `Resources`.
+2. **[Histórico]** Durante janela de migração, havia fallback legado opcional via `Resources`.
 
 ### Resultado esperado
 - Transições passam a usar **referência direta** para `SceneTransitionProfile` quando o catálogo estiver preenchido.
-- Mantém comportamento atual (fallback) quando o catálogo não existir/ainda não estiver pronto.
+- No estado atual, o trilho de produção usa fail-fast para dependências obrigatórias de catálogo/config.
 - Um único “ponto de configuração” para desligar o legado quando você quiser endurecer.
 
-### Configuração recomendada
+### Configuração recomendada (estado atual)
 - Criar os profiles (`SceneTransitionProfile`) normalmente.
 - Criar 1 catálogo (`SceneTransitionProfileCatalogAsset`) e preencher ao menos:
   - `startup`, `frontend`, `gameplay`.
-- Se quiser auto-load pelo bootstrap, colocar o catálogo em:
-  - `Resources/SceneFlow/SceneTransitionProfileCatalog.asset`
-  - (path de load: `SceneFlow/SceneTransitionProfileCatalog`)
-- Quando estiver 100% coberto pelo catálogo, desligar legado:
-  - `SceneTransitionProfileCatalogAsset.AllowLegacyResourcesFallback = false`
+- Registrar catálogo/referências no `NewScriptsBootstrapConfigAsset` e validar resolução via DI no boot.
+- Política atual de produção: dependências obrigatórias ausentes => fail-fast com logs `[FATAL][Config]`/`[OBS]`.
 
 
-## Resources layout canônico (Navigation)
+## Resources layout (histórico)
 
-Fonte de verdade para assets carregados via `Resources.Load` no fluxo de navegação:
-
-- **GameNavigationCatalog**
-  - Asset: `Assets/Resources/Navigation/GameNavigationCatalog.asset`
-  - Load path: `"Navigation/GameNavigationCatalog"`
-- **TransitionStyleCatalog**
-  - Asset: `Assets/Resources/Navigation/TransitionStyleCatalog.asset`
-  - Load path: `"Navigation/TransitionStyleCatalog"`
-- **LevelCatalog (LevelFlow)**
-  - Asset: `Assets/Resources/Navigation/LevelCatalog.asset`
-  - Load path: `"Navigation/LevelCatalog"`
-- **SceneRouteCatalog** (mantido como definido atualmente no docs/código)
-  - Asset: `Assets/Resources/SceneFlow/SceneRouteCatalog.asset`
-  - Load path: `"SceneFlow/SceneRouteCatalog"`
-
-Regra: nenhum asset de Navigation deve ficar na raiz de `Resources/`.
+> **Histórico:** esta seção descreve o layout usado no período de migração.
+> Estado atual de produção: catálogos/referências são resolvidos via BootstrapConfig/DI, com uso de `Resources` restrito ao bootstrap root single-load quando aplicável.
 
 ### Evidência (logs)
 - Quando resolver via catálogo:
   - `resolvedPath='catalog'`
-- Quando cair no legado (apenas 1x por sessão):
-  - `[OBS] ... usando fallback legado via Resources ...`
+- **[Histórico]** Durante migração: `[OBS] ... usando fallback legado via Resources ...`.
 
 - Boot (antes do clique Play):
   - `[OBS][Navigation] Catalog boot snapshot: ... rawRoutesCount=... builtRouteIdsCount=... hasToGameplay=...`
@@ -93,7 +75,7 @@ Regra: nenhum asset de Navigation deve ficar na raiz de `Resources/`.
 
 ## Status do plano (v2.1.3)
 
-- ✅ **F1 (concluído no escopo principal):** catálogo de profiles por referência direta + fallback legado controlável.
+- ✅ **F1 (concluído no escopo principal):** catálogo de profiles por referência direta via BootstrapConfig/DI; fallback legado por `Resources` tratado como histórico.
 - ✅ **F3 (concluído):** rota é a fonte única de scene data (ScenesToLoad/Unload/Active); Navigation e LevelFlow não duplicam dados em runtime.
 - ✅ **Pendências reais:** nenhuma no escopo F1–F5 (F1, F2, F3, F4 e F5 concluídos).
 

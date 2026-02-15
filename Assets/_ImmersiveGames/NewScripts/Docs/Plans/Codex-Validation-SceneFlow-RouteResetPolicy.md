@@ -72,13 +72,13 @@ Pontos críticos:
 5. Logs/contratos canônicos de observabilidade permanecem coerentes.
 
 
-## Follow-up wiring fix
+## Follow-up wiring fix (histórico)
 
 A primeira versão mitigava o problema com logs `[OBS]`, mas não se curava no boot padrão: quando `RegisterSceneFlowNative()` rodava antes de `RegisterGameNavigationService()`, o `ISceneRouteCatalog` ainda não estava no DI e o resolver continuava `null`.
 
 Para fechar o gap de ordem do pipeline sem refactor amplo:
-- `ResolveOrRegisterRouteResolverBestEffort()` agora tenta `Resources.Load<SceneRouteCatalogAsset>("SceneFlow/SceneRouteCatalog")` quando DI ainda não tem catálogo.
+- **[Histórico]** `ResolveOrRegisterRouteResolverBestEffort()` chegou a tentar `Resources.Load<SceneRouteCatalogAsset>("SceneFlow/SceneRouteCatalog")` quando DI ainda não tinha catálogo.
 - Ao encontrar o asset, registra `ISceneRouteCatalog` e `ISceneRouteResolver` imediatamente (antes da navegação).
-- Se não encontrar, mantém fallback backward-compatible com log `[OBS]` explícito.
+- No estado atual (hardening), priorizar DI/BootstrapConfig e tratar fallback por `Resources` como transitório/legado.
 
 Com isso, o SceneFlow consegue hidratar payload por rota já no bootstrap normal, e a `SceneRouteResetPolicy` consegue decidir por `RouteKind` na primeira transição quando o catálogo estiver disponível.
