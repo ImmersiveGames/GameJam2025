@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine.Serialization;
 using UnityEngine;
 
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             public string routeId;
 
             [Tooltip("SceneRouteId associado ao intent (fallback quando routeRef não está setado).")]
+            [SceneFlowAllowEmptyId]
             public SceneRouteId sceneRouteId;
 
             [Tooltip("Referência direta opcional para a rota canônica.")]
