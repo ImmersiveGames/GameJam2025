@@ -13,25 +13,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
     {
         public SceneFlowIdSourceResult Collect()
         {
-            var values = new HashSet<string>();
+            var allValues = new HashSet<string>();
             var duplicates = new HashSet<string>();
 
-            AddCanonicalProfiles(values, duplicates);
-            CollectFromTransitionStyleCatalog(values, duplicates);
-            CollectFromTransitionProfileCatalog(values, duplicates);
+            AddCanonicalProfiles(allValues);
+            CollectFromTransitionStyleCatalog(allValues);
+            CollectFromTransitionProfileCatalog(allValues, duplicates);
 
-            return SceneFlowIdSourceUtility.BuildResult(values, duplicates);
+            return SceneFlowIdSourceUtility.BuildResult(allValues, duplicates);
         }
 
-        private static void AddCanonicalProfiles(HashSet<string> values, HashSet<string> duplicates)
+        private static void AddCanonicalProfiles(HashSet<string> allValues)
         {
-            SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, SceneFlowProfileId.Startup.Value);
-            SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, SceneFlowProfileId.Frontend.Value);
-            SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, SceneFlowProfileId.Gameplay.Value);
+            // Comentário: canônicos podem sobrepor catálogos; isso é esperado.
+            SceneFlowIdSourceUtility.AddValue(allValues, SceneFlowProfileId.Startup.Value);
+            SceneFlowIdSourceUtility.AddValue(allValues, SceneFlowProfileId.Frontend.Value);
+            SceneFlowIdSourceUtility.AddValue(allValues, SceneFlowProfileId.Gameplay.Value);
         }
 
-        private static void CollectFromTransitionStyleCatalog(HashSet<string> values, HashSet<string> duplicates)
+        private static void CollectFromTransitionStyleCatalog(HashSet<string> allValues)
         {
+            // Comentário: estilos e catálogo de profiles podem compartilhar os mesmos IDs.
             string[] guids = AssetDatabase.FindAssets("t:TransitionStyleCatalogAsset");
             for (int i = 0; i < guids.Length; i++)
             {
@@ -59,12 +61,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                         continue;
                     }
 
-                    SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, raw.stringValue);
+                    SceneFlowIdSourceUtility.AddValue(allValues, raw.stringValue);
                 }
             }
         }
 
-        private static void CollectFromTransitionProfileCatalog(HashSet<string> values, HashSet<string> duplicates)
+        private static void CollectFromTransitionProfileCatalog(HashSet<string> allValues, HashSet<string> duplicates)
         {
             string[] guids = AssetDatabase.FindAssets("t:SceneTransitionProfileCatalogAsset");
             for (int i = 0; i < guids.Length; i++)
@@ -83,6 +85,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                     continue;
                 }
 
+                // Comentário: duplicidade relevante aqui é dentro do próprio catálogo de profiles.
+                var profileCatalogIds = new HashSet<string>();
+
                 for (int j = 0; j < entries.arraySize; j++)
                 {
                     SerializedProperty entry = entries.GetArrayElementAtIndex(j);
@@ -93,7 +98,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                         continue;
                     }
 
-                    SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, raw.stringValue);
+                    string value = raw.stringValue;
+                    SceneFlowIdSourceUtility.AddAndTrackDuplicate(profileCatalogIds, duplicates, value);
+                    SceneFlowIdSourceUtility.AddValue(allValues, value);
                 }
             }
         }

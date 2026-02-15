@@ -36,11 +36,38 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdDrawers
                 ? !allowEmpty
                 : !Contains(source.Values, currentNormalized);
 
+            string invalidMessage = BuildInvalidMessage(currentNormalized);
+            string duplicateMessage = BuildDuplicateMessage(source.DuplicateValues);
+
             var options = BuildOptions(source.Values, allowEmpty, currentNormalized, isMissing, out int currentIndex);
 
-            Rect lineRect = new(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
-            Rect invalidRect = new(position.x, lineRect.yMax + EditorGUIUtility.standardVerticalSpacing, position.width, EditorGUIUtility.singleLineHeight * 2f);
-            Rect duplicateRect = new(position.x, invalidRect.yMax + EditorGUIUtility.standardVerticalSpacing, position.width, EditorGUIUtility.singleLineHeight * 2f);
+            float y = position.y;
+            Rect lineRect = new(position.x, y, position.width, EditorGUIUtility.singleLineHeight);
+            y += EditorGUIUtility.singleLineHeight;
+
+            float invalidHeight = isMissing
+                ? EditorStyles.helpBox.CalcHeight(new GUIContent(invalidMessage), position.width)
+                : 0f;
+
+            float duplicateHeight = source.DuplicateValues.Count > 0
+                ? EditorStyles.helpBox.CalcHeight(new GUIContent(duplicateMessage), position.width)
+                : 0f;
+
+            Rect invalidRect = default;
+            Rect duplicateRect = default;
+
+            if (isMissing)
+            {
+                y += EditorGUIUtility.standardVerticalSpacing;
+                invalidRect = new Rect(position.x, y, position.width, invalidHeight);
+                y += invalidHeight;
+            }
+
+            if (source.DuplicateValues.Count > 0)
+            {
+                y += EditorGUIUtility.standardVerticalSpacing;
+                duplicateRect = new Rect(position.x, y, position.width, duplicateHeight);
+            }
 
             Color previousColor = GUI.color;
             if (isMissing)
@@ -67,18 +94,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdDrawers
 
             if (isMissing)
             {
-                string currentLabel = string.IsNullOrEmpty(currentNormalized) ? "<empty>" : currentNormalized;
-                string message =
-                    $"ID atual '{currentLabel}' não foi encontrado nas fontes conhecidas. " +
-                    "Verifique catálogo/asset de origem ou ajuste o valor pelo dropdown.";
-                EditorGUI.HelpBox(invalidRect, message, MessageType.Error);
+                EditorGUI.HelpBox(invalidRect, invalidMessage, MessageType.Error);
             }
 
             if (source.DuplicateValues.Count > 0)
             {
-                string duplicates = string.Join(", ", source.DuplicateValues);
-                string message = $"IDs duplicados detectados na fonte: {duplicates}.";
-                EditorGUI.HelpBox(duplicateRect, message, MessageType.Warning);
+                EditorGUI.HelpBox(duplicateRect, duplicateMessage, MessageType.Warning);
             }
         }
 
@@ -98,14 +119,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdDrawers
                 : !Contains(source.Values, currentNormalized);
 
             float height = EditorGUIUtility.singleLineHeight;
+
             if (isMissing)
             {
-                height += EditorGUIUtility.standardVerticalSpacing + (EditorGUIUtility.singleLineHeight * 2f);
+                string invalidMessage = BuildInvalidMessage(currentNormalized);
+                float invalidHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(invalidMessage), EditorGUIUtility.currentViewWidth);
+                height += EditorGUIUtility.standardVerticalSpacing + invalidHeight;
             }
 
             if (source.DuplicateValues.Count > 0)
             {
-                height += EditorGUIUtility.standardVerticalSpacing + (EditorGUIUtility.singleLineHeight * 2f);
+                string duplicateMessage = BuildDuplicateMessage(source.DuplicateValues);
+                float duplicateHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(duplicateMessage), EditorGUIUtility.currentViewWidth);
+                height += EditorGUIUtility.standardVerticalSpacing + duplicateHeight;
             }
 
             return height;
@@ -132,6 +158,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdDrawers
             }
 
             return false;
+        }
+
+        private static string BuildInvalidMessage(string currentNormalized)
+        {
+            string currentLabel = string.IsNullOrEmpty(currentNormalized) ? "<empty>" : currentNormalized;
+            return $"ID '{currentLabel}' não existe na fonte. Ajuste pelo dropdown.";
+        }
+
+        private static string BuildDuplicateMessage(IReadOnlyList<string> duplicateValues)
+        {
+            string duplicates = string.Join(", ", duplicateValues);
+            return $"IDs duplicados na fonte: {duplicates}.";
         }
 
         private static string[] BuildOptions(

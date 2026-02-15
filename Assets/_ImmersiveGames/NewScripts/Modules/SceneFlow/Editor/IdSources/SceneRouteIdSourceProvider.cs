@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEditor;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
 {
@@ -13,17 +12,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
     {
         public SceneFlowIdSourceResult Collect()
         {
-            var values = new HashSet<string>();
+            var allValues = new HashSet<string>();
             var duplicates = new HashSet<string>();
 
-            CollectFromRouteDefinitionAssets(values, duplicates);
-            CollectFromRouteCatalogAssets(values, duplicates);
+            CollectFromRouteDefinitionAssets(allValues, duplicates);
+            CollectFromRouteCatalogAssets(allValues, duplicates);
 
-            return SceneFlowIdSourceUtility.BuildResult(values, duplicates);
+            return SceneFlowIdSourceUtility.BuildResult(allValues, duplicates);
         }
 
-        private static void CollectFromRouteDefinitionAssets(HashSet<string> values, HashSet<string> duplicates)
+        private static void CollectFromRouteDefinitionAssets(HashSet<string> allValues, HashSet<string> duplicates)
         {
+            // Comentário: aqui duplicidade é relevante (dois RouteDefinitionAsset com o mesmo routeId).
+            var routeDefinitionIds = new HashSet<string>();
+
             string[] guids = AssetDatabase.FindAssets("t:SceneRouteDefinitionAsset");
             for (int i = 0; i < guids.Length; i++)
             {
@@ -34,11 +36,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                     continue;
                 }
 
-                SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, asset.RouteId.Value);
+                string routeId = asset.RouteId.Value;
+                if (!SceneFlowIdSourceUtility.AddAndTrackDuplicate(routeDefinitionIds, duplicates, routeId))
+                {
+                    continue;
+                }
+
+                SceneFlowIdSourceUtility.AddValue(allValues, routeId);
             }
         }
 
-        private static void CollectFromRouteCatalogAssets(HashSet<string> values, HashSet<string> duplicates)
+        private static void CollectFromRouteCatalogAssets(HashSet<string> allValues, HashSet<string> duplicates)
         {
             string[] guids = AssetDatabase.FindAssets("t:SceneRouteCatalogAsset");
             for (int i = 0; i < guids.Length; i++)
@@ -51,13 +59,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                 }
 
                 var serializedObject = new SerializedObject(catalog);
-                ReadRouteDefinitionReferences(serializedObject, values, duplicates);
-                ReadInlineRoutes(serializedObject, values, duplicates);
+                ReadRouteDefinitionReferences(serializedObject, allValues);
+                ReadInlineRoutes(serializedObject, allValues, duplicates);
             }
         }
 
-        private static void ReadRouteDefinitionReferences(SerializedObject serializedObject, HashSet<string> values, HashSet<string> duplicates)
+        private static void ReadRouteDefinitionReferences(SerializedObject serializedObject, HashSet<string> allValues)
         {
+            // Comentário: sobreposição com RouteDefinitionAsset é esperada e NÃO deve gerar duplicidade.
             SerializedProperty definitions = serializedObject.FindProperty("routeDefinitions");
             if (definitions == null || !definitions.isArray)
             {
@@ -72,17 +81,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                     continue;
                 }
 
-                SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, routeAsset.RouteId.Value);
+                SceneFlowIdSourceUtility.AddValue(allValues, routeAsset.RouteId.Value);
             }
         }
 
-        private static void ReadInlineRoutes(SerializedObject serializedObject, HashSet<string> values, HashSet<string> duplicates)
+        private static void ReadInlineRoutes(SerializedObject serializedObject, HashSet<string> allValues, HashSet<string> duplicates)
         {
             SerializedProperty routes = serializedObject.FindProperty("routes");
             if (routes == null || !routes.isArray)
             {
                 return;
             }
+
+            // Comentário: duplicidade de inline routes entre si continua relevante.
+            var inlineRouteIds = new HashSet<string>();
 
             for (int i = 0; i < routes.arraySize; i++)
             {
@@ -94,7 +106,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                     continue;
                 }
 
-                SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, raw.stringValue);
+                string value = raw.stringValue;
+                SceneFlowIdSourceUtility.AddAndTrackDuplicate(inlineRouteIds, duplicates, value);
+                SceneFlowIdSourceUtility.AddValue(allValues, value);
             }
         }
     }
