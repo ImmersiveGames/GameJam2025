@@ -4,8 +4,10 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
+using System.IO;
 #endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
@@ -238,9 +240,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             var unload = ResolveKeys(entry.scenesToUnloadKeys, routeId, nameof(RouteEntry.scenesToUnloadKeys));
             var active = ResolveSingleKey(entry.targetActiveSceneKey, routeId, nameof(RouteEntry.targetActiveSceneKey));
 
+            LogResolvedRouteSceneList(routeId, nameof(RouteEntry.scenesToUnloadKeys), unload);
+
             EnsureActiveScenePolicy(routeId, entry.routeKind, active, "routeId");
             EnsureResetPolicyConsistency(routeId, entry.routeKind, entry.requiresWorldReset, "routeId");
             routeDefinition = new SceneRouteDefinition(load, unload, active, entry.routeKind, entry.requiresWorldReset);
+        }
+
+        private static void LogResolvedRouteSceneList(SceneRouteId routeId, string fieldName, IReadOnlyList<string> resolved)
+        {
+            DebugUtility.Log(typeof(SceneRouteCatalogAsset),
+                $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{fieldName}' scenes=[{FormatSceneDetails(resolved)}].",
+                DebugUtility.Colors.Info);
         }
 
         private static void EnsureActiveScenePolicy(SceneRouteId routeId, SceneRouteKind routeKind, string activeScene, string source)
@@ -282,10 +293,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             if (keys == null || keys.Length == 0)
             {
+                DebugUtility.Log(typeof(SceneRouteCatalogAsset),
+                    $"[OBS][SceneFlow] ResolveRouteKeys routeId='{routeId}' field='{fieldName}' before=[] after=[].",
+                    DebugUtility.Colors.Info);
                 return Array.Empty<string>();
             }
 
+            var beforeFilter = new List<string>(keys.Length);
             var resolved = new List<string>(keys.Length);
+            var seenNames = new HashSet<string>(StringComparer.Ordinal);
+
             for (int i = 0; i < keys.Length; i++)
             {
                 var key = keys[i];
@@ -299,12 +316,78 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                     FailFast($"routeId='{routeId}' possui SceneKeyAsset inválido em '{fieldName}[{i}]' (SceneName vazio). asset='{key.name}'.");
                 }
 
-                resolved.Add(key.SceneName.Trim());
+                string sceneName = key.SceneName.Trim();
+                beforeFilter.Add(sceneName);
+
+                if (!seenNames.Add(sceneName))
+                {
+                    DebugUtility.LogWarning(typeof(SceneRouteCatalogAsset),
+                        $"[OBS][SceneFlow] ResolveRouteKeysFiltered routeId='{routeId}' field='{fieldName}' key='{key.name}' scene='{sceneName}' reason='duplicate_scene_name'.");
+                    continue;
+                }
+
+                if (!string.Equals(key.name, sceneName, StringComparison.Ordinal))
+                {
+                    DebugUtility.LogWarning(typeof(SceneRouteCatalogAsset),
+                        $"[OBS][SceneFlow] ResolveRouteKeysFiltered routeId='{routeId}' field='{fieldName}' key='{key.name}' scene='{sceneName}' reason='invalid_key_name_mismatch'.");
+                }
+
+                resolved.Add(sceneName);
             }
 
-            return resolved
-                .Distinct(StringComparer.Ordinal)
-                .ToArray();
+            DebugUtility.Log(typeof(SceneRouteCatalogAsset),
+                $"[OBS][SceneFlow] ResolveRouteKeys routeId='{routeId}' field='{fieldName}' before=[{FormatSceneDetails(beforeFilter)}] after=[{FormatSceneDetails(resolved)}].",
+                DebugUtility.Colors.Info);
+
+            return resolved.ToArray();
+        }
+
+        private static string FormatSceneDetails(IReadOnlyList<string> scenes)
+        {
+            if (scenes == null || scenes.Count == 0)
+            {
+                return "<none>";
+            }
+
+            var details = new List<string>(scenes.Count);
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                string sceneName = scenes[i] ?? string.Empty;
+                int buildIndex = ResolveBuildIndex(sceneName);
+                bool isInBuildSettings = Application.CanStreamedLevelBeLoaded(sceneName);
+                details.Add($"name='{sceneName}', buildIndex={buildIndex}, isInBuildSettings={isInBuildSettings}");
+            }
+
+            return string.Join(" | ", details);
+        }
+
+        private static int ResolveBuildIndex(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return -1;
+            }
+
+            Scene loadedScene = SceneManager.GetSceneByName(sceneName);
+            if (loadedScene.IsValid())
+            {
+                return loadedScene.buildIndex;
+            }
+
+#if UNITY_EDITOR
+            EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes;
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                string path = scenes[i].path;
+                string name = Path.GetFileNameWithoutExtension(path);
+                if (string.Equals(name, sceneName, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+#endif
+
+            return -1;
         }
 
         private static string ResolveSingleKey(SceneKeyAsset key, SceneRouteId routeId, string fieldName)

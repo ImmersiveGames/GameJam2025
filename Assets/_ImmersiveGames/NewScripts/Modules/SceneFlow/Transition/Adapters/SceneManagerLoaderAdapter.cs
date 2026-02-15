@@ -27,11 +27,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
         public async Task UnloadSceneAsync(string sceneName)
         {
+            var scene = SceneManager.GetSceneByName(sceneName);
+            bool exists = scene.IsValid();
+            bool isLoaded = exists && scene.isLoaded;
+            bool isActiveScene = exists && scene == SceneManager.GetActiveScene();
+
+            DebugUtility.Log<SceneManagerLoaderAdapter>(
+                $"[OBS][SceneFlow] UnloadAttempt scene='{sceneName}' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.",
+                DebugUtility.Colors.Info);
+
             var op = SceneManager.UnloadSceneAsync(sceneName);
             if (op == null)
             {
                 DebugUtility.LogWarning<SceneManagerLoaderAdapter>(
-                    $"[SceneFlow] UnloadSceneAsync retornou null para '{sceneName}'.");
+                    $"[OBS][SceneFlow] UnloadAttempt scene='{sceneName}' result='null_operation' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.");
                 return;
             }
 
@@ -39,6 +48,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
             {
                 await Task.Yield();
             }
+
+            var sceneAfter = SceneManager.GetSceneByName(sceneName);
+            bool existsAfter = sceneAfter.IsValid();
+            bool isLoadedAfter = existsAfter && sceneAfter.isLoaded;
+
+            DebugUtility.Log<SceneManagerLoaderAdapter>(
+                $"[OBS][SceneFlow] UnloadAttempt scene='{sceneName}' result='completed' existsAfter={existsAfter} isLoadedAfter={isLoadedAfter}.",
+                DebugUtility.Colors.Info);
         }
 
         public bool IsSceneLoaded(string sceneName)

@@ -78,7 +78,7 @@ Durante a transição:
 #### Reset por escopos vs Reset de gameplay
 
 - **WorldLifecycle (infra)**: reset determinístico do mundo (gate + hooks + spawn/despawn) e **soft reset por escopos** via `ResetScope` e `IResetScopeParticipant`.
-- **RunRearm (gameplay)**: módulo em `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/RunRearm/Core/` que define **alvos** (`RunRearmTarget`) e **etapas** (`RunRearmStep`) para resets de componentes (`IRunRearmable`). Pode ser acionado via Dev (direto) ou via bridges (ex.: `PlayersRunRearmWorldParticipant`).
+- **RunRearm (gameplay)**: módulo em `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/RunRearm/Runtime/` que define **alvos** (`RunRearmTarget`) e **etapas** (`RunRearmStep`) para resets de componentes (`IRunRearmable`). Pode ser acionado via Dev (direto) ou via bridges (ex.: `PlayersRunRearmWorldParticipant`).
 
 - Executa reset determinístico por escopos e etapas (despawn/spawn/hook).
 - Integrado ao Scene Flow via `WorldLifecycleSceneFlowResetDriver`:

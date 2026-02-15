@@ -42,10 +42,31 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     HandleRouteMismatch(levelId, routeId, routeRefId);
                 }
 
+                if (routeId.IsValid)
+                {
+                    DebugUtility.LogVerbose(typeof(LevelDefinition),
+                        $"[OBS][Deprecated] Legacy field 'routeId' foi ignorado pois 'routeRef' está presente. " +
+                        $"levelId='{levelId}', legacyRouteId='{routeId}', resolvedRouteId='{routeRefId}'.",
+                        DebugUtility.Colors.Warning);
+                }
+
+                DebugUtility.LogVerbose(typeof(LevelDefinition),
+                    $"[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='{levelId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
+                    DebugUtility.Colors.Info);
+
                 return routeRefId;
             }
 
-            return routeId;
+            if (routeId.IsValid)
+            {
+                DebugUtility.LogVerbose(typeof(LevelDefinition),
+                    $"[OBS][SceneFlow] RouteResolvedVia=RouteId levelId='{levelId}', routeId='{routeId}'.",
+                    DebugUtility.Colors.Info);
+
+                return routeId;
+            }
+
+            return SceneRouteId.None;
         }
 
         /// <summary>

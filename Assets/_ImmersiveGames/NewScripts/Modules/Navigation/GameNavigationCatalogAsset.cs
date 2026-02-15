@@ -52,8 +52,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                         HandleRouteMismatch(owner, routeId, sceneRouteId, routeRefId);
                     }
 
+                    if (sceneRouteId.IsValid)
+                    {
+                        DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
+                            $"[OBS][Deprecated] Legacy field 'sceneRouteId' foi ignorado pois 'routeRef' está presente. " +
+                            $"owner='{owner}', intentId='{routeId}', legacyRouteId='{sceneRouteId}', resolvedRouteId='{routeRefId}'.",
+                            DebugUtility.Colors.Warning);
+                    }
+
                     DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
-                        $"[OBS][Config] RouteResolvedVia=AssetRef owner='{owner}', intentId='{routeId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
+                        $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{owner}', intentId='{routeId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
                         DebugUtility.Colors.Info);
 
                     return routeRefId;
@@ -62,11 +70,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 if (sceneRouteId.IsValid)
                 {
                     DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
-                        $"[OBS][Config] RouteResolvedVia=RouteId owner='{owner}', intentId='{routeId}', routeId='{sceneRouteId}'.",
+                        $"[OBS][SceneFlow] RouteResolvedVia=RouteId owner='{owner}', intentId='{routeId}', routeId='{sceneRouteId}'.",
                         DebugUtility.Colors.Info);
+
+                    return sceneRouteId;
                 }
 
-                return sceneRouteId;
+                return SceneRouteId.None;
             }
 
             public void MigrateLegacy()

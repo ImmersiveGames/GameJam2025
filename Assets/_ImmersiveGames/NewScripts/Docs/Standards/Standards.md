@@ -25,6 +25,14 @@ Quando houver exceção intencional (ex.: domínio SceneFlow com catálogo próp
 
 ### Regra F3 — Route como fonte única de Scene Data
 
+
+**Observabilidade obrigatória (F3):**
+
+- Ao resolver rota, emitir log canônico:
+  - `SceneFlow`: `[OBS][SceneFlow] RouteResolvedVia=RouteId routeId='...' source='ISceneRouteResolver'.`
+  - `Navigation`/`LevelFlow`: `[OBS][SceneFlow] RouteResolvedVia={AssetRef|RouteId} ...`
+- Se campo legado estiver preenchido mas for ignorado (porque `routeRef` existe), emitir:
+  - `[OBS][Deprecated] Legacy field '...' foi ignorado pois 'routeRef' está presente...`
 - `ScenesToLoad`/`ScenesToUnload`/`TargetActiveScene` devem ser definidos no `SceneRouteCatalog` (SceneFlow).
 - `Navigation` e `LevelFlow` não devem carregar scene data local em runtime; devem resolver por `SceneRouteId`.
 - Campos LEGACY em catálogos/definitions podem permanecer apenas para migração, desde que sejam ignorados funcionalmente e emitam warning observável quando preenchidos.

@@ -1,5 +1,11 @@
 # Changelog — Docs
 
+## 2026-02-15
+
+- **Registrado como concluído:** `SceneFlow-Navigation-LevelFlow-Refactor-Plan-v2.1.3` (F1–F5).
+- **F3 (Route como fonte única de SceneData):** SceneFlow falha em `RouteId` ausente/inválido; Navigation/LevelFlow resolvem rota via `routeRef`/`SceneRouteId` e emitem logs `[OBS][SceneFlow] RouteResolvedVia=...`.
+
+
 ## 2026-02-04
 
 ### Changed
@@ -259,7 +265,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Added: `Reports/Archive/2025/SceneFlow-Gameplay-To-Menu-Report.md` com checklist e logs esperados do retorno Gameplay → Menu.
 - Updated: `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/ExitToMenuNavigationBridge.cs`, `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.cs` e `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Commands/GameCommands.cs` para suportar ExitToMenu em produção/dev.
 - Added: `Reports/Archive/2025/SceneFlow-Gameplay-Blockers-Report.md` com os 3 blockers do fluxo Menu → Gameplay (erros, causa raiz, correções e evidências).
-- Updated: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs` e `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/PlayerSpawnService.cs` (fixes de blockers do fluxo).
+- Updated: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs` e `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawning/PlayerSpawnService.cs` (fixes de blockers do fluxo).
 - Updated: `README.md` e `WORLD_LIFECYCLE.md` com explicação simples do pipeline, definição de “loading real”
   e critério para remover o SKIP (decisão registrada).
 - Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` e `ARCHITECTURE_TECHNICAL.md` com formalização de
