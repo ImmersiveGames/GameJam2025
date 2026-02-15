@@ -52,14 +52,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                         HandleRouteMismatch(owner, routeId, sceneRouteId, routeRefId);
                     }
 
-                    if (sceneRouteId.IsValid)
-                    {
-                        DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
-                            $"[OBS][Deprecated] Legacy field 'sceneRouteId' foi ignorado pois 'routeRef' está presente. " +
-                            $"owner='{owner}', intentId='{routeId}', legacyRouteId='{sceneRouteId}', resolvedRouteId='{routeRefId}'.",
-                            DebugUtility.Colors.Warning);
-                    }
-
                     DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
                         $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{owner}', intentId='{routeId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
                         DebugUtility.Colors.Info);
@@ -189,6 +181,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (string.IsNullOrWhiteSpace(route.routeId))
                 return false;
 
+            ValidateCriticalRouteEntryOrFail(route);
+
             var resolvedRouteId = route.ResolveRouteId(name);
             if (!resolvedRouteId.IsValid)
                 return false;
@@ -202,6 +196,47 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 SceneTransitionPayload.Empty);
 
             return true;
+        }
+
+        private void ValidateCriticalRouteEntryOrFail(RouteEntry route)
+        {
+            if (!IsCriticalIntent(route.routeId))
+            {
+                return;
+            }
+
+            if (route.routeRef == null)
+            {
+                FailFastCriticalRouteConfig(route.routeId,
+                    "routeRef obrigatório e não configurado para intent crítico.");
+            }
+
+            if (route.sceneRouteId.IsValid)
+            {
+                FailFastCriticalRouteConfig(route.routeId,
+                    $"sceneRouteId legado deve estar vazio para intent crítico quando routeRef é usado. sceneRouteId='{route.sceneRouteId}'.");
+            }
+        }
+
+        private static bool IsCriticalIntent(string intentId)
+        {
+            if (string.IsNullOrWhiteSpace(intentId))
+            {
+                return false;
+            }
+
+            string normalized = intentId.Trim();
+            return string.Equals(normalized, GameNavigationIntents.ToMenu, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(normalized, GameNavigationIntents.ToGameplay, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void FailFastCriticalRouteConfig(string intentId, string detail)
+        {
+            string message =
+                $"[FATAL][Config] GameNavigationCatalog inválido para intent crítico. asset='{name}', intentId='{intentId}', detail='{detail}'";
+
+            DebugUtility.LogError(typeof(GameNavigationCatalogAsset), message);
+            throw new InvalidOperationException(message);
         }
     }
 }
