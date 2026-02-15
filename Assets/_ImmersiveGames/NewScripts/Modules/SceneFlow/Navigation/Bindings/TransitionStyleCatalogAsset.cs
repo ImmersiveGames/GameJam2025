@@ -52,7 +52,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
         private readonly Dictionary<TransitionStyleId, TransitionStyleDefinition> _cache = new();
         private bool _cacheBuilt;
-        private static readonly TransitionStyleId CriticalGameplayStyleId = TransitionStyleId.FromName("style.gameplay");
 
         public bool TryGet(TransitionStyleId styleId, out TransitionStyleDefinition style)
         {
@@ -94,6 +93,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 FailFast("TransitionStyleCatalog sem estilos configurados.");
             }
 
+            int degradedStyles = 0;
+
             for (int i = 0; i < styles.Count; i++)
             {
                 var entry = styles[i];
@@ -114,12 +115,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
                 if (entry.transitionProfile == null)
                 {
-                    if (entry.styleId == CriticalGameplayStyleId)
-                    {
-                        FailFast($"Style crítico exige AssetRef de SceneTransitionProfile. styleId='{entry.styleId}' não permite resolução via profileId/string.");
-                    }
+                    degradedStyles++;
 
-                    FailFast($"TransitionStyle sem SceneTransitionProfile. styleId='{entry.styleId}'.");
+                    DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
+                        $"[WARN][Degraded] TransitionStyle sem SceneTransitionProfile. styleId='{entry.styleId}', profileId='{entry.profileId}'. Fallback=no-fade (dur=0).");
+
+                    _cache.Add(entry.styleId, new TransitionStyleDefinition(null, entry.profileId, false));
+                    continue;
                 }
 
                 ValidateProfileIdConsistency(entry);
@@ -134,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             if (warnOnInvalidStyles)
             {
                 DebugUtility.LogVerbose<TransitionStyleCatalogAsset>(
-                    $"[OBS][Config] TransitionStyleCatalogBuild stylesResolved={_cache.Count} invalidStyles=0",
+                    $"[OBS][Config] TransitionStyleCatalogBuild stylesResolved={_cache.Count} invalidStyles=0 degradedStyles={degradedStyles}",
                     DebugUtility.Colors.Info);
             }
         }
@@ -143,11 +145,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             if (!entry.profileId.IsValid)
             {
-                if (entry.styleId == CriticalGameplayStyleId)
-                {
-                    FailFast($"Style crítico exige profileId válido para validação de consistência. styleId='{entry.styleId}'.");
-                }
-
                 return;
             }
 
@@ -194,8 +191,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                     continue;
                 }
 
-                DebugUtility.LogError<TransitionStyleCatalogAsset>(
-                    $"[FATAL][Config] TransitionStyleCatalog com referência nula de SceneTransitionProfile. asset='{assetPath}', index={i}, styleId='{entry.styleId}'.");
+                DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
+                    $"[WARN][Degraded] TransitionStyleCatalog com referência nula de SceneTransitionProfile. asset='{assetPath}', index={i}, styleId='{entry.styleId}'. Fallback=no-fade (dur=0).");
             }
         }
 #else
