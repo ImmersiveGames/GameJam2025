@@ -2,6 +2,8 @@
 
 ## 2026-02-15
 
+- **F3 concluído (rota como fonte única de SceneData) — commit X**.
+- **Plano Strings → DirectRefs atualizado para política strict fail-fast — commit X**.
 - **Registrado como concluído:** `SceneFlow-Navigation-LevelFlow-Refactor-Plan-v2.1.3` (F1–F5).
 - **F3 (Route como fonte única de SceneData):** SceneFlow falha em `RouteId` ausente/inválido; Navigation/LevelFlow resolvem rota via `routeRef`/`SceneRouteId` e emitem logs `[OBS][SceneFlow] RouteResolvedVia=...`.
 
