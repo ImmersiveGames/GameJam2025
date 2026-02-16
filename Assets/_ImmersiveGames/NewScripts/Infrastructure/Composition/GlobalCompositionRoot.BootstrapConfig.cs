@@ -44,18 +44,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 }
                 else
                 {
-                    var resourcesConfig = Resources.Load<NewScriptsBootstrapConfigAsset>(NewScriptsBootstrapConfigAsset.DefaultResourcesPath);
-                    if (resourcesConfig != null)
-                    {
-                        cachedBootstrapConfig = resourcesConfig;
-                        cachedBootstrapConfigVia = "ResourcesRoot";
-                        DependencyManager.Provider.RegisterGlobal(resourcesConfig);
-                    }
-                    else
-                    {
-                        FailFast(
-                            $"Missing NewScriptsBootstrapConfigAsset. path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}");
-                    }
+                    ResolveBootstrapConfigFromSceneProviderOrFail();
+                    DependencyManager.Provider.RegisterGlobal(cachedBootstrapConfig);
                 }
             }
 
@@ -65,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 bootstrapConfigResolutionLogged = true;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={cachedBootstrapConfig.name} path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}",
+                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={cachedBootstrapConfig.name}",
                     DebugUtility.Colors.Info);
             }
 
@@ -75,6 +65,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             return cachedBootstrapConfig;
+        }
+
+        private static void ResolveBootstrapConfigFromSceneProviderOrFail()
+        {
+            var provider = UnityEngine.Object.FindFirstObjectByType<NewScriptsBootstrapConfigProvider>(FindObjectsInactive.Include);
+            if (provider == null)
+            {
+                FailFast("Missing required NewScriptsBootstrapConfigProvider in loaded scene. Configure a direct reference to NewScriptsBootstrapConfigAsset.");
+            }
+
+            if (provider.Config == null)
+            {
+                FailFast("Missing required NewScriptsBootstrapConfigAsset in NewScriptsBootstrapConfigProvider.config.");
+            }
+
+            cachedBootstrapConfig = provider.Config;
+            cachedBootstrapConfigVia = "SceneProvider";
         }
     }
 }
