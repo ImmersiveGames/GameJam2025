@@ -76,18 +76,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
                 return catalog;
             }
 
-            string[] guids = AssetDatabase.FindAssets("t:GameNavigationCatalogAsset");
-            if (guids.Length > 0)
-            {
-                string anyPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                catalog = AssetDatabase.LoadAssetAtPath<GameNavigationCatalogAsset>(anyPath);
-                if (catalog != null)
-                {
-                    Debug.Log($"[OBS][SceneFlow][Config] Using existing navigation catalog found at '{anyPath}'.");
-                    return catalog;
-                }
-            }
-
             EnsureDirectoryForAsset(NavigationCatalogPath);
             catalog = ScriptableObject.CreateInstance<GameNavigationCatalogAsset>();
             catalog.name = "GameNavigationCatalog";
