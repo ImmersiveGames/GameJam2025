@@ -61,7 +61,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         [Serializable]
         public sealed class RouteEntry
         {
-            [Tooltip("Identificador canônico do intent extra/custom.")]
+            [Tooltip("Identificador tipado do intent extra/custom.")]
+            public NavigationIntentId intentId;
+
+            [SerializeField]
+            [HideInInspector]
+            [Tooltip("Identificador legado do intent extra/custom (somente migração/backward compatibility).")]
             public string routeId;
 
             [Tooltip("SceneRouteId associado ao intent extra/custom (fallback quando routeRef não está setado).")]
@@ -77,6 +82,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             public SceneRouteId ResolveRouteId(string owner)
             {
+                string resolvedIntentId = ResolveIntentId().Value;
+
                 if (routeRef != null)
                 {
                     var routeRefId = routeRef.RouteId;
@@ -87,11 +94,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
                     if (sceneRouteId.IsValid && sceneRouteId != routeRefId)
                     {
-                        HandleRouteMismatch(owner, routeId, sceneRouteId, routeRefId);
+                        HandleRouteMismatch(owner, resolvedIntentId, sceneRouteId, routeRefId);
                     }
 
                     DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
-                        $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{owner}', intentId='{routeId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
+                        $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{owner}', intentId='{resolvedIntentId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
                         DebugUtility.Colors.Info);
 
                     return routeRefId;
@@ -100,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 if (sceneRouteId.IsValid)
                 {
                     DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
-                        $"[OBS][SceneFlow] RouteResolvedVia=RouteId owner='{owner}', intentId='{routeId}', routeId='{sceneRouteId}'.",
+                        $"[OBS][SceneFlow] RouteResolvedVia=RouteId owner='{owner}', intentId='{resolvedIntentId}', routeId='{sceneRouteId}'.",
                         DebugUtility.Colors.Info);
 
                     return sceneRouteId;
@@ -111,7 +118,32 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             public void MigrateLegacy()
             {
-                routeId = routeId?.Trim();
+                routeId = NavigationIntentId.Normalize(routeId);
+
+                if (!intentId.IsValid && !string.IsNullOrEmpty(routeId))
+                {
+                    intentId = NavigationIntentId.FromName(routeId);
+                }
+
+                if (intentId.IsValid)
+                {
+                    routeId = intentId.Value;
+                }
+            }
+
+            public NavigationIntentId ResolveIntentId()
+            {
+                if (intentId.IsValid)
+                {
+                    return NavigationIntentId.FromName(intentId.Value);
+                }
+
+                if (string.IsNullOrWhiteSpace(routeId))
+                {
+                    return NavigationIntentId.None;
+                }
+
+                return NavigationIntentId.FromName(routeId);
             }
 
             public bool TryAutoSyncFromRouteRef(out bool sceneRouteIdSynced)
@@ -190,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return false;
             }
 
-            string normalizedIntentId = routeId.Trim();
+            string normalizedIntentId = NavigationIntentId.Normalize(routeId);
             if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind coreKind))
             {
                 entry = ResolveCoreOrFail(coreKind);
@@ -208,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 FailFastConfig($"[FATAL][Config] GameNavigationCatalog intentId inválido/vazio. asset='{name}'.");
             }
 
-            string normalizedIntentId = intentId.Trim();
+            string normalizedIntentId = NavigationIntentId.Normalize(intentId);
             if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind coreKind))
             {
                 return ResolveCoreOrFail(coreKind);
@@ -484,12 +516,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             intentId = string.Empty;
             entry = default;
 
-            if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+            if (route == null)
             {
                 return false;
             }
 
-            intentId = route.routeId.Trim();
+            NavigationIntentId typedIntentId = route.ResolveIntentId();
+            if (!typedIntentId.IsValid)
+            {
+                return false;
+            }
+
+            intentId = typedIntentId.Value;
             if (TryMapIntentIdToCoreKind(intentId, out _))
             {
                 FailFastConfig(
@@ -674,12 +712,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private bool IsIntentMapped(string intentId)
         {
-            if (string.IsNullOrWhiteSpace(intentId))
+            string normalizedIntentId = NavigationIntentId.Normalize(intentId);
+            if (string.IsNullOrWhiteSpace(normalizedIntentId))
             {
                 return false;
             }
 
-            if (TryMapIntentIdToCoreKind(intentId, out GameNavigationIntentKind kind))
+            if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind kind))
             {
                 CoreIntentSlot slot = GetCoreSlot(kind);
                 if (slot.routeRef == null || !slot.styleId.IsValid)
@@ -698,12 +737,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             for (int i = 0; i < routes.Count; i++)
             {
                 RouteEntry route = routes[i];
-                if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+                if (route == null)
                 {
                     continue;
                 }
 
-                if (!string.Equals(route.routeId.Trim(), intentId, StringComparison.OrdinalIgnoreCase))
+                NavigationIntentId routeIntentId = route.ResolveIntentId();
+                if (!routeIntentId.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(routeIntentId.Value, normalizedIntentId, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -725,12 +770,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             for (int i = 0; i < routes.Count; i++)
             {
                 RouteEntry route = routes[i];
-                if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+                if (route == null)
                 {
                     continue;
                 }
 
-                string intentId = route.routeId.Trim();
+                NavigationIntentId routeIntentId = route.ResolveIntentId();
+                if (!routeIntentId.IsValid)
+                {
+                    continue;
+                }
+
+                string intentId = routeIntentId.Value;
                 if (TryMapIntentIdToCoreKind(intentId, out _))
                 {
                     FailFastConfig(
@@ -741,7 +792,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private bool TryMapIntentIdToCoreKind(string intentId, out GameNavigationIntentKind kind)
         {
-            string normalized = intentId?.Trim();
+            string normalized = NavigationIntentId.Normalize(intentId);
             if (TryGetIntentId(GameNavigationIntentKind.Menu, out NavigationIntentId menuIntentId) &&
                 string.Equals(normalized, menuIntentId.Value, StringComparison.OrdinalIgnoreCase))
             {

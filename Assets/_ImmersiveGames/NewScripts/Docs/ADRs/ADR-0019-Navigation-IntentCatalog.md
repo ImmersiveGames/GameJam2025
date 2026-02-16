@@ -1,75 +1,94 @@
-# ADR-0019 — Navigation: IntentCatalog + NavigationCatalog
+# ADR-0019 — Navigation Intent Catalog (IntentCatalog + GameNavigationCatalog)
 
-- **Status:** Concluído
-- **Data:** 2026-02-16
-- **Owner:** NewScripts / Navigation
-- **Relacionados:** ADR-0008 (RuntimeModeConfig/boot e `Resources` canônico), ADR-0017 (Level config/catalog), ADR-0018 (Fade/TransitionStyle), P-001 (Strings→DirectRefs)
+- **Status:** Accepted (implemented)
+- **Date:** 2026-02-16
+- **Scope:** `Assets/_ImmersiveGames/NewScripts/Modules/Navigation` + SceneFlow wiring via `SceneRouteDefinitionAsset`
 
-## Contexto
+## Context
 
-A navegação do jogo tinha risco de acoplamento por *strings* espalhadas (`to-menu`, `to-gameplay`, etc.) em múltiplos pontos de runtime e configuração.
+A navegação (Menu/GamePlay/PostGame/etc.) vinha sendo configurada com **IDs string** espalhados e com descoberta por varredura (`FindAssets`) em tooling. Isso cria risco alto de erro por digitação, refactors quebrando silenciosamente e “mágica” em tooling.
 
-Esse padrão aumenta:
-- custo de manutenção (renomear IDs exige rastrear uso em vários lugares),
-- risco de erro por digitação,
-- ambiguidade entre **contrato de intenção** e **detalhe de rota/transição**.
+Em paralelo, o plano **Strings → DirectRefs** (P-001) exige:
 
-## Decisão Arquitetural (estado canônico atual)
+- **Direct-ref-first** em produção quando `routeRef` existe.
+- **Fail-fast** para o mínimo canônico (core mandatory).
+- Tooling Editor **sem** varredura global quando existe um path canônico.
 
-Mantemos **dois assets separados**, com responsabilidades explícitas e complementares:
+## Decision
 
-### 1) `GameNavigationIntentCatalog` (contrato de intent IDs)
+### 1) Dois assets canônicos (fonte de verdade por path fixo)
 
-Define os IDs estáveis do domínio de navegação (core + custom).
+**A)** `GameNavigationIntentCatalogAsset` (intent catalog)
 
-Responsabilidade: **o que** existe semanticamente como intent.
+- **Path canônico:** `Assets/Resources/GameNavigationIntentCatalog.asset`
+- Responsável por:
+    - Definir o conjunto de **intent IDs canônicos** (core + extras)
+    - Fornecer **routeRef** (SceneRouteDefinitionAsset) e **styleId** (TransitionStyleId) por intent
+    - Sinalizar criticidade (somente para o core obrigatório)
 
-### 2) `GameNavigationCatalog` (mapeamento intent -> route/style)
+**B)** `GameNavigationCatalogAsset` (navigation catalog)
 
-Define configuração operacional de navegação:
-- `intentId -> routeRef`,
-- `intentId -> style`.
+- **Path canônico:** `Assets/Resources/Navigation/GameNavigationCatalog.asset`
+- Responsável por:
+    - Expor **slots core explícitos** (menu/gameplay + opcionais)
+    - Manter **extras/custom** em lista extensível (sem colidir com core)
 
-Responsabilidade: **como e para onde** cada intent navega.
+### 2) Core mandatory intents (fail-fast)
 
-## Core slots obrigatórios (canônicos)
+Somente estes são **obrigatórios** (produção + editor):
 
-Os slots core **obrigatórios** são **somente**:
 - `to-menu`
 - `to-gameplay`
 
-## Intents extras (opcionais)
+Qualquer ausência/inconsistência nesses dois deve resultar em **[FATAL][Config]**.
 
-Os intents abaixo são **extras/opcionais** para validação de bootstrap:
-- `victory`
-- `defeat`
-- `restart`
-- `exit-to-menu`
-- `gameover`
+### 3) Extras permanecem opcionais (observáveis, não críticos)
 
-Ausências desses intents (ou de seus mapeamentos) **não** causam fail-fast.
+Os extras/aliases abaixo permanecem **não-mandatórios**:
 
-## Política de validação / fail-fast
+- `gameover`, `victory`, `defeat`, `restart`, `exit-to-menu`
 
-### Regra canônica
+Regra: podem existir no `IntentCatalog`, mas o runtime **não** falha se não estiverem completos. O sistema registra **[OBS]/[WARN]** quando aplicável.
 
-- **Fail-fast apenas para core slots obrigatórios** (`to-menu`, `to-gameplay`) quando ausentes/nulos/inválidos.
-- Intents extras/opcionais geram apenas observabilidade (`[OBS]`) e/ou warning (`[WARN]`).
-- Intents extras/opcionais **não** devem encerrar playmode/boot por ausência de configuração.
+### 4) IDs tipados no YAML: `NavigationIntentId` como “string-strongly-typed”
 
-## Path canônico de Resources
+Para reduzir erro de digitação e preparar migração incremental:
 
-Path canônico de `Resources` para os assets de navegação:
-- `Assets/Resources`
+- O ID de intent extra/custom agora é `NavigationIntentId` (serializa em `intentId._value`).
+- `routeId` (string) permanece **legado**, oculto e somente para backward compatibility.
 
-Diretriz explícita:
-- **não usar** `Assets/_ImmersiveGames/Resources` como caminho canônico.
+**Migração:** `RouteEntry.MigrateLegacy()` normaliza `routeId` e preenche/espelha `intentId` quando necessário.
 
-## Implementation notes
+### 5) Tooling Editor: sem varredura global, com path canônico
 
-- `GameNavigationCatalog` e `GameNavigationIntentCatalog` devem manter criticidade restrita a `to-menu`/`to-gameplay`.
-- Não usar flags/listas de criticidade para promover intents extras a fail-fast por padrão.
-- Preservar observabilidade `[OBS][SceneFlow]` na resolução via `AssetRef`.
-- A resolução segue a cadeia canônica:
+`GameNavigationCatalogNormalizer` (Editor-only):
 
-`intent -> GameNavigationCatalog -> routeRef/style -> SceneFlow`
+- Removeu fallback por `FindAssets("t:GameNavigationCatalogAsset")`.
+- Opera **apenas** no path canônico e cria os assets ausentes no local correto.
+
+### 6) UX de Inspector: dropdown para `NavigationIntentId`
+
+Editor-only:
+
+- `NavigationIntentIdPropertyDrawer` desenha dropdown baseado na fonte canônica
+  (`GameNavigationIntentCatalog.asset`), com:
+    - `(None)` → string vazia
+    - `MISSING: <valor>` quando o YAML contém valor inexistente
+    - HelpBox de warning para inconsistências
+
+## Non-goals
+
+- Trocar Scenes para Addressables nesta etapa.
+- Eliminar imediatamente todos os IDs string: permanecem **constantes canônicas** centralizadas onde inevitáveis (tooling/contrato).
+
+## Consequences
+
+- Config fica mais explícita e auditável (paths canônicos, refs diretas).
+- O runtime fica mais resistente a erros de digitação (IDs tipados + drawers).
+- Há um custo de migração gradual (assets antigos carregam `routeId` legado até serem re-salvos).
+
+## Validation / Evidence
+
+- Auditoria final Strings → DirectRefs: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Snapshot canônico pré-DataCleanup: `Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`
+- MenuItem de validação (Editor): `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`

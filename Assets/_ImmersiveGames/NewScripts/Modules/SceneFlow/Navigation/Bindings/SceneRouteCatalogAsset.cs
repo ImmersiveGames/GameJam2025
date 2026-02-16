@@ -4,17 +4,15 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
-using System.IO;
 #endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
     /// <summary>
     /// Catálogo configurável de rotas do SceneFlow (SceneRouteId -> SceneRouteDefinition).
-    /// Suporta wiring por referência direta de assets de rota e fallback por entrada inline.
+    /// Usa somente wiring por referência direta de assets de rota.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneRouteCatalogAsset",
@@ -68,14 +66,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [Tooltip("Quando true, registra warning se houver rotas inválidas/duplicadas.")]
         [SerializeField] private bool warnOnInvalidRoutes = true;
 
-        private static readonly HashSet<string> CriticalRouteIds = new(StringComparer.Ordinal)
-        {
-            "to-menu",
-            "to-gameplay",
-            "level.1",
-            "level.2"
-        };
-
         private readonly Dictionary<SceneRouteId, SceneRouteDefinition> _cache = new();
         private bool _cacheBuilt;
 
@@ -117,6 +107,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             try
             {
+                EnsureNoInlineRoutesOrFail();
                 EnsureCache();
             }
             catch (Exception ex)
@@ -138,11 +129,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 return;
             }
 
+            EnsureNoInlineRoutesOrFail();
+
             _cacheBuilt = true;
             _cache.Clear();
 
             int viaAssetRefCount = 0;
-            int viaInlineIdCount = 0;
 
             if (routeDefinitions != null)
             {
@@ -165,27 +157,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 }
             }
 
-            if (routes != null)
-            {
-                for (int i = 0; i < routes.Count; i++)
-                {
-                    var entry = routes[i];
-                    BuildFromEntry(entry, out var routeId, out var routeDefinition, index: i);
-
-                    if (_cache.ContainsKey(routeId))
-                    {
-                        FailFast($"Rota duplicada no SceneRouteCatalog (inline). routeId='{routeId}', index={i}.");
-                    }
-
-                    viaInlineIdCount++;
-                    _cache.Add(routeId, routeDefinition);
-
-                    DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
-                        $"[OBS][Config] RouteResolvedVia=RouteId routeId='{routeId}'.",
-                        DebugUtility.Colors.Info);
-                }
-            }
-
             if (warnOnInvalidRoutes && _cache.Count == 0)
             {
                 DebugUtility.LogWarning<SceneRouteCatalogAsset>(
@@ -194,8 +165,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
                 "[OBS][Config] SceneRouteCatalogBuild " +
-                $"routesResolved={_cache.Count} viaAssetRef={viaAssetRefCount} viaRouteId={viaInlineIdCount} invalidRoutes=0",
+                $"routesResolved={_cache.Count} viaAssetRef={viaAssetRefCount} viaRouteId=0 invalidRoutes=0",
                 DebugUtility.Colors.Info);
+        }
+
+        private void EnsureNoInlineRoutesOrFail()
+        {
+            // DataCleanup v1: remove fallback inline para evitar config ambígua e divergência entre catálogos.
+            // A partir desta etapa, TODA rota deve existir apenas em routeDefinitions (AssetRef canônico).
+            if (routes != null && routes.Count > 0)
+            {
+                FailFast(
+                    $"SceneRouteCatalogAsset contém rotas inline legadas (routes[]). " +
+                    $"Use somente routeDefinitions e remova/migre routes[]. asset='{name}' count={routes.Count}.");
+            }
         }
 
         private static void BuildFromAsset(
@@ -223,50 +206,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             EnsureResetPolicyConsistency(routeId, routeDefinition.RouteKind, routeDefinition.RequiresWorldReset, "assetRef");
         }
 
-        private static void BuildFromEntry(
-            RouteEntry entry,
-            out SceneRouteId routeId,
-            out SceneRouteDefinition routeDefinition,
-            int index)
-        {
-            routeId = SceneRouteId.None;
-            routeDefinition = default;
-
-            if (entry == null)
-            {
-                FailFast($"RouteEntry nulo em routes[{index}].");
-            }
-
-            if (!entry.routeId.IsValid)
-            {
-                FailFast($"RouteEntry inválido em routes[{index}] (routeId vazio). field='{nameof(RouteEntry.routeId)}'.");
-            }
-
-            routeId = entry.routeId;
-
-            if (IsCriticalRoute(routeId))
-            {
-                FailFast($"routeId crítico='{routeId}' não pode ser resolvido via inline legacy. Configure routeDefinitions (AssetRef) no catálogo canônico.");
-            }
-
-            var load = ResolveKeys(entry.scenesToLoadKeys, routeId, nameof(RouteEntry.scenesToLoadKeys));
-            var unload = ResolveKeys(entry.scenesToUnloadKeys, routeId, nameof(RouteEntry.scenesToUnloadKeys));
-            var active = ResolveSingleKey(entry.targetActiveSceneKey, routeId, nameof(RouteEntry.targetActiveSceneKey));
-
-            LogResolvedRouteSceneList(routeId, nameof(RouteEntry.scenesToUnloadKeys), unload);
-
-            EnsureActiveScenePolicy(routeId, entry.routeKind, active, "routeId");
-            EnsureResetPolicyConsistency(routeId, entry.routeKind, entry.requiresWorldReset, "routeId");
-            routeDefinition = new SceneRouteDefinition(load, unload, active, entry.routeKind, entry.requiresWorldReset);
-        }
-
-        private static void LogResolvedRouteSceneList(SceneRouteId routeId, string fieldName, IReadOnlyList<string> resolved)
-        {
-            DebugUtility.Log(typeof(SceneRouteCatalogAsset),
-                $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{fieldName}' scenes=[{FormatSceneDetails(resolved)}].",
-                DebugUtility.Colors.Info);
-        }
-
         private static void EnsureActiveScenePolicy(SceneRouteId routeId, SceneRouteKind routeKind, string activeScene, string source)
         {
             if (string.IsNullOrWhiteSpace(activeScene) && RequiresActiveScene(routeKind))
@@ -282,7 +221,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             // Regra explícita: rotas de gameplay devem sempre definir cena ativa alvo.
             return routeKind == SceneRouteKind.Gameplay;
         }
-
 
         private static void EnsureResetPolicyConsistency(SceneRouteId routeId, SceneRouteKind routeKind, bool requiresWorldReset, string source)
         {
@@ -302,126 +240,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             }
         }
 
-        private static string[] ResolveKeys(SceneKeyAsset[] keys, SceneRouteId routeId, string fieldName)
-        {
-            if (keys == null || keys.Length == 0)
-            {
-                DebugUtility.Log(typeof(SceneRouteCatalogAsset),
-                    $"[OBS][SceneFlow] ResolveRouteKeys routeId='{routeId}' field='{fieldName}' before=[] after=[].",
-                    DebugUtility.Colors.Info);
-                return Array.Empty<string>();
-            }
-
-            var beforeFilter = new List<string>(keys.Length);
-            var resolved = new List<string>(keys.Length);
-            var seenNames = new HashSet<string>(StringComparer.Ordinal);
-
-            for (int i = 0; i < keys.Length; i++)
-            {
-                var key = keys[i];
-                if (key == null)
-                {
-                    FailFast($"routeId='{routeId}' possui key null em '{fieldName}[{i}]'.");
-                }
-
-                if (string.IsNullOrWhiteSpace(key.SceneName))
-                {
-                    FailFast($"routeId='{routeId}' possui SceneKeyAsset inválido em '{fieldName}[{i}]' (SceneName vazio). asset='{key.name}'.");
-                }
-
-                string sceneName = key.SceneName.Trim();
-                beforeFilter.Add(sceneName);
-
-                if (!seenNames.Add(sceneName))
-                {
-                    DebugUtility.LogWarning(typeof(SceneRouteCatalogAsset),
-                        $"[OBS][SceneFlow] ResolveRouteKeysFiltered routeId='{routeId}' field='{fieldName}' key='{key.name}' scene='{sceneName}' reason='duplicate_scene_name'.");
-                    continue;
-                }
-
-                if (!string.Equals(key.name, sceneName, StringComparison.Ordinal))
-                {
-                    DebugUtility.LogWarning(typeof(SceneRouteCatalogAsset),
-                        $"[OBS][SceneFlow] ResolveRouteKeysFiltered routeId='{routeId}' field='{fieldName}' key='{key.name}' scene='{sceneName}' reason='invalid_key_name_mismatch'.");
-                }
-
-                resolved.Add(sceneName);
-            }
-
-            DebugUtility.Log(typeof(SceneRouteCatalogAsset),
-                $"[OBS][SceneFlow] ResolveRouteKeys routeId='{routeId}' field='{fieldName}' before=[{FormatSceneDetails(beforeFilter)}] after=[{FormatSceneDetails(resolved)}].",
-                DebugUtility.Colors.Info);
-
-            return resolved.ToArray();
-        }
-
-        private static string FormatSceneDetails(IReadOnlyList<string> scenes)
-        {
-            if (scenes == null || scenes.Count == 0)
-            {
-                return "<none>";
-            }
-
-            var details = new List<string>(scenes.Count);
-            for (int i = 0; i < scenes.Count; i++)
-            {
-                string sceneName = scenes[i] ?? string.Empty;
-                int buildIndex = ResolveBuildIndex(sceneName);
-                bool isInBuildSettings = Application.CanStreamedLevelBeLoaded(sceneName);
-                details.Add($"name='{sceneName}', buildIndex={buildIndex}, isInBuildSettings={isInBuildSettings}");
-            }
-
-            return string.Join(" | ", details);
-        }
-
-        private static int ResolveBuildIndex(string sceneName)
-        {
-            if (string.IsNullOrWhiteSpace(sceneName))
-            {
-                return -1;
-            }
-
-            Scene loadedScene = SceneManager.GetSceneByName(sceneName);
-            if (loadedScene.IsValid())
-            {
-                return loadedScene.buildIndex;
-            }
-
-#if UNITY_EDITOR
-            EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes;
-            for (int i = 0; i < scenes.Length; i++)
-            {
-                string path = scenes[i].path;
-                string name = Path.GetFileNameWithoutExtension(path);
-                if (string.Equals(name, sceneName, StringComparison.Ordinal))
-                {
-                    return i;
-                }
-            }
-#endif
-
-            return -1;
-        }
-
-        private static string ResolveSingleKey(SceneKeyAsset key, SceneRouteId routeId, string fieldName)
-        {
-            if (key == null)
-            {
-                return string.Empty;
-            }
-
-            if (string.IsNullOrWhiteSpace(key.SceneName))
-            {
-                FailFast($"routeId='{routeId}' possui SceneKeyAsset inválido em '{fieldName}' (SceneName vazio). asset='{key.name}'.");
-            }
-
-            return key.SceneName.Trim();
-        }
-
-        private static bool IsCriticalRoute(SceneRouteId routeId)
-        {
-            return routeId.IsValid && CriticalRouteIds.Contains(routeId.Value);
-        }
 
         private static void FailFast(string message)
         {
