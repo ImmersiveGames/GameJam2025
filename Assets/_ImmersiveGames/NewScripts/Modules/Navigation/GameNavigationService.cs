@@ -145,10 +145,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[FATAL][Config] Missing gameplay intent entry. " +
-                        $"intentId='{GameNavigationIntents.ToGameplay}', levelId='{levelId}'. " +
+                        $"intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}', levelId='{levelId}'. " +
                         $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}].");
                     throw new InvalidOperationException(
-                        $"[FATAL][Config] Missing gameplay intent entry '{GameNavigationIntents.ToGameplay}'.");
+                        $"[FATAL][Config] Missing gameplay intent entry '{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
                 }
 
                 if (_levelFlowService == null)
@@ -201,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[FATAL][Config] Missing gameplay intent entry for StartGameplayRouteAsync. intentId='{GameNavigationIntents.ToGameplay}'.");
+                    $"[FATAL][Config] Missing gameplay intent entry for StartGameplayRouteAsync. intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
                 throw new InvalidOperationException("[FATAL][Config] Missing gameplay intent entry.");
             }
 
@@ -228,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 $"[OBS][Navigation] StartGameplayRouteRequested routeId='{routeId}', reason='{reason ?? "<null>"}', styleId='{routeEntry.StyleId}', profile='{profileId}', profileAsset='{(profile != null ? profile.name : "<null>")}'.",
                 DebugUtility.Colors.Info);
 
-            await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, routeEntry, reason);
+            await ExecuteEntryAsync(GetCoreIntentId(GameNavigationIntentKind.Gameplay), routeEntry, reason);
         }
 
         public Task NavigateAsync(GameNavigationIntentKind intent, string reason = null)
@@ -334,17 +334,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             switch (intent)
             {
                 case GameNavigationIntentKind.Menu:
-                    return GameNavigationIntents.ToMenu;
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu);
                 case GameNavigationIntentKind.Gameplay:
-                    return GameNavigationIntents.ToGameplay;
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay);
                 case GameNavigationIntentKind.GameOver:
-                    return "to-gameover";
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.GameOver);
                 case GameNavigationIntentKind.Victory:
-                    return "to-victory";
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Victory);
                 case GameNavigationIntentKind.Restart:
-                    return "to-restart";
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Restart);
                 case GameNavigationIntentKind.ExitToMenu:
-                    return "exit-to-menu";
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.ExitToMenu);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(intent), intent, null);
             }

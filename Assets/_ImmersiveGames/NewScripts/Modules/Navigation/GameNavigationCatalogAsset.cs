@@ -242,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             EnsureBuilt();
             rawRoutesCount = routes?.Count ?? 0;
             builtRouteIdsCount = _cache.Count;
-            hasToGameplay = _cache.ContainsKey(GameNavigationIntents.ToGameplay);
+            hasToGameplay = _cache.ContainsKey(GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay));
         }
 
         public void OnBeforeSerialize()
@@ -474,13 +474,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private static bool TryMapIntentIdToCoreKind(string intentId, out GameNavigationIntentKind kind)
         {
             string normalized = intentId?.Trim();
-            if (string.Equals(normalized, GameNavigationIntents.ToMenu, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.Menu;
                 return true;
             }
 
-            if (string.Equals(normalized, GameNavigationIntents.ToGameplay, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.Gameplay;
                 return true;
@@ -519,9 +519,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             switch (kind)
             {
                 case GameNavigationIntentKind.Menu:
-                    return GameNavigationIntents.ToMenu;
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu);
                 case GameNavigationIntentKind.Gameplay:
-                    return GameNavigationIntents.ToGameplay;
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay);
                 case GameNavigationIntentKind.GameOver:
                     return IntentGameOver;
                 case GameNavigationIntentKind.Victory:
