@@ -36,16 +36,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (navigationIntentCatalog != null)
+            if (navigationIntentCatalog == null)
             {
-                return;
+                string message =
+                    $"[FATAL][Config] NewScriptsBootstrapConfigAsset inválido: navigationIntentCatalog obrigatório e não configurado. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(NewScriptsBootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
             }
 
-            string message =
-                $"[FATAL][Config] NewScriptsBootstrapConfigAsset inválido: navigationIntentCatalog obrigatório e não configurado. asset='{name}'.";
-
-            DebugUtility.LogError(typeof(NewScriptsBootstrapConfigAsset), message);
-            throw new InvalidOperationException(message);
+            if (navigationCatalog != null)
+            {
+                navigationCatalog.ValidateCriticalIntentsInEditor(navigationIntentCatalog);
+            }
         }
 #endif
 

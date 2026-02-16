@@ -300,6 +300,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
+#if UNITY_EDITOR
+        public void ValidateCriticalIntentsInEditor(GameNavigationIntentCatalogAsset intents)
+        {
+            if (intents == null)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog validação crítica sem GameNavigationIntentCatalogAsset. asset='{name}'.");
+            }
+
+            foreach (NavigationIntentId criticalIntent in intents.EnumerateCriticalIntents())
+            {
+                ValidateCriticalIntentIdInEditorOrFail(criticalIntent);
+            }
+        }
+#endif
+
         private void EnsureBuilt()
         {
             if (_built)
@@ -417,8 +432,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private void ValidateCoreSlotsInEditorOrFail()
         {
-            ValidateCoreSlotOrFail(GameNavigationIntentKind.Menu, required: true);
-            ValidateCoreSlotOrFail(GameNavigationIntentKind.Gameplay, required: true);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Menu, required: false);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Gameplay, required: false);
             ValidateCoreSlotOrFail(GameNavigationIntentKind.GameOver, required: false);
             ValidateCoreSlotOrFail(GameNavigationIntentKind.Victory, required: false);
             ValidateCoreSlotOrFail(GameNavigationIntentKind.Restart, required: false);
@@ -445,6 +460,76 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             ResolveCoreOrFail(kind);
+        }
+
+        private void ValidateCriticalIntentIdInEditorOrFail(NavigationIntentId criticalIntent)
+        {
+            if (!criticalIntent.IsValid)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog contém intent crítico inválido/vazio. catalogAsset='{name}'.");
+            }
+
+            string criticalIntentId = criticalIntent.Value;
+            if (TryMapIntentIdToCoreKind(criticalIntentId, out GameNavigationIntentKind coreKind))
+            {
+                ValidateCoreSlotOrFail(coreKind, required: true);
+                return;
+            }
+
+            RouteEntry route = FindExtraRouteByIntentId(criticalIntentId);
+            if (route == null)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog sem intent crítico configurado nos extras. asset='{name}', intentId='{criticalIntentId}'.");
+            }
+
+            ValidateExtraCriticalRouteOrFail(route, criticalIntentId);
+        }
+
+        private RouteEntry FindExtraRouteByIntentId(string intentId)
+        {
+            if (routes == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < routes.Count; i++)
+            {
+                RouteEntry route = routes[i];
+                if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+                {
+                    continue;
+                }
+
+                if (string.Equals(route.routeId.Trim(), intentId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return route;
+                }
+            }
+
+            return null;
+        }
+
+        private void ValidateExtraCriticalRouteOrFail(RouteEntry route, string intentId)
+        {
+            if (route.routeRef == null)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] Intent crítico exige routeRef obrigatório. asset='{name}', intentId='{intentId}'.");
+            }
+
+            SceneRouteId routeRefId = route.routeRef.RouteId;
+            if (!routeRefId.IsValid)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] Intent crítico com routeRef inválido. asset='{name}', intentId='{intentId}', routeRef='{route.routeRef.name}'.");
+            }
+
+            if (!string.Equals(routeRefId.Value, intentId, StringComparison.OrdinalIgnoreCase))
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] Intent crítico divergente de routeRef.routeId. asset='{name}', intentId='{intentId}', routeRef.routeId='{routeRefId}'.");
+            }
         }
 
         private void ValidateExtrasInEditorOrFail()
