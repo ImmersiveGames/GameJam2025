@@ -118,3 +118,14 @@ Sinais mínimos de que o ADR está **implementado e ativo**:
     - `[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter + IWorldResetPolicy registrados no DI global.`
 
 Resultado observado no mesmo log: o fluxo segue normalmente (SceneFlow/WorldLifecycle/GameLoop), indicando que o modo e o reporter não travam o boot.
+
+## Nota de atualização (2026-02-16) — Boot canônico do NewScripts
+
+Para alinhar o boot ao plano `StringsToDirectRefs v1`, esta ADR registra as seguintes regras vigentes:
+
+- `RuntimeModeConfig` é a **raiz canônica** de configuração do boot global do NewScripts.
+- `Resources` é permitido **somente** para carregar `RuntimeModeConfig` no path fixo `RuntimeModeConfig`.
+- `NewScriptsBootstrapConfigAsset` é resolvido por **referência direta** dentro de `RuntimeModeConfig` (`NewScriptsBootstrapConfig`).
+- Não existe caminho obrigatório via **provider/manifest em cena** para resolver bootstrap config.
+- O entrypoint global do `GlobalCompositionRoot` é único e determinístico em `BeforeSceneLoad`.
+
