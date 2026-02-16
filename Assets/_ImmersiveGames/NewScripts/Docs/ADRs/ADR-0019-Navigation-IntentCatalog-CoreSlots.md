@@ -4,7 +4,7 @@
 
 - Estado: Concluído
 - Data (decisão): 2026-02-16
-- Última atualização: 2026-02-16
+- Última atualização: 2026-02-16 (rev. Core vs Custom + aliases)
 - Tipo: Implementação
 - Escopo: Navigation (`GameNavigationCatalogAsset`), contratos de configuração de intents
 - Decisores: Time NewScripts (Navigation/SceneFlow)
@@ -37,15 +37,26 @@ Ao mesmo tempo, o catálogo precisa continuar extensível para intents não-core
 
 No runtime, o consumo dos intents core deve ocorrer por enum forte (`GameNavigationIntentKind`), removendo dependência direta de strings para os fluxos essenciais.
 
+
+### Modelo canônico atual: Core vs Custom
+
+- **Core**: intents oficiais suportadas pelo produto e mantidas no bloco `Core` do `GameNavigationIntentCatalogAsset`.
+- **Custom**: intents não-canônicas (projeto/feature específica) mantidas no bloco `Custom`.
+
+Core oficial (baseline atual):
+
+1. `to-menu` → `Route_to-menu.asset` + `style.frontend` (**crítica/required**)
+2. `to-gameplay` → `Route_to-gameplay.asset` + `style.gameplay` (**crítica/required**)
+3. `exit-to-menu` → `Route_to-menu.asset` + `style.frontend` (alias core, não-crítica)
+4. `restart` → `Route_to-gameplay.asset` + `style.gameplay` (alias core, não-crítica)
+
+> `to-menu` e `to-gameplay` permanecem como intents críticas de baseline para validação fail-fast.
+
 ### Contrato de produção (mínimo)
 
-1. Os intents core são representados por slots explícitos no catálogo:
-   - `Menu`
-   - `Gameplay`
-   - `GameOver`
-   - `Victory`
-   - `Restart`
-   - `ExitToMenu`
+1. Os intents core são representados no bloco `Core` do catálogo (com suporte a aliases oficiais).
+   - Baseline obrigatório: `to-menu`, `to-gameplay` (críticos).
+   - Aliases core (não-críticos por padrão): `exit-to-menu`, `restart`.
 
 2. Runtime para core usa enum:
    - API de resolução/consulta de intent core recebe `GameNavigationIntentKind`.
@@ -95,12 +106,13 @@ No runtime, o consumo dos intents core deve ocorrer por enum forte (`GameNavigat
 
 ### Critérios de pronto (DoD)
 
-- [ ] `GameNavigationCatalogAsset` possui slots explícitos para os 6 core intents.
+- [ ] `GameNavigationIntentCatalogAsset` possui separação explícita `Core` vs `Custom`.
+- [ ] Bloco `Core` contém `to-menu`, `to-gameplay`, `exit-to-menu`, `restart` com direct refs válidas (routeRef + styleId).
 - [ ] Runtime core consome intents via `GameNavigationIntentKind`.
 - [ ] Editor aplica fail-fast (fatal + throw) para qualquer slot core obrigatório inválido/incompleto.
 - [ ] Runtime strict falha sem fallback silencioso para core inválido.
 - [ ] Extras continuam extensíveis por lista id string.
-- [ ] Logs `[OBS]` comprovam resolução via AssetRef nos casos core críticos.
+- [ ] Logs `[OBS]` comprovam resolução via AssetRef nos casos core críticos (`to-menu`, `to-gameplay`).
 
 ## Implementação (arquivos impactados)
 
