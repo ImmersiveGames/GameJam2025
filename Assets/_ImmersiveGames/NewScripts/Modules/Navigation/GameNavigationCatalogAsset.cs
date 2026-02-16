@@ -276,7 +276,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             var routeRefId = route.routeRef.RouteId;
             if (!routeRefId.IsValid)
             {
-                return;
+                FailFastCriticalRouteConfig(route.routeId,
+                    "routeRef.RouteId inválido para intent crítico.");
             }
 
             string normalizedIntentId = route.routeId.Trim();
