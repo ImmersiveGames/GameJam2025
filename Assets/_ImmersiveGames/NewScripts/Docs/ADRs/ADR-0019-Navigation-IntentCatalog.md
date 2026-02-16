@@ -32,47 +32,30 @@ Define configuração operacional de navegação:
 
 Responsabilidade: **como e para onde** cada intent navega.
 
-## Core intents previstos
+## Core slots obrigatórios (canônicos)
 
-O conjunto core previsto é:
-- `to-menu`
-- `to-gameplay`
-- `victory`
-- `defeat`
-- `gameover`
-- `restart`
-- `exit-to-menu`
-
-## Criticidade (CORE x CORE+CRITICAL)
-
-### CORE+CRITICAL
-
-Somente estes intents são core **críticos** e obrigatórios para boot:
+Os slots core **obrigatórios** são **somente**:
 - `to-menu`
 - `to-gameplay`
 
-### CORE (não críticos)
+## Intents extras (opcionais)
 
-Os intents abaixo são core, porém **não críticos** para inicialização:
+Os intents abaixo são **extras/opcionais** para validação de bootstrap:
 - `victory`
 - `defeat`
-- `gameover`
 - `restart`
 - `exit-to-menu`
+- `gameover`
 
-Ausências de mapeamento desses itens não devem quebrar boot.
+Ausências desses intents (ou de seus mapeamentos) **não** causam fail-fast.
 
-## Validação / Fail-fast
+## Política de validação / fail-fast
 
-### Editor
+### Regra canônica
 
-- Falhar (`throw`) **apenas** quando um intent CORE+CRITICAL estiver sem mapeamento válido.
-- Para intents CORE não críticos ausentes/incompletos: registrar observabilidade (`[OBS]` e/ou `[WARN]`), sem fatal.
-
-### Produção
-
-- Política de fail-fast permanece limitada ao mínimo crítico (`to-menu` e `to-gameplay`).
-- Ausências dos demais intents core não devem interromper inicialização.
+- **Fail-fast apenas para core slots obrigatórios** (`to-menu`, `to-gameplay`) quando ausentes/nulos/inválidos.
+- Intents extras/opcionais geram apenas observabilidade (`[OBS]`) e/ou warning (`[WARN]`).
+- Intents extras/opcionais **não** devem encerrar playmode/boot por ausência de configuração.
 
 ## Path canônico de Resources
 
@@ -84,8 +67,9 @@ Diretriz explícita:
 
 ## Implementation notes
 
-- `GameNavigationCatalog` deve consultar o `GameNavigationIntentCatalog` para determinar criticidade (CORE+CRITICAL vs CORE não crítico).
-- Não usar hardcode de criticidade em runtime/editor validation.
-- A resolução deve seguir a cadeia canônica:
+- `GameNavigationCatalog` e `GameNavigationIntentCatalog` devem manter criticidade restrita a `to-menu`/`to-gameplay`.
+- Não usar flags/listas de criticidade para promover intents extras a fail-fast por padrão.
+- Preservar observabilidade `[OBS][SceneFlow]` na resolução via `AssetRef`.
+- A resolução segue a cadeia canônica:
 
 `intent -> GameNavigationCatalog -> routeRef/style -> SceneFlow`

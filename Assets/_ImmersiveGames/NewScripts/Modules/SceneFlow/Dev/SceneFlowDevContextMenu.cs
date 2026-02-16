@@ -22,7 +22,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         private const string ReasonQaRestart = "QA/RestartGameplay";
         private const string ReasonQaExitToMenu = "QA/ExitToMenu";
         private const string ReasonForceReset = "QA/WorldLifecycle/ForceResetWorld";
-        private static readonly string[] RelevantRouteTokens = { "menu", "gameplay", "postgame", "restart", "exit" };
 
         [ContextMenu("QA/StartGameplay (levelId)")]
         private void Qa_EnterGameplay()
@@ -119,8 +118,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             var routes = routeCatalogAsset.DebugGetRoutesSnapshot();
             int unspecifiedCount = 0;
             int totalRoutes = 0;
-            var relevant = new List<RouteDumpItem>();
-            var unspecifiedRelevant = new List<string>();
+            var policyAnnotatedRoutes = new List<RouteDumpItem>();
+            var routeKindCounts = new Dictionary<SceneRouteKind, int>();
+            int requiresWorldResetCount = 0;
 
             for (int i = 0; i < routes.Count; i++)
             {
@@ -133,31 +133,37 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                     unspecifiedCount++;
                 }
 
-                if (IsRelevant(routeId.Value))
+                TrackRouteKind(routeKindCounts, routeDefinition.RouteKind);
+                if (routeDefinition.RequiresWorldReset)
                 {
-                    relevant.Add(new RouteDumpItem(routeId.Value, routeDefinition.RouteKind, routeDefinition.TargetActiveScene));
-                    if (routeDefinition.RouteKind == SceneRouteKind.Unspecified)
-                    {
-                        unspecifiedRelevant.Add(routeId.Value);
-                    }
+                    requiresWorldResetCount++;
                 }
+
+                policyAnnotatedRoutes.Add(new RouteDumpItem(routeId, routeDefinition.RouteKind, routeDefinition.TargetActiveScene, routeDefinition.RequiresWorldReset));
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): totalRoutes={totalRoutes}, unspecified={unspecifiedCount}, source='{sourceLabel}'.",
+                $"[OBS][SceneFlow] Dump Route Catalog (RouteKind): totalRoutes={totalRoutes}, unspecified={unspecifiedCount}, requiresWorldReset={requiresWorldResetCount}, source='{sourceLabel}'.",
                 ColorInfo);
 
-            foreach (var route in relevant)
+            foreach (var pair in routeKindCounts)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[OBS][SceneFlow] Route routeId='{route.RouteId}', routeKind='{route.RouteKind}', targetActiveScene='{route.TargetActiveScene}'.",
+                    $"[OBS][SceneFlow] RouteKindSummary kind='{pair.Key}' count={pair.Value}.",
                     ColorInfo);
             }
 
-            if (unspecifiedRelevant.Count > 0)
+            foreach (var route in policyAnnotatedRoutes)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[OBS][SceneFlow] Rotas relevantes ainda com routeKind=Unspecified: {string.Join(", ", unspecifiedRelevant)}.",
+                    $"[OBS][SceneFlow] Route routeId='{route.RouteId}', routeKind='{route.RouteKind}', requiresWorldReset={route.RequiresWorldReset}, targetActiveScene='{route.TargetActiveScene}'.",
+                    ColorInfo);
+            }
+
+            if (unspecifiedCount > 0)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    "[OBS][SceneFlow] Existem rotas com routeKind=Unspecified; revisar policy metadata no catálogo.",
                     ColorErr);
             }
         }
@@ -200,37 +206,31 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             throw new InvalidOperationException(errorMessage);
         }
 
-        private static bool IsRelevant(string routeId)
+        private static void TrackRouteKind(IDictionary<SceneRouteKind, int> counts, SceneRouteKind routeKind)
         {
-            if (string.IsNullOrWhiteSpace(routeId))
+            if (counts.TryGetValue(routeKind, out int current))
             {
-                return false;
+                counts[routeKind] = current + 1;
+                return;
             }
 
-            var normalized = routeId.Trim().ToLowerInvariant();
-            for (int i = 0; i < RelevantRouteTokens.Length; i++)
-            {
-                if (normalized.Contains(RelevantRouteTokens[i]))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            counts[routeKind] = 1;
         }
 
         private readonly struct RouteDumpItem
         {
-            public RouteDumpItem(string routeId, SceneRouteKind routeKind, string targetActiveScene)
+            public RouteDumpItem(SceneRouteId routeId, SceneRouteKind routeKind, string targetActiveScene, bool requiresWorldReset)
             {
                 RouteId = routeId;
                 RouteKind = routeKind;
                 TargetActiveScene = targetActiveScene;
+                RequiresWorldReset = requiresWorldReset;
             }
 
-            public string RouteId { get; }
+            public SceneRouteId RouteId { get; }
             public SceneRouteKind RouteKind { get; }
             public string TargetActiveScene { get; }
+            public bool RequiresWorldReset { get; }
         }
 #endif
     }
