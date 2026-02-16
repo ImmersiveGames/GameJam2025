@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 if (entry.transitionProfile == null)
                 {
                     FailFast(
-                        $"TransitionStyle sem SceneTransitionProfile. styleId='{entry.styleId}', profileId='{entry.profileId}'.");
+                        $"TransitionStyle sem SceneTransitionProfile (obrigatório mesmo quando useFade=false). styleId='{entry.styleId}', profileId='{entry.profileId}', useFade={entry.useFade}.");
                 }
 
                 ValidateProfileIdConsistency(entry);
@@ -176,6 +176,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             }
 
             int invalidEntriesCount = 0;
+            int noFadeEntriesCount = 0;
 
             for (int i = 0; i < styles.Count; i++)
             {
@@ -190,12 +191,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 {
                     invalidEntriesCount++;
                 }
+
+                if (!entry.useFade)
+                {
+                    noFadeEntriesCount++;
+                }
             }
 
-            if (invalidEntriesCount > 0)
+            if (invalidEntriesCount > 0 || noFadeEntriesCount > 0)
             {
                 DebugUtility.Log(typeof(TransitionStyleCatalogAsset),
-                    $"[OBS][Config] TransitionStyleCatalog OnValidate encontrou entradas inválidas. invalidEntries={invalidEntriesCount}, asset='{name}'.",
+                    $"[OBS][Config] TransitionStyleCatalog OnValidate summary: invalidEntries={invalidEntriesCount}, noFadeEntries={noFadeEntriesCount}, asset='{name}'.",
                     DebugUtility.Colors.Info);
             }
         }
