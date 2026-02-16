@@ -239,6 +239,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             SceneRouteCatalogAsset sceneRouteCatalog,
             GameNavigationCatalogAsset navigationCatalog)
         {
+            ValidateInlineRoutesAreEmpty(context, sceneRouteCatalog);
             DetectDuplicatedRouteIdsInSceneRouteCatalog(context, sceneRouteCatalog);
 
             SceneRouteId menuRouteId = GetCoreSlotRouteId(navigationCatalog, "menuSlot");
@@ -246,6 +247,29 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
 
             ValidateRouteExistsInCatalog(context, sceneRouteCatalog, MenuIntentId.Value, menuRouteId);
             ValidateRouteExistsInCatalog(context, sceneRouteCatalog, GameplayIntentId.Value, gameplayRouteId);
+        }
+
+        private static void ValidateInlineRoutesAreEmpty(ValidationContext context, SceneRouteCatalogAsset sceneRouteCatalog)
+        {
+            if (sceneRouteCatalog == null)
+            {
+                context.InlineRoutesCount = -1;
+                context.InlineRoutesStatus = "FATAL";
+                return;
+            }
+
+            SerializedObject serializedObject = new SerializedObject(sceneRouteCatalog);
+            SerializedProperty inlineRoutes = serializedObject.FindProperty("routes");
+            int count = inlineRoutes != null && inlineRoutes.isArray ? inlineRoutes.arraySize : 0;
+
+            context.InlineRoutesCount = count;
+            context.InlineRoutesStatus = count == 0 ? "OK" : "FATAL";
+
+            if (count > 0)
+            {
+                context.AddFatal(
+                    $"SceneRouteCatalogAsset contém rotas inline legadas (routes[]). Use somente routeDefinitions e remova/migre routes[]. count={count}.");
+            }
         }
 
         private static void DetectDuplicatedRouteIdsInSceneRouteCatalog(ValidationContext context, SceneRouteCatalogAsset sceneRouteCatalog)
@@ -520,6 +544,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
             sb.AppendLine();
 
+            sb.AppendLine("## Inline routes policy");
+            sb.AppendLine();
+            sb.AppendLine($"- Inline routes (routes[]) count: {context.InlineRoutesCount}");
+            sb.AppendLine($"- Status: {context.InlineRoutesStatus}");
+            sb.AppendLine();
+
             sb.AppendLine("## Problems");
             sb.AppendLine();
             sb.AppendLine("### FATAL");
@@ -593,6 +623,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             public readonly List<CoreSlotRecord> CoreSlots = new List<CoreSlotRecord>();
             public readonly List<string> Fatals = new List<string>();
             public readonly List<string> Warnings = new List<string>();
+            public int InlineRoutesCount;
+            public string InlineRoutesStatus = "UNKNOWN";
 
             public bool HasFatal => Fatals.Count > 0;
 
