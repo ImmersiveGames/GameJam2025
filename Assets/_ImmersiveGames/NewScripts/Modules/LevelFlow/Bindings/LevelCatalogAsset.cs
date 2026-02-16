@@ -98,6 +98,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             {
                 DebugUtility.LogError(typeof(LevelCatalogAsset),
                     $"[FATAL][Config] LevelCatalogAsset inválido durante OnValidate. detail='{ex.Message}'.");
+                throw;
             }
         }
 

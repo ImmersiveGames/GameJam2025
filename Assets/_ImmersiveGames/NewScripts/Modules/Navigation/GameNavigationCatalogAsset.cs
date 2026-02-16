@@ -163,6 +163,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             ApplyRouteMigration();
             _built = false;
 
+            ValidateCriticalRoutesInEditor();
+
             int syncedEntriesCount = 0;
             int syncedSceneRouteIdCount = 0;
 
@@ -197,6 +199,25 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     "[OBS][Config] GameNavigationCatalog OnValidate auto-fix aplicado: " +
                     $"entries={syncedEntriesCount}, sceneRouteIdSynced={syncedSceneRouteIdCount}, asset='{name}'.",
                     DebugUtility.Colors.Info);
+            }
+        }
+
+        private void ValidateCriticalRoutesInEditor()
+        {
+            if (routes == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < routes.Count; i++)
+            {
+                RouteEntry route = routes[i];
+                if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+                {
+                    continue;
+                }
+
+                ValidateCriticalRouteEntryOrFail(route);
             }
         }
 
