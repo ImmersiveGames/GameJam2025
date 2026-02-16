@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         order = 30)]
     public sealed class GameNavigationCatalogAsset : ScriptableObject, IGameNavigationCatalog, ISerializationCallbackReceiver
     {
-        private static readonly GameNavigationIntentKind[] RequiredCoreIntents =
+        private static readonly GameNavigationIntentKind[] LegacyRequiredCoreIntentsFallback =
         {
             GameNavigationIntentKind.Menu,
             GameNavigationIntentKind.Gameplay,
@@ -150,8 +150,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         [Header("Catalog Reference")]
         [SerializeField]
-        [Tooltip("Referência obrigatória para o catálogo canônico de intents (core + custom).")]
-        private GameNavigationIntentCatalogAsset assetRef;
+        [FormerlySerializedAs("assetRef")]
+        [Tooltip("Referência opcional para o catálogo canônico de intents (core + custom).")]
+        private GameNavigationIntentCatalogAsset intentCatalog;
 
         [Header("Core Intents (slots explícitos)")]
         [SerializeField] private CoreIntentSlot menuSlot;
@@ -178,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
-        public GameNavigationIntentCatalogAsset IntentCatalogAssetRef => assetRef;
+        public GameNavigationIntentCatalogAsset IntentCatalogAssetRef => intentCatalog;
 
         public bool TryGet(string routeId, out GameNavigationEntry entry)
         {
@@ -276,10 +277,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             ApplyRouteMigration();
             _built = false;
 
-            ValidateIntentCatalogReferenceOrFail();
-            ValidateIntentCatalogCoreCoverageOrFail();
-
-            ValidateRequiredCoreSlotsInEditorOrFail();
+            ValidateCriticalCoreSlotsInEditorOrFail();
             ValidateOptionalCoreSlotsInEditor();
             LogMissingOptionalIntentsObservability();
             ValidateExtrasInEditorOrFail();
@@ -324,15 +322,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 #if UNITY_EDITOR
         public void ValidateCriticalIntentsInEditor(GameNavigationIntentCatalogAsset intents)
         {
-            if (intents == null)
-            {
-                FailFastConfig($"[FATAL][Config] GameNavigationCatalog validação crítica sem GameNavigationIntentCatalogAsset. asset='{name}'.");
-            }
-
-            for (int i = 0; i < RequiredCoreIntents.Length; i++)
-            {
-                ValidateCoreSlotOrFail(RequiredCoreIntents[i], required: true);
-            }
+            intentCatalog = intents;
+            ValidateCriticalCoreSlotsInEditorOrFail();
         }
 #endif
 
@@ -515,12 +506,47 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return true;
         }
 
-        private void ValidateRequiredCoreSlotsInEditorOrFail()
+        private void ValidateCriticalCoreSlotsInEditorOrFail()
         {
-            for (int i = 0; i < RequiredCoreIntents.Length; i++)
+            List<GameNavigationIntentKind> criticalIntents = ResolveCriticalCoreIntentsForValidation();
+            for (int i = 0; i < criticalIntents.Count; i++)
             {
-                ValidateCoreSlotOrFail(RequiredCoreIntents[i], required: true);
+                ValidateCoreSlotOrFail(criticalIntents[i], required: true);
             }
+        }
+
+        private List<GameNavigationIntentKind> ResolveCriticalCoreIntentsForValidation()
+        {
+            if (intentCatalog == null)
+            {
+                return new List<GameNavigationIntentKind>(LegacyRequiredCoreIntentsFallback);
+            }
+
+            List<GameNavigationIntentKind> critical = new List<GameNavigationIntentKind>();
+            foreach (NavigationIntentId criticalIntentId in intentCatalog.EnumerateCriticalIntents())
+            {
+                if (!TryMapIntentIdToCoreKind(criticalIntentId.Value, out GameNavigationIntentKind kind))
+                {
+                    continue;
+                }
+
+                if (kind != GameNavigationIntentKind.Menu && kind != GameNavigationIntentKind.Gameplay)
+                {
+                    continue;
+                }
+
+                if (!critical.Contains(kind))
+                {
+                    critical.Add(kind);
+                }
+            }
+
+            if (critical.Count == 0)
+            {
+                critical.AddRange(LegacyRequiredCoreIntentsFallback);
+            }
+
+            return critical;
         }
 
         private void ValidateOptionalCoreSlotsInEditor()
@@ -636,16 +662,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private List<string> CollectOptionalCoreIntentIdsFromCatalog()
         {
             List<string> optional = new List<string>();
-            if (assetRef == null)
+            if (intentCatalog == null)
             {
+                AddOptionalIntentIdIfValid(optional, NavigationIntentId.FromName("victory"));
+                AddOptionalIntentIdIfValid(optional, NavigationIntentId.FromName("defeat"));
+                AddOptionalIntentIdIfValid(optional, NavigationIntentId.FromName("restart"));
+                AddOptionalIntentIdIfValid(optional, NavigationIntentId.FromName("exit-to-menu"));
+                AddOptionalIntentIdIfValid(optional, NavigationIntentId.FromName("gameover"));
                 return optional;
             }
 
-            AddOptionalIntentIdIfValid(optional, assetRef.Victory);
-            AddOptionalIntentIdIfValid(optional, assetRef.Defeat);
-            AddOptionalIntentIdIfValid(optional, assetRef.Restart);
-            AddOptionalIntentIdIfValid(optional, assetRef.ExitToMenu);
-            AddOptionalIntentIdIfValid(optional, assetRef.GameOver);
+            AddOptionalIntentIdIfValid(optional, intentCatalog.Victory);
+            AddOptionalIntentIdIfValid(optional, intentCatalog.Defeat);
+            AddOptionalIntentIdIfValid(optional, intentCatalog.Restart);
+            AddOptionalIntentIdIfValid(optional, intentCatalog.ExitToMenu);
+            AddOptionalIntentIdIfValid(optional, intentCatalog.GameOver);
 
             return optional;
         }
@@ -797,56 +828,43 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private bool TryGetIntentId(GameNavigationIntentKind kind, out NavigationIntentId intentId)
         {
-            ValidateIntentCatalogReferenceOrFail();
-
             switch (kind)
             {
                 case GameNavigationIntentKind.Menu:
-                    intentId = assetRef.Menu;
+                    if (intentCatalog == null)
+                    {
+                        intentId = NavigationIntentId.FromName("to-menu");
+                        return true;
+                    }
+
+                    intentId = intentCatalog.Menu;
                     break;
                 case GameNavigationIntentKind.Gameplay:
-                    intentId = assetRef.Gameplay;
+                    if (intentCatalog == null)
+                    {
+                        intentId = NavigationIntentId.FromName("to-gameplay");
+                        return true;
+                    }
+
+                    intentId = intentCatalog.Gameplay;
                     break;
                 case GameNavigationIntentKind.GameOver:
-                    intentId = assetRef.GameOver;
+                    intentId = intentCatalog != null ? intentCatalog.GameOver : NavigationIntentId.FromName("gameover");
                     break;
                 case GameNavigationIntentKind.Victory:
-                    intentId = assetRef.Victory;
+                    intentId = intentCatalog != null ? intentCatalog.Victory : NavigationIntentId.FromName("victory");
                     break;
                 case GameNavigationIntentKind.Restart:
-                    intentId = assetRef.Restart;
+                    intentId = intentCatalog != null ? intentCatalog.Restart : NavigationIntentId.FromName("restart");
                     break;
                 case GameNavigationIntentKind.ExitToMenu:
-                    intentId = assetRef.ExitToMenu;
+                    intentId = intentCatalog != null ? intentCatalog.ExitToMenu : NavigationIntentId.FromName("exit-to-menu");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
             }
 
             return intentId.IsValid;
-        }
-
-        private void ValidateIntentCatalogReferenceOrFail()
-        {
-            if (assetRef == null)
-            {
-                FailFastConfig($"[FATAL][Config] GameNavigationCatalog exige assetRef (GameNavigationIntentCatalogAsset). asset='{name}'.");
-            }
-        }
-
-        private void ValidateIntentCatalogCoreCoverageOrFail()
-        {
-            ValidateIntentCatalogReferenceOrFail();
-
-            for (int i = 0; i < RequiredCoreIntents.Length; i++)
-            {
-                GameNavigationIntentKind requiredKind = RequiredCoreIntents[i];
-                if (!TryGetIntentId(requiredKind, out _))
-                {
-                    FailFastConfig(
-                        $"[FATAL][Config] GameNavigationCatalog sem intent core obrigatória no GameNavigationIntentCatalog. asset='{name}', kind='{requiredKind}'.");
-                }
-            }
         }
 
         private CoreIntentSlot GetCoreSlot(GameNavigationIntentKind kind)

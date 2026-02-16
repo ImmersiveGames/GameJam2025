@@ -16,13 +16,11 @@ Esse padrão aumenta:
 
 ## Decisão Arquitetural (estado canônico atual)
 
-A arquitetura canônica usa **dois assets separados**:
+Mantemos **dois assets separados**, com responsabilidades explícitas e complementares:
 
 ### 1) `GameNavigationIntentCatalog` (contrato de intent IDs)
 
-Define os IDs estáveis do domínio de navegação:
-- core intents (base do produto),
-- intents custom (extensões de projeto).
+Define os IDs estáveis do domínio de navegação (core + custom).
 
 Responsabilidade: **o que** existe semanticamente como intent.
 
@@ -34,71 +32,60 @@ Define configuração operacional de navegação:
 
 Responsabilidade: **como e para onde** cada intent navega.
 
-## Motivação da separação
+## Core intents previstos
 
-Separar os dois assets evita acoplamento entre contrato e infraestrutura:
-- IDs podem permanecer estáveis enquanto rotas/estilos evoluem,
-- reduz impacto de mudanças de fluxo,
-- melhora validação, observabilidade e manutenção.
+O conjunto core previsto é:
+- `to-menu`
+- `to-gameplay`
+- `victory`
+- `defeat`
+- `gameover`
+- `restart`
+- `exit-to-menu`
 
-## Core intents (conjunto base extensível)
+## Criticidade (CORE x CORE+CRITICAL)
 
-O conjunto base de intents core é:
-- `Menu` (`to-menu`)
-- `Gameplay` (`to-gameplay`)
-- `Victory` (`victory`)
-- `Defeat` (`defeat`)
-- `Restart` (`restart`)
-- `ExitToMenu` (`exit-to-menu`)
-- `GameOver` (opcionalmente, quando existir no projeto)
+### CORE+CRITICAL
 
-> Observação: o conjunto é extensível por contexto de projeto, mantendo compatibilidade com aliases oficiais já adotados.
-
-## Requiredness atual (produção)
-
-### REQUIRED (mínimo de boot)
-
-Somente estes dois intents são obrigatórios em produção:
+Somente estes intents são core **críticos** e obrigatórios para boot:
 - `to-menu`
 - `to-gameplay`
 
-### OPTIONAL (por enquanto)
+### CORE (não críticos)
 
-Os demais core slots existem, mas são opcionais no estado atual:
+Os intents abaixo são core, porém **não críticos** para inicialização:
 - `victory`
 - `defeat`
+- `gameover`
 - `restart`
 - `exit-to-menu`
-- `gameover` (quando aplicável)
 
-Esses opcionais **não devem quebrar boot** se estiverem sem mapeamento.
+Ausências de mapeamento desses itens não devem quebrar boot.
 
 ## Validação / Fail-fast
 
 ### Editor
 
-- Falhar (`throw`) **apenas** quando um intent REQUIRED estiver sem mapeamento válido (route/style conforme contrato vigente).
-- Para intents opcionais ausentes/incompletos: registrar somente observabilidade (`[OBS]`, e/ou `[WARN]` quando aplicável), sem fatal.
+- Falhar (`throw`) **apenas** quando um intent CORE+CRITICAL estiver sem mapeamento válido.
+- Para intents CORE não críticos ausentes/incompletos: registrar observabilidade (`[OBS]` e/ou `[WARN]`), sem fatal.
 
 ### Produção
 
-- Política de fail-fast permanece limitada ao mínimo de boot (`to-menu` e `to-gameplay`).
-- Ausências de opcionais não devem interromper inicialização.
+- Política de fail-fast permanece limitada ao mínimo crítico (`to-menu` e `to-gameplay`).
+- Ausências dos demais intents core não devem interromper inicialização.
 
-## Paths canônicos de Resources
+## Path canônico de Resources
 
-Path canônico para `GameNavigationIntentCatalog`:
-- `Assets/Resources/...`
+Path canônico de `Resources` para os assets de navegação:
+- `Assets/Resources`
 
 Diretriz explícita:
-- **não usar** `Assets/_ImmersiveGames/Resources/...` como caminho canônico.
+- **não usar** `Assets/_ImmersiveGames/Resources` como caminho canônico.
 
-## Observabilidade e runtime
+## Implementation notes
 
-Cadeia canônica de resolução:
+- `GameNavigationCatalog` deve consultar o `GameNavigationIntentCatalog` para determinar criticidade (CORE+CRITICAL vs CORE não crítico).
+- Não usar hardcode de criticidade em runtime/editor validation.
+- A resolução deve seguir a cadeia canônica:
 
 `intent -> GameNavigationCatalog -> routeRef/style -> SceneFlow`
-
-Diretrizes:
-- evitar hardcode de rota fora dos catálogos,
-- preservar logs `[OBS][SceneFlow]`, incluindo resolução via `AssetRef` quando configurado.
