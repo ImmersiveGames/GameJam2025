@@ -6,6 +6,10 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -60,15 +64,73 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return string.Empty;
             }
 
-            if (!Application.CanStreamedLevelBeLoaded(fadeSceneName))
+            if (!TryValidateFadeSceneInBuildSettings(fadeSceneName, bootstrap.name, fadeSceneKey.name, out failureReason))
             {
-                failureReason =
-                    $"Fade scene is not available in Build Settings. asset='{bootstrap.name}', field='fadeSceneKey', keyAsset='{fadeSceneKey.name}', scene='{fadeSceneName}'.";
                 return string.Empty;
             }
 
             failureReason = string.Empty;
             return fadeSceneName;
+        }
+
+        private static bool TryValidateFadeSceneInBuildSettings(
+            string fadeSceneName,
+            string bootstrapAssetName,
+            string fadeSceneKeyAssetName,
+            out string failureReason)
+        {
+            string buildScenePath = TryResolveBuildSettingsScenePath(fadeSceneName);
+            if (!string.IsNullOrWhiteSpace(buildScenePath))
+            {
+                int buildIndex = SceneUtility.GetBuildIndexByScenePath(buildScenePath);
+                if (buildIndex < 0)
+                {
+                    failureReason =
+                        $"FadeScene inválida no Build Settings: path='{buildScenePath}' retornou buildIndex={buildIndex}. " +
+                        $"Corrija em File > Build Settings e garanta a cena habilitada. asset='{bootstrapAssetName}', field='fadeSceneKey', keyAsset='{fadeSceneKeyAssetName}', scene='{fadeSceneName}'.";
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (!Application.CanStreamedLevelBeLoaded(fadeSceneName))
+            {
+                failureReason =
+                    $"FadeScene ausente no Build Settings. Adicione/ative a cena em File > Build Settings (scene/path) para fade funcionar. " +
+                    $"asset='{bootstrapAssetName}', field='fadeSceneKey', keyAsset='{fadeSceneKeyAssetName}', scene='{fadeSceneName}'.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static string TryResolveBuildSettingsScenePath(string fadeSceneName)
+        {
+#if UNITY_EDITOR
+            EditorBuildSettingsScene[] buildScenes = EditorBuildSettings.scenes;
+            if (buildScenes == null)
+            {
+                return string.Empty;
+            }
+
+            for (int i = 0; i < buildScenes.Length; i++)
+            {
+                EditorBuildSettingsScene scene = buildScenes[i];
+                if (scene == null || !scene.enabled || string.IsNullOrWhiteSpace(scene.path))
+                {
+                    continue;
+                }
+
+                string scenePath = scene.path.Trim();
+                string sceneFileName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                if (string.Equals(sceneFileName, fadeSceneName, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return scenePath;
+                }
+            }
+#endif
+            return string.Empty;
         }
 
         private static async System.Threading.Tasks.Task PreloadFadeSceneAsync(IFadeService fadeService, string fadeSceneName)
