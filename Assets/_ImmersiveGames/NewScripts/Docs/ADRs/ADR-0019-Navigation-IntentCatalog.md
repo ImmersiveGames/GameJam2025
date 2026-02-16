@@ -14,94 +14,91 @@ Esse padrão aumenta:
 - risco de erro por digitação,
 - ambiguidade entre **contrato de intenção** e **detalhe de rota/transição**.
 
-## Decisão
+## Decisão Arquitetural (estado canônico atual)
 
-Foi adotada a separação em **2 catálogos canônicos**, com responsabilidades distintas e complementares.
+A arquitetura canônica usa **dois assets separados**:
 
-### 1) `GameNavigationIntentCatalog` (semântica/slots)
+### 1) `GameNavigationIntentCatalog` (contrato de intent IDs)
 
-Responsável por definir **o contrato semântico de navegação**:
-- intents core (slots de produto),
-- intents custom (extensíveis por projeto).
+Define os IDs estáveis do domínio de navegação:
+- core intents (base do produto),
+- intents custom (extensões de projeto).
 
-Este catálogo define **o que** existe como intenção de navegação.
+Responsabilidade: **o que** existe semanticamente como intent.
 
-### 2) `GameNavigationCatalog` (mapeamento intent -> rota/estilo)
+### 2) `GameNavigationCatalog` (mapeamento intent -> route/style)
 
-Responsável por definir **o mapeamento operacional**:
+Define configuração operacional de navegação:
 - `intentId -> routeRef`,
-- `intentId -> transitionStyle/profile defaults`.
+- `intentId -> style`.
 
-Este catálogo define **como e para onde** cada intent navega.
+Responsabilidade: **como e para onde** cada intent navega.
 
-## Core Slots (catálogo semântico)
+## Motivação da separação
 
-Os slots core documentados para o produto são:
-- `Menu`
-- `Gameplay`
-- `GameOver`
-- `Victory`
-- `Restart`
-- `ExitToMenu`
+Separar os dois assets evita acoplamento entre contrato e infraestrutura:
+- IDs podem permanecer estáveis enquanto rotas/estilos evoluem,
+- reduz impacto de mudanças de fluxo,
+- melhora validação, observabilidade e manutenção.
 
-## Política Required vs Optional
+## Core intents (conjunto base extensível)
 
-### Required (fail-fast no Editor/produção)
+O conjunto base de intents core é:
+- `Menu` (`to-menu`)
+- `Gameplay` (`to-gameplay`)
+- `Victory` (`victory`)
+- `Defeat` (`defeat`)
+- `Restart` (`restart`)
+- `ExitToMenu` (`exit-to-menu`)
+- `GameOver` (opcionalmente, quando existir no projeto)
 
-Slots mínimos de boot, obrigatórios para execução:
-- `Menu`
-- `Gameplay`
+> Observação: o conjunto é extensível por contexto de projeto, mantendo compatibilidade com aliases oficiais já adotados.
 
-Se faltarem no catálogo semântico ou no mapeamento operacional correspondente:
-- emitir log `[FATAL][Config]`,
-- falhar em validação de Editor,
-- interromper inicialização em produção conforme política de fail-fast.
+## Requiredness atual (produção)
 
-### Optional (permitido faltar sem fatal, por enquanto)
+### REQUIRED (mínimo de boot)
 
-Slots permitidos sem quebra fatal imediata:
-- `GameOver`
-- `Victory`
-- `Restart`
-- `ExitToMenu`
+Somente estes dois intents são obrigatórios em produção:
+- `to-menu`
+- `to-gameplay`
 
-Para esses casos, deve haver observabilidade (`[OBS]`) e sinalização clara de configuração incompleta, sem `throw` fatal por padrão.
+### OPTIONAL (por enquanto)
 
-## Regras de validação
+Os demais core slots existem, mas são opcionais no estado atual:
+- `victory`
+- `defeat`
+- `restart`
+- `exit-to-menu`
+- `gameover` (quando aplicável)
 
-1. `GameNavigationIntentCatalog` é a fonte canônica dos intents/slots semânticos.
-2. `GameNavigationCatalog` deve referenciar o catálogo de intents e validar consistência de IDs.
-3. Required deve validar em modo fail-fast (Editor e produção).
-4. Optional pode faltar sem fatal neste estágio, mantendo logs de observabilidade.
+Esses opcionais **não devem quebrar boot** se estiverem sem mapeamento.
 
-## Paths canônicos de assets
+## Validação / Fail-fast
 
-Os assets de configuração canônicos devem residir em:
+### Editor
+
+- Falhar (`throw`) **apenas** quando um intent REQUIRED estiver sem mapeamento válido (route/style conforme contrato vigente).
+- Para intents opcionais ausentes/incompletos: registrar somente observabilidade (`[OBS]`, e/ou `[WARN]` quando aplicável), sem fatal.
+
+### Produção
+
+- Política de fail-fast permanece limitada ao mínimo de boot (`to-menu` e `to-gameplay`).
+- Ausências de opcionais não devem interromper inicialização.
+
+## Paths canônicos de Resources
+
+Path canônico para `GameNavigationIntentCatalog`:
 - `Assets/Resources/...`
 
 Diretriz explícita:
-- **não usar** `Assets/_ImmersiveGames/Resources/...` como path canônico.
-
-## Consequências
-
-### Positivas
-- separação clara entre semântica de domínio e infraestrutura de navegação,
-- menor acoplamento entre contrato de intents e detalhes de rota/transição,
-- validação mais previsível e aderente ao fail-fast para o mínimo de boot,
-- evolução incremental de fluxos opcionais sem bloquear entregas.
-
-### Trade-offs
-- necessidade de disciplina de configuração em dois catálogos,
-- necessidade de validação explícita entre catálogo semântico e catálogo operacional.
+- **não usar** `Assets/_ImmersiveGames/Resources/...` como caminho canônico.
 
 ## Observabilidade e runtime
 
-Cadeia de resolução em runtime:
+Cadeia canônica de resolução:
 
 `intent -> GameNavigationCatalog -> routeRef/style -> SceneFlow`
 
-Diretriz:
-- evitar hardcode de nomes de rota fora do catálogo,
-- manter dependência em `intentId` e resolução por catálogo.
-
-Logs de observabilidade permanecem mandatórios em pontos de resolução, incluindo `RouteResolvedVia=AssetRef` quando aplicável.
+Diretrizes:
+- evitar hardcode de rota fora dos catálogos,
+- preservar logs `[OBS][SceneFlow]`, incluindo resolução via `AssetRef` quando configurado.
