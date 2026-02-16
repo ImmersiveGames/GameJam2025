@@ -23,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private static readonly NavigationIntentId MenuCanonicalId = NavigationIntentId.FromName("to-menu");
         private static readonly NavigationIntentId GameplayCanonicalId = NavigationIntentId.FromName("to-gameplay");
         private static readonly NavigationIntentId GameOverCanonicalId = NavigationIntentId.FromName("gameover");
+        private static readonly NavigationIntentId DefeatAliasId = NavigationIntentId.FromName("defeat");
         private static readonly NavigationIntentId VictoryCanonicalId = NavigationIntentId.FromName("victory");
         private static readonly NavigationIntentId RestartCanonicalId = NavigationIntentId.FromName("restart");
         private static readonly NavigationIntentId ExitToMenuCanonicalId = NavigationIntentId.FromName("exit-to-menu");
@@ -57,6 +58,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public NavigationIntentId Menu => TryGetCoreIntentId(MenuCanonicalId);
         public NavigationIntentId Gameplay => TryGetCoreIntentId(GameplayCanonicalId);
         public NavigationIntentId GameOver => TryGetCoreIntentId(GameOverCanonicalId);
+        public NavigationIntentId Defeat => TryGetCoreIntentId(DefeatAliasId);
         public NavigationIntentId Victory => TryGetCoreIntentId(VictoryCanonicalId);
         public NavigationIntentId Restart => TryGetCoreIntentId(RestartCanonicalId);
         public NavigationIntentId ExitToMenu => TryGetCoreIntentId(ExitToMenuCanonicalId);
@@ -147,6 +149,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             EnsureCanonicalCoreEntryOrFail(MenuCanonicalId);
             EnsureCanonicalCoreEntryOrFail(GameplayCanonicalId);
+            EnsureCanonicalCoreEntryOrFail(GameOverCanonicalId);
+            EnsureCanonicalCoreEntryOrFail(VictoryCanonicalId);
+            EnsureCanonicalCoreEntryOrFail(RestartCanonicalId);
+            EnsureCanonicalCoreEntryOrFail(ExitToMenuCanonicalId);
         }
 
         private void ValidateListOrFail(List<IntentEntry> entries, ISet<NavigationIntentId> seen, bool isCore)
