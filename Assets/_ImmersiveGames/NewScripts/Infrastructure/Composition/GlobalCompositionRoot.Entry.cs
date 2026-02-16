@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // Entry
         // --------------------------------------------------------------------
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
 #if !NEWSCRIPTS_MODE

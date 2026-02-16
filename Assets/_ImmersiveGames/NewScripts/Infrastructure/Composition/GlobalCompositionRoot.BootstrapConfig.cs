@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 }
                 else
                 {
-                    ResolveBootstrapConfigFromSceneProviderOrFail();
+                    ResolveBootstrapConfigFromPreloadedManifestOrFail();
                     DependencyManager.Provider.RegisterGlobal(cachedBootstrapConfig);
                 }
             }
@@ -67,21 +67,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return cachedBootstrapConfig;
         }
 
-        private static void ResolveBootstrapConfigFromSceneProviderOrFail()
+        private static void ResolveBootstrapConfigFromPreloadedManifestOrFail()
         {
-            var provider = UnityEngine.Object.FindFirstObjectByType<NewScriptsBootstrapConfigProvider>(FindObjectsInactive.Include);
-            if (provider == null)
+            NewScriptsBootstrapConfigManifestAsset[] manifests = Resources.FindObjectsOfTypeAll<NewScriptsBootstrapConfigManifestAsset>();
+            if (manifests == null || manifests.Length != 1)
             {
-                FailFast("Missing required NewScriptsBootstrapConfigProvider in loaded scene. Configure a direct reference to NewScriptsBootstrapConfigAsset.");
+                int found = manifests?.Length ?? 0;
+                FailFast(
+                    "Expected exactly 1 NewScriptsBootstrapConfigManifestAsset loaded via Preloaded Assets. " +
+                    $"Found={found}. Configure Player Settings > Preloaded Assets.");
             }
 
-            if (provider.Config == null)
+            NewScriptsBootstrapConfigManifestAsset manifest = manifests[0];
+            if (manifest == null)
             {
-                FailFast("Missing required NewScriptsBootstrapConfigAsset in NewScriptsBootstrapConfigProvider.config.");
+                FailFast("NewScriptsBootstrapConfigManifestAsset reference is null. Configure Player Settings > Preloaded Assets.");
             }
 
-            cachedBootstrapConfig = provider.Config;
-            cachedBootstrapConfigVia = "SceneProvider";
+            if (manifest.Config == null)
+            {
+                FailFast("NewScriptsBootstrapConfigManifestAsset.config is null. Assign a valid NewScriptsBootstrapConfigAsset.");
+            }
+
+            cachedBootstrapConfig = manifest.Config;
+            cachedBootstrapConfigVia = "PreloadedManifest";
         }
     }
 }
