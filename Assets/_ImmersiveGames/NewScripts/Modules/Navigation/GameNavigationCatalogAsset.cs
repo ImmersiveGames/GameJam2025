@@ -78,19 +78,47 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 routeId = routeId?.Trim();
             }
 
+            public bool TryAutoSyncFromRouteRef(out bool routeIdSynced, out bool sceneRouteIdSynced)
+            {
+                routeIdSynced = false;
+                sceneRouteIdSynced = false;
+
+                if (routeRef == null)
+                {
+                    return false;
+                }
+
+                SceneRouteId routeRefId = routeRef.RouteId;
+                if (!routeRefId.IsValid)
+                {
+                    return false;
+                }
+
+                string canonicalRouteId = routeRefId.Value;
+                string currentRouteId = routeId?.Trim() ?? string.Empty;
+
+                if (!string.Equals(currentRouteId, canonicalRouteId, StringComparison.Ordinal))
+                {
+                    routeId = canonicalRouteId;
+                    routeIdSynced = true;
+                }
+
+                if (sceneRouteId != routeRefId)
+                {
+                    sceneRouteId = routeRefId;
+                    sceneRouteIdSynced = true;
+                }
+
+                return routeIdSynced || sceneRouteIdSynced;
+            }
+
             private static void HandleRouteMismatch(string owner, string intentId, SceneRouteId sceneRouteId, SceneRouteId routeRefId)
             {
                 string message =
                     $"[FATAL][Config] GameNavigationCatalog routeId divergente de routeRef. " +
                     $"owner='{owner}', intentId='{intentId}', sceneRouteId='{sceneRouteId}', routeRef.routeId='{routeRefId}'.";
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
-                    $"{message} Em editor/dev, routeRef terá prioridade (RouteResolvedVia=AssetRef).");
-#else
-                DebugUtility.LogError(typeof(GameNavigationCatalogAsset), message);
-                throw new InvalidOperationException(message);
-#endif
+                FailFastConfig(message);
             }
         }
 
@@ -138,6 +166,54 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             ApplyRouteMigration();
             _built = false;
+        }
+
+        private void OnValidate()
+        {
+            ApplyRouteMigration();
+            _built = false;
+
+            int syncedEntriesCount = 0;
+            int syncedRouteIdCount = 0;
+            int syncedSceneRouteIdCount = 0;
+
+            if (routes == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < routes.Count; i++)
+            {
+                RouteEntry route = routes[i];
+                if (route == null)
+                {
+                    continue;
+                }
+
+                if (!route.TryAutoSyncFromRouteRef(out bool routeIdSynced, out bool sceneRouteIdSynced))
+                {
+                    continue;
+                }
+
+                syncedEntriesCount++;
+                if (routeIdSynced)
+                {
+                    syncedRouteIdCount++;
+                }
+
+                if (sceneRouteIdSynced)
+                {
+                    syncedSceneRouteIdCount++;
+                }
+            }
+
+            if (syncedEntriesCount > 0)
+            {
+                DebugUtility.Log(typeof(GameNavigationCatalogAsset),
+                    "[OBS][Config] GameNavigationCatalog OnValidate auto-fix aplicado: " +
+                    $"entries={syncedEntriesCount}, routeIdSynced={syncedRouteIdCount}, sceneRouteIdSynced={syncedSceneRouteIdCount}, asset='{name}'.",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private void EnsureBuilt()
@@ -227,15 +303,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (route.sceneRouteId != routeRefId)
             {
                 HandleCriticalRouteMismatch(route.routeId, route.sceneRouteId, routeRefId);
-                return;
             }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
-                $"[WARN][Config] GameNavigationCatalog redundância tolerada. intentId='{route.routeId}', sceneRouteId='{route.sceneRouteId}' igual ao routeRef.RouteId.");
-#endif
         }
-
 
         private void HandleCriticalRouteMismatch(string intentId, SceneRouteId sceneRouteId, SceneRouteId routeRefId)
         {
@@ -243,13 +312,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 $"[FATAL][Config] GameNavigationCatalog routeId divergente de routeRef. " +
                 $"owner='{name}', intentId='{intentId}', sceneRouteId='{sceneRouteId}', routeRef.routeId='{routeRefId}'.";
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            DebugUtility.LogWarning(typeof(GameNavigationCatalogAsset),
-                $"{message} Em editor/dev, routeRef terá prioridade (RouteResolvedVia=AssetRef). ");
-#else
-            DebugUtility.LogError(typeof(GameNavigationCatalogAsset), message);
-            throw new InvalidOperationException(message);
-#endif
+            FailFastConfig(message);
         }
 
         private static bool IsCriticalIntent(string intentId)
@@ -269,7 +332,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             string message =
                 $"[FATAL][Config] GameNavigationCatalog inválido para intent crítico. asset='{name}', intentId='{intentId}', detail='{detail}'";
 
+            FailFastConfig(message);
+        }
+
+        private static void FailFastConfig(string message)
+        {
             DebugUtility.LogError(typeof(GameNavigationCatalogAsset), message);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
             throw new InvalidOperationException(message);
         }
     }
