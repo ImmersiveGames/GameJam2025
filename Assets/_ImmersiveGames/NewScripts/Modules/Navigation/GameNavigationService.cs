@@ -314,6 +314,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                         $"[FATAL][Config] Missing core intent entry '{intentId}'.");
                 }
 
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][Navigation] RuntimeResolveChain intent -> entry -> routeRef. intentKind='{intent}', intentId='{intentId}', routeId='{entry.RouteId}'.",
+                    DebugUtility.Colors.Info);
+
                 await ExecuteEntryAsync(intentId, entry, reason);
             }
             catch (Exception ex)

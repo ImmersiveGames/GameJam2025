@@ -134,10 +134,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
-        private const string IntentGameOver = "to-gameover";
-        private const string IntentVictory = "to-victory";
-        private const string IntentRestart = "to-restart";
-        private const string IntentExitToMenu = "exit-to-menu";
+        [Header("Catalog Reference")]
+        [SerializeField]
+        [Tooltip("Referência obrigatória para o catálogo canônico de intents (core + custom).")]
+        private GameNavigationIntentCatalogAsset assetRef;
 
         [Header("Core Intents (slots explícitos)")]
         [SerializeField] private CoreIntentSlot menuSlot;
@@ -163,6 +163,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return _cache.Keys;
             }
         }
+
+        public GameNavigationIntentCatalogAsset IntentCatalogAssetRef => assetRef;
 
         public bool TryGet(string routeId, out GameNavigationEntry entry)
         {
@@ -242,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             EnsureBuilt();
             rawRoutesCount = routes?.Count ?? 0;
             builtRouteIdsCount = _cache.Count;
-            hasToGameplay = _cache.ContainsKey(GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay));
+            hasToGameplay = _cache.ContainsKey(GetIntentId(GameNavigationIntentKind.Gameplay));
         }
 
         public void OnBeforeSerialize()
@@ -260,7 +262,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             ApplyRouteMigration();
             _built = false;
 
+            ValidateIntentCatalogReferenceOrFail();
+            ValidateIntentCatalogCoreCoverageOrFail();
+
             ValidateCoreSlotsInEditorOrFail();
+            ValidateMinimumProductionCoreSlotsInEditorOrFail();
             ValidateExtrasInEditorOrFail();
 
             int syncedEntriesCount = 0;
@@ -337,8 +343,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             AddCoreToCacheOrFail(GameNavigationIntentKind.Gameplay, required: true);
             AddCoreToCacheOrFail(GameNavigationIntentKind.GameOver, required: false);
             AddCoreToCacheOrFail(GameNavigationIntentKind.Victory, required: false);
-            AddCoreToCacheOrFail(GameNavigationIntentKind.Restart, required: false);
-            AddCoreToCacheOrFail(GameNavigationIntentKind.ExitToMenu, required: false);
+            AddCoreToCacheOrFail(GameNavigationIntentKind.Restart, required: true);
+            AddCoreToCacheOrFail(GameNavigationIntentKind.ExitToMenu, required: true);
         }
 
         private void AddCoreToCacheOrFail(GameNavigationIntentKind kind, bool required)
@@ -438,6 +444,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             ValidateCoreSlotOrFail(GameNavigationIntentKind.Victory, required: false);
             ValidateCoreSlotOrFail(GameNavigationIntentKind.Restart, required: false);
             ValidateCoreSlotOrFail(GameNavigationIntentKind.ExitToMenu, required: false);
+        }
+
+        private void ValidateMinimumProductionCoreSlotsInEditorOrFail()
+        {
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Menu, required: true);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Gameplay, required: true);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Restart, required: true);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.ExitToMenu, required: true);
         }
 
         private void ValidateCoreSlotOrFail(GameNavigationIntentKind kind, bool required)
@@ -556,40 +570,40 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
-        private static bool TryMapIntentIdToCoreKind(string intentId, out GameNavigationIntentKind kind)
+        private bool TryMapIntentIdToCoreKind(string intentId, out GameNavigationIntentKind kind)
         {
             string normalized = intentId?.Trim();
-            if (string.Equals(normalized, GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu), StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GetIntentId(GameNavigationIntentKind.Menu), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.Menu;
                 return true;
             }
 
-            if (string.Equals(normalized, GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay), StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GetIntentId(GameNavigationIntentKind.Gameplay), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.Gameplay;
                 return true;
             }
 
-            if (string.Equals(normalized, IntentGameOver, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GetIntentId(GameNavigationIntentKind.GameOver), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.GameOver;
                 return true;
             }
 
-            if (string.Equals(normalized, IntentVictory, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GetIntentId(GameNavigationIntentKind.Victory), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.Victory;
                 return true;
             }
 
-            if (string.Equals(normalized, IntentRestart, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GetIntentId(GameNavigationIntentKind.Restart), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.Restart;
                 return true;
             }
 
-            if (string.Equals(normalized, IntentExitToMenu, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, GetIntentId(GameNavigationIntentKind.ExitToMenu), StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.ExitToMenu;
                 return true;
@@ -599,25 +613,55 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return false;
         }
 
-        private static string GetIntentId(GameNavigationIntentKind kind)
+        private string GetIntentId(GameNavigationIntentKind kind)
         {
+            ValidateIntentCatalogReferenceOrFail();
+
+            NavigationIntentId intentId;
             switch (kind)
             {
                 case GameNavigationIntentKind.Menu:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu);
+                    intentId = assetRef.Menu;
+                    break;
                 case GameNavigationIntentKind.Gameplay:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay);
+                    intentId = assetRef.Gameplay;
+                    break;
                 case GameNavigationIntentKind.GameOver:
-                    return IntentGameOver;
+                    intentId = assetRef.GameOver;
+                    break;
                 case GameNavigationIntentKind.Victory:
-                    return IntentVictory;
+                    intentId = assetRef.Victory;
+                    break;
                 case GameNavigationIntentKind.Restart:
-                    return IntentRestart;
+                    intentId = assetRef.Restart;
+                    break;
                 case GameNavigationIntentKind.ExitToMenu:
-                    return IntentExitToMenu;
+                    intentId = assetRef.ExitToMenu;
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
             }
+
+            if (!intentId.IsValid)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog sem intent core canônica no GameNavigationIntentCatalog. asset='{name}', kind='{kind}'.");
+            }
+
+            return intentId.Value;
+        }
+
+        private void ValidateIntentCatalogReferenceOrFail()
+        {
+            if (assetRef == null)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog exige assetRef (GameNavigationIntentCatalogAsset). asset='{name}'.");
+            }
+        }
+
+        private void ValidateIntentCatalogCoreCoverageOrFail()
+        {
+            ValidateIntentCatalogReferenceOrFail();
+            assetRef.EnsureCoreIntentsForProductionOrFail();
         }
 
         private CoreIntentSlot GetCoreSlot(GameNavigationIntentKind kind)

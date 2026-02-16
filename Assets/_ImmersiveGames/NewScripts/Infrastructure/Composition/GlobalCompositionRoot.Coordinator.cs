@@ -12,8 +12,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static readonly SceneRouteId BootStartRouteId = SceneRouteId.FromName(GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu));
-
         private static void RegisterGameLoopSceneFlowCoordinatorIfAvailable()
         {
             if (_sceneFlowCoordinator != null)
@@ -32,13 +30,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            EnsureBootStartRouteConfiguredOrFailFast();
-
             var bootstrap = GetRequiredBootstrapConfig(out _);
+            SceneRouteId bootStartRouteId = ResolveBootStartRouteIdOrFailFast(bootstrap);
             SceneTransitionProfile profile = ResolveRequiredStartupProfile(bootstrap);
 
             var startPlan = new SceneTransitionRequest(
-                routeId: BootStartRouteId,
+                routeId: bootStartRouteId,
                 styleId: TransitionStyleId.None,
                 payload: SceneTransitionPayload.Empty,
                 transitionProfile: profile,
@@ -50,26 +47,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(sceneFlow, startPlan);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, routeId='{BootStartRouteId}', profile='{StartProfileId}', profileAsset='{profile.name}').",
+                $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, routeId='{bootStartRouteId}', profile='{StartProfileId}', profileAsset='{profile.name}').",
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureBootStartRouteConfiguredOrFailFast()
+        private static SceneRouteId ResolveBootStartRouteIdOrFailFast(Infrastructure.Config.NewScriptsBootstrapConfigAsset bootstrap)
         {
-            if (!BootStartRouteId.IsValid)
+            var navigationCatalog = bootstrap.NavigationCatalog;
+            if (navigationCatalog == null)
+            {
+                FailFast("[FATAL][Config] Boot/StartPlan exige NavigationCatalog no bootstrap.");
+            }
+
+            GameNavigationEntry menuEntry = navigationCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Menu);
+            SceneRouteId bootStartRouteId = menuEntry.RouteId;
+            if (!bootStartRouteId.IsValid)
             {
                 FailFast("[FATAL][Config] Boot/StartPlan routeId inválido/vazio.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var routeResolver) || routeResolver == null)
             {
-                FailFast($"[FATAL][Config] Boot/StartPlan sem ISceneRouteResolver para routeId='{BootStartRouteId}'.");
+                FailFast($"[FATAL][Config] Boot/StartPlan sem ISceneRouteResolver para routeId='{bootStartRouteId}'.");
             }
 
-            if (!routeResolver.TryResolve(BootStartRouteId, out _))
+            if (!routeResolver.TryResolve(bootStartRouteId, out _))
             {
-                FailFast($"[FATAL][Config] Boot/StartPlan routeId não encontrado no catálogo de rotas. routeId='{BootStartRouteId}'.");
+                FailFast($"[FATAL][Config] Boot/StartPlan routeId não encontrado no catálogo de rotas. routeId='{bootStartRouteId}'.");
             }
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Navigation] BootStartRouteResolvedVia intent -> entry -> routeRef. intentKind='{GameNavigationIntentKind.Menu}', routeId='{bootStartRouteId}'.",
+                DebugUtility.Colors.Info);
+
+            return bootStartRouteId;
         }
 
         private static SceneTransitionProfile ResolveRequiredStartupProfile(Infrastructure.Config.NewScriptsBootstrapConfigAsset bootstrap)

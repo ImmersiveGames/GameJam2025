@@ -1,126 +1,109 @@
-# ADR-0019 — Navigation: Intent Catalog (Core Slots)
+# ADR-0019 — Navigation: IntentCatalog + NavigationCatalog (Opção B)
 
-- **Status:** Accepted / Implemented (parcial)
+- **Status:** Accepted / Implemented
 - **Data:** 2026-02-16
 - **Owner:** NewScripts / Navigation
-- **Relacionados:** ADR-0008 (RuntimeModeConfig/boot), ADR-0017 (Level config/catalog), ADR-0018 (Fade/TransitionStyle), P-001 (Strings→DirectRefs)
+- **Relacionados:** ADR-0008 (RuntimeModeConfig/boot e Resources canônico), ADR-0017 (Level config/catalog), ADR-0018 (Fade/TransitionStyle), P-001 (Strings→DirectRefs)
 
-## Contexto
+## Contexto / Problema
 
-O módulo de navegação ainda depende de *strings canônicas* (“to-menu”, “to-gameplay”, etc.) espalhadas em múltiplos pontos:
-- constantes de intent,
-- entradas críticas dentro do `GameNavigationCatalogAsset`,
-- validações de Editor (fail-fast) e logs de evidência.
+A navegação do jogo tinha risco de acoplamento por *strings* espalhadas (`to-menu`, `to-gameplay`, etc.) em múltiplos pontos de runtime e configuração.
 
-Isso cria acoplamento por digitação e aumenta o custo de evolução (renomear/migrar IDs).
+Esse padrão aumenta:
+- custo de manutenção (renomear IDs exige rastrear uso em vários lugares),
+- risco de erro por digitação,
+- ambiguidade entre **contrato de intenção** e **detalhe de rota/transição**.
 
-Ao mesmo tempo, existem intents que **são invariantes do produto** (ex.: voltar ao menu, iniciar gameplay, reiniciar). Esses “verbos” precisam ser **referenciáveis** e **validados** como obrigatórios, sem impedir a criação de novas intenções no futuro.
-
-## Objetivos
-
-1. **Centralizar** a definição dos intents “core” (obrigatórios) em um único asset.
-2. **Fail-fast no Editor** para garantir que intents core estão configurados (sem fallback degradado).
-3. **Extensível**: permitir intents customizados sem modificar código de runtime.
-4. **Reduzir** strings “digitadas” fora de um lugar único e validável.
+Neste domínio, os intents core representam o **contrato do jogo** (ex.: menu, gameplay, restart, exit-to-menu) e devem ser explícitos, validados e estáveis.
 
 ## Decisão
 
-### (B) Manter **dois catálogos**, com papéis distintos
+Foi escolhida a **Opção B**: manter **2 catálogos separados**, com responsabilidades claras.
 
-#### 1) `GameNavigationIntentCatalogAsset` (Core Slots)
-Asset que define **slots explícitos** para intents core (obrigatórios e opcionais), servindo como “fonte canônica” do *set mínimo* de intenções do jogo.
+### 1) `GameNavigationIntentCatalogAsset` (catálogo canônico de intents)
+Responsável por definir a lista canônica de intents:
+- **CoreSlots** (contrato obrigatório do produto),
+- **Custom** (extensível por projeto).
 
-- **Local canônico:** `Assets/Resources/` (para boot determinístico via Resources quando necessário).
-- **Uso:** runtime/DI resolve este catálogo e expõe um serviço/contrato para consultar intents core.
-- **Regra:** o catálogo define *o que existe como intenção*, não o “para onde vai”.
+Este catálogo define **o que** existe como intenção de navegação.
 
-#### 2) `GameNavigationCatalogAsset` (Mappings)
-Asset que mapeia **intentId -> (routeRef + styleId)**, incluindo:
-- entradas **core** (preenchidas e validadas),
-- entradas **custom** (livres para evolução).
+### 2) `GameNavigationCatalogAsset` (catálogo de mapping/config)
+Responsável por mapear `intentId -> routeRef/style/profile defaults` e entradas de navegação.
 
-- **Local típico:** referenciado pelo `NewScriptsBootstrapConfigAsset` (que por sua vez é referenciado via `RuntimeModeConfig`).
-- **Regra:** este catálogo define *para onde cada intent navega* (rota/cenas) e *como* (style).
+Este catálogo define **como e para onde** cada intent navega.
 
-### Core intents (baseline do produto)
+## Rationale (por que manter 2 catálogos)
 
-- **Obrigatórios (MUST):**
-    - `to-menu` — entrar no Menu/Frontend
-    - `to-gameplay` — entrar na Gameplay (shell padrão)
-    - `exit-to-menu` — sair do run atual e ir ao Menu
-    - `restart` — reiniciar run (volta ao fluxo de gameplay)
+Manter dois catálogos é uma decisão intencional de arquitetura (separação de concerns):
 
-- **Recomendados (SHOULD) — podem ser adicionados conforme o produto evolui:**
-    - `to-gameover`
-    - `to-victory`
-    - `to-defeat`
+- **IntentCatalog** modela contrato de domínio (semântica de navegação).
+- **GameNavigationCatalog** modela configuração operacional (rota, estilo, profile).
 
-> Observação: “ter intents core” **não** significa que o projeto fica preso aos mesmos *SceneRouteIds* para sempre. A estabilidade é do **intent**. As rotas podem mudar, desde que o mapeamento no catálogo seja atualizado.
+Benefícios diretos:
+- reduz acoplamento entre semântica e infraestrutura,
+- facilita evolução de rota/transição sem quebrar o contrato de intents,
+- melhora testabilidade e validação de config,
+- mantém aderência a princípios SOLID (responsabilidade única e baixo acoplamento).
 
 ## Consequências
 
-### Benefícios
-- **Um lugar único** para verificar “o jogo tem/precisa suportar X”.
-- **Menos acoplamento por string** fora do catálogo (reduz erro de digitação).
-- **Fail-fast no Editor**: não dá para commitar config incompleta para intents core.
-- **Extensibilidade**: novas intenções entram por catálogo (sem alterar runtime).
+### Positivas
+- Intents core ficam **reservados** e validados como contrato de produção.
+- O sistema permanece **extensível** por intents custom sem alteração de runtime.
+- Validações de Editor garantem consistência entre catálogo canônico e catálogo de mapping.
+- Migração de strings para referências de catálogo fica incremental e controlada.
 
-### Custos
-- Dois assets para entender (intents vs mappings).
-- Exige disciplina de naming e validação para manter consistência.
+### Trade-offs
+- Exige disciplina de configuração em dois assets.
+- Exige validação explícita para impedir divergência entre catálogos.
 
 ## Regras de validação (Editor / Fail-Fast)
 
-1. `GameNavigationIntentCatalogAsset`:
-    - slots MUST **não podem** estar vazios/invalidos.
-    - deve logar `[FATAL][Config]` e **throw** no `OnValidate()` se faltarem slots obrigatórios.
+1. `GameNavigationIntentCatalogAsset` deve conter intents core obrigatórios de produção:
+   - `to-menu`
+   - `to-gameplay`
+   - `restart`
+   - `exit-to-menu`
 
-2. `GameNavigationCatalogAsset`:
-    - MUST ter entradas para intents core, com `routeRef` **obrigatório** (direct-ref-first).
-    - `styleId` obrigatório para intents core (ou política explícita documentada).
+2. `GameNavigationCatalogAsset` deve:
+   - referenciar explicitamente o `GameNavigationIntentCatalogAsset` (`assetRef`),
+   - validar consistência com o catálogo canônico,
+   - conter entradas mínimas para os intents core de produção (menu/gameplay/restart/exit),
+   - validar `routeRef` e `style` conforme política de produção.
 
-3. Runtime:
-    - Sem “fallback silencioso” para core intents.
-    - Em falta de config core, deve falhar explicitamente (fail-fast).
+3. Em inconsistência crítica de config: log `[FATAL][Config]` + `throw` no Editor (fail-fast).
 
-## Plano de implementação (incremental)
+## Uso em runtime
 
-### Fase 1 — Core Slots
-- Criar/ajustar `GameNavigationIntentCatalogAsset` em `Assets/Resources/`.
-- Registrar no boot (DI global) via bootstrap/pipeline.
-- Expor contrato simples: `GetCoreIntent(CoreIntentKind)` ou propriedades (`ToMenu`, `ToGameplay`, etc.).
+O runtime deve resolver navegação por cadeia canônica:
 
-### Fase 2 — Mappings
-- Garantir que `GameNavigationCatalogAsset` contém entradas core preenchidas:
-    - `to-menu`, `to-gameplay`, `exit-to-menu`, `restart`
-- Garantir que essas entradas usam `routeRef` (sem depender de `sceneRouteId` legado).
+`intent -> entry do GameNavigationCatalog -> routeRef/style -> SceneFlow`
 
-### Fase 3 — Reduzir strings “soltas”
-- Substituir usos diretos de strings core no runtime por consulta ao `GameNavigationIntentCatalog`.
-- Manter strings apenas onde ainda são inevitáveis (ex.: logs/evidências e compat temporária).
+Regra principal:
+- Sem dependência em “nomes obrigatórios de rota” hardcoded fora do catálogo.
+- Dependência em `intentId` + resolução por catálogo.
 
-## Evidências / Observabilidade
+## Observabilidade
 
-- Logs [OBS] devem continuar mostrando `RouteResolvedVia=AssetRef` para:
-    - core intents
-    - levels
-- Baseline (Menu→Gameplay, Restart, ExitToMenu) deve permanecer PASS.
+Permanecem válidos os logs `[OBS]` já adotados, em especial:
+- `RouteResolvedVia=AssetRef`
 
-## Migração / Compatibilidade
+Também fica documentada a leitura operacional da cadeia de resolução:
+- runtime resolve via `intent -> entry -> routeRef`.
 
-- Mantém compat com IDs tipados enquanto o plano Strings→DirectRefs avança.
-- `sceneRouteId` pode permanecer como compat temporária, mas core intents devem usar `routeRef`.
+## Recursos canônicos (ADR-0008)
 
-## Notas de nomenclatura
+`Assets/Resources` permanece canônico **somente** para:
+- raiz `RuntimeModeConfig`,
+- assets necessários ao boot/pipeline conforme ADR-0008.
 
-- Os nomes atuais (**GameNavigationCatalog** vs **GameNavigationIntentCatalog**) são aceitos por agora.
-- Uma melhoria futura pode renomear para algo mais explícito:
-    - `GameNavigationIntentCatalog` → `GameNavigationCoreIntents`
-    - `GameNavigationCatalog` → `GameNavigationIntentMappings`
+Demais referências seguem fluxo de bootstrap/config para evitar centralização indevida em `Resources`.
 
-## Status de implementação (2026-02-16)
+## Migração
 
-- Boot canônico: `RuntimeModeConfig` como raiz + `BeforeSceneLoad` (ver ADR-0008).
-- Catálogo de intents core: criado e posicionado no `Assets/Resources/` (local canônico).
-- Catálogo de mappings: entradas core preenchidas (to-menu, to-gameplay, exit-to-menu, restart) com `routeRef` + `styleId`.
-- Próximo passo: reduzir dependência de strings core no runtime consumindo o `IntentCatalog` diretamente.
+A migração de pontos legados com string hardcoded deve seguir incrementalmente para a cadeia por catálogo, preservando compatibilidade enquanto houver trechos antigos.
+
+Objetivo final de estado:
+- contrato de intents no `IntentCatalog`,
+- mapping de rota/estilo no `GameNavigationCatalog`,
+- runtime sem acoplamento a routeId obrigatório fora de catálogo.
