@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             DebugUtility.LogVerbose(typeof(GameNavigationService),
                 $"[OBS][Navigation] GoToMenuRequested reason='{reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
-            return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
+            return NavigateAsync(GameNavigationIntentKind.Menu, reason);
         }
 
         public async Task RestartAsync(string reason = null)
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             string styleLabel = "<unknown>";
             string profileLabel = "<unknown>";
-            if (_catalog.TryGet(GameNavigationIntents.ToMenu, out var menuEntry) && menuEntry.IsValid)
+            if (TryResolveCoreEntry(GameNavigationIntentKind.Menu, out var menuEntry) && menuEntry.IsValid)
             {
                 styleLabel = menuEntry.StyleId.ToString();
                 if (_styleCatalog != null && _styleCatalog.TryGet(menuEntry.StyleId, out var style))
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             DebugUtility.Log(typeof(GameNavigationService),
                 $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}', styleId='{styleLabel}', profile='{profileLabel}'.",
                 DebugUtility.Colors.Info);
-            return ExecuteIntentAsync(GameNavigationIntents.ToMenu, reason);
+            return NavigateAsync(GameNavigationIntentKind.Menu, reason);
         }
 
         [Obsolete("Use GoToMenuAsync(reason).")]
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             try
             {
-                if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var entry) || !entry.IsValid)
+                if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var entry) || !entry.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[FATAL][Config] Missing gameplay intent entry. " +
@@ -198,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 throw new InvalidOperationException("[FATAL][Config] StartGameplayRouteAsync with invalid RouteId.");
             }
 
-            if (!_catalog.TryGet(GameNavigationIntents.ToGameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
+            if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
                     $"[FATAL][Config] Missing gameplay intent entry for StartGameplayRouteAsync. intentId='{GameNavigationIntents.ToGameplay}'.");
@@ -231,12 +231,22 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             await ExecuteEntryAsync(GameNavigationIntents.ToGameplay, routeEntry, reason);
         }
 
-        [Obsolete("Use métodos explícitos: GoToMenuAsync, RestartAsync, ExitToMenuAsync ou StartGameplayAsync(levelId, reason).")]
+        public Task NavigateAsync(GameNavigationIntentKind intent, string reason = null)
+        {
+            if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
+            {
+                DebugUtility.LogWarning(typeof(GameNavigationService),
+                    $"[Navigation] Navegação já em progresso. Ignorando intent core='{intent}'.");
+                return Task.CompletedTask;
+            }
+
+            return ExecuteCoreIntentAsync(intent, reason);
+        }
+
+        [Obsolete("Prefira NavigateAsync(GameNavigationIntentKind, reason) para core intents; mantenha string para extras/custom.")]
         public Task NavigateAsync(string routeId, string reason = null)
         {
-            DebugUtility.LogError(typeof(GameNavigationService),
-                "[FATAL][Config] Obsolete navigation API called: NavigateAsync. Use the non-obsolete API.");
-            throw new InvalidOperationException("Obsolete navigation API called: NavigateAsync. Use GoToMenuAsync(reason), RestartAsync(reason), ExitToMenuAsync(reason), or StartGameplayAsync(levelId, reason).");
+            return ExecuteIntentAsync(routeId, reason);
         }
 
         private async Task ExecuteIntentAsync(string intentId, string reason = null)
@@ -276,6 +286,67 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             finally
             {
                 Interlocked.Exchange(ref _navigationInProgress, 0);
+            }
+        }
+
+        private async Task ExecuteCoreIntentAsync(GameNavigationIntentKind intent, string reason)
+        {
+            string intentId = GetCoreIntentId(intent);
+
+            try
+            {
+                if (!TryResolveCoreEntry(intent, out GameNavigationEntry entry) || !entry.IsValid)
+                {
+                    DebugUtility.LogError(typeof(GameNavigationService),
+                        $"[FATAL][Config] Missing core intent entry. intent='{intent}', intentId='{intentId}'.");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config] Missing core intent entry '{intentId}'.");
+                }
+
+                await ExecuteEntryAsync(intentId, entry, reason);
+            }
+            catch (Exception ex)
+            {
+                // Comentário: navegação é infraestrutura de fluxo; não deve derrubar o jogo.
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[Navigation] Exceção ao navegar (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _navigationInProgress, 0);
+            }
+        }
+
+        private bool TryResolveCoreEntry(GameNavigationIntentKind intent, out GameNavigationEntry entry)
+        {
+            if (_catalog is GameNavigationCatalogAsset assetCatalog)
+            {
+                entry = assetCatalog.ResolveCoreOrFail(intent);
+                return entry.IsValid;
+            }
+
+            string intentId = GetCoreIntentId(intent);
+            return _catalog.TryGet(intentId, out entry) && entry.IsValid;
+        }
+
+        private static string GetCoreIntentId(GameNavigationIntentKind intent)
+        {
+            switch (intent)
+            {
+                case GameNavigationIntentKind.Menu:
+                    return GameNavigationIntents.ToMenu;
+                case GameNavigationIntentKind.Gameplay:
+                    return GameNavigationIntents.ToGameplay;
+                case GameNavigationIntentKind.GameOver:
+                    return "to-gameover";
+                case GameNavigationIntentKind.Victory:
+                    return "to-victory";
+                case GameNavigationIntentKind.Restart:
+                    return "to-restart";
+                case GameNavigationIntentKind.ExitToMenu:
+                    return "exit-to-menu";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(intent), intent, null);
             }
         }
 

@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             NavigationTaskRunner.FireAndForget(
                 navigation.RestartAsync(reason),
                 typeof(RestartNavigationBridge),
-                $"Restart -> routeId='{GameNavigationIntents.ToGameplay}'");
+                $"Restart -> coreIntent=Gameplay");
         }
     }
 }

@@ -67,10 +67,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][Navigation] QA ExitToMenu -> ExitToMenuAsync reason='{ReasonQaExitToMenu}'.",
+                $"[OBS][Navigation] QA ExitToMenu -> NavigateAsync(core=Menu) reason='{ReasonQaExitToMenu}'.",
                 ColorInfo);
 
-            _ = navigation.ExitToMenuAsync(ReasonQaExitToMenu);
+            _ = navigation.NavigateAsync(GameNavigationIntentKind.Menu, ReasonQaExitToMenu);
         }
 
         [ContextMenu("QA/WorldLifecycle/ForceResetWorld (TC: Manual ResetWorld)")]
