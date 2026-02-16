@@ -50,16 +50,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
             _lastProfileLabel = string.IsNullOrWhiteSpace(profileLabel) ? profile.name : profileLabel.Trim();
 
-            if (!profile.UseFade)
-            {
-                _shouldFade = false;
-                _resolvedConfig = NoOpConfig();
-
-                DebugUtility.LogVerbose<SceneFlowFadeAdapter>(
-                    $"[SceneFlow] Profile '{_lastProfileLabel}' aplicado: UseFade=false → no-op (dur=0).");
-                return;
-            }
-
             _shouldFade = true;
 
             _resolvedConfig = new FadeConfig(
@@ -146,13 +136,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 #endif
         }
 
-        private static FadeConfig NoOpConfig()
-        {
-            return new FadeConfig(
-                fadeInDuration: 0f,
-                fadeOutDuration: 0f,
-                fadeInCurve: DefaultConfig.FadeInCurve,
-                fadeOutCurve: DefaultConfig.FadeOutCurve);
-        }
     }
 }
