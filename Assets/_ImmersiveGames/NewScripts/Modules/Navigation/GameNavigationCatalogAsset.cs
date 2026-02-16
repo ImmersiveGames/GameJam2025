@@ -281,6 +281,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             ValidateRequiredCoreSlotsInEditorOrFail();
             ValidateOptionalCoreSlotsInEditor();
+            LogMissingOptionalIntentsObservability();
             ValidateExtrasInEditorOrFail();
 
             int syncedEntriesCount = 0;
@@ -600,6 +601,115 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             DebugUtility.Log(typeof(GameNavigationCatalogAsset),
                 $"[OBS][SceneFlow][Config] Optional core intent configurado. owner='{name}', kind='{kind}', intentId='{intentId}', routeId='{routeRefId}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void LogMissingOptionalIntentsObservability()
+        {
+            List<string> optionalCoreIntentIds = CollectOptionalCoreIntentIdsFromCatalog();
+            if (optionalCoreIntentIds.Count == 0)
+            {
+                return;
+            }
+
+            List<string> missingOptionalIntentIds = new List<string>();
+            for (int i = 0; i < optionalCoreIntentIds.Count; i++)
+            {
+                string intentId = optionalCoreIntentIds[i];
+                if (IsIntentMapped(intentId))
+                {
+                    continue;
+                }
+
+                missingOptionalIntentIds.Add(intentId);
+            }
+
+            if (missingOptionalIntentIds.Count == 0)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(GameNavigationCatalogAsset),
+                $"[OBS][Config] MissingOptionalIntents=[{string.Join(",", missingOptionalIntentIds)}] asset='{name}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private List<string> CollectOptionalCoreIntentIdsFromCatalog()
+        {
+            List<string> optional = new List<string>();
+            if (assetRef == null)
+            {
+                return optional;
+            }
+
+            AddOptionalIntentIdIfValid(optional, assetRef.Victory);
+            AddOptionalIntentIdIfValid(optional, assetRef.Defeat);
+            AddOptionalIntentIdIfValid(optional, assetRef.Restart);
+            AddOptionalIntentIdIfValid(optional, assetRef.ExitToMenu);
+            AddOptionalIntentIdIfValid(optional, assetRef.GameOver);
+
+            return optional;
+        }
+
+        private static void AddOptionalIntentIdIfValid(List<string> optional, NavigationIntentId intentId)
+        {
+            if (!intentId.IsValid)
+            {
+                return;
+            }
+
+            string value = intentId.Value;
+            for (int i = 0; i < optional.Count; i++)
+            {
+                if (string.Equals(optional[i], value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            optional.Add(value);
+        }
+
+        private bool IsIntentMapped(string intentId)
+        {
+            if (string.IsNullOrWhiteSpace(intentId))
+            {
+                return false;
+            }
+
+            if (TryMapIntentIdToCoreKind(intentId, out GameNavigationIntentKind kind))
+            {
+                CoreIntentSlot slot = GetCoreSlot(kind);
+                if (slot.routeRef == null || !slot.styleId.IsValid)
+                {
+                    return false;
+                }
+
+                return slot.routeRef.RouteId.IsValid;
+            }
+
+            if (routes == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < routes.Count; i++)
+            {
+                RouteEntry route = routes[i];
+                if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(route.routeId.Trim(), intentId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                SceneRouteId resolvedRouteId = route.ResolveRouteId(name);
+                return resolvedRouteId.IsValid && route.styleId.IsValid;
+            }
+
+            return false;
         }
 
         private void ValidateExtrasInEditorOrFail()
