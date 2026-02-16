@@ -81,6 +81,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Config] Plan=DataCleanup v1 (post StringsToDirectRefs v1)",
                 DebugUtility.Colors.Info);
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][Config] DataCleanupV1Anchor snapshot='SceneFlow-Config-Snapshot-DataCleanup-v1.md'",
+                DebugUtility.Colors.Info);
             RegisterEssentialServicesOnly();
 
             DebugUtility.Log(
