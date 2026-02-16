@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: NewScriptsBootstrapConfig
   m_EditorClassIdentifier: 
   navigationCatalog: {fileID: 11400000, guid: 199efb62d31d34e4f8862069f922a7a3, type: 2}
+  navigationIntentCatalog: {fileID: 11400000, guid: 7f5f8ad62ca74c5481f2beea1d9e6a2d, type: 2}
   transitionStyleCatalog: {fileID: 11400000, guid: de91983d669cc0641940bf2c0ae602ab, type: 2}
   levelCatalog: {fileID: 11400000, guid: be509bdd7186b7742847d1c1022eac54, type: 2}
   startGameplayLevelId:
