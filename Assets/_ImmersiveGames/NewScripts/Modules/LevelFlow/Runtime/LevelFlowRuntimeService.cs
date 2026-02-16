@@ -75,7 +75,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return ("<unknown>", "<unknown>", "<unknown>");
             }
 
-            if (!_navigationCatalog.TryGet(GameNavigationIntents.ToGameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
+            GameNavigationEntry gameplayEntry;
+            if (_navigationCatalog is GameNavigationCatalogAsset assetCatalog)
+            {
+                gameplayEntry = assetCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Gameplay);
+            }
+            else if (!_navigationCatalog.TryGet(GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay), out gameplayEntry) || !gameplayEntry.IsValid)
             {
                 return ("<unknown>", "<unknown>", "<unknown>");
             }

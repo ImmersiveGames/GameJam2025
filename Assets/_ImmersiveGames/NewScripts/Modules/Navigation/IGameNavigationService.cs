@@ -39,9 +39,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
 
         /// <summary>
-        /// Compatibilidade temporária: navegar por id de intent/rota.
+        /// Navegação por intent core tipado (slots explícitos no catálogo).
         /// </summary>
-        [System.Obsolete("Use métodos explícitos: GoToMenuAsync, RestartAsync, ExitToMenuAsync ou StartGameplayAsync(levelId, reason).")]
+        Task NavigateAsync(GameNavigationIntentKind intent, string reason = null);
+
+        /// <summary>
+        /// Compatibilidade temporária: navegar por id de intent/rota (inclui extras/custom intents).
+        /// </summary>
+        [System.Obsolete("Prefira NavigateAsync(GameNavigationIntentKind, reason) para core intents; mantenha string para extras/custom.")]
         Task NavigateAsync(string routeId, string reason = null);
 
         /// <summary>

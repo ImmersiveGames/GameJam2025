@@ -139,6 +139,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     "Missing required NewScriptsBootstrapConfigAsset.navigationCatalog (GameNavigationCatalogAsset).");
             }
 
+            var intentCatalogAsset = bootstrapConfig.NavigationIntentCatalog;
+            if (intentCatalogAsset == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required GameNavigationIntentCatalogAsset in NewScriptsBootstrapConfigAsset.navigationIntentCatalog.");
+                throw new InvalidOperationException(
+                    "Missing required NewScriptsBootstrapConfigAsset.navigationIntentCatalog (GameNavigationIntentCatalogAsset).");
+            }
+
             var styleCatalogAsset = bootstrapConfig.TransitionStyleCatalog;
             if (styleCatalogAsset == null)
             {
@@ -160,6 +169,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             const string catalogsVia = "BootstrapConfig";
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=navigationCatalog asset={catalogAsset.name}",
+                DebugUtility.Colors.Info);
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=navigationIntentCatalog asset={intentCatalogAsset.name}",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=transitionStyleCatalog asset={styleCatalogAsset.name}",
@@ -185,6 +197,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 "[OBS][Navigation] Catalog boot snapshot: " +
                 $"bootstrapVia={bootstrapVia}, " +
                 $"navigationVia={catalogsVia} navigationAsset={catalogAsset.name}, " +
+                $"intentsVia={catalogsVia} intentsAsset={intentCatalogAsset.name}, " +
                 $"stylesVia={catalogsVia} stylesAsset={styleCatalogAsset.name}, " +
                 $"levelsVia={catalogsVia} levelsAsset={levelCatalogAsset.name}, " +
                 $"rawRoutesCount={rawRoutesCount}, " +
@@ -197,13 +210,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 catalogAsset,
                 sceneRouteResolver,
                 styleCatalogAsset,
-                levelCatalogAsset);
+                levelCatalogAsset,
+                intentCatalogAsset);
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Navigation] GameNavigationService registrado. " +
-                $"bootstrapVia={bootstrapVia} navigationVia={catalogsVia} stylesVia={catalogsVia} levelsVia={catalogsVia} " +
-                $"(assets: navigation={catalogAsset.name}, styles={styleCatalogAsset.name}, levels={levelCatalogAsset.name}).",
+                $"bootstrapVia={bootstrapVia} navigationVia={catalogsVia} intentsVia={catalogsVia} stylesVia={catalogsVia} levelsVia={catalogsVia} " +
+                $"(assets: navigation={catalogAsset.name}, intents={intentCatalogAsset.name}, styles={styleCatalogAsset.name}, levels={levelCatalogAsset.name}).",
                 DebugUtility.Colors.Info);
 
 

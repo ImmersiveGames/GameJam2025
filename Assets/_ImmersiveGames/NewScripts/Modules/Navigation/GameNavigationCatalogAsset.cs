@@ -9,12 +9,34 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
+    public enum GameNavigationIntentKind
+    {
+        Menu = 0,
+        Gameplay = 1,
+        GameOver = 2,
+        Victory = 3,
+        Restart = 4,
+        ExitToMenu = 5,
+    }
+
+    [Serializable]
+    public struct CoreIntentSlot
+    {
+        [Tooltip("Referência direta obrigatória para a rota do intent core.")]
+        public SceneRouteDefinitionAsset routeRef;
+
+        [FormerlySerializedAs("transitionStyleId")]
+        [Tooltip("TransitionStyleId que define ProfileId/UseFade (SceneFlow) usado neste intent core.")]
+        public TransitionStyleId styleId;
+    }
+
     /// <summary>
     /// Catálogo de intents de navegação (produção).
     ///
     /// F3/Fase 3:
     /// - Catálogo não define Scene Data.
-    /// - Rota pode ser resolvida por referência direta opcional (routeRef) ou por SceneRouteId.
+    /// - Intents core usam slots explícitos por enum.
+    /// - Intents extras permanecem extensíveis por lista.
     /// </summary>
     [CreateAssetMenu(
         fileName = "GameNavigationCatalogAsset",
@@ -25,14 +47,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         [Serializable]
         public sealed class RouteEntry
         {
-            [Tooltip("Identificador canônico do intent de navegação (ex.: 'nav.menu', 'nav.gameplay').")]
+            [Tooltip("Identificador canônico do intent extra/custom.")]
             public string routeId;
 
-            [Tooltip("SceneRouteId associado ao intent (fallback quando routeRef não está setado).")]
+            [Tooltip("SceneRouteId associado ao intent extra/custom (fallback quando routeRef não está setado).")]
             [SceneFlowAllowEmptyId]
             public SceneRouteId sceneRouteId;
 
-            [Tooltip("Referência direta opcional para a rota canônica.")]
+            [Tooltip("Referência direta opcional para a rota canônica do intent extra/custom.")]
             public SceneRouteDefinitionAsset routeRef;
 
             [FormerlySerializedAs("transitionStyleId")]
@@ -112,6 +134,20 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
+        private const string IntentGameOver = "to-gameover";
+        private const string IntentVictory = "to-victory";
+        private const string IntentRestart = "to-restart";
+        private const string IntentExitToMenu = "exit-to-menu";
+
+        [Header("Core Intents (slots explícitos)")]
+        [SerializeField] private CoreIntentSlot menuSlot;
+        [SerializeField] private CoreIntentSlot gameplaySlot;
+        [SerializeField] private CoreIntentSlot gameOverSlot;
+        [SerializeField] private CoreIntentSlot victorySlot;
+        [SerializeField] private CoreIntentSlot restartSlot;
+        [SerializeField] private CoreIntentSlot exitToMenuSlot;
+
+        [Header("Extra / Custom Intents")]
         [SerializeField]
         [FormerlySerializedAs("_routes")]
         private List<RouteEntry> routes = new();
@@ -130,14 +166,75 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         public bool TryGet(string routeId, out GameNavigationEntry entry)
         {
+            entry = default;
+
             if (string.IsNullOrWhiteSpace(routeId))
             {
-                entry = default;
                 return false;
             }
 
+            string normalizedIntentId = routeId.Trim();
+            if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind coreKind))
+            {
+                entry = ResolveCoreOrFail(coreKind);
+                return entry.IsValid;
+            }
+
             EnsureBuilt();
-            return _cache.TryGetValue(routeId.Trim(), out entry);
+            return _cache.TryGetValue(normalizedIntentId, out entry);
+        }
+
+        public GameNavigationEntry ResolveIntentOrFail(string intentId)
+        {
+            if (string.IsNullOrWhiteSpace(intentId))
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog intentId inválido/vazio. asset='{name}'.");
+            }
+
+            string normalizedIntentId = intentId.Trim();
+            if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind coreKind))
+            {
+                return ResolveCoreOrFail(coreKind);
+            }
+
+            EnsureBuilt();
+            if (_cache.TryGetValue(normalizedIntentId, out GameNavigationEntry entry) && entry.IsValid)
+            {
+                return entry;
+            }
+
+            FailFastConfig(
+                $"[FATAL][Config] GameNavigationCatalog sem intent configurado. asset='{name}', intentId='{normalizedIntentId}'.");
+            return default;
+        }
+
+        public GameNavigationEntry ResolveCoreOrFail(GameNavigationIntentKind kind)
+        {
+            CoreIntentSlot slot = GetCoreSlot(kind);
+            string intentId = GetIntentId(kind);
+
+            if (slot.routeRef == null)
+            {
+                FailFastCoreSlot(kind, "routeRef obrigatório e não configurado para intent core.");
+            }
+
+            SceneRouteId routeRefId = slot.routeRef.RouteId;
+            if (!routeRefId.IsValid)
+            {
+                FailFastCoreSlot(kind,
+                    $"routeRef.RouteId inválido para intent core. intentId='{intentId}', asset='{slot.routeRef.name}'.");
+            }
+
+            if (!slot.styleId.IsValid)
+            {
+                FailFastCoreSlot(kind, $"styleId inválido para intent core. intentId='{intentId}'.");
+            }
+
+            DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
+                $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{name}', intentId='{intentId}', routeId='{routeRefId}', asset='{slot.routeRef.name}'.",
+                DebugUtility.Colors.Info);
+
+            return new GameNavigationEntry(routeRefId, slot.styleId, SceneTransitionPayload.Empty);
         }
 
         public void GetObservabilitySnapshot(out int rawRoutesCount, out int builtRouteIdsCount, out bool hasToGameplay)
@@ -145,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             EnsureBuilt();
             rawRoutesCount = routes?.Count ?? 0;
             builtRouteIdsCount = _cache.Count;
-            hasToGameplay = _cache.ContainsKey(GameNavigationIntents.ToGameplay);
+            hasToGameplay = _cache.ContainsKey(GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay));
         }
 
         public void OnBeforeSerialize()
@@ -162,6 +259,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             ApplyRouteMigration();
             _built = false;
+
+            ValidateCoreSlotsInEditorOrFail();
+            ValidateExtrasInEditorOrFail();
 
             int syncedEntriesCount = 0;
             int syncedSceneRouteIdCount = 0;
@@ -200,129 +300,351 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
+#if UNITY_EDITOR
+        public void ValidateCriticalIntentsInEditor(GameNavigationIntentCatalogAsset intents)
+        {
+            if (intents == null)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog validação crítica sem GameNavigationIntentCatalogAsset. asset='{name}'.");
+            }
+
+            foreach (NavigationIntentId criticalIntent in intents.EnumerateCriticalIntents())
+            {
+                ValidateCriticalIntentIdInEditorOrFail(criticalIntent);
+            }
+        }
+#endif
+
         private void EnsureBuilt()
         {
             if (_built)
+            {
                 return;
+            }
 
             ApplyRouteMigration();
 
             _built = true;
             _cache.Clear();
 
-            if (routes == null)
-                return;
+            BuildCoreCacheEntries();
+            BuildExtrasCacheEntries();
+        }
 
-            foreach (var route in routes)
+        private void BuildCoreCacheEntries()
+        {
+            AddCoreToCacheOrFail(GameNavigationIntentKind.Menu, required: true);
+            AddCoreToCacheOrFail(GameNavigationIntentKind.Gameplay, required: true);
+            AddCoreToCacheOrFail(GameNavigationIntentKind.GameOver, required: false);
+            AddCoreToCacheOrFail(GameNavigationIntentKind.Victory, required: false);
+            AddCoreToCacheOrFail(GameNavigationIntentKind.Restart, required: false);
+            AddCoreToCacheOrFail(GameNavigationIntentKind.ExitToMenu, required: false);
+        }
+
+        private void AddCoreToCacheOrFail(GameNavigationIntentKind kind, bool required)
+        {
+            CoreIntentSlot slot = GetCoreSlot(kind);
+            string intentId = GetIntentId(kind);
+
+            if (!slot.routeRef)
             {
-                if (!TryBuildEntry(route, out var entry))
-                    continue;
+                if (required)
+                {
+                    FailFastCoreSlot(kind, "routeRef obrigatório e não configurado para intent core obrigatório.");
+                }
 
-                _cache[route.routeId.Trim()] = entry;
+                if (slot.styleId.IsValid)
+                {
+                    FailFastCoreSlot(kind,
+                        "slot core parcialmente configurado (styleId setado sem routeRef). Remova styleId ou configure routeRef.");
+                }
+
+                return;
+            }
+
+            GameNavigationEntry entry = ResolveCoreOrFail(kind);
+            if (_cache.ContainsKey(intentId))
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog duplicado para intent core. asset='{name}', intentId='{intentId}'.");
+            }
+
+            _cache.Add(intentId, entry);
+        }
+
+        private void BuildExtrasCacheEntries()
+        {
+            if (routes == null)
+            {
+                return;
+            }
+
+            foreach (RouteEntry route in routes)
+            {
+                if (!TryBuildExtraEntry(route, out string intentId, out GameNavigationEntry entry))
+                {
+                    continue;
+                }
+
+                _cache[intentId] = entry;
             }
         }
 
         private void ApplyRouteMigration()
         {
             if (routes == null)
+            {
                 return;
+            }
 
-            foreach (var route in routes)
+            foreach (RouteEntry route in routes)
             {
                 route?.MigrateLegacy();
             }
         }
 
-        private bool TryBuildEntry(RouteEntry route, out GameNavigationEntry entry)
+        private bool TryBuildExtraEntry(RouteEntry route, out string intentId, out GameNavigationEntry entry)
         {
+            intentId = string.Empty;
             entry = default;
 
-            if (route == null)
+            if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+            {
                 return false;
+            }
 
-            if (string.IsNullOrWhiteSpace(route.routeId))
+            intentId = route.routeId.Trim();
+            if (TryMapIntentIdToCoreKind(intentId, out _))
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog extras não pode usar intent reservado. asset='{name}', intentId='{intentId}'.");
+            }
+
+            SceneRouteId resolvedRouteId = route.ResolveRouteId(name);
+            if (!resolvedRouteId.IsValid || !route.styleId.IsValid)
+            {
                 return false;
+            }
 
-            ValidateCriticalRouteEntryOrFail(route);
-
-            var resolvedRouteId = route.ResolveRouteId(name);
-            if (!resolvedRouteId.IsValid)
-                return false;
-
-            if (!route.styleId.IsValid)
-                return false;
-
-            entry = new GameNavigationEntry(
-                resolvedRouteId,
-                route.styleId,
-                SceneTransitionPayload.Empty);
-
+            entry = new GameNavigationEntry(resolvedRouteId, route.styleId, SceneTransitionPayload.Empty);
             return true;
         }
 
-        private void ValidateCriticalRouteEntryOrFail(RouteEntry route)
+        private void ValidateCoreSlotsInEditorOrFail()
         {
-            if (!IsCriticalIntent(route.routeId))
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Menu, required: false);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Gameplay, required: false);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.GameOver, required: false);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Victory, required: false);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.Restart, required: false);
+            ValidateCoreSlotOrFail(GameNavigationIntentKind.ExitToMenu, required: false);
+        }
+
+        private void ValidateCoreSlotOrFail(GameNavigationIntentKind kind, bool required)
+        {
+            CoreIntentSlot slot = GetCoreSlot(kind);
+            if (!slot.routeRef)
             {
+                if (required)
+                {
+                    FailFastCoreSlot(kind, "slot core obrigatório sem routeRef.");
+                }
+
+                if (slot.styleId.IsValid)
+                {
+                    FailFastCoreSlot(kind,
+                        "slot core parcialmente configurado (styleId setado sem routeRef). Remova styleId ou configure routeRef.");
+                }
+
                 return;
             }
 
+            ResolveCoreOrFail(kind);
+        }
+
+        private void ValidateCriticalIntentIdInEditorOrFail(NavigationIntentId criticalIntent)
+        {
+            if (!criticalIntent.IsValid)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog contém intent crítico inválido/vazio. catalogAsset='{name}'.");
+            }
+
+            string criticalIntentId = criticalIntent.Value;
+            if (TryMapIntentIdToCoreKind(criticalIntentId, out GameNavigationIntentKind coreKind))
+            {
+                ValidateCoreSlotOrFail(coreKind, required: true);
+                return;
+            }
+
+            RouteEntry route = FindExtraRouteByIntentId(criticalIntentId);
+            if (route == null)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog sem intent crítico configurado nos extras. asset='{name}', intentId='{criticalIntentId}'.");
+            }
+
+            ValidateExtraCriticalRouteOrFail(route, criticalIntentId);
+        }
+
+        private RouteEntry FindExtraRouteByIntentId(string intentId)
+        {
+            if (routes == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < routes.Count; i++)
+            {
+                RouteEntry route = routes[i];
+                if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+                {
+                    continue;
+                }
+
+                if (string.Equals(route.routeId.Trim(), intentId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return route;
+                }
+            }
+
+            return null;
+        }
+
+        private void ValidateExtraCriticalRouteOrFail(RouteEntry route, string intentId)
+        {
             if (route.routeRef == null)
             {
-                FailFastCriticalRouteConfig(route.routeId,
-                    "routeRef obrigatório e não configurado para intent crítico.");
+                FailFastConfig(
+                    $"[FATAL][Config] Intent crítico exige routeRef obrigatório. asset='{name}', intentId='{intentId}'.");
             }
 
-            var routeRefId = route.routeRef.RouteId;
+            SceneRouteId routeRefId = route.routeRef.RouteId;
             if (!routeRefId.IsValid)
             {
-                FailFastCriticalRouteConfig(route.routeId,
-                    "routeRef.RouteId inválido para intent crítico.");
+                FailFastConfig(
+                    $"[FATAL][Config] Intent crítico com routeRef inválido. asset='{name}', intentId='{intentId}', routeRef='{route.routeRef.name}'.");
             }
 
-            string normalizedIntentId = route.routeId.Trim();
-            if (!string.Equals(normalizedIntentId, routeRefId.Value, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(routeRefId.Value, intentId, StringComparison.OrdinalIgnoreCase))
             {
-                FailFastCriticalRouteConfig(route.routeId,
-                    $"routeRef.RouteId divergente do intent crítico. routeRef.routeId='{routeRefId}', intentId='{normalizedIntentId}'.");
+                FailFastConfig(
+                    $"[FATAL][Config] Intent crítico divergente de routeRef.routeId. asset='{name}', intentId='{intentId}', routeRef.routeId='{routeRefId}'.");
             }
+        }
 
-            if (!route.sceneRouteId.IsValid)
+        private void ValidateExtrasInEditorOrFail()
+        {
+            if (routes == null)
             {
                 return;
             }
 
-            if (route.sceneRouteId != routeRefId)
+            for (int i = 0; i < routes.Count; i++)
             {
-                HandleCriticalRouteMismatch(route.routeId, route.sceneRouteId, routeRefId);
+                RouteEntry route = routes[i];
+                if (route == null || string.IsNullOrWhiteSpace(route.routeId))
+                {
+                    continue;
+                }
+
+                string intentId = route.routeId.Trim();
+                if (TryMapIntentIdToCoreKind(intentId, out _))
+                {
+                    FailFastConfig(
+                        $"[FATAL][Config] GameNavigationCatalog extras não pode usar intent reservado. asset='{name}', index={i}, intentId='{intentId}'.");
+                }
             }
         }
 
-        private void HandleCriticalRouteMismatch(string intentId, SceneRouteId sceneRouteId, SceneRouteId routeRefId)
+        private static bool TryMapIntentIdToCoreKind(string intentId, out GameNavigationIntentKind kind)
         {
-            string message =
-                $"[FATAL][Config] GameNavigationCatalog routeId divergente de routeRef. " +
-                $"owner='{name}', intentId='{intentId}', sceneRouteId='{sceneRouteId}', routeRef.routeId='{routeRefId}'.";
-
-            FailFastConfig(message);
-        }
-
-        private static bool IsCriticalIntent(string intentId)
-        {
-            if (string.IsNullOrWhiteSpace(intentId))
+            string normalized = intentId?.Trim();
+            if (string.Equals(normalized, GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu), StringComparison.OrdinalIgnoreCase))
             {
-                return false;
+                kind = GameNavigationIntentKind.Menu;
+                return true;
             }
 
-            string normalized = intentId.Trim();
-            return string.Equals(normalized, GameNavigationIntents.ToMenu, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(normalized, GameNavigationIntents.ToGameplay, StringComparison.OrdinalIgnoreCase);
+            if (string.Equals(normalized, GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay), StringComparison.OrdinalIgnoreCase))
+            {
+                kind = GameNavigationIntentKind.Gameplay;
+                return true;
+            }
+
+            if (string.Equals(normalized, IntentGameOver, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = GameNavigationIntentKind.GameOver;
+                return true;
+            }
+
+            if (string.Equals(normalized, IntentVictory, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = GameNavigationIntentKind.Victory;
+                return true;
+            }
+
+            if (string.Equals(normalized, IntentRestart, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = GameNavigationIntentKind.Restart;
+                return true;
+            }
+
+            if (string.Equals(normalized, IntentExitToMenu, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = GameNavigationIntentKind.ExitToMenu;
+                return true;
+            }
+
+            kind = default;
+            return false;
         }
 
-        private void FailFastCriticalRouteConfig(string intentId, string detail)
+        private static string GetIntentId(GameNavigationIntentKind kind)
+        {
+            switch (kind)
+            {
+                case GameNavigationIntentKind.Menu:
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu);
+                case GameNavigationIntentKind.Gameplay:
+                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay);
+                case GameNavigationIntentKind.GameOver:
+                    return IntentGameOver;
+                case GameNavigationIntentKind.Victory:
+                    return IntentVictory;
+                case GameNavigationIntentKind.Restart:
+                    return IntentRestart;
+                case GameNavigationIntentKind.ExitToMenu:
+                    return IntentExitToMenu;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+            }
+        }
+
+        private CoreIntentSlot GetCoreSlot(GameNavigationIntentKind kind)
+        {
+            switch (kind)
+            {
+                case GameNavigationIntentKind.Menu:
+                    return menuSlot;
+                case GameNavigationIntentKind.Gameplay:
+                    return gameplaySlot;
+                case GameNavigationIntentKind.GameOver:
+                    return gameOverSlot;
+                case GameNavigationIntentKind.Victory:
+                    return victorySlot;
+                case GameNavigationIntentKind.Restart:
+                    return restartSlot;
+                case GameNavigationIntentKind.ExitToMenu:
+                    return exitToMenuSlot;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+            }
+        }
+
+        private void FailFastCoreSlot(GameNavigationIntentKind kind, string detail)
         {
             string message =
-                $"[FATAL][Config] GameNavigationCatalog inválido para intent crítico. asset='{name}', intentId='{intentId}', detail='{detail}'";
+                $"[FATAL][Config] GameNavigationCatalog inválido para intent core. asset='{name}', kind='{kind}', intentId='{GetIntentId(kind)}', detail='{detail}'";
 
             FailFastConfig(message);
         }

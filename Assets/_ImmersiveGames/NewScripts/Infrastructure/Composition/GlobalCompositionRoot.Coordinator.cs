@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static readonly SceneRouteId BootStartRouteId = SceneRouteId.FromName(GameNavigationIntents.ToMenu);
+        private static readonly SceneRouteId BootStartRouteId = SceneRouteId.FromName(GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu));
 
         private static void RegisterGameLoopSceneFlowCoordinatorIfAvailable()
         {
