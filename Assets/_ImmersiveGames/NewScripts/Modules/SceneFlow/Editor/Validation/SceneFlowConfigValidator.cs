@@ -49,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                 assets.TransitionStyleCatalog,
                 assets.TransitionProfileCatalog,
                 assets.BootstrapConfig);
+            ValidateAllTransitionStyles(context, assets.TransitionStyleCatalog, assets.TransitionProfileCatalog);
 
             string reportContent = BuildReport(context);
             WriteReport(reportContent);
@@ -450,32 +451,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                 return;
             }
 
-            bool hasProfileByRef = style.Profile != null;
-            bool hasProfileByCatalog = false;
-
-            if (!hasProfileByRef)
+            if (style.Profile == null)
             {
-                if (style.ProfileId.IsValid)
-                {
-                    if (profileCatalog == null)
-                    {
-                        context.AddFatal(
-                            $"styleId '{styleId}' depende de profileId '{style.ProfileId}', mas SceneTransitionProfileCatalogAsset está ausente.");
-                    }
-                    else if (!profileCatalog.TryGetProfile(style.ProfileId, out SceneTransitionProfile profileRef) || profileRef == null)
-                    {
-                        context.AddFatal(
-                            $"styleId '{styleId}' possui profileId '{style.ProfileId}' não resolvido no SceneTransitionProfileCatalogAsset.");
-                    }
-                    else
-                    {
-                        hasProfileByCatalog = true;
-                    }
-                }
-                else
-                {
-                    context.AddFatal($"styleId '{styleId}' sem transitionProfile e sem profileId válido.");
-                }
+                context.AddFatal($"styleId '{styleId}' sem transitionProfile (profileRef obrigatório).");
+            }
+
+            if (!style.ProfileId.IsValid)
+            {
+                context.AddFatal($"styleId '{styleId}' sem profileId válido.");
             }
 
             if (style.UseFade && !HasFadeSceneKeyConfigured(bootstrapConfig))
@@ -484,10 +467,117 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                     $"Slot '{slotLabel}' usa styleId '{styleId}' com UseFade=true, mas bootstrapConfig.fadeSceneKey não está configurado.");
             }
 
-            if (hasProfileByRef || hasProfileByCatalog)
+            if (profileCatalog != null && style.ProfileId.IsValid)
+            {
+                if (!profileCatalog.TryGetProfile(style.ProfileId, out SceneTransitionProfile profileFromCatalog) || profileFromCatalog == null)
+                {
+                    context.AddFatal(
+                        $"styleId '{styleId}' possui profileId '{style.ProfileId}' não resolvido no SceneTransitionProfileCatalogAsset.");
+                }
+            }
+        }
+
+        private static void ValidateAllTransitionStyles(
+            ValidationContext context,
+            TransitionStyleCatalogAsset styleCatalog,
+            SceneTransitionProfileCatalogAsset profileCatalog)
+        {
+            if (styleCatalog == null)
             {
                 return;
             }
+
+            SerializedObject styleSerialized = new SerializedObject(styleCatalog);
+            SerializedProperty stylesProp = styleSerialized.FindProperty("styles");
+            if (stylesProp == null || !stylesProp.isArray)
+            {
+                context.AddFatal("TransitionStyleCatalogAsset sem coleção 'styles' para validação global.");
+                return;
+            }
+
+            Dictionary<string, int> seenStyles = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < stylesProp.arraySize; i++)
+            {
+                SerializedProperty styleEntry = stylesProp.GetArrayElementAtIndex(i);
+
+                string styleIdValue = ReadTypedIdValue(styleEntry.FindPropertyRelative("styleId"));
+                bool useFade = styleEntry.FindPropertyRelative("useFade")?.boolValue ?? false;
+                string profileIdValue = ReadTypedIdValue(styleEntry.FindPropertyRelative("profileId"));
+                SceneTransitionProfile profileRef = ReadStyleProfileReference(styleEntry);
+                string profileRefName = profileRef != null ? profileRef.name : "<null>";
+
+                StyleValidationRecord record = new StyleValidationRecord
+                {
+                    StyleId = string.IsNullOrWhiteSpace(styleIdValue) ? "<invalid-styleId>" : styleIdValue,
+                    UseFade = useFade,
+                    ProfileId = string.IsNullOrWhiteSpace(profileIdValue) ? "<invalid-profileId>" : profileIdValue,
+                    ProfileRef = profileRefName,
+                    Status = "OK"
+                };
+
+                bool hasFatal = false;
+                bool hasWarn = false;
+
+                if (string.IsNullOrWhiteSpace(styleIdValue))
+                {
+                    context.AddFatal($"TransitionStyleCatalog.styles[{i}] com styleId inválido.");
+                    hasFatal = true;
+                }
+                else
+                {
+                    if (seenStyles.TryGetValue(styleIdValue, out int firstIndex))
+                    {
+                        context.AddFatal($"TransitionStyleCatalog com styleId duplicado '{styleIdValue}' (indexes {firstIndex} e {i}).");
+                        hasFatal = true;
+                    }
+                    else
+                    {
+                        seenStyles.Add(styleIdValue, i);
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(profileIdValue))
+                {
+                    context.AddFatal($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' com profileId inválido.");
+                    hasFatal = true;
+                }
+
+                if (profileRef == null)
+                {
+                    context.AddFatal($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' com profileRef nulo.");
+                    hasFatal = true;
+                }
+
+                if (profileCatalog != null && !string.IsNullOrWhiteSpace(profileIdValue))
+                {
+                    bool catalogResolved = profileCatalog.TryGetProfile(SceneFlowProfileId.FromName(profileIdValue), out SceneTransitionProfile profileFromCatalog);
+                    if (!catalogResolved || profileFromCatalog == null)
+                    {
+                        context.AddFatal($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' com profileId '{profileIdValue}' não resolvido no SceneTransitionProfileCatalogAsset.");
+                        hasFatal = true;
+                    }
+                    else if (profileRef != null && profileFromCatalog != profileRef)
+                    {
+                        context.AddWarn($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' possui divergência entre profileId '{profileIdValue}' e profileRef '{profileRef.name}'.");
+                        hasWarn = true;
+                    }
+                }
+
+                record.Status = hasFatal ? "FATAL" : hasWarn ? "WARN" : "OK";
+                context.Styles.Add(record);
+            }
+        }
+
+        private static SceneTransitionProfile ReadStyleProfileReference(SerializedProperty styleEntry)
+        {
+            SerializedProperty profileRefProp = styleEntry.FindPropertyRelative("profileRef");
+            if (profileRefProp == null)
+            {
+                profileRefProp = styleEntry.FindPropertyRelative("transitionProfile");
+            }
+
+            return profileRefProp != null ? profileRefProp.objectReferenceValue as SceneTransitionProfile : null;
         }
 
         private static bool HasFadeSceneKeyConfigured(NewScriptsBootstrapConfigAsset bootstrapConfig)
@@ -548,6 +638,21 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             sb.AppendLine();
             sb.AppendLine($"- Inline routes (routes[]) count: {context.InlineRoutesCount}");
             sb.AppendLine($"- Status: {context.InlineRoutesStatus}");
+            sb.AppendLine();
+
+            sb.AppendLine("## Transition styles");
+            sb.AppendLine();
+            sb.AppendLine("| styleId | useFade | profileId | profileRef | status |");
+            sb.AppendLine("|---|---|---|---|---|");
+            for (int i = 0; i < context.Styles.Count; i++)
+            {
+                StyleValidationRecord record = context.Styles[i];
+                sb.AppendLine($"| `{record.StyleId}` | `{record.UseFade}` | `{record.ProfileId}` | `{record.ProfileRef}` | {record.Status} |");
+            }
+            if (context.Styles.Count == 0)
+            {
+                sb.AppendLine("| `<none>` | `-` | `-` | `-` | WARN |");
+            }
             sb.AppendLine();
 
             sb.AppendLine("## Problems");
@@ -621,6 +726,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             public readonly List<AssetStatus> AssetStatuses = new List<AssetStatus>();
             public readonly List<CoreIntentRecord> CoreMandatoryIntents = new List<CoreIntentRecord>();
             public readonly List<CoreSlotRecord> CoreSlots = new List<CoreSlotRecord>();
+            public readonly List<StyleValidationRecord> Styles = new List<StyleValidationRecord>();
             public readonly List<string> Fatals = new List<string>();
             public readonly List<string> Warnings = new List<string>();
             public int InlineRoutesCount;
@@ -677,6 +783,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             public string Slot;
             public string RouteId;
             public string StyleId;
+            public string Status;
+        }
+
+        private sealed class StyleValidationRecord
+        {
+            public string StyleId;
+            public bool UseFade;
+            public string ProfileId;
+            public string ProfileRef;
             public string Status;
         }
     }
