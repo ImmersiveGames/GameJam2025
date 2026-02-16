@@ -40,7 +40,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // State / Constants
         // --------------------------------------------------------------------
 
-        private static bool _initialized;
+        private static bool _preInitialized;
+        private static bool _postInitialized;
         private static GameReadinessService _gameReadinessService;
 
         // Opção B: mantém referência viva do coordinator (evita GC / descarte prematuro).
@@ -55,23 +56,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private const string SceneUIGlobal = "UIGlobalScene";
 
         // --------------------------------------------------------------------
-        // Entry
+        // Entry (two-phase)
         // --------------------------------------------------------------------
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Initialize()
+        private static void InitializePreScene()
         {
 #if !NEWSCRIPTS_MODE
             DebugUtility.Log(typeof(GlobalCompositionRoot),
                 "NEWSCRIPTS_MODE desativado: GlobalCompositionRoot ignorado.");
             return;
 #else
-            if (_initialized)
+            if (_preInitialized)
             {
                 return;
             }
 
-            _initialized = true;
+            _preInitialized = true;
 
             InitializeLogging();
             EnsureDependencyProvider();
@@ -81,11 +82,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Config] Plan=DataCleanup v1 (post StringsToDirectRefs v1)",
                 DebugUtility.Colors.Info);
+
+            RegisterPreSceneEssentialsOnly();
+
+            DebugUtility.Log(
+                typeof(GlobalCompositionRoot),
+                "✅ NewScripts pre-scene infrastructure initialized.",
+                DebugUtility.Colors.Success);
+#endif
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void InitializePostScene()
+        {
+#if !NEWSCRIPTS_MODE
+            return;
+#else
+            if (_postInitialized)
+            {
+                return;
+            }
+
+            if (!_preInitialized)
+            {
+                // Guard rail defensivo para ambientes atípicos.
+                InitializePreScene();
+            }
+
+            _postInitialized = true;
+
             RegisterEssentialServicesOnly();
 
             DebugUtility.Log(
                 typeof(GlobalCompositionRoot),
-                "✅ NewScripts global infrastructure initialized (Commit 1 minimal).",
+                "✅ NewScripts post-scene infrastructure initialized (full pipeline).",
                 DebugUtility.Colors.Success);
 #endif
         }

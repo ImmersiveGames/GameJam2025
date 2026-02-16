@@ -14,9 +14,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // Main registration pipeline (order matters)
         // --------------------------------------------------------------------
 
+        private static void RegisterPreSceneEssentialsOnly()
+        {
+            // Deve rodar apenas no bootstrap pre-scene para evitar limpar assinaturas após Awakes da cena.
+            PrimeEventSystems();
+
+            RegisterRuntimePolicyServices();
+            RegisterInputModesFromRuntimeConfig();
+
+            RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
+            RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
+            RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
+        }
+
         private static void RegisterEssentialServicesOnly()
         {
-            PrimeEventSystems();
+            // IMPORTANT: PrimeEventSystems não deve rodar aqui (fase pós-cena),
+            // para evitar EventBus.Clear após MonoBehaviours terem registrado bindings em Awake.
 
             RegisterRuntimePolicyServices();
             RegisterInputModesFromRuntimeConfig();
