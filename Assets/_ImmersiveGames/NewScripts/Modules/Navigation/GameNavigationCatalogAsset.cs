@@ -517,36 +517,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private List<GameNavigationIntentKind> ResolveCriticalCoreIntentsForValidation()
         {
-            if (intentCatalog == null)
-            {
-                return new List<GameNavigationIntentKind>(LegacyRequiredCoreIntentsFallback);
-            }
-
-            List<GameNavigationIntentKind> critical = new List<GameNavigationIntentKind>();
-            foreach (NavigationIntentId criticalIntentId in intentCatalog.EnumerateCriticalIntents())
-            {
-                if (!TryMapIntentIdToCoreKind(criticalIntentId.Value, out GameNavigationIntentKind kind))
-                {
-                    continue;
-                }
-
-                if (kind != GameNavigationIntentKind.Menu && kind != GameNavigationIntentKind.Gameplay)
-                {
-                    continue;
-                }
-
-                if (!critical.Contains(kind))
-                {
-                    critical.Add(kind);
-                }
-            }
-
-            if (critical.Count == 0)
-            {
-                critical.AddRange(LegacyRequiredCoreIntentsFallback);
-            }
-
-            return critical;
+            // Regra canônica (ADR-0019): fail-fast somente para os slots core obrigatórios.
+            return new List<GameNavigationIntentKind>(LegacyRequiredCoreIntentsFallback);
         }
 
         private void ValidateOptionalCoreSlotsInEditor()
