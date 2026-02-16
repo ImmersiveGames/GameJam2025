@@ -30,29 +30,29 @@ MonoBehaviour:
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     styleId:
       _value: style.frontend
-    criticalRequired: 1
+    criticalRequired: 0
   - intentId:
       _value: restart
     routeRef: {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
     styleId:
       _value: style.gameplay
-    criticalRequired: 1
+    criticalRequired: 0
   - intentId:
       _value: gameover
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     styleId:
       _value: style.frontend
-    criticalRequired: 1
+    criticalRequired: 0
   - intentId:
       _value: victory
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     styleId:
       _value: style.frontend
-    criticalRequired: 1
+    criticalRequired: 0
   - intentId:
       _value: defeat
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     styleId:
       _value: style.frontend
-    criticalRequired: 1
+    criticalRequired: 0
   custom: []
