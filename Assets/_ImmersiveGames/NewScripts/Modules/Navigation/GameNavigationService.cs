@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private readonly IGameNavigationCatalog _catalog;
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly ILevelFlowService _levelFlowService;
+        private readonly GameNavigationIntentCatalogAsset _intentsCatalog;
 
         private LevelId _lastStartedGameplayLevelId;
         private SceneRouteId _lastGameplayRouteId;
@@ -32,13 +33,23 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             IGameNavigationCatalog catalog,
             ISceneRouteResolver sceneRouteResolver,
             ITransitionStyleCatalog styleCatalog,
-            ILevelFlowService levelFlowService)
+            ILevelFlowService levelFlowService,
+            GameNavigationIntentCatalogAsset intentsCatalog)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _ = sceneRouteResolver ?? throw new ArgumentNullException(nameof(sceneRouteResolver));
             _styleCatalog = styleCatalog ?? throw new ArgumentNullException(nameof(styleCatalog));
             _levelFlowService = levelFlowService;
+            _intentsCatalog = intentsCatalog;
+
+            if (_intentsCatalog == null)
+            {
+                string message =
+                    "[FATAL][Config] GameNavigationService requires GameNavigationIntentCatalogAsset (navigationIntentCatalog).";
+                DebugUtility.LogError(typeof(GameNavigationService), message);
+                throw new InvalidOperationException(message);
+            }
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
                 $"[Navigation] GameNavigationService inicializado. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
@@ -329,25 +340,42 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return _catalog.TryGet(intentId, out entry) && entry.IsValid;
         }
 
-        private static string GetCoreIntentId(GameNavigationIntentKind intent)
+        private string GetCoreIntentId(GameNavigationIntentKind intent)
         {
+            NavigationIntentId intentId;
             switch (intent)
             {
                 case GameNavigationIntentKind.Menu:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Menu);
+                    intentId = _intentsCatalog.Menu;
+                    break;
                 case GameNavigationIntentKind.Gameplay:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay);
+                    intentId = _intentsCatalog.Gameplay;
+                    break;
                 case GameNavigationIntentKind.GameOver:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.GameOver);
+                    intentId = _intentsCatalog.GameOver;
+                    break;
                 case GameNavigationIntentKind.Victory:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Victory);
+                    intentId = _intentsCatalog.Victory;
+                    break;
                 case GameNavigationIntentKind.Restart:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.Restart);
+                    intentId = _intentsCatalog.Restart;
+                    break;
                 case GameNavigationIntentKind.ExitToMenu:
-                    return GameNavigationIntents.FromKind(GameNavigationIntentKind.ExitToMenu);
+                    intentId = _intentsCatalog.ExitToMenu;
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(intent), intent, null);
             }
+
+            if (!intentId.IsValid)
+            {
+                string message =
+                    $"[FATAL][Config] GameNavigationIntentCatalogAsset inválido para intent core. intent='{intent}', intentId='<empty>'.";
+                DebugUtility.LogError(typeof(GameNavigationService), message);
+                throw new InvalidOperationException(message);
+            }
+
+            return intentId.Value;
         }
 
         private async Task ExecuteEntryAsync(string intentId, GameNavigationEntry entry, string reason)
