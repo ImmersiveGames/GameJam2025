@@ -1,29 +1,27 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 {
     /// <summary>
-    /// Resolve RuntimeModeConfig apenas via DI global.
-    /// Se não houver configuração registrada, retorna null.
+    /// Resolve RuntimeModeConfig via DI global e fallback por Resources (path canônico).
+    /// Retorna null quando não houver configuração disponível.
     /// </summary>
     public static class RuntimeModeConfigLoader
     {
         public static RuntimeModeConfig LoadOrNull()
         {
-            if (!DependencyManager.HasInstance)
+            if (DependencyManager.HasInstance)
             {
-                return null;
+                var provider = DependencyManager.Provider;
+                if (provider != null && provider.TryGetGlobal<RuntimeModeConfig>(out var config) && config != null)
+                {
+                    return config;
+                }
             }
 
-            var provider = DependencyManager.Provider;
-            if (provider == null)
-            {
-                return null;
-            }
-
-            return provider.TryGetGlobal<RuntimeModeConfig>(out var config)
-                ? config
-                : null;
+            RuntimeModeConfig fromResources = Resources.Load<RuntimeModeConfig>(RuntimeModeConfig.DefaultResourcesPath);
+            return fromResources;
         }
     }
 }

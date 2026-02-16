@@ -1,6 +1,33 @@
-# Plano de Implementação por Etapas — Data Cleanup pós StringsToDirectRefs v1
+# Plano (P-002) — Data Cleanup pós StringsToDirectRefs v1
+
+## Status
+
+- ActivityId: **P-002**
+- Estado: **PROPOSED**
+- Última atualização: **2026-02-15**
+
+### Fonte de verdade (referências)
+
+- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
+- Política Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
+- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+
+### Artefatos esperados
+
+- Auditorias (CODEX read-only) em: `Docs/Reports/Audits/<YYYY-MM-DD>/...`
+- Snapshot de configuração (quando aplicável): `Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`
 
 > Objetivo: reduzir “texto digitado” no Inspector, eliminar resíduos legados/compat, e consolidar o wiring por **referências diretas** sem mexer no comportamento runtime crítico.
+
+## Checklist rastreável (alto nível)
+
+- [ ] Etapa 0 — Guardrails + inventário
+- [ ] Etapa 1 — PropertyDrawers + Source Providers
+- [ ] Etapa 2 — Tipar Intent ID no Navigation
+- [ ] Etapa 3 — Descontinuar routes inline no SceneRouteCatalog
+- [ ] Etapa 4 — Formalizar ProfileCatalog como validation-only
+- [ ] Etapa 5 — Validator + relatório
+- [ ] Etapa 6 — Remoção final de legado
 
 ## Contexto (estado atual)
 

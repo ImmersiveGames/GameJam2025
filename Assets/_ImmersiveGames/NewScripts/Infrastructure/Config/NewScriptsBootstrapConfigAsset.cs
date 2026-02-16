@@ -13,8 +13,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         order = 20)]
     public sealed class NewScriptsBootstrapConfigAsset : ScriptableObject
     {
-        public const string DefaultResourcesPath = "NewScriptsBootstrapConfig";
-
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
         [SerializeField] private TransitionStyleCatalogAsset transitionStyleCatalog;
         [SerializeField] private LevelCatalogAsset levelCatalog;

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: RuntimeModeConfig
   m_EditorClassIdentifier: 
   modeOverride: 0
+  newScriptsBootstrapConfig: {fileID: 11400000, guid: b3f866decfd85714db622d024b341b0a, type: 2}
   reporter:
     dedupStrategy: 1
     cooldownSeconds: 5
@@ -23,3 +24,8 @@ MonoBehaviour:
   strictness:
     degradedAsError: 1
     degradedAsException: 0
+  inputModes:
+    enableInputModes: 1
+    playerActionMapName: Player
+    menuActionMapName: UI
+    logVerbose: 1

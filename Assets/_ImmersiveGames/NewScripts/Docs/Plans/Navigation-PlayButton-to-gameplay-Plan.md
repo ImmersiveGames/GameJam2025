@@ -1,18 +1,43 @@
-# /plan — Play Button `to-gameplay`
+# Plano (P-003) — Navigation: Play Button → `to-gameplay`
+
+## Status
+
+- ActivityId: **P-003**
+- Estado: **BLOCKED**
+- Última atualização: **2026-02-15**
+
+### Fonte de verdade (referências)
+
+- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
+- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+
+### Evidência / auditoria relacionada
+
+- `Docs/Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md` (investigação do sintoma "Entries: []" e riscos de catálogo/Resources)
 
 ## Objetivo
 Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e evidência de runtime (DI + resolver).
 
-## Etapas
-1. Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
-2. Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
-3. Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
-4. Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
-5. Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
-6. Validar por inspeção estática e checklist de logs esperados.
+## Checklist rastreável
+
+- [ ] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
+- [ ] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
+- [ ] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
+- [ ] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
+- [ ] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
+- [ ] Validar por inspeção estática + checklist de logs esperados.
+
+### Artefatos esperados
+
+- Auditoria (CODEX read-only): `Docs/Reports/Audits/<YYYY-MM-DD>/Audit-PlayButton-ToGameplay.md`
+- Evidência (runtime): snapshot em `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + atualização de `Docs/Reports/Evidence/LATEST.md`
 
 ## Critério de sucesso
 - `MenuPlayButtonBinder` chama `RestartAsync(...)`.
 - `GameNavigationCatalogAsset.TryGet("to-gameplay", ...)` retorna entry válido.
 - `GameNavigationService` deixa de logar erro de rota desconhecida para `to-gameplay`.
 - Boot registra observabilidade `[OBS][Navigation] ... tryResolve('to-gameplay')=True`.
+
+## Bloqueio atual
+
+- O sintoma "Entries: []" já foi demonstrado como **possível** no estado atual do repositório, e existe risco de **confusão por assets duplicados** (ex.: `LevelCatalog.asset` em dois paths). Ver auditoria relacionada.

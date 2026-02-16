@@ -1,4 +1,20 @@
-# Codex Validation Plan — SceneFlow / Navigation / RouteResetPolicy
+# Plano (P-004) — Validação (Codex): SceneFlow / Navigation / RouteResetPolicy
+
+## Status
+
+- ActivityId: **P-004**
+- Estado: **IN_PROGRESS**
+- Última atualização: **2026-02-15**
+
+### Fonte de verdade (referências)
+
+- ADRs: `Docs/ADRs/` (principalmente decisões de SceneFlow/Navigation/LevelFlow)
+- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
+- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+
+### Artefato esperado (auditoria)
+
+- Output do CODEX (read-only) em: `Docs/Reports/Audits/<YYYY-MM-DD>/Audit-SceneFlow-RouteResetPolicy.md`
 
 ## Contexto
 
@@ -45,7 +61,7 @@ Pontos críticos:
 - `ISceneRouteResolver` normalmente só é registrado em `RegisterGameNavigationService()` (via `ResolveOrRegisterSceneRouteResolver(...)`).
 - Resultado: há caminho de bootstrap em que `SceneTransitionService` nasce com `routeResolver = null`.
 
-## Checklist de validação
+## Checklist rastreável
 
 - [x] Confirmar contrato de `IGameNavigationService` e wrappers legados `[Obsolete]`.
 - [x] Auditar call-sites de APIs legadas (`RequestMenuAsync`, `RequestGameplayAsync`, `NavigateAsync`).
@@ -70,6 +86,11 @@ Pontos críticos:
 3. Quando não houver catálogo/resolver, comportamento continua seguro com log `[OBS]` explícito e fallback preservado.
 4. `SceneRouteResetPolicy` usa rota (via resolver) como fonte primária e profile como fallback.
 5. Logs/contratos canônicos de observabilidade permanecem coerentes.
+
+## Bloqueios conhecidos
+
+- Pendente fechar o item de **ordem do DI** (garantir `ISceneRouteResolver` disponível no momento do `SceneTransitionService`).
+- Pendente registrar uma **auditoria datada** em `Docs/Reports/Audits/<data>/...` para este plano.
 
 
 ## Follow-up wiring fix (histórico)

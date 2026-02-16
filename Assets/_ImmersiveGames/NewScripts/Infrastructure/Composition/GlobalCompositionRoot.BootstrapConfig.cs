@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -44,18 +45,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 }
                 else
                 {
-                    var resourcesConfig = Resources.Load<NewScriptsBootstrapConfigAsset>(NewScriptsBootstrapConfigAsset.DefaultResourcesPath);
-                    if (resourcesConfig != null)
-                    {
-                        cachedBootstrapConfig = resourcesConfig;
-                        cachedBootstrapConfigVia = "ResourcesRoot";
-                        DependencyManager.Provider.RegisterGlobal(resourcesConfig);
-                    }
-                    else
-                    {
-                        FailFast(
-                            $"Missing NewScriptsBootstrapConfigAsset. path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}");
-                    }
+                    ResolveBootstrapConfigFromRuntimeModeConfigOrFail();
+                    DependencyManager.Provider.RegisterGlobal(cachedBootstrapConfig, allowOverride: false);
                 }
             }
 
@@ -65,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 bootstrapConfigResolutionLogged = true;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={cachedBootstrapConfig.name} path={NewScriptsBootstrapConfigAsset.DefaultResourcesPath}",
+                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={cachedBootstrapConfig.name}",
                     DebugUtility.Colors.Info);
             }
 
@@ -75,6 +66,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             return cachedBootstrapConfig;
+        }
+
+        private static void ResolveBootstrapConfigFromRuntimeModeConfigOrFail()
+        {
+            RuntimeModeConfig runtimeModeConfig = RuntimeModeConfigLoader.LoadOrNull();
+            if (runtimeModeConfig == null)
+            {
+                FailFast(
+                    "Missing required RuntimeModeConfig. Create/place RuntimeModeConfig in Resources (path='RuntimeModeConfig').");
+            }
+
+            if (runtimeModeConfig.NewScriptsBootstrapConfig == null)
+            {
+                FailFast("RuntimeModeConfig.NewScriptsBootstrapConfig is null. Assign a valid NewScriptsBootstrapConfigAsset.");
+            }
+
+            cachedBootstrapConfig = runtimeModeConfig.NewScriptsBootstrapConfig;
+            cachedBootstrapConfigVia = "RuntimeModeConfig";
         }
     }
 }

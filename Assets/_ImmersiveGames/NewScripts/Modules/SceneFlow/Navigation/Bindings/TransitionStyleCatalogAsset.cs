@@ -74,8 +74,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         private void OnValidate()
         {
             _cacheBuilt = false;
-            EnsureCache();
             ValidateTransitionProfileReferences();
+            EnsureCache();
         }
 
         private void EnsureCache()
@@ -92,8 +92,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             {
                 FailFast("TransitionStyleCatalog sem estilos configurados.");
             }
-
-            int degradedStyles = 0;
 
             for (int i = 0; i < styles.Count; i++)
             {
@@ -115,13 +113,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
                 if (entry.transitionProfile == null)
                 {
-                    degradedStyles++;
-
-                    DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
-                        $"[WARN][Degraded] TransitionStyle sem SceneTransitionProfile. styleId='{entry.styleId}', profileId='{entry.profileId}'. Fallback=no-fade (dur=0).");
-
-                    _cache.Add(entry.styleId, new TransitionStyleDefinition(null, entry.profileId, false));
-                    continue;
+                    FailFast(
+                        $"TransitionStyle sem SceneTransitionProfile (obrigatório mesmo quando useFade=false). styleId='{entry.styleId}', profileId='{entry.profileId}', useFade={entry.useFade}.");
                 }
 
                 ValidateProfileIdConsistency(entry);
@@ -136,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             if (warnOnInvalidStyles)
             {
                 DebugUtility.LogVerbose<TransitionStyleCatalogAsset>(
-                    $"[OBS][Config] TransitionStyleCatalogBuild stylesResolved={_cache.Count} invalidStyles=0 degradedStyles={degradedStyles}",
+                    $"[OBS][Config] TransitionStyleCatalogBuild stylesResolved={_cache.Count} invalidStyles=0",
                     DebugUtility.Colors.Info);
             }
         }
@@ -177,22 +170,39 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [ContextMenu("Validate Transition Profiles")]
         private void ValidateTransitionProfileReferences()
         {
-            string assetPath = AssetDatabase.GetAssetPath(this);
             if (styles == null)
             {
                 return;
             }
 
+            int invalidEntriesCount = 0;
+            int noFadeEntriesCount = 0;
+
             for (int i = 0; i < styles.Count; i++)
             {
                 var entry = styles[i];
-                if (entry == null || entry.transitionProfile != null)
+                if (entry == null)
                 {
+                    invalidEntriesCount++;
                     continue;
                 }
 
-                DebugUtility.LogWarning<TransitionStyleCatalogAsset>(
-                    $"[WARN][Degraded] TransitionStyleCatalog com referência nula de SceneTransitionProfile. asset='{assetPath}', index={i}, styleId='{entry.styleId}'. Fallback=no-fade (dur=0).");
+                if (entry.transitionProfile == null)
+                {
+                    invalidEntriesCount++;
+                }
+
+                if (!entry.useFade)
+                {
+                    noFadeEntriesCount++;
+                }
+            }
+
+            if (invalidEntriesCount > 0 || noFadeEntriesCount > 0)
+            {
+                DebugUtility.Log(typeof(TransitionStyleCatalogAsset),
+                    $"[OBS][Config] TransitionStyleCatalog OnValidate summary: invalidEntries={invalidEntriesCount}, noFadeEntries={noFadeEntriesCount}, asset='{name}'.",
+                    DebugUtility.Colors.Info);
             }
         }
 #else

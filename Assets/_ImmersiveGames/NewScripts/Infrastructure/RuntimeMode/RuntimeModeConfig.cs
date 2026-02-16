@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
@@ -16,9 +17,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
         order = 20)]
     public sealed class RuntimeModeConfig : ScriptableObject
     {
+        // Caminho canônico para carregamento via Resources.
+        public const string DefaultResourcesPath = "RuntimeModeConfig";
+
         [Header("Modo")]
         [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: força o modo, útil para testes.")]
         public RuntimeModeOverride modeOverride = RuntimeModeOverride.Auto;
+
+        [Header("Bootstrap")]
+        [Tooltip("Config raiz obrigatório do NewScripts (resolvido pelo GlobalCompositionRoot).")]
+        [SerializeField] private NewScriptsBootstrapConfigAsset newScriptsBootstrapConfig;
+
+        public NewScriptsBootstrapConfigAsset NewScriptsBootstrapConfig => newScriptsBootstrapConfig;
 
         [Header("Degraded Mode Reporter")]
         public DegradedReporterSettings reporter = new DegradedReporterSettings();

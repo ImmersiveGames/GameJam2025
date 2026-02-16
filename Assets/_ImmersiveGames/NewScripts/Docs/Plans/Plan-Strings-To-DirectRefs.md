@@ -1,7 +1,25 @@
-# Plano de Execução (Incremental): **Strings → Referências Diretas** (SOs + Enums)
+# Plano (P-001) — Execução (Incremental): **Strings → Referências Diretas** (SOs + Enums)
 **Projeto:** Unity 6 / `NewScripts` (SceneFlow + Navigation + LevelFlow)
 **Data:** 2026-02-13
 **Status:** em andamento (alinhado ao estado real de runtime + tooling)
+
+## Status
+
+- ActivityId: **P-001**
+- Estado: **IN_PROGRESS**
+- Última atualização: **2026-02-15**
+
+### Fonte de verdade (referências)
+
+- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
+- Política Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
+- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+
+### Auditorias relacionadas (status atual)
+
+- `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Steps-01-02.md`
+
+> Regra: qualquer nova checagem deve gerar um arquivo em `Docs/Reports/Audits/<YYYY-MM-DD>/...`.
 
 ## Status atual (2026-02-15)
 
@@ -12,6 +30,14 @@
 | **F2** | **DONE** | `SceneKeyAsset` em uso no fluxo de rotas, com resolução para nomes de cena no boundary com API da Unity. |
 | **F3** | **PARTIAL** | Estratégia **direct-ref-first** implementada de forma incremental (`routeRef`), porém IDs tipados (`routeId`) ainda existem como compatibilidade temporária. |
 | **F4** | **PARTIAL** | Hardening avançado, mas ainda há resíduos legados em tooling/dev e APIs `[Obsolete]` aguardando janela de remoção. |
+
+## Checklist rastreável (alto nível)
+
+- [x] **F0** — Documento no repo + âncora de observabilidade
+- [x] **F1** — Bootstrap root único + strict fail-fast
+- [x] **F2** — `SceneKeyAsset` no boundary de Unity
+- [ ] **F3** — Rota como fonte única de SceneData (remover duplicidades)
+- [ ] **F4** — Hardening final + remoção controlada de compat/legado
 
 ---
 
