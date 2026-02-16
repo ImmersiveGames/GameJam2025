@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -40,7 +41,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("Style de transição associado à intent.")]
             public TransitionStyleId styleId;
 
-            [Tooltip("Quando true, a intent é crítica e obrigatória para validação de bootstrap.")]
+            [FormerlySerializedAs("criticalRequired")]
+            [Tooltip("Campo legado sem efeito de fail-fast. A criticidade canônica é fixa em to-menu/to-gameplay.")]
             public bool criticalRequired;
 
             public void Normalize()
@@ -67,30 +69,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             EnsureCanonicalCoreEntryOrFail(MenuCanonicalId);
             EnsureCanonicalCoreEntryOrFail(GameplayCanonicalId);
-            EnsureCanonicalCoreEntryOrFail(RestartCanonicalId);
-            EnsureCanonicalCoreEntryOrFail(ExitToMenuCanonicalId);
-        }
-
-        /// <summary>
-        /// Retorna intents críticas obrigatórias configuradas no bloco Core.
-        /// </summary>
-        public IEnumerable<NavigationIntentId> EnumerateCriticalIntents()
-        {
-            if (core == null)
-            {
-                yield break;
-            }
-
-            for (int i = 0; i < core.Count; i++)
-            {
-                IntentEntry entry = core[i];
-                if (entry == null || !entry.criticalRequired || !entry.intentId.IsValid)
-                {
-                    continue;
-                }
-
-                yield return entry.intentId;
-            }
         }
 
 #if UNITY_EDITOR
@@ -157,10 +135,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             EnsureCanonicalCoreEntryOrFail(MenuCanonicalId);
             EnsureCanonicalCoreEntryOrFail(GameplayCanonicalId);
-            EnsureCanonicalCoreEntryOrFail(GameOverCanonicalId);
-            EnsureCanonicalCoreEntryOrFail(VictoryCanonicalId);
-            EnsureCanonicalCoreEntryOrFail(RestartCanonicalId);
-            EnsureCanonicalCoreEntryOrFail(ExitToMenuCanonicalId);
 
             EnsureCoreIntentsForProductionOrFail();
         }
@@ -192,17 +166,29 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
                 if (isCore)
                 {
-                    if (entry.routeRef == null)
+                    if (IsMandatoryCoreIntent(entry.intentId) && entry.routeRef == null)
                     {
                         FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: Core exige routeRef. asset='{name}', intentId='{entry.intentId}'.");
                     }
 
-                    if (!entry.styleId.IsValid)
+                    if (IsMandatoryCoreIntent(entry.intentId) && !entry.styleId.IsValid)
                     {
                         FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: Core exige styleId válido. asset='{name}', intentId='{entry.intentId}'.");
                     }
+
+                    if (!IsMandatoryCoreIntent(entry.intentId) && (entry.routeRef == null || !entry.styleId.IsValid))
+                    {
+                        DebugUtility.Log(typeof(GameNavigationIntentCatalogAsset),
+                            $"[OBS][Config] Core extra opcional com configuração parcial/ausente (permitido). asset='{name}', intentId='{entry.intentId}'.",
+                            DebugUtility.Colors.Info);
+                    }
                 }
             }
+        }
+
+        private static bool IsMandatoryCoreIntent(NavigationIntentId intentId)
+        {
+            return intentId == MenuCanonicalId || intentId == GameplayCanonicalId;
         }
 
         private void EnsureCanonicalCoreEntryOrFail(NavigationIntentId canonicalId)

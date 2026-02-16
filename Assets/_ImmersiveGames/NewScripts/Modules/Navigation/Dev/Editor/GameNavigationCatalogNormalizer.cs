@@ -76,18 +76,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
                 return catalog;
             }
 
-            string[] guids = AssetDatabase.FindAssets("t:GameNavigationCatalogAsset");
-            if (guids.Length > 0)
-            {
-                string anyPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                catalog = AssetDatabase.LoadAssetAtPath<GameNavigationCatalogAsset>(anyPath);
-                if (catalog != null)
-                {
-                    Debug.Log($"[OBS][SceneFlow][Config] Using existing navigation catalog found at '{anyPath}'.");
-                    return catalog;
-                }
-            }
-
             EnsureDirectoryForAsset(NavigationCatalogPath);
             catalog = ScriptableObject.CreateInstance<GameNavigationCatalogAsset>();
             catalog.name = "GameNavigationCatalog";
@@ -101,17 +89,24 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
         {
             SerializedObject so = new SerializedObject(intentCatalog);
             SerializedProperty core = so.FindProperty("core");
+            if (core == null)
+            {
+                FailFastEditor("[FATAL][Config] GameNavigationIntentCatalogAsset sem propriedade serializada 'core'.");
+            }
 
-            EnsureCoreIntentEntry(core, IntentMenu, routeIntent: IntentMenu, styleId: StyleFrontend, criticalRequired: true);
-            EnsureCoreIntentEntry(core, IntentGameplay, routeIntent: IntentGameplay, styleId: StyleGameplay, criticalRequired: true);
+            // Direct-ref-first: usa routeRef já configurado nos intents canônicos obrigatórios.
+            SceneRouteDefinitionAsset menuRouteRef = GetRequiredCoreRouteRefOrFail(core, IntentMenu);
+            SceneRouteDefinitionAsset gameplayRouteRef = GetRequiredCoreRouteRefOrFail(core, IntentGameplay);
 
-            // Mantém o id canônico atual do projeto para GameOver e também garante alias legado/uso gameplay.
-            EnsureCoreIntentEntry(core, IntentGameOverCanonical, routeIntent: IntentMenu, styleId: StyleFrontend, criticalRequired: false);
-            EnsureCoreIntentEntry(core, IntentDefeatAlias, routeIntent: IntentMenu, styleId: StyleFrontend, criticalRequired: false);
+            EnsureCoreIntentEntry(core, IntentMenu, menuRouteRef, StyleFrontend, criticalRequired: true);
+            EnsureCoreIntentEntry(core, IntentGameplay, gameplayRouteRef, StyleGameplay, criticalRequired: true);
 
-            EnsureCoreIntentEntry(core, IntentVictory, routeIntent: IntentMenu, styleId: StyleFrontend, criticalRequired: false);
-            EnsureCoreIntentEntry(core, IntentRestart, routeIntent: IntentGameplay, styleId: StyleGameplay, criticalRequired: false);
-            EnsureCoreIntentEntry(core, IntentExitToMenu, routeIntent: IntentMenu, styleId: StyleFrontend, criticalRequired: false);
+            // Extras opcionais: continuam mapeados por referência direta, reaproveitando refs canônicas já configuradas.
+            EnsureCoreIntentEntry(core, IntentGameOverCanonical, menuRouteRef, StyleFrontend, criticalRequired: false);
+            EnsureCoreIntentEntry(core, IntentDefeatAlias, menuRouteRef, StyleFrontend, criticalRequired: false);
+            EnsureCoreIntentEntry(core, IntentVictory, menuRouteRef, StyleFrontend, criticalRequired: false);
+            EnsureCoreIntentEntry(core, IntentRestart, gameplayRouteRef, StyleGameplay, criticalRequired: false);
+            EnsureCoreIntentEntry(core, IntentExitToMenu, menuRouteRef, StyleFrontend, criticalRequired: false);
 
             so.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -120,38 +115,51 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
             GameNavigationCatalogAsset navigationCatalog,
             GameNavigationIntentCatalogAsset intentCatalog)
         {
-            SerializedObject so = new SerializedObject(navigationCatalog);
+            SerializedObject navigationSo = new SerializedObject(navigationCatalog);
+            SetIntentCatalogReferenceOrFail(navigationSo, intentCatalog);
 
-            SerializedProperty assetRef = so.FindProperty("assetRef");
-            assetRef.objectReferenceValue = intentCatalog;
+            SerializedObject intentSo = new SerializedObject(intentCatalog);
+            SerializedProperty core = intentSo.FindProperty("core");
+            if (core == null)
+            {
+                FailFastEditor("[FATAL][Config] GameNavigationIntentCatalogAsset sem propriedade serializada 'core'.");
+            }
 
-            NormalizeCoreSlot(so, "menuSlot", IntentMenu, StyleFrontend, required: true);
-            NormalizeCoreSlot(so, "gameplaySlot", IntentGameplay, StyleGameplay, required: true);
-            NormalizeCoreSlot(so, "gameOverSlot", IntentMenu, StyleGameplayNoFade, required: false);
-            NormalizeCoreSlot(so, "victorySlot", IntentMenu, StyleGameplayNoFade, required: false);
-            NormalizeCoreSlot(so, "restartSlot", IntentGameplay, StyleGameplayNoFade, required: false);
-            NormalizeCoreSlot(so, "exitToMenuSlot", IntentMenu, StyleFrontend, required: false);
+            SceneRouteDefinitionAsset menuRouteRef = GetRequiredCoreRouteRefOrFail(core, IntentMenu);
+            SceneRouteDefinitionAsset gameplayRouteRef = GetRequiredCoreRouteRefOrFail(core, IntentGameplay);
 
-            so.ApplyModifiedPropertiesWithoutUndo();
+            NormalizeCoreSlot(navigationSo, "menuSlot", menuRouteRef, StyleFrontend, required: true);
+            NormalizeCoreSlot(navigationSo, "gameplaySlot", gameplayRouteRef, StyleGameplay, required: true);
+            NormalizeCoreSlot(navigationSo, "gameOverSlot", menuRouteRef, StyleGameplayNoFade, required: false);
+            NormalizeCoreSlot(navigationSo, "victorySlot", menuRouteRef, StyleGameplayNoFade, required: false);
+            NormalizeCoreSlot(navigationSo, "restartSlot", gameplayRouteRef, StyleGameplayNoFade, required: false);
+            NormalizeCoreSlot(navigationSo, "exitToMenuSlot", menuRouteRef, StyleFrontend, required: false);
+
+            navigationSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetIntentCatalogReferenceOrFail(SerializedObject navigationSo, GameNavigationIntentCatalogAsset intentCatalog)
+        {
+            SerializedProperty intentCatalogProperty = navigationSo.FindProperty("intentCatalog") ?? navigationSo.FindProperty("assetRef");
+            if (intentCatalogProperty == null)
+            {
+                FailFastEditor("[FATAL][Config] GameNavigationCatalogAsset sem propriedade serializada 'intentCatalog'/'assetRef'.");
+            }
+
+            intentCatalogProperty.objectReferenceValue = intentCatalog;
         }
 
         private static void NormalizeCoreSlot(
             SerializedObject navigationCatalogSo,
             string slotPropertyName,
-            string defaultRouteIntent,
+            SceneRouteDefinitionAsset defaultRouteRef,
             string defaultStyleId,
             bool required)
         {
             SerializedProperty slot = navigationCatalogSo.FindProperty(slotPropertyName);
             if (slot == null)
             {
-                if (required)
-                {
-                    throw new InvalidOperationException($"Missing slot property '{slotPropertyName}' in GameNavigationCatalogAsset.");
-                }
-
-                Debug.LogWarning($"[WARN][SceneFlow][Config] Optional slot property '{slotPropertyName}' not found.");
-                return;
+                FailFastEditor($"[FATAL][Config] Missing slot property '{slotPropertyName}' in GameNavigationCatalogAsset.");
             }
 
             SerializedProperty routeRef = slot.FindPropertyRelative("routeRef");
@@ -159,41 +167,25 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
 
             if (routeRef.objectReferenceValue == null)
             {
-                SceneRouteDefinitionAsset routeAsset = FindRouteByIntent(defaultRouteIntent);
-                if (routeAsset != null)
+                if (defaultRouteRef == null)
                 {
-                    routeRef.objectReferenceValue = routeAsset;
+                    FailFastEditor(
+                        $"[FATAL][Config] Slot '{slotPropertyName}' sem routeRef e sem defaultRouteRef (direct-ref-first). required={required}.");
                 }
-                else if (required)
-                {
-                    throw new InvalidOperationException(
-                        $"Required core slot '{slotPropertyName}' is missing routeRef and no route asset was found for intent '{defaultRouteIntent}'.");
-                }
-                else
-                {
-                    Debug.LogWarning(
-                        $"[WARN][SceneFlow][Config] Optional core slot '{slotPropertyName}' left without routeRef (route '{defaultRouteIntent}' not found).");
-                }
+
+                routeRef.objectReferenceValue = defaultRouteRef;
             }
 
             if (string.IsNullOrWhiteSpace(styleId.stringValue))
             {
-                if (required)
-                {
-                    styleId.stringValue = defaultStyleId;
-                }
-                else
-                {
-                    styleId.stringValue = defaultStyleId;
-                    Debug.Log($"[OBS][SceneFlow][Config] Optional core slot '{slotPropertyName}' received default style '{defaultStyleId}'.");
-                }
+                styleId.stringValue = defaultStyleId;
             }
         }
 
         private static void EnsureCoreIntentEntry(
             SerializedProperty coreList,
             string intentId,
-            string routeIntent,
+            SceneRouteDefinitionAsset routeRef,
             string styleId,
             bool criticalRequired)
         {
@@ -206,22 +198,45 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
 
             SerializedProperty entry = coreList.GetArrayElementAtIndex(index);
             SerializedProperty serializedIntentId = entry.FindPropertyRelative("intentId").FindPropertyRelative("_value");
-            SerializedProperty routeRef = entry.FindPropertyRelative("routeRef");
+            SerializedProperty serializedRouteRef = entry.FindPropertyRelative("routeRef");
             SerializedProperty serializedStyleId = entry.FindPropertyRelative("styleId").FindPropertyRelative("_value");
             SerializedProperty serializedCritical = entry.FindPropertyRelative("criticalRequired");
 
             serializedIntentId.stringValue = intentId;
             serializedCritical.boolValue = criticalRequired;
 
-            if (routeRef.objectReferenceValue == null)
+            if (routeRef == null)
             {
-                routeRef.objectReferenceValue = FindRouteByIntent(routeIntent);
+                FailFastEditor($"[FATAL][Config] Intent '{intentId}' sem routeRef para normalização direct-ref-first.");
             }
+
+            serializedRouteRef.objectReferenceValue = routeRef;
 
             if (string.IsNullOrWhiteSpace(serializedStyleId.stringValue))
             {
                 serializedStyleId.stringValue = styleId;
             }
+        }
+
+        private static SceneRouteDefinitionAsset GetRequiredCoreRouteRefOrFail(SerializedProperty coreList, string intentId)
+        {
+            int index = FindCoreIntentIndex(coreList, intentId);
+            if (index < 0)
+            {
+                FailFastEditor(
+                    $"[FATAL][Config] Intent core obrigatória '{intentId}' não encontrada no bloco core do GameNavigationIntentCatalogAsset. Configure routeRef direto antes de normalizar.");
+            }
+
+            SerializedProperty entry = coreList.GetArrayElementAtIndex(index);
+            SerializedProperty routeRef = entry.FindPropertyRelative("routeRef");
+            SceneRouteDefinitionAsset routeAsset = routeRef.objectReferenceValue as SceneRouteDefinitionAsset;
+            if (routeAsset == null)
+            {
+                FailFastEditor(
+                    $"[FATAL][Config] Intent core obrigatória '{intentId}' sem routeRef direto. Configure routeRef no GameNavigationIntentCatalogAsset antes de normalizar.");
+            }
+
+            return routeAsset;
         }
 
         private static int FindCoreIntentIndex(SerializedProperty coreList, string intentId)
@@ -237,27 +252,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
             }
 
             return -1;
-        }
-
-        private static SceneRouteDefinitionAsset FindRouteByIntent(string intentId)
-        {
-            string[] guids = AssetDatabase.FindAssets("t:SceneRouteDefinitionAsset");
-            for (int i = 0; i < guids.Length; i++)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                SceneRouteDefinitionAsset route = AssetDatabase.LoadAssetAtPath<SceneRouteDefinitionAsset>(path);
-                if (route == null)
-                {
-                    continue;
-                }
-
-                if (string.Equals(route.RouteId.Value, intentId, StringComparison.OrdinalIgnoreCase))
-                {
-                    return route;
-                }
-            }
-
-            return null;
         }
 
         private static void EnsureDirectoryForAsset(string assetPath)
@@ -286,6 +280,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
 
                 current = next;
             }
+        }
+
+        private static void FailFastEditor(string message)
+        {
+            Debug.LogError(message);
+            throw new InvalidOperationException(message);
         }
     }
 }
