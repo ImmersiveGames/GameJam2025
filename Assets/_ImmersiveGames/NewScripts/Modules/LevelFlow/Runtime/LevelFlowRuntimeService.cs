@@ -80,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             {
                 gameplayEntry = assetCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Gameplay);
             }
-            else if (!_navigationCatalog.TryGet(GameNavigationIntents.FromKind(GameNavigationIntentKind.Gameplay), out gameplayEntry) || !gameplayEntry.IsValid)
+            else
             {
                 return ("<unknown>", "<unknown>", "<unknown>");
             }

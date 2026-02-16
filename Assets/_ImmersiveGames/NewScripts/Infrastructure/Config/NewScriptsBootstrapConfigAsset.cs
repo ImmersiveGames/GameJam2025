@@ -47,6 +47,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 
             if (navigationCatalog != null)
             {
+                if (navigationCatalog.IntentCatalogAssetRef != navigationIntentCatalog)
+                {
+                    string message =
+                        $"[FATAL][Config] NewScriptsBootstrapConfigAsset inconsistente: navigationCatalog.assetRef deve apontar para navigationIntentCatalog. asset='{name}'.";
+
+                    DebugUtility.LogError(typeof(NewScriptsBootstrapConfigAsset), message);
+                    throw new InvalidOperationException(message);
+                }
+
                 navigationCatalog.ValidateCriticalIntentsInEditor(navigationIntentCatalog);
             }
         }

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c955e7a29f314edda14aaa33e5763f86, type: 3}
   m_Name: GameNavigationCatalog
   m_EditorClassIdentifier: 
+  assetRef: {fileID: 11400000, guid: 6866bc8b955cf1a40a194ebc0b98eb1f, type: 2}
   menuSlot:
     routeRef: {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
     styleId:

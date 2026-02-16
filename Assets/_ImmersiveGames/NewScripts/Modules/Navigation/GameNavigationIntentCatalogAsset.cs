@@ -63,6 +63,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public NavigationIntentId Restart => TryGetCoreIntentId(RestartCanonicalId);
         public NavigationIntentId ExitToMenu => TryGetCoreIntentId(ExitToMenuCanonicalId);
 
+        public void EnsureCoreIntentsForProductionOrFail()
+        {
+            EnsureCanonicalCoreEntryOrFail(MenuCanonicalId);
+            EnsureCanonicalCoreEntryOrFail(GameplayCanonicalId);
+            EnsureCanonicalCoreEntryOrFail(RestartCanonicalId);
+            EnsureCanonicalCoreEntryOrFail(ExitToMenuCanonicalId);
+        }
+
         /// <summary>
         /// Retorna intents críticas obrigatórias configuradas no bloco Core.
         /// </summary>
@@ -153,6 +161,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             EnsureCanonicalCoreEntryOrFail(VictoryCanonicalId);
             EnsureCanonicalCoreEntryOrFail(RestartCanonicalId);
             EnsureCanonicalCoreEntryOrFail(ExitToMenuCanonicalId);
+
+            EnsureCoreIntentsForProductionOrFail();
         }
 
         private void ValidateListOrFail(List<IntentEntry> entries, ISet<NavigationIntentId> seen, bool isCore)
