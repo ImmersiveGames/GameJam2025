@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -44,8 +45,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 }
                 else
                 {
-                    ResolveBootstrapConfigFromPreloadedManifestOrFail();
-                    DependencyManager.Provider.RegisterGlobal(cachedBootstrapConfig);
+                    ResolveBootstrapConfigFromRuntimeModeConfigOrFail();
+                    DependencyManager.Provider.RegisterGlobal(cachedBootstrapConfig, allowOverride: false);
                 }
             }
 
@@ -67,30 +68,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return cachedBootstrapConfig;
         }
 
-        private static void ResolveBootstrapConfigFromPreloadedManifestOrFail()
+        private static void ResolveBootstrapConfigFromRuntimeModeConfigOrFail()
         {
-            NewScriptsBootstrapConfigManifestAsset[] manifests = Resources.FindObjectsOfTypeAll<NewScriptsBootstrapConfigManifestAsset>();
-            if (manifests == null || manifests.Length != 1)
+            RuntimeModeConfig runtimeModeConfig = RuntimeModeConfigLoader.LoadOrNull();
+            if (runtimeModeConfig == null)
             {
-                int found = manifests?.Length ?? 0;
                 FailFast(
-                    "Expected exactly 1 NewScriptsBootstrapConfigManifestAsset loaded via Preloaded Assets. " +
-                    $"Found={found}. Configure Player Settings > Preloaded Assets.");
+                    "Missing required RuntimeModeConfig. Create/place RuntimeModeConfig in Resources (path='RuntimeModeConfig').");
             }
 
-            NewScriptsBootstrapConfigManifestAsset manifest = manifests[0];
-            if (manifest == null)
+            if (runtimeModeConfig.NewScriptsBootstrapConfig == null)
             {
-                FailFast("NewScriptsBootstrapConfigManifestAsset reference is null. Configure Player Settings > Preloaded Assets.");
+                FailFast("RuntimeModeConfig.NewScriptsBootstrapConfig is null. Assign a valid NewScriptsBootstrapConfigAsset.");
             }
 
-            if (manifest.Config == null)
-            {
-                FailFast("NewScriptsBootstrapConfigManifestAsset.config is null. Assign a valid NewScriptsBootstrapConfigAsset.");
-            }
-
-            cachedBootstrapConfig = manifest.Config;
-            cachedBootstrapConfigVia = "PreloadedManifest";
+            cachedBootstrapConfig = runtimeModeConfig.NewScriptsBootstrapConfig;
+            cachedBootstrapConfigVia = "RuntimeModeConfig";
         }
     }
 }
