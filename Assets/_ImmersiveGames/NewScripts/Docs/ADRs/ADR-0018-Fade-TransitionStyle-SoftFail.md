@@ -1,9 +1,16 @@
 # ADR-0018: Fade/TransitionStyle é Soft-Fail (não interrompe o jogo)
 
-**Status:** Aceito (validado por teste negativo)
-**Data:** 2026-02-15
-**Decisores:** Time NewScripts (GameLoop/SceneFlow)
-**Escopo:** SceneFlow Fade + TransitionStyleCatalog (**apenas**)
+## Status
+
+- Estado: **Implementado**
+- Data (decisão): **2026-02-15**
+- Última atualização: **2026-02-17**
+- Decisores: Time NewScripts (GameLoop/SceneFlow)
+- Escopo: SceneFlow Fade + TransitionStyleCatalog (**apenas**)
+- Evidências:
+  - `Docs/Reports/Evidence/LATEST.md`
+  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+  - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
 ---
 
@@ -31,6 +38,11 @@ Apesar disso, o jogo **continuou inicializando** e executou transição de cena 
 
 2. **A exceção é exclusiva do Fade.**
    Outros catálogos/configs considerados pré-requisitos de runtime permanecem **fail-fast** (falha deve abortar conforme política do projeto).
+
+3. **Clarificações operacionais (source-of-truth e fronteiras do soft-fail).**
+   - `UseFade` é decidido por `TransitionStyle`/request (source-of-truth da transição).
+   - Se `UseFade=true` e `fadeSceneKey` estiver ausente, o sistema registra **WARN** e aplica **soft-fail** (não interrompe o jogo).
+   - Configuração inválida de catálogo (`styleId`/`profileId`/`profileRef` obrigatórios) **não** entra em soft-fail: continua **fail-fast** conforme política de configuração obrigatória.
 
 ---
 
