@@ -17,31 +17,31 @@ MonoBehaviour:
       _value: style.startup
     profileId:
       _value: startup
-    transitionProfile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+    profileRef: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
     useFade: 1
   - styleId:
       _value: style.frontend
     profileId:
       _value: frontend
-    transitionProfile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+    profileRef: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
     useFade: 1
   - styleId:
       _value: style.gameplay
     profileId:
       _value: gameplay
-    transitionProfile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+    profileRef: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
     useFade: 1
   - styleId:
       _value: style.frontend.nofade
     profileId:
       _value: frontend
-    transitionProfile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+    profileRef: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
     useFade: 0
   - styleId:
       _value: style.gameplay.nofade
     profileId:
       _value: gameplay
-    transitionProfile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+    profileRef: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
     useFade: 0
   transitionProfileCatalog: {fileID: 11400000, guid: 7da079f7b1949914d81899fd4cec6813, type: 2}
   warnOnInvalidStyles: 1

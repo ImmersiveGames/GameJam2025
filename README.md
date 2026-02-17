@@ -10,3 +10,11 @@ Repositório base para jogo Unity 6 com multiplayer local. Este README atua apen
 - **LevelManager**: progressão de níveis e disparo de IntroStage.
 
 > Observação: toda a documentação operacional do NewScripts vive exclusivamente em `Assets/_ImmersiveGames/NewScripts/Docs`.
+
+
+## Projetos ativos (planos)
+- **P-001 — Strings->DirectRefs v1:** **DONE**
+- **P-002 — DataCleanup v1:** **DONE**
+
+## Como validar
+- Executar o MenuItem **Validate SceneFlow Config (DataCleanup v1)** e conferir o report em `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`.

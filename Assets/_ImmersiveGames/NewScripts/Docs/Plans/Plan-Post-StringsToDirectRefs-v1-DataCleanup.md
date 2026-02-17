@@ -3,8 +3,8 @@
 ## Status
 
 - ActivityId: **P-002**
-- Estado: **PROPOSED**
-- Última atualização: **2026-02-15**
+- Estado: **DONE**
+- Última atualização: **2026-02-17**
 
 ### Fonte de verdade (referências)
 
@@ -21,13 +21,23 @@
 
 ## Checklist rastreável (alto nível)
 
-- [ ] Etapa 0 — Guardrails + inventário
-- [ ] Etapa 1 — PropertyDrawers + Source Providers
-- [ ] Etapa 2 — Tipar Intent ID no Navigation
-- [ ] Etapa 3 — Descontinuar routes inline no SceneRouteCatalog
-- [ ] Etapa 4 — Formalizar ProfileCatalog como validation-only
-- [ ] Etapa 5 — Validator + relatório
-- [ ] Etapa 6 — Remoção final de legado
+- [x] Etapa 0 — Guardrails + inventário
+- [x] Etapa 1 — PropertyDrawers + Source Providers
+- [x] Etapa 2 — Tipar Intent ID no Navigation
+- [x] Etapa 3 — Descontinuar routes inline no SceneRouteCatalog
+- [x] Etapa 4 — Formalizar ProfileCatalog como validation-only
+- [x] Etapa 5 — Validator + relatório
+- [x] Etapa 6 — Remoção final de legado
+
+## Evidências (P-002)
+
+- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
+- Validator report (PASS): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Smoke runtime: `Docs/Reports/lastlog.log`
+- Auditorias de etapas:
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-03-InlineRoutes.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-04-ProfileCatalog-ValidationOnly.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-06-Remove-InlineRoutes.md`
 
 ## Contexto (estado atual)
 
@@ -152,7 +162,7 @@
 - Um “botão” único para rodar auditoria antes de build/PR.
 
 **Trabalhos**
-- Menu: `Tools/NewScripts/Validate SceneFlow Config…`
+- Menu: `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
 - Gera report (Markdown) com:
   - intents órfãos
   - estilos sem profile (incluindo caso ADR-0018 “no-fade”)
@@ -203,3 +213,20 @@
 - `SceneRouteCatalogAsset.routes` não existe mais em runtime (apenas histórico em commits).
 - Existe tooling único de validação + report.
 - Logs `[OBS]` mantêm âncoras estáveis para Baseline/Evidências.
+
+
+## Verification
+
+- Smoke do validador: "[SceneFlow][Validation] PASS. Report generated at: Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md"
+- Report path: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- MenuItem (referência): `Validate SceneFlow Config (DataCleanup v1)`
+- MenuItem (referência): `Reserialize SceneFlow Assets (DataCleanup v1)`
+- MenuItem (referência): `Migrate TransitionStyles ProfileRef (DataCleanup v1)`
+
+
+## Como validar (manual)
+
+- MenuItem: `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
+- Report gerado: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Conferir no report: seção `VERDICT: PASS`.
+

@@ -1,13 +1,13 @@
 # Plano (P-001) — Execução (Incremental): **Strings → Referências Diretas** (SOs + Enums)
 **Projeto:** Unity 6 / `NewScripts` (SceneFlow + Navigation + LevelFlow)
 **Data:** 2026-02-13
-**Status:** em andamento (alinhado ao estado real de runtime + tooling)
+**Status:** DONE (concluído após fechamento de F0–F5)
 
 ## Status
 
 - ActivityId: **P-001**
-- Estado: **IN_PROGRESS**
-- Última atualização: **2026-02-15**
+- Estado: **DONE**
+- Última atualização: **2026-02-17**
 
 ### Fonte de verdade (referências)
 
@@ -15,29 +15,39 @@
 - Política Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
 - Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
 
+### Evidências (P-001)
+
+- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Smoke runtime: `Docs/Reports/lastlog.log`
+- Smoke datado (DataCleanup v1): `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+- Validator de suporte (DataCleanup v1): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+
 ### Auditorias relacionadas (status atual)
 
 - `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Steps-01-02.md`
+- `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
 
 > Regra: qualquer nova checagem deve gerar um arquivo em `Docs/Reports/Audits/<YYYY-MM-DD>/...`.
 
-## Status atual (2026-02-15)
+## Status atual (2026-02-17)
 
 | Fase | Status | Resumo objetivo |
 |---|---|---|
 | **F0** | **DONE** | Documento no repositório e âncora de observabilidade ativa no boot (`Plan=StringsToDirectRefs v1`). |
-| **F1** | **DONE (Strict)** | Bootstrap root único implementado; política oficial em runtime é **strict fail-fast** quando bootstrap/root obrigatório está ausente. |
+| **F1** | **DONE** | Bootstrap root único implementado; política oficial em runtime é **strict fail-fast** quando bootstrap/root obrigatório está ausente. |
 | **F2** | **DONE** | `SceneKeyAsset` em uso no fluxo de rotas, com resolução para nomes de cena no boundary com API da Unity. |
-| **F3** | **PARTIAL** | Estratégia **direct-ref-first** implementada de forma incremental (`routeRef`), porém IDs tipados (`routeId`) ainda existem como compatibilidade temporária. |
-| **F4** | **PARTIAL** | Hardening avançado, mas ainda há resíduos legados em tooling/dev e APIs `[Obsolete]` aguardando janela de remoção. |
+| **F3** | **DONE** | Estratégia **direct-ref-first** consolidada no fluxo principal, com compatibilidade residual tratada no DataCleanup v1. |
+| **F4** | **DONE** | Hardening concluído para o escopo v1; resíduos remanescentes migrados/encerrados no DataCleanup v1. |
+| **F5** | **DONE** | Fechamento final com validação/smoke e evidências canônicas registradas. |
 
 ## Checklist rastreável (alto nível)
 
 - [x] **F0** — Documento no repo + âncora de observabilidade
 - [x] **F1** — Bootstrap root único + strict fail-fast
 - [x] **F2** — `SceneKeyAsset` no boundary de Unity
-- [ ] **F3** — Rota como fonte única de SceneData (remover duplicidades)
-- [ ] **F4** — Hardening final + remoção controlada de compat/legado
+- [x] **F3** — Rota como fonte única de SceneData (remover duplicidades)
+- [x] **F4** — Hardening final + remoção controlada de compat/legado
+- [x] **F5** — Fechamento final com validação/smoke e evidências canônicas
 
 ---
 
@@ -185,8 +195,8 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ---
 
 ## Checklist rápido de validação
-- [ ] Compila
-- [ ] Boot → Menu OK
-- [ ] Menu → Gameplay OK
-- [ ] Restart OK
-- [ ] Logs `[OBS]` aparecem conforme fase
+- [x] Compila
+- [x] Boot → Menu OK
+- [x] Menu → Gameplay OK
+- [x] Restart OK
+- [x] Logs `[OBS]` aparecem conforme fase

@@ -26,10 +26,10 @@ Uma atividade só vira **DONE** quando:
 
 | Ordem | ActivityId | Status esperado | Escopo |
 |---:|---|---|---|
-| 1 | P-001 | IN_PROGRESS → DONE | Strings → referências diretas (v1) |
-| 2 | P-002 | PROPOSED → IN_PROGRESS → DONE | Data cleanup pós v1 (remoção de resíduos/compat) |
-| 3 | P-003 | BLOCKED → IN_PROGRESS → DONE | Navegação: Play → `to-gameplay` (correção mínima) |
-| 4 | P-004 | IN_PROGRESS → DONE | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
+| 1 | P-001 | DONE | Strings → referências diretas (v1) |
+| 2 | P-002 | DONE | Data cleanup pós v1 (remoção de resíduos/compat) |
+| 3 | P-003 | DONE | Navegação: Play → `to-gameplay` (correção mínima) |
+| 4 | P-004 | IN_PROGRESS | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
 
 ---
 
@@ -38,13 +38,13 @@ Uma atividade só vira **DONE** quando:
 
 **Projeto:** Unity 6 / `NewScripts` (SceneFlow + Navigation + LevelFlow)
 **Data:** 2026-02-13
-**Status:** em andamento (alinhado ao estado real de runtime + tooling)
+**Status:** DONE (fechado com evidências e smoke de validação)
 
 ### Status
 
 - ActivityId: **P-001**
-- Estado: **IN_PROGRESS**
-- Última atualização: **2026-02-15**
+- Estado: **DONE**
+- Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)
 
@@ -55,26 +55,29 @@ Uma atividade só vira **DONE** quando:
 #### Auditorias relacionadas (status atual)
 
 - `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Steps-01-02.md`
+- `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
 
 > Regra: qualquer nova checagem deve gerar um arquivo em `Docs/Reports/Audits/<YYYY-MM-DD>/...`.
 
-### Status atual (2026-02-15)
+### Status atual (2026-02-17)
 
 | Fase | Status | Resumo objetivo |
 |---|---|---|
 | **F0** | **DONE** | Documento no repositório e âncora de observabilidade ativa no boot (`Plan=StringsToDirectRefs v1`). |
-| **F1** | **DONE (Strict)** | Bootstrap root único implementado; política oficial em runtime é **strict fail-fast** quando bootstrap/root obrigatório está ausente. |
+| **F1** | **DONE** | Bootstrap root único implementado; política oficial em runtime é **strict fail-fast** quando bootstrap/root obrigatório está ausente. |
 | **F2** | **DONE** | `SceneKeyAsset` em uso no fluxo de rotas, com resolução para nomes de cena no boundary com API da Unity. |
-| **F3** | **PARTIAL** | Estratégia **direct-ref-first** implementada de forma incremental (`routeRef`), porém IDs tipados (`routeId`) ainda existem como compatibilidade temporária. |
-| **F4** | **PARTIAL** | Hardening avançado, mas ainda há resíduos legados em tooling/dev e APIs `[Obsolete]` aguardando janela de remoção. |
+| **F3** | **DONE** | Estratégia **direct-ref-first** consolidada no fluxo principal, com compatibilidade residual tratada no DataCleanup v1. |
+| **F4** | **DONE** | Hardening concluído para o escopo v1; resíduos remanescentes migrados/encerrados no DataCleanup v1. |
+| **F5** | **DONE** | Fechamento final com validação/smoke e evidências canônicas registradas. |
 
 ### Checklist rastreável (alto nível)
 
 - [x] **F0** — Documento no repo + âncora de observabilidade
 - [x] **F1** — Bootstrap root único + strict fail-fast
 - [x] **F2** — `SceneKeyAsset` no boundary de Unity
-- [ ] **F3** — Rota como fonte única de SceneData (remover duplicidades)
-- [ ] **F4** — Hardening final + remoção controlada de compat/legado
+- [x] **F3** — Rota como fonte única de SceneData (remover duplicidades)
+- [x] **F4** — Hardening final + remoção controlada de compat/legado
+- [x] **F5** — Fechamento final com validação/smoke e evidências canônicas
 
 ---
 
@@ -190,6 +193,14 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ---
 
+### Evidências (P-001)
+
+- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
+- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Smoke datado: `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+- Validator DataCleanup v1 (smoke complementar): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Log runtime/smoke: `Docs/Reports/lastlog.log`
+
 ### Evidências canônicas
 
 #### Logs `[OBS]`
@@ -235,8 +246,8 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ### Status
 
 - ActivityId: **P-002**
-- Estado: **PROPOSED**
-- Última atualização: **2026-02-15**
+- Estado: **DONE**
+- Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)
 
@@ -253,13 +264,24 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ### Checklist rastreável (alto nível)
 
-- [ ] Etapa 0 — Guardrails + inventário
-- [ ] Etapa 1 — PropertyDrawers + Source Providers
-- [ ] Etapa 2 — Tipar Intent ID no Navigation
-- [ ] Etapa 3 — Descontinuar routes inline no SceneRouteCatalog
-- [ ] Etapa 4 — Formalizar ProfileCatalog como validation-only
-- [ ] Etapa 5 — Validator + relatório
-- [ ] Etapa 6 — Remoção final de legado
+- [x] Etapa 0 — Guardrails + inventário
+- [x] Etapa 1 — PropertyDrawers + Source Providers
+- [x] Etapa 2 — Tipar Intent ID no Navigation
+- [x] Etapa 3 — Descontinuar routes inline no SceneRouteCatalog
+- [x] Etapa 4 — Formalizar ProfileCatalog como validation-only
+- [x] Etapa 5 — Validator + relatório
+- [x] Etapa 6 — Remoção final de legado
+
+### Evidências (P-002)
+
+- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
+- Smoke datado: `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+- Validator PASS: `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Smoke runtime: `Docs/Reports/lastlog.log`
+- Auditorias de etapas: 
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-03-InlineRoutes.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-04-ProfileCatalog-ValidationOnly.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-06-Remove-InlineRoutes.md`
 
 ### Contexto (estado atual)
 
@@ -268,6 +290,11 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
   - `GameNavigationCatalogAsset.RouteEntry.routeId` (string crua de intent).
   - Edição manual de IDs tipados (sem drawers dedicados).
   - `SceneRouteCatalogAsset.routes` como fallback inline legado.
+
+### Evidências de fechamento (2026-02-17)
+
+- P-001 (snapshot/final): `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- P-002 (validator smoke): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` com PASS registrado.
 
 ### Princípios
 
@@ -443,8 +470,8 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ### Status
 
 - ActivityId: **P-003**
-- Estado: **BLOCKED**
-- Última atualização: **2026-02-15**
+- Estado: **DONE**
+- Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)
 
@@ -460,12 +487,12 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 ### Checklist rastreável
 
-- [ ] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
-- [ ] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
-- [ ] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
-- [ ] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
-- [ ] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
-- [ ] Validar por inspeção estática + checklist de logs esperados.
+- [x] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
+- [x] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
+- [x] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
+- [x] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
+- [x] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
+- [x] Validar por inspeção estática + checklist de logs esperados.
 
 #### Artefatos esperados
 
@@ -473,14 +500,23 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 - Evidência (runtime): snapshot em `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + atualização de `Docs/Reports/Evidence/LATEST.md`
 
 ### Critério de sucesso
-- `MenuPlayButtonBinder` chama `RestartAsync(...)`.
+- `MenuPlayButtonBinder` chama `StartGameplayAsync(...)`.
 - `GameNavigationCatalogAsset.TryGet("to-gameplay", ...)` retorna entry válido.
 - `GameNavigationService` deixa de logar erro de rota desconhecida para `to-gameplay`.
 - Boot registra observabilidade `[OBS][Navigation] ... tryResolve('to-gameplay')=True`.
 
-### Bloqueio atual
+### Evidências (P-003)
 
-- O sintoma "Entries: []" já foi demonstrado como **possível** no estado atual do repositório, e existe risco de **confusão por assets duplicados** (ex.: `LevelCatalog.asset` em dois paths). Ver auditoria relacionada.
+- Log de smoke: `Docs/Reports/lastlog.log`
+- Auditoria histórica de mismatch (origem do bloqueio): `Docs/Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md`
+- Evidência do estado corrigido (trecho do smoke):
+
+```log
+[MenuPlayButtonBinder] [OBS][LevelFlow] MenuPlay -> StartGameplayAsync levelId='level.1' reason='Menu/PlayButton'.
+[GameNavigationService] [OBS][Navigation] DispatchIntent -> intentId='to-gameplay', sceneRouteId='level.1', styleId='style.gameplay', reason='Menu/PlayButton'
+[SceneTransitionService] [SceneFlow] TransitionStarted id=2 ... routeId='level.1' ... reason='Menu/PlayButton'
+[SceneTransitionService] [OBS][SceneFlow] RouteExecutionPlan routeId='level.1' activeScene='GameplayScene' toLoad=[GameplayScene, UIGlobalScene] toUnload=[NewBootstrap, MenuScene]
+```
 
 
 <a id="p-004"></a>
@@ -490,7 +526,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 - ActivityId: **P-004**
 - Estado: **IN_PROGRESS**
-- Última atualização: **2026-02-15**
+- Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)
 

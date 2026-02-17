@@ -1,8 +1,16 @@
 # ADR-0019 — Navigation Intent Catalog (IntentCatalog + GameNavigationCatalog)
 
-- **Status:** Accepted (implemented)
-- **Date:** 2026-02-16
-- **Scope:** `Assets/_ImmersiveGames/NewScripts/Modules/Navigation` + SceneFlow wiring via `SceneRouteDefinitionAsset`
+## Status
+
+- Estado: **Implementado**
+- Data (decisão): **2026-02-16**
+- Última atualização: **2026-02-17**
+- Escopo: `Assets/_ImmersiveGames/NewScripts/Modules/Navigation` + SceneFlow wiring via `SceneRouteDefinitionAsset`
+- Evidências:
+  - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+  - `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+  - `Docs/Reports/Evidence/LATEST.md`
 
 ## Context
 

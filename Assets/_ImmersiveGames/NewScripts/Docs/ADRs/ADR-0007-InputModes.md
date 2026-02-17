@@ -1,9 +1,15 @@
 ﻿# ADR-0007: Formalizar InputModes e responsabilidade do módulo
 
-- Status: **Implemented**
-- Data: 2026-02-05
+## Status
+
+- Estado: **Implementado**
+- Data (decisão): **2026-02-05**
+- Última atualização: **2026-02-17**
 - Dono: NewScripts/Core
 - Tags: Input, SceneFlow, UX, Architecture
+- Evidências:
+  - `Docs/Reports/Evidence/LATEST.md`
+  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 
 ## Contexto
 

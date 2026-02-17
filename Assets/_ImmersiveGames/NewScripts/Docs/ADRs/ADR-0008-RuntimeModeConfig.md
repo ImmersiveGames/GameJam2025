@@ -1,8 +1,14 @@
 # ADR-0008: RuntimeModeConfig (Strict/Release + Degraded)
 
-* Status: **Fechado**
-* Data: **2026-02-05**
-* Decisores: **NewScripts / Infra**
+## Status
+
+- Estado: **Implementado**
+- Data (decisão): **2026-02-05**
+- Última atualização: **2026-02-17**
+- Decisores: **NewScripts / Infra**
+- Evidências:
+  - `Docs/Reports/Evidence/LATEST.md`
+  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 
 ## Contexto
 

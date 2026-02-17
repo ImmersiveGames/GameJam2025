@@ -1,6 +1,6 @@
 ﻿# SceneFlow Config Validation Report (DataCleanup v1)
 
-- Timestamp: 2026-02-17 16:15:28 UTC
+- Timestamp: 2026-02-17 18:52:03 UTC
 - Unity version: 6000.0.67f1
 
 ## Assets canônicos
@@ -21,8 +21,8 @@
 
 | intentId | routeRef | routeId | status |
 |---|---|---|---|
-| `to-menu` | `Route_to-gameplay` | `to-gameplay` | OK |
-| `to-gameplay` | `Route_to-menu` | `to-menu` | OK |
+| `to-menu` | `Route_to-menu` | `to-menu` | OK |
+| `to-gameplay` | `Route_to-gameplay` | `to-gameplay` | OK |
 
 ## Core slots
 

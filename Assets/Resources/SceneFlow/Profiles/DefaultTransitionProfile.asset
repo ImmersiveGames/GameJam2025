@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 23c01e74e65543a3839c20d58a052a08, type: 3}
   m_Name: DefaultTransitionProfile
   m_EditorClassIdentifier: 
-  useFade: 1
   fadeInDuration: 0.5
   fadeOutDuration: 0.5
   fadeInCurve:
