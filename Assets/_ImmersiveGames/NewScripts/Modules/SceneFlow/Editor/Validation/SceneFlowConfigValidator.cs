@@ -170,7 +170,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
             else
             {
-                record.Status = "OK";
+                string normalizedExpectedIntentId = string.IsNullOrWhiteSpace(targetIntentId.Value)
+                    ? string.Empty
+                    : targetIntentId.Value.Trim().ToLowerInvariant();
+                string normalizedRouteId = string.IsNullOrWhiteSpace(routeRef.RouteId.Value)
+                    ? string.Empty
+                    : routeRef.RouteId.Value.Trim().ToLowerInvariant();
+
+                if (!string.Equals(normalizedRouteId, normalizedExpectedIntentId, StringComparison.Ordinal))
+                {
+                    record.Status = "FATAL";
+                    context.AddFatal(
+                        $"[FATAL][Config] Intent core '{targetIntentId.Value}' aponta para routeId '{routeRef.RouteId.Value}', esperado '{targetIntentId.Value}'.");
+                }
+                else
+                {
+                    record.Status = "OK";
+                }
             }
 
             context.CoreMandatoryIntents.Add(record);
