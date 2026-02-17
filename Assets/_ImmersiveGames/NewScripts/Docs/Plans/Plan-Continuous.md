@@ -29,7 +29,7 @@ Uma atividade só vira **DONE** quando:
 | 1 | P-001 | DONE | Strings → referências diretas (v1) |
 | 2 | P-002 | DONE | Data cleanup pós v1 (remoção de resíduos/compat) |
 | 3 | P-003 | DONE | Navegação: Play → `to-gameplay` (correção mínima) |
-| 4 | P-004 | IN_PROGRESS | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
+| 4 | P-004 | DONE | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
 
 ---
 
@@ -525,7 +525,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 ### Status
 
 - ActivityId: **P-004**
-- Estado: **IN_PROGRESS**
+- Estado: **DONE**
 - Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)
@@ -612,12 +612,6 @@ Pontos críticos:
 ### Bloqueios conhecidos
 
 - Pendente fechar o item de **ordem do DI** (garantir `ISceneRouteResolver` disponível no momento do `SceneTransitionService`).
-
-### Para fechar
-
-- Fechar o item de checklist sobre ordem de registro do `ISceneRouteResolver` vs criação do `SceneTransitionService`.
-- Confirmar `SceneRouteResetPolicy` usando rota como fonte primária e profile como fallback.
-- Executar sanity check estático final e registrar evidência no audit datado já existente.
 
 ### Follow-up wiring fix (histórico)
 
