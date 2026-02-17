@@ -240,8 +240,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             SceneRouteCatalogAsset sceneRouteCatalog,
             GameNavigationCatalogAsset navigationCatalog)
         {
-            ValidateInlineRoutesAreEmpty(context, sceneRouteCatalog);
-            DetectDuplicatedRouteIdsInSceneRouteCatalog(context, sceneRouteCatalog);
+            ValidateRouteDefinitionsInSceneRouteCatalog(context, sceneRouteCatalog);
 
             SceneRouteId menuRouteId = GetCoreSlotRouteId(navigationCatalog, "menuSlot");
             SceneRouteId gameplayRouteId = GetCoreSlotRouteId(navigationCatalog, "gameplaySlot");
@@ -250,30 +249,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             ValidateRouteExistsInCatalog(context, sceneRouteCatalog, GameplayIntentId.Value, gameplayRouteId);
         }
 
-        private static void ValidateInlineRoutesAreEmpty(ValidationContext context, SceneRouteCatalogAsset sceneRouteCatalog)
-        {
-            if (sceneRouteCatalog == null)
-            {
-                context.InlineRoutesCount = -1;
-                context.InlineRoutesStatus = "FATAL";
-                return;
-            }
-
-            SerializedObject serializedObject = new SerializedObject(sceneRouteCatalog);
-            SerializedProperty inlineRoutes = serializedObject.FindProperty("routes");
-            int count = inlineRoutes != null && inlineRoutes.isArray ? inlineRoutes.arraySize : 0;
-
-            context.InlineRoutesCount = count;
-            context.InlineRoutesStatus = count == 0 ? "OK" : "FATAL";
-
-            if (count > 0)
-            {
-                context.AddFatal(
-                    $"SceneRouteCatalogAsset contém rotas inline legadas (routes[]). Use somente routeDefinitions e remova/migre routes[]. count={count}.");
-            }
-        }
-
-        private static void DetectDuplicatedRouteIdsInSceneRouteCatalog(ValidationContext context, SceneRouteCatalogAsset sceneRouteCatalog)
+        private static void ValidateRouteDefinitionsInSceneRouteCatalog(ValidationContext context, SceneRouteCatalogAsset sceneRouteCatalog)
         {
             if (sceneRouteCatalog == null)
             {
@@ -284,34 +260,21 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             Dictionary<string, int> seenRouteIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             SerializedProperty routeDefinitions = serializedObject.FindProperty("routeDefinitions");
-            if (routeDefinitions != null && routeDefinitions.isArray)
+            if (routeDefinitions == null || !routeDefinitions.isArray)
             {
-                for (int i = 0; i < routeDefinitions.arraySize; i++)
-                {
-                    SceneRouteDefinitionAsset routeAsset = routeDefinitions.GetArrayElementAtIndex(i).objectReferenceValue as SceneRouteDefinitionAsset;
-                    if (routeAsset == null)
-                    {
-                        continue;
-                    }
-
-                    RegisterRouteIdOccurrence(context, seenRouteIds, routeAsset.RouteId.Value, $"routeDefinitions[{i}]");
-                }
+                context.AddFatal("SceneRouteCatalogAsset sem coleção 'routeDefinitions'.");
+                return;
             }
 
-            SerializedProperty inlineRoutes = serializedObject.FindProperty("routes");
-            if (inlineRoutes != null && inlineRoutes.isArray)
+            for (int i = 0; i < routeDefinitions.arraySize; i++)
             {
-                for (int i = 0; i < inlineRoutes.arraySize; i++)
+                SceneRouteDefinitionAsset routeAsset = routeDefinitions.GetArrayElementAtIndex(i).objectReferenceValue as SceneRouteDefinitionAsset;
+                if (routeAsset == null)
                 {
-                    SerializedProperty entry = inlineRoutes.GetArrayElementAtIndex(i);
-                    string routeId = ReadTypedIdValue(entry.FindPropertyRelative("routeId"));
-                    if (string.IsNullOrWhiteSpace(routeId))
-                    {
-                        continue;
-                    }
-
-                    RegisterRouteIdOccurrence(context, seenRouteIds, routeId, $"routes[{i}]");
+                    continue;
                 }
+
+                RegisterRouteIdOccurrence(context, seenRouteIds, routeAsset.RouteId.Value, $"routeDefinitions[{i}]");
             }
         }
 
@@ -634,12 +597,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
             sb.AppendLine();
 
-            sb.AppendLine("## Inline routes policy");
-            sb.AppendLine();
-            sb.AppendLine($"- Inline routes (routes[]) count: {context.InlineRoutesCount}");
-            sb.AppendLine($"- Status: {context.InlineRoutesStatus}");
-            sb.AppendLine();
-
             sb.AppendLine("## Transition styles");
             sb.AppendLine();
             sb.AppendLine("| styleId | useFade | profileId | profileRef | status |");
@@ -729,9 +686,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             public readonly List<StyleValidationRecord> Styles = new List<StyleValidationRecord>();
             public readonly List<string> Fatals = new List<string>();
             public readonly List<string> Warnings = new List<string>();
-            public int InlineRoutesCount;
-            public string InlineRoutesStatus = "UNKNOWN";
-
             public bool HasFatal => Fatals.Count > 0;
 
             public void AddFatal(string message)
