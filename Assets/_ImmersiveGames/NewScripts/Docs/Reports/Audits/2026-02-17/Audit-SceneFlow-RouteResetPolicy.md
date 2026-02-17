@@ -1,3 +1,18 @@
+# Update 2026-02-17 — Fechamento do P-004
+
+- **Status atualizado:** P-004 foi fechado como **DONE** nos planos canônicos.
+- **Evidências usadas:**
+  - Smoke: `Docs/Reports/lastlog.log` com âncoras `routePolicy:Frontend` e `routePolicy:Gameplay`.
+  - Verificação de ausência de `policy:missing` no smoke de fechamento.
+  - Validator PASS: `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`.
+- **Planos atualizados:**
+  - `Docs/Plans/Plan-Continuous.md#p-004`
+  - `Docs/Plans/Codex-Validation-SceneFlow-RouteResetPolicy.md`
+
+---
+
+## Snapshot anterior (superseded)
+
 # Audit — SceneFlow / RouteResetPolicy (P-004, READ-ONLY)
 
 **Data:** 2026-02-17  

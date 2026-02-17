@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | **P-001** (`Plans/Plan-Strings-To-DirectRefs.md`, `Plans/Plan-Continuous.md#p-001`) | **DONE** | `Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`, `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`, `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` (PASS) | **Não identificada** | Fechamento documentado com auditoria final + smoke + validator PASS. |
 | **P-002** (`Plans/Plan-Post-StringsToDirectRefs-v1-DataCleanup.md`, `Plans/Plan-Continuous.md#p-002`) | **DONE** | `Reports/Audits/2026-02-16/DataCleanup-v1-Step-03-InlineRoutes.md`, `...Step-04...`, `...Step-06...`, `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` (PASS), `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md` | **Não identificada** | Evidências de etapas + validator PASS sustentam DONE. |
-| **P-004** (`Plans/Plan-Continuous.md#p-004`) | **DONE** | `Reports/Evidence/LATEST.md`, `Reports/lastlog.log` | **Não conclusiva** (sem contradição direta) | Não foi encontrado, no conjunto lido, o artefato nomeado no próprio plano: `Audit-SceneFlow-RouteResetPolicy.md`. |
+| **P-004** (`Plans/Plan-Continuous.md#p-004`) | **DONE** | `Reports/Evidence/LATEST.md`, `Reports/lastlog.log`, `Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md` | **Não identificada** | Fechamento documental consolidado com audit datado + smoke + validator PASS. |
 
 ## 2) ADRs (0007 / 0008 / 0018 / 0019)
 
@@ -23,15 +23,8 @@
 
 ## 3) O que falta mudar (máx 10)
 
-1. `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Continuous.md` — alinhar o status esperado de P-004 na linha do tempo (evitar semântica “IN_PROGRESS → DONE” enquanto seção já está em DONE).
-2. `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Continuous.md` — registrar link explícito de evidência para P-004 (ou ajustar texto de “artefato esperado”).
-3. `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Post-StringsToDirectRefs-v1-DataCleanup.md` — remover/normalizar duplicidade de referência de MenuItem (há menções com rótulos diferentes no mesmo documento).
-4. `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Post-StringsToDirectRefs-v1-DataCleanup.md` — revisar “Contexto (estado atual)” para evitar texto residual de risco legado quando status já é DONE.
-5. `Assets/_ImmersiveGames/NewScripts/Docs/Plans/README.md` — manter tabela de status estritamente sincronizada com `Plan-Continuous.md` (especialmente P-004).
-6. `Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0007-InputModes.md` — adicionar ponteiro para evidências recentes (LATEST/smoke 2026-02-17), se aplicável.
-7. `Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0008-RuntimeModeConfig.md` — adicionar ponteiro para evidências recentes (LATEST/smoke 2026-02-17), se aplicável.
-8. `Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0019-Navigation-IntentCatalog.md` — complementar seção de evidência com `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`.
-9. `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` — revisar coerência da tabela “Core mandatory intents” (mapeamento `to-menu`/`to-gameplay` aparece invertido em `routeRef/routeId`).
+1. `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md` — manter esta auditoria alinhada a snapshots futuros quando status de planos mudar novamente.
+2. `Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0017-LevelManager-Config-Catalog.md` — corrigir links relativos quebrados na seção de referências (`Overview`, `LevelManager`, `LevelPlan`).
 
 ---
 

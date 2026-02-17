@@ -534,9 +534,9 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 - Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
 - Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
 
-#### Artefato esperado (auditoria)
+#### Artefato datado (auditoria)
 
-- Audit datado existente (canônico): `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
+- `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
 
 ### Contexto
 
@@ -544,85 +544,47 @@ Projeto Unity 6 (multiplayer local), escopo em `Assets/_ImmersiveGames/NewScript
 
 Objetivo desta rodada:
 1. Validar migração dos call-sites para o contrato explícito de `IGameNavigationService`.
-2. Corrigir wiring de `SceneTransitionService` para evitar `ISceneRouteResolver` ausente no momento da criação.
-3. Garantir que `SceneRouteResetPolicy` priorize resolução por rota via injeção e use fallback por profile apenas quando necessário.
-4. Verificar redundâncias de contratos/classes e organização modular correta (sem tocar em `Scripts/` legado).
-
-### Diagnóstico inicial (inventário)
-
-#### 1) Contrato de navegação
-- `IGameNavigationService` **já expõe**:
-  - `GoToMenuAsync(reason)`
-  - `RestartAsync(reason)`
-  - `ExitToMenuAsync(reason)`
-  - `StartGameplayAsync(levelId, reason)`
-- Métodos legados `[Obsolete]` **preservados**:
-  - `NavigateAsync(routeId, reason)`
-  - `RequestMenuAsync(reason)`
-  - `RequestGameplayAsync(reason)`
-
-#### 2) Varredura de call-sites legados
-Varredura em `NewScripts` (excluindo docs):
-- **Nenhum call-site ativo** usando `RequestMenuAsync`, `RequestGameplayAsync` ou `NavigateAsync`.
-- Ocorrências encontradas estão somente na própria interface/implementação para compatibilidade.
-
-#### 3) Candidatos de UI/bridge/dev
-- `MenuPlayButtonBinder`: usa `RestartAsync(reason)` (sem `LevelId` explícito disponível no binder).
-- `RestartNavigationBridge`: usa `RestartAsync(reason)`.
-- `ExitToMenuNavigationBridge`: usa `ExitToMenuAsync(reason)`.
-- `SceneFlowDevContextMenu`: usa `RestartAsync(reason)`.
-
-#### 4) Wiring DI atual (problema identificado)
-Ordem atual em `GlobalCompositionRoot.Pipeline`:
-1. `RegisterSceneFlowNative()`
-2. `RegisterSceneFlowRouteResetPolicy()`
-3. `RegisterGameNavigationService()`
-
-Pontos críticos:
-- `RegisterSceneFlowNative()` cria `SceneTransitionService` com `ISceneRouteResolver` via `TryGetGlobal`.
-- `ISceneRouteResolver` normalmente só é registrado em `RegisterGameNavigationService()` (via `ResolveOrRegisterSceneRouteResolver(...)`).
-- Resultado: há caminho de bootstrap em que `SceneTransitionService` nasce com `routeResolver = null`.
+2. Confirmar wiring de `SceneTransitionService` sem regressão de `ISceneRouteResolver`.
+3. Confirmar que `SceneRouteResetPolicy` decide por rota (`routePolicy`) no fluxo real.
+4. Fechar o plano com evidências de smoke + auditoria + validator PASS.
 
 ### Checklist rastreável
 
 - [x] Confirmar contrato de `IGameNavigationService` e wrappers legados `[Obsolete]`.
 - [x] Auditar call-sites de APIs legadas (`RequestMenuAsync`, `RequestGameplayAsync`, `NavigateAsync`).
 - [x] Verificar binders/bridges/dev menus principais.
-- [ ] Ajustar wiring para registrar/obter `ISceneRouteResolver` antes (ou durante) criação do `SceneTransitionService`.
-- [ ] Atualizar `SceneRouteResetPolicy` para preferir `ISceneRouteResolver` injetado e fallback por profile quando ausente.
-- [ ] Auditar redundâncias de tipos (resolver/guard/reset policy/kinds) e consolidar se necessário.
-- [ ] Sanity check estático (referências/namespace/assinaturas).
+- [x] Validar evidência de decisão `routePolicy:Frontend` no smoke.
+- [x] Validar evidência de decisão `routePolicy:Gameplay` no smoke.
+- [x] Confirmar ausência de `policy:missing` no smoke.
+- [x] Confirmar validator de configuração SceneFlow com `VERDICT: PASS`.
 
-### Lista prevista de arquivos a tocar
+### Critérios de aceitação (fechamento)
 
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.SceneFlowWorldLifecycle.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/SceneRouteResetPolicy.cs`
-- `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Codex-Validation-SceneFlow-RouteResetPolicy.md`
+1. Há evidência de reset policy por rota frontend e gameplay no smoke.
+2. Não há ocorrência de `policy:missing` no smoke usado para fechamento.
+3. O audit datado de P-004 existe e está referenciado no plano.
+4. O report de validação de configuração SceneFlow existe e está em PASS.
 
-> Observação: não há alteração planejada em `Scripts/` legado.
+### Evidências (P-004)
 
-### Critérios de aceitação
+- Smoke usado no fechamento:
+  - `Docs/Reports/lastlog.log`
+- Report de validação (PASS):
+  - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Audit datado de fechamento:
+  - `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
 
-1. Compilação sem erros de referência/assinatura (checagem estática das mudanças).
-2. `SceneTransitionService` recebe `ISceneRouteResolver` válido quando existir catálogo/registro no DI.
-3. Quando não houver catálogo/resolver, comportamento continua seguro com log `[OBS]` explícito e fallback preservado.
-4. `SceneRouteResetPolicy` usa rota (via resolver) como fonte primária e profile como fallback.
-5. Logs/contratos canônicos de observabilidade permanecem coerentes.
+#### Comandos de prova (executáveis no CLI)
 
-### Bloqueios conhecidos
+- `rg -n "ResetPolicy routeId='to-menu'|decisionSource='routePolicy:Frontend'" Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log`
+- `rg -n "ResetPolicy routeId='level.1'|decisionSource='routePolicy:Gameplay'" Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log`
+- `rg -n "policy:missing" Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log`
+- `rg -n "VERDICT:" Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
-- Pendente fechar o item de **ordem do DI** (garantir `ISceneRouteResolver` disponível no momento do `SceneTransitionService`).
+### Follow-ups (post)
 
-### Follow-up wiring fix (histórico)
-
-A primeira versão mitigava o problema com logs `[OBS]`, mas não se curava no boot padrão: quando `RegisterSceneFlowNative()` rodava antes de `RegisterGameNavigationService()`, o `ISceneRouteCatalog` ainda não estava no DI e o resolver continuava `null`.
-
-Para fechar o gap de ordem do pipeline sem refactor amplo:
-- **[Histórico]** `ResolveOrRegisterRouteResolverBestEffort()` chegou a tentar `Resources.Load<SceneRouteCatalogAsset>("SceneFlow/SceneRouteCatalog")` quando DI ainda não tinha catálogo.
-- Ao encontrar o asset, registra `ISceneRouteCatalog` e `ISceneRouteResolver` imediatamente (antes da navegação).
-- No estado atual (hardening), priorizar DI/BootstrapConfig e tratar fallback por `Resources` como transitório/legado.
-
-Com isso, o SceneFlow consegue hidratar payload por rota já no bootstrap normal, e a `SceneRouteResetPolicy` consegue decidir por `RouteKind` na primeira transição quando o catálogo estiver disponível.
+- Higienizar auditorias históricas de 2026-02-17 para remover observações superadas sobre inexistência de artefato P-004.
+- Manter monitoramento de regressão de `policy:missing` em futuros smokes (não bloqueia o fechamento atual de P-004).
 
 
 ---
