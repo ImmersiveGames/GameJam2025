@@ -31,6 +31,7 @@
 
 ## Evidências (P-002)
 
+- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
 - Validator report (PASS): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Smoke runtime: `Docs/Reports/lastlog.log`
 - Auditorias de etapas:

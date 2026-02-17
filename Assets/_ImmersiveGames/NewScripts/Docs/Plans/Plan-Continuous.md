@@ -29,7 +29,7 @@ Uma atividade só vira **DONE** quando:
 | 1 | P-001 | DONE | Strings → referências diretas (v1) |
 | 2 | P-002 | DONE | Data cleanup pós v1 (remoção de resíduos/compat) |
 | 3 | P-003 | DONE | Navegação: Play → `to-gameplay` (correção mínima) |
-| 4 | P-004 | IN_PROGRESS → DONE | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
+| 4 | P-004 | IN_PROGRESS | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
 
 ---
 
@@ -195,7 +195,9 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ### Evidências (P-001)
 
+- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
 - Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Smoke datado: `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator DataCleanup v1 (smoke complementar): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Log runtime/smoke: `Docs/Reports/lastlog.log`
 
@@ -272,6 +274,8 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ### Evidências (P-002)
 
+- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
+- Smoke datado: `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator PASS: `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Smoke runtime: `Docs/Reports/lastlog.log`
 - Auditorias de etapas: 
@@ -521,7 +525,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 ### Status
 
 - ActivityId: **P-004**
-- Estado: **DONE**
+- Estado: **IN_PROGRESS**
 - Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)

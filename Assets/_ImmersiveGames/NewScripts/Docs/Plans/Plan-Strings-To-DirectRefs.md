@@ -19,6 +19,7 @@
 
 - Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
 - Smoke runtime: `Docs/Reports/lastlog.log`
+- Smoke datado (DataCleanup v1): `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator de suporte (DataCleanup v1): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
 ### Auditorias relacionadas (status atual)
@@ -194,8 +195,8 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ---
 
 ## Checklist rápido de validação
-- [ ] Compila
-- [ ] Boot → Menu OK
-- [ ] Menu → Gameplay OK
-- [ ] Restart OK
-- [ ] Logs `[OBS]` aparecem conforme fase
+- [x] Compila
+- [x] Boot → Menu OK
+- [x] Menu → Gameplay OK
+- [x] Restart OK
+- [x] Logs `[OBS]` aparecem conforme fase
