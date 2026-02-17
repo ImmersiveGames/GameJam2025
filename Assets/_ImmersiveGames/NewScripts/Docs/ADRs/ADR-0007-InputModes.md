@@ -10,6 +10,7 @@
 - Evidências:
   - `Docs/Reports/Evidence/LATEST.md`
   - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+  - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
 ## Contexto
 

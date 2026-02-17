@@ -11,6 +11,7 @@
   - `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
   - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
   - `Docs/Reports/Evidence/LATEST.md`
+  - `Docs/Reports/lastlog.log`
 
 ## Context
 

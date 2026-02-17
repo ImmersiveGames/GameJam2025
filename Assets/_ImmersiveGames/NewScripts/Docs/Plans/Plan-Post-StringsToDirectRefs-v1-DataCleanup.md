@@ -219,14 +219,13 @@
 
 - Smoke do validador: "[SceneFlow][Validation] PASS. Report generated at: Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md"
 - Report path: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
-- MenuItem (referência): `Validate SceneFlow Config (DataCleanup v1)`
-- MenuItem (referência): `Reserialize SceneFlow Assets (DataCleanup v1)`
-- MenuItem (referência): `Migrate TransitionStyles ProfileRef (DataCleanup v1)`
+- MenuItem canônico: `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
+- MenuItem canônico: `ImmersiveGames/NewScripts/Config/Reserialize SceneFlow Assets (DataCleanup v1)`
+- MenuItem canônico: `ImmersiveGames/NewScripts/Config/Migrate TransitionStyles ProfileRef (DataCleanup v1)`
 
 
 ## Como validar (manual)
 
-- MenuItem: `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
+- Executar os 3 MenuItems canônicos listados em **Verification** (na ordem que fizer sentido para manutenção local).
 - Report gerado: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Conferir no report: seção `VERDICT: PASS`.
-

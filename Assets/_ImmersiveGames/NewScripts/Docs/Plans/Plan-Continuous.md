@@ -536,7 +536,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 #### Artefato esperado (auditoria)
 
-- Output do CODEX (read-only) em: `Docs/Reports/Audits/<YYYY-MM-DD>/Audit-SceneFlow-RouteResetPolicy.md`
+- Audit datado existente (canônico): `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
 
 ### Contexto
 
@@ -612,8 +612,12 @@ Pontos críticos:
 ### Bloqueios conhecidos
 
 - Pendente fechar o item de **ordem do DI** (garantir `ISceneRouteResolver` disponível no momento do `SceneTransitionService`).
-- Pendente registrar uma **auditoria datada** em `Docs/Reports/Audits/<data>/...` para este plano.
 
+### Para fechar
+
+- Fechar o item de checklist sobre ordem de registro do `ISceneRouteResolver` vs criação do `SceneTransitionService`.
+- Confirmar `SceneRouteResetPolicy` usando rota como fonte primária e profile como fallback.
+- Executar sanity check estático final e registrar evidência no audit datado já existente.
 
 ### Follow-up wiring fix (histórico)
 

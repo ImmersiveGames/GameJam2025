@@ -9,6 +9,7 @@
 - Evidências:
   - `Docs/Reports/Evidence/LATEST.md`
   - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+  - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
 ## Contexto
 
@@ -106,6 +107,11 @@ Integração:
 ## Evidências de Implementação
 
 Evidência canônica: **log de inicialização** enviado pelo projeto (data do log: **2026-02-05**).
+
+Ponteiros operacionais atuais:
+- `Docs/Reports/Evidence/LATEST.md`
+- `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+- `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
 Sinais mínimos de que o ADR está **implementado e ativo**:
 

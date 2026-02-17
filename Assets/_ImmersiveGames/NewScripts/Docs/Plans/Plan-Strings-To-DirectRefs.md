@@ -17,10 +17,11 @@
 
 ### Evidências (P-001)
 
-- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
-- Smoke runtime: `Docs/Reports/lastlog.log`
+- Evidência vigente (ponteiro canônico): `Docs/Reports/Evidence/LATEST.md`
+- Log bruto vigente: `Docs/Reports/lastlog.log`
 - Smoke datado (DataCleanup v1): `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator de suporte (DataCleanup v1): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
 
 ### Auditorias relacionadas (status atual)
 

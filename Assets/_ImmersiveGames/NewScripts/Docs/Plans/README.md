@@ -39,10 +39,10 @@ Os arquivos individuais antigos permanecem apenas como **redirecionamento** (par
 
 | ActivityId | Status | Atividade | Fonte de verdade | Evidência/Auditoria | Trilho canônico |
 |---|---|---|---|---|---|
-| **P-001** | **DONE** | Strings → Referências diretas (v1) | ADRs + Standards | Audit final: `Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md` | `Plan-Continuous.md#p-001` |
-| **P-002** | **DONE** | Data Cleanup pós v1 (remove resíduos/compat) | ADRs + Standards | Validator: `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` | `Plan-Continuous.md#p-002` |
+| **P-001** | **DONE** | Strings → Referências diretas (v1) | ADRs + Standards | Audit final: `Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md` + Smoke `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md` + Validator `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` | `Plan-Continuous.md#p-001` |
+| **P-002** | **DONE** | Data Cleanup pós v1 (remove resíduos/compat) | ADRs + Standards | Steps `DataCleanup-v1-Step-03/04/06` + Smoke `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md` + Validator `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` | `Plan-Continuous.md#p-002` |
 | **P-003** | **DONE** | Navegação: Play → `to-gameplay` (correção mínima) | ADRs + Standards | Smoke: `Reports/lastlog.log` + audit de origem `Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md` | `Plan-Continuous.md#p-003` |
-| **P-004** | **DONE** | Validação (Codex) — SceneFlow/RouteResetPolicy | ADRs + Standards | Audit datada em `Reports/Audits/2026-02-16/` | `Plan-Continuous.md#p-004` |
+| **P-004** | **IN_PROGRESS** | Validação (Codex) — SceneFlow/RouteResetPolicy | ADRs + Standards | Audit datada: `Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md` | `Plan-Continuous.md#p-004` |
 
 ## Notas
 
