@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using UnityEngine;
+using UnityEngine.Serialization;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -26,11 +27,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             [Tooltip("Id canônico do estilo (TransitionStyleId).")]
             public TransitionStyleId styleId;
 
-            [Tooltip("Profile canônico do SceneFlow (id semântico para regras de runtime).")]
+            [Tooltip("Profile canônico do SceneFlow (id semântico para regras de validação/editor).")]
             public SceneFlowProfileId profileId = SceneFlowProfileId.Frontend;
 
-            [Tooltip("Referência direta ao SceneTransitionProfile usado pela transição.")]
-            public SceneTransitionProfile transitionProfile;
+            [FormerlySerializedAs("transitionProfile")]
+            [Tooltip("Referência direta ao SceneTransitionProfile usado pela transição (obrigatório).")]
+            public SceneTransitionProfile profileRef;
 
             [Tooltip("Quando true, aplica fade (se o SceneFlow suportar).")]
             public bool useFade = true;
@@ -42,8 +44,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [Header("Styles")]
         [SerializeField] private List<StyleEntry> styles = new();
 
-        [Header("Profile Catalog (Consistency Validation)")]
-        [Tooltip("Catálogo canônico usado para validar consistência entre profileId (legado) e transitionProfile (AssetRef).")]
+        [Header("Profile Catalog (Legacy / Validation-only)")]
+        [Tooltip("Campo legado mantido para compatibilidade YAML/editor. Nunca é usado em runtime para resolver profile.")]
         [SerializeField] private SceneTransitionProfileCatalogAsset transitionProfileCatalog;
 
         [Header("Validation")]
@@ -90,39 +92,41 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             if (styles == null || styles.Count == 0)
             {
-                FailFast("TransitionStyleCatalog sem estilos configurados.");
+                FailFastConfig("TransitionStyleCatalog has no configured styles.");
             }
 
             for (int i = 0; i < styles.Count; i++)
             {
-                var entry = styles[i];
+                StyleEntry entry = styles[i];
                 if (entry == null)
                 {
-                    FailFast($"StyleEntry nulo em styles[{i}].");
+                    FailFastConfig($"TransitionStyleCatalog contains null StyleEntry at styles[{i}].");
                 }
 
                 if (!entry.styleId.IsValid)
                 {
-                    FailFast($"StyleEntry inválido em styles[{i}] (styleId vazio/inválido).");
+                    FailFastConfig($"TransitionStyleCatalog contains invalid styleId at styles[{i}].");
                 }
 
                 if (_cache.ContainsKey(entry.styleId))
                 {
-                    FailFast($"Estilo duplicado no TransitionStyleCatalog. styleId='{entry.styleId}', index={i}.");
+                    FailFastConfig($"TransitionStyleCatalog has duplicated styleId='{entry.styleId}' at index={i}.");
                 }
 
-                if (entry.transitionProfile == null)
+                if (!entry.profileId.IsValid)
                 {
-                    FailFast(
-                        $"TransitionStyle sem SceneTransitionProfile (obrigatório mesmo quando useFade=false). styleId='{entry.styleId}', profileId='{entry.profileId}', useFade={entry.useFade}.");
+                    FailFastConfig($"TransitionStyleCatalog: invalid profileId for styleId='{entry.styleId}'.");
                 }
 
-                ValidateProfileIdConsistency(entry);
+                if (entry.profileRef == null)
+                {
+                    FailFastConfig($"TransitionStyleCatalog: missing profileRef for styleId='{entry.styleId}' profileId='{entry.profileId}'.");
+                }
 
-                _cache.Add(entry.styleId, new TransitionStyleDefinition(entry.transitionProfile, entry.profileId, entry.useFade));
+                _cache.Add(entry.styleId, new TransitionStyleDefinition(entry.profileRef, entry.profileId, entry.useFade));
 
                 DebugUtility.LogVerbose<TransitionStyleCatalogAsset>(
-                    $"[OBS][Config] StyleResolvedVia=AssetRef styleId='{entry.styleId}' profileId='{entry.profileId}' asset='{entry.transitionProfile.name}' useFade={entry.useFade}.",
+                    $"[OBS][Config] StyleResolvedVia=AssetRef styleId='{entry.styleId}' profileId='{entry.profileId}' asset='{entry.profileRef.name}' useFade={entry.useFade}.",
                     DebugUtility.Colors.Info);
             }
 
@@ -134,32 +138,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             }
         }
 
-        private void ValidateProfileIdConsistency(StyleEntry entry)
-        {
-            if (!entry.profileId.IsValid)
-            {
-                return;
-            }
-
-            if (transitionProfileCatalog == null)
-            {
-                FailFast($"TransitionStyleCatalog sem referência ao SceneTransitionProfileCatalogAsset para validar consistência id/ref. styleId='{entry.styleId}', profileId='{entry.profileId}'.");
-            }
-
-            if (!transitionProfileCatalog.TryGetProfile(entry.profileId, out var profileFromCatalog) || profileFromCatalog == null)
-            {
-                FailFast($"profileId não encontrado no SceneTransitionProfileCatalogAsset. styleId='{entry.styleId}', profileId='{entry.profileId}'.");
-            }
-
-            if (profileFromCatalog != entry.transitionProfile)
-            {
-                FailFast(
-                    $"Inconsistência entre profileId e transitionProfile. styleId='{entry.styleId}', profileId='{entry.profileId}', " +
-                    $"catalogProfile='{profileFromCatalog.name}', directProfile='{entry.transitionProfile.name}'.");
-            }
-        }
-
-        private static void FailFast(string detail)
+        private static void FailFastConfig(string detail)
         {
             string message = $"[FATAL][Config] {detail}";
             DebugUtility.LogError<TransitionStyleCatalogAsset>(message);
@@ -180,14 +159,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             for (int i = 0; i < styles.Count; i++)
             {
-                var entry = styles[i];
+                StyleEntry entry = styles[i];
                 if (entry == null)
                 {
                     invalidEntriesCount++;
                     continue;
                 }
 
-                if (entry.transitionProfile == null)
+                if (!entry.profileId.IsValid || entry.profileRef == null)
                 {
                     invalidEntriesCount++;
                 }
