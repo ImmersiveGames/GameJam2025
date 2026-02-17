@@ -70,4 +70,5 @@
 
 * [x] "[SceneFlow][Validation] PASS. Report generated at: Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md"
 * [x] Report: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+* [x] Smoke runtime: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log`
 * [x] Snapshot de suporte: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`

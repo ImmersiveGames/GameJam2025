@@ -15,6 +15,12 @@
 - Política Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
 - Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
 
+### Evidências (P-001)
+
+- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Smoke runtime: `Docs/Reports/lastlog.log`
+- Validator de suporte (DataCleanup v1): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+
 ### Auditorias relacionadas (status atual)
 
 - `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Steps-01-02.md`

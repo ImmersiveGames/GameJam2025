@@ -29,6 +29,15 @@
 - [x] Etapa 5 — Validator + relatório
 - [x] Etapa 6 — Remoção final de legado
 
+## Evidências (P-002)
+
+- Validator report (PASS): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Smoke runtime: `Docs/Reports/lastlog.log`
+- Auditorias de etapas:
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-03-InlineRoutes.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-04-ProfileCatalog-ValidationOnly.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-06-Remove-InlineRoutes.md`
+
 ## Contexto (estado atual)
 
 - O runtime principal de SceneFlow/Navigation já opera “direct-ref-first” (rotas e profiles por referência de asset).
@@ -152,7 +161,7 @@
 - Um “botão” único para rodar auditoria antes de build/PR.
 
 **Trabalhos**
-- Menu: `Tools/NewScripts/Validate SceneFlow Config…`
+- Menu: `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
 - Gera report (Markdown) com:
   - intents órfãos
   - estilos sem profile (incluindo caso ADR-0018 “no-fade”)
@@ -212,3 +221,11 @@
 - MenuItem (referência): `Validate SceneFlow Config (DataCleanup v1)`
 - MenuItem (referência): `Reserialize SceneFlow Assets (DataCleanup v1)`
 - MenuItem (referência): `Migrate TransitionStyles ProfileRef (DataCleanup v1)`
+
+
+## Como validar (manual)
+
+- MenuItem: `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
+- Report gerado: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Conferir no report: seção `VERDICT: PASS`.
+

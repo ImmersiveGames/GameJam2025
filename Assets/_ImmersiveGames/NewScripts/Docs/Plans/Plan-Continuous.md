@@ -28,7 +28,7 @@ Uma atividade só vira **DONE** quando:
 |---:|---|---|---|
 | 1 | P-001 | DONE | Strings → referências diretas (v1) |
 | 2 | P-002 | DONE | Data cleanup pós v1 (remoção de resíduos/compat) |
-| 3 | P-003 | BLOCKED → IN_PROGRESS → DONE | Navegação: Play → `to-gameplay` (correção mínima) |
+| 3 | P-003 | DONE | Navegação: Play → `to-gameplay` (correção mínima) |
 | 4 | P-004 | IN_PROGRESS → DONE | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
 
 ---
@@ -193,6 +193,12 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ---
 
+### Evidências (P-001)
+
+- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Validator DataCleanup v1 (smoke complementar): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Log runtime/smoke: `Docs/Reports/lastlog.log`
+
 ### Evidências canônicas
 
 #### Logs `[OBS]`
@@ -238,7 +244,7 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ### Status
 
 - ActivityId: **P-002**
-- Estado: **PROPOSED**
+- Estado: **DONE**
 - Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)
@@ -263,6 +269,15 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 - [x] Etapa 4 — Formalizar ProfileCatalog como validation-only
 - [x] Etapa 5 — Validator + relatório
 - [x] Etapa 6 — Remoção final de legado
+
+### Evidências (P-002)
+
+- Validator PASS: `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Smoke runtime: `Docs/Reports/lastlog.log`
+- Auditorias de etapas: 
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-03-InlineRoutes.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-04-ProfileCatalog-ValidationOnly.md`
+  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-06-Remove-InlineRoutes.md`
 
 ### Contexto (estado atual)
 
@@ -451,7 +466,7 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ### Status
 
 - ActivityId: **P-003**
-- Estado: **BLOCKED**
+- Estado: **DONE**
 - Última atualização: **2026-02-17**
 
 #### Fonte de verdade (referências)
@@ -468,12 +483,12 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 ### Checklist rastreável
 
-- [ ] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
-- [ ] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
-- [ ] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
-- [ ] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
-- [ ] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
-- [ ] Validar por inspeção estática + checklist de logs esperados.
+- [x] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
+- [x] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
+- [x] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
+- [x] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
+- [x] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
+- [x] Validar por inspeção estática + checklist de logs esperados.
 
 #### Artefatos esperados
 
@@ -481,14 +496,23 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 - Evidência (runtime): snapshot em `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + atualização de `Docs/Reports/Evidence/LATEST.md`
 
 ### Critério de sucesso
-- `MenuPlayButtonBinder` chama `RestartAsync(...)`.
+- `MenuPlayButtonBinder` chama `StartGameplayAsync(...)`.
 - `GameNavigationCatalogAsset.TryGet("to-gameplay", ...)` retorna entry válido.
 - `GameNavigationService` deixa de logar erro de rota desconhecida para `to-gameplay`.
 - Boot registra observabilidade `[OBS][Navigation] ... tryResolve('to-gameplay')=True`.
 
-### Bloqueio atual
+### Evidências (P-003)
 
-- O sintoma "Entries: []" já foi demonstrado como **possível** no estado atual do repositório, e existe risco de **confusão por assets duplicados** (ex.: `LevelCatalog.asset` em dois paths). Ver auditoria relacionada.
+- Log de smoke: `Docs/Reports/lastlog.log`
+- Auditoria histórica de mismatch (origem do bloqueio): `Docs/Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md`
+- Evidência do estado corrigido (trecho do smoke):
+
+```log
+[MenuPlayButtonBinder] [OBS][LevelFlow] MenuPlay -> StartGameplayAsync levelId='level.1' reason='Menu/PlayButton'.
+[GameNavigationService] [OBS][Navigation] DispatchIntent -> intentId='to-gameplay', sceneRouteId='level.1', styleId='style.gameplay', reason='Menu/PlayButton'
+[SceneTransitionService] [SceneFlow] TransitionStarted id=2 ... routeId='level.1' ... reason='Menu/PlayButton'
+[SceneTransitionService] [OBS][SceneFlow] RouteExecutionPlan routeId='level.1' activeScene='GameplayScene' toLoad=[GameplayScene, UIGlobalScene] toUnload=[NewBootstrap, MenuScene]
+```
 
 
 <a id="p-004"></a>

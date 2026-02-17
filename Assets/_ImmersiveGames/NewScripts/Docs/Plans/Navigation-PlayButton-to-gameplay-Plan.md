@@ -3,8 +3,8 @@
 ## Status
 
 - ActivityId: **P-003**
-- Estado: **BLOCKED**
-- Última atualização: **2026-02-15**
+- Estado: **DONE**
+- Última atualização: **2026-02-17**
 
 ### Fonte de verdade (referências)
 
@@ -20,12 +20,12 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 ## Checklist rastreável
 
-- [ ] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
-- [ ] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
-- [ ] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
-- [ ] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
-- [ ] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
-- [ ] Validar por inspeção estática + checklist de logs esperados.
+- [x] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
+- [x] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
+- [x] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
+- [x] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
+- [x] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
+- [x] Validar por inspeção estática + checklist de logs esperados.
 
 ### Artefatos esperados
 
@@ -33,11 +33,23 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 - Evidência (runtime): snapshot em `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + atualização de `Docs/Reports/Evidence/LATEST.md`
 
 ## Critério de sucesso
-- `MenuPlayButtonBinder` chama `RestartAsync(...)`.
+- `MenuPlayButtonBinder` chama `StartGameplayAsync(...)` (e dispara intent `to-gameplay`).
 - `GameNavigationCatalogAsset.TryGet("to-gameplay", ...)` retorna entry válido.
 - `GameNavigationService` deixa de logar erro de rota desconhecida para `to-gameplay`.
 - Boot registra observabilidade `[OBS][Navigation] ... tryResolve('to-gameplay')=True`.
 
-## Bloqueio atual
+## Evidência de smoke (2026-02-17)
 
-- O sintoma "Entries: []" já foi demonstrado como **possível** no estado atual do repositório, e existe risco de **confusão por assets duplicados** (ex.: `LevelCatalog.asset` em dois paths). Ver auditoria relacionada.
+- Fonte: `Docs/Reports/lastlog.log`
+- Trecho relevante (PlayButton → Gameplay):
+
+```log
+[MenuPlayButtonBinder] [OBS][LevelFlow] MenuPlay -> StartGameplayAsync levelId='level.1' reason='Menu/PlayButton'.
+[GameNavigationService] [OBS][Navigation] DispatchIntent -> intentId='to-gameplay', sceneRouteId='level.1', styleId='style.gameplay', reason='Menu/PlayButton'
+[SceneTransitionService] [SceneFlow] TransitionStarted id=2 ... routeId='level.1' ... reason='Menu/PlayButton'
+[SceneTransitionService] [OBS][SceneFlow] RouteExecutionPlan routeId='level.1' activeScene='GameplayScene' toLoad=[GameplayScene, UIGlobalScene] toUnload=[NewBootstrap, MenuScene]
+```
+
+## Observação histórica
+
+- A auditoria de origem do bloqueio permanece registrada em `Docs/Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md`.
