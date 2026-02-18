@@ -124,9 +124,9 @@ Ver seção **Fora de escopo**.
 ## Referências
 
 - [README.md](../README.md)
-- [Docs/Overview/Overview.md](../Docs/Overview/Overview.md)
+- [Docs/Overview/Overview.md](../Overview/Overview.md)
 - [Observability-Contract.md](../Standards/Standards.md#observability-contract)
-- [LevelManager](../../Modules/Levels/LevelManager.cs)
-- [LevelPlan](../../Modules/Levels/LevelPlan.cs)
+- LevelManager (historical): `../../Modules/Levels/LevelManager.cs` (removed/deprecated)
+- LevelPlan (historical): `../../Modules/Levels/LevelPlan.cs` (removed/deprecated)
 - [ContentSwap Change Service](../../Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs)
 - [LATEST.md](../Reports/Evidence/LATEST.md)
