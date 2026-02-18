@@ -221,15 +221,54 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
 
 
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
-            {
-                levelFlowRuntime = new LevelFlowRuntimeService(levelCatalogAsset, service, catalogAsset, styleCatalogAsset);
-                DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(levelFlowRuntime);
+        }
 
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
-                    DebugUtility.Colors.Info);
+        private static void RegisterLevelsServices()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var existing) && existing != null)
+            {
+                return;
             }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            {
+                throw new InvalidOperationException("IGameNavigationService obrigatório ausente no DI global. Garanta RegisterGameNavigationService no pipeline antes de RegisterLevelsServices.");
+            }
+
+            var bootstrapConfig = GetRequiredBootstrapConfig(out _);
+            var levelCatalogAsset = bootstrapConfig.LevelCatalog;
+            if (levelCatalogAsset == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required LevelCatalogAsset in NewScriptsBootstrapConfigAsset.levelCatalog.");
+                throw new InvalidOperationException(
+                    "Missing required NewScriptsBootstrapConfigAsset.levelCatalog (LevelCatalogAsset).");
+            }
+
+            var catalogAsset = bootstrapConfig.NavigationCatalog;
+            if (catalogAsset == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required GameNavigationCatalogAsset in NewScriptsBootstrapConfigAsset.navigationCatalog.");
+                throw new InvalidOperationException(
+                    "Missing required NewScriptsBootstrapConfigAsset.navigationCatalog (GameNavigationCatalogAsset).");
+            }
+
+            var styleCatalogAsset = bootstrapConfig.TransitionStyleCatalog;
+            if (styleCatalogAsset == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required TransitionStyleCatalogAsset in NewScriptsBootstrapConfigAsset.transitionStyleCatalog.");
+                throw new InvalidOperationException(
+                    "Missing required NewScriptsBootstrapConfigAsset.transitionStyleCatalog (TransitionStyleCatalogAsset).");
+            }
+
+            var runtimeService = new LevelFlowRuntimeService(levelCatalogAsset, navigationService, catalogAsset, styleCatalogAsset);
+            DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterGlobalIfMissing<T>(T service, string label) where T : class

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 #nullable enable
 
 using System;
@@ -139,3 +140,5 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
 
     }
 }
+
+#endif
