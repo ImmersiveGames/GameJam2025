@@ -64,16 +64,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             [Tooltip("Identificador tipado do intent extra/custom.")]
             public NavigationIntentId intentId;
 
-            [SerializeField]
-            [HideInInspector]
-            [Tooltip("Identificador legado do intent extra/custom (somente migração/backward compatibility).")]
-            public string routeId;
-
-            [Tooltip("SceneRouteId associado ao intent extra/custom (fallback quando routeRef não está setado).")]
+            [Tooltip("SceneRouteId derivado de routeRef (auto-sync no OnValidate, legado de inspeção).")]
             [SceneFlowAllowEmptyId]
             public SceneRouteId sceneRouteId;
 
-            [Tooltip("Referência direta opcional para a rota canônica do intent extra/custom.")]
+            [Tooltip("Referência direta obrigatória para a rota canônica do intent extra/custom.")]
             public SceneRouteDefinitionAsset routeRef;
 
             [FormerlySerializedAs("transitionStyleId")]
@@ -84,66 +79,47 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             {
                 string resolvedIntentId = ResolveIntentId().Value;
 
-                if (routeRef != null)
+                if (routeRef == null)
                 {
-                    var routeRefId = routeRef.RouteId;
-                    if (!routeRefId.IsValid)
-                    {
-                        return SceneRouteId.None;
-                    }
-
-                    if (sceneRouteId.IsValid && sceneRouteId != routeRefId)
-                    {
-                        HandleRouteMismatch(owner, resolvedIntentId, sceneRouteId, routeRefId);
-                    }
-
-                    DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
-                        $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{owner}', intentId='{resolvedIntentId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
-                        DebugUtility.Colors.Info);
-
-                    return routeRefId;
+                    FailFastConfig(
+                        $"[FATAL][Config] GameNavigationCatalog extra sem routeRef obrigatório. owner='{owner}', intentId='{resolvedIntentId}'.");
                 }
 
-                if (sceneRouteId.IsValid)
+                SceneRouteId routeRefId = routeRef.RouteId;
+                if (!routeRefId.IsValid)
                 {
-                    DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
-                        $"[OBS][SceneFlow] RouteResolvedVia=RouteId owner='{owner}', intentId='{resolvedIntentId}', routeId='{sceneRouteId}'.",
-                        DebugUtility.Colors.Info);
-
-                    return sceneRouteId;
+                    FailFastConfig(
+                        $"[FATAL][Config] GameNavigationCatalog extra com routeRef inválido. owner='{owner}', intentId='{resolvedIntentId}', asset='{routeRef.name}'.");
                 }
 
-                return SceneRouteId.None;
+                if (sceneRouteId.IsValid && sceneRouteId != routeRefId)
+                {
+                    HandleRouteMismatch(owner, resolvedIntentId, sceneRouteId, routeRefId);
+                }
+
+                DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
+                    $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{owner}', intentId='{resolvedIntentId}', routeId='{routeRefId}', asset='{routeRef.name}'.",
+                    DebugUtility.Colors.Info);
+
+                return routeRefId;
             }
 
             public void MigrateLegacy()
             {
-                routeId = NavigationIntentId.Normalize(routeId);
-
-                if (!intentId.IsValid && !string.IsNullOrEmpty(routeId))
-                {
-                    intentId = NavigationIntentId.FromName(routeId);
-                }
-
                 if (intentId.IsValid)
                 {
-                    routeId = intentId.Value;
+                    intentId = NavigationIntentId.FromName(intentId.Value);
                 }
             }
 
             public NavigationIntentId ResolveIntentId()
             {
-                if (intentId.IsValid)
-                {
-                    return NavigationIntentId.FromName(intentId.Value);
-                }
-
-                if (string.IsNullOrWhiteSpace(routeId))
+                if (!intentId.IsValid)
                 {
                     return NavigationIntentId.None;
                 }
 
-                return NavigationIntentId.FromName(routeId);
+                return NavigationIntentId.FromName(intentId.Value);
             }
 
             public bool TryAutoSyncFromRouteRef(out bool sceneRouteIdSynced)
@@ -535,9 +511,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             SceneRouteId resolvedRouteId = route.ResolveRouteId(name);
-            if (!resolvedRouteId.IsValid || !route.styleId.IsValid)
+            if (!resolvedRouteId.IsValid)
             {
-                return false;
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog extra com routeRef inválido após resolução. asset='{name}', intentId='{intentId}'.");
+            }
+
+            if (!route.styleId.IsValid)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog extra com styleId inválido. asset='{name}', intentId='{intentId}'.");
             }
 
             entry = new GameNavigationEntry(resolvedRouteId, route.styleId, SceneTransitionPayload.Empty);
@@ -786,6 +769,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     FailFastConfig(
                         $"[FATAL][Config] GameNavigationCatalog extras não pode usar intent reservado. asset='{name}', index={i}, intentId='{intentId}'.");
+                }
+
+                if (route.routeRef == null)
+                {
+                    FailFastConfig(
+                        $"[FATAL][Config] GameNavigationCatalog extra sem routeRef obrigatório. asset='{name}', index={i}, intentId='{intentId}'.");
+                }
+
+                SceneRouteId resolvedRouteId = route.routeRef.RouteId;
+                if (!resolvedRouteId.IsValid)
+                {
+                    FailFastConfig(
+                        $"[FATAL][Config] GameNavigationCatalog extra com routeRef inválido. asset='{name}', index={i}, intentId='{intentId}', routeAsset='{route.routeRef.name}'.");
                 }
             }
         }
