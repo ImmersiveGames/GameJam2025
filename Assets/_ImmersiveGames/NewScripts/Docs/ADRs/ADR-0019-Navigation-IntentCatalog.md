@@ -4,14 +4,15 @@
 
 - Estado: **Implementado**
 - Data (decisão): **2026-02-16**
-- Última atualização: **2026-02-17**
+- Última atualização: **2026-02-18**
 - Escopo: `Assets/_ImmersiveGames/NewScripts/Modules/Navigation` + SceneFlow wiring via `SceneRouteDefinitionAsset`
-- Evidências:
-  - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
-  - `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
-  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
-  - `Docs/Reports/Evidence/LATEST.md`
-  - `Docs/Reports/lastlog.log`
+
+## Evidências canônicas (atualizado em 2026-02-18)
+
+- `Docs/Reports/Evidence/LATEST.md`
+- `Docs/Reports/lastlog.log`
+- `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 
 ## Context
 
@@ -98,6 +99,7 @@ Editor-only:
 
 ## Validation / Evidence
 
+- Audit de fechamento P-004 (PASS): `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 - Auditoria final Strings → DirectRefs: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
 - Snapshot canônico pré-DataCleanup: `Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`
 - MenuItem de validação (Editor): `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
