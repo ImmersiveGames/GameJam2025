@@ -177,6 +177,23 @@ Superfícies típicas:
 - Priorizar compatibilidade de assets em migrações editor-only com reserialize controlado.
 - Preservar âncoras de observabilidade existentes e introduzir as novas sem quebra de parsing em QA.
 
+#### Poréns / Débitos (P0/P1)
+
+- **P0**
+    - `LevelFlowRuntimeService` adquiriu dependências opcionais usadas apenas para “labeling/observability” (catálogos). Manter opcional e remover/centralizar no cleanup se virar acoplamento desnecessário.
+    - Padronizar ownership de logs: decidir se `RestartContextService.Clear()` e correlatos devem logar como `[OBS][Level]` (owner LevelFlow) ou `[OBS][Navigation]` (consumer Navigation).
+
+- **P1**
+    - Hardening recomendado: evitar sobrescrever o “last valid levelId” com `LevelId.None` ao atualizar cache/observabilidade.
+    - Hardening recomendado: no fallback de `RestartAsync`, se existir `lastGameplayRouteId` válido, permitir restart por rota mesmo quando `lastStartedGameplayLevelId` estiver inválido (reduz FATAL falso).
+    - Limitação conhecida: restart via snapshot usa `payload=Empty` no P1 mínimo; contrato de payload por level/content será resolvido em P2/P3.
+
+#### Cleanup planejado (P3)
+
+- Remover logs `[Compat]` e reverse lookup legado quando N→1 estiver habilitado e validado.
+- Remover dependências opcionais usadas apenas para observabilidade (se não forem essenciais).
+- Normalizar `LastLevelIdUpdated` e regras de cache quando `LevelId.None`.
+
 ## Evidência
 
 Âncoras atuais relevantes (existentes hoje):

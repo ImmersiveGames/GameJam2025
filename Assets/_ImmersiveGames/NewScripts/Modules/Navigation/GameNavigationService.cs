@@ -71,7 +71,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             string resolvedReason = string.IsNullOrWhiteSpace(reason) ? "Restart" : reason.Trim();
 
-            bool hasSnapshot = _restartContextService != null && _restartContextService.TryGetCurrent(out var snapshot);
+            GameplayStartSnapshot snapshot = default;
+            bool hasSnapshot = _restartContextService != null && _restartContextService.TryGetCurrent(out snapshot);
             if (hasSnapshot)
             {
                 DebugUtility.Log(typeof(GameNavigationService),
