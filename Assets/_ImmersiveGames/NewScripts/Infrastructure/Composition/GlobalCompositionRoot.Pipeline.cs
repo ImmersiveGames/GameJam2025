@@ -31,9 +31,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // Resolve ISimulationGateService UMA vez para os consumidores (reduz repetição de TryGetGlobal).
             DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
 
-            // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
-            RegisterSceneFlowFadeModule();
-
             RegisterPauseBridge(gateService);
 
             _compositionInstallStage = CompositionInstallStage.GameLoop;
@@ -60,8 +57,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             RegisterExitToMenuNavigationBridge();
             RegisterRestartNavigationBridge();
-
-            RegisterSceneFlowLoadingIfAvailable();
 
             RegisterInputModeSceneFlowBridge();
             RegisterStateDependentService();
@@ -170,11 +165,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void InstallSceneFlowServices()
         {
+            // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
+            RegisterSceneFlowFadeModule();
+
             RegisterSceneFlowTransitionProfiles();
             RegisterSceneFlowRoutesRequired();
             RegisterSceneFlowNative();
             RegisterSceneFlowSignatureCache();
             RegisterSceneFlowRouteResetPolicy();
+
+            // ADR-0010: mantém o Loading no final da instalação do SceneFlow
+            // para preservar o ponto de registro equivalente do pipeline.
+            RegisterSceneFlowLoadingIfAvailable();
         }
 
     }
