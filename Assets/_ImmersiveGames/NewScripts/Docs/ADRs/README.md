@@ -16,6 +16,9 @@ Cada ADR possui 3 eixos:
 
 | ADR | Título | Decisão | Implementação | Manutenção | Última atualização |
 |---|---|---:|---:|---:|---:|
+| [`ADR-0005-GlobalCompositionRoot-Modularizacao.md`](ADR-0005-GlobalCompositionRoot-Modularizacao.md) | ADR-0005 - Modularização do GlobalCompositionRoot (registro global por Feature Modules) | Aceita | Implementada | Fechada | 2026-02-18 |
+| [`ADR-0007-InputModes.md`](ADR-0007-InputModes.md) | ADR-0007 - Formalizar InputModes e responsabilidade do módulo | Aceita | Implementada | Ativa | 2026-02-18 |
+| [`ADR-0008-RuntimeModeConfig.md`](ADR-0008-RuntimeModeConfig.md) | ADR-0008 - RuntimeModeConfig (Strict/Release + Degraded) | Aceita | Implementada | Ativa | 2026-02-18 |
 | [`ADR-0009-FadeSceneFlow.md`](ADR-0009-FadeSceneFlow.md) | ADR-0009 - Fade + SceneFlow (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0010-LoadingHud-SceneFlow.md`](ADR-0010-LoadingHud-SceneFlow.md) | ADR-0010 - Loading HUD + SceneFlow (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0011-WorldDefinition-MultiActor-GameplayScene.md`](ADR-0011-WorldDefinition-MultiActor-GameplayScene.md) | ADR-0011 - WorldDefinition multi-actor para GameplayScene (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
@@ -25,6 +28,9 @@ Cada ADR possui 3 eixos:
 | [`ADR-0015-Baseline-2.0-Fechamento.md`](ADR-0015-Baseline-2.0-Fechamento.md) | ADR-0015 - Baseline 2.0: Fechamento | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0016-ContentSwap-WorldLifecycle.md`](ADR-0016-ContentSwap-WorldLifecycle.md) | ADR-0016 - ContentSwap InPlace-only (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0017-LevelManager-Config-Catalog.md`](ADR-0017-LevelManager-Config-Catalog.md) | ADR-0017 - LevelManager: Config + Catalog (Single Source of Truth) | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0018-Fade-TransitionStyle-SoftFail.md`](ADR-0018-Fade-TransitionStyle-SoftFail.md) | ADR-0018 - Fade/TransitionStyle é Soft-Fail (não interrompe o jogo) | Aceita | Implementada | Ativa | 2026-02-18 |
+| [`ADR-0019-Navigation-IntentCatalog.md`](ADR-0019-Navigation-IntentCatalog.md) | ADR-0019 - Navigation Intent Catalog (IntentCatalog + GameNavigationCatalog) | Aceita | Implementada | Ativa | 2026-02-18 |
+| [`ADR-0020-LevelContent-Progression-vs-SceneRoute.md`](ADR-0020-LevelContent-Progression-vs-SceneRoute.md) | ADR-0020 - Separar LevelContent/Progression de SceneRoute/Scene Data | Aberto | Não iniciada | Ativa | 2026-02-18 |
 
 ## Templates
 
