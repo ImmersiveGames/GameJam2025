@@ -233,11 +233,11 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ---
 
 ### Checklist rápido de validação
-- [ ] Compila
-- [ ] Boot → Menu OK
-- [ ] Menu → Gameplay OK
-- [ ] Restart OK
-- [ ] Logs `[OBS]` aparecem conforme fase
+- [x] Compila
+- [x] Boot → Menu OK
+- [x] Menu → Gameplay OK
+- [x] Restart OK
+- [x] Logs `[OBS]` aparecem conforme fase
 
 
 <a id="p-002"></a>
@@ -526,7 +526,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 - ActivityId: **P-004**
 - Estado: **DONE**
-- Última atualização: **2026-02-17**
+- Última atualização: **2026-02-18**
 
 #### Fonte de verdade (referências)
 
