@@ -25,8 +25,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             InstallCompositionModules();
             RegisterInputModesFromRuntimeConfig();
 
-            RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
-            RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
+            _compositionInstallStage = CompositionInstallStage.Gates;
+            InstallCompositionModules();
 
             // Resolve ISimulationGateService UMA vez para os consumidores (reduz repetição de TryGetGlobal).
             DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
@@ -36,35 +36,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             RegisterPauseBridge(gateService);
 
-            RegisterGameLoop();
-            RegisterIntroStageCoordinator();
-            RegisterIntroStageControlService();
-            RegisterGameplaySceneClassifier();
-            RegisterIntroStagePolicyResolver();
-            RegisterDefaultIntroStageStep();
-
-            // Resolve IGameLoopService UMA vez para serviços dependentes.
-            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
-
-            RegisterGameRunEndRequestService();
-            RegisterGameCommands();
-            RegisterGameRunStatusService(gameLoopService);
-            RegisterGameRunOutcomeService(gameLoopService);
-            RegisterGameRunOutcomeEventInputBridge();
-            RegisterPostPlayOwnershipService();
+            _compositionInstallStage = CompositionInstallStage.GameLoop;
+            InstallCompositionModules();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             _compositionInstallStage = CompositionInstallStage.SceneFlow;
             InstallCompositionModules();
 
-            RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
-            RegisterIfMissing(() => new WorldResetService());
-            RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
+            _compositionInstallStage = CompositionInstallStage.WorldLifecycle;
+            InstallCompositionModules();
 
-
-            RegisterGameNavigationService();
+            _compositionInstallStage = CompositionInstallStage.Navigation;
+            InstallCompositionModules();
 
             _compositionInstallStage = CompositionInstallStage.Levels;
+            InstallCompositionModules();
+
+            _compositionInstallStage = CompositionInstallStage.ContentSwap;
+            InstallCompositionModules();
+
+            _compositionInstallStage = CompositionInstallStage.DevQA;
             InstallCompositionModules();
 
             RegisterExitToMenuNavigationBridge();
@@ -75,20 +66,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterInputModeSceneFlowBridge();
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
-            // ADR-0016: ContentSwapContext precisa existir no DI global.
-            RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterIntroStageQaInstaller();
-            RegisterContentSwapQaInstaller();
-            RegisterSceneFlowQaInstaller();
-#endif
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterIntroStageRuntimeDebugGui();
-#endif
-
-            // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
-            RegisterContentSwapChangeService();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
@@ -104,19 +81,91 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 new RuntimePolicyCompositionModule(),
                 new SceneFlowCompositionModule(),
-                new LevelsCompositionModule()
+                new GatesCompositionModule(),
+                new GameLoopCompositionModule(),
+                new WorldLifecycleCompositionModule(),
+                new NavigationCompositionModule(),
+                new LevelsCompositionModule(),
+                new ContentSwapCompositionModule(),
+                new DevQaCompositionModule()
             };
 
             var context = new GlobalCompositionContext(
                 _compositionInstallStage,
                 installRuntimePolicy: RegisterRuntimePolicyServices,
                 installSceneFlow: InstallSceneFlowServices,
-                installLevels: RegisterLevelsServices);
+                installLevels: RegisterLevelsServices,
+                installGates: InstallGatesServices,
+                installGameLoop: InstallGameLoopServices,
+                installWorldLifecycle: InstallWorldLifecycleServices,
+                installNavigation: InstallNavigationServices,
+                installContentSwap: InstallContentSwapServices,
+                installDevQa: InstallDevQaServices);
 
             for (int i = 0; i < modules.Length; i++)
             {
                 modules[i].Install(context);
             }
+        }
+
+        private static void InstallGatesServices()
+        {
+            RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
+            RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
+        }
+
+        private static void InstallGameLoopServices()
+        {
+            RegisterGameLoop();
+            RegisterIntroStageCoordinator();
+            RegisterIntroStageControlService();
+            RegisterGameplaySceneClassifier();
+            RegisterIntroStagePolicyResolver();
+            RegisterDefaultIntroStageStep();
+
+            RegisterGameRunEndRequestService();
+            RegisterGameCommands();
+
+            // Resolve IGameLoopService UMA vez para serviços dependentes.
+            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
+
+            RegisterGameRunStatusService(gameLoopService);
+            RegisterGameRunOutcomeService(gameLoopService);
+            RegisterGameRunOutcomeEventInputBridge();
+            RegisterPostPlayOwnershipService();
+        }
+
+        private static void InstallWorldLifecycleServices()
+        {
+            RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
+            RegisterIfMissing(() => new WorldResetService());
+
+            DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
+            RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
+        }
+
+        private static void InstallNavigationServices()
+        {
+            RegisterGameNavigationService();
+        }
+
+        private static void InstallContentSwapServices()
+        {
+            // ADR-0016: ContentSwapContext precisa existir no DI global.
+            RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
+
+            // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
+            RegisterContentSwapChangeService();
+        }
+
+        private static void InstallDevQaServices()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RegisterIntroStageQaInstaller();
+            RegisterContentSwapQaInstaller();
+            RegisterSceneFlowQaInstaller();
+            RegisterIntroStageRuntimeDebugGui();
+#endif
         }
 
         private static void InstallSceneFlowServices()
