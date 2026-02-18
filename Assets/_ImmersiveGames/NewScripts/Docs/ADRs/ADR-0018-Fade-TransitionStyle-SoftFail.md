@@ -4,13 +4,16 @@
 
 - Estado: **Implementado**
 - Data (decisão): **2026-02-15**
-- Última atualização: **2026-02-17**
+- Última atualização: **2026-02-18**
 - Decisores: Time NewScripts (GameLoop/SceneFlow)
 - Escopo: SceneFlow Fade + TransitionStyleCatalog (**apenas**)
-- Evidências:
-  - `Docs/Reports/Evidence/LATEST.md`
-  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
-  - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+
+## Evidências canônicas (atualizado em 2026-02-18)
+
+- `Docs/Reports/Evidence/LATEST.md`
+- `Docs/Reports/lastlog.log`
+- `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 
 ---
 

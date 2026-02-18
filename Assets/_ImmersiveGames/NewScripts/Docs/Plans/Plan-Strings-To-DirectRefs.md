@@ -1,12 +1,14 @@
+> SUPERSEDED / ARCHIVED: este plano é histórico. Fonte canônica: `Docs/Plans/Plan-Continuous.md#p-001` (atividade P-001 = DONE).
+
 # Plano (P-001) — Execução (Incremental): **Strings → Referências Diretas** (SOs + Enums)
 **Projeto:** Unity 6 / `NewScripts` (SceneFlow + Navigation + LevelFlow)
 **Data:** 2026-02-13
-**Status:** DONE (concluído após fechamento de F0–F5)
+**Status:** ARCHIVED (histórico; atividade canônica P-001 está DONE em Plan-Continuous)
 
 ## Status
 
 - ActivityId: **P-001**
-- Estado: **DONE**
+- Estado: **ARCHIVED**
 - Última atualização: **2026-02-17**
 
 ### Fonte de verdade (referências)
@@ -17,10 +19,11 @@
 
 ### Evidências (P-001)
 
-- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
-- Smoke runtime: `Docs/Reports/lastlog.log`
+- Evidência vigente (ponteiro canônico): `Docs/Reports/Evidence/LATEST.md`
+- Log bruto vigente: `Docs/Reports/lastlog.log`
 - Smoke datado (DataCleanup v1): `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator de suporte (DataCleanup v1): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
 
 ### Auditorias relacionadas (status atual)
 

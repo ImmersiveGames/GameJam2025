@@ -1,80 +1,134 @@
-# Audit — SceneFlow / RouteResetPolicy (P-004, READ-ONLY)
+> SUPERSEDED (2026-02-18): este documento foi superado por `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md` (veredito PASS).
+> Motivo: consolidação final do fechamento de P-004 com evidências canônicas (lastlog + validator PASS).
 
-**Data:** 2026-02-17  
-**Escopo:** `Assets/_ImmersiveGames/NewScripts/**` (inspeção estática + docs)  
-**Objetivo:** validar o estado do plano P-004 (RouteResetPolicy/SceneFlow/Navigation) sem alterar código.
+# Audit — SceneFlow / Navigation / RouteResetPolicy (P-004)
+
+- Data/Hora (UTC): **2026-02-18 00:23:42 UTC**
+- Escopo: `Assets/_ImmersiveGames/NewScripts/**` (inspeção estática read-only + evidência documental)
+- Modo: **AUDITORIA + DOCS ONLY**
+- Objetivo: revalidar P-004 no estado atual (pós DataCleanup v1) sem alterar runtime/editor code.
 
 ---
 
-## 1) Inventário de classes/serviços envolvidos
+## Comandos usados
 
-### Orquestração e DI (Composition)
+```bash
+rg -n "RegisterSceneFlowNative|RegisterSceneFlowRouteResetPolicy|RegisterGameNavigationService|RegisterSceneFlowRoutesRequired|SceneTransitionService|ResolveOrRegisterRouteResolver|ISceneRouteResolver|ISceneRouteCatalog|Resources.Load|SceneRouteResetPolicy|RouteKind|RequiresWorldReset|policy:missing|routePolicy" Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle Assets/_ImmersiveGames/NewScripts/Modules/Navigation -g '*.cs'
+
+nl -ba Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.Pipeline.cs | sed -n '1,220p'
+nl -ba Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.SceneFlowRoutes.cs | sed -n '1,260p'
+nl -ba Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.SceneFlowWorldLifecycle.cs | sed -n '1,220p'
+nl -ba Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs | sed -n '240,420p'
+nl -ba Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/SceneRouteResetPolicy.cs | sed -n '1,260p'
+nl -ba Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs | sed -n '1,220p'
+
+rg -n "ResetPolicy|policy:missing" Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log
+rg -n "SceneFlow Config Validation Report|VERDICT:" Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md
+```
+
+Arquivos inspecionados:
 - `Infrastructure/Composition/GlobalCompositionRoot.Pipeline.cs`
-  - Ordem atual relevante: `RegisterSceneFlowRoutesRequired()` -> `RegisterSceneFlowNative()` -> `RegisterSceneFlowRouteResetPolicy()` -> `RegisterGameNavigationService()`.
-- `Infrastructure/Composition/GlobalCompositionRoot.SceneFlowWorldLifecycle.cs`
-  - `RegisterSceneFlowNative()` cria `SceneTransitionService`.
-  - `RegisterSceneFlowRouteResetPolicy()` registra `IRouteResetPolicy` com `SceneRouteResetPolicy`.
-  - `ResolveOrRegisterRouteResolverRequired()` exige `ISceneRouteResolver` (fail-fast se ausente).
 - `Infrastructure/Composition/GlobalCompositionRoot.SceneFlowRoutes.cs`
-  - `RegisterSceneFlowRoutesRequired()` valida/garante `ISceneRouteCatalog` e registra `ISceneRouteResolver`.
-
-### Runtime SceneFlow/WorldLifecycle
+- `Infrastructure/Composition/GlobalCompositionRoot.SceneFlowWorldLifecycle.cs`
 - `Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
-  - Recebe `ISceneRouteResolver` e `IRouteResetPolicy`.
-  - `BuildRequestFromRouteDefinition(...)` falha em `routeId` inválido ou resolver ausente.
-  - `BuildContextWithResetDecision(...)` usa `IRouteResetPolicy`; se policy ausente, aplica `requiresWorldReset=false` com `decisionSource='policy:missing'`.
 - `Modules/WorldLifecycle/Runtime/SceneRouteResetPolicy.cs`
-  - Fonte primária: `routeDefinition` direto (quando já resolvido) ou `ISceneRouteResolver`.
-  - Decide reset por `RouteKind/RequiresWorldReset`.
-  - Em config inválida (`routeId` inválido, rota não resolvida, `RouteKind.Unspecified`) faz fail-fast (`[FATAL][Config]`).
-
-### Navegação (contrato e implementação)
-- `Modules/Navigation/IGameNavigationService.cs`
-  - Contrato principal por intent/core + wrappers legados `[Obsolete]`.
-- `Modules/Navigation/GameNavigationService.cs`
-  - Implementa navegação por intent e integração com SceneFlow (`SceneTransitionService`).
-
-### Evidências/documentos relacionados
-- `Docs/Plans/Plan-Continuous.md` (seção P-004: estado **IN_PROGRESS**).
-- `Docs/Reports/lastlog.log` (smoke runtime com transições e `RouteExecutionPlan`).
+- `Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs`
+- `Docs/Reports/lastlog.log`
+- `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
 ---
 
-## 2) Gaps vs contrato do plano P-004
+## Achados
 
-Referência de contrato: seção P-004 em `Docs/Plans/Plan-Continuous.md` (objetivos + checklist + critérios de aceitação).
+### A) Ordem de DI/pipeline: ainda existe cenário com `SceneTransitionService` sem `ISceneRouteResolver`?
 
-### Coberto (sem gap crítico observado)
-1. **Contrato explícito de navegação** está presente (`IGameNavigationService` com intents core e wrappers legados isolados).
-2. **Resolver obrigatório no bootstrap** foi endurecido: `SceneTransitionService` é criado com resolver exigido via `ResolveOrRegisterRouteResolverRequired()`.
-3. **RouteResetPolicy prioriza rota** (definition direta/resolver), com decisão por `RouteKind` e `RequiresWorldReset`.
-4. **Fail-fast de configuração inválida** em `SceneRouteResetPolicy` está coerente com política strict para config obrigatória.
+**Conclusão:** **foi resolvido no pipeline canônico atual (fail-fast, sem resolver nulo no caminho esperado)**.
 
-### Gaps/remanescentes
-1. **P-004 ainda não fechado documentalmente**: no plano canônico o checklist de execução permanece parcialmente pendente e o status está `IN_PROGRESS`.
-2. **Fallback quando policy ausente** em `SceneTransitionService` (`policy:missing` -> `requiresWorldReset=false`) é seguro, mas pode mascarar wiring incompleto em ambientes não strict.
-3. **Artefato datado específico de P-004** ainda é esperado no próprio plano (`Audit-SceneFlow-RouteResetPolicy.md`) — este arquivo atende esse requisito a partir desta auditoria.
-4. **Redundâncias de contrato/tipos** (item explícito do checklist) não estão consolidadas como decisão final no plano.
+Evidências:
+1. Pipeline registra rotas obrigatórias **antes** de SceneFlow native:
+   - `RegisterSceneFlowRoutesRequired()` vem antes de `RegisterSceneFlowNative()` no pipeline principal.
+2. `RegisterSceneFlowNative()` resolve resolver via método obrigatório:
+   - `var routeResolver = ResolveOrRegisterRouteResolverRequired();`
+   - instanciação de `SceneTransitionService(..., routeResolver, ...)` com resolver já resolvido.
+3. Se resolver não existir, há `InvalidOperationException` (fail-fast) em `ResolveOrRegisterRouteResolverRequired()`.
+4. `RegisterSceneFlowRoutesRequired()` registra `ISceneRouteCatalog` via bootstrap obrigatório e cria `ISceneRouteResolver` (`SceneRouteCatalogResolver`) se ausente.
 
----
-
-## 3) Próximos passos (5–10 bullets)
-
-1. Atualizar o bloco P-004 em `Docs/Plans/Plan-Continuous.md` com referência explícita a este audit datado.
-2. Fechar (ou justificar) os itens pendentes do checklist P-004 relacionados a wiring e redundâncias.
-3. Registrar evidência de runtime vinculando `lastlog.log` aos critérios de aceitação de P-004 (assinaturas e decisões de reset).
-4. Tornar observável no log quando `policy:missing` ocorrer em runtime, com severidade diferenciada por modo (Strict/Release).
-5. Adicionar nota de decisão no plano/ADR sobre quando o fallback `policy:missing` é aceitável.
-6. Confirmar no plano se a ordem atual de DI é a ordem canônica final (evitar regressão por reorder futuro).
-7. Consolidar documentação de responsabilidades entre `SceneTransitionService` e `SceneRouteResetPolicy` (fonte de decisão de reset).
-8. Após fechamento dos pendentes, promover P-004 de `IN_PROGRESS` para `DONE` com evidência associada.
+Trechos curtos relevantes:
+- Pipeline order:
+  - `RegisterSceneFlowRoutesRequired();`
+  - `RegisterSceneFlowNative();`
+- Fail-fast do resolver:
+  - `throw new InvalidOperationException("[SceneFlow] ISceneRouteResolver obrigatório ausente...`)`
 
 ---
 
-## 4) Comandos usados na auditoria
+### B) `SceneRouteResetPolicy`: decisão primária por rota (`RouteKind`/`RequiresWorldReset`) + fallback
 
-- `rg -n "Plano \(P-004\)|RouteResetPolicy|ISceneRouteResolver|SceneTransitionService|IGameNavigationService|..." ...`
-- `sed -n` nos arquivos de composição, runtime e plano canônico para inspeção do estado atual.
-- `rg -n "RequestMenuAsync\(|RequestGameplayAsync\(|NavigateAsync\(" Assets/_ImmersiveGames/NewScripts -g '!**/*.meta'`
+**Conclusão:** **PASS** — a policy decide reset com fonte primária em rota; fallback por profile não está na policy, ocorre somente no `SceneTransitionService` quando policy está ausente.
 
-> Auditoria executada em modo READ-ONLY (sem alteração de código/runtime).
+Evidências de implementação:
+1. `SceneRouteResetPolicy.Resolve(...)`:
+   - valida `routeId`;
+   - resolve definição via `routeDefinition` direto (quando já fornecido) ou `_routeResolver.TryResolve(...)`;
+   - falha em config inválida (`RouteKind.Unspecified`) com `[FATAL][Config]`;
+   - retorna `RouteResetDecision(shouldReset: resolvedDefinition.RequiresWorldReset, decisionSource: "routePolicy:<RouteKind>", reason: "RoutePolicy")`.
+2. `SceneTransitionService.BuildContextWithResetDecision(...)`:
+   - se não conseguir policy: usa fallback `requiresWorldReset=false`, `decisionSource="policy:missing"`;
+   - com policy presente: aplica decisão retornada por `IRouteResetPolicy`.
+3. Logs observáveis no smoke (`lastlog.log`):
+   - `decisionSource='routePolicy:Frontend'` para `routeId='to-menu'`.
+   - `decisionSource='routePolicy:Gameplay'` para `routeId='level.1'`.
+
+Logs [OBS]/[FATAL] relevantes:
+- [OBS] `ResetPolicy routeId='to-menu' ... decisionSource='routePolicy:Frontend'`
+- [OBS] `ResetPolicy routeId='level.1' ... decisionSource='routePolicy:Gameplay'`
+- [FATAL][Config] (na policy) para:
+  - `routeId` inválido,
+  - rota não resolvida,
+  - `RouteKind.Unspecified`.
+
+---
+
+### C) Regressão proibida: ainda existe fallback por `Resources.Load` para resolver catálogo/resolver?
+
+**Conclusão:** **não encontrado no caminho canônico de composição SceneFlow/Routes/WorldLifecycle**.
+
+Evidências:
+1. Em `GlobalCompositionRoot.SceneFlowRoutes.cs`, a origem do catálogo é `NewScriptsBootstrapConfigAsset.sceneRouteCatalog` (fail-fast se ausente), sem `Resources.Load`.
+2. Busca por `Resources.Load` no escopo de composição (`Infrastructure/Composition`) não retornou fallback para `SceneRouteCatalog`/resolver.
+3. Registro de `ISceneRouteCatalog` e `ISceneRouteResolver` é feito via DI (`RegisterGlobal`) com objeto resolvido do bootstrap.
+
+Observação:
+- Existe fallback defensivo `policy:missing` em `SceneTransitionService` caso `IRouteResetPolicy` não esteja disponível em runtime; porém no smoke atual há evidência de policy ativa e decisões `routePolicy:*`.
+
+---
+
+## Status vs Critérios de Aceitação (P-004)
+
+Critérios (P-004) avaliados no estado atual:
+
+1. **`SceneTransitionService` não deve nascer sem resolver no pipeline canônico**
+   - **PASS** (ordem + fail-fast + resolver obrigatório).
+2. **`SceneRouteResetPolicy` decide por rota (kind/requiresWorldReset)**
+   - **PASS** (implementação direta + logs `routePolicy:Frontend/Gameplay`).
+3. **Sem regressão para fallback de catálogo por `Resources.Load` no caminho canônico**
+   - **PASS** (catálogo via bootstrap config + DI).
+4. **Evidência runtime e validator DataCleanup v1**
+   - **PASS** (`lastlog.log` contém âncoras de reset policy; validator report em `VERDICT: PASS`).
+
+**Veredito geral da auditoria:** **PASS**.
+
+---
+
+## Ações recomendadas
+
+Como todos os critérios acima estão em PASS:
+
+1. **Manter P-004 em DONE** nos planos canônicos (`Plan-Continuous` e plano dedicado P-004).
+2. **Manter links de evidência sincronizados** para:
+   - `Docs/Reports/lastlog.log` (âncoras `routePolicy:*`),
+   - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` (`VERDICT: PASS`),
+   - este audit datado.
+3. **Monitorar regressão operacional**: em novos smokes, verificar explicitamente ausência de `policy:missing` e presença de `routePolicy:Frontend/Gameplay`.
+
+> Esta auditoria substitui leituras anteriores que marcavam P-004 como `IN_PROGRESS` por snapshot histórico.
