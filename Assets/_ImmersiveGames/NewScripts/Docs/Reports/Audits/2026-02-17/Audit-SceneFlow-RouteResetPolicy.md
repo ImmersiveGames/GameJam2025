@@ -1,3 +1,6 @@
+> SUPERSEDED (2026-02-18): este documento foi superado por `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md` (veredito PASS).
+> Motivo: consolidação final do fechamento de P-004 com evidências canônicas (lastlog + validator PASS).
+
 # Audit — SceneFlow / Navigation / RouteResetPolicy (P-004)
 
 - Data/Hora (UTC): **2026-02-18 00:23:42 UTC**

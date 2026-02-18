@@ -1,3 +1,6 @@
+> SUPERSEDED (estado atualizado em 2026-02-18): conclusões deste snapshot foram superadas por evidências atuais.
+> Estado atual relevante: validator `PASS` e audit P-004 `PASS` em `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`.
+
 # Audit — Plan/ADR Closure (READ-ONLY)
 
 **Data:** 2026-02-17  
