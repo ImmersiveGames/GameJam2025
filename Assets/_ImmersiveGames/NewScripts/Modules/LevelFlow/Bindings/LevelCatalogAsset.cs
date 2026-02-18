@@ -18,20 +18,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         fileName = "LevelCatalogAsset",
         menuName = "ImmersiveGames/NewScripts/Modules/LevelFlow/Catalogs/LevelCatalogAsset",
         order = 30)]
-    public sealed class LevelCatalogAsset : ScriptableObject, ILevelFlowService
+    public sealed class LevelCatalogAsset : ScriptableObject, ILevelFlowService, ILevelContentResolver
     {
         private readonly struct LevelResolution
         {
-            public LevelResolution(LevelDefinition definition, SceneRouteId routeId, SceneTransitionPayload payload)
+            public LevelResolution(LevelDefinition definition, SceneRouteId routeId, SceneTransitionPayload payload, string contentId)
             {
                 Definition = definition;
                 RouteId = routeId;
                 Payload = payload;
+                ContentId = contentId;
             }
 
             public LevelDefinition Definition { get; }
             public SceneRouteId RouteId { get; }
             public SceneTransitionPayload Payload { get; }
+            public string ContentId { get; }
         }
 
         [Header("Levels")]
@@ -96,6 +98,26 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             return true;
         }
 
+
+        public bool TryResolveContentId(LevelId levelId, out string contentId)
+        {
+            contentId = LevelFlowContentDefaults.DefaultContentId;
+
+            if (!levelId.IsValid)
+            {
+                return false;
+            }
+
+            EnsureCache();
+            if (!_cache.TryGetValue(levelId, out var resolution))
+            {
+                return false;
+            }
+
+            contentId = LevelFlowContentDefaults.Normalize(resolution.ContentId);
+            return true;
+        }
+
         private void OnEnable()
         {
             _cacheBuilt = false;
@@ -109,6 +131,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
 #if UNITY_EDITOR
             TryMigrateLegacyRouteRefsInEditor();
+            EnsureDefaultContentIdsInEditor();
 #endif
 
             try
@@ -177,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
                 }
 
-                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload()));
+                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
             int ambiguousRoutes = 0;
@@ -254,6 +277,43 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             EditorUtility.SetDirty(this);
             DebugUtility.Log(typeof(LevelCatalogAsset),
                 $"[OBS][Config] LevelCatalogAsset OnValidate migrou routeRef a partir de routeId legado. migrated={migratedCount}, asset='{name}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void EnsureDefaultContentIdsInEditor()
+        {
+            if (levels == null || levels.Count == 0)
+            {
+                return;
+            }
+
+            int migratedCount = 0;
+            for (int i = 0; i < levels.Count; i++)
+            {
+                LevelDefinition definition = levels[i];
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                string normalizedContentId = LevelFlowContentDefaults.Normalize(definition.contentId);
+                if (string.Equals(definition.contentId, normalizedContentId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                definition.contentId = normalizedContentId;
+                migratedCount++;
+            }
+
+            if (migratedCount <= 0)
+            {
+                return;
+            }
+
+            EditorUtility.SetDirty(this);
+            DebugUtility.Log(typeof(LevelCatalogAsset),
+                $"[OBS][Compat] LevelCatalogAsset OnValidate contentId default aplicado. migrated={migratedCount}, default='{LevelFlowContentDefaults.DefaultContentId}', asset='{name}'.",
                 DebugUtility.Colors.Info);
         }
 

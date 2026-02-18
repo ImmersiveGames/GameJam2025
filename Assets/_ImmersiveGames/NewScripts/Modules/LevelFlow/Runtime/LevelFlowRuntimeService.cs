@@ -59,11 +59,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string normalizedReason = NormalizeReason(reason);
             string contextSignature = BuildContextSignature(typedLevelId, resolvedRouteId, styleIdTyped, normalizedReason);
 
+            string selectedContentId = ResolveContentId(typedLevelId);
+
             var snapshot = new GameplayStartSnapshot(
                 typedLevelId,
                 resolvedRouteId,
                 styleIdTyped,
-                contentId: string.Empty,
+                contentId: selectedContentId,
                 reason: normalizedReason,
                 selectionVersion: 0,
                 contextSignature: contextSignature);
@@ -76,13 +78,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
                 typedLevelId,
                 resolvedRouteId,
-                contentId: string.Empty,
+                contentId: selectedContentId,
                 reason: normalizedReason,
                 selectionVersion: snapshot.SelectionVersion,
                 contextSignature: contextSignature));
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][Level] LevelSelected levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='<empty>' reason='{normalizedReason}' v='{snapshot.SelectionVersion}' contextSignature='{contextSignature}'.",
+                $"[OBS][Level] LevelSelected levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' contentRef='{selectedContentId}' reason='{normalizedReason}' v='{snapshot.SelectionVersion}' contextSignature='{contextSignature}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
@@ -128,6 +130,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return (styleId, gameplayEntry.StyleId, profileId, profileAsset);
         }
 
+
+        private string ResolveContentId(LevelId levelId)
+        {
+            if (_levelResolver is ILevelContentResolver contentResolver &&
+                contentResolver.TryResolveContentId(levelId, out string contentId))
+            {
+                return LevelFlowContentDefaults.Normalize(contentId);
+            }
+
+            return LevelFlowContentDefaults.DefaultContentId;
+        }
 
         private static string NormalizeReason(string reason)
         {
