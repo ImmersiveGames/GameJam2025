@@ -110,6 +110,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
         }
 
+
+        private static IRestartContextService ResolveOrRegisterRestartContextService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var existing) && existing != null)
+            {
+                return existing;
+            }
+
+            var service = new RestartContextService();
+            DependencyManager.Provider.RegisterGlobal<IRestartContextService>(service);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][Navigation] RestartContextService registrado no DI global.",
+                DebugUtility.Colors.Info);
+
+            return service;
+        }
+
         private static void RegisterGameNavigationService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var existing) && existing != null)
@@ -205,13 +223,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"hasToGameplay={hasToGameplay}.",
                 DebugUtility.Colors.Info);
 
+            var restartContextService = ResolveOrRegisterRestartContextService();
+
             var service = new GameNavigationService(
                 sceneFlow,
                 catalogAsset,
                 sceneRouteResolver,
                 styleCatalogAsset,
                 levelCatalogAsset,
-                intentCatalogAsset);
+                intentCatalogAsset,
+                restartContextService);
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
@@ -263,7 +284,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     "Missing required NewScriptsBootstrapConfigAsset.transitionStyleCatalog (TransitionStyleCatalogAsset).");
             }
 
-            var runtimeService = new LevelFlowRuntimeService(levelCatalogAsset, navigationService, catalogAsset, styleCatalogAsset);
+            var restartContextService = ResolveOrRegisterRestartContextService();
+            var runtimeService = new LevelFlowRuntimeService(levelCatalogAsset, navigationService, catalogAsset, styleCatalogAsset, restartContextService);
             DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

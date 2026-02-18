@@ -116,9 +116,9 @@ Regras:
 
 ### Critérios de pronto (DoD)
 
-- [ ] `LevelSelectedEvent` publicado e consumido com logs âncora.
-- [ ] Start Gameplay não depende de bijeção rígida Route→Level.
-- [ ] Restart funciona com snapshot canônico (sem reverse lookup obrigatório).
+- [x] `LevelSelectedEvent` publicado e consumido com logs âncora.
+- [x] Start Gameplay não depende de bijeção rígida Route→Level.
+- [x] Restart funciona com snapshot canônico (sem reverse lookup obrigatório).
 - [ ] `LevelCatalogAsset` não impõe 1:1 Level↔Route (N→1 permitido).
 - [ ] Migração Editor-only cria/associa `contentRef` default explícito.
 - [ ] Baseline: menu->play, post-game restart, exit to menu continuam OK.
@@ -157,9 +157,42 @@ Superfícies típicas:
 
 ## Notas de implementação (se necessário)
 
+### Execução real — P0/P1 (2026-02-18)
+
+- **P0 concluído (contrato mínimo + observabilidade):**
+  - Introduzidos `LevelSelectedEvent`, `GameplayStartSnapshot` e `IRestartContextService` com implementação simples (`RestartContextService`).
+  - `LevelFlowRuntimeService.StartGameplayAsync(levelId, reason)` passou a registrar snapshot canônico, publicar `LevelSelectedEvent` e emitir log âncora `[OBS][Level] LevelSelected ...`.
+  - `GameNavigationService.RestartAsync(reason)` passou a emitir log âncora `[OBS][Navigation] RestartUsingSnapshot ...` em modo compatível.
+
+- **P1 mínimo concluído (desacoplamento incremental Route→Level):**
+  - `GameNavigationService.StartGameplayRouteAsync(routeId, payload, reason)` deixou de exigir hard-fail para reverse lookup `RouteId -> LevelId`.
+  - Resolução de `levelId` em ordem: snapshot (quando rota coincide e há levelId), reverse lookup best-effort, fallback para `LevelId.None` sem fatal.
+  - Em fallback sem mapeamento, observabilidade compatível via `[OBS][Navigation][Compat] RouteToLevelNotResolved routeId='...'`.
+  - `RestartAsync(reason)` passou a resolver rota por snapshot quando disponível e registrar `[OBS][Navigation] RestartResolved routeId='...' source='snapshot|legacy'`; fallback legado permanece para compatibilidade.
+
+- **Escopo preservado:**
+  - Sem alteração de semântica de SceneFlow, ContentSwap ou spawn nesta etapa.
+
 - Manter rollout incremental por feature flag para preservar baseline durante a transição.
 - Priorizar compatibilidade de assets em migrações editor-only com reserialize controlado.
 - Preservar âncoras de observabilidade existentes e introduzir as novas sem quebra de parsing em QA.
+
+#### Poréns / Débitos (P0/P1)
+
+- **P0**
+    - `LevelFlowRuntimeService` adquiriu dependências opcionais usadas apenas para “labeling/observability” (catálogos). Manter opcional e remover/centralizar no cleanup se virar acoplamento desnecessário.
+    - Padronizar ownership de logs: decidir se `RestartContextService.Clear()` e correlatos devem logar como `[OBS][Level]` (owner LevelFlow) ou `[OBS][Navigation]` (consumer Navigation).
+
+- **P1**
+    - Hardening recomendado: evitar sobrescrever o “last valid levelId” com `LevelId.None` ao atualizar cache/observabilidade.
+    - Hardening recomendado: no fallback de `RestartAsync`, se existir `lastGameplayRouteId` válido, permitir restart por rota mesmo quando `lastStartedGameplayLevelId` estiver inválido (reduz FATAL falso).
+    - Limitação conhecida: restart via snapshot usa `payload=Empty` no P1 mínimo; contrato de payload por level/content será resolvido em P2/P3.
+
+#### Cleanup planejado (P3)
+
+- Remover logs `[Compat]` e reverse lookup legado quando N→1 estiver habilitado e validado.
+- Remover dependências opcionais usadas apenas para observabilidade (se não forem essenciais).
+- Normalizar `LastLevelIdUpdated` e regras de cache quando `LevelId.None`.
 
 ## Evidência
 
