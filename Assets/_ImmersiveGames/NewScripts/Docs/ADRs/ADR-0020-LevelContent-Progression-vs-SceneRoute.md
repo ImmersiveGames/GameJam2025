@@ -116,9 +116,9 @@ Regras:
 
 ### Critérios de pronto (DoD)
 
-- [ ] `LevelSelectedEvent` publicado e consumido com logs âncora.
-- [ ] Start Gameplay não depende de bijeção rígida Route→Level.
-- [ ] Restart funciona com snapshot canônico (sem reverse lookup obrigatório).
+- [x] `LevelSelectedEvent` publicado e consumido com logs âncora.
+- [x] Start Gameplay não depende de bijeção rígida Route→Level.
+- [x] Restart funciona com snapshot canônico (sem reverse lookup obrigatório).
 - [ ] `LevelCatalogAsset` não impõe 1:1 Level↔Route (N→1 permitido).
 - [ ] Migração Editor-only cria/associa `contentRef` default explícito.
 - [ ] Baseline: menu->play, post-game restart, exit to menu continuam OK.
@@ -156,6 +156,22 @@ Superfícies típicas:
 - Ajustar contratos e consumers.
 
 ## Notas de implementação (se necessário)
+
+### Execução real — P0/P1 (2026-02-18)
+
+- **P0 concluído (contrato mínimo + observabilidade):**
+  - Introduzidos `LevelSelectedEvent`, `GameplayStartSnapshot` e `IRestartContextService` com implementação simples (`RestartContextService`).
+  - `LevelFlowRuntimeService.StartGameplayAsync(levelId, reason)` passou a registrar snapshot canônico, publicar `LevelSelectedEvent` e emitir log âncora `[OBS][Level] LevelSelected ...`.
+  - `GameNavigationService.RestartAsync(reason)` passou a emitir log âncora `[OBS][Navigation] RestartUsingSnapshot ...` em modo compatível.
+
+- **P1 mínimo concluído (desacoplamento incremental Route→Level):**
+  - `GameNavigationService.StartGameplayRouteAsync(routeId, payload, reason)` deixou de exigir hard-fail para reverse lookup `RouteId -> LevelId`.
+  - Resolução de `levelId` em ordem: snapshot (quando rota coincide e há levelId), reverse lookup best-effort, fallback para `LevelId.None` sem fatal.
+  - Em fallback sem mapeamento, observabilidade compatível via `[OBS][Navigation][Compat] RouteToLevelNotResolved routeId='...'`.
+  - `RestartAsync(reason)` passou a resolver rota por snapshot quando disponível e registrar `[OBS][Navigation] RestartResolved routeId='...' source='snapshot|legacy'`; fallback legado permanece para compatibilidade.
+
+- **Escopo preservado:**
+  - Sem alteração de semântica de SceneFlow, ContentSwap ou spawn nesta etapa.
 
 - Manter rollout incremental por feature flag para preservar baseline durante a transição.
 - Priorizar compatibilidade de assets em migrações editor-only com reserialize controlado.
