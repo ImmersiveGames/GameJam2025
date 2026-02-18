@@ -75,9 +75,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var modules = new IGlobalCompositionModule[]
             {
                 new RuntimePolicyCompositionModule(),
-                new SceneFlowCompositionModule(),
                 new GatesCompositionModule(),
                 new GameLoopCompositionModule(),
+                new SceneFlowCompositionModule(),
                 new WorldLifecycleCompositionModule(),
                 new NavigationCompositionModule(),
                 new LevelsCompositionModule(),
