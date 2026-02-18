@@ -155,6 +155,12 @@ Superfícies típicas:
 - Remover/rebaixar `TryResolveLevelId(route)` como requisito hard.
 - Ajustar contratos e consumers.
 
+## Notas de implementação (se necessário)
+
+- Manter rollout incremental por feature flag para preservar baseline durante a transição.
+- Priorizar compatibilidade de assets em migrações editor-only com reserialize controlado.
+- Preservar âncoras de observabilidade existentes e introduzir as novas sem quebra de parsing em QA.
+
 ## Evidência
 
 Âncoras atuais relevantes (existentes hoje):
