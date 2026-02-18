@@ -2,8 +2,12 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 {
@@ -89,6 +93,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private void OnValidate()
         {
             _cacheBuilt = false;
+
+#if UNITY_EDITOR
+            TryMigrateLegacyRouteRefsInEditor();
+#endif
 
             try
             {
@@ -178,18 +186,74 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             LevelDefinition definition = resolution.Definition;
-            if (definition.routeRef != null)
+            DebugUtility.LogVerbose<LevelCatalogAsset>(
+                $"[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='{levelId}' routeId='{resolution.RouteId}' asset='{definition.routeRef.name}'.",
+                DebugUtility.Colors.Info);
+        }
+
+#if UNITY_EDITOR
+        private void TryMigrateLegacyRouteRefsInEditor()
+        {
+            if (levels == null || levels.Count == 0)
             {
-                DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='{levelId}' routeId='{resolution.RouteId}' asset='{definition.routeRef.name}'.",
-                    DebugUtility.Colors.Info);
                 return;
             }
 
-            DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][SceneFlow] RouteResolvedVia=RouteId levelId='{levelId}' routeId='{resolution.RouteId}'.",
+            Dictionary<SceneRouteId, SceneRouteDefinitionAsset> routesById = BuildRoutesById();
+            int migratedCount = 0;
+
+            for (int i = 0; i < levels.Count; i++)
+            {
+                LevelDefinition definition = levels[i];
+                if (definition == null || definition.routeRef != null || !definition.routeId.IsValid)
+                {
+                    continue;
+                }
+
+                if (!routesById.TryGetValue(definition.routeId, out SceneRouteDefinitionAsset routeAsset) || routeAsset == null)
+                {
+                    continue;
+                }
+
+                // Migração automática do legado: promove routeId para routeRef.
+                definition.routeRef = routeAsset;
+                migratedCount++;
+            }
+
+            if (migratedCount <= 0)
+            {
+                return;
+            }
+
+            EditorUtility.SetDirty(this);
+            DebugUtility.Log(typeof(LevelCatalogAsset),
+                $"[OBS][Config] LevelCatalogAsset OnValidate migrou routeRef a partir de routeId legado. migrated={migratedCount}, asset='{name}'.",
                 DebugUtility.Colors.Info);
         }
+
+        private static Dictionary<SceneRouteId, SceneRouteDefinitionAsset> BuildRoutesById()
+        {
+            var routesById = new Dictionary<SceneRouteId, SceneRouteDefinitionAsset>();
+            string[] guids = AssetDatabase.FindAssets("t:SceneRouteDefinitionAsset");
+
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+                SceneRouteDefinitionAsset routeAsset = AssetDatabase.LoadAssetAtPath<SceneRouteDefinitionAsset>(assetPath);
+                if (routeAsset == null || !routeAsset.RouteId.IsValid)
+                {
+                    continue;
+                }
+
+                if (!routesById.ContainsKey(routeAsset.RouteId))
+                {
+                    routesById.Add(routeAsset.RouteId, routeAsset);
+                }
+            }
+
+            return routesById;
+        }
+#endif
 
         private static void HandleDuplicateRouteMappingConfigError(SceneRouteId routeId, LevelId firstLevelId, LevelId duplicatedLevelId)
         {
