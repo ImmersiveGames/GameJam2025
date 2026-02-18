@@ -5,12 +5,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition.Modules
     public enum CompositionInstallStage
     {
         RuntimePolicy,
-        SceneFlow,
-        Levels,
         Gates,
         GameLoop,
+        SceneFlow,
         WorldLifecycle,
         Navigation,
+        Levels,
         ContentSwap,
         DevQA
     }
