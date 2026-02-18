@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition.Modules;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
@@ -10,6 +11,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
+        private static CompositionInstallStage _compositionInstallStage;
+
         // --------------------------------------------------------------------
         // Main registration pipeline (order matters)
         // --------------------------------------------------------------------
@@ -18,7 +21,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             PrimeEventSystems();
 
-            RegisterRuntimePolicyServices();
+            _compositionInstallStage = CompositionInstallStage.RuntimePolicy;
+            InstallCompositionModules();
             RegisterInputModesFromRuntimeConfig();
 
             RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
@@ -50,11 +54,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterPostPlayOwnershipService();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
-            RegisterSceneFlowTransitionProfiles();
-            RegisterSceneFlowRoutesRequired();
-            RegisterSceneFlowNative();
-            RegisterSceneFlowSignatureCache();
-            RegisterSceneFlowRouteResetPolicy();
+            _compositionInstallStage = CompositionInstallStage.SceneFlow;
+            InstallCompositionModules();
 
             RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
             RegisterIfMissing(() => new WorldResetService());
@@ -91,6 +92,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             InitializeReadinessGate(gateService);
             RegisterGameLoopSceneFlowCoordinatorIfAvailable();
+        }
+
+        private static void InstallCompositionModules()
+        {
+            var modules = new IGlobalCompositionModule[]
+            {
+                new RuntimePolicyCompositionModule(),
+                new SceneFlowCompositionModule()
+            };
+
+            var context = new GlobalCompositionContext(
+                _compositionInstallStage,
+                installRuntimePolicy: RegisterRuntimePolicyServices,
+                installSceneFlow: InstallSceneFlowServices);
+
+            for (int i = 0; i < modules.Length; i++)
+            {
+                modules[i].Install(context);
+            }
+        }
+
+        private static void InstallSceneFlowServices()
+        {
+            RegisterSceneFlowTransitionProfiles();
+            RegisterSceneFlowRoutesRequired();
+            RegisterSceneFlowNative();
+            RegisterSceneFlowSignatureCache();
+            RegisterSceneFlowRouteResetPolicy();
         }
 
     }
