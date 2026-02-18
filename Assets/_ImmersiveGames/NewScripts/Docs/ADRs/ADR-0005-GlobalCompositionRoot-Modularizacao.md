@@ -2,7 +2,7 @@
 
 ## Status
 
-- Estado: Implemented/DONE
+- Estado: Fechado
 - Data (decisão): 2026-02-06
 - Última atualização: 2026-02-18
 - Tipo: Implementação
@@ -296,6 +296,5 @@ O *baseline atual* já define uma sequência que funciona. A migração deve pre
 
 ## Evidências de fechamento (2026-02-18)
 
-- Log de execução/baseline mais recente: `Docs/Reports/lastlog.log`.
-- Validação de configuração do SceneFlow (DataCleanup v1): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`.
-- Auditoria de fechamento desta ADR: `Docs/Reports/Audits/2026-02-18/Audit-ADR-0005-Closure.md`.
+- Log de execução/baseline mais recente: [`../Reports/lastlog.log`](../Reports/lastlog.log).
+- Auditoria de fechamento desta ADR: [`../Reports/Audits/2026-02-18/Audit-ADR-0005-Closure.md`](../Reports/Audits/2026-02-18/Audit-ADR-0005-Closure.md).
