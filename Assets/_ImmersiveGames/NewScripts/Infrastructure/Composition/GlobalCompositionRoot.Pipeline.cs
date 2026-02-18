@@ -63,6 +63,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
 
             RegisterGameNavigationService();
+
+            _compositionInstallStage = CompositionInstallStage.Levels;
+            InstallCompositionModules();
+
             RegisterExitToMenuNavigationBridge();
             RegisterRestartNavigationBridge();
 
@@ -99,13 +103,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var modules = new IGlobalCompositionModule[]
             {
                 new RuntimePolicyCompositionModule(),
-                new SceneFlowCompositionModule()
+                new SceneFlowCompositionModule(),
+                new LevelsCompositionModule()
             };
 
             var context = new GlobalCompositionContext(
                 _compositionInstallStage,
                 installRuntimePolicy: RegisterRuntimePolicyServices,
-                installSceneFlow: InstallSceneFlowServices);
+                installSceneFlow: InstallSceneFlowServices,
+                installLevels: RegisterLevelsServices);
 
             for (int i = 0; i < modules.Length; i++)
             {
