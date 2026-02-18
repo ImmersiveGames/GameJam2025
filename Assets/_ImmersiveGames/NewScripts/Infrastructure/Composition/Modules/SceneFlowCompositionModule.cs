@@ -8,7 +8,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition.Modules
 
         public void Install(GlobalCompositionContext context)
         {
-            if (_installed || context == null || context.Stage != CompositionInstallStage.SceneFlow)
+            if (context == null || context.Stage != CompositionInstallStage.SceneFlow)
+            {
+                return;
+            }
+
+            if (_installed)
             {
                 return;
             }
