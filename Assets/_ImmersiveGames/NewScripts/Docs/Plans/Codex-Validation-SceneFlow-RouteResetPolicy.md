@@ -14,7 +14,7 @@
 
 ### Artefatos de fechamento (evidência real)
 
-- Audit datado: `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
+- Audit datado: `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 - Smoke: `Docs/Reports/lastlog.log`
 - Validator PASS: `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
@@ -52,5 +52,5 @@
 
 - `Docs/Reports/lastlog.log`
 - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
-- `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
+- `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 - `Docs/Plans/Codex-Validation-SceneFlow-RouteResetPolicy.md`

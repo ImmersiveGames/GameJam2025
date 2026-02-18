@@ -536,7 +536,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 #### Artefato datado (auditoria)
 
-- `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
+- `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 
 ### Contexto
 
@@ -572,7 +572,7 @@ Objetivo desta rodada:
 - Report de validação (PASS):
   - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Audit datado de fechamento:
-  - `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
+  - `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 - Plano dedicado (fechamento P-004):
   - `Docs/Plans/Codex-Validation-SceneFlow-RouteResetPolicy.md`
 

@@ -1,9 +1,12 @@
+> SUPERSEDED / ARCHIVED: este plano é histórico. Fonte canônica: `Docs/Plans/Plan-Continuous.md#p-002` (atividade P-002 = DONE).
+
 # Plano (P-002) — Data Cleanup pós StringsToDirectRefs v1
 
 ## Status
 
 - ActivityId: **P-002**
-- Estado: **DONE**
+- Estado: **ARCHIVED**
+- Status canônico da atividade: **DONE** (ver Plan-Continuous)
 - Última atualização: **2026-02-17**
 
 ### Fonte de verdade (referências)
