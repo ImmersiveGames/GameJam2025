@@ -2,9 +2,9 @@
 
 ## Status
 
-- Estado: Em andamento
+- Estado: Implemented/DONE
 - Data (decisão): 2026-02-06
-- Última atualização: 2026-02-06
+- Última atualização: 2026-02-18
 - Tipo: Implementação
 - Escopo: `Infrastructure/Composition` (DI global) + registro de módulos (SceneFlow, GameLoop, WorldLifecycle, etc.)
 - Decisores: Innocenti
@@ -101,12 +101,12 @@ Manter um **Composition Root pequeno e legível**, responsável apenas por:
 
 ### Critérios de pronto (DoD)
 
-- [ ] `GlobalCompositionRoot` reduzido para um arquivo “orquestrador” (preferência: < 300 linhas).
-- [ ] Extração de módulos de registro por feature (mínimo: RuntimePolicy, Gates, SceneFlow, GameLoop, WorldLifecycle, Navigation, ContentSwap, Levels, Dev/QA).
-- [ ] `Install()` idempotente em todos os módulos.
-- [ ] Sem reflection scanning para discovery de módulos.
-- [ ] Build compila em Release e Dev.
-- [ ] Evidência: log de baseline confirma que as âncoras canônicas permanecem (ou mudanças justificadas).
+- [x] `GlobalCompositionRoot` reduzido para um arquivo “orquestrador” (preferência: < 300 linhas), com orquestração centralizada no pipeline e implementações separadas por partials/módulos.
+- [x] Extração de módulos de registro por feature concluída (RuntimePolicy, Gates, SceneFlow, GameLoop, WorldLifecycle, Navigation, ContentSwap, Levels, Dev/QA).
+- [x] `Install()` idempotente em todos os módulos (guard `_installed` + validação de `Stage`).
+- [x] Sem reflection scanning para discovery de módulos (lista explícita em `InstallCompositionModules()`).
+- [x] Build compila em Release e Dev (guardas de compilação para Dev/Editor preservados).
+- [x] Evidência: baseline/relatórios atualizados e sem ruptura de âncoras canônicas não justificada.
 
 ## Implementação (arquivos impactados)
 
@@ -292,3 +292,10 @@ O *baseline atual* já define uma sequência que funciona. A migração deve pre
 - ADR-0017 — LevelManager + Config Catalog
 - Baseline 2.0 — `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Spec.md`
 - Standards — `Assets/_ImmersiveGames/NewScripts/Docs/Standards/Standards.md`
+
+
+## Evidências de fechamento (2026-02-18)
+
+- Log de execução/baseline mais recente: `Docs/Reports/lastlog.log`.
+- Validação de configuração do SceneFlow (DataCleanup v1): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`.
+- Auditoria de fechamento desta ADR: `Docs/Reports/Audits/2026-02-18/Audit-ADR-0005-Closure.md`.
