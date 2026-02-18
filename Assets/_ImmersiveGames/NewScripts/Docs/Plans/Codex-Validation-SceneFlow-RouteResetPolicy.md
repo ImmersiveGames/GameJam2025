@@ -4,7 +4,7 @@
 
 - ActivityId: **P-004**
 - Estado: **DONE**
-- Última atualização: **2026-02-17**
+- Última atualização: **2026-02-18**
 
 ### Fonte de verdade (referências)
 
@@ -42,6 +42,15 @@
 - `rg -n "policy:missing" Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log`
 - `rg -n "VERDICT:" Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 
-## Follow-ups (post)
+## Histórico (resolvido)
 
-- Consolidar periodicamente auditorias históricas para evitar conclusões superadas em snapshots anteriores.
+- **Ordem de DI/pipeline:** cenário de `ISceneRouteResolver` ausente no caminho canônico foi tratado via registro obrigatório de rotas antes do SceneFlow native + fail-fast quando resolver não existe.
+- **Decisão de reset:** `SceneRouteResetPolicy` opera por rota (`RouteKind`/`RequiresWorldReset`) e o smoke confirma decisões `routePolicy:Frontend` e `routePolicy:Gameplay`.
+- **Regressão de catálogo:** não há fallback canônico por `Resources.Load` para catálogo/resolver de rota no fluxo validado.
+
+## Evidências
+
+- `Docs/Reports/lastlog.log`
+- `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
+- `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
+- `Docs/Plans/Codex-Validation-SceneFlow-RouteResetPolicy.md`

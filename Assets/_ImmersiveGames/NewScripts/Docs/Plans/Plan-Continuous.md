@@ -44,7 +44,7 @@ Uma atividade só vira **DONE** quando:
 
 - ActivityId: **P-001**
 - Estado: **DONE**
-- Última atualização: **2026-02-17**
+- Última atualização: **2026-02-18**
 
 #### Fonte de verdade (referências)
 
@@ -573,6 +573,8 @@ Objetivo desta rodada:
   - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Audit datado de fechamento:
   - `Docs/Reports/Audits/2026-02-17/Audit-SceneFlow-RouteResetPolicy.md`
+- Plano dedicado (fechamento P-004):
+  - `Docs/Plans/Codex-Validation-SceneFlow-RouteResetPolicy.md`
 
 #### Comandos de prova (executáveis no CLI)
 
