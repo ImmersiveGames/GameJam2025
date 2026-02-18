@@ -22,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly ILevelFlowService _levelFlowService;
         private readonly GameNavigationIntentCatalogAsset _intentsCatalog;
+        private readonly IRestartContextService _restartContextService;
 
         private LevelId _lastStartedGameplayLevelId;
         private SceneRouteId _lastGameplayRouteId;
@@ -34,7 +35,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             ISceneRouteResolver sceneRouteResolver,
             ITransitionStyleCatalog styleCatalog,
             ILevelFlowService levelFlowService,
-            GameNavigationIntentCatalogAsset intentsCatalog)
+            GameNavigationIntentCatalogAsset intentsCatalog,
+            IRestartContextService restartContextService = null)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -42,6 +44,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             _styleCatalog = styleCatalog ?? throw new ArgumentNullException(nameof(styleCatalog));
             _levelFlowService = levelFlowService;
             _intentsCatalog = intentsCatalog;
+            _restartContextService = restartContextService;
 
             if (_intentsCatalog == null)
             {
@@ -66,6 +69,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         public async Task RestartAsync(string reason = null)
         {
+            if (_restartContextService != null && _restartContextService.TryGetCurrent(out var snapshot))
+            {
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.RouteId}', levelId='{(snapshot.HasLevelId ? snapshot.LevelId.ToString() : "<none>")}', contentId='{(snapshot.HasContentId ? snapshot.ContentId : "<none>")}', styleId='{snapshot.StyleId}', v='{snapshot.SelectionVersion}', reason='{(string.IsNullOrWhiteSpace(reason) ? snapshot.Reason : reason)}', contextSignature='{(string.IsNullOrWhiteSpace(snapshot.ContextSignature) ? "<none>" : snapshot.ContextSignature)}'.",
+                    DebugUtility.Colors.Info);
+            }
+            else
+            {
+                DebugUtility.Log(typeof(GameNavigationService),
+                    "[OBS][Navigation] RestartUsingSnapshot status='empty_or_compat'.",
+                    DebugUtility.Colors.Info);
+            }
+
             if (!_lastStartedGameplayLevelId.IsValid)
             {
                 string lastRouteId = _lastGameplayRouteId.IsValid ? _lastGameplayRouteId.ToString() : "<none>";
