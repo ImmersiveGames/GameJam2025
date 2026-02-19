@@ -212,6 +212,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
             }
 
+            DebugUtility.Log<LevelCatalogAsset>(
+                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes}",
+                DebugUtility.Colors.Info);
+
             if (warnOnInvalidLevels)
             {
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
