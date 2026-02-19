@@ -18,20 +18,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         fileName = "LevelCatalogAsset",
         menuName = "ImmersiveGames/NewScripts/Modules/LevelFlow/Catalogs/LevelCatalogAsset",
         order = 30)]
-    public sealed class LevelCatalogAsset : ScriptableObject, ILevelFlowService
+    public sealed class LevelCatalogAsset : ScriptableObject, ILevelFlowService, ILevelContentResolver
     {
         private readonly struct LevelResolution
         {
-            public LevelResolution(LevelDefinition definition, SceneRouteId routeId, SceneTransitionPayload payload)
+            public LevelResolution(LevelDefinition definition, SceneRouteId routeId, SceneTransitionPayload payload, string contentId)
             {
                 Definition = definition;
                 RouteId = routeId;
                 Payload = payload;
+                ContentId = contentId;
             }
 
             public LevelDefinition Definition { get; }
             public SceneRouteId RouteId { get; }
             public SceneTransitionPayload Payload { get; }
+            public string ContentId { get; }
         }
 
         [Header("Levels")]
@@ -43,6 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
         private readonly Dictionary<LevelId, LevelResolution> _cache = new();
         private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
+        private readonly Dictionary<SceneRouteId, List<LevelId>> _routeToLevelCandidates = new();
         private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
@@ -80,7 +83,39 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             EnsureCache();
-            return _routeToLevelCache.TryGetValue(routeId, out levelId) && levelId.IsValid;
+            if (!_routeToLevelCache.TryGetValue(routeId, out levelId) || !levelId.IsValid)
+            {
+                return false;
+            }
+
+            if (_routeToLevelCandidates.TryGetValue(routeId, out List<LevelId> candidates) && candidates.Count > 1)
+            {
+                DebugUtility.Log(typeof(LevelCatalogAsset),
+                    $"[OBS][Compat] RouteToLevelAmbiguous routeId='{routeId}' picked='{levelId}' candidates='[{string.Join(", ", candidates)}]'.",
+                    DebugUtility.Colors.Warning);
+            }
+
+            return true;
+        }
+
+
+        public bool TryResolveContentId(LevelId levelId, out string contentId)
+        {
+            contentId = LevelFlowContentDefaults.DefaultContentId;
+
+            if (!levelId.IsValid)
+            {
+                return false;
+            }
+
+            EnsureCache();
+            if (!_cache.TryGetValue(levelId, out var resolution))
+            {
+                return false;
+            }
+
+            contentId = LevelFlowContentDefaults.Normalize(resolution.ContentId);
+            return true;
         }
 
         private void OnEnable()
@@ -96,6 +131,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
 #if UNITY_EDITOR
             TryMigrateLegacyRouteRefsInEditor();
+            EnsureDefaultContentIdsInEditor();
 #endif
 
             try
@@ -120,6 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cacheBuilt = true;
             _cache.Clear();
             _routeToLevelCache.Clear();
+            _routeToLevelCandidates.Clear();
 
             if (levels == null || levels.Count == 0)
             {
@@ -150,23 +187,39 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     FailFast($"Rota inválida ao resolver levelId='{entry.levelId}' em levels[{i}].");
                 }
 
-                if (_routeToLevelCache.TryGetValue(resolvedRouteId, out var existingLevelId) && existingLevelId != entry.levelId)
+                if (!_routeToLevelCandidates.TryGetValue(resolvedRouteId, out List<LevelId> candidates))
                 {
-                    HandleDuplicateRouteMappingConfigError(resolvedRouteId, existingLevelId, entry.levelId);
+                    candidates = new List<LevelId>();
+                    _routeToLevelCandidates.Add(resolvedRouteId, candidates);
                 }
+
+                candidates.Add(entry.levelId);
 
                 if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
                 {
                     _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
                 }
 
-                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload()));
+                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
+
+            int ambiguousRoutes = 0;
+            foreach (var pair in _routeToLevelCandidates)
+            {
+                if (pair.Value != null && pair.Value.Count > 1)
+                {
+                    ambiguousRoutes++;
+                }
+            }
+
+            DebugUtility.Log<LevelCatalogAsset>(
+                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes}",
+                DebugUtility.Colors.Info);
 
             if (warnOnInvalidLevels)
             {
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes={ambiguousRoutes}",
                     DebugUtility.Colors.Info);
             }
         }
@@ -231,6 +284,43 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 DebugUtility.Colors.Info);
         }
 
+        private void EnsureDefaultContentIdsInEditor()
+        {
+            if (levels == null || levels.Count == 0)
+            {
+                return;
+            }
+
+            int migratedCount = 0;
+            for (int i = 0; i < levels.Count; i++)
+            {
+                LevelDefinition definition = levels[i];
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                string normalizedContentId = LevelFlowContentDefaults.Normalize(definition.contentId);
+                if (string.Equals(definition.contentId, normalizedContentId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                definition.contentId = normalizedContentId;
+                migratedCount++;
+            }
+
+            if (migratedCount <= 0)
+            {
+                return;
+            }
+
+            EditorUtility.SetDirty(this);
+            DebugUtility.Log(typeof(LevelCatalogAsset),
+                $"[OBS][Compat] LevelCatalogAsset OnValidate contentId default aplicado. migrated={migratedCount}, default='{LevelFlowContentDefaults.DefaultContentId}', asset='{name}'.",
+                DebugUtility.Colors.Info);
+        }
+
         private static Dictionary<SceneRouteId, SceneRouteDefinitionAsset> BuildRoutesById()
         {
             var routesById = new Dictionary<SceneRouteId, SceneRouteDefinitionAsset>();
@@ -255,11 +345,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         }
 #endif
 
-        private static void HandleDuplicateRouteMappingConfigError(SceneRouteId routeId, LevelId firstLevelId, LevelId duplicatedLevelId)
-        {
-            FailFast(
-                $"RouteId duplicado mapeado para múltiplos LevelId no LevelCatalog. routeId='{routeId}', firstLevelId='{firstLevelId}', duplicatedLevelId='{duplicatedLevelId}'.");
-        }
 
         private static void FailFast(string detail)
         {

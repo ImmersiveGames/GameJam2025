@@ -98,7 +98,32 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
             else
             {
-                if (!_lastStartedGameplayLevelId.IsValid)
+                if (_lastStartedGameplayLevelId.IsValid)
+                {
+                    if (_levelFlowService == null)
+                    {
+                        DebugUtility.LogError(typeof(GameNavigationService),
+                            $"[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                        throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback.");
+                    }
+
+                    if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out resolvedRouteId, out var resolvedPayload) || !resolvedRouteId.IsValid)
+                    {
+                        DebugUtility.LogError(typeof(GameNavigationService),
+                            $"[FATAL][Config] Restart unresolved LevelId in ILevelFlowService. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                        throw new InvalidOperationException("[FATAL][Config] Restart unresolved LevelId in ILevelFlowService.");
+                    }
+
+                    payload = resolvedPayload ?? SceneTransitionPayload.Empty;
+                    resolveSource = "legacy";
+                }
+                else if (_lastGameplayRouteId.IsValid)
+                {
+                    resolvedRouteId = _lastGameplayRouteId;
+                    payload = SceneTransitionPayload.Empty;
+                    resolveSource = "legacy_route_only";
+                }
+                else
                 {
                     string lastRouteId = _lastGameplayRouteId.IsValid ? _lastGameplayRouteId.ToString() : "<none>";
                     string lastIntent = string.IsNullOrWhiteSpace(_lastNavigationIntentId) ? "<none>" : _lastNavigationIntentId;
@@ -107,23 +132,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                         $"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId/routeId. lastRouteId='{lastRouteId}', lastIntent='{lastIntent}', reason='{reason ?? "<null>"}'.");
                     throw new InvalidOperationException($"[FATAL][Config] Restart called before StartGameplayAsync; no last levelId/routeId. lastRouteId='{lastRouteId}', lastIntent='{lastIntent}'.");
                 }
-
-                if (_levelFlowService == null)
-                {
-                    DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
-                    throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback.");
-                }
-
-                if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out resolvedRouteId, out var resolvedPayload) || !resolvedRouteId.IsValid)
-                {
-                    DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[FATAL][Config] Restart unresolved LevelId in ILevelFlowService. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
-                    throw new InvalidOperationException("[FATAL][Config] Restart unresolved LevelId in ILevelFlowService.");
-                }
-
-                payload = resolvedPayload ?? SceneTransitionPayload.Empty;
-                resolveSource = "legacy";
             }
 
             DebugUtility.Log(typeof(GameNavigationService),
@@ -259,7 +267,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             LevelId resolvedLevelId = LevelId.None;
             string resolveSource = "none";
 
-            if (_restartContextService != null && _restartContextService.TryGetCurrent(out var snapshot) && snapshot.RouteId == routeId && snapshot.HasLevelId)
+            GameplayStartSnapshot snapshot = default;
+            bool hasSnapshot = _restartContextService != null && _restartContextService.TryGetCurrent(out snapshot);
+            if (hasSnapshot && snapshot.RouteId == routeId && snapshot.HasLevelId)
             {
                 resolvedLevelId = snapshot.LevelId;
                 resolveSource = "snapshot";
@@ -464,7 +474,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private void UpdateLastLevelId(LevelId levelId, SceneRouteId routeId, string source, string reason)
         {
-            _lastStartedGameplayLevelId = levelId;
+            if (levelId.IsValid)
+            {
+                _lastStartedGameplayLevelId = levelId;
+            }
+
             _lastGameplayRouteId = routeId;
 
             DebugUtility.Log(typeof(GameNavigationService),

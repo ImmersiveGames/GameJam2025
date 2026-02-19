@@ -27,6 +27,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         [Tooltip("Referência direta obrigatória para a rota canônica.")]
         public SceneRouteDefinitionAsset routeRef;
 
+        [Tooltip("ContentId associado ao nível (observability/compat).")]
+        public string contentId = LevelFlowContentDefaults.DefaultContentId;
+
         public bool IsValid => levelId.IsValid && ResolveRouteId().IsValid;
 
         public SceneRouteId ResolveRouteId()
@@ -55,6 +58,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             return routeRefId;
         }
+
+        public string ResolveContentId()
+            => LevelFlowContentDefaults.Normalize(contentId);
 
         /// <summary>
         /// Retorna o payload adicional do nível.
