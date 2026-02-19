@@ -23,6 +23,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public GameplayStartSnapshot RegisterGameplayStart(GameplayStartSnapshot snapshot)
         {
+            return UpdateGameplayStartSnapshot(snapshot);
+        }
+
+        public GameplayStartSnapshot UpdateGameplayStartSnapshot(GameplayStartSnapshot snapshot)
+        {
             lock (_sync)
             {
                 int nextVersion = _current.SelectionVersion + 1;
@@ -35,11 +40,20 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     nextVersion,
                     snapshot.ContextSignature);
 
+                DebugUtility.Log<RestartContextService>(
+                    $"[OBS][Navigation] GameplayStartSnapshotUpdated levelId='{(_current.HasLevelId ? _current.LevelId.ToString() : "<none>")}' routeId='{_current.RouteId}' styleId='{_current.StyleId}' contentId='{(_current.HasContentId ? _current.ContentId : "<none>")}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
+                    DebugUtility.Colors.Info);
+
                 return _current;
             }
         }
 
         public bool TryGetCurrent(out GameplayStartSnapshot snapshot)
+        {
+            return TryGetLastGameplayStartSnapshot(out snapshot);
+        }
+
+        public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
         {
             lock (_sync)
             {
