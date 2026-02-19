@@ -285,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 if (!deduplicate && _repeatedCallVerboseEnabled)
                 {
-                    if (_repeatedCallTracker.Add(trackerKey))
+                    if (_repeatedCallTracker.Add(trackerKey) && !ShouldSuppressRepeatedCallWarning(type, message))
                     {
                         LogRepeatedCallVerbose(type, message, frame);
                     }
@@ -324,6 +324,23 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                           .Append(message);
 
             Debug.Log(ApplyColor(_stringBuilder.ToString(), RepeatedCallColor));
+        }
+
+        private static bool ShouldSuppressRepeatedCallWarning(Type type, string message)
+        {
+            string typeName = type?.Name ?? string.Empty;
+            if (!string.Equals(typeName, "GameNavigationCatalogAsset", StringComparison.Ordinal) &&
+                !string.Equals(typeName, "SceneRouteCatalogAsset", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return false;
+            }
+
+            return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal);
         }
         #endregion
     }
