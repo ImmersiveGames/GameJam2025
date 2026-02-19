@@ -17,6 +17,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         /// </summary>
         bool TryGetCurrent(out GameplayStartSnapshot snapshot);
 
+
+        /// <summary>
+        /// Atualiza apenas o contentId do snapshot atual, preservando routeId/levelId e demais metadados.
+        /// Retorna false quando não existe snapshot válido.
+        /// </summary>
+        bool TryUpdateCurrentContentId(string contentId, string reason = null);
+
         /// <summary>
         /// Limpa o estado atual (útil em cenários de reset global/boot).
         /// </summary>

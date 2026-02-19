@@ -57,6 +57,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             RegisterExitToMenuNavigationBridge();
             RegisterRestartNavigationBridge();
+            RegisterRestartSnapshotContentSwapBridge();
 
             RegisterInputModeSceneFlowBridge();
             RegisterStateDependentService();

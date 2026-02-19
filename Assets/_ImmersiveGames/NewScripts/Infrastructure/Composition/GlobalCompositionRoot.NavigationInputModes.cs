@@ -342,6 +342,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
+
+        private static void RegisterRestartSnapshotContentSwapBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<RestartSnapshotContentSwapBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[Navigation] RestartSnapshotContentSwapBridge ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new RestartSnapshotContentSwapBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[Navigation] RestartSnapshotContentSwapBridge registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterInputModeSceneFlowBridge()
         {
             if (DependencyManager.Provider.TryGetGlobal<SceneFlowInputModeBridge>(out var existing) && existing != null)
