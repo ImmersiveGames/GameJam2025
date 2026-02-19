@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -20,6 +21,10 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
         private const string LevelAPath = AssetsFolderPath + "/LevelDefinition_CompatScenarioB_A.asset";
         private const string LevelBPath = AssetsFolderPath + "/LevelDefinition_CompatScenarioB_B.asset";
         private const string CatalogPath = AssetsFolderPath + "/LevelCatalog_CompatScenarioB.asset";
+        private const string ScenarioLevelAId = "compat.scenariob.a";
+        private const string ScenarioLevelBId = "compat.scenariob.b";
+        private const string ScenarioReasonA = "QA/Compat/ScenarioB/A";
+        private const string ScenarioReasonB = "QA/Compat/ScenarioB/B";
 
         [MenuItem(MenuRoot + "/Create Or Update Assets", priority = 1300)]
         public static void CreateOrUpdateAssets()
@@ -41,8 +46,8 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
                 LevelDefinition levelA = containerA.Definition;
                 LevelDefinition levelB = containerB.Definition;
 
-                ConfigureLevel(levelA, new LevelId("compat.scenariob.a"), routeAsset);
-                ConfigureLevel(levelB, new LevelId("compat.scenariob.b"), routeAsset);
+                ConfigureLevel(levelA, new LevelId(ScenarioLevelAId), routeAsset);
+                ConfigureLevel(levelB, new LevelId(ScenarioLevelBId), routeAsset);
                 EditorUtility.SetDirty(containerA);
                 EditorUtility.SetDirty(containerB);
 
@@ -99,20 +104,9 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
 
         private static void RunInternal(LevelCatalogAsset catalog, bool validateOnly)
         {
-            if (!TryGetRouteIdFromFirstLevel(catalog, out SceneRouteId routeId))
-            {
-                Debug.LogError("[ERROR][QA] ScenarioB failed: could not read routeId from first level routeRef.");
-                return;
-            }
-
-            if (!catalog.TryResolveLevelId(routeId, out LevelId pickedLevelId))
-            {
-                Debug.LogError($"[ERROR][QA] ScenarioB failed: could not resolve levelId for routeId='{routeId}'.");
-                return;
-            }
-
-            // Garante que o catálogo consegue resolver também o fluxo direto do LevelId selecionado.
-            catalog.TryResolve(pickedLevelId, out _, out _);
+            // Mantém validação estrutural de ambiguidade sem depender de reverse lookup routeId -> levelId.
+            catalog.TryResolve(new LevelId(ScenarioLevelAId), out _, out _);
+            catalog.TryResolve(new LevelId(ScenarioLevelBId), out _, out _);
 
             int duplicatedRoutes = CountDuplicatedRoutes(catalog);
             if (duplicatedRoutes <= 0)
@@ -124,8 +118,31 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
 
             if (!validateOnly)
             {
-                Debug.Log($"[OBS][Compat] ScenarioB run completed routeId='{routeId}' pickedLevelId='{pickedLevelId}' duplicatedRoutes={duplicatedRoutes}.");
+                if (RunExplicitStartGameplayScenario())
+                {
+                    Debug.Log(
+                        $"[PASS][Compat] ScenarioB run completed StartGameplayAsync levelA='{ScenarioLevelAId}' reasonA='{ScenarioReasonA}' levelB='{ScenarioLevelBId}' reasonB='{ScenarioReasonB}' duplicatedRoutes={duplicatedRoutes}.");
+                }
             }
+        }
+
+        private static bool RunExplicitStartGameplayScenario()
+        {
+            if (DependencyManager.Provider == null)
+            {
+                Debug.LogError("[ERROR][QA] ScenarioB failed: DependencyManager.Provider is null.");
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out ILevelFlowRuntimeService levelFlow) || levelFlow == null)
+            {
+                Debug.LogError("[ERROR][QA] ScenarioB failed: global service ILevelFlowRuntimeService is unavailable.");
+                return false;
+            }
+
+            levelFlow.StartGameplayAsync(ScenarioLevelAId, ScenarioReasonA).GetAwaiter().GetResult();
+            levelFlow.StartGameplayAsync(ScenarioLevelBId, ScenarioReasonB).GetAwaiter().GetResult();
+            return true;
         }
 
         private static int CountDuplicatedRoutes(LevelCatalogAsset catalog)
@@ -162,29 +179,6 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
             }
 
             return duplicated;
-        }
-
-        private static bool TryGetRouteIdFromFirstLevel(LevelCatalogAsset catalog, out SceneRouteId routeId)
-        {
-            routeId = SceneRouteId.None;
-
-            SerializedObject so = new SerializedObject(catalog);
-            SerializedProperty levelsProp = so.FindProperty("levels");
-            if (levelsProp == null || levelsProp.arraySize <= 0)
-            {
-                return false;
-            }
-
-            SerializedProperty firstLevel = levelsProp.GetArrayElementAtIndex(0);
-            SerializedProperty routeRefProp = firstLevel.FindPropertyRelative("routeRef");
-            SceneRouteDefinitionAsset routeRef = routeRefProp?.objectReferenceValue as SceneRouteDefinitionAsset;
-            if (routeRef == null || !routeRef.RouteId.IsValid)
-            {
-                return false;
-            }
-
-            routeId = routeRef.RouteId;
-            return true;
         }
 
         private static void ConfigureCatalog(LevelCatalogAsset catalog, LevelDefinition levelA, LevelDefinition levelB)
