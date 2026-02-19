@@ -1,0 +1,27 @@
+[VERBOSE] [EaterRandomMovementController] [EaterMovement] New direction: (-0.85, 0.00, -0.53) (scene='GameplayScene'). (@ 10,91s)
+
+[VERBOSE] [EaterRandomMovementController] [EaterMovement] New direction: (0.03, 0.00, 1.00) (scene='GameplayScene'). (@ 12,91s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IContentSwapChangeService encontrado no escopo global (tipo registrado: IContentSwapChangeService). (@ 17,00s)
+
+<color=#A8DEED>[INFO] [ContentSwapDevContextMenu] [QA][ContentSwap] G01 start contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals' (fade=False, hud=False).</color>
+
+<color=#A8DEED>[INFO] [InPlaceContentSwapService] [OBS][ContentSwap] ContentSwapRequested event=content_swap_inplace mode=InPlace contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'</color>
+
+[VERBOSE] [GlobalServiceRegistry] Serviço ISimulationGateService encontrado no escopo global (tipo registrado: ISimulationGateService). (@ 17,00s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IRuntimeModeProvider encontrado no escopo global (tipo registrado: IRuntimeModeProvider). (@ 17,00s)
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IDegradedModeReporter encontrado no escopo global (tipo registrado: IDegradedModeReporter). (@ 17,00s)
+
+[INFO] [ContentSwapContextService] [ContentSwapContext] ContentSwapPendingSet plan='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'
+
+[INFO] [ContentSwapContextService] [ContentSwapContext] ContentSwapCommitted prev='<none>' current='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'
+
+[VERBOSE] [GlobalServiceRegistry] Serviço IRestartContextService encontrado no escopo global (tipo registrado: IRestartContextService). (@ 17,00s)
+
+<color=#A8DEED>[INFO] [RestartSnapshotContentSwapBridge] [OBS][Navigation] RestartSnapshotContentUpdated routeId='level.1' levelId='level.1' contentId='content.2' reason='ContentSwap/QA/ContentSwap/InPlace/NoVisuals'.</color>
+
+<color=#4CAF50>[INFO] [ContentSwapDevContextMenu] [QA][ContentSwap] G01 done contentId='content.2'.</color>
+
+[VERBOSE] [EaterRandomMovementController] [EaterMovement] New direction: (0.32, 0.00, 0.95) (scene='GameplayScene'). (@ 17,77s)

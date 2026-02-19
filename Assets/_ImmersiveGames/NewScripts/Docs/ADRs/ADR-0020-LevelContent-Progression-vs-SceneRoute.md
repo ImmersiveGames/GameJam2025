@@ -1,215 +1,117 @@
-# ADR-0020 — Separar LevelContent/Progression de SceneRoute/Scene Data
+# ADR-0020 — Level/Content Progression vs SceneRoute
 
 ## Status
+- **State:** Implemented
+- **Date:** 2026-02-19
+- **Owner:** Innocenti
+- **Tags:** LevelFlow, LevelCatalog, ContentSwap, SceneFlow, Navigation, WorldLifecycle
+- **Scope:**
+    - Runtime: `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/**`, `.../Modules/Navigation/**`, `.../Modules/SceneFlow/**`
+    - Assets: `Assets/Resources/Navigation/LevelCatalog.asset`
+- **Related ADRs:** ADR-0017 (LevelManager/Config/Catalog), Plan-v2 (F4 LevelFlow)
+
+## Summary
+**Decision:** manter *SceneRoute* responsável apenas por **carregamento/aplicação de cenas** (SceneFlow) e mover a noção de **progresso de gameplay** (LevelId → ContentId/ContentRef) para o trilho de **LevelFlow/LevelCatalog + RestartSnapshot**.
+
+Na prática:
+- Um `LevelId` seleciona um *level entry* no `LevelCatalog`.
+- O entry referencia a rota (preferencialmente `routeRef`) e o conteúdo (ex.: `contentId`/`contentRef`).
+- `StartGameplay(levelId)` dispara o SceneFlow para a mesma rota de gameplay, mas a *identidade do conteúdo* fica no snapshot (e pode mudar sem mudar a rota).
+
+## Problem statement
+O sistema precisava suportar:
+1) **N→1**: múltiplos `LevelId` diferentes apontando para **a mesma rota** (ex.: `level.1`), mas com **conteúdos distintos**, para evidenciar progressão/variação sem multiplicar rotas.
+2) **ContentSwap in-place**: trocar conteúdo dentro da mesma gameplay (sem transição de cena) e garantir que o snapshot de “start/restart” reflita o conteúdo atual.
+
+O risco original era “vazar” progressão de conteúdo para dentro do `SceneRoute` (ex.: criar rotas por conteúdo), criando:
+- explosão de rotas;
+- mais wiring por string;
+- dedupe de transição confundindo o cenário;
+- dificuldade de observabilidade do “conteúdo atual” versus “rota atual”.
+
+## Constraints and requirements
+- **Direct-ref-first**: quando possível, preferir referências diretas (SO) em vez de strings.
+- **Fail-fast** para assets obrigatórios; sem fallback silencioso em runtime.
+- **Observabilidade**: logs [OBS] e [QA] com âncoras estáveis para gerar evidências.
+- **Compatibilidade**: aceitar, quando necessário, campos legados (ex.: `routeId`) sem divergir de `routeRef`.
+
+## Options considered
+### Option A — Colocar progressão/conteúdo em SceneRoute
+- Ex.: route por content (`level.1.content.2`), ou metadata de content dentro do route.
+- **Prós:** “um único lugar”.
+- **Contras:** acoplamento errado (cena ≠ conteúdo), explosão de rotas e churn no SceneFlow.
+
+### Option B — LevelFlow/LevelCatalog como fonte de verdade de progressão
+- `SceneRoute` fica “sobre cenas”, `LevelId` fica “sobre gameplay/progressão”.
+- **Prós:** separa responsabilidades; N→1 vira uma configuração de catálogo; ContentSwap não precisa de cena.
+- **Contras:** exige trilho claro (StartGameplay(levelId)) e snapshot/telemetria bem definidos.
+
+### Option C — Híbrido (route + level)
+- Parte no route, parte no level.
+- **Contras:** invariantes ambíguas e maior chance de divergência.
+
+## Decision
+Escolher **Option B**.
+
+### Decision details
+- `SceneRouteDefinition`/`SceneRouteCatalog` definem **apenas**: cenas a carregar/descarregar, cena ativa, perfil/estilo de transição, e policy (ex.: requiresWorldReset).
+- `LevelCatalog` define: `levelId` + `routeRef` (source of truth) + `contentId`/`contentRef` (identidade do conteúdo).
+- `StartGameplay(levelId)`:
+    1) resolve o entry do catálogo;
+    2) publica/atualiza o snapshot (`RestartContext` / “GameplayStartSnapshot”) com `levelId/routeId/styleId/contentId`;
+    3) despacha o intent canônico de gameplay para aplicar a rota.
+- `ContentSwap in-place`:
+    - atualiza o “content atual” e também o snapshot de restart, **sem exigir** transition de rota.
+
+## Consequences
+- **N→1** é suportado naturalmente com múltiplos entries no `LevelCatalog` apontando para a mesma `routeRef`.
+- O SceneFlow pode **dedupar** transições repetidas (mesma signature) sem quebrar o conceito de “conteúdo atual” — porque o conteúdo não depende de uma transição de cena.
+- O catálogo pode conter rotas duplicadas (por design). Mantemos telemetria (ex.: `duplicatedRoutes`) como **[OBS]**, não fatal.
+
+## Implementation notes
+- Foram adicionadas entradas DEV/QA no `LevelCatalog`:
+    - `qa.level.nto1.a` → `routeRef=level.1` + `contentId=content.1`
+    - `qa.level.nto1.b` → `routeRef=level.1` + `contentId=content.2`
+    - `routeId` legado intencionalmente vazio para evitar divergência com `routeRef`.
+- Existe menu QA/Dev para acionar N→1:
+    - `QA/LevelFlow/NTo1/Start A`
+    - `QA/LevelFlow/NTo1/Start B`
+    - `QA/LevelFlow/NTo1/Run Sequence A->B`
+
+## Observability and evidence
+### Evidence 1 — ContentSwap in-place atualiza snapshot de restart
+Arquivo de evidência:
+- `ADR-0020-Evidence-ContentSwap-2026-02-18.log`
+
+Âncoras esperadas:
+- `[QA][ContentSwap] ... start contentId='content.2'`
+- `[OBS][ContentSwap] ContentSwapRequested ... contentId='content.2'`
+- `[OBS][Navigation] RestartSnapshotContentUpdated ... contentId='content.2'`
+
+### Evidence 2 — N→1 (A e B) com mesma rota e conteúdos diferentes
+Arquivo de evidência:
+- `ADR-0020-Evidence-LevelFlow-NTo1-2026-02-18.log`
+
+Âncoras esperadas:
+- `[QA][LevelFlow] NTo1 start levelId='qa.level.nto1.a' routeRef='level.1'`
+- `[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='qa.level.nto1.a' routeId='level.1'`
+- `[OBS][Level] LevelSelected ... levelId='qa.level.nto1.a' ... contentId='content.1'`
+- Repetir para `qa.level.nto1.b` com `contentId='content.2'`.
+
+### Evidence 3 — Sequência A→B pode dedupar transição (expected)
+Âncora:
+- `[SceneFlow] Dedupe: TransitionAsync ignorado (signature repetida...)`
+
+Interpretação:
+- **Aceitável** para N→1 quando a rota é idêntica; o conteúdo/snapshot muda independentemente da transição.
 
-- Estado: Aberto
-- Data (decisão): 2026-02-18
-- Última atualização: 2026-02-18
-- Tipo: Implementação
-- Escopo: LevelFlow, Navigation, ContentSwap, Gameplay/Spawn, Editor Validation
-- Decisores: NewScripts Architecture + Gameplay/Tech
-- Tags: LevelFlow, SceneFlow, Navigation, Content, SOLID, Observability, FailFast
+### Commands (auditoria rápida)
+- `rg -n "\[QA\]\[ContentSwap\]|\[OBS\]\[ContentSwap\]|RestartSnapshotContentUpdated" Assets/_ImmersiveGames/NewScripts/`
+- `rg -n "\[QA\]\[LevelFlow\] NTo1 start|RouteResolvedVia=AssetRef|LevelSelected" Assets/_ImmersiveGames/NewScripts/`
 
-> Este ADR é baseado em auditoria read-only (Assets/_ImmersiveGames/NewScripts/**).
-> Evidências principais: Level é alias de Route via bijeção 1:1 + restart depende de LevelId.
+## Follow-ups
+- Se o produto exigir “aplicar conteúdo” como efeito colateral do `LevelSelected` (além de snapshot), formalizar um *ContentApply* explícito (event-driven) separado do SceneFlow.
+- Evolução futura (fora do escopo deste ADR): migração de cenas para Addressables.
 
-## Contexto
-
-No runtime atual, "Level" está funcionalmente acoplado à "Route":
-
-- `LevelDefinition` resolve `routeRef/routeId` e não carrega conteúdo próprio (`ToPayload() => Empty`).
-- `LevelCatalogAsset` mantém cache direto e reverso (`LevelId -> RouteId` e `RouteId -> LevelId`) e rejeita duplicidade, impondo bijeção 1:1.
-- `GameNavigationService.StartGameplayRouteAsync` exige `RouteId -> LevelId`; se não mapear, falha com `[FATAL][Config]`.
-- `RestartAsync` depende de `_lastStartedGameplayLevelId`; restart sem “último level” falha.
-
-Em paralelo, conteúdo jogável está em outros eixos:
-- Spawn por cena via `WorldDefinition.spawnEntries` + `SceneScopeCompositionRoot`.
-- Troca de conteúdo em runtime via `ContentSwap` (contentId) sem vínculo canônico com LevelId/Progressão.
-
-Leitura consolidada: o Level virou alias de Route para navegação, enquanto conteúdo/progressão ficou disperso.
-
-## Decisão
-
-### Objetivo de produção (sistema ideal)
-
-Separar responsabilidades de forma explícita:
-
-1) **SceneRoute/SceneFlow**: único dono de Scene Data (load/unload/active + reset policy).
-2) **LevelContent/Progression**: único dono de seleção/progressão e perfil de conteúdo (quantidades/regras/spawn profiles/etc.).
-3) **Navigation**: orquestra intents/transições sem depender de bijeção rígida `Level↔Route` para operar.
-
-### Contrato de produção (mínimo)
-
-#### A) Level = (seleção/progressão + conteúdo) e referencia uma Route
-
-- `LevelId` permanece como chave de progressão/telemetria/logs (ID tipado).
-- Um Level deve apontar para:
-    - `routeRef` (Scene Data)
-    - `contentRef` (Content Profile)
-- Um mesmo `routeRef` pode ser compartilhado por múltiplos `LevelId` (N→1 permitido).
-
-#### B) Evento canônico (event-driven)
-
-Definir evento global canônico para seleção:
-
-- `LevelSelectedEvent`
-    - `levelId`
-    - `routeId` (derivado do `routeRef`, para observabilidade/correlação)
-    - `contentId` (derivado do `contentRef`)
-    - `reason`
-    - `selectionVersion` (monótono, para dedupe)
-    - `contextSignature` (quando relevante para trilhas de reset/scene flow)
-
-Publicação mínima:
-- UI (MenuPlay) e/ou trilho canônico `LevelFlowRuntimeService.StartGameplayAsync(levelId, reason)`.
-
-Consumo mínimo:
-- Navigation (para iniciar gameplay com contexto completo)
-- Content/Gameplay (para aplicar conteúdo e logar evidência)
-- Opcional: ContentSwap (modo compat ou integração futura)
-
-#### C) Restart não pode depender de bijeção Route→Level
-
-Definir `IRestartContextService` com snapshot canônico:
-
-- `GameplayStartSnapshot { levelId? , routeId, styleId, contentId?, selectionVersion, reason }`
-
-Regras:
-- Start gameplay atualiza snapshot.
-- Restart usa snapshot (não exige reverse lookup `RouteId -> LevelId`).
-
-#### D) Fail-fast (Strict) e migração Editor-only
-
-- Editor-only: auto-migração e validações ajudam a preencher `contentRef`/`routeRef` e reserializar assets.
-- Runtime strict: ausência de `routeRef` ou `contentRef` na hora de iniciar gameplay => `[FATAL][Config]` + abort.
-
-### Não-objetivos (resumo)
-
-- Não redesenhar SceneFlow/Route (já é source-of-truth de Scene Data).
-- Não implementar sistema completo de difficulty/waves agora; este ADR define o ponto canônico de extensão.
-- Não remover todo legado em um único PR (migração incremental).
-
-## Fora de escopo
-
-- Rebalanceamento do jogo.
-- Ferramentas avançadas de authoring de conteúdo.
-- Migration “big bang”.
-
-## Consequências
-
-### Benefícios
-
-- Remove a ambiguidade “Level = Route”.
-- Permite progressão e variação de conteúdo sem proliferar rotas.
-- Isola responsabilidades (SceneFlow vs Gameplay) e reduz acoplamento.
-
-### Custos / Riscos
-
-- Coexistência temporária (contrato novo + compat) aumenta complexidade.
-- Restart é ponto de alto risco (hoje depende de LevelId).
-- Migração de assets exige disciplina (Editor-only + reserialize).
-
-### Política de falhas e fallback (fail-fast)
-
-- Em produção: falhar cedo para bugs de pipeline/config.
-- Fallback controlado apenas durante migração via feature flag (ex.: `LevelRouteLegacyBridgeEnabled`), com logs `[OBS][Level][Compat]`.
-
-### Critérios de pronto (DoD)
-
-- [x] `LevelSelectedEvent` publicado e consumido com logs âncora.
-- [x] Start Gameplay não depende de bijeção rígida Route→Level.
-- [x] Restart funciona com snapshot canônico (sem reverse lookup obrigatório).
-- [ ] `LevelCatalogAsset` não impõe 1:1 Level↔Route (N→1 permitido).
-- [ ] Migração Editor-only cria/associa `contentRef` default explícito.
-- [ ] Baseline: menu->play, post-game restart, exit to menu continuam OK.
-- [ ] Evidências/âncoras estáveis e documentadas.
-
-## Implementação (arquivos impactados)
-
-> Esta seção lista superfícies impactadas inferidas pela auditoria. A execução será incremental.
-
-### P0 — Contrato mínimo + observabilidade (sem quebrar baseline)
-
-- Criar DTO/evento: `LevelSelectedEvent`, `GameplayStartSnapshot`, `IRestartContextService`.
-- Publicar logs âncora (sem alterar semântica de spawn ainda).
-
-Superfícies típicas:
-- `Modules/LevelFlow/Runtime/LevelFlowRuntimeService.cs`
-- `Modules/Navigation/GameNavigationService.cs`
-- `Modules/Navigation/RestartNavigationBridge.cs`
-- `MenuPlayButtonBinder.cs` (origem do StartGameplayLevelId)
-- `Docs/Standards` (se houver contrato de observabilidade)
-
-### P1 — Restart e StartGameplay desacoplados de Route→Level
-
-- `StartGameplayRouteAsync` deve aceitar contexto do snapshot (não exigir reverse lookup).
-- `_lastStartedGameplayLevelId` passa a ser substituído por snapshot.
-
-### P2 — Level passa a conter conteúdo (LevelContentDefinitionAsset)
-
-- Introduzir `LevelContentDefinitionAsset` e `contentRef` em `LevelDefinition`.
-- `LevelCatalogAsset` passa a cachear `LevelId -> LevelDefinition` (não só route).
-
-### P3 — Remoção progressiva da bijeção e de APIs legadas
-
-- Remover/rebaixar `TryResolveLevelId(route)` como requisito hard.
-- Ajustar contratos e consumers.
-
-## Notas de implementação (se necessário)
-
-### Execução real — P0/P1 (2026-02-18)
-
-- **P0 concluído (contrato mínimo + observabilidade):**
-  - Introduzidos `LevelSelectedEvent`, `GameplayStartSnapshot` e `IRestartContextService` com implementação simples (`RestartContextService`).
-  - `LevelFlowRuntimeService.StartGameplayAsync(levelId, reason)` passou a registrar snapshot canônico, publicar `LevelSelectedEvent` e emitir log âncora `[OBS][Level] LevelSelected ...`.
-  - `GameNavigationService.RestartAsync(reason)` passou a emitir log âncora `[OBS][Navigation] RestartUsingSnapshot ...` em modo compatível.
-
-- **P1 mínimo concluído (desacoplamento incremental Route→Level):**
-  - `GameNavigationService.StartGameplayRouteAsync(routeId, payload, reason)` deixou de exigir hard-fail para reverse lookup `RouteId -> LevelId`.
-  - Resolução de `levelId` em ordem: snapshot (quando rota coincide e há levelId), reverse lookup best-effort, fallback para `LevelId.None` sem fatal.
-  - Em fallback sem mapeamento, observabilidade compatível via `[OBS][Navigation][Compat] RouteToLevelNotResolved routeId='...'`.
-  - `RestartAsync(reason)` passou a resolver rota por snapshot quando disponível e registrar `[OBS][Navigation] RestartResolved routeId='...' source='snapshot|legacy'`; fallback legado permanece para compatibilidade.
-
-- **Escopo preservado:**
-  - Sem alteração de semântica de SceneFlow, ContentSwap ou spawn nesta etapa.
-
-- Manter rollout incremental por feature flag para preservar baseline durante a transição.
-- Priorizar compatibilidade de assets em migrações editor-only com reserialize controlado.
-- Preservar âncoras de observabilidade existentes e introduzir as novas sem quebra de parsing em QA.
-
-#### Poréns / Débitos (P0/P1)
-
-- **P0**
-    - `LevelFlowRuntimeService` adquiriu dependências opcionais usadas apenas para “labeling/observability” (catálogos). Manter opcional e remover/centralizar no cleanup se virar acoplamento desnecessário.
-    - Padronizar ownership de logs: decidir se `RestartContextService.Clear()` e correlatos devem logar como `[OBS][Level]` (owner LevelFlow) ou `[OBS][Navigation]` (consumer Navigation).
-
-- **P1**
-    - Hardening recomendado: evitar sobrescrever o “last valid levelId” com `LevelId.None` ao atualizar cache/observabilidade.
-    - Hardening recomendado: no fallback de `RestartAsync`, se existir `lastGameplayRouteId` válido, permitir restart por rota mesmo quando `lastStartedGameplayLevelId` estiver inválido (reduz FATAL falso).
-    - Limitação conhecida: restart via snapshot usa `payload=Empty` no P1 mínimo; contrato de payload por level/content será resolvido em P2/P3.
-
-#### Cleanup planejado (P3)
-
-- Remover logs `[Compat]` e reverse lookup legado quando N→1 estiver habilitado e validado.
-- Remover dependências opcionais usadas apenas para observabilidade (se não forem essenciais).
-- Normalizar `LastLevelIdUpdated` e regras de cache quando `LevelId.None`.
-
-## Evidência
-
-Âncoras atuais relevantes (existentes hoje):
-- `[OBS][LevelFlow] StartGameplayRequested ...`
-- `[OBS][Navigation] LastLevelIdUpdated ...`
-- `[OBS][SceneFlow] RouteResolvedVia=...`
-- `[OBS][ContentSwap] ContentSwapRequested ...`
-
-Âncoras novas propostas (ADR-0020):
-- `[OBS][Level] LevelSelected levelId='...' routeId='...' contentId='...' reason='...' v='...'`
-- `[OBS][Level] LevelSelectionApplied ...`
-- `[OBS][Navigation] RestartUsingSnapshot ...`
-- `[OBS][Gameplay] LevelContentApplied ...`
-
-## Referências
-
-- ADR-0016 / ADR-0017 / ADR-0019
-- Plano SceneFlow/Navigation/LevelFlow (Plan-v2)
-- Docs/Standards/Standards.md#observability-contract
+## Sources
+- Logs de evidência anexados e logs [OBS]/[QA] do runtime.
