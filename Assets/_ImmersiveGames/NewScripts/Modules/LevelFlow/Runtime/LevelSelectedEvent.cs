@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public LevelSelectedEvent(
             LevelId levelId,
             SceneRouteId routeId,
+            TransitionStyleId styleId,
             string contentId,
             string reason,
             int selectionVersion,
@@ -18,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             LevelId = levelId;
             RouteId = routeId;
+            StyleId = styleId;
             ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
@@ -26,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public LevelId LevelId { get; }
         public SceneRouteId RouteId { get; }
+        public TransitionStyleId StyleId { get; }
         public string ContentId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }

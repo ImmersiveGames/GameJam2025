@@ -8,6 +8,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         GameplayStartSnapshot Current { get; }
 
         /// <summary>
+        /// Atualiza o snapshot canônico do último start de gameplay.
+        /// </summary>
+        GameplayStartSnapshot UpdateGameplayStartSnapshot(GameplayStartSnapshot snapshot);
+
+        /// <summary>
+        /// Tenta ler o snapshot canônico mais recente.
+        /// </summary>
+        bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot);
+
+        /// <summary>
         /// Registra snapshot do start de gameplay e retorna a versão persistida.
         /// </summary>
         GameplayStartSnapshot RegisterGameplayStart(GameplayStartSnapshot snapshot);
