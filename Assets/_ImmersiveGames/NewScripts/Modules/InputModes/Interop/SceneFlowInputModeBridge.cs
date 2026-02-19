@@ -80,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 
                 LogObsInputModeApplied(
                     mode: "Gameplay",
-                    map: "Gameplay",
+                    map: "Player",
                     reason: "SceneFlow/Completed:Gameplay",
                     signature: signature,
                     scene: activeScene,

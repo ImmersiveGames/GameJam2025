@@ -803,6 +803,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return true;
             }
 
+            NavigationIntentId defeatIntentId = intentCatalog != null
+                ? intentCatalog.Defeat
+                : NavigationIntentId.FromName("defeat");
+
+            // Comentário: defeat é intent opcional/compat, resolvida para o mesmo trilho de gameplay.
+            if (defeatIntentId.IsValid && string.Equals(normalized, defeatIntentId.Value, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = GameNavigationIntentKind.Gameplay;
+                return true;
+            }
+
             if (TryGetIntentId(GameNavigationIntentKind.GameOver, out NavigationIntentId gameOverIntentId) &&
                 string.Equals(normalized, gameOverIntentId.Value, StringComparison.OrdinalIgnoreCase))
             {

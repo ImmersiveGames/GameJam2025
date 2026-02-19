@@ -102,20 +102,45 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     if (_levelFlowService == null)
                     {
-                        DebugUtility.LogError(typeof(GameNavigationService),
-                            $"[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
-                        throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback.");
-                    }
+                        if (_lastGameplayRouteId.IsValid)
+                        {
+                            resolvedRouteId = _lastGameplayRouteId;
+                            payload = SceneTransitionPayload.Empty;
+                            resolveSource = "legacy_route_only";
 
-                    if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out resolvedRouteId, out var resolvedPayload) || !resolvedRouteId.IsValid)
+                            DebugUtility.LogWarning(typeof(GameNavigationService),
+                                $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{_lastGameplayRouteId}' reason='Restart/MissingILevelFlowService'.");
+                        }
+                        else
+                        {
+                            DebugUtility.LogError(typeof(GameNavigationService),
+                                $"[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                            throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback.");
+                        }
+                    }
+                    else if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out resolvedRouteId, out var resolvedPayload) || !resolvedRouteId.IsValid)
                     {
-                        DebugUtility.LogError(typeof(GameNavigationService),
-                            $"[FATAL][Config] Restart unresolved LevelId in ILevelFlowService. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
-                        throw new InvalidOperationException("[FATAL][Config] Restart unresolved LevelId in ILevelFlowService.");
-                    }
+                        if (_lastGameplayRouteId.IsValid)
+                        {
+                            resolvedRouteId = _lastGameplayRouteId;
+                            payload = SceneTransitionPayload.Empty;
+                            resolveSource = "legacy_route_only";
 
-                    payload = resolvedPayload ?? SceneTransitionPayload.Empty;
-                    resolveSource = "legacy";
+                            DebugUtility.LogWarning(typeof(GameNavigationService),
+                                $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{_lastGameplayRouteId}' levelId='{_lastStartedGameplayLevelId}' reason='Restart/LevelResolveFailed'.");
+                        }
+                        else
+                        {
+                            DebugUtility.LogError(typeof(GameNavigationService),
+                                $"[FATAL][Config] Restart unresolved LevelId in ILevelFlowService. levelId='{_lastStartedGameplayLevelId}', reason='{reason ?? "<null>"}'.");
+                            throw new InvalidOperationException("[FATAL][Config] Restart unresolved LevelId in ILevelFlowService.");
+                        }
+                    }
+                    else
+                    {
+                        payload = resolvedPayload ?? SceneTransitionPayload.Empty;
+                        resolveSource = "legacy";
+                    }
                 }
                 else if (_lastGameplayRouteId.IsValid)
                 {
@@ -281,9 +306,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
             else
             {
-                DebugUtility.Log(typeof(GameNavigationService),
-                    $"[OBS][Navigation][Compat] RouteToLevelNotResolved routeId='{routeId}'.",
-                    DebugUtility.Colors.Info);
+                DebugUtility.LogWarning(typeof(GameNavigationService),
+                    $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{routeId}' reason='StartGameplayRouteAsync'.");
             }
 
             UpdateLastLevelId(resolvedLevelId, routeId, source: $"StartGameplayRouteAsync/{resolveSource}", reason: reason);
@@ -474,10 +498,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private void UpdateLastLevelId(LevelId levelId, SceneRouteId routeId, string source, string reason)
         {
-            if (levelId.IsValid)
-            {
-                _lastStartedGameplayLevelId = levelId;
-            }
+            _lastStartedGameplayLevelId = levelId.IsValid ? levelId : LevelId.None;
 
             _lastGameplayRouteId = routeId;
 

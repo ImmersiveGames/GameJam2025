@@ -61,30 +61,23 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             string selectedContentId = ResolveContentId(typedLevelId);
 
-            var snapshot = new GameplayStartSnapshot(
+            int nextSelectionVersion = ResolveNextSelectionVersion();
+
+            EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
                 typedLevelId,
                 resolvedRouteId,
                 styleIdTyped,
                 contentId: selectedContentId,
                 reason: normalizedReason,
-                selectionVersion: 0,
-                contextSignature: contextSignature);
-
-            if (_restartContextService != null)
-            {
-                snapshot = _restartContextService.RegisterGameplayStart(snapshot);
-            }
-
-            EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
-                typedLevelId,
-                resolvedRouteId,
-                contentId: selectedContentId,
-                reason: normalizedReason,
-                selectionVersion: snapshot.SelectionVersion,
+                selectionVersion: nextSelectionVersion,
                 contextSignature: contextSignature));
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][Level] LevelSelected levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' contentRef='{selectedContentId}' reason='{normalizedReason}' v='{snapshot.SelectionVersion}' contextSignature='{contextSignature}'.",
+                $"[OBS][Level] LevelSelectedEventPublished levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' reason='{normalizedReason}' v='{nextSelectionVersion}' contextSignature='{contextSignature}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][Level] LevelSelected levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' contentRef='{selectedContentId}' reason='{normalizedReason}' v='{nextSelectionVersion}' contextSignature='{contextSignature}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
@@ -145,6 +138,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private static string NormalizeReason(string reason)
         {
             return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/StartGameplay" : reason.Trim();
+        }
+
+        private int ResolveNextSelectionVersion()
+        {
+            if (_restartContextService != null &&
+                _restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot currentSnapshot) &&
+                currentSnapshot.IsValid)
+            {
+                return currentSnapshot.SelectionVersion + 1;
+            }
+
+            return 1;
         }
 
         private static string BuildContextSignature(LevelId levelId, SceneRouteId routeId, TransitionStyleId styleId, string reason)
