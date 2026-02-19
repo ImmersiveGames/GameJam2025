@@ -87,15 +87,52 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.NTo1
             int index = FindLevelIndex(levelsProp, levelId);
             if (index < 0)
             {
-                index = levelsProp.arraySize;
-                levelsProp.InsertArrayElementAtIndex(index);
+                levelsProp.arraySize++;
+                index = levelsProp.arraySize - 1;
             }
 
             SerializedProperty entry = levelsProp.GetArrayElementAtIndex(index);
-            entry.FindPropertyRelative("levelId")?.FindPropertyRelative("_value").stringValue = levelId;
-            entry.FindPropertyRelative("routeRef").objectReferenceValue = routeRef;
-            entry.FindPropertyRelative("routeId")?.FindPropertyRelative("_value").stringValue = string.Empty;
-            entry.FindPropertyRelative("contentId").stringValue = contentId;
+            if (entry == null)
+            {
+                Debug.LogError($"[ERROR][QA] NTo1 failed: could not access levels[{index}] serialized entry.");
+                return;
+            }
+
+            SerializedProperty levelIdValue = entry.FindPropertyRelative("levelId")?.FindPropertyRelative("_value");
+            if (levelIdValue == null)
+            {
+                Debug.LogError($"[ERROR][QA] NTo1 failed: missing serialized 'levelId._value' on levels[{index}].");
+                return;
+            }
+
+            SerializedProperty routeRefProp = entry.FindPropertyRelative("routeRef");
+            if (routeRefProp == null)
+            {
+                Debug.LogError($"[ERROR][QA] NTo1 failed: missing serialized 'routeRef' on levels[{index}].");
+                return;
+            }
+
+            SerializedProperty routeIdValue = entry.FindPropertyRelative("routeId")?.FindPropertyRelative("_value");
+            if (routeIdValue == null)
+            {
+                Debug.LogWarning($"[WARN][QA] NTo1: missing serialized 'routeId._value' on levels[{index}] (legacy field).");
+            }
+
+            SerializedProperty contentIdProp = entry.FindPropertyRelative("contentId");
+            if (contentIdProp == null || contentIdProp.propertyType != SerializedPropertyType.String)
+            {
+                Debug.LogError($"[ERROR][QA] NTo1 failed: missing serialized string 'contentId' on levels[{index}].");
+                return;
+            }
+
+            levelIdValue.stringValue = levelId;
+            routeRefProp.objectReferenceValue = routeRef;
+            if (routeIdValue != null)
+            {
+                routeIdValue.stringValue = string.Empty;
+            }
+
+            contentIdProp.stringValue = contentId;
         }
 
         private static int FindLevelIndex(SerializedProperty levelsProp, string levelId)
