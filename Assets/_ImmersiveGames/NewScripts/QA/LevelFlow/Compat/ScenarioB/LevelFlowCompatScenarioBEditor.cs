@@ -52,10 +52,18 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
+                LevelCatalogAsset reloadedCatalog = AssetDatabase.LoadAssetAtPath<LevelCatalogAsset>(CatalogPath);
+                if (reloadedCatalog == null)
+                {
+                    Debug.LogError($"[ERROR][QA] ScenarioB failed: could not reload catalog at path='{CatalogPath}' after update.");
+                    return;
+                }
+
                 Debug.Log(
                     $"[OBS][Compat] ScenarioB assets ready catalog='{CatalogPath}' levelA='{LevelAPath}' levelB='{LevelBPath}' routeId='{routeAsset.RouteId}'.");
+                Debug.Log($"[OBS][Compat] ScenarioB using catalog='{reloadedCatalog.name}' path='{CatalogPath}'");
 
-                RunInternal(catalog, validateOnly: true);
+                RunInternal(reloadedCatalog, validateOnly: true);
             }
             catch (Exception ex)
             {
@@ -80,6 +88,7 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
                     return;
                 }
 
+                Debug.Log($"[OBS][Compat] ScenarioB using catalog='{catalog.name}' path='{CatalogPath}'");
                 RunInternal(catalog, validateOnly: false);
             }
             catch (Exception ex)
