@@ -267,7 +267,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             LevelId resolvedLevelId = LevelId.None;
             string resolveSource = "none";
 
-            if (_restartContextService != null && _restartContextService.TryGetCurrent(out var snapshot) && snapshot.RouteId == routeId && snapshot.HasLevelId)
+            GameplayStartSnapshot snapshot = default;
+            bool hasSnapshot = _restartContextService != null && _restartContextService.TryGetCurrent(out snapshot);
+            if (hasSnapshot && snapshot.RouteId == routeId && snapshot.HasLevelId)
             {
                 resolvedLevelId = snapshot.LevelId;
                 resolveSource = "snapshot";
