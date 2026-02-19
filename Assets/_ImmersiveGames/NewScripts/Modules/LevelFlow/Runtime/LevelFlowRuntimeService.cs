@@ -66,6 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
                 typedLevelId,
                 resolvedRouteId,
+                styleIdTyped,
                 contentId: selectedContentId,
                 reason: normalizedReason,
                 selectionVersion: nextSelectionVersion,

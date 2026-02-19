@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -38,7 +38,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private static void OnLevelSelected(LevelSelectedEvent evt)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext) || restartContext == null)
+            bool serviceResolved = DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext) && restartContext != null;
+
+            DebugUtility.Log(typeof(LevelSelectedRestartSnapshotBridge),
+                $"[OBS][Navigation] LevelSelectedEventConsumed levelId='{evt.LevelId}' routeId='{evt.RouteId}' contentId='{(string.IsNullOrWhiteSpace(evt.ContentId) ? "<none>" : evt.ContentId)}' v='{evt.SelectionVersion}' contextSignature='{(string.IsNullOrWhiteSpace(evt.ContextSignature) ? "<none>" : evt.ContextSignature)}' restartContextResolved='{serviceResolved}'.",
+                DebugUtility.Colors.Info);
+
+            if (!serviceResolved)
             {
                 return;
             }
@@ -46,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             var snapshot = new GameplayStartSnapshot(
                 evt.LevelId,
                 evt.RouteId,
-                TransitionStyleId.None,
+                evt.StyleId,
                 evt.ContentId,
                 evt.Reason,
                 evt.SelectionVersion,

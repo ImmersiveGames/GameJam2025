@@ -30,14 +30,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             lock (_sync)
             {
-                int nextVersion = _current.SelectionVersion + 1;
+                int persistedVersion = snapshot.SelectionVersion > 0
+                    ? snapshot.SelectionVersion
+                    : _current.SelectionVersion + 1;
+
                 _current = new GameplayStartSnapshot(
                     snapshot.LevelId,
                     snapshot.RouteId,
                     snapshot.StyleId,
                     snapshot.ContentId,
                     snapshot.Reason,
-                    nextVersion,
+                    persistedVersion,
                     snapshot.ContextSignature);
 
                 DebugUtility.Log<RestartContextService>(
