@@ -35,11 +35,16 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
                     return;
                 }
 
-                LevelDefinition levelA = LoadOrCreateLevelDefinition(LevelAPath, "LevelDefinition_CompatScenarioB_A");
-                LevelDefinition levelB = LoadOrCreateLevelDefinition(LevelBPath, "LevelDefinition_CompatScenarioB_B");
+                LevelDefinitionAssetContainer containerA = LoadOrCreateLevelContainer(LevelAPath, "LevelDefinition_CompatScenarioB_A");
+                LevelDefinitionAssetContainer containerB = LoadOrCreateLevelContainer(LevelBPath, "LevelDefinition_CompatScenarioB_B");
+
+                LevelDefinition levelA = containerA.Definition;
+                LevelDefinition levelB = containerB.Definition;
 
                 ConfigureLevel(levelA, new LevelId("compat.scenariob.a"), routeAsset);
                 ConfigureLevel(levelB, new LevelId("compat.scenariob.b"), routeAsset);
+                EditorUtility.SetDirty(containerA);
+                EditorUtility.SetDirty(containerB);
 
                 LevelCatalogAsset catalog = LoadOrCreateCatalog(CatalogPath, "LevelCatalog_CompatScenarioB");
                 ConfigureCatalog(catalog, levelA, levelB);
@@ -63,6 +68,11 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
         {
             try
             {
+                if (!EditorApplication.isPlaying)
+                {
+                    Debug.LogWarning("[WARN][QA] ScenarioB running outside Play Mode. Runtime DebugUtility anchors are best validated in Play Mode.");
+                }
+
                 LevelCatalogAsset catalog = AssetDatabase.LoadAssetAtPath<LevelCatalogAsset>(CatalogPath);
                 if (catalog == null)
                 {
@@ -181,9 +191,6 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
             }
 
             levelsProp.arraySize = 2;
-            levelsProp.GetArrayElementAtIndex(0).managedReferenceValue = null;
-            levelsProp.GetArrayElementAtIndex(1).managedReferenceValue = null;
-
             CopyLevelDefinitionToSerialized(levelA, levelsProp.GetArrayElementAtIndex(0));
             CopyLevelDefinitionToSerialized(levelB, levelsProp.GetArrayElementAtIndex(1));
 
@@ -228,12 +235,18 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
             return catalog;
         }
 
-        private static LevelDefinition LoadOrCreateLevelDefinition(string assetPath, string assetName)
+        private static LevelDefinitionAssetContainer LoadOrCreateLevelContainer(string assetPath, string assetName)
         {
             LevelDefinitionAssetContainer container = AssetDatabase.LoadAssetAtPath<LevelDefinitionAssetContainer>(assetPath);
             if (container != null)
             {
-                return container.Definition;
+                if (container.Definition == null)
+                {
+                    container.Definition = new LevelDefinition();
+                    EditorUtility.SetDirty(container);
+                }
+
+                return container;
             }
 
             container = ScriptableObject.CreateInstance<LevelDefinitionAssetContainer>();
@@ -241,7 +254,7 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
             container.Definition = new LevelDefinition();
             AssetDatabase.CreateAsset(container, assetPath);
             EditorUtility.SetDirty(container);
-            return container.Definition;
+            return container;
         }
 
         private static SceneRouteDefinitionAsset FindScenarioRouteAsset()
