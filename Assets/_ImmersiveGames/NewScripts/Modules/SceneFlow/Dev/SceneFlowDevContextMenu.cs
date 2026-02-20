@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 return;
             }
 
-            var levelSignature = new LevelContextSignature(snapshot.ContextSignature);
+            var levelSignature = LevelContextSignature.Create(snapshot.LevelId, snapshot.RouteId, ReasonQaResetLevelCurrent, snapshot.HasContentId ? snapshot.ContentId : string.Empty);
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
                 $"[QA][WorldLifecycle] ResetLevel comando levelId='{snapshot.LevelId}' reason='{ReasonQaResetLevelCurrent}'.",
