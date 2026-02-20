@@ -57,9 +57,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             var (styleId, styleIdTyped, profileId, profileAsset) = ResolveGameplayStyleObservability();
             string normalizedReason = NormalizeReason(reason);
-            string contextSignature = BuildContextSignature(typedLevelId, resolvedRouteId, styleIdTyped, normalizedReason);
-
             string selectedContentId = ResolveContentId(typedLevelId);
+            LevelContextSignature levelSignature = LevelContextSignature.Create(
+                typedLevelId,
+                resolvedRouteId,
+                normalizedReason,
+                selectedContentId);
 
             int nextSelectionVersion = ResolveNextSelectionVersion();
 
@@ -70,14 +73,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 contentId: selectedContentId,
                 reason: normalizedReason,
                 selectionVersion: nextSelectionVersion,
-                contextSignature: contextSignature));
+                levelSignature: levelSignature));
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][Level] LevelSelectedEventPublished levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' reason='{normalizedReason}' v='{nextSelectionVersion}' contextSignature='{contextSignature}'.",
+                $"[OBS][Level] LevelSelectedEventPublished levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][Level] LevelSelected levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' contentRef='{selectedContentId}' reason='{normalizedReason}' v='{nextSelectionVersion}' contextSignature='{contextSignature}'.",
+                $"[OBS][Level] LevelSelected levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' contentRef='{selectedContentId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
@@ -150,11 +153,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             return 1;
-        }
-
-        private static string BuildContextSignature(LevelId levelId, SceneRouteId routeId, TransitionStyleId styleId, string reason)
-        {
-            return $"level:{levelId}|route:{routeId}|style:{styleId}|reason:{reason}";
         }
 
         private static void FailFastConfig(string detail)
