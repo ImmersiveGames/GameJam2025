@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string contentId,
             string reason,
             int selectionVersion,
-            string contextSignature)
+            LevelContextSignature levelSignature)
         {
             LevelId = levelId;
             RouteId = routeId;
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
-            ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
+            LevelSignature = levelSignature;
         }
 
         public LevelId LevelId { get; }
@@ -32,6 +32,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public string ContentId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
-        public string ContextSignature { get; }
+        public LevelContextSignature LevelSignature { get; }
     }
 }

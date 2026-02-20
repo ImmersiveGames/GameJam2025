@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -27,6 +28,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         private const string QaNTo1LevelB = "qa.level.nto1.b";
         private const string ReasonQaNTo1StartA = "QA/LevelFlow/NTo1/A";
         private const string ReasonQaNTo1StartB = "QA/LevelFlow/NTo1/B";
+        private const string ReasonQaResetMacroGameplay = "QA/WorldLifecycle/ResetMacro/Gameplay";
+        private const string ReasonQaResetLevelCurrent = "QA/WorldLifecycle/ResetLevel/Current";
 
         [ContextMenu("QA/StartGameplay (levelId)")]
         private void Qa_EnterGameplay()
@@ -91,6 +94,78 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 ColorInfo);
 
             _ = resetService.RequestResetAsync(ReasonForceReset);
+        }
+
+        [ContextMenu("QA/WorldLifecycle/Reset Macro (Gameplay)")]
+        private void Qa_ResetMacroGameplay()
+        {
+            _ = ResetMacroGameplayAsync();
+        }
+
+        [ContextMenu("QA/WorldLifecycle/Reset Level (Current)")]
+        private void Qa_ResetLevelCurrent()
+        {
+            _ = ResetLevelCurrentAsync();
+        }
+
+        private static async Task ResetMacroGameplayAsync()
+        {
+            var commands = ResolveGlobal<IWorldResetCommands>("IWorldResetCommands");
+            if (commands == null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider == null ||
+                !DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext) ||
+                restartContext == null ||
+                !restartContext.TryGetCurrent(out var snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.RouteId.IsValid)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    "[QA][WorldLifecycle] Snapshot de restart inválido para Reset Macro (Gameplay).",
+                    ColorErr);
+                return;
+            }
+
+            string macroSignature = string.Empty;
+
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[QA][WorldLifecycle] ResetMacro comando routeId='{snapshot.RouteId}' reason='{ReasonQaResetMacroGameplay}'.",
+                ColorInfo);
+
+            await commands.ResetMacroAsync(snapshot.RouteId, ReasonQaResetMacroGameplay, macroSignature, CancellationToken.None);
+        }
+
+        private static async Task ResetLevelCurrentAsync()
+        {
+            var commands = ResolveGlobal<IWorldResetCommands>("IWorldResetCommands");
+            if (commands == null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider == null ||
+                !DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext) ||
+                restartContext == null ||
+                !restartContext.TryGetCurrent(out var snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.HasLevelId)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    "[QA][WorldLifecycle] Snapshot de restart inválido para Reset Level (Current).",
+                    ColorErr);
+                return;
+            }
+
+            var levelSignature = LevelContextSignature.Create(snapshot.LevelId, snapshot.RouteId, ReasonQaResetLevelCurrent, snapshot.HasContentId ? snapshot.ContentId : string.Empty);
+
+            DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                $"[QA][WorldLifecycle] ResetLevel comando levelId='{snapshot.LevelId}' reason='{ReasonQaResetLevelCurrent}'.",
+                ColorInfo);
+
+            await commands.ResetLevelAsync(snapshot.LevelId, ReasonQaResetLevelCurrent, levelSignature, CancellationToken.None);
         }
 
         [ContextMenu("QA/LevelFlow/NTo1/Start A")]
