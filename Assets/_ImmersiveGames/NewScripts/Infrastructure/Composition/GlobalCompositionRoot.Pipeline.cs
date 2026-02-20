@@ -136,6 +136,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
             RegisterIfMissing(() => new WorldResetService());
+            RegisterIfMissing<IWorldResetCommands>(() => new WorldResetCommands());
 
             DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
             RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
