@@ -34,20 +34,18 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         }
 
-        public async Task ExecuteAsync(WorldResetRequest request)
+        public async Task<WorldResetResult> ExecuteAsync(WorldResetRequest request)
         {
             ResetDecision decision = EvaluateGuards(request);
             if (!decision.ShouldProceed)
             {
-                HandleDecision("Guard", decision, request);
-                return;
+                return HandleDecision("Guard", decision, request);
             }
 
             decision = _validation.Validate(request, _policy);
             if (!decision.ShouldProceed)
             {
-                HandleDecision("Validation", decision, request);
-                return;
+                return HandleDecision("Validation", decision, request);
             }
 
             IReadOnlyList<WorldLifecycleController> controllers = DiscoverControllers(request.TargetScene);
@@ -57,10 +55,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                 string reason = $"{WorldResetReasons.FailedNoControllerPrefix}:{target}";
                 LogDegraded($"Nenhum WorldLifecycleController encontrado para reset. targetScene='{target}'.");
                 PublishResetCompleted(request, reason);
-                return;
+                return WorldResetResult.Failed;
             }
 
             PublishResetStarted(request);
+
+            WorldResetResult result = WorldResetResult.Completed;
 
             try
             {
@@ -68,6 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             }
             catch (Exception ex)
             {
+                result = WorldResetResult.Failed;
                 DebugUtility.LogError<WorldResetOrchestrator>(
                     $"[{ResetLogTags.Failed}] [WorldResetOrchestrator] Erro durante execução do reset. request={request}, ex='{ex}'.");
             }
@@ -75,6 +76,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             {
                 PublishResetCompleted(request, request.Reason);
             }
+
+            return result;
         }
 
         private ResetDecision EvaluateGuards(WorldResetRequest request)
@@ -107,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             return WorldLifecycleControllerLocator.FindControllersForScene(targetScene);
         }
 
-        private void HandleDecision(string stage, ResetDecision decision, WorldResetRequest request)
+        private WorldResetResult HandleDecision(string stage, ResetDecision decision, WorldResetRequest request)
         {
             if (decision.IsViolation)
             {
@@ -135,6 +138,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             {
                 PublishResetCompleted(request, decision.Reason);
             }
+
+            if (string.Equals(stage, "Validation", StringComparison.Ordinal))
+            {
+                return WorldResetResult.SkippedValidation;
+            }
+
+            return WorldResetResult.Failed;
         }
 
         private static void PublishResetStarted(WorldResetRequest request)
