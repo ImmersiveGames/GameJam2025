@@ -1,10 +1,13 @@
+using System;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     /// <summary>
     /// Assinatura de contexto do domínio LevelFlow.
     /// Não deve ser reutilizada como MacroSignature do SceneFlow.
     /// </summary>
-    public readonly struct LevelContextSignature
+    public readonly struct LevelContextSignature : IEquatable<LevelContextSignature>
     {
         public static readonly LevelContextSignature Empty = new(string.Empty);
 
@@ -18,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public static LevelContextSignature Create(
             LevelId levelId,
-            SceneFlow.Navigation.Runtime.SceneRouteId routeId,
+            SceneRouteId routeId,
             string reason,
             string contentId = null)
         {
@@ -34,5 +37,30 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
 
         public override string ToString() => Value;
+
+        public bool Equals(LevelContextSignature other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is LevelContextSignature other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return StringComparer.Ordinal.GetHashCode(Value ?? string.Empty);
+        }
+
+        public static bool operator ==(LevelContextSignature left, LevelContextSignature right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(LevelContextSignature left, LevelContextSignature right)
+        {
+            return !left.Equals(right);
+        }
     }
 }

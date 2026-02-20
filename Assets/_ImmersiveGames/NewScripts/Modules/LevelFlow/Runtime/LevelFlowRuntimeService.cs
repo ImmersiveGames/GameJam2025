@@ -80,10 +80,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][Level] LevelSelected levelId='{typedLevelId}' routeId='{resolvedRouteId}' contentId='{selectedContentId}' contentRef='{selectedContentId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
-                DebugUtility.Colors.Info);
-
-            DebugUtility.Log<LevelFlowRuntimeService>(
                 $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' routeId='{resolvedRouteId}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
