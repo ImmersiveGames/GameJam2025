@@ -88,13 +88,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 return false;
             }
 
-            if (_routeToLevelCandidates.TryGetValue(routeId, out List<LevelId> candidates) && candidates.Count > 1)
-            {
-                DebugUtility.Log(typeof(LevelCatalogAsset),
-                    $"[OBS][Compat] RouteToLevelAmbiguous routeId='{routeId}' picked='{levelId}' candidates='[{string.Join(", ", candidates)}]'.",
-                    DebugUtility.Colors.Warning);
-            }
-
             return true;
         }
 
@@ -203,32 +196,39 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
-            int ambiguousRoutes = 0;
-            List<string> duplicatedRouteDetails = null;
+            int sharedRoutes = 0;
+            List<string> sharedRouteDetails = null;
             foreach (var pair in _routeToLevelCandidates)
             {
                 if (pair.Value != null && pair.Value.Count > 1)
                 {
-                    ambiguousRoutes++;
+                    sharedRoutes++;
 
-                    duplicatedRouteDetails ??= new List<string>();
-                    duplicatedRouteDetails.Add(
+                    pair.Value.Sort((left, right) => string.CompareOrdinal(left.ToString(), right.ToString()));
+                    _routeToLevelCache[pair.Key] = pair.Value[0];
+
+                    sharedRouteDetails ??= new List<string>();
+                    sharedRouteDetails.Add(
                         $"routeId='{pair.Key}' levels=[{string.Join(", ", pair.Value)}]");
+
+                    DebugUtility.LogVerbose<LevelCatalogAsset>(
+                        $"[OBS][Compat] RouteToLevelDeterministic routeId='{pair.Key}' selected='{pair.Value[0]}' candidates=[{string.Join(", ", pair.Value)}].",
+                        DebugUtility.Colors.Info);
                 }
             }
 
-            string duplicatedDetails = duplicatedRouteDetails == null
+            string sharedDetails = sharedRouteDetails == null
                 ? "[]"
-                : $"[{string.Join(", ", duplicatedRouteDetails)}]";
+                : $"[{string.Join(", ", sharedRouteDetails)}]";
 
             DebugUtility.Log<LevelCatalogAsset>(
-                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes} duplicated={duplicatedDetails}",
+                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes=0 sharedRoutes={sharedRoutes} shared={sharedDetails}",
                 DebugUtility.Colors.Info);
 
             if (warnOnInvalidLevels)
             {
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes={ambiguousRoutes}",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes=0 sharedRoutes={sharedRoutes}",
                     DebugUtility.Colors.Info);
             }
         }
