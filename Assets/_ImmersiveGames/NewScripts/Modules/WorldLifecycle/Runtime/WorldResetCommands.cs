@@ -44,7 +44,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             try
             {
                 IWorldResetService resetService = ResolveMacroResetServiceOrFail();
-                await resetService.TriggerResetAsync(normalizedMacroSignature, normalizedReason);
+                WorldResetResult resetResult = await resetService.TriggerResetAsync(normalizedMacroSignature, normalizedReason);
+                bool success = resetResult == WorldResetResult.Completed;
+
+                // Mantemos note explícito para telemetria de bloqueio por validação.
+                string notes = resetResult switch
+                {
+                    WorldResetResult.SkippedValidation => "ValidationFailed: ContextSignature vazia",
+                    WorldResetResult.Failed => "ResetFailed",
+                    _ => string.Empty
+                };
 
                 PublishCompleted(
                     kind: ResetKind.Macro,
@@ -54,8 +63,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     reason: normalizedReason,
                     macroSignature: normalizedMacroSignature,
                     levelSignature: LevelContextSignature.Empty,
-                    success: true,
-                    notes: string.Empty);
+                    success: success,
+                    notes: notes);
             }
             catch (Exception ex)
             {

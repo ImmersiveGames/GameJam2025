@@ -10,9 +10,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
     /// </summary>
     public interface IWorldResetService
     {
-        Task TriggerResetAsync(string? contextSignature, string? reason);
+        Task<WorldResetResult> TriggerResetAsync(string? contextSignature, string? reason);
 
-        Task TriggerResetAsync(WorldResetRequest request);
+        Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request);
     }
 }
 

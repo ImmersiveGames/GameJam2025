@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         private bool _dependenciesResolved;
         private WorldResetOrchestrator _orchestrator;
 
-        public async Task TriggerResetAsync(string? contextSignature, string? reason)
+        public async Task<WorldResetResult> TriggerResetAsync(string? contextSignature, string? reason)
         {
             var request = new WorldResetRequest(
                 contextSignature: contextSignature ?? string.Empty,
@@ -36,10 +36,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                 sourceSignature: contextSignature ?? string.Empty,
                 isGameplayProfile: true);
 
-            await TriggerResetAsync(request);
+            return await TriggerResetAsync(request);
         }
 
-        public async Task TriggerResetAsync(WorldResetRequest request)
+        public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
             EnsureDependencies();
 
@@ -52,13 +52,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                 {
                     DebugUtility.LogWarning<WorldResetService>(
                         $"[{ResetLogTags.Guarded}][DEGRADED_MODE] Reset ja em andamento para signature='{ctx}'. Ignorando duplicate.");
-                    return;
+                    return WorldResetResult.Failed;
                 }
             }
 
             try
             {
-                await _orchestrator.ExecuteAsync(request);
+                return await _orchestrator.ExecuteAsync(request);
             }
             catch (Exception ex)
             {
@@ -67,6 +67,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
 
                 // Best-effort: ainda publica completed para evitar deadlock no SceneFlow gate.
                 EventBus<WorldLifecycleResetCompletedEvent>.Raise(new WorldLifecycleResetCompletedEvent(ctx, rsn));
+                return WorldResetResult.Failed;
             }
             finally
             {

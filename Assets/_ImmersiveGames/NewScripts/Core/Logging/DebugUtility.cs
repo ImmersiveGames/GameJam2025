@@ -340,7 +340,10 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 return false;
             }
 
-            return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal);
+            // Suprime apenas spam de observabilidade idempotente de catálogo.
+            return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
+                   message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
+                   message.Contains("[OBS][Config] SceneRouteCatalogBuild", StringComparison.Ordinal);
         }
         #endregion
     }

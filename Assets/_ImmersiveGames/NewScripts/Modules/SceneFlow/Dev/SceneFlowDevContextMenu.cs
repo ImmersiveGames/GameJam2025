@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
@@ -129,10 +130,28 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 return;
             }
 
-            string macroSignature = string.Empty;
+            if (DependencyManager.Provider == null ||
+                !DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var signatureCache) ||
+                signatureCache == null)
+            {
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    "[ERROR][QA][WorldLifecycle] ResetMacro abortado: ISceneFlowSignatureCache indisponível no DI global.",
+                    ColorErr);
+                return;
+            }
+
+            if (!signatureCache.TryGetLast(out var macroSignature, out var profileId, out var targetScene) ||
+                string.IsNullOrWhiteSpace(macroSignature))
+            {
+                // Falha explícita para evitar reset sem assinatura válida.
+                DebugUtility.Log(typeof(SceneFlowDevContextMenu),
+                    "[ERROR][QA][WorldLifecycle] ResetMacro abortado: ContextSignature vazia/nula no SceneFlowSignatureCache.",
+                    ColorErr);
+                return;
+            }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[QA][WorldLifecycle] ResetMacro comando routeId='{snapshot.RouteId}' reason='{ReasonQaResetMacroGameplay}'.",
+                $"[OBS][QA][WorldLifecycle] ResetMacro comando routeId='{snapshot.RouteId}' reason='{ReasonQaResetMacroGameplay}' signature='{macroSignature}' profile='{profileId}' targetScene='{targetScene}'.",
                 ColorInfo);
 
             await commands.ResetMacroAsync(snapshot.RouteId, ReasonQaResetMacroGameplay, macroSignature, CancellationToken.None);
