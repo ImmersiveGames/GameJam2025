@@ -204,16 +204,25 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             int ambiguousRoutes = 0;
+            List<string> duplicatedRouteDetails = null;
             foreach (var pair in _routeToLevelCandidates)
             {
                 if (pair.Value != null && pair.Value.Count > 1)
                 {
                     ambiguousRoutes++;
+
+                    duplicatedRouteDetails ??= new List<string>();
+                    duplicatedRouteDetails.Add(
+                        $"routeId='{pair.Key}' levels=[{string.Join(", ", pair.Value)}]");
                 }
             }
 
+            string duplicatedDetails = duplicatedRouteDetails == null
+                ? "[]"
+                : $"[{string.Join(", ", duplicatedRouteDetails)}]";
+
             DebugUtility.Log<LevelCatalogAsset>(
-                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes}",
+                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes} duplicated={duplicatedDetails}",
                 DebugUtility.Colors.Info);
 
             if (warnOnInvalidLevels)
