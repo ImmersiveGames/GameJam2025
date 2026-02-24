@@ -197,7 +197,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             int sharedRoutes = 0;
-            List<string> sharedRouteDetails = null;
             foreach (var pair in _routeToLevelCandidates)
             {
                 if (pair.Value != null && pair.Value.Count > 1)
@@ -206,23 +205,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
                     pair.Value.Sort((left, right) => string.CompareOrdinal(left.ToString(), right.ToString()));
                     _routeToLevelCache[pair.Key] = pair.Value[0];
-
-                    sharedRouteDetails ??= new List<string>();
-                    sharedRouteDetails.Add(
-                        $"routeId='{pair.Key}' levels=[{string.Join(", ", pair.Value)}]");
-
-                    DebugUtility.LogVerbose<LevelCatalogAsset>(
-                        $"[OBS][Compat] RouteToLevelDeterministic routeId='{pair.Key}' selected='{pair.Value[0]}' candidates=[{string.Join(", ", pair.Value)}].",
-                        DebugUtility.Colors.Info);
                 }
             }
 
-            string sharedDetails = sharedRouteDetails == null
-                ? "[]"
-                : $"[{string.Join(", ", sharedRouteDetails)}]";
-
             DebugUtility.Log<LevelCatalogAsset>(
-                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes=0 sharedRoutes={sharedRoutes} shared={sharedDetails}",
+                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes=0 sharedRoutes={sharedRoutes}",
                 DebugUtility.Colors.Info);
 
             if (warnOnInvalidLevels)
