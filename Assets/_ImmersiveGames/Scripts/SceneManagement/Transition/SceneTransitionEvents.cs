@@ -1,9 +1,9 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
-    /// Disparado assim que o SceneTransitionService inicia o processamento
-    /// de uma transição (antes de FadeIn, Load ou Unload).
+    /// Disparado assim que o OldSceneTransitionService inicia o processamento
+    /// de uma transi��o (antes de FadeIn, Load ou Unload).
     /// </summary>
     public readonly struct SceneTransitionStartedEvent : IEvent
     {
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     /// <summary>
     /// Disparado quando todas as cenas alvo foram carregadas,
     /// todas as cenas obsoletas foram descarregadas e a cena ativa
-    /// já foi definida. Representa o momento em que o "mundo" está pronto.
+    /// j� foi definida. Representa o momento em que o "mundo" est� pronto.
     /// </summary>
     public readonly struct SceneTransitionScenesReadyEvent : IEvent
     {
@@ -31,8 +31,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     }
 
     /// <summary>
-    /// Disparado ao final da transição, depois do FadeOut (quando usado).
-    /// Representa a conclusão total da transição.
+    /// Disparado ao final da transi��o, depois do FadeOut (quando usado).
+    /// Representa a conclus�o total da transi��o.
     /// </summary>
     public readonly struct SceneTransitionCompletedEvent : IEvent
     {
@@ -44,3 +44,4 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         }
     }
 }
+

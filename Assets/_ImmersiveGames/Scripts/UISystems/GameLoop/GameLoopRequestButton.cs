@@ -1,8 +1,8 @@
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.UISystems.GameLoop
@@ -40,16 +40,16 @@ namespace _ImmersiveGames.Scripts.UISystems.GameLoop
             switch (requestType)
             {
                 case GameLoopRequestType.Start:
-                    EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
+                    EventBus<OldGameStartRequestedEvent>.Raise(new OldGameStartRequestedEvent());
                     break;
                 case GameLoopRequestType.Pause:
                     EventBus<GamePauseRequestedEvent>.Raise(new GamePauseRequestedEvent());
                     break;
                 case GameLoopRequestType.Resume:
-                    EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
+                    EventBus<OldGameResumeRequestedEvent>.Raise(new OldGameResumeRequestedEvent());
                     break;
                 case GameLoopRequestType.Reset:
-                    EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+                    EventBus<OldGameResetRequestedEvent>.Raise(new OldGameResetRequestedEvent());
                     break;
                 case GameLoopRequestType.GameOver:
                     if (manager == null || !manager.TryTriggerGameOver("UI Button"))
@@ -78,3 +78,4 @@ namespace _ImmersiveGames.Scripts.UISystems.GameLoop
 #endif
     }
 }
+

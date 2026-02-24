@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cdacc728aec81746b38bd96d0b26ae3, type: 3}
+  m_Name: LevelCatalog
+  m_EditorClassIdentifier: 
+  levels:
+  - levelId:
+      _value: level.1
+    routeId:
+      _value: level.1
+    routeRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
+    contentId: content.default
+  - levelId:
+      _value: level.2
+    routeId:
+      _value: level.2
+    routeRef: {fileID: 11400000, guid: 26626e420f9344b2b95d9ccacac64d20, type: 2}
+    contentId: content.default
+  - levelId:
+      _value: qa.level.nto1.a
+    routeId:
+      _value: 
+    routeRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
+    contentId: content.1
+  - levelId:
+      _value: qa.level.nto1.b
+    routeId:
+      _value: 
+    routeRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
+    contentId: content.2
+  warnOnInvalidLevels: 1

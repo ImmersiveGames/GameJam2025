@@ -1,10 +1,10 @@
-using _ImmersiveGames.Scripts.DamageSystem;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
 
@@ -129,10 +129,11 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         protected virtual void OnDestroy()
         {
             // Desregistrar bindings individuais para evitar leaks
-            FilteredEventBus<DeathEvent>.Unregister(_deathBinding, ActorId);
-            FilteredEventBus<DamageEvent>.Unregister(_damageBinding, ActorId);
-            FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, ActorId);
-            FilteredEventBus<ResetEvent>.Unregister(_resetBinding, ActorId);
+            FilteredEventBus<string,DeathEvent>.Unregister(ActorId,_deathBinding);
+            FilteredEventBus<string,DamageEvent>.Unregister(ActorId,_damageBinding);
+            FilteredEventBus<string,ReviveEvent>.Unregister(ActorId, _reviveBinding);
+            FilteredEventBus<string, ResetEvent>.Unregister(ActorId,_resetBinding);
         }
     }
 }
+

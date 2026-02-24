@@ -1,4 +1,4 @@
-ï»¿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 namespace _ImmersiveGames.Scripts.TimerSystem.Events
 {
     public class EventTimerStarted : IEvent
@@ -20,21 +20,22 @@ namespace _ImmersiveGames.Scripts.TimerSystem.Events
         }
     }
     /// <summary>
-    /// Evento explÃ­cito para resetar o cronÃ´metro somente quando a FASE inteira Ã© reiniciada.
-    /// NÃ£o deve ser usado para reset "in-place" de Player.
+    /// Evento explícito para resetar o cronômetro somente quando a etapa inteira é reiniciada.
+    /// Não deve ser usado para reset "in-place" de Player.
     /// </summary>
-    public class GamePhaseResetEvent : IEvent
+    public class GameResetStepEvent : IEvent
     {
         public readonly string reason;
 
-        public GamePhaseResetEvent(string reason)
+        public GameResetStepEvent(string reason)
         {
             this.reason = reason;
         }
 
         public override string ToString()
         {
-            return $"GamePhaseResetEvent(reason='{reason ?? "null"}')";
+            return $"GameResetStepEvent(reason='{reason ?? "null"}')";
         }
     }
 }
+

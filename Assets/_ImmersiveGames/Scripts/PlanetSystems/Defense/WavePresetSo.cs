@@ -2,7 +2,7 @@ using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using UnityEngine;
 using UnityEngine.Serialization;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -100,3 +100,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 #endif
     }
 }
+

@@ -1,22 +1,21 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
-    /// Implementação básica do planner:
+    /// Implementa��o b�sica do planner:
     /// - ScenesToLoad  = targetScenes - currentState. LoadedScenes
     /// - ScenesToUnload = currentState.LoadedScenes - targetScenes,
     ///   desconsiderando cenas persistentes (como a UIGlobalScene e FadeScene).
     /// - TargetActiveScene:
-    ///     - usa explicitTargetActiveScene se não for vazio;
-    ///     - senão, usa a primeira cena do targetScenes;
-    ///     - se targetScenes estiver vazio, mantém a ActiveScene atual.
+    ///     - usa explicitTargetActiveScene se n�o for vazio;
+    ///     - sen�o, usa a primeira cena do targetScenes;
+    ///     - se targetScenes estiver vazio, mant�m a ActiveScene atual.
     ///
     /// IMPORTANTE:
-    /// - Esta classe NÃO herda de MonoBehaviour.
+    /// - Esta classe N�O herda de MonoBehaviour.
     /// - Pode ser instanciada normalmente com "new" no DependencyBootstrapper.
     /// </summary>
     public sealed class SimpleSceneTransitionPlanner : ISceneTransitionPlanner
@@ -27,13 +26,13 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         // Cenas que nunca devem ser descarregadas automaticamente
         private readonly HashSet<string> _persistentScenes;
 
-        // Perfil de transição default (opcional). Pode ser null.
-        private readonly SceneTransitionProfile _defaultTransitionProfile;
+        // Perfil de transi��o default (opcional). Pode ser null.
+        private readonly OldSceneTransitionProfile _defaultTransitionProfile;
 
         /// <summary>
         /// Construtor default:
         /// - Marca "UIGlobalScene" e "FadeScene" como cenas persistentes;
-        /// - Não define perfil de transição default (null).
+        /// - N�o define perfil de transi��o default (null).
         /// </summary>
         public SimpleSceneTransitionPlanner()
             : this(new[] { DefaultUIGlobalSceneName, DefaultFadeSceneName }, null)
@@ -41,12 +40,12 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         }
 
         /// <summary>
-        /// Construtor com configuração explícita.
+        /// Construtor com configura��o expl�cita.
         /// Permite injetar lista de cenas persistentes e um perfil default.
         /// </summary>
         private SimpleSceneTransitionPlanner(
             IEnumerable<string> persistentScenes,
-            SceneTransitionProfile defaultTransitionProfile)
+            OldSceneTransitionProfile defaultTransitionProfile)
         {
             _persistentScenes = persistentScenes != null
                 ? new HashSet<string>(persistentScenes.Where(s => !string.IsNullOrWhiteSpace(s)))
@@ -66,7 +65,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             if (currentState == null)
             {
                 DebugUtility.LogWarning<SimpleSceneTransitionPlanner>(
-                    "[Planner] currentState é null. Retornando contexto vazio.");
+                    "[Planner] currentState � null. Retornando contexto vazio.");
                 return new SceneTransitionContext(
                     scenesToLoad: new List<string>(),
                     scenesToUnload: new List<string>(),
@@ -106,7 +105,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             if (currentState == null)
             {
                 DebugUtility.LogWarning<SimpleSceneTransitionPlanner>(
-                    "[Planner] BuildContext(currentState, targetGroup): currentState é null. " +
+                    "[Planner] BuildContext(currentState, targetGroup): currentState � null. " +
                     "Retornando contexto vazio.");
                 return new SceneTransitionContext(
                     scenesToLoad: new List<string>(),
@@ -118,7 +117,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             if (targetGroup == null)
             {
                 DebugUtility.LogWarning<SimpleSceneTransitionPlanner>(
-                    "[Planner] BuildContext(currentState, targetGroup): targetGroup é null. " +
+                    "[Planner] BuildContext(currentState, targetGroup): targetGroup � null. " +
                     "Retornando contexto vazio.");
                 return new SceneTransitionContext(
                     scenesToLoad: new List<string>(),
@@ -149,7 +148,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
             // Decide o uso de fade:
             // - Se perfil existir, UseFade dele prevalece;
-            // - Senão, usa ForceUseFade do grupo;
+            // - Sen�o, usa ForceUseFade do grupo;
             // - Fallback: true.
             var profile = targetGroup.TransitionProfile ?? _defaultTransitionProfile;
             bool useFade = profile != null
@@ -204,12 +203,12 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 ? new HashSet<string>(persistentScenes)
                 : new HashSet<string>();
 
-            // Tudo que está no alvo e não está carregado → Load
+            // Tudo que est� no alvo e n�o est� carregado ? Load
             var toLoad = targetSet
                 .Where(scene => !currentState.LoadedScenes.Contains(scene))
                 .ToList();
 
-            // Tudo que está carregado, não está no alvo e não é persistente → Unload
+            // Tudo que est� carregado, n�o est� no alvo e n�o � persistente ? Unload
             var toUnload = currentState.LoadedScenes
                 .Where(loaded => !targetSet.Contains(loaded) && !persistentSet.Contains(loaded))
                 .ToList();
@@ -237,3 +236,5 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         #endregion
     }
 }
+
+

@@ -1,7 +1,7 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         [Tooltip("Se verdadeiro, registra automaticamente todos os GameplayExecutionParticipantBehaviour encontrados na cena.")]
         [SerializeField] private bool autoDiscoverParticipants = true;
 
-        private ISimulationGateService _gate;
+        private IOldSimulationGateService _gate;
         private readonly HashSet<IGameplayExecutionParticipant> _participants = new();
 
         private bool _isExecutionAllowed = true;
@@ -33,10 +33,10 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             DependencyManager.Provider.RegisterForScene<IGameplayExecutionCoordinator>(_sceneName, this, allowOverride: true);
 
             // 2) Resolver Gate global
-            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out _gate) || _gate == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IOldSimulationGateService>(out _gate) || _gate == null)
             {
                 DebugUtility.LogWarning<GameplayExecutionCoordinator>(
-                    "ISimulationGateService nÃ£o encontrado no DI global. Coordinator ficarÃ¡ inativo.",
+                    "IOldSimulationGateService não encontrado no DI global. Coordinator ficará inativo.",
                     this);
                 return;
             }
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 AutoDiscoverAndRegisterParticipants();
             }
 
-            // Reaplica estado apÃ³s registrar participantes para garantir consistÃªncia imediata.
+            // Reaplica estado após registrar participantes para garantir consistência imediata.
             ApplyGateState(_gate.IsOpen, forceReapplyToParticipants: true);
         }
 
@@ -160,3 +160,4 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         }
     }
 }
+

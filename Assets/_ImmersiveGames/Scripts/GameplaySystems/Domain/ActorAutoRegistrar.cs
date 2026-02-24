@@ -1,6 +1,6 @@
-Ôªøusing _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
     public sealed class ActorAutoRegistrar : MonoBehaviour
     {
         private IActor _actor;
-        private IActorRegistry _registry;
+        private IOldActorRegistry _registry;
 
         private bool _registered;
         private bool _pendingRegister;
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (_actor == null)
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
-                    $"Nenhum IActor encontrado em '{name}'. ActorAutoRegistrar ser√° ignorado.",
+                    $"Nenhum IActor encontrado em '{name}'. ActorAutoRegistrar ser· ignorado.",
                     this);
             }
         }
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (_registry == null)
                 return;
 
-            // Se o ActorId ainda n√£o est√° pronto, adia para Start.
+            // Se o ActorId ainda n„o est· pronto, adia para Start.
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
             {
                 _pendingRegister = true;
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
                     $"ActorId ainda vazio em Start para '{_actor.ActorName}'. " +
-                    $"Verifique se o ActorMaster est√° gerando ActorId no Awake e se o OldUniqueIdFactory est√° dispon√≠vel.",
+                    $"Verifique se o ActorMaster est· gerando ActorId no Awake e se o OldUniqueIdFactory est· disponÌvel.",
                     this);
                 return;
             }
@@ -87,10 +87,10 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             var sceneName = gameObject.scene.name;
 
-            if (!DependencyManager.Provider.TryGetForScene<IActorRegistry>(sceneName, out _registry) || _registry == null)
+            if (!DependencyManager.Provider.TryGetForScene<IOldActorRegistry>(sceneName, out _registry) || _registry == null)
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
-                    $"IActorRegistry n√£o encontrado para a cena '{sceneName}'. " +
+                    $"IOldActorRegistry n„o encontrado para a cena '{sceneName}'. " +
                     $"Garanta que existe um GameplayDomainBootstrapper nessa cena.",
                     this);
                 _registry = null;
@@ -98,3 +98,4 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         }
     }
 }
+

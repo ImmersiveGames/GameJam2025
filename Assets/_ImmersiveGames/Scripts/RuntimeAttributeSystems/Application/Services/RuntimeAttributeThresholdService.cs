@@ -1,8 +1,8 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
@@ -72,3 +72,4 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
     }
 }
+

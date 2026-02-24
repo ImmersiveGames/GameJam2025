@@ -1,6 +1,6 @@
-ï»¿using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 
         private void Update()
         {
-            var state = GameManagerStateMachine.Instance != null ? GameManagerStateMachine.Instance.CurrentState : null;
+            var state = OldGameManagerStateMachine.Instance != null ? OldGameManagerStateMachine.Instance.CurrentState : null;
             var currentType = state?.GetType();
 
             if (currentType == _lastStateType)
@@ -38,28 +38,30 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
                 return;
 
             // Terminal states => mostra overlay.
-            if (state is VictoryState)
+            if (state is OldVictoryState)
             {
                 overlay.ShowVictory();
                 return;
             }
 
-            if (state is GameOverState)
+            if (state is OldGameOverState)
             {
                 overlay.ShowGameOver();
                 return;
             }
 
-            // Qualquer outro estado => garante que o terminal overlay nÃ£o fique â€œtravadoâ€.
+            // Qualquer outro estado => garante que o terminal overlay não fique “travado”.
             overlay.Hide();
         }
 
         private void SnapshotState(string label)
         {
-            var state = GameManagerStateMachine.Instance != null ? GameManagerStateMachine.Instance.CurrentState : null;
+            var state = OldGameManagerStateMachine.Instance != null ? OldGameManagerStateMachine.Instance.CurrentState : null;
             _lastStateType = state?.GetType();
             DebugUtility.LogVerbose<TerminalOverlayStateWatcher>(
                 $"[TerminalOverlayWatcher] {label} | State='{_lastStateType?.Name ?? "null"}'");
         }
     }
 }
+
+

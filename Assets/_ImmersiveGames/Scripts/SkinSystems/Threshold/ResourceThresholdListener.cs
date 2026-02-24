@@ -2,8 +2,8 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine.Events;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
 
         private void Start()
         {
-            if (showDebugLogs) 
+            if (showDebugLogs)
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Started listening with {thresholdConfigs.Length} configs on {gameObject.name}. Expected ActorId: {_expectedActorId}");
 
             for (int i = 0; i < thresholdConfigs.Length; i++)
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             }
 
             _registrationScope = _expectedActorId;
-            FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_thresholdBinding, _registrationScope);
+            FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_registrationScope,_thresholdBinding);
             if (showDebugLogs)
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Registered on FilteredEventBus para ActorId {_expectedActorId} em {gameObject.name}");
         }
@@ -114,8 +114,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Event ignored on {gameObject.name}: ActorId {evt.ActorId} != expected {_expectedActorId}");
                 return;
             }
-            
-            if (showDebugLogs) 
+
+            if (showDebugLogs)
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Received event on {gameObject.name}: Actor={evt.ActorId}, Type={evt.RuntimeAttributeType}, Threshold={evt.Threshold}, Percentage={evt.CurrentPercentage:P0}, Ascending={evt.IsAscending}");
 
             bool anyMatch = false;

@@ -1,6 +1,5 @@
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-
-namespace _ImmersiveGames.Scripts.DamageSystem
+using _ImmersiveGames.NewScripts.Core.Events;
+namespace _ImmersiveGames.Scripts.DamageSystem.Events
 {
     public static class DamageEventDispatcher
     {
@@ -19,3 +18,4 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
     }
 }
+

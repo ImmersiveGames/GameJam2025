@@ -1,10 +1,10 @@
-Ôªøusing _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
     /// <summary>
-    /// Mant√©m o attributeCanvas sempre virado para a c√¢mera (billboard effect)
-    /// Para canvases em world space, com suporte a offset de posi√ß√£o/rota√ß√£o
+    /// MantÈm o attributeCanvas sempre virado para a c‚mera (billboard effect)
+    /// Para canvases em world space, com suporte a offset de posiÁ„o/rotaÁ„o
     /// </summary>
     public class WorldSpaceBillboard : MonoBehaviour
     {
@@ -103,29 +103,29 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             }
             _lastUpdateTime = Time.time;
 
-            // Aplicar offset de posi√ß√£o
+            // Aplicar offset de posiÁ„o
             var finalPosition = _originalPosition + positionOffset;
             if (positionOffset != Vector3.zero)
             {
                 transform.position = finalPosition;
             }
 
-            // Calcular dire√ß√£o para a c√¢mera
+            // Calcular direÁ„o para a c‚mera
             var directionToCamera = _cameraTransform.position - transform.position;
 
-            // Aplicar restri√ß√µes de eixo
+            // Aplicar restriÁıes de eixo
             if (!billboardX) directionToCamera.x = 0f;
             if (!billboardY) directionToCamera.y = 0f;
             if (!billboardZ) directionToCamera.z = 0f;
 
-            // Inverter se necess√°rio
+            // Inverter se necess·rio
             if (invertForward) directionToCamera = -directionToCamera;
 
-            // Aplicar rota√ß√£o apenas se a dire√ß√£o for v√°lida
+            // Aplicar rotaÁ„o apenas se a direÁ„o for v·lida
             if (directionToCamera == Vector3.zero) return;
             var targetRotation = Quaternion.LookRotation(directionToCamera);
                 
-            // Aplicar offset de rota√ß√£o
+            // Aplicar offset de rotaÁ„o
             if (rotationOffset != Vector3.zero)
             {
                 targetRotation *= Quaternion.Euler(rotationOffset);

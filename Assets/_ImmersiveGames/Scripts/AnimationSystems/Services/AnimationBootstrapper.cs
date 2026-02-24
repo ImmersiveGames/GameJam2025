@@ -1,5 +1,5 @@
-﻿using _ImmersiveGames.Scripts.AnimationSystems.Config;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.AnimationSystems.Config;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services
@@ -43,8 +43,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
             else
             {
                 DebugUtility.LogWarning<AnimationBootstrapper>(
-                    $"AnimationConfig não encontrada em Resources para '{controllerTypeName}' (path: '{resourcePath}').");
+                    $"AnimationConfig n�o encontrada em Resources para '{controllerTypeName}' (path: '{resourcePath}').");
             }
         }
     }
 }
+

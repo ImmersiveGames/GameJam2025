@@ -1,6 +1,6 @@
-ï»¿using System;
+using System;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
                 EaterRegistered?.Invoke(actor);
 
                 DebugUtility.LogVerbose<EaterDomain>(
-                    $"Eater registrado no domÃ­nio: {actor.ActorName} ({actor.ActorId}).");
+                    $"Eater registrado no domínio: {actor.ActorName} ({actor.ActorId}).");
 
                 return true;
             }
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             EaterUnregistered?.Invoke(old);
 
             DebugUtility.LogVerbose<EaterDomain>(
-                $"Eater removido do domÃ­nio: {old.ActorName} ({old.ActorId}).");
+                $"Eater removido do domínio: {old.ActorName} ({old.ActorId}).");
 
             return true;
         }
@@ -97,3 +97,4 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         }
     }
 }
+

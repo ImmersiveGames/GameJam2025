@@ -64,19 +64,19 @@ namespace Tools.Editor {
 
         private static class Folders {
             public static void CreateDefault(string root, params string[] folders) {
-                var fullPath = Path.Combine(Application.dataPath, root);
+                string fullPath = Path.Combine(Application.dataPath, root);
                 if (!Directory.Exists(fullPath)) {
                     Directory.CreateDirectory(fullPath);
                 }
-                foreach (var folder in folders) {
+                foreach (string folder in folders) {
                     CreateSubFolders(fullPath, folder);
                 }
             }
     
             private static void CreateSubFolders(string rootPath, string folderHierarchy) {
-                var folders = folderHierarchy.Split('/');
-                var currentPath = rootPath;
-                foreach (var folder in folders) {
+                string[] folders = folderHierarchy.Split('/');
+                string currentPath = rootPath;
+                foreach (string folder in folders) {
                     currentPath = Path.Combine(currentPath, folder);
                     if (!Directory.Exists(currentPath)) {
                         Directory.CreateDirectory(currentPath);
@@ -90,7 +90,7 @@ namespace Tools.Editor {
             private static readonly Queue<string> PackagesToInstall = new();
 
             public static void InstallPackages(string[] packages) {
-                foreach (var package in packages) {
+                foreach (string package in packages) {
                     PackagesToInstall.Enqueue(package);
                 }
 

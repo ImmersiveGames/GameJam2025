@@ -1,14 +1,15 @@
-﻿using UnityEngine;
-using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.SkinSystems.Data;
+using _ImmersiveGames.Scripts.SkinSystems.Events;
 using _ImmersiveGames.Scripts.SkinSystems.Runtime;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
-namespace _ImmersiveGames.Scripts.SkinSystems
+using _ImmersiveGames.Scripts.SkinSystems.Services;
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 {
     public class ActorSkinController : MonoBehaviour, IResettable
     {
@@ -50,7 +51,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         }
 
         /// <summary>
-        /// Permite injeção externa de um serviço de skin customizado (útil para testes).
+        /// Permite inje��o externa de um servi�o de skin customizado (�til para testes).
         /// </summary>
         public void SetSkinService(ISkinService skinService)
         {
@@ -62,10 +63,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             RegisterWithDependencyManager();
 
             // IMPORTANTe:
-            // Initialize() apenas configura o serviço. Para os "Configurable" receberem os dados
-            // (SkinAudioConfigurable, etc.), precisamos DISPARAR os eventos aplicando a coleção.
+            // Initialize() apenas configura o servi�o. Para os "Configurable" receberem os dados
+            // (SkinAudioConfigurable, etc.), precisamos DISPARAR os eventos aplicando a cole��o.
             //
-            // Rodar no Start garante que todos os Awake() já executaram e os SkinConfigurable já assinaram
+            // Rodar no Start garante que todos os Awake() j� executaram e os SkinConfigurable j� assinaram
             // os eventos do ActorSkinController.
             if (autoInitialize && defaultSkinCollection != null)
             {
@@ -172,7 +173,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         private void OnGlobalSkinUpdate(SkinEvents evt)
         {
             // Reagir a eventos globais de skin update
-            // Útil para sincronização em multiplayer ou sistemas cross-actor
+            // �til para sincroniza��o em multiplayer ou sistemas cross-actor
         }
 
         private void OnGlobalSkinCollectionUpdate(SkinCollectionUpdateEvent evt)
@@ -410,7 +411,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             if (tracker == null)
             {
                 DebugUtility.LogWarning<ActorSkinController>(
-                    $"ActorSkinController em {name} não encontrou SkinRuntimeStateTracker no mesmo GameObject.");
+                    $"ActorSkinController em {name} n�o encontrou SkinRuntimeStateTracker no mesmo GameObject.");
                 return;
             }
 
@@ -419,3 +420,4 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 #endif
     }
 }
+

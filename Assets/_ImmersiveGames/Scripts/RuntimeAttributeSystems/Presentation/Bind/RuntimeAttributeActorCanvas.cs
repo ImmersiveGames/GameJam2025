@@ -5,8 +5,9 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 using _ImmersiveGames.Scripts.Utils;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI;
 using UnityEngine;
 using UnityEngine.Pool;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
@@ -197,3 +198,4 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         public int GetActorSlotsCount() => _actorSlots.Count;
     }
 }
+

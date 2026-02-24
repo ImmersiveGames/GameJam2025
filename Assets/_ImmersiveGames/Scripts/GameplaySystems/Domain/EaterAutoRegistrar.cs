@@ -1,6 +1,6 @@
-Ôªøusing _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (_actor == null)
             {
                 DebugUtility.LogWarning<EaterAutoRegistrar>(
-                    $"Nenhum IActor encontrado em '{name}'. EaterAutoRegistrar ser√° ignorado.",
+                    $"Nenhum IActor encontrado em '{name}'. EaterAutoRegistrar ser· ignorado.",
                     this);
             }
         }
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (!DependencyManager.Provider.TryGetForScene<IEaterDomain>(sceneName, out _eaterDomain) || _eaterDomain == null)
             {
                 DebugUtility.LogWarning<EaterAutoRegistrar>(
-                    $"IEaterDomain n√£o encontrado para a cena '{sceneName}'. " +
+                    $"IEaterDomain n„o encontrado para a cena '{sceneName}'. " +
                     $"Garanta GameplayDomainBootstrapper nessa cena e maxSceneServices adequado.",
                     this);
                 _eaterDomain = null;
@@ -78,3 +78,4 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         }
     }
 }
+

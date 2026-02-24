@@ -1,7 +1,7 @@
-Ôªøusing _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.SkinSystems.Configurable;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Skins
@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
 
         protected override void Awake()
         {
-            // IMPORTANT√çSSIMO: o base usa 'targetModelType' (campo), n√£o propriedade.
+            // IMPORTANTÕSSIMO: o base usa 'targetModelType' (campo), n„o propriedade.
             targetModelType = ModelType.SoundRoot;
 
             base.Awake();
@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
             if (skinConfig is not ISkinAudioConfig audioConfig)
             {
                 DebugUtility.LogWarning<SkinAudioConfigurable>(
-                    $"[{name}] SkinConfig recebida n√£o implementa ISkinAudioConfig.",
+                    $"[{name}] SkinConfig recebida n„o implementa ISkinAudioConfig.",
                     this);
                 return;
             }
@@ -41,14 +41,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
             _currentAudioConfig = audioConfig;
 
             DebugUtility.Log<SkinAudioConfigurable>(
-                $"[{name}] Skin de √°udio aplicada (SoundRoot). Entradas: {_currentAudioConfig.AudioEntries?.Count ?? 0}",
+                $"[{name}] Skin de ·udio aplicada (SoundRoot). Entradas: {_currentAudioConfig.AudioEntries?.Count ?? 0}",
                 DebugUtility.Colors.CrucialInfo,
                 this);
         }
 
         protected override void ApplyDynamicModifications()
         {
-            // Nenhuma modifica√ß√£o din√¢mica por enquanto
+            // Nenhuma modificaÁ„o din‚mica por enquanto
         }
 
         public bool TryGetSound(SkinAudioKey key, out SoundData sound)
@@ -63,3 +63,4 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
         }
     }
 }
+

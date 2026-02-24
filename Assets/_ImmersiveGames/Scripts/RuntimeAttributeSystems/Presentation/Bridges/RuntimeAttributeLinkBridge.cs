@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 return;
             }
 
-            // Obtem ou cria o serviço global
+            // Obtem ou cria o servi�o global
             if (!DependencyManager.Provider.TryGetGlobal(out _linkService))
             {
                 _linkService = new RuntimeAttributeLinkService();
@@ -34,16 +34,16 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             {
                 if (link == null)
                 {
-                    DebugUtility.LogWarning<RuntimeAttributeLinkBridge>("Configuração de link nula ignorada.");
+                    DebugUtility.LogWarning<RuntimeAttributeLinkBridge>("Configura��o de link nula ignorada.");
                     continue;
                 }
 
                 _linkService.RegisterLink(actor.ActorId, link);
-                DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>($"🔗 {link.sourceRuntimeAttribute} → {link.targetRuntimeAttribute} registrado");
+                DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>($"?? {link.sourceRuntimeAttribute} ? {link.targetRuntimeAttribute} registrado");
             }
 
             DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>(
-                $"✅ RuntimeAttributeLinkBridge ativo com {resourceLinks.Length} links para {actor.ActorId}",
+                $"? RuntimeAttributeLinkBridge ativo com {resourceLinks.Length} links para {actor.ActorId}",
                 DebugUtility.Colors.Success);
         }
 
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             if (_linkService == null || actor == null) return;
             _linkService.UnregisterAllLinks(actor.ActorId);
             DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>(
-                "🗑️ Todos os links removidos",
+                "??? Todos os links removidos",
                 DebugUtility.Colors.Success);
         }
 
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         {
             if (_linkService == null || actor == null || link == null) return;
             _linkService.RegisterLink(actor.ActorId, link);
-            DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>($"➕ Link adicionado: {link.sourceRuntimeAttribute} -> {link.targetRuntimeAttribute}");
+            DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>($"? Link adicionado: {link.sourceRuntimeAttribute} -> {link.targetRuntimeAttribute}");
         }
 
         public bool HasLink(RuntimeAttributeType src) =>
@@ -69,3 +69,4 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         public RuntimeAttributeLinkConfig[] GetAllLinks() => resourceLinks;
     }
 }
+

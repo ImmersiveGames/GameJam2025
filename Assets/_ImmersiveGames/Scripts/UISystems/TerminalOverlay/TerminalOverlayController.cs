@@ -1,6 +1,6 @@
-ï»¿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,11 +34,11 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
             if (canvasGroup == null)
             {
                 DebugUtility.LogWarning<TerminalOverlayController>(
-                    "[TerminalOverlay] CanvasGroup nÃ£o configurado. Overlay nÃ£o serÃ¡ exibido.");
+                    "[TerminalOverlay] CanvasGroup não configurado. Overlay não será exibido.");
                 return;
             }
 
-            // ðŸ”’ Garante que o overlay SEMPRE receba raycast quando visÃ­vel
+            // ?? Garante que o overlay SEMPRE receba raycast quando visível
             canvasGroup.ignoreParentGroups = true;
             SetVisible(false);
 
@@ -101,10 +101,10 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
         private void OnRestartClicked()
         {
             DebugUtility.LogVerbose<TerminalOverlayController>(
-                "[TerminalOverlay] Restart clicked -> GameResetRequestedEvent");
+                "[TerminalOverlay] Restart clicked -> OldGameResetRequestedEvent");
 
             Hide();
-            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+            EventBus<OldGameResetRequestedEvent>.Raise(new OldGameResetRequestedEvent());
         }
 
         private void OnMenuClicked()
@@ -117,3 +117,4 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
         }
     }
 }
+

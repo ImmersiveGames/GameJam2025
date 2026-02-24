@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
@@ -256,3 +256,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
+

@@ -1,14 +1,22 @@
 # Evidência canônica (LATEST)
 
-Snapshot canônico mais recente:
+Esta página aponta para o conjunto de evidências **mais recente** aceito como referência para auditoria.
 
-- **Data:** 2026-01-18
-- **Resumo:** [Baseline-2.1-Evidence-2026-01-18.md](./2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+## Snapshot atual
 
-Uso:
+- **Data:** 2026-02-03
+- **Baseline:** 2.2
+- **Arquivo de evidência:** [`Baseline-2.2-Evidence-2026-02-03.md`](2026-02-03/Baseline-2.2-Evidence-2026-02-03.md)
+- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log) *(atualizado em 2026-02-17)*
+- **Evidências adicionais:** [ADR-0017-LevelCatalog-Evidence-2026-02-03.md](2026-02-03/ADR-0017-LevelCatalog-Evidence-2026-02-03.md)
+- **SceneFlow Config Snapshot (DataCleanup v1):** [../SceneFlow-Config-Snapshot-DataCleanup-v1.md](../SceneFlow-Config-Snapshot-DataCleanup-v1.md)
+- **DataCleanup v1 validation PASS (2026-02-17):** [../SceneFlow-Config-ValidationReport-DataCleanup-v1.md](../SceneFlow-Config-ValidationReport-DataCleanup-v1.md)
+- **Smoke audit (2026-02-17):** [../Audits/2026-02-17/Smoke-DataCleanup-v1.md](../Audits/2026-02-17/Smoke-DataCleanup-v1.md)
+- **Log bruto usado no smoke:** [../lastlog.log](../lastlog.log)
 
-- ADRs em **Proposto/Em andamento** referenciam este arquivo.
-- ADRs em **Aceito/Implementado** referenciam o snapshot datado e podem manter este arquivo como evidência de regressão contínua.
+## Regras
 
-## ADRs (adicionados no snapshot 2026-01-18)
-- ADR-0017: [ADR-0017-Evidence-2026-01-18.md](./2026-01-18/ADR-0017-Evidence-2026-01-18.md)
+- Quando um snapshot é promovido para “LATEST”, ele vira **fonte de verdade** até nova promoção.
+- Alterações de comportamento devem atualizar o snapshot e/ou justificar divergências via ADR + evidência.
+
+

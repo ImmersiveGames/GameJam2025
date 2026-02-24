@@ -52,7 +52,7 @@ O ResetOrchestrator não deve “adivinhar” reset. Ele é acionado por **event
 Reset é uma operação sensível; precisa ser auditável:
 
 * Evento “ResetStarted” (com escopo, razão, timestamp/frame)
-* Evento “ResetPhaseChanged” (opcional, mas recomendado)
+* Evento “ResetStepChanged” (opcional, mas recomendado)
 * Evento “ResetCompleted”
 * Evento “ResetFailed” (com exceção e fase atual)
 

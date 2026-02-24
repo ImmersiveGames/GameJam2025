@@ -1,12 +1,13 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
-using _ImmersiveGames.Scripts.SkinSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.SkinSystems.Controllers;
+using _ImmersiveGames.Scripts.SkinSystems.Events;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {
@@ -181,3 +182,4 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         }
     }
 }
+

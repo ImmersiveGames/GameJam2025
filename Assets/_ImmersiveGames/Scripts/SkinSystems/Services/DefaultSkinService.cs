@@ -6,7 +6,7 @@ using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace _ImmersiveGames.Scripts.SkinSystems
+namespace _ImmersiveGames.Scripts.SkinSystems.Services
 {
     /// <summary>
     /// Serviço responsável por gerenciar contêineres e instâncias de skins.

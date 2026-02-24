@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -115,18 +115,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public IPoolable SpawnedMinion { get; }
         public MinionSpawnContext SpawnContext { get; }
-        public bool EntryPhaseStarted { get; }
+        public bool EntryStepStarted { get; }
 
         public PlanetDefenseMinionSpawnedEvent(
             PlanetsMaster planet,
             IPoolable spawnedMinion,
             MinionSpawnContext spawnContext,
-            bool entryPhaseStarted)
+            bool entryStepStarted)
         {
             Planet = planet;
             SpawnedMinion = spawnedMinion;
             SpawnContext = spawnContext;
-            EntryPhaseStarted = entryPhaseStarted;
+            EntryStepStarted = entryStepStarted;
         }
     }
 }
+

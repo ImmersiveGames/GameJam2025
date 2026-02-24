@@ -1,5 +1,5 @@
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -127,3 +127,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 }
+

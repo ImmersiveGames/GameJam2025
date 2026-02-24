@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Pool
             if (maxSoundInstances < initialPoolSize)
             {
                 DebugUtility.LogWarning<SoundEmitterPoolData>(
-                    $"MaxSoundInstances não pode ser menor que InitialPoolSize em {name}. Ajustando...",
+                    $"MaxSoundInstances n�o pode ser menor que InitialPoolSize em {name}. Ajustando...",
                     this);
                 maxSoundInstances = initialPoolSize;
             }

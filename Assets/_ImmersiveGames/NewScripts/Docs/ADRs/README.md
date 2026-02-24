@@ -1,31 +1,40 @@
-# ADRs — Índice
+# ADRs (Architecture Decision Records)
 
-Este índice lista as decisões arquiteturais registradas como ADR no projeto. Use-o como ponto de entrada para auditoria e navegação.
+Este diretório contém decisões arquiteturais do **NewScripts**.
 
-## Convenções
+## Convenções de status
 
-- **ADRs descrevem decisões**, não implementação detalhada. Evidências e execução ficam em `../Reports/` (quando aplicável).
-- O campo **Estado** indica o estágio do ADR (Proposto, Aceito, Implementado, Obsoleto, Substituído).
+Cada ADR possui 3 eixos:
 
-## Lista de ADRs
+- **Decisão:** Proposta | Aceita | Rejeitada | Substituída | Obsoleta
+- **Implementação:** Não iniciada | Em andamento | Parcial | Implementada | Obsoleta
+- **Manutenção:** Ativa | Fechada | Obsoleta
 
-| ADR | Título | Estado | Escopo |
-|---|---|---|---|
-| [ADR-0009](./ADR-0009-FadeSceneFlow.md) | Fade + SceneFlow (NewScripts) | Implementado | SceneFlow + Fade + Loading HUD (NewScripts) |
-| [ADR-0010](./ADR-0010-LoadingHud-SceneFlow.md) | Loading HUD + SceneFlow (NewScripts) | Implementado | SceneFlow + Loading HUD (NewScripts) |
-| [ADR-0011](./ADR-0011-WorldDefinition-MultiActor-GameplayScene.md) | WorldDefinition multi-actor para GameplayScene (NewScripts) | Implementado | `GameplayScene`, `NewSceneBootstrapper`, spawn services (Player/Eater), WorldLifecycle |
-| [ADR-0012](./ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md) | Fluxo pós-gameplay: GameOver, Vitória e Restart | Implementado | `GameLoop` (NewScripts), `WorldLifecycle`, SceneFlow, `UIGlobalScene` (overlays de UI) |
-| [ADR-0013](./ADR-0013-Ciclo-de-Vida-Jogo.md) | Ciclo de vida do jogo (NewScripts) | Implementado | GameLoop + SceneFlow + WorldLifecycle (NewScripts) |
-| [ADR-0014](./ADR-0014-GameplayReset-Targets-Grupos.md) | Gameplay Reset: Targets e Grupos | Implementado | `GameplayReset` (NewScripts), WorldLifecycle, spawn services (Player/Eater) |
-| [ADR-0015](./ADR-0015-Baseline-2.0-Fechamento.md) | Baseline 2.0: Fechamento Operacional | Implementado | NewScripts / Baseline 2.0 |
-| [ADR-0016](./ADR-0016-Phases-WorldLifecycle.md) | Phases + modos de avanço + IntroStage opcional (WorldLifecycle/SceneFlow) | Implementado | WorldLifecycle + SceneFlow + GameLoop (NewScripts) |
-| [ADR-0017](./ADR-0017-Tipos-de-troca-fase.md) | Tipos de troca de fase (ContentSwap: In-Place vs SceneTransition) | Implementado | ContentSwap + SceneFlow (NewScripts) |
-| [ADR-0018](./ADR-0018-Gate-de-Promoção-Baseline2.2.md) | Mudança de semântica: Phase => ContentSwap + Level/Phase Manager | Aceito | ContentSwap + Level/Phase Manager |
-| [ADR-0019](./ADR-0019-Promocao-Baseline2.2.md) | Promoção do Baseline 2.2 (ContentSwap + Level/Phase Manager + Config) | Proposto | Baseline 2.2 |
+> Regra prática: uma decisão pode estar **Aceita** mesmo com implementação **Parcial**; isso evita confundir "aprovação do design" com "trabalho concluído".
 
+## Índice
 
-## Atalhos
+| ADR | Título | Decisão | Implementação | Manutenção | Última atualização |
+|---|---|---:|---:|---:|---:|
+| [`ADR-0005-GlobalCompositionRoot-Modularizacao.md`](ADR-0005-GlobalCompositionRoot-Modularizacao.md) | ADR-0005 - Modularização do GlobalCompositionRoot (registro global por Feature Modules) | Aceita | Implementada | Fechada | 2026-02-18 |
+| [`ADR-0007-InputModes.md`](ADR-0007-InputModes.md) | ADR-0007 - Formalizar InputModes e responsabilidade do módulo | Aceita | Implementada | Ativa | 2026-02-18 |
+| [`ADR-0008-RuntimeModeConfig.md`](ADR-0008-RuntimeModeConfig.md) | ADR-0008 - RuntimeModeConfig (Strict/Release + Degraded) | Aceita | Implementada | Ativa | 2026-02-18 |
+| [`ADR-0009-FadeSceneFlow.md`](ADR-0009-FadeSceneFlow.md) | ADR-0009 - Fade + SceneFlow (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0010-LoadingHud-SceneFlow.md`](ADR-0010-LoadingHud-SceneFlow.md) | ADR-0010 - Loading HUD + SceneFlow (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0011-WorldDefinition-MultiActor-GameplayScene.md`](ADR-0011-WorldDefinition-MultiActor-GameplayScene.md) | ADR-0011 - WorldDefinition multi-actor para GameplayScene (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`](ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md) | ADR-0012 - Fluxo Pós-Gameplay (GameOver, Vitória, Restart, ExitToMenu) | Aceita | Implementada | Fechada | 2026-02-04 |
+| [`ADR-0013-Ciclo-de-Vida-Jogo.md`](ADR-0013-Ciclo-de-Vida-Jogo.md) | ADR-0013 - Ciclo de Vida do Jogo (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0014-GameplayReset-Targets-Grupos.md`](ADR-0014-GameplayReset-Targets-Grupos.md) | ADR-0014 - GameplayReset: Targets por Grupos | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0015-Baseline-2.0-Fechamento.md`](ADR-0015-Baseline-2.0-Fechamento.md) | ADR-0015 - Baseline 2.0: Fechamento | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0016-ContentSwap-WorldLifecycle.md`](ADR-0016-ContentSwap-WorldLifecycle.md) | ADR-0016 - ContentSwap InPlace-only (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0017-LevelManager-Config-Catalog.md`](ADR-0017-LevelManager-Config-Catalog.md) | ADR-0017 - LevelManager: Config + Catalog (Single Source of Truth) | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0018-Fade-TransitionStyle-SoftFail.md`](ADR-0018-Fade-TransitionStyle-SoftFail.md) | ADR-0018 - Fade/TransitionStyle é Soft-Fail (não interrompe o jogo) | Aceita | Implementada | Ativa | 2026-02-18 |
+| [`ADR-0019-Navigation-IntentCatalog.md`](ADR-0019-Navigation-IntentCatalog.md) | ADR-0019 - Navigation Intent Catalog (IntentCatalog + GameNavigationCatalog) | Aceita | Implementada | Ativa | 2026-02-18 |
+| [`ADR-0020-LevelContent-Progression-vs-SceneRoute.md`](ADR-0020-LevelContent-Progression-vs-SceneRoute.md) | ADR-0020 - Separar LevelContent/Progression de SceneRoute/Scene Data | Aberto | Não iniciada | Ativa | 2026-02-18 |
 
-- Contrato canônico: [Observability-Contract.md](../Reports/Observability-Contract.md)
-- Evidência vigente (ponte): [LATEST](../Reports/Evidence/LATEST.md)
-- Snapshot (2026-01-18): [Evidência consolidada](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
+## Templates
+
+- **Implementação:** [`ADR-TEMPLATE.md`](ADR-TEMPLATE.md)
+- **Completude / Governança:** [`ADR-TEMPLATE-COMPLETENESS.md`](ADR-TEMPLATE-COMPLETENESS.md)
+
+> Regra: ADRs de implementação seguem o template de implementação; ADRs de fechamento/baseline seguem o template de completude (ex.: ADR-0015).

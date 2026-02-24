@@ -1,15 +1,15 @@
-Ôªøusing System.Threading.Tasks;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 {
     /// <summary>
-    /// Vincula automaticamente a c√¢mera de gameplay (vinda do ICameraResolver)
-    /// ao Canvas em modo WorldSpace. Suporta troca de c√¢mera em runtime.
+    /// Vincula automaticamente a c‚mera de gameplay (vinda do IOldCameraResolver)
+    /// ao Canvas em modo WorldSpace. Suporta troca de c‚mera em runtime.
     /// </summary>
     [RequireComponent(typeof(Canvas))]
     public class CanvasCameraBinder : MonoBehaviour, IResetInterfaces, IResetScopeFilter, IResetOrder
@@ -17,19 +17,19 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
         #region Private Fields
 
         private Canvas _canvas;
-        private ICameraResolver _resolver;
+        private IOldCameraResolver _resolver;
         private bool _subscribed;
 
         #endregion
 
         #region Reset Ordering / Filtering
 
-        // UI binder pode rebindar depois do player/c√¢mera.
+        // UI binder pode rebindar depois do player/c‚mera.
         public int ResetOrder => 50;
 
         public bool ShouldParticipate(ResetScope scope)
         {
-            // Em geral faz sentido em reset amplo; mas permitir PlayersOnly tamb√©m √© seguro.
+            // Em geral faz sentido em reset amplo; mas permitir PlayersOnly tambÈm È seguro.
             return scope == ResetScope.AllActorsInScene || scope == ResetScope.PlayersOnly;
         }
 
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
             if (!DependencyManager.Provider.TryGetGlobal(out _resolver))
             {
                 DebugUtility.LogError<CanvasCameraBinder>(
-                    $"[{name}] CameraResolverService n√£o encontrado. CanvasCameraBinder desativado.",
+                    $"[{name}] OldCameraResolverService n„o encontrado. CanvasCameraBinder desativado.",
                     this);
                 enabled = false;
                 return;
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
             if (cam == null)
             {
                 DebugUtility.LogWarning<CanvasCameraBinder>(
-                    $"[{name}] Nenhuma c√¢mera registrada no CameraResolverService.",
+                    $"[{name}] Nenhuma c‚mera registrada no OldCameraResolverService.",
                     this);
                 return;
             }
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 
         #endregion
 
-        #region Reset Phases
+        #region Reset Steps
 
         public Task Reset_CleanupAsync(ResetContext ctx)
         {
@@ -154,3 +154,4 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
         #endregion
     }
 }
+

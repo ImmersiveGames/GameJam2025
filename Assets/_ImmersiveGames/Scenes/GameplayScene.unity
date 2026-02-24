@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enableTimeout: 0
-  timeoutSeconds: 15
+  timeoutSeconds: 5000
   timeoutOutcome: 2
   timeoutReason: Gameplay/Timeout
   useUnscaledTime: 0

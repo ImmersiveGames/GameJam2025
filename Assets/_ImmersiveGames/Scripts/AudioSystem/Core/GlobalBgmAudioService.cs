@@ -2,8 +2,9 @@ using System.Collections;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.Services;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.AudioSystem.System;
 using UnityEngine;
 using UnityEngine.Audio;
 namespace _ImmersiveGames.Scripts.AudioSystem.Core
@@ -302,3 +303,4 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static bool IsSourceValid(AudioSource source) => source != null && source;
     }
 }
+

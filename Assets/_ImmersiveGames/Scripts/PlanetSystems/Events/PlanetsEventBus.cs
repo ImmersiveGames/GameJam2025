@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Events
 {
@@ -79,3 +79,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Events
     }
 
 }
+

@@ -1,5 +1,5 @@
-ï»¿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
@@ -14,13 +14,13 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             _objectsToRemove.Clear();
 
-            // Usar ToList() para criar snapshot e evitar exceÃ§Ãµes de modificaÃ§Ã£o durante iteraÃ§Ã£o
+            // Usar ToList() para criar snapshot e evitar exceções de modificação durante iteração
             var poolableEntries = new List<KeyValuePair<IPoolable, float>>(_objectLifetimes);
 
             foreach ((var poolable, float f) in poolableEntries)
             {
 
-                // Se o poolable foi destruÃ­do (mas a referÃªncia ainda existe), remove da lista
+                // Se o poolable foi destruído (mas a referência ainda existe), remove da lista
                 if (IsPoolableDestroyed(poolable))
                 {
                     _objectsToRemove.Add(poolable);
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 if (IsPoolableDestroyed(poolable))
                 {
-                    // Para objetos nulos/destruÃ­dos, apenas remove do dicionÃ¡rio
+                    // Para objetos nulos/destruídos, apenas remove do dicionário
                     _objectLifetimes.Remove(poolable);
                 }
             }
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         }
 
         /// <summary>
-        /// Trata corretamente referÃªncias destruÃ­das (UnityEngine.Object) mesmo quando tipadas como interface.
+        /// Trata corretamente referências destruídas (UnityEngine.Object) mesmo quando tipadas como interface.
         /// </summary>
         private static bool IsPoolableDestroyed(IPoolable poolable)
         {

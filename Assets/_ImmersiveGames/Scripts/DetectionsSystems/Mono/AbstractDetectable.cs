@@ -1,8 +1,8 @@
-Ôªøusing _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,22 +23,22 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         protected virtual void Awake()
         {
-            // Permite que detect√°veis posicionados em objetos filhos utilizem o ator definido no pai.
+            // Permite que detect·veis posicionados em objetos filhos utilizem o ator definido no pai.
             _owner = GetComponent<IActor>() ?? GetComponentInParent<IActor>();
 
             if (_owner == null)
             {
-                DebugUtility.LogError<AbstractDetectable>($"Componente IActor n√£o encontrado em {gameObject.name}");
+                DebugUtility.LogError<AbstractDetectable>($"Componente IActor n„o encontrado em {gameObject.name}");
                 return;
             }
 
             if (myDetectionType == null)
             {
-                DebugUtility.LogError<AbstractDetectable>($"DetectionType n√£o configurado em {gameObject.name}");
+                DebugUtility.LogError<AbstractDetectable>($"DetectionType n„o configurado em {gameObject.name}");
                 return;
             }
 
-            // Registrar eventos de detec√ß√£o
+            // Registrar eventos de detecÁ„o
             _enterBinding = new EventBinding<DetectionEnterEvent>(OnDetectionEnterEvent);
             _exitBinding = new EventBinding<DetectionExitEvent>(OnDetectionExitEvent);
 
@@ -87,19 +87,19 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         public IActor Owner => _owner;
 
-        // M√©todos abstratos para classes concretas implementarem
+        // MÈtodos abstratos para classes concretas implementarem
         public abstract void OnEnterDetection(IDetector detector, DetectionType detectionType);
         public abstract void OnExitDetection(IDetector detector, DetectionType detectionType);
 
-        // Manipula√ß√£o de eventos (filtro por myDetectionType aqui)
+        // ManipulaÁ„o de eventos (filtro por myDetectionType aqui)
         protected virtual void OnDetectionEnterEvent(DetectionEnterEvent enterEvent)
         {
             if (!ReferenceEquals(enterEvent.Detectable, this) || enterEvent.DetectionType != myDetectionType) return;
 
-            // Criar chave √∫nica para este evento
+            // Criar chave ˙nica para este evento
             string eventKey = $"ENTER_{enterEvent.Detector.GetHashCode()}_{enterEvent.DetectionType.GetHashCode()}";
             
-            // Verificar se j√° processamos este evento neste frame
+            // Verificar se j· processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
                 return;
             
@@ -117,16 +117,16 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         {
             if (!ReferenceEquals(exitEvent.Detectable, this) || exitEvent.DetectionType != myDetectionType) return;
 
-            // Criar chave √∫nica para este evento
+            // Criar chave ˙nica para este evento
             string eventKey = $"EXIT_{exitEvent.Detector.GetHashCode()}_{exitEvent.DetectionType.GetHashCode()}";
             
-            // Verificar se j√° processamos este evento neste frame
+            // Verificar se j· processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
                 return;
             
             _processedEvents[eventKey] = Time.frameCount;
 
-            DebugUtility.LogVerbose<AbstractDetectable>($"EVENTO SA√çDA [Frame {Time.frameCount}]: Perdeu detec√ß√£o por {GetName(exitEvent.Detector)} em {gameObject.name}");
+            DebugUtility.LogVerbose<AbstractDetectable>($"EVENTO SAÕDA [Frame {Time.frameCount}]: Perdeu detecÁ„o por {GetName(exitEvent.Detector)} em {gameObject.name}");
 
             OnExitDetection(exitEvent.Detector, exitEvent.DetectionType);
 

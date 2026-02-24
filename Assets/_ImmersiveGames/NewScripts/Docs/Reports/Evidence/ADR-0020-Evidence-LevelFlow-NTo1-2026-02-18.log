@@ -1,0 +1,9 @@
+<color=#A8DEED>[VERBOSE] [LevelCatalogAsset] [OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='qa.level.nto1.a' routeId='level.1' asset='Route_level.1'.</color>
+<color=#A8DEED>[INFO] [SceneFlowDevContextMenu] [QA][LevelFlow] NTo1 start levelId='qa.level.nto1.a' routeRef='level.1'.</color>
+<color=#A8DEED>[INFO] [LevelFlowRuntimeService] [OBS][Level] LevelSelected levelId='qa.level.nto1.a' routeId='level.1' contentId='content.1' contentRef='content.1' reason='QA/LevelFlow/NTo1/A' v='2' contextSignature='level:qa.level.nto1.a|route:level.1|style:style.gameplay|reason:QA/LevelFlow/NTo1/A'.</color>
+
+<color=#A8DEED>[VERBOSE] [LevelCatalogAsset] [OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='qa.level.nto1.b' routeId='level.1' asset='Route_level.1'.</color>
+<color=#A8DEED>[INFO] [SceneFlowDevContextMenu] [QA][LevelFlow] NTo1 start levelId='qa.level.nto1.b' routeRef='level.1'.</color>
+<color=#A8DEED>[INFO] [LevelFlowRuntimeService] [OBS][Level] LevelSelected levelId='qa.level.nto1.b' routeId='level.1' contentId='content.2' contentRef='content.2' reason='QA/LevelFlow/NTo1/B' v='3' contextSignature='level:qa.level.nto1.b|route:level.1|style:style.gameplay|reason:QA/LevelFlow/NTo1/B'.</color>
+
+[WARNING] [SceneTransitionService] [SceneFlow] Dedupe: TransitionAsync ignorado (signature repetida em janela curta). signature='r:level.1|s:style.gameplay|p:gameplay|pa:DefaultTransitionProfile|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:NewBootstrap|MenuScene', requestedBy='QA/LevelFlow/NTo1/B'.

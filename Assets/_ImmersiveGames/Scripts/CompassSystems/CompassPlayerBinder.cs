@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.CompassSystems
 {
@@ -29,3 +29,4 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         }
     }
 }
+

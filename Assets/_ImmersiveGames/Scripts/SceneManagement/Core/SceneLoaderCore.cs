@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
 
             if (IsSceneLoaded(sceneName))
             {
-                DebugUtility.LogWarning<SceneLoaderCore>($"Cena '{sceneName}' já está carregada.");
+                DebugUtility.LogWarning<SceneLoaderCore>($"Cena '{sceneName}' j� est� carregada.");
                 return;
             }
 
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
 
             if (!IsSceneLoaded(sceneName))
             {
-                DebugUtility.LogWarning<SceneLoaderCore>($"Cena '{sceneName}' não está carregada.");
+                DebugUtility.LogWarning<SceneLoaderCore>($"Cena '{sceneName}' n�o est� carregada.");
                 return;
             }
 
@@ -107,3 +107,4 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
         }
     }
 }
+

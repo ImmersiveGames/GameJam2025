@@ -1,14 +1,14 @@
-﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.AnimationStrategies;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Animation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies;
 using _ImmersiveGames.Scripts.Utils.Extensions;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 {
     public class RuntimeAttributeUISlot : MonoBehaviour
     {
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 
             ApplyBaseStyleImmediate();
 
-            // Cria estratégia a partir do perfil (ou Instant como fallback)
+            // Cria estrat�gia a partir do perfil (ou Instant como fallback)
             _fillStrategy = CreateStrategyFromProfile(animationProfile);
             _fillStrategy.Initialize(fillImage, pendingFillImage, animationProfile, this);
 
@@ -79,14 +79,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 
             ApplyVisualsImmediate();
 
-            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"✅ Slot initialized for {actorId}.{type} - Style: {_currentStyle?.name ?? "None"}");
+            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"? Slot initialized for {actorId}.{type} - Style: {_currentStyle?.name ?? "None"}");
         }
 
         private void ApplyBaseStyleImmediate()
         {
             if (_currentStyle == null) return;
 
-            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"🎨 Applying base style: {_currentStyle.name}");
+            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"?? Applying base style: {_currentStyle.name}");
 
             if (fillImage != null)
                 fillImage.fillAmount = _currentFill;
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 
             float newValue = data.GetPercentage();
 
-            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"🔄 Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, Style: {_currentStyle?.name ?? "None"}");
+            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"?? Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, Style: {_currentStyle?.name ?? "None"}");
 
             _currentFill = newValue;
             _currentText = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 
         private void ApplyVisualsImmediate()
         {
-            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}, Style: {_currentStyle?.name}");
+            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"? ApplyVisualsImmediate: {Type} - Current: {_currentFill}, Style: {_currentStyle?.name}");
             _fillStrategy?.SetInstant(_currentFill);
             ClearAllTween();
             ApplyStyleColors(_currentFill);
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
             _currentStyle = InstanceConfig?.slotStyle;
             ApplyBaseStyleImmediate();
             ApplyVisualsImmediate();
-            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"🔄 Style refreshed: {Type} - {_currentStyle?.name}");
+            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"?? Style refreshed: {Type} - {_currentStyle?.name}");
         }
 
         public void Clear()
@@ -178,7 +178,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         {
             ApplyBaseStyleImmediate();
             ApplyVisualsImmediate();
-            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"🔧 ForceVisualUpdate: {Type} - Fill: {_currentFill}, Style: {_currentStyle?.name}");
+            DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"?? ForceVisualUpdate: {Type} - Fill: {_currentFill}, Style: {_currentStyle?.name}");
         }
 
         private void OnDestroy()
@@ -231,8 +231,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         }
 
         /// <summary>
-        /// Recupera a duração de transição de cor a partir do perfil de animação,
-        /// garantindo um valor padrão consistente quando nenhum perfil for atribuído.
+        /// Recupera a dura��o de transi��o de cor a partir do perfil de anima��o,
+        /// garantindo um valor padr�o consistente quando nenhum perfil for atribu�do.
         /// </summary>
         private float GetColorTransitionDuration()
         {
@@ -244,7 +244,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         }
 
         /// <summary>
-        /// Recupera o easing da transição de cor com fallback para o easing padrão.
+        /// Recupera o easing da transi��o de cor com fallback para o easing padr�o.
         /// </summary>
         private Ease GetColorTransitionEase()
         {
@@ -256,3 +256,4 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         }
     }
 }
+

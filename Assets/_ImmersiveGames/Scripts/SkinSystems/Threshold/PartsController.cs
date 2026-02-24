@@ -1,4 +1,4 @@
-ï»¿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
@@ -39,13 +39,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         #endregion
 
         #region Public Methods for UnityEvents
-        // MÃ©todo unificado para registro em UnityEvents (suporta Both)
+        // Método unificado para registro em UnityEvents (suporta Both)
         public void HandleThresholdCrossed(float threshold, float percentage, bool ascending)
         {
             if (showDebugLogs)
                 DebugUtility.LogVerbose<PartsController>($"Entering HandleThresholdCrossed on {gameObject.name}: Threshold={threshold}, Percentage={percentage:P0}, Ascending={ascending}");
             
-            UpdatePartsState(percentage, ascending); // Roteia baseado em direÃ§Ã£o
+            UpdatePartsState(percentage, ascending); // Roteia baseado em direção
 
             if (showDebugLogs)
                 DebugUtility.LogVerbose<PartsController>($"Handled threshold at {threshold} (Ascending={ascending}) on {gameObject.name}");
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 if (parts[i] != null)
                 {
                     float partThreshold = 1f - ((i + 1f) / parts.Length);
-                    parts[i].SetActive(healthPercentage > partThreshold); // Mantido para consistÃªncia em reativaÃ§Ã£o quando high
+                    parts[i].SetActive(healthPercentage > partThreshold); // Mantido para consistência em reativação quando high
                     if (showDebugLogs)
                         DebugUtility.LogVerbose<PartsController>($"Activation: Part {i} ({parts[i].name}) set to {parts[i].activeSelf} (threshold={partThreshold}) on {gameObject.name}");
                 }

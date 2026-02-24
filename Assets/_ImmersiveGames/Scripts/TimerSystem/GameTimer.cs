@@ -6,9 +6,9 @@ using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private EventBinding<GamePauseEvent> _pauseBinding;
         private EventBinding<GameOverEvent> _gameOverBinding;
         private EventBinding<GameVictoryEvent> _victoryBinding;
-        private EventBinding<GameResetRequestedEvent> _resetBinding;
+        private EventBinding<OldGameResetRequestedEvent> _resetBinding;
         private EventBinding<StateChangedEvent> _stateChangedBinding;
 
         private float _configuredDuration;
@@ -91,8 +91,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             EventBus<GameVictoryEvent>.Register(_victoryBinding);
 
             // MACRO: reset de jogo (fase inteira)
-            _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => StopSession(true, reason: "Reset solicitado (GameResetRequestedEvent)"));
-            EventBus<GameResetRequestedEvent>.Register(_resetBinding);
+            _resetBinding = new EventBinding<OldGameResetRequestedEvent>(_ => StopSession(true, reason: "Reset solicitado (OldGameResetRequestedEvent)"));
+            EventBus<OldGameResetRequestedEvent>.Register(_resetBinding);
 
             _stateChangedBinding = new EventBinding<StateChangedEvent>(HandleStateChanged);
             EventBus<StateChangedEvent>.Register(_stateChangedBinding);
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             if (_resetBinding != null)
             {
-                EventBus<GameResetRequestedEvent>.Unregister(_resetBinding);
+                EventBus<OldGameResetRequestedEvent>.Unregister(_resetBinding);
                 _resetBinding = null;
             }
 
@@ -340,8 +340,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             if (_sessionActive || _autoStartLocked)
                 return;
 
-            var stateMachine = GameManagerStateMachine.Instance;
-            if (stateMachine == null || stateMachine.CurrentState is not PlayingState)
+            var stateMachine = OldGameManagerStateMachine.Instance;
+            if (stateMachine == null || stateMachine.CurrentState is not OldPlayingState)
                 return;
 
             StartSession();
@@ -396,3 +396,5 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         }
     }
 }
+
+

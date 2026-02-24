@@ -1,0 +1,71 @@
+using System;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
+{
+    /// <summary>
+    /// Bridge de entrada para requests de encerramento de run.
+    ///
+    /// Em produção, sistemas de gameplay devem publicar <see cref="GameRunEndRequestedEvent"/>.
+    /// Este bridge converte o evento em chamadas ao <see cref="IGameRunOutcomeService"/>,
+    /// mantendo a lógica de idempotência e de estado dentro do serviço.
+    /// </summary>
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class GameRunOutcomeCommandBridge : IDisposable
+    {
+        private readonly IGameRunOutcomeService _outcome;
+        private readonly EventBinding<GameRunEndRequestedEvent> _binding;
+        private bool _disposed;
+
+        public GameRunOutcomeCommandBridge(IGameRunOutcomeService outcome)
+        {
+            _outcome = outcome ?? throw new ArgumentNullException(nameof(outcome));
+
+            _binding = new EventBinding<GameRunEndRequestedEvent>(OnEndRequested);
+            EventBus<GameRunEndRequestedEvent>.Register(_binding);
+
+            DebugUtility.LogVerbose<GameRunOutcomeCommandBridge>(
+                "GameRunOutcomeCommandBridge registered.");
+        }
+
+        private void OnEndRequested(GameRunEndRequestedEvent evt)
+        {
+            if (_disposed || evt == null)
+            {
+                return;
+            }
+
+            switch (evt.Outcome)
+            {
+                case GameRunOutcome.Victory:
+                    _outcome.RequestVictory(evt.Reason);
+                    break;
+
+                case GameRunOutcome.Defeat:
+                    _outcome.RequestDefeat(evt.Reason);
+                    break;
+
+                default:
+                    DebugUtility.LogWarning<GameRunOutcomeCommandBridge>(
+                        $"Ignored GameRunEndRequestedEvent with Outcome={evt.Outcome}. Reason='{evt.Reason}'.");
+                    break;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            try { EventBus<GameRunEndRequestedEvent>.Unregister(_binding); } catch { /* best-effort */ }
+
+            DebugUtility.LogVerbose<GameRunOutcomeCommandBridge>(
+                "GameRunOutcomeCommandBridge disposed.");
+        }
+    }
+}
+

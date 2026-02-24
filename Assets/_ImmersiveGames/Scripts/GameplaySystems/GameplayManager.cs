@@ -1,6 +1,6 @@
-ï»¿using _ImmersiveGames.Scripts.GameplaySystems.Domain;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.GameplaySystems.Domain;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityUtils;
 
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             DependencyManager.Provider.RegisterGlobal<IGameplayManager>(this, allowOverride: true);
 
             DebugUtility.Log<GameplayManager>(
-                "GameplayManager inicializado (resoluÃ§Ã£o do Eater via DomÃ­nio quando disponÃ­vel).",
+                "GameplayManager inicializado (resolução do Eater via Domínio quando disponível).",
                 DebugUtility.Colors.Success);
         }
 
@@ -74,3 +74,4 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         }
     }
 }
+

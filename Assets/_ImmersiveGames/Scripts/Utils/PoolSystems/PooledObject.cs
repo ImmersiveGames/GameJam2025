@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {

@@ -1,291 +1,135 @@
-# ADR-0012 — Fluxo pós-gameplay: GameOver, Vitória e Restart
+# ADR-0012 — Fluxo Pós-Gameplay (GameOver, Vitória, Restart, ExitToMenu)
 
 ## Status
-- Estado: Implementado
-- Data: 2025-12-28
-- Fechado em: 2026-01-18
-- Escopo: `GameLoop` (NewScripts), `WorldLifecycle`, SceneFlow, `UIGlobalScene` (overlays de UI)
 
-## Evidência
+- Estado: Fechado
+- Data (decisão): 2026-01-31
+- Última atualização: 2026-02-04
+- Tipo: Implementação
+- Escopo: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/` + integrações com `WorldLifecycle/SceneFlow`
 
-- Snapshot canônico: `Docs/Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md`
-- Ponte para regressão contínua: `Docs/Reports/Evidence/LATEST.md`
+---
 
 ## Contexto
 
-### 1. Contexto
+O Baseline 2.2 exige que o fluxo **Gameplay → PostGame** seja determinístico, auditável por logs e compatível com política **Strict/Release** (matriz/invariantes do spec congelado em `Docs/Reports/Baseline-2.0-Spec.md`).
 
-O fluxo de produção atual está estável para:
+O problema original era evitar ambiguidade e regressões em:
 
-* Startup → Menu → Gameplay, com:
+- Transição para **PostGame** por **Victory**/**Defeat**
+- Ações pós-jogo:
+  - **Restart**: deve disparar reset determinístico e rearmar gameplay corretamente
+  - **ExitToMenu**: deve retornar ao frontend **sem reset** (SKIP esperado em `profile=frontend`)
+- **Idempotência**: PostGame não pode aplicar efeitos duplicados se receber triggers repetidos (por UI, input, etc.)
+- Coerência com **gates/tokens** (ex.: `flow.scene_transition`, `sim.gameplay`) e InputMode.
 
-    * `SceneTransitionService` + Fade + LoadingHUD.
-    * `WorldLifecycleRuntimeCoordinator` disparando hard reset em perfis `gameplay` após `SceneTransitionScenesReadyEvent`.
-    * `GameReadinessService` + `SimulationGateService` controlando `GameplayReady` + gate.
-    * `InputModeService` trocando entre `FrontendMenu`, `Gameplay`, `PauseOverlay`.
-    * `GameLoopService` com estados principais: `Boot`, `Ready`, `Playing`, `Paused`.
-
-Também já existem:
-
-* Overlay de pausa em `UIGlobalScene` (PauseOverlay) integrando:
-
-    * Gate (`ISimulationGateService` via `GamePauseGateBridge`).
-    * `InputModeService` (`PauseOverlay`).
-    * Eventos de navegação (`GameExitToMenuRequestedEvent` → `ExitToMenuNavigationBridge` → `IGameNavigationService`).
-
-Porém, o fluxo **pós-gameplay** (fim de partida) ainda não é padronizado:
-
-* Não há estado explícito no `GameLoop` para “pós-jogo” (GameOver/Vitória).
-* Não há contrato único de evento de “fim de run” (resultado da partida).
-* A navegação após o fim (Restart / Voltar ao Menu) ainda não está formalizada em torno de `GameNavigationService` + `WorldLifecycle`.
-
-### 2. Problema
-
-Sem um desenho explícito para GameOver/Vitória/Restart:
-
-* Cada feature pode tentar resolver o fim de jogo “por conta própria” (carregar cenas diretamente, resetar objetos manualmente, etc.).
-* A semântica de reset pode divergir do pipeline oficial (`WorldLifecycleOrchestrator` + SceneFlow).
-* O fluxo de input/UI (overlays, mapas de input) pode ficar inconsistente com o restante do sistema (`PauseOverlay`, `FrontendMenu`, etc.).
-
-É necessário definir um **fluxo canônico** pós-gameplay que:
-
-* Use o mesmo backbone: `GameLoop` + `WorldLifecycle` + SceneFlow + `InputModeService` + `GameNavigationService`.
-* Seja determinístico (reset sempre via `WorldLifecycle`).
-* Seja reutilizável para futuros modos (ex.: waves, missões, etc.).
-
-### 3. Objetivos
-
-1. Padronizar a sequência pós-gameplay em termos de:
-
-    * Estados do `GameLoop`.
-    * Eventos de domínio (“fim de run”, “restart solicitado”).
-    * Overlays de UI (GameOver/Vitória).
-    * Navegação (voltar ao Menu / reiniciar Gameplay).
-
-2. Garantir que **Restart** use o mesmo pipeline de produção do `profile='gameplay'`:
-
-    * `SceneTransitionService` → `WorldLifecycleRuntimeCoordinator` → `WorldLifecycleOrchestrator`.
-
-3. Reutilizar infra existente sempre que possível:
-
-    * `GameNavigationService` para transições.
-    * `InputModeService` para modos de input.
-    * Gate + readiness (`SimulationGateService` + `GameReadinessService`) como fontes da semântica de “pode jogar / não pode jogar”.
+---
 
 ## Decisão
 
-### 4. Decisão (resumo)
+Padronizar o Pós-Gameplay como um conjunto de **transições explícitas** (com `reason` padronizado) e tratá-lo como parte do **contrato do Baseline**:
 
-1. Introduzir um **estado pós-gameplay** no `GameLoop` (por exemplo, `PostGame` / `Ended`) para representar “fim de run” (Vitória ou GameOver).
-2. Introduzir um **evento de domínio de fim de run** (nome sugerido: `GameRunEndedEvent`) que:
+1. **Entrada em PostGame** ocorre por **Victory** ou **Defeat**, com registro de contexto e reason.
+2. **Restart** executa o caminho de reset determinístico:
+   - Publica a intenção (`reason='PostGame/Restart'`)
+   - Dispara o reset via WorldLifecycle/SceneFlow (produção)
+   - Garante novo ciclo **IntroStage → Playing** após o reset
+3. **ExitToMenu** navega para o frontend:
+   - Publica a intenção (`reason='PostGame/ExitToMenu'`)
+   - Transiciona para `profile=frontend`
+   - O reset em frontend deve ser **SKIP** (por política)
+4. **Idempotência**: PostGame deve ser protegido por “single-flight” (ou gating equivalente) para evitar reentrância/duplicação.
 
-    * Carrega o resultado (Vitória / Derrota) e metadados básicos (motivo, stats simples).
-    * É publicado pelo domínio de gameplay quando a partida termina.
-3. Implementar um **overlay pós-gameplay** em `UIGlobalScene` (nome sugerido: `PostGameOverlay`), que:
+### Não-objetivos (resumo)
 
-    * Exibe UI de Vitória ou GameOver com base em `GameRunEndedEvent`.
-    * Expõe botões “Restart” e “Menu”.
-4. Tratar **Restart** como uma navegação padrão via `GameNavigationService`:
-
-    * Botão “Restart” → evento de solicitação (ex.: `GameRestartRequestedEvent`) → bridge de navegação → `GameNavigationService.RequestToGameplay(profile='gameplay')`.
-    * O pipeline de transição + `WorldLifecycle` se encarrega do reset determinístico.
-5. Reutilizar o evento de saída já existente:
-
-    * Botão “Menu” do overlay pós-gameplay continua emitindo `GameExitToMenuRequestedEvent`, já integrado com `ExitToMenuNavigationBridge`.
-6. Isolar a lógica de input:
-
-    * `PostGameOverlay` usa um modo de input próprio (nome sugerido: `PostGameOverlay`) configurado via `InputModeService`.
+- Criar novos motivos além dos definidos (mudanças exigem ADR/evidência).
+- Alterar o pipeline de ResetWorld/SceneFlow.
 
 ## Fora de escopo
 
-- O fluxo pós-game **não define** como vitória/derrota é detectada em produção (timer, morte, objetivos, etc.).
+- UX/arte de overlays (apenas contrato e sinais).
+- Implementar novos estados de game loop sem ADR.
+
+---
+
+## Regras / Invariantes
+
+- **D1 — Idempotência**: para cada término de run (Victory/Defeat), PostGame aplica efeitos **uma vez**.
+- **D2 — Restart determinístico**: `PostGame/Restart` implica:
+  - reset completo + spawn pipeline coerente
+  - retorno ao ciclo normal (IntroStage → Playing)
+- **D3 — ExitToMenu sem reset**: `PostGame/ExitToMenu` implica:
+  - transição para `profile=frontend`
+  - reset em frontend = **SKIP**
+- **D4 — Reasons padronizados**: `PostGame/Restart` e `PostGame/ExitToMenu` são **strings de contrato** (não renomear sem atualizar Baseline Spec + auditoria).
+
+---
+
+## Evidências (log canônico)
+
+**Última evidência (log bruto):** `Docs/Reports/lastlog.log`
+
+**Evidência canônica (Baseline 2.2):**
+
+- `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
+- Auditorias relacionadas:
+  - `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md` (itens B/D)
+  - `Docs/Reports/Audits/2026-01-31/ADR-Sync-Audit-NewScripts.md`
+
+> A evidência desta ADR é **por assinatura**, para manter robustez contra mudanças de linha/offset no log.
+
+### Sequência mínima (restart)
+
+Buscar no log:
+
+- `Victory` **ou** `Defeat` (gatilho de término)
+- `PostGame` (entrada no estado/tela de pós-jogo)
+- `reason='PostGame/Restart'`
+- evidência de reset determinístico + rearm:
+  - reset completo concluído
+  - novo ciclo de gameplay com IntroStage → Playing
+
+### Sequência mínima (exit to menu)
+
+Buscar no log:
+
+- `reason='PostGame/ExitToMenu'`
+- transição para menu com `profile=frontend`
+- marcação de reset **SKIP** em frontend
+
+### Evidência de idempotência
+
+- Não deve haver duplicação de:
+  - “entrada em PostGame”
+  - execução de “Restart” ou “ExitToMenu”
+  para o mesmo gatilho (Victory/Defeat).
+
+---
 
 ## Consequências
 
-### Benefícios
+- O Pós-Gameplay fica **auditável** e alinhado ao Baseline 2.2 (D).
+- Renomear `reason` quebra contrato; mudanças precisam atualizar:
+  - Baseline 2.2 Spec (Matrix D)
+  - Auditoria Strict/Release
+  - ADR-0012 (esta).
 
-* Pós-gameplay passa a ter um fluxo único, previsível e rastreável:
+---
 
-    * `GameRunEndedEvent` → `GameLoop.PostGame` → `PostGameOverlay` → `GameRestartRequestedEvent`/`GameExitToMenuRequestedEvent` → `GameNavigationService`.
-* Restart é 100% compatível com:
+## Tarefas de manutenção
 
-    * Gate/Readiness (`SimulationGateService` + `GameReadinessService`).
-    * `InputModeService`.
-    * `WorldLifecycle` (despawn + spawn determinístico).
-* A UI pós-gameplay fica desacoplada da lógica de domínio; depende apenas de eventos de alto nível.
-* Fica simples adicionar outros modos de pós-gameplay (ex.: tela de stats detalhada, replay, etc.) sem tocar no núcleo de reset.
+- Se surgir um novo caminho de término (ex.: “Abort”, “Timeout”), ele deve:
+  - definir `reason` próprio
+  - atualizar Matrix D e esta ADR
+  - incluir evidência por assinatura no log
 
-### Trade-offs / Riscos
+## Implementação (arquivos impactados)
 
-* Introdução de um novo estado no `GameLoop` (`PostGame`) aumenta a matriz de transições possíveis; precisa ser bem coberta em QA.
-* Se o domínio usar múltiplos eventos de fim de run ou disparar `GameRunEndedEvent` mais de uma vez por partida, será necessário reforçar invariantes e logs.
-* O overlay pós-gameplay é mais uma UI em `UIGlobalScene`; requer cuidado para não conflitar com PauseOverlay (visibilidade, input, etc.).
-
-## Notas de implementação
-
-### 5. Desenho da solução
-
-#### 5.1. Estados do GameLoop
-
-Extensão sugerida de `GameLoopStateId` (nomes exemplificativos):
-
-* Já existentes:
-
-    * `Boot`
-    * `Ready`
-    * `Playing`
-    * `Paused`
-* Novo:
-
-    * `PostGame` (representa “fim de run / pós-jogo”).
-
-Semântica:
-
-* `PostGame` é um estado **não ativo** (`IsGameActive == false`).
-* O `GameLoop` entra em `PostGame` quando recebe o evento de “fim de run” (ver 5.2).
-* Enquanto está em `PostGame`:
-
-    * O jogo não avança lógica de gameplay.
-    * A interação é mediada pelo overlay pós-gameplay (Restart/Menu).
-    * O gate e `GameplayReady` podem permanecer em estado “jogo pronto, mas não jogável” (estado de “espera de decisão do jogador”).
-
-#### 5.2. Evento de fim de run
-
-O fluxo pós-game **não define** como vitória/derrota é detectada em produção (timer, morte, objetivos, etc.). Ele define um contrato simples e consistente para “encerrar a run”.
-
-- **Input (solicitação):** `GameRunEndRequestedEvent(GameRunOutcome outcome, string reason = null)`
-  - Pode ser publicado por qualquer sistema.
-  - Para reduzir acoplamento com o EventBus, prefira o wrapper `IGameRunEndRequestService` (DI global).
-- **Output (resultado):** `GameRunEndedEvent(GameRunOutcome outcome, string reason = null)`
-  - Publicado pelo `GameRunOutcomeService` após validações (ex.: estado do GameLoop) e com garantia de idempotência (uma vez por run).
-
-**Motivação**
-- Permite múltiplos “detectors” (timer, combate, objetivos) sem amarrar o fluxo de pós-game a regras específicas.
-- Centraliza a transição de “solicitação” → “resultado” e padroniza `reason` para debug/telemetria.
-
-**Como testar**
-- `PostGameQaHotkeys`: `F7` (Victory) / `F6` (Defeat).
-- Em código: injete `IGameRunEndRequestService` e chame `RequestVictory/RequestDefeat`.
-
-#### 5.3. Overlay pós-gameplay (UI)
-
-Novo overlay na `UIGlobalScene` (ex.: `PostGameOverlayController`):
-
-Responsabilidades:
-
-1. Escutar `GameRunEndedEvent` e abrir a UI:
-
-**Wiring (produção):** a solicitação (`GameRunEndRequestedEvent`) é consumida pelo `GameRunOutcomeEventInputBridge`, que converte para chamadas no `IGameRunOutcomeService`. O `GameRunOutcomeService` é o produtor oficial do `GameRunEndedEvent` (uma vez por run, e apenas em `Playing`).
-
-Isso permite que **múltiplos triggers** existam sem acoplar o módulo de pós-game a regras de vitória/derrota (timer, morte, objetivos, sequências, score etc.). O contrato de produção é apenas: *“se um sistema decidir, ele solicita.”*
-
-    * Exibir título/mensagem de Vitória ou GameOver.
-    * Mostrar stats resumidos, se existirem.
-    * Exibir botões:
-
-        * “Restart”
-        * “Menu”
-2. Integrar com `InputModeService`:
-
-    * Ao abrir:
-
-        * Modo de input `PostGameOverlay` (similar ao `PauseOverlay`, mas específico).
-    * Ao fechar:
-
-        * Voltar para `FrontendMenu` (caso de “Menu”).
-        * Deixar a transição de cena + SceneFlow/WorldLifecycle aplicar `Gameplay` novamente (caso de “Restart”).
-
-#### 5.4. Restart via GameNavigationService
-
-Fluxo canônico de Restart:
-
-1. Jogador clica em “Restart” no `PostGameOverlay`.
-2. O controller do overlay publica um evento de intenção (nome sugerido: `GameRestartRequestedEvent`).
-3. Um bridge dedicado (ex.: `RestartNavigationBridge`) ouve este evento e:
-
-    * Resolve `IGameNavigationService` no escopo global.
-    * Chama `RequestToGameplay(...)`, utilizando o **mesmo profile** de gameplay já adotado pelo botão “Play” do Menu:
-
-        * `targetActive = "GameplayScene"`
-        * `profile = "gameplay"`
-        * `reason = "PostGame/RestartButton"` (string de log).
-4. Daqui em diante, o pipeline é o mesmo:
-
-    * `SceneTransitionService` inicia a transição (`GameplayScene` + `UIGlobalScene`, unload do que for necessário).
-    * Fade + LoadingHUD operam normalmente.
-    * `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` com `profile='gameplay'` e dispara hard reset:
-
-        * `WorldLifecycleController` → `WorldLifecycleOrchestrator` → despawn + spawn determinístico.
-    * Gate + `GameReadinessService` consolidam o estado `GameplayReady`.
-    * `InputModeSceneFlowBridge` coloca `InputMode = Gameplay`.
-    * `GameLoopSceneFlowCoordinator` chama novamente `GameLoop.RequestStart()`.
-
-Resultado:
-
-* Restart é “só” mais um caso de navegar para `GameplayScene` com `profile='gameplay'`, reaproveitando todo o pipeline já validado.
-
-#### 5.5. Voltar ao Menu pós-gameplay
-
-Para voltar ao Menu, reusa-se o fluxo já existente:
-
-1. Botão “Menu” no `PostGameOverlay` publica `GameExitToMenuRequestedEvent` (já usado pelo PauseOverlay).
-2. `GamePauseGateBridge`/`ExitToMenuNavigationBridge` tratam o evento e delegam ao `IGameNavigationService`:
-
-    * `RequestToMenu(...)` com `targetActive="MenuScene"`, `profile='startup'` ou outro configurado.
-3. O restante segue o pipeline de SceneFlow + WorldLifecycle já existente para Gameplay → Menu.
-
-#### 5.6. Integração com WorldLifecycle
-
-Invariantes:
-
-* O **único responsável** por resetar o mundo é o pipeline `SceneTransitionScenesReadyEvent` + `WorldLifecycleRuntimeCoordinator` + `WorldLifecycleController` + `WorldLifecycleOrchestrator`.
-* O fluxo pós-gameplay **não** introduz resets manuais adicionais dentro de atores ou serviços de gameplay.
-
-Regras:
-
-1. GameOver/Vitória **não** fazem reset “in place” por conta própria; apenas publicam `GameRunEndedEvent` e aguardam decisão do jogador (Restart/Menu).
-2. Restart **sempre** passa por:
-
-    * Transição de cena `profile='gameplay'` (mesmo profile já usado pelo Menu).
-    * Hard reset via `WorldLifecycleOrchestrator` (despawn + spawn completo).
-3. GameOver/Vitória podem, opcionalmente, ajustar `contextSignature`/`reason` da transição (ex.: `reason='RunEnded/Victory'`), para melhor rastreabilidade nos logs, mas o pipeline permanece o mesmo.
-
-### 7. Plano de implementação incremental
-
-1. **GameLoop**
-
-    1. Extender `GameLoopStateId` para incluir `PostGame` (ou nome equivalente).
-    2. Atualizar `GameLoopStateMachine` para suportar transição `Playing → PostGame` ao receber o evento de fim de run.
-    3. Atualizar `GameLoop.md` com o novo estado e a máquina de estados estendida.
-
-## Evidências
-
-- Metodologia: [`Reports/Evidence/README.md`](../Reports/Evidence/README.md)
-- Evidência canônica (LATEST): [`Reports/Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
-- Snapshot arquivado (2026-01-18): [`Baseline-2.1-Evidence-2026-01-18.md`](../Reports/Evidence/2026-01-18/Baseline-2.1-Evidence-2026-01-18.md)
-- Contrato: [`Observability-Contract.md`](../Reports/Observability-Contract.md)
-
-## Referências
-
-- (não informado)
-
-## Implementação final (baseline)
-
-### Caminho canônico (produção)
-
-- **Fim de run**: `GameRunOutcomeService` publica `GameRunEndedEvent` e `GameRunStatusService` mantém `Outcome` + `Reason`.
-- **UI pós-game**: `PostGameOverlayController` observa `GameRunEndedEvent`, exibe overlay e:
-  - `Restart` → publica `GameResetRequestedEvent` (`reason='PostGame/Restart'`)
-  - `ExitToMenu` → publica `GameExitToMenuRequestedEvent` (`reason='PostGame/ExitToMenu'`)
-- **Navegação**:
-  - `RestartNavigationBridge` → `IGameNavigationService.RequestGameplayAsync` (`profile='gameplay'`)
-  - `ExitToMenuNavigationBridge` → `IGameNavigationService.RequestMenuAsync` (`profile='frontend'`)
-- **Reset determinístico**:
-  - `WorldLifecycleSceneFlowResetDriver` dispara `ResetWorld` no `ScenesReady` apenas para `profile='gameplay'`.
-  - `WorldLifecycleResetCompletionGate` fecha o ciclo de transição (completion gate) antes do FadeOut.
-
-### Desvios intencionais do texto original
-
-- O baseline atual não depende de um estado explícito `PostGame` no `GameLoop` para operar corretamente.
-  O pós-game é representado via evento (`GameRunEndedEvent`) + overlay + intents de navegação (evento/bridge).
-
+- `Assets/_ImmersiveGames/NewScripts/Modules/PostGame/Bindings/PostGameOverlayController.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameRunOutcomeService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameRunStateService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameRunEndRequestService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameRunOutcomeCommandBridge.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/RestartNavigationBridge.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Navigation/ExitToMenuNavigationBridge.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/PostGame/PostGameOwnershipService.cs`

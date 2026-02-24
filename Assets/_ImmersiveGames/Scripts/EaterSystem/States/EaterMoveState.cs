@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using ImprovedTimers;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -161,3 +161,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
+

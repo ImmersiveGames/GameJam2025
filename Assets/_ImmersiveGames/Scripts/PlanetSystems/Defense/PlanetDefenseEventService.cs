@@ -1,8 +1,7 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -138,7 +137,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             DebugUtility.LogVerbose<PlanetDefenseEventService>(
                 $"[SpawnEvent] Minion spawnado em {spawnedEvent.Planet.ActorName} com role '{spawnedEvent.SpawnContext.TargetRole}' " +
-                $"e label '{spawnedEvent.SpawnContext.TargetLabel}'. EntryStarted={spawnedEvent.EntryPhaseStarted}.");
+                $"e label '{spawnedEvent.SpawnContext.TargetLabel}'. EntryStarted={spawnedEvent.EntryStepStarted}.");
         }
 
         private void ResolveDependenciesFromProvider()
@@ -180,3 +179,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 }
+

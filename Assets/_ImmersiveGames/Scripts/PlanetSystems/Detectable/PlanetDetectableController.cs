@@ -1,9 +1,10 @@
 using UnityEngine;
-using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.AudioSystem.Components;
+using _ImmersiveGames.Scripts.AudioSystem.System;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 {
@@ -121,3 +122,4 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         }
     }
 }
+

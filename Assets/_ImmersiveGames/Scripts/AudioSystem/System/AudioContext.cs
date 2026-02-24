@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.AudioSystem
+namespace _ImmersiveGames.Scripts.AudioSystem.System
 {
     /// <summary>
     /// Contexto de reprodução de áudio, contendo posição, uso de espacialização

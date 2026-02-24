@@ -1,8 +1,7 @@
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.DamageSystem
+namespace _ImmersiveGames.Scripts.DamageSystem.Events
 {
     public struct DamageEvent : IEvent
     {
@@ -154,3 +153,4 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
     }
 }
+

@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
@@ -95,3 +95,4 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
     }
 }
+

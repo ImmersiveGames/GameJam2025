@@ -1,7 +1,7 @@
-Ôªøusing _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         private EventBinding<DetectionExitEvent> _exitBinding;
         private readonly HashSet<IDetectable> _detectedItems = new();
         
-        // Cache por evento por frame para evitar duplica√ß√£o
+        // Cache por evento por frame para evitar duplicaÁ„o
         private readonly Dictionary<string, int> _processedEvents = new();
 
         protected virtual void Awake()
@@ -24,11 +24,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             _owner = GetComponent<IActor>();
             if (_owner == null)
             {
-                DebugUtility.LogError<AbstractDetector>($"Componente IActor n√£o encontrado em {gameObject.name}");
+                DebugUtility.LogError<AbstractDetector>($"Componente IActor n„o encontrado em {gameObject.name}");
                 return;
             }
 
-            // Registrar eventos de detec√ß√£o
+            // Registrar eventos de detecÁ„o
             _enterBinding = new EventBinding<DetectionEnterEvent>(OnDetectionEnterEvent);
             _exitBinding = new EventBinding<DetectionExitEvent>(OnDetectionExitEvent);
 
@@ -47,31 +47,31 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         public IActor Owner => _owner;
 
-        // M√©todos abstratos para classes concretas implementarem
+        // MÈtodos abstratos para classes concretas implementarem
         public abstract void OnDetected(IDetectable detectable, DetectionType detectionType);
         public abstract void OnLost(IDetectable detectable, DetectionType detectionType);
 
-        // Manipula√ß√£o de eventos
+        // ManipulaÁ„o de eventos
         protected virtual void OnDetectionEnterEvent(DetectionEnterEvent enterEvent)
         {
             if (!ReferenceEquals(enterEvent.Detector, this) || enterEvent.DetectionType == null) return;
 
-            // Criar chave √∫nica para este evento
+            // Criar chave ˙nica para este evento
             string eventKey = $"ENTER_{enterEvent.Detectable.GetHashCode()}_{enterEvent.DetectionType.GetHashCode()}";
             
-            // Verificar se j√° processamos este evento neste frame
+            // Verificar se j· processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
                 return;
             
             _processedEvents[eventKey] = Time.frameCount;
 
-            // Adiciona ao cache de detec√ß√µes
+            // Adiciona ao cache de detecÁıes
             bool added = _detectedItems.Add(enterEvent.Detectable);
 
             DebugUtility.LogVerbose<AbstractDetector>($"EVENTO ENTRADA [Frame {Time.frameCount}]: Detectado {GetName(enterEvent.Detectable)} " +
                 $"como {enterEvent.DetectionType.TypeName}, Novo: {added}, Cache: {_detectedItems.Count} em {gameObject.name}");
 
-            // Chama m√©todo abstrato apenas se foi uma nova detec√ß√£o
+            // Chama mÈtodo abstrato apenas se foi uma nova detecÁ„o
             if (added) 
             {
                 OnDetected(enterEvent.Detectable, enterEvent.DetectionType);
@@ -85,22 +85,22 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         {
             if (!ReferenceEquals(exitEvent.Detector, this) || exitEvent.DetectionType == null) return;
 
-            // Criar chave √∫nica para este evento
+            // Criar chave ˙nica para este evento
             string eventKey = $"EXIT_{exitEvent.Detectable.GetHashCode()}_{exitEvent.DetectionType.GetHashCode()}";
             
-            // Verificar se j√° processamos este evento neste frame
+            // Verificar se j· processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
                 return;
             
             _processedEvents[eventKey] = Time.frameCount;
 
-            // Remove do cache de detec√ß√µes
+            // Remove do cache de detecÁıes
             bool removed = _detectedItems.Remove(exitEvent.Detectable);
 
-            DebugUtility.LogVerbose<AbstractDetector>($"EVENTO SA√çDA [Frame {Time.frameCount}]: Perdeu {GetName(exitEvent.Detectable)} como " +
+            DebugUtility.LogVerbose<AbstractDetector>($"EVENTO SAÕDA [Frame {Time.frameCount}]: Perdeu {GetName(exitEvent.Detectable)} como " +
                 $"{exitEvent.DetectionType.TypeName}, Removido: {removed}, Cache: {_detectedItems.Count} em {gameObject.name}");
 
-            // Chama m√©todo abstrato apenas se o item estava no cache
+            // Chama mÈtodo abstrato apenas se o item estava no cache
             if (removed) 
             {
                 OnLost(exitEvent.Detectable, exitEvent.DetectionType);
@@ -125,15 +125,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             return detectable.Owner?.ActorName ?? detectable.ToString();
         }
 
-        // M√©todo para classes concretas acessarem o cache
+        // MÈtodo para classes concretas acessarem o cache
         protected IReadOnlyCollection<IDetectable> GetDetectedItems()
         {
-            // Limpar refer√™ncias nulas
+            // Limpar referÍncias nulas
             _detectedItems.RemoveWhere(item => item == null || (item as MonoBehaviour)?.gameObject == null);
             return _detectedItems;
         }
 
-        // M√©todo para limpar o cache manualmente
+        // MÈtodo para limpar o cache manualmente
         private void ClearCache()
         {
             _detectedItems.Clear();
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             OnCacheCleared();
         }
 
-        // M√©todo virtual para classes concretas reagirem √† limpeza do cache
+        // MÈtodo virtual para classes concretas reagirem ‡ limpeza do cache
         protected virtual void OnCacheCleared() { }
     }
 }
