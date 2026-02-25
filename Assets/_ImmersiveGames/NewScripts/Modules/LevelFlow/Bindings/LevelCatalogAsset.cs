@@ -40,12 +40,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         [SerializeField] private List<LevelDefinition> levels = new();
 
         [Header("Validation")]
-        [Tooltip("Quando true, registra warning se houver níveis inválidos/duplicados.")]
+        [Tooltip("Quando true, registra observabilidade para validação de níveis inválidos.")]
         [SerializeField] private bool warnOnInvalidLevels = true;
 
         private readonly Dictionary<LevelId, LevelResolution> _cache = new();
         private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
-        private readonly Dictionary<SceneRouteId, List<LevelId>> _routeToLevelCandidates = new();
         private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
@@ -86,13 +85,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             if (!_routeToLevelCache.TryGetValue(routeId, out levelId) || !levelId.IsValid)
             {
                 return false;
-            }
-
-            if (_routeToLevelCandidates.TryGetValue(routeId, out List<LevelId> candidates) && candidates.Count > 1)
-            {
-                DebugUtility.Log(typeof(LevelCatalogAsset),
-                    $"[OBS][Compat] RouteToLevelAmbiguous routeId='{routeId}' picked='{levelId}' candidates='[{string.Join(", ", candidates)}]'.",
-                    DebugUtility.Colors.Warning);
             }
 
             return true;
@@ -156,7 +148,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cacheBuilt = true;
             _cache.Clear();
             _routeToLevelCache.Clear();
-            _routeToLevelCandidates.Clear();
 
             if (levels == null || levels.Count == 0)
             {
@@ -187,14 +178,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     FailFast($"Rota inválida ao resolver levelId='{entry.levelId}' em levels[{i}].");
                 }
 
-                if (!_routeToLevelCandidates.TryGetValue(resolvedRouteId, out List<LevelId> candidates))
-                {
-                    candidates = new List<LevelId>();
-                    _routeToLevelCandidates.Add(resolvedRouteId, candidates);
-                }
-
-                candidates.Add(entry.levelId);
-
                 if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
                 {
                     _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
@@ -203,23 +186,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
-            int ambiguousRoutes = 0;
-            foreach (var pair in _routeToLevelCandidates)
-            {
-                if (pair.Value != null && pair.Value.Count > 1)
-                {
-                    ambiguousRoutes++;
-                }
-            }
-
-            DebugUtility.Log<LevelCatalogAsset>(
-                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes}",
-                DebugUtility.Colors.Info);
-
             if (warnOnInvalidLevels)
             {
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes={ambiguousRoutes}",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0",
                     DebugUtility.Colors.Info);
             }
         }

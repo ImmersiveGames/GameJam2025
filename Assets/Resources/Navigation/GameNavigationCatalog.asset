@@ -30,11 +30,11 @@ MonoBehaviour:
     styleId:
       _value: style.gameplay.nofade
   restartSlot:
-    routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
+    routeRef: {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
     styleId:
       _value: style.gameplay.nofade
   exitToMenuSlot:
-    routeRef: {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
+    routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     styleId:
       _value: style.frontend
   routes: []

@@ -287,6 +287,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             ValidateCriticalCoreSlotsInEditorOrFail();
             ValidateOptionalCoreSlotsInEditor();
+            ValidateCoreIntentRouteInvariantsOrFail();
             LogMissingOptionalIntentsObservability();
             ValidateExtrasInEditorOrFail();
 
@@ -344,11 +345,101 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             ApplyRouteMigration();
 
-            _built = true;
             _cache.Clear();
 
             BuildCoreCacheEntries();
+            ValidateCoreIntentRouteInvariantsOrFail();
             BuildExtrasCacheEntries();
+
+            _built = true;
+        }
+
+        private void ValidateCoreIntentRouteInvariantsOrFail()
+        {
+            SceneRouteId menuRouteId = ResolveRequiredCoreRouteIdOrFail(GameNavigationIntentKind.Menu);
+            SceneRouteId gameplayRouteId = ResolveRequiredCoreRouteIdOrFail(GameNavigationIntentKind.Gameplay);
+
+            ValidateExitToMenuPointsToMenuOrFail(menuRouteId);
+            ValidateRestartPointsToGameplayOrFail(menuRouteId, gameplayRouteId);
+        }
+
+        private SceneRouteId ResolveRequiredCoreRouteIdOrFail(GameNavigationIntentKind kind)
+        {
+            if (!TryGetIntentId(kind, out NavigationIntentId intentId))
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog sem intent core canônica obrigatória. owner='{name}', kind='{kind}', intentId='<missing>', routeId='<none>', asset='{name}'.");
+            }
+
+            CoreIntentSlot slot = GetCoreSlot(kind);
+            if (slot.routeRef == null)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog core intent obrigatório sem routeRef. owner='{name}', kind='{kind}', intentId='{intentId.Value}', routeId='<none>', asset='{name}'.");
+            }
+
+            SceneRouteId routeId = slot.routeRef.RouteId;
+            if (!routeId.IsValid)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog core intent obrigatório com routeId inválido. owner='{name}', kind='{kind}', intentId='{intentId.Value}', routeId='{routeId}', asset='{slot.routeRef.name}'.");
+            }
+
+            return routeId;
+        }
+
+        private void ValidateExitToMenuPointsToMenuOrFail(SceneRouteId menuRouteId)
+        {
+            if (!TryGetIntentId(GameNavigationIntentKind.ExitToMenu, out NavigationIntentId intentId))
+            {
+                return;
+            }
+
+            CoreIntentSlot slot = GetCoreSlot(GameNavigationIntentKind.ExitToMenu);
+            if (slot.routeRef == null)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog core intent inválido: ExitToMenu sem routeRef. owner='{name}', kind='{GameNavigationIntentKind.ExitToMenu}', intentId='{intentId.Value}', routeId='<none>', asset='{name}'.");
+            }
+
+            SceneRouteId routeId = slot.routeRef.RouteId;
+            bool matchesMenuRoute = routeId.IsValid && routeId == menuRouteId;
+            bool matchesMenuRouteRef = slot.routeRef == GetCoreSlot(GameNavigationIntentKind.Menu).routeRef;
+            if (matchesMenuRoute || matchesMenuRouteRef)
+            {
+                return;
+            }
+
+            FailFastConfig(
+                $"[FATAL][Config] GameNavigationCatalog core intent inválido: ExitToMenu deve resolver para menu. owner='{name}', kind='{GameNavigationIntentKind.ExitToMenu}', intentId='{intentId.Value}', routeId='{routeId}', asset='{slot.routeRef.name}'.");
+        }
+
+        private void ValidateRestartPointsToGameplayOrFail(SceneRouteId menuRouteId, SceneRouteId gameplayRouteId)
+        {
+            if (!TryGetIntentId(GameNavigationIntentKind.Restart, out NavigationIntentId intentId))
+            {
+                return;
+            }
+
+            CoreIntentSlot slot = GetCoreSlot(GameNavigationIntentKind.Restart);
+            if (slot.routeRef == null)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog core intent inválido: Restart sem routeRef. owner='{name}', kind='{GameNavigationIntentKind.Restart}', intentId='{intentId.Value}', routeId='<none>', asset='{name}'.");
+            }
+
+            SceneRouteId routeId = slot.routeRef.RouteId;
+            if (routeId == menuRouteId)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog core intent inválido: Restart não pode resolver para menu. owner='{name}', kind='{GameNavigationIntentKind.Restart}', intentId='{intentId.Value}', routeId='{routeId}', asset='{slot.routeRef.name}'.");
+            }
+
+            if (routeId != gameplayRouteId)
+            {
+                FailFastConfig(
+                    $"[FATAL][Config] GameNavigationCatalog core intent inválido: Restart deve resolver para gameplay. owner='{name}', kind='{GameNavigationIntentKind.Restart}', intentId='{intentId.Value}', routeId='{routeId}', asset='{slot.routeRef.name}'.");
+            }
         }
 
         private void BuildCoreCacheEntries()
