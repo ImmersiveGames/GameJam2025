@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     snapshot.ContentId,
                     snapshot.Reason,
                     persistedVersion,
-                    snapshot.ContextSignature);
+                    snapshot.LevelSignature);
 
                 DebugUtility.Log<RestartContextService>(
                     $"[OBS][Navigation] GameplayStartSnapshotUpdated levelId='{(_current.HasLevelId ? _current.LevelId.ToString() : "<none>")}' routeId='{_current.RouteId}' styleId='{_current.StyleId}' contentId='{(_current.HasContentId ? _current.ContentId : "<none>")}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     normalizedContentId,
                     _current.Reason,
                     _current.SelectionVersion,
-                    _current.ContextSignature);
+                    _current.LevelSignature);
             }
 
             return true;
