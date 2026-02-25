@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
@@ -21,15 +22,20 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
+        private readonly EventBinding<LevelSwapLocalAppliedEvent> _levelSwapLocalAppliedBinding;
         // Dedupe por instância para evitar supressão entre instâncias após restarts.
         private string _lastProcessedSignature;
+        // Guard local para evitar reentrância do swap com mesma versão canônica.
+        private int _lastSwapVersion = -1;
 
         public SceneFlowInputModeBridge()
         {
             _startedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
             _completedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
+            _levelSwapLocalAppliedBinding = new EventBinding<LevelSwapLocalAppliedEvent>(OnLevelSwapLocalApplied);
             EventBus<SceneTransitionStartedEvent>.Register(_startedBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
+            EventBus<LevelSwapLocalAppliedEvent>.Register(_levelSwapLocalAppliedBinding);
 
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
                 "[InputMode] SceneFlowInputModeBridge registrado nos eventos de SceneTransitionStartedEvent e SceneTransitionCompletedEvent.",
@@ -44,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         {
             EventBus<SceneTransitionStartedEvent>.Unregister(_startedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_completedBinding);
+            EventBus<LevelSwapLocalAppliedEvent>.Unregister(_levelSwapLocalAppliedBinding);
         }
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
@@ -163,14 +170,13 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     }
                     else
                     {
-                        gameLoopService.RequestIntroStageStart();
-                        var introStageContext = new IntroStageContext(
-                            contextSignature: signature,
-                            profileId: evt.Context.TransitionProfileId,
-                            targetScene: evt.Context.TargetActiveScene,
-                            reason: "SceneFlow/Completed");
-
-                        _ = coordinator.RunIntroStageAsync(introStageContext);
+                        RequestIntroStageRun(
+                            gameLoopService,
+                            coordinator,
+                            signature,
+                            evt.Context.TransitionProfileId,
+                            evt.Context.TargetActiveScene,
+                            "SceneFlow/Completed");
                     }
                 }
                 return;
@@ -240,6 +246,72 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
                 $"[InputMode] Profile nao reconhecido ('{profile}'); input mode nao alterado.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void OnLevelSwapLocalApplied(LevelSwapLocalAppliedEvent evt)
+        {
+            if (evt.SelectionVersion == _lastSwapVersion)
+            {
+                return;
+            }
+
+            _lastSwapVersion = evt.SelectionVersion;
+
+            if (!IsGameplayScene())
+            {
+                DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
+                    $"[SceneFlowInputModeBridge] [IntroStageController] LevelSwapLocal aplicado fora de gameplay. IntroStageController ignorada. scene='{SceneManager.GetActiveScene().name}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var gameLoopService = ResolveGameLoopService();
+            if (gameLoopService == null)
+            {
+                DebugUtility.LogWarning<SceneFlowInputModeBridge>(
+                    "[SceneFlowInputModeBridge] [GameLoop] IGameLoopService indisponivel; IntroStageController do LevelSwapLocal nao sera executada.");
+                return;
+            }
+
+            var coordinator = ResolveIntroStageCoordinator();
+            if (coordinator == null)
+            {
+                DebugUtility.LogWarning<SceneFlowInputModeBridge>(
+                    "[SceneFlowInputModeBridge] [IntroStageController] IIntroStageCoordinator indisponível; IntroStageController não será executada para LevelSwapLocal.");
+                return;
+            }
+
+            string normalizedReason = string.IsNullOrWhiteSpace(evt.Reason) ? "LevelFlow/SwapLevelLocal" : evt.Reason;
+
+            DebugUtility.Log<SceneFlowInputModeBridge>(
+                $"[OBS][IntroStageController] IntroStageStartRequested source='LevelSwapLocal' levelId='{evt.LevelId}' v='{evt.SelectionVersion}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            RequestIntroStageRun(
+                gameLoopService,
+                coordinator,
+                evt.LevelSignature,
+                SceneFlowProfileId.Gameplay,
+                SceneManager.GetActiveScene().name,
+                normalizedReason);
+        }
+
+        private static void RequestIntroStageRun(
+            IGameLoopService gameLoopService,
+            IIntroStageCoordinator coordinator,
+            string contextSignature,
+            SceneFlowProfileId profileId,
+            string targetScene,
+            string reason)
+        {
+            gameLoopService.RequestIntroStageStart();
+            var introStageContext = new IntroStageContext(
+                contextSignature: contextSignature,
+                profileId: profileId,
+                targetScene: targetScene,
+                reason: reason);
+
+            _ = coordinator.RunIntroStageAsync(introStageContext);
         }
 
         private static void LogObsInputModeApplied(

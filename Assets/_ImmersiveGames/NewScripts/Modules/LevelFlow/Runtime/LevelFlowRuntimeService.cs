@@ -155,6 +155,19 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 ct.ThrowIfCancellationRequested();
                 await _worldResetCommands.ResetLevelAsync(levelId, normalizedReason, levelSignature, ct);
 
+                PublishLevelSwapLocalApplied(
+                    levelId,
+                    resolvedRouteId,
+                    macroRouteId,
+                    contentId,
+                    normalizedReason,
+                    nextSelectionVersion,
+                    levelSignature);
+
+                DebugUtility.Log<LevelFlowRuntimeService>(
+                    $"[OBS][LevelFlow] LevelSwapLocalApplied levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
+
                 DebugUtility.Log<LevelFlowRuntimeService>(
                     $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=True notes=''.",
                     DebugUtility.Colors.Success);
@@ -263,6 +276,25 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             DebugUtility.Log<LevelFlowRuntimeService>(
                 $"[OBS][Level] LevelSelectedEventPublished levelId='{levelId}' routeId='{routeId}' contentId='{contentId}' reason='{reason}' v='{selectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void PublishLevelSwapLocalApplied(
+            LevelId levelId,
+            SceneRouteId routeId,
+            SceneRouteId macroRouteId,
+            string contentId,
+            string reason,
+            int selectionVersion,
+            LevelContextSignature levelSignature)
+        {
+            EventBus<LevelSwapLocalAppliedEvent>.Raise(new LevelSwapLocalAppliedEvent(
+                levelId,
+                routeId,
+                macroRouteId,
+                contentId,
+                reason,
+                selectionVersion,
+                levelSignature.Value));
         }
 
         private static void FailFastConfig(string detail)
