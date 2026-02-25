@@ -100,6 +100,6 @@ Editor-only:
 ## Validation / Evidence
 
 - Audit de fechamento P-004 (PASS): `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
-- Auditoria final Strings → DirectRefs: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Auditoria final Strings → DirectRefs: `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
 - Snapshot canônico pré-DataCleanup: `Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`
 - MenuItem de validação (Editor): `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`

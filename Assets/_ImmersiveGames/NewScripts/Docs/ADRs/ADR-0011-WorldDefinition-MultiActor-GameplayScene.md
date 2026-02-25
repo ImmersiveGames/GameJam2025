@@ -105,7 +105,7 @@ Evidência canônica mostra:
 
 ### Auditoria Strict/Release
 
-- **Arquivo:** `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
+- **Arquivo:** `Docs/CHANGELOG.md (entrada histórica de 2026-01-31)`
 
 ## Fora de escopo
 

@@ -73,8 +73,8 @@ Padronizar o Pós-Gameplay como um conjunto de **transições explícitas** (com
 
 - `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
 - Auditorias relacionadas:
-  - `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md` (itens B/D)
-  - `Docs/Reports/Audits/2026-01-31/ADR-Sync-Audit-NewScripts.md`
+  - `Docs/CHANGELOG.md (entrada histórica de 2026-01-31)` (itens B/D)
+  - `Docs/CHANGELOG.md (entrada histórica de 2026-01-31)`
 
 > A evidência desta ADR é **por assinatura**, para manter robustez contra mudanças de linha/offset no log.
 

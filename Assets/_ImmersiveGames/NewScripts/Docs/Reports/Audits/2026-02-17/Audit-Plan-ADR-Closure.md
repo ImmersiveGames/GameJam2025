@@ -11,8 +11,8 @@
 
 | Plano | Status atual no doc | Evidência lida | Contradição com evidência? | Observação curta |
 |---|---|---|---|---|
-| **P-001** (`Plans/Plan-Strings-To-DirectRefs.md`, `Plans/Plan-Continuous.md#p-001`) | **DONE** | `Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`, `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`, `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` (PASS) | **Não identificada** | Fechamento documentado com auditoria final + smoke + validator PASS. |
-| **P-002** (`Plans/Plan-Post-StringsToDirectRefs-v1-DataCleanup.md`, `Plans/Plan-Continuous.md#p-002`) | **DONE** | `Reports/Audits/2026-02-16/DataCleanup-v1-Step-03-InlineRoutes.md`, `...Step-04...`, `...Step-06...`, `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` (PASS), `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md` | **Não identificada** | Evidências de etapas + validator PASS sustentam DONE. |
+| **P-001** (`Plans/Plan-Continuous.md#p-001`, `Plans/Plan-Continuous.md#p-001`) | **DONE** | `Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`, `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`, `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` (PASS) | **Não identificada** | Fechamento documentado com auditoria final + smoke + validator PASS. |
+| **P-002** (`Plans/Plan-Continuous.md#p-002`, `Plans/Plan-Continuous.md#p-002`) | **DONE** | `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`, `Smoke-DataCleanup-v1 (consolidado em 2026-02-17)`, `Smoke-DataCleanup-v1 (consolidado em 2026-02-17)`, `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` (PASS), `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md` | **Não identificada** | Evidências de etapas + validator PASS sustentam DONE. |
 | **P-004** (`Plans/Plan-Continuous.md#p-004`) | **DONE** | `Reports/Evidence/LATEST.md`, `Reports/lastlog.log`, `Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md` | **Não identificada** | Fechamento documental consolidado com audit datado + smoke + validator PASS. |
 
 ## 2) ADRs (0007 / 0008 / 0018 / 0019)
@@ -32,14 +32,14 @@
 ---
 
 ### Fontes lidas nesta auditoria
-- `Plans/Plan-Strings-To-DirectRefs.md`
-- `Plans/Plan-Post-StringsToDirectRefs-v1-DataCleanup.md`
+- `Plans/Plan-Continuous.md#p-001`
+- `Plans/Plan-Continuous.md#p-002`
 - `Plans/Plan-Continuous.md`
 - `ADRs/ADR-0007-InputModes.md`
 - `ADRs/ADR-0008-RuntimeModeConfig.md`
 - `ADRs/ADR-0018-Fade-TransitionStyle-SoftFail.md`
 - `ADRs/ADR-0019-Navigation-IntentCatalog.md`
 - `Reports/Evidence/LATEST.md`
-- `Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- `Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
 - `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`

@@ -205,6 +205,15 @@
 
 All notable documentation changes to **NewScripts** are documented in this file.
 
+## [2026-02-25]
+### Docs cleanup / retenção
+- Removed: planos concluídos/arquivados em `Docs/Plans/` (DONE/ARCHIVED, SUPERSEDED e `Archive-*`) para manter somente trilho ativo (`Plan-Continuous` + WIP).
+- Removed: versões antigas do plano de refactor em `Docs/Overview/` (`v2` e `v2.1.1`) e promoção da versão mais recente para nome canônico sem sufixo de versão.
+- Removed: auditorias antigas em `Docs/Reports/Audits/`, mantendo apenas as 3 pastas datadas mais recentes (`2026-02-17`, `2026-02-18`, `2026-02-19`).
+- Moved: `Reports/Audits/2026-02-19/ADR-Sync-Audit-Prompt.md` para `Reports/Audits/2026-02-19/` por aderência ao padrão de retenção por data.
+- Updated: índices e ponteiros (`Docs/README.md`, `Overview/Overview.md`, `Plans/README.md`, `Reports/Evidence/README.md`, `Reports/Evidence/LATEST.md`) para evitar referências quebradas.
+- Nota: histórico completo permanece disponível via Git.
+
 ## [2025-12-30]
 ### Updated
 - `WORLD_LIFECYCLE.md`: evidência de SKIP em startup/frontend e reforço do gate antes do FadeOut.

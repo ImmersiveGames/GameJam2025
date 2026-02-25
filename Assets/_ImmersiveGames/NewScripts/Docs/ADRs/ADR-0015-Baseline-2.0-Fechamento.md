@@ -43,7 +43,7 @@ Considerar o Baseline 2.0 fechado e não evoluir mais o contrato 2.0. Evoluçõe
 
 - Última evidência (log bruto): `Docs/Reports/lastlog.log`
 - Fonte canônica atual: `Docs/Reports/Evidence/LATEST.md`
-- Evidências adicionais: `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
+- Evidências adicionais: `Docs/CHANGELOG.md (entrada histórica de 2026-01-31)`
 
 ## Implementação (arquivos impactados)
 
@@ -53,8 +53,8 @@ Artefatos canônicos:
 
 - `Docs/Reports/Evidence/LATEST.md`
 - `Docs/Reports/Evidence/2026-02-03/Baseline-2.2-Evidence-2026-02-03.md`
-- `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
-- `Docs/Reports/Audits/2026-01-31/ADR-Sync-Audit-NewScripts.md`
+- `Docs/CHANGELOG.md (entrada histórica de 2026-01-31)`
+- `Docs/CHANGELOG.md (entrada histórica de 2026-01-31)`
 
 ## Riscos / Observações
 
@@ -63,4 +63,4 @@ Artefatos canônicos:
 ## Referências
 
 - `../Reports/Evidence/LATEST.md`
-- `../Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
+- `../CHANGELOG.md`

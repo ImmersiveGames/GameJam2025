@@ -440,7 +440,7 @@ Usar o CODEX **somente** para auditorias de sincronização (Docs ⇄ Código) e
 
 ### Prompt canônico
 
-Use `Docs/Reports/Audits/ADR-Sync-Audit-Prompt.md`.
+Use `Docs/Reports/Audits/2026-02-19/ADR-Sync-Audit-Prompt.md`.
 
 ---
 

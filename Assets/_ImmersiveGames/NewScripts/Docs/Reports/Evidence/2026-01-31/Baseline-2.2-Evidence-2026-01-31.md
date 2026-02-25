@@ -155,5 +155,5 @@
 
 ## Referências
 
-- Auditoria Strict/Release: `Docs/Reports/Audits/2026-01-31/Invariants-StrictRelease-Audit.md`
+- Auditoria Strict/Release: `Docs/CHANGELOG.md (entrada histórica de 2026-01-31)`
 - ADR relacionado: `Docs/ADRs/ADR-0011-WorldDefinition-MultiActor-GameplayScene.md`
