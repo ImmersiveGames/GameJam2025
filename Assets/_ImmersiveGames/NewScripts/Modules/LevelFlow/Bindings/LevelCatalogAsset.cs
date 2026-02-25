@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -41,16 +40,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         [SerializeField] private List<LevelDefinition> levels = new();
 
         [Header("Validation")]
-        [Tooltip("Quando true, registra warning se houver níveis inválidos/duplicados.")]
+        [Tooltip("Quando true, registra observabilidade para validação de níveis inválidos.")]
         [SerializeField] private bool warnOnInvalidLevels = true;
 
         private readonly Dictionary<LevelId, LevelResolution> _cache = new();
         private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
-        private readonly Dictionary<SceneRouteId, List<LevelId>> _routeToLevelCandidates = new();
         private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
-        private string _sharedRoutesDiagnostics = "[]";
 
         public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
         {
@@ -151,8 +148,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cacheBuilt = true;
             _cache.Clear();
             _routeToLevelCache.Clear();
-            _routeToLevelCandidates.Clear();
-            _sharedRoutesDiagnostics = "[]";
 
             if (levels == null || levels.Count == 0)
             {
@@ -183,14 +178,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     FailFast($"Rota inválida ao resolver levelId='{entry.levelId}' em levels[{i}].");
                 }
 
-                if (!_routeToLevelCandidates.TryGetValue(resolvedRouteId, out List<LevelId> candidates))
-                {
-                    candidates = new List<LevelId>();
-                    _routeToLevelCandidates.Add(resolvedRouteId, candidates);
-                }
-
-                candidates.Add(entry.levelId);
-
                 if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
                 {
                     _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
@@ -199,74 +186,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
-            int sharedRoutes = 0;
-            _sharedRoutesDiagnostics = BuildSharedRoutesDiagnostics(out sharedRoutes);
-
-            DebugUtility.Log<LevelCatalogAsset>(
-                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes=0 sharedRoutes={sharedRoutes} shared={_sharedRoutesDiagnostics}",
-                DebugUtility.Colors.Info);
-
-            LogDeterministicReverseMapForSharedRoutes();
-
             if (warnOnInvalidLevels)
             {
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes=0 sharedRoutes={sharedRoutes}",
-                    DebugUtility.Colors.Info);
-            }
-        }
-
-        private string BuildSharedRoutesDiagnostics(out int sharedRoutes)
-        {
-            sharedRoutes = 0;
-
-            StringBuilder builder = new("[");
-            bool hasEntries = false;
-
-            foreach (var pair in _routeToLevelCandidates)
-            {
-                if (pair.Value == null || pair.Value.Count <= 1)
-                {
-                    continue;
-                }
-
-                if (hasEntries)
-                {
-                    builder.Append(", ");
-                }
-
-                builder
-                    .Append("routeId='")
-                    .Append(pair.Key)
-                    .Append("' levels=[")
-                    .Append(string.Join(", ", pair.Value))
-                    .Append("]");
-
-                sharedRoutes++;
-                hasEntries = true;
-            }
-
-            builder.Append(']');
-            return builder.ToString();
-        }
-
-
-        private void LogDeterministicReverseMapForSharedRoutes()
-        {
-            foreach (var pair in _routeToLevelCandidates)
-            {
-                if (pair.Value == null || pair.Value.Count <= 1)
-                {
-                    continue;
-                }
-
-                if (!_routeToLevelCache.TryGetValue(pair.Key, out LevelId pickedLevelId))
-                {
-                    continue;
-                }
-
-                DebugUtility.Log<LevelCatalogAsset>(
-                    $"[OBS][Compat] RouteToLevelDeterministic routeId='{pair.Key}' picked='{pickedLevelId}' sharedLevels='[{string.Join(", ", pair.Value)}]'.",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0",
                     DebugUtility.Colors.Info);
             }
         }
