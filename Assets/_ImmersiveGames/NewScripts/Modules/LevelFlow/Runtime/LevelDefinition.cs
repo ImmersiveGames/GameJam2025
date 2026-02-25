@@ -27,6 +27,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         [Tooltip("Referência direta obrigatória para a rota canônica.")]
         public SceneRouteDefinitionAsset routeRef;
 
+        [Tooltip("Referência direta obrigatória para a macro rota canônica do nível (ADR-0024).")]
+        public SceneRouteDefinitionAsset macroRouteRef;
+
         [Tooltip("ContentId associado ao nível (observability/compat).")]
         public string contentId = LevelFlowContentDefaults.DefaultContentId;
 
@@ -61,6 +64,28 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public string ResolveContentId()
             => LevelFlowContentDefaults.Normalize(contentId);
+
+        public SceneRouteId ResolveMacroRouteId()
+        {
+            if (!levelId.IsValid)
+            {
+                FailFast("LevelDefinition inválido: levelId vazio/inválido.");
+            }
+
+            if (macroRouteRef == null)
+            {
+                SceneRouteId currentRouteId = routeRef != null ? routeRef.RouteId : SceneRouteId.None;
+                FailFast($"LevelDefinition exige macroRouteRef obrigatório. levelId='{levelId}', routeId='{currentRouteId}'.");
+            }
+
+            SceneRouteId macroRouteId = macroRouteRef.RouteId;
+            if (!macroRouteId.IsValid)
+            {
+                FailFast($"macroRouteRef inválido. levelId='{levelId}', asset='{macroRouteRef.name}', macroRouteRef.routeId vazio/inválido.");
+            }
+
+            return macroRouteId;
+        }
 
         /// <summary>
         /// Retorna o payload adicional do nível.

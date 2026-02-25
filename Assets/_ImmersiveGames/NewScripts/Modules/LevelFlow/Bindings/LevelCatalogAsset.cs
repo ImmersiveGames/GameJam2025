@@ -123,6 +123,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
 #if UNITY_EDITOR
             TryMigrateLegacyRouteRefsInEditor();
+            TryMigrateMacroRouteRefsInEditor();
             EnsureDefaultContentIdsInEditor();
 #endif
 
@@ -148,6 +149,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cacheBuilt = true;
             _cache.Clear();
             _routeToLevelCache.Clear();
+            var macroRoutes = new HashSet<SceneRouteId>();
 
             if (levels == null || levels.Count == 0)
             {
@@ -178,6 +180,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     FailFast($"Rota inválida ao resolver levelId='{entry.levelId}' em levels[{i}].");
                 }
 
+                SceneRouteId resolvedMacroRouteId = entry.ResolveMacroRouteId();
+                if (!resolvedMacroRouteId.IsValid)
+                {
+                    FailFast($"MacroRoute inválida ao resolver levelId='{entry.levelId}' em levels[{i}]. routeId='{resolvedRouteId}', macroRouteRef missing/invalid.");
+                }
+
+                macroRoutes.Add(resolvedMacroRouteId);
+
                 if (!_routeToLevelCache.ContainsKey(resolvedRouteId))
                 {
                     _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
@@ -189,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             if (warnOnInvalidLevels)
             {
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} macroRoutesMapped={macroRoutes.Count} invalidLevels=0",
                     DebugUtility.Colors.Info);
             }
         }
@@ -252,6 +262,43 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             DebugUtility.Log(typeof(LevelCatalogAsset),
                 $"[OBS][Config] LevelCatalogAsset OnValidate migrou routeRef a partir de routeId legado. migrated={migratedCount}, asset='{name}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void TryMigrateMacroRouteRefsInEditor()
+        {
+            if (levels == null || levels.Count == 0)
+            {
+                return;
+            }
+
+            int migratedCount = 0;
+            for (int i = 0; i < levels.Count; i++)
+            {
+                LevelDefinition definition = levels[i];
+                if (definition == null || definition.macroRouteRef != null || definition.routeRef == null)
+                {
+                    continue;
+                }
+
+                if (!definition.routeRef.RouteId.IsValid)
+                {
+                    continue;
+                }
+
+                definition.macroRouteRef = definition.routeRef;
+                migratedCount++;
+
+                DebugUtility.Log(typeof(LevelCatalogAsset),
+                    $"[OBS][MIGRATION][LevelCatalog] macroRouteRef auto-set a partir de routeRef. levelId='{definition.levelId}', macroRouteId='{definition.routeRef.RouteId}', asset='{name}'.",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (migratedCount <= 0)
+            {
+                return;
+            }
+
+            EditorUtility.SetDirty(this);
         }
 
         private void EnsureDefaultContentIdsInEditor()
