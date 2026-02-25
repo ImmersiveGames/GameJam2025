@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string contentId,
             string reason,
             int selectionVersion,
-            string contextSignature)
+            string levelSignature)
         {
             LevelId = levelId;
             RouteId = routeId;
@@ -24,7 +24,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             ContentId = Sanitize(contentId);
             Reason = Sanitize(reason);
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
-            ContextSignature = Sanitize(contextSignature);
+
+            // Hardening: assinatura de nível deve permanecer consistente com os campos canônicos.
+            // LevelSignature != MacroSignature (macro é responsabilidade de outro domínio).
+            string normalizedLevelSignature = Sanitize(levelSignature);
+            if (string.IsNullOrWhiteSpace(normalizedLevelSignature))
+            {
+                normalizedLevelSignature = LevelContextSignature
+                    .Create(LevelId, RouteId, Reason, ContentId)
+                    .Value;
+            }
+
+            LevelSignature = normalizedLevelSignature;
         }
 
         public LevelId LevelId { get; }
@@ -33,7 +44,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public string ContentId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
-        public string ContextSignature { get; }
+        public string LevelSignature { get; }
+
+        // Compatibilidade temporária: manter API antiga sem alterar comportamento.
+        // LevelSignature != MacroSignature (macro virá em etapa futura separada).
+        [System.Obsolete("Use LevelSignature. ContextSignature no snapshot representa assinatura de nível por compatibilidade.")]
+        public string ContextSignature => LevelSignature;
 
         public bool HasLevelId => LevelId.IsValid;
         public bool HasContentId => !string.IsNullOrWhiteSpace(ContentId);
@@ -50,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public override string ToString()
         {
-            return $"levelId='{(HasLevelId ? LevelId.ToString() : "<none>")}', routeId='{RouteId}', styleId='{StyleId}', contentId='{(HasContentId ? ContentId : "<none>")}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', contextSignature='{(string.IsNullOrWhiteSpace(ContextSignature) ? "<none>" : ContextSignature)}'";
+            return $"levelId='{(HasLevelId ? LevelId.ToString() : "<none>")}', routeId='{RouteId}', styleId='{StyleId}', contentId='{(HasContentId ? ContentId : "<none>")}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', levelSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
         }
 
         private static string Sanitize(string value)

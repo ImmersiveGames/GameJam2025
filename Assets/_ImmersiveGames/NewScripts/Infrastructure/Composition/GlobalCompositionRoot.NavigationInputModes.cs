@@ -11,6 +11,7 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -285,7 +286,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             var restartContextService = ResolveOrRegisterRestartContextService();
-            var runtimeService = new LevelFlowRuntimeService(levelCatalogAsset, navigationService, catalogAsset, styleCatalogAsset, restartContextService);
+            IWorldResetCommands worldResetCommands = null;
+            DependencyManager.Provider.TryGetGlobal(out worldResetCommands);
+
+            var runtimeService = new LevelFlowRuntimeService(
+                levelCatalogAsset,
+                navigationService,
+                catalogAsset,
+                styleCatalogAsset,
+                restartContextService,
+                worldResetCommands,
+                levelCatalogAsset,
+                levelCatalogAsset);
             DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

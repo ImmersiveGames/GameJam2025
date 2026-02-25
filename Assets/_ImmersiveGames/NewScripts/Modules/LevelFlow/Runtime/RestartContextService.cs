@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     snapshot.ContentId,
                     snapshot.Reason,
                     persistedVersion,
-                    snapshot.ContextSignature);
+                    snapshot.LevelSignature);
 
                 DebugUtility.Log<RestartContextService>(
                     $"[OBS][Navigation] GameplayStartSnapshotUpdated levelId='{(_current.HasLevelId ? _current.LevelId.ToString() : "<none>")}' routeId='{_current.RouteId}' styleId='{_current.StyleId}' contentId='{(_current.HasContentId ? _current.ContentId : "<none>")}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
@@ -69,6 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public bool TryUpdateCurrentContentId(string contentId, string reason = null)
         {
             string normalizedContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
 
             lock (_sync)
             {
@@ -77,14 +78,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     return false;
                 }
 
+                string finalReason = string.IsNullOrWhiteSpace(normalizedReason)
+                    ? _current.Reason
+                    : normalizedReason;
+
+                string updatedLevelSignature = LevelContextSignature
+                    .Create(_current.LevelId, _current.RouteId, finalReason, normalizedContentId)
+                    .Value;
+
                 _current = new GameplayStartSnapshot(
                     _current.LevelId,
                     _current.RouteId,
                     _current.StyleId,
                     normalizedContentId,
-                    _current.Reason,
+                    finalReason,
                     _current.SelectionVersion,
-                    _current.ContextSignature);
+                    updatedLevelSignature);
             }
 
             return true;

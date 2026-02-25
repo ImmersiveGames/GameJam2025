@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (hasSnapshot)
             {
                 DebugUtility.Log(typeof(GameNavigationService),
-                    $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.RouteId}', levelId='{(snapshot.HasLevelId ? snapshot.LevelId.ToString() : "<none>")}', contentId='{(snapshot.HasContentId ? snapshot.ContentId : "<none>")}', styleId='{snapshot.StyleId}', v='{snapshot.SelectionVersion}', reason='{(string.IsNullOrWhiteSpace(reason) ? snapshot.Reason : resolvedReason)}', contextSignature='{(string.IsNullOrWhiteSpace(snapshot.ContextSignature) ? "<none>" : snapshot.ContextSignature)}'.",
+                    $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.RouteId}', levelId='{(snapshot.HasLevelId ? snapshot.LevelId.ToString() : "<none>")}', contentId='{(snapshot.HasContentId ? snapshot.ContentId : "<none>")}', styleId='{snapshot.StyleId}', v='{snapshot.SelectionVersion}', reason='{(string.IsNullOrWhiteSpace(reason) ? snapshot.Reason : resolvedReason)}', levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
                     DebugUtility.Colors.Info);
             }
             else
