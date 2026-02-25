@@ -130,10 +130,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, resolvedRouteId, normalizedReason, contentId);
             int nextSelectionVersion = ResolveNextSelectionVersion();
 
+            TransitionStyleId swapStyleId = ResolveStyleIdForSwap();
+
             PublishLevelSelected(
                 levelId,
                 resolvedRouteId,
-                TransitionStyleId.None,
+                swapStyleId,
                 contentId,
                 normalizedReason,
                 nextSelectionVersion,
@@ -241,6 +243,31 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             return resolvedRouteId;
+        }
+
+
+        private TransitionStyleId ResolveStyleIdForSwap()
+        {
+            if (_restartContextService != null
+                && _restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
+                && snapshot.IsValid
+                && snapshot.StyleId.IsValid)
+            {
+                return snapshot.StyleId;
+            }
+
+            if (_navigationCatalog is GameNavigationCatalogAsset assetCatalog)
+            {
+                GameNavigationEntry gameplayEntry = assetCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Gameplay);
+                if (gameplayEntry.StyleId.IsValid)
+                {
+                    return gameplayEntry.StyleId;
+                }
+            }
+
+            DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                "[WARN][OBS][LevelFlow] style_unknown while publishing LevelSelectedEvent during SwapLevelLocalAsync; fallback styleId='none'.");
+            return TransitionStyleId.None;
         }
 
         private int ResolveNextSelectionVersion()
