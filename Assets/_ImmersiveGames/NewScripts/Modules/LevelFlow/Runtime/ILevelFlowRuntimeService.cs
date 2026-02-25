@@ -9,5 +9,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     public interface ILevelFlowRuntimeService
     {
         Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default);
+        Task SwapLevelLocalAsync(LevelId levelId, string reason = null, CancellationToken ct = default);
     }
 }
