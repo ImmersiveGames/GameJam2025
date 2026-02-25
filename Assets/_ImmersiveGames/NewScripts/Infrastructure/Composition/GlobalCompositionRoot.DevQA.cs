@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -43,6 +44,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
                     $"[QA][SceneFlow] Falha ao instalar SceneFlowDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
+
+            try
+            {
+                LevelFlowDevInstaller.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                    $"[QA][LevelFlow] Falha ao instalar LevelFlowDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
