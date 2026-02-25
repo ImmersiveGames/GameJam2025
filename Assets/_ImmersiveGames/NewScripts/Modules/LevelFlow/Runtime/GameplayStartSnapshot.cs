@@ -24,7 +24,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             ContentId = Sanitize(contentId);
             Reason = Sanitize(reason);
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
-            LevelSignature = Sanitize(levelSignature);
+
+            // Hardening: assinatura de nível deve permanecer consistente com os campos canônicos.
+            // LevelSignature != MacroSignature (macro é responsabilidade de outro domínio).
+            string normalizedLevelSignature = Sanitize(levelSignature);
+            if (string.IsNullOrWhiteSpace(normalizedLevelSignature))
+            {
+                normalizedLevelSignature = LevelContextSignature
+                    .Create(LevelId, RouteId, Reason, ContentId)
+                    .Value;
+            }
+
+            LevelSignature = normalizedLevelSignature;
         }
 
         public LevelId LevelId { get; }
