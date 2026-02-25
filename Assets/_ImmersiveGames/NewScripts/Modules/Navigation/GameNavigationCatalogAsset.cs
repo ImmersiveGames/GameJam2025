@@ -287,6 +287,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             ValidateCriticalCoreSlotsInEditorOrFail();
             ValidateOptionalCoreSlotsInEditor();
+            ValidateCoreIntentRouteInvariantsOrFail();
             LogMissingOptionalIntentsObservability();
             ValidateExtrasInEditorOrFail();
 
@@ -344,11 +345,86 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             ApplyRouteMigration();
 
-            _built = true;
             _cache.Clear();
 
             BuildCoreCacheEntries();
+            ValidateCoreIntentRouteInvariantsOrFail();
             BuildExtrasCacheEntries();
+
+            _built = true;
+        }
+
+        private void ValidateCoreIntentRouteInvariantsOrFail()
+        {
+            SceneRouteId menuRouteId = ResolveMenuRouteIdOrFail();
+            ValidateExitToMenuPointsToMenuOrFail(menuRouteId);
+            ValidateRestartIsNotMenuOrFail(menuRouteId);
+        }
+
+        private SceneRouteId ResolveMenuRouteIdOrFail()
+        {
+            CoreIntentSlot menuSlotValue = GetCoreSlot(GameNavigationIntentKind.Menu);
+            if (menuSlotValue.routeRef == null)
+            {
+                FailFastCoreSlot(GameNavigationIntentKind.Menu, "slot core obrigatório sem routeRef.");
+            }
+
+            SceneRouteId menuRouteId = menuSlotValue.routeRef.RouteId;
+            if (!menuRouteId.IsValid)
+            {
+                FailFastCoreSlot(GameNavigationIntentKind.Menu,
+                    $"routeRef.RouteId inválido para intent core. intentId='{GetIntentId(GameNavigationIntentKind.Menu)}', asset='{menuSlotValue.routeRef.name}'.");
+            }
+
+            return menuRouteId;
+        }
+
+        private void ValidateExitToMenuPointsToMenuOrFail(SceneRouteId menuRouteId)
+        {
+            if (!TryGetIntentId(GameNavigationIntentKind.ExitToMenu, out NavigationIntentId intentId))
+            {
+                return;
+            }
+
+            CoreIntentSlot slot = GetCoreSlot(GameNavigationIntentKind.ExitToMenu);
+            if (slot.routeRef == null)
+            {
+                return;
+            }
+
+            SceneRouteId routeId = slot.routeRef.RouteId;
+            bool matchesMenuRoute = routeId.IsValid && routeId == menuRouteId;
+            bool matchesMenuRouteRef = slot.routeRef == GetCoreSlot(GameNavigationIntentKind.Menu).routeRef;
+            if (matchesMenuRoute || matchesMenuRouteRef)
+            {
+                return;
+            }
+
+            FailFastConfig(
+                $"[FATAL][Config] GameNavigationCatalog core intent inválido: ExitToMenu deve apontar para rota de menu. asset='{name}', kind='{GameNavigationIntentKind.ExitToMenu}', intentId='{intentId.Value}', routeId='{routeId}', routeAsset='{slot.routeRef.name}'.");
+        }
+
+        private void ValidateRestartIsNotMenuOrFail(SceneRouteId menuRouteId)
+        {
+            if (!TryGetIntentId(GameNavigationIntentKind.Restart, out NavigationIntentId intentId))
+            {
+                return;
+            }
+
+            CoreIntentSlot slot = GetCoreSlot(GameNavigationIntentKind.Restart);
+            if (slot.routeRef == null)
+            {
+                return;
+            }
+
+            SceneRouteId routeId = slot.routeRef.RouteId;
+            if (routeId != menuRouteId)
+            {
+                return;
+            }
+
+            FailFastConfig(
+                $"[FATAL][Config] GameNavigationCatalog core intent inválido: Restart não pode resolver para rota de menu. asset='{name}', kind='{GameNavigationIntentKind.Restart}', intentId='{intentId.Value}', routeId='{routeId}', routeAsset='{slot.routeRef.name}'.");
         }
 
         private void BuildCoreCacheEntries()
