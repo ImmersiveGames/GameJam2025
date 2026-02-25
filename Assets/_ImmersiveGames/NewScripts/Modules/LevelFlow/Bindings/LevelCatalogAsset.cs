@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -49,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
+        private string _duplicatedRoutesDiagnostics = "[]";
 
         public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
         {
@@ -157,6 +159,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cache.Clear();
             _routeToLevelCache.Clear();
             _routeToLevelCandidates.Clear();
+            _duplicatedRoutesDiagnostics = "[]";
 
             if (levels == null || levels.Count == 0)
             {
@@ -204,16 +207,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             int ambiguousRoutes = 0;
-            foreach (var pair in _routeToLevelCandidates)
-            {
-                if (pair.Value != null && pair.Value.Count > 1)
-                {
-                    ambiguousRoutes++;
-                }
-            }
+            _duplicatedRoutesDiagnostics = BuildDuplicatedRoutesDiagnostics(out ambiguousRoutes);
 
             DebugUtility.Log<LevelCatalogAsset>(
-                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes}",
+                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes} duplicated={_duplicatedRoutesDiagnostics}",
                 DebugUtility.Colors.Info);
 
             if (warnOnInvalidLevels)
@@ -222,6 +219,40 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes={ambiguousRoutes}",
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private string BuildDuplicatedRoutesDiagnostics(out int duplicatedRoutes)
+        {
+            duplicatedRoutes = 0;
+
+            StringBuilder builder = new("[");
+            bool hasEntries = false;
+
+            foreach (var pair in _routeToLevelCandidates)
+            {
+                if (pair.Value == null || pair.Value.Count <= 1)
+                {
+                    continue;
+                }
+
+                if (hasEntries)
+                {
+                    builder.Append(", ");
+                }
+
+                builder
+                    .Append("routeId='")
+                    .Append(pair.Key)
+                    .Append("' levels=[")
+                    .Append(string.Join(", ", pair.Value))
+                    .Append("]");
+
+                duplicatedRoutes++;
+                hasEntries = true;
+            }
+
+            builder.Append(']');
+            return builder.ToString();
         }
 
         private void LogResolutionDedupePerFrame(LevelId levelId, LevelResolution resolution)
