@@ -54,8 +54,8 @@ Uma atividade só vira **DONE** quando:
 
 #### Auditorias relacionadas (status atual)
 
-- `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Steps-01-02.md`
-- `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
+- `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
 
 > Regra: qualquer nova checagem deve gerar um arquivo em `Docs/Reports/Audits/<YYYY-MM-DD>/...`.
 
@@ -196,7 +196,7 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 ### Evidências (P-001)
 
 - LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
-- Auditoria final: `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- Auditoria final: `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
 - Smoke datado: `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator DataCleanup v1 (smoke complementar): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Log runtime/smoke: `Docs/Reports/lastlog.log`
@@ -279,9 +279,9 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 - Validator PASS: `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Smoke runtime: `Docs/Reports/lastlog.log`
 - Auditorias de etapas: 
-  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-03-InlineRoutes.md`
-  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-04-ProfileCatalog-ValidationOnly.md`
-  - `Docs/Reports/Audits/2026-02-16/DataCleanup-v1-Step-06-Remove-InlineRoutes.md`
+  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
+  - `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 
 ### Contexto (estado atual)
 
@@ -293,7 +293,7 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ### Evidências de fechamento (2026-02-17)
 
-- P-001 (snapshot/final): `Docs/Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md`
+- P-001 (snapshot/final): `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
 - P-002 (validator smoke): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` com PASS registrado.
 
 ### Princípios
@@ -480,7 +480,7 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 #### Evidência / auditoria relacionada
 
-- `Docs/Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md` (investigação do sintoma "Entries: []" e riscos de catálogo/Resources)
+- `Docs/CHANGELOG.md (entrada histórica de navegação / P-003)` (investigação do sintoma "Entries: []" e riscos de catálogo/Resources)
 
 ### Objetivo
 Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e evidência de runtime (DI + resolver).
@@ -508,7 +508,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 ### Evidências (P-003)
 
 - Log de smoke: `Docs/Reports/lastlog.log`
-- Auditoria histórica de mismatch (origem do bloqueio): `Docs/Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md`
+- Auditoria histórica de mismatch (origem do bloqueio): `Docs/CHANGELOG.md (entrada histórica de navegação / P-003)`
 - Evidência do estado corrigido (trecho do smoke):
 
 ```log
@@ -574,7 +574,7 @@ Objetivo desta rodada:
 - Audit datado de fechamento:
   - `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 - Plano dedicado (fechamento P-004):
-  - `Docs/Plans/Codex-Validation-SceneFlow-RouteResetPolicy.md`
+  - `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 
 #### Comandos de prova (executáveis no CLI)
 

@@ -1,91 +1,105 @@
-# ADR-0022 — Assinaturas e Dedupe por Domínio: MacroRoute vs Level
+# ADR-0022 — Assinaturas e Dedupe por Domínio (MacroRoute vs Level)
 
 ## Status
 
-- Estado: Proposto
+- Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-19
+- Última atualização: 2026-02-25
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
 
+## Resumo
+
+Padronizar **assinaturas** e **dedupe** separando claramente dois domínios:
+
+- **MacroRoute / SceneFlow**: assinatura macro para transições de cenas (load/unload/active/fade/profile).
+- **Level / LevelFlow**: assinatura de level para seleção e conteúdo (levelId + contentId) dentro de um macro.
+
+Objetivo: evitar acoplamento/ambiguidade (ex.: usar “macroSignature” como se fosse “levelSignature”), e permitir resets locais sem disparar transição macro.
 
 ## Contexto
 
-Hoje o sistema usa uma *signature* única para dedupe/telemetria do SceneFlow (ex.: `r:<route>|s:<style>|p:<profile>|...`), e *Level* foi historicamente tratado como “alias” de rota.  
-Com a separação MacroRoutes × Levels (ADR-0020/Plano MacroRoutes vs Levels), precisamos **evitar colisões conceituais**:
+O projeto possui:
 
-- Transições de **rota macro** (Menu → Gameplay, Gameplay → Menu etc.) são “mudanças de espaço macro”.
-- Trocas de **level** (Level 1 → Level 2 dentro de Gameplay) são “mudanças locais” e podem ocorrer **sem cortina**.
-- Ambos possuem dedupe, observabilidade, contexto e *reason* — porém com semânticas diferentes.
+- **SceneFlow** orquestrando transições macro por `routeId` (Menu, Gameplay base etc).
+- **LevelFlow** selecionando level e conteúdo dentro de um macro que suporta levels.
+- **WorldLifecycle** executando reset macro (spawn/despawn) e reset local (quando aplicável).
 
-Se usarmos uma única signature (ou uma única janela de dedupe) para tudo, geramos falsos positivos:
-- dedupe de *level swap* bloqueando transição macro;
-- ou transição macro mascarando evidência de troca de level.
+Sem separação de assinaturas, o dedupe pode bloquear ações legítimas (ex.: reset local) e a observabilidade fica confusa (logs misturam “macro route” com “level”).
 
 ## Decisão
 
-Definir **dois domínios explícitos** de assinatura/telemetria/dedupe:
+### 1) Duas assinaturas canônicas
 
-1) **MacroSignature (SceneFlow / Route)**
-- Identifica a transição macro do SceneFlow.
-- Fonte: `routeId`, `styleId`, `profile`, `profileAsset`, `activeScene`, `scenesToLoad/unload`, `useFade`.
-- Usada por: `SceneTransitionService` (Started/ScenesReady/Completed), gates de scene transition, loading macro.
+#### Assinatura Macro (SceneFlow)
 
-2) **LevelSignature (LevelFlow / Level)**
-- Identifica a transição local de *level* dentro de uma MacroRoute.
-- Fonte: `macroRouteId` (ou RouteKind), `levelId`, `contentId`, `levelChainStep` (A/B/Index), e `reason`.
-- Usada por: `LevelFlowRuntimeService` / `LevelLocalContentLoader` / ContentSwap (in-place), intro/post-level (se existir).
+- Nome: `macroSignature` (ou simplesmente `signature` nos eventos de SceneFlow).
+- Fonte: `SceneTransitionService` / `SceneFlowSignatureCache`.
+- Componentes mínimos:
+  - `routeId`
+  - `styleId`
+  - `profileId` e `profileAsset`
+  - `activeScene`
+  - `useFade` (ou equivalente)
+  - `scenesToLoad` / `scenesToUnload` (ou um hash determinístico delas)
 
-### Regras de dedupe
+> Esta assinatura **não** carrega `levelId`/`contentId`. Level é um domínio separado.
 
-- **Dedupe Macro**: permanece no `SceneTransitionService` (janela curta contra chamadas repetidas).
-- **Dedupe Level**: novo dedupe no domínio do LevelFlow (*se necessário*), jamais bloqueando Macro.
-- Um evento “LevelSwapRequested” não invalida/consome o budget de dedupe macro.
+#### Assinatura Level (LevelFlow)
 
-### Regras de observabilidade (logs)
+- Nome: `levelSignature`.
+- Fonte: `LevelFlowRuntimeService` (ou serviço equivalente de seleção).
+- Componentes mínimos:
+  - `levelId`
+  - `routeId` (micro-route/route do level, se existir)
+  - `contentId`
+  - `reason`
+  - `v` (versão incremental, monotônica, por macro)
 
-Ancorar logs [OBS] em domínios distintos:
+### 2) Dedupe por domínio
 
-- Macro:
-  - `[OBS][SceneFlow] TransitionStarted ... signature='<macroSignature>'`
-  - `[OBS][SceneFlow] RouteResolvedVia=AssetRef ...`
-- Level:
-  - `[OBS][LevelFlow] LevelSelected ... levelSignature='<levelSignature>'`
-  - `[OBS][Level] ContentApplied ... contentId='...'`
+- **Macro dedupe**:
+  - `SceneTransitionService` pode dedupar transições macro por `macroSignature`.
+  - `SceneFlowInputModeBridge` e similares podem dedupar re-aplicações por `macroSignature`.
+
+- **Level dedupe**:
+  - `LevelFlowRuntimeService` dedupa eventos de seleção/aplicação por `{macroRouteId, levelId, contentId, v}` (ou por `levelSignature`).
+  - Um reset local (LevelReset) **não** deve ser bloqueado por dedupe macro.
+
+### 3) Contrato de logs [OBS]
+
+- Logs do SceneFlow devem sempre incluir a **macro signature**.
+- Logs do LevelFlow devem sempre incluir a **level signature**.
+- Bridges (Navigation/Restart/ContentSwap) devem registrar **ambas** quando fizer sentido:
+  - `macroSignature` para “onde estou” (contexto macro)
+  - `levelSignature` para “o que está selecionado/aplicado” (contexto de level)
+
+## Implementação atual (2026-02-25)
+
+### Evidências (anchors do log canônico)
+
+- SceneFlow usa assinatura macro (`signature='r:...|s:...|p:...|pa:...|a:...|f:...'`) em:
+  - `TransitionStarted`, `ScenesReady`, `TransitionCompleted`.
+- LevelFlow publica e propaga assinatura de level:
+  - `levelSignature='level:level.1|route:level.1|content:content.default|reason:Menu/PlayButton'` com `v='1'`/`v='2'`.
+- Há dedupe explícito por assinatura macro em bridges:
+  - `SceneFlowInputModeBridge ... reset dedupe. signature='...'`.
+- Restart usa snapshot com contexto de level e não depende da assinatura macro para decidir “o que reiniciar”:
+  - `RestartUsingSnapshot routeId='level.1', levelId='level.1', contentId='content.default', styleId='style.gameplay' ...`.
 
 ## Implicações
 
-### Positivas
-- Elimina ambiguidade (Level ≠ Route).
-- Dedupe passa a ser determinístico e “correto por domínio”.
-- Evidências (Baseline 3.0) ficam robustas: não dependem de coincidência de assinatura.
-
-### Negativas / custos
-- Ajuste incremental em telemetria e estruturas internas (propagação de signatures).
-- Mais um conceito para devs (macro vs level), mitigado por documentação e nomes explícitos.
-
-## Alternativas consideradas
-
-1) **Manter signature única e “anexar” levelId no final**  
-Rejeitado: mistura domínios e dificulta dedupe separado; risco de regressões e de “signature explosiva”.
-
-2) **Level como “Route” de segunda classe**  
-Rejeitado: reintroduz confusão. Nosso objetivo é **separar**.
+- Dedupe macro fica estável e previsível (não interfere em trocas locais de level/conteúdo).
+- Observabilidade melhora: cada log “fala do seu domínio” e fica simples correlacionar.
+- Simplifica a evolução do F4/F5 do LevelFlow: “StartGameplayAsync(levelId)” passa a ser trilho canônico.
 
 ## Critérios de aceite (DoD)
 
-- Logs de transição macro permanecem inalterados semanticamente e continuam emitindo MacroSignature.
-- Logs de LevelFlow passam a emitir LevelSignature em pontos-chave:
-  - seleção do level;
-  - aplicação do conteúdo;
-  - (opcional) troca de level A→B.
-- Dedupe macro não bloqueia operações de level (e vice-versa).
-- Evidência em Baseline 3.0:
-  - “Macro: Menu→Gameplay” com MacroSignature.
-  - “Level: N→1 A/B” com LevelSignature (ou equivalente).
+- [x] Existe distinção clara entre `macroSignature` (SceneFlow) e `levelSignature` (LevelFlow).
+- [x] Logs [OBS] exibem assinaturas corretas em seus domínios.
+- [x] Dedupe macro não bloqueia reset/troca local de level/conteúdo.
+- [ ] Hardening: adicionar testes/QA que validem colisão (mesmo macroSignature com levelSignature diferentes) sem transição macro.
 
-## Referências
+## Changelog
 
-- ADR-0020 — Level/Content/Progression vs SceneRoute
-- ADR-0021 — Baseline 3.0 (Completeness)
-- Plan-Incremental-Baseline-3.0-MacroRoutes-Levels.md
+- 2026-02-25: Marcado como **Implementado**, adicionadas evidências e alinhamento do contrato de logs/dedupe com o comportamento observado no log canônico.

@@ -13,7 +13,7 @@
 ### 1) F0 — Rede de proteção (evidência)
 
 * [x] Auditoria rápida atual (strings vs refs) gerada e arquivada em `Docs/Reports/Audits/<data>/`.
-* [x] Plano `Plan-Strings-To-DirectRefs.md` com **Status atual** e critérios de saída atualizados (se necessário).
+* [x] Atividade `P-001` em `Plan-Continuous.md#p-001` com **Status atual** e critérios de saída atualizados (se necessário).
 
 ### 2) F1 — TransitionStyleId → direct ref (Strict)
 

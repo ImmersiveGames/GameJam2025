@@ -6,7 +6,7 @@ A partir deste snapshot, o trilho canônico é:
 
 - `Docs/Plans/Plan-Continuous.md`
 
-Os arquivos individuais antigos permanecem apenas como **redirecionamento** (para não quebrar links em Reports/Docs).
+A pasta mantém somente planos **ativos/WIP** e o plano canônico contínuo. Planos históricos foram removidos do working tree (histórico preservado no Git).
 
 ## Fonte de verdade (não duplicar)
 
@@ -39,12 +39,12 @@ Os arquivos individuais antigos permanecem apenas como **redirecionamento** (par
 
 | ActivityId | Status | Atividade | Fonte de verdade | Evidência/Auditoria | Trilho canônico |
 |---|---|---|---|---|---|
-| **P-001** | **DONE** | Strings → Referências diretas (v1) | ADRs + Standards | Plano: `Plans/Plan-Strings-To-DirectRefs.md` + Audit final: `Reports/Audits/2026-02-16/Audit-StringsToDirectRefs-v1-Step-06-Final.md` + Validator: `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` | `Plan-Continuous.md#p-001` |
-| **P-002** | **DONE** | Data Cleanup pós v1 (remove resíduos/compat) | ADRs + Standards | Plano: `Plans/Plan-Post-StringsToDirectRefs-v1-DataCleanup.md` + Validator: `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` + Smoke: `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md` | `Plan-Continuous.md#p-002` |
-| **P-003** | **DONE** | Navegação: Play → `to-gameplay` (correção mínima) | ADRs + Standards | Smoke: `Reports/lastlog.log` + audit de origem `Reports/Audits/2026-02-11/Audit-NavigationRuntime-Mismatch.md` | `Plan-Continuous.md#p-003` |
+| **P-001** | **DONE** | Strings → Referências diretas (v1) | ADRs + Standards | Referência histórica no Git + Validator: `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` + fechamento consolidado em `Plan-Continuous.md#p-001` | `Plan-Continuous.md#p-001` |
+| **P-002** | **DONE** | Data Cleanup pós v1 (remove resíduos/compat) | ADRs + Standards | Referência histórica no Git + Validator: `Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` + Smoke: `Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md` | `Plan-Continuous.md#p-002` |
+| **P-003** | **DONE** | Navegação: Play → `to-gameplay` (correção mínima) | ADRs + Standards | Smoke: `Reports/lastlog.log` + fechamento consolidado em `Plan-Continuous.md#p-003` | `Plan-Continuous.md#p-003` |
 | **P-004** | **DONE** | Validação (Codex) — SceneFlow/RouteResetPolicy | ADRs + Standards | Audit datada: `Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md` | `Plan-Continuous.md#p-004` |
 
 ## Notas
 
 - **Plano macro (design):** o trilho arquitetural SceneFlow/Navigation/LevelFlow (v2.x) vive em `Docs/Overview/`.
-- **Plano histórico:** `Plans/Archive-Plano-2.2.md` existe apenas como referência/placeholder.
+- Históricos de planos foram removidos do working tree após política de retenção; consulte o Git para rastreabilidade.

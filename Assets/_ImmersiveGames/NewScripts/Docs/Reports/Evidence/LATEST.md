@@ -7,7 +7,7 @@ Esta página aponta para o conjunto de evidências **mais recente** aceito como 
 - **Data:** 2026-02-03
 - **Baseline:** 2.2
 - **Arquivo de evidência:** [`Baseline-2.2-Evidence-2026-02-03.md`](2026-02-03/Baseline-2.2-Evidence-2026-02-03.md)
-- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log) *(atualizado em 2026-02-17)*
+- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log) *(atualizado em 2026-02-25)**
 - **Evidências adicionais:** [ADR-0017-LevelCatalog-Evidence-2026-02-03.md](2026-02-03/ADR-0017-LevelCatalog-Evidence-2026-02-03.md)
 - **SceneFlow Config Snapshot (DataCleanup v1):** [../SceneFlow-Config-Snapshot-DataCleanup-v1.md](../SceneFlow-Config-Snapshot-DataCleanup-v1.md)
 - **DataCleanup v1 validation PASS (2026-02-17):** [../SceneFlow-Config-ValidationReport-DataCleanup-v1.md](../SceneFlow-Config-ValidationReport-DataCleanup-v1.md)

@@ -21,6 +21,6 @@ Este diretório guarda snapshots de evidência (logs + interpretação) usados p
 
 ## Política de retenção
 
-- Manter **LATEST** + **as 2 evidências anteriores** em `Reports/Evidence/`.
+- Manter **LATEST** + **as 2 evidências anteriores** em `Reports/Evidence/` (3 snapshots datados no total).
 - Manter **as 3 auditorias mais recentes** em `Reports/Audits/`.
 - Material antigo deve ser removido (o histórico segue no Git).

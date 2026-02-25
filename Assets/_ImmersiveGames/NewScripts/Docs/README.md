@@ -28,7 +28,7 @@ Este diretório é o **ponto de entrada** para documentação do módulo **NewSc
 
 6) **Planos e WIP**
 - `Plans/` — planos de execução atuais (work-in-progress).
-- `Plans/Archive-Plano-2.2.md` — plano histórico (referência).
+- `Plans/Plan-Continuous.md` — trilho canônico + status das atividades.
 
 ## Regra operacional
 

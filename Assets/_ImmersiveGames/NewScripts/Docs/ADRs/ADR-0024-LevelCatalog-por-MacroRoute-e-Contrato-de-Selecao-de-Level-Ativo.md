@@ -2,80 +2,82 @@
 
 ## Status
 
-- Estado: Proposto
+- Estado: **Em implementação (parcial em produção)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-19
+- Última atualização: 2026-02-25
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
 
+## Resumo
+
+Formalizar que:
+
+- **MacroRoutes** representam espaços macro (Menu, Gameplay, Tutorial, Hub).
+- Alguns macros possuem **catálogo de levels**.
+- Ao entrar em um macro com levels, existe **exatamente 1 level ativo**, com seleção determinística e observável.
 
 ## Contexto
 
-A intenção é que **MacroRoutes** representem “espaços macros” do jogo (Menu, Gameplay, Tutorial, Hub...).  
-Apenas alguns macros possuem *levels* (Gameplay, Tutorial). Menu normalmente não.
+Hoje já existem evidências de:
 
-Para o macro “com levels”, ao entrar nele o sistema deve:
-- identificar o catálogo de levels do macro;
-- selecionar um único level ativo;
-- preparar o conteúdo antes da conclusão do loading macro (FadeOut macro).
+- `LevelCatalog` construindo entradas e mapeando levels para rotas.
+- `StartGameplayAsync(levelId)` como trilho canônico.
+- Snapshot de restart com `{levelId, routeId, contentId, v}`.
 
-Além disso, precisamos suportar:
-- progressão por ordem (next/prev);
-- seleção direta por id/index;
-- cadeia de levels (ex.: mundo 1-1, 1-2...).
+O que falta consolidar é o vínculo explícito: **macroRoute → catálogo de levels**, e evitar que `routeId` do level seja usado como se fosse o “macroRouteId”.
 
 ## Decisão
 
 Definir um contrato explícito:
 
-- Cada **MacroRouteDefinition** (ou RouteKind=Gameplay/Tutorial) pode opcionalmente ter:
-  - `LevelCollectionRef` (catálogo/coleção de LevelDefinitions)
+- Cada **MacroRouteDefinition** (ou `RouteKind=Gameplay/Tutorial`) pode opcionalmente ter:
+  - `LevelCollectionRef` (catálogo/coleção de `LevelDefinition`)
   - `DefaultLevelId` (ou “primeiro do catálogo”)
 
 - Existe **exatamente 1 level ativo por macro**:
   - `ILevelSelectionState` guarda `{ macroRouteId, levelId, contentId, version }`
   - Mudança de macro invalida seleção anterior e força seleção do default.
 
-- `LevelCatalog` continua sendo *source-of-truth* para produção, mas QA/Dev pode inserir entradas auxiliares (qa.*) para evidência (como N→1 A/B).
+- `LevelCatalog` é *source-of-truth* para produção, mas QA/Dev pode inserir entradas auxiliares (qa.*) para evidência.
 
 ### Regras
 
-- LevelDefinitions **não** carregam/unloadam “cenas macro”; isso é responsabilidade da rota macro.
-- LevelDefinitions descrevem apenas:
-  - conteúdo aditivo do level (cenas a adicionar / addressables futuramente);
-  - conteúdo/variantes (contentId/contentRef);
-  - flags: `hasIntroStage`, `allowCurtainIn`, `allowCurtainOut`, etc.
+- `LevelDefinition` **não** carrega/unload “cenas macro”.
+- `LevelDefinition` descreve apenas:
+  - conteúdo do level (cenas/Addressables futuramente);
+  - variantes (contentId/contentRef);
+  - flags/stages (`hasIntroStage`, `hasPostLevel`, etc.).
 
-## Implicações
+## Implementação atual (2026-02-25)
 
-- Clarifica separação:
-  - Macro: carrega base (GameplayScene + UIGlobal etc.) e política de reset.
-  - Level: carrega *conteúdo do level* e stages do level (intro/post).
-- Permite múltiplos macros com catálogos distintos (Tutorial vs Gameplay).
+### O que está comprovado pelo log
 
-## Alternativas consideradas
+- `LevelCatalogBuild levelsResolved=4 ...`
+- `MenuPlay -> StartGameplayAsync levelId='level.1'`
+- Publicação de seleção:
+  - `LevelSelectedEventPublished levelId='level.1' routeId='level.1' contentId='content.default' v='1' levelSignature='...'`
+- Snapshot para restart:
+  - `RestartContextService GameplayStartSnapshotUpdated levelId='level.1' routeId='level.1' styleId='style.gameplay' contentId='content.default' v='1' ...`
 
-1) **Um catálogo global de levels sem vínculo com macro**  
-Rejeitado: perde encapsulamento; aumenta risco de usar level “errado” no macro errado.
+### Lacunas (ainda não fechadas)
 
-2) **Levels como rotas “micro”**  
-Rejeitado: volta a confundir e obriga unloads manuais; queremos “swap local”.
+- **Separar `macroRouteId` de `routeId` do level**:
+  - No log atual, o `routeId` usado na transição para gameplay é `level.1` (ou seja, o level ainda está “virando” a route macro).
+- Vínculo explícito **macro → catálogo** ainda não está evidenciado (só vemos catálogo e seleção, não o “owner macro”).
 
 ## Critérios de aceite (DoD)
 
-- Ao entrar em uma macro com catálogo, o sistema seleciona automaticamente o default level.
-- Logs [OBS] mostram:
-  - Macro: route aplicada / policy / started/ready/completed
-  - Level: level selecionado + conteúdo aplicado
-- QA/Dev: ações de N→1 (A/B/Sequence) demonstram:
-  - mesmo routeRef macro;
+- [ ] Ao entrar em um macro com catálogo, o sistema seleciona automaticamente o default level (sem depender do Menu/Play).
+- [x] `StartGameplayAsync(levelId, reason)` é trilho canônico e observado em log.
+- [x] Logs [OBS] mostram:
+  - Macro: route/policy/started/ready/completed
+  - Level: level selecionado + conteúdo aplicado (levelSignature + v)
+- [ ] QA/Dev demonstra N→1 sem transição macro:
+  - mesmo macroRouteId;
   - levelId distintos;
   - contentId distintos;
-  - sem exigir nova transição macro.
+  - sem `TransitionStarted`.
 
-## Referências
+## Changelog
 
-- ADR-0017 — LevelManager/Config/Catalog (provável reabertura)
-- ADR-0019 — Navigation IntentCatalog
-- ADR-0020 — LevelContent/Progression vs SceneRoute
-- ADR-0021 — Baseline 3.0 (Completeness)
+- 2026-02-25: Atualizado para **parcial** com base no log; adicionadas evidências de LevelCatalog/seleção/snapshot e registradas lacunas (macroRouteId vs level routeId).

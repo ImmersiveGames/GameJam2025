@@ -2,90 +2,77 @@
 
 ## Status
 
-- Estado: Proposto
+- Estado: **Aceito (Implementado de forma equivalente)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-19
+- Última atualização: 2026-02-25
 - Tipo: Implementação
-- Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
+- Escopo: NewScripts/Runtime (SceneFlow, WorldLifecycle, LevelFlow, LoadingHud)
 
+## Resumo
+
+Garantir que, ao entrar em um macro com levels (ex.: Gameplay), o “loading macro” só conclua (FadeOut) quando o **level estiver pronto**.
 
 ## Contexto
 
-No fluxo macro atual:
-1) FadeIn
-2) Apply Route (load/unload/active)
-3) WorldReset (quando política exige)
-4) ScenesReady
-5) Completion gate
-6) FadeOut
+O SceneFlow possui:
 
-A intenção nova é: **se a MacroRoute possui Levels**, então o “Level 1” (ou default) deve ser carregado **antes do macro concluir o loading e abrir a cortina**.
+1) FadeIn  
+2) Load/Unload scenes macro  
+3) `ScenesReady` + gates (WorldLoaded)  
+4) FadeOut (conclusão visual)
 
-Ou seja, o usuário só vê o mundo após:
-- base macro pronta + reset macro executado
-- level selecionado + conteúdo aplicado
-- spawns obrigatórios concluídos
+Se o FadeOut ocorrer antes do level estar preparado, o jogador verá “pop-in”, HUD inconsistente ou input/state incorreto.
 
-## Decisão
+## Decisão (contrato)
 
-Adicionar ao pipeline macro uma etapa explícita **LevelPrepareStep** (condicional):
+Antes do FadeOut macro, deve estar pronto:
 
-**Macro Transition Pipeline (com levels):**
-1) FadeIn (cortina fecha)
-2) Apply Route (load/unload/active)
-3) WorldReset (macro), se `requiresWorldReset`
-4) ScenesReady (base macro pronta)
-5) **LevelPrepareStep**:
-   - resolve `LevelCollection` do macro
-   - seleciona default level (ou mantém selecionado se cenário permitir)
-   - aplica conteúdo do level (swap/load)
-   - executa reset/local-init do level conforme contrato
-   - garante spawns obrigatórios (player/inimigos etc.)
-6) Completion gate macro concluído
-7) FadeOut (cortina abre)
+- política de reset aplicada (se requer MacroReset);
+- world reset concluído (quando aplicável);
+- level selecionado e conteúdo aplicado (quando aplicável);
+- gates corretos (SceneFlow gate + Simulation gate) preservando a ordem.
 
-**Macro Transition Pipeline (sem levels):**
-- mantém pipeline atual (sem etapa 5).
+## Implementação atual (2026-02-25)
 
-### Observabilidade
+### Sequência observada no log
 
-- Logs [OBS] do pipeline devem evidenciar a fase:
-  - `[OBS][SceneFlow] MacroLoadingPhase='LevelPrepare' ...`
-  - `[OBS][LevelFlow] LevelPrepared ...`
-- A conclusão do completion gate só ocorre após `LevelPrepared`.
+Para gameplay (`routeId='level.1'`, profile='gameplay'):
 
-## Implicações
+1) `TransitionStarted` → `FadeInStarted/Completed`
+2) `RouteExecutionPlan` → load/unload macro
+3) **MacroReset executado dentro da transição**:
+   - `ResetWorldStarted` → despawn/spawn → `ResetCompleted`
+4) `ScenesReady`
+5) Completion gate concluído (cached) → `LoadingHudHide (BeforeFadeOut)` → `FadeOutStarted/Completed`
+6) `TransitionCompleted`
 
-### Positivas
-- Coerência com intenção: MacroRoute “entrega” um gameplay pronto (inclui level inicial).
-- Reduz “flash” de mundo vazio e melhora UX.
-- Simplifica IntroStage: passa a ser do Level (executa após FadeOut ou com cortina opcional).
+### Como o “Level antes do FadeOut” é garantido hoje
 
-### Negativas / custos
-- A etapa LevelPrepare adiciona dependências ordenadas (SceneFlow → LevelFlow → WorldLifecycle).
-- Precisa de cuidado para não duplicar reset/spawn (idempotência).
+- A **seleção do level** ocorre **antes** da transição macro iniciar:
+  - `MenuPlay -> StartGameplayAsync levelId='level.1'`
+  - `LevelSelectedEventPublished ... levelSignature=...`
+- O **MacroReset** durante a transição executa spawn/despawn e deixa o mundo pronto **antes** do FadeOut.
 
-## Alternativas consideradas
+> Observação: não existe (ainda) uma etapa “LevelPrepare” explícita no SceneFlow, mas o efeito (level pronto antes do FadeOut) é atingido por:  
+> **(a)** seleção/snapshot pré-transição + **(b)** MacroReset pré-FadeOut.
 
-1) **Carregar Level depois do FadeOut macro**  
-Rejeitado: expõe mundo incompleto e confunde responsabilidade do macro.
+## Observabilidade mínima (logs [OBS])
 
-2) **Sempre ter Fade para troca de level**  
-Rejeitado: perde o benefício de swap local; a cortina do level é opcional e controlada pelo level.
+- Macro:
+  - `TransitionStarted`, `ScenesReady`, `TransitionCompleted`
+  - `RouteAppliedPolicy requiresWorldReset=...`
+- WorldLifecycle:
+  - `ResetWorldStarted`, `ResetCompleted`
+- LevelFlow:
+  - `StartGameplayRequested` + `LevelSelectedEventPublished` (levelSignature)
 
 ## Critérios de aceite (DoD)
 
-- Em macro com levels:
-  - FadeOut macro acontece apenas após `LevelPrepared`.
-  - Logs comprovam ordem: `ScenesReady` → `LevelPrepare` → `TransitionCompleted`.
-- Em macro sem levels:
-  - pipeline não muda (sem regressão).
-- Baseline 3.0:
-  - evidência “Macro enter gameplay + Level 1 ready antes do FadeOut”.
+- [x] Para gameplay, MacroReset ocorre antes de FadeOut macro.
+- [x] Level selection ocorre antes da transição (garante contexto correto para reset/spawn).
+- [x] FadeOut só ocorre após completion gate (WorldLoaded).
+- [ ] Hardening: tornar “LevelPrepare” explícito (log + gate) caso precisemos suportar levels com carga pesada (Addressables/cenas de conteúdo) antes do FadeOut.
 
-## Referências
+## Changelog
 
-- ADR-0013 — Ciclo de vida do jogo
-- ADR-0016 — ContentSwap ↔ WorldLifecycle
-- ADR-0020 — separação Macro vs Level
-- ADR-0021 — Baseline 3.0
+- 2026-02-25: Marcado como **Implementado (equivalente)** com base no log; documentada a estratégia atual (seleção pré-transição + MacroReset pré-FadeOut) e registrado hardening opcional para etapa explícita.

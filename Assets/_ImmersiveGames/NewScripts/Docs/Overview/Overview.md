@@ -7,6 +7,7 @@ Este documento consolida a visão geral do módulo **NewScripts** em um único a
 - Contrato de observabilidade: `../Standards/Standards.md#observability-contract`
 - Política Strict/Release: `../Standards/Standards.md#politica-strict-vs-release`
 - Evidência vigente: `../Reports/Evidence/LATEST.md` (log bruto mais recente: `../Reports/lastlog.log`)
+- Refactor plan canônico: `SceneFlow-Navigation-LevelFlow-Refactor-Plan.md`
 
 ---
 
@@ -67,7 +68,7 @@ Durante a transição:
 - `GameReadinessService` adquire o gate (`flow.scene_transition`) para bloquear gameplay.
 - O Fade e o Loading HUD (NewScripts) são executados antes/depois do carregamento.
 
-### 6) Fade + Loading HUD ([ADR-0009](ADRs/ADR-0009-FadeSceneFlow.md), [ADR-0010](ADRs/ADR-0010-LoadingHud-SceneFlow.md))
+### 6) Fade + Loading HUD ([ADR-0009](../ADRs/ADR-0009-FadeSceneFlow.md), [ADR-0010](../ADRs/ADR-0010-LoadingHud-SceneFlow.md))
 - `IFadeService` controla `FadeScene` (Additive) e o `FadeController` (CanvasGroup).
 - `ILoadingHudService` controla o `LoadingHudScene` (Additive).
 - `SceneTransitionProfile` define parâmetros (durations/curves) por **profileName**.
@@ -86,7 +87,7 @@ Durante a transição:
     - executa reset (ou SKIP em Menu/Startup),
     - emite `WorldLifecycleResetCompletedEvent` para destravar o Coordinator.
 
-Detalhes em: [Overview/Overview.md](Overview/Overview.md).
+Detalhes em: [Overview/Overview.md](Overview.md).
 
 ## Fluxo de transição (canônico)
 **Resumo:** `SceneTransitionStarted` → `SceneTransitionScenesReady` → (reset/skip) → `SceneTransitionCompleted`.
@@ -148,26 +149,25 @@ Diagrama simplificado:
 
 ## Baseline 2.0 (contrato)
 A fonte vigente do Baseline 2.0 é o contrato de observabilidade + evidência datada:
-- [ADR-0015 — Baseline 2.0: Fechamento Operacional](ADRs/ADR-0015-Baseline-2.0-Fechamento.md)
-- [Evidence/LATEST.md](Reports/Evidence/LATEST.md)
+- [ADR-0015 — Baseline 2.0: Fechamento Operacional](../ADRs/ADR-0015-Baseline-2.0-Fechamento.md)
+- [Evidence/LATEST.md](../Reports/Evidence/LATEST.md)
 - [Observability-Contract.md](../Standards/Standards.md#observability-contract)
 
 ### Baseline 2.0 (status fechado)
 - **Status:** FECHADO / OPERACIONAL (2026-01-05).
-- **ADR de fechamento:** [ADR-0015-Baseline-2.0-Fechamento](ADRs/ADR-0015-Baseline-2.0-Fechamento.md).
+- **ADR de fechamento:** [ADR-0015-Baseline-2.0-Fechamento](../ADRs/ADR-0015-Baseline-2.0-Fechamento.md).
 - Contrato do pipeline: **SceneFlow → ScenesReady → WorldLifecycleResetCompleted → Gate → FadeOut/Completed**.
 - Spec/checklist antigos foram removidos; a verificação vigente usa contrato de observabilidade + evidência datada.
 
 ## Documentos relacionados
-- [Overview/Overview.md](Overview/Overview.md)
-- [ADR-0009-FadeSceneFlow.md](ADRs/ADR-0009-FadeSceneFlow.md)
-- [ADR-0010-LoadingHud-SceneFlow.md](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
-- [ADR-0013-Ciclo-de-Vida-Jogo.md](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
-- [ADR-0014-GameplayReset-Targets-Grupos.md](ADRs/ADR-0014-GameplayReset-Targets-Grupos.md)
+- [Overview/Overview.md](Overview.md)
+- [ADR-0009-FadeSceneFlow.md](../ADRs/ADR-0009-FadeSceneFlow.md)
+- [ADR-0010-LoadingHud-SceneFlow.md](../ADRs/ADR-0010-LoadingHud-SceneFlow.md)
+- [ADR-0013-Ciclo-de-Vida-Jogo.md](../ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
+- [ADR-0014-GameplayReset-Targets-Grupos.md](../ADRs/ADR-0014-GameplayReset-Targets-Grupos.md)
 - [CHANGELOG.md](../CHANGELOG.md)
-- [Reports/GameLoop.md](Reports/GameLoop.md)
-- [Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md](Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md)
-- [Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md](Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md)
+- [SceneFlow-Config-ValidationReport-DataCleanup-v1.md](../Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md)
+- [SceneFlow-Config-Snapshot-DataCleanup-v1.md](../Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md)
 
 > Nota: no GameLoop, o “COMMAND” de start não é um evento separado; ele é a chamada `GameLoop.RequestStart()` feita pelo Coordinator somente quando o runtime está “ready” (TransitionCompleted + WorldLifecycleResetCompleted/SKIP).
 
@@ -314,9 +314,9 @@ Trechos relevantes:
 
 ## Referências
 
-- [ADR-0013 — Ciclo de Vida do Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
-- [ADR-0016 — ContentSwap no WorldLifecycle](ADRs/ADR-0016-ContentSwap-WorldLifecycle.md)
-- [ADR-0016 — ContentSwap InPlace-only](ADRs/ADR-0016-ContentSwap-WorldLifecycle.md)
-- [ADR-0010 — Loading HUD + SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
-- [ADR-0009 — Fade + SceneFlow](ADRs/ADR-0009-FadeSceneFlow.md)
+- [ADR-0013 — Ciclo de Vida do Jogo](../ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
+- [ADR-0016 — ContentSwap no WorldLifecycle](../ADRs/ADR-0016-ContentSwap-WorldLifecycle.md)
+- [ADR-0016 — ContentSwap InPlace-only](../ADRs/ADR-0016-ContentSwap-WorldLifecycle.md)
+- [ADR-0010 — Loading HUD + SceneFlow](../ADRs/ADR-0010-LoadingHud-SceneFlow.md)
+- [ADR-0009 — Fade + SceneFlow](../ADRs/ADR-0009-FadeSceneFlow.md)
 - [Standards/Standards.md#observability-contract](../Standards/Standards.md#observability-contract)

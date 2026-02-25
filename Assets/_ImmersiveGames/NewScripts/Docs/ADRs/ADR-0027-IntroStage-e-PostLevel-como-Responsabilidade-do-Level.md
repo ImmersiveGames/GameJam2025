@@ -2,65 +2,67 @@
 
 ## Status
 
-- Estado: Proposto
+- Estado: **Em implementação (IntroStage OK; PostLevel pendente)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-19
+- Última atualização: 2026-02-25
 - Tipo: Implementação
-- Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
+- Escopo: NewScripts/Modules (LevelFlow, IntroStageController, PostGame/PostLevel, InputMode, SimulationGate)
 
+## Resumo
+
+Mover a responsabilidade de **stages do gameplay** para o domínio de Level:
+
+- **IntroStage**: bloquear simulação e input de gameplay até confirmação do jogador.
+- **PostLevel**: encerrar/avaliar o level (vitória/derrota), preparar next/exit, e decidir transição macro (Menu) ou swap local (próximo level).
 
 ## Contexto
 
-No desenho antigo, parte do “intro” (ex.: IntroStage/UIConfirm) estava acoplada ao fluxo macro.  
-Com Levels, o intro faz sentido como parte do **conteúdo/experiência do level**, não da rota macro.
-
-Além disso, alguns levels podem querer:
-- IntroStage (antes do gameplay liberar inputs)
-- PostLevel (antes de avançar para o próximo level, ou para retornar ao macro hub)
+- Hoje já existe um GameLoop (Boot/Ready/IntroStage/Playing/PostGame) e gates (`sim.gameplay`, `flow.scene_transition`, etc.).
+- O risco arquitetural é Intro/Post virar “coisa do macro” e ficar acoplado ao SceneFlow.
 
 ## Decisão
 
-Mover a ownership de stages para o domínio de LevelFlow:
+- `LevelFlow` (ou um coordenador de stages do level) deve ser o ponto de orquestração:
+  - **quando** iniciar IntroStage (tipicamente após entrar em gameplay e world reset),
+  - **quando** concluir IntroStage e liberar simulação,
+  - **quando** finalizar level e entrar em PostLevel,
+  - **quais** ações o PostLevel oferece (Restart, ExitToMenu, NextLevel).
 
-- `ILevelStageOrchestrator` (ou equivalente) executa stages do level:
-  - `IntroStage` (opcional)
-  - `PostLevelStage` (opcional)
+- SceneFlow continua responsável apenas por:
+  - transições macro (Menu ↔ Gameplay),
+  - gates macro (WorldLoaded),
+  - fade/loading HUD.
 
-### Integração com gates
+## Implementação atual (2026-02-25)
 
-- Durante stages, `SimulationGate`/InputMode podem ficar bloqueados:
-  - IntroStage segura `sim.gameplay` até completar
-  - PostLevel segura progressão/troca de level até completar
+### IntroStage (evidência: OK)
 
-### Ordem
+O log canônico mostra:
 
-- Macro enter gameplay:
-  - macro pipeline conclui e abre cortina
-  - **então** LevelStageOrchestrator roda IntroStage se existir
-- LevelSwap:
-  - se `allowCurtainIn/out`: pode fechar cortina local, trocar conteúdo, abrir
-  - roda IntroStage do novo level se existir
+- `IntroStageStarted ... reason='SceneFlow/Completed'`
+- `GameplaySimulationBlocked token='sim.gameplay'`
+- `ConfirmToStartIntroStageStep` requisitando InputMode UI (`FrontendMenu`) durante intro
+- `IntroStageCompleted ... GameplaySimulationUnblocked token='sim.gameplay'`
+- GameLoop transita para `Playing` após conclusão
 
-## Implicações
+### PostLevel (lacuna)
 
-- MacroRoute fica “limpa”: define só espaço macro, transição macro e política de reset.
-- Levels definem experiência específica (intro/post, gating local).
-- Melhor alinhamento com seu objetivo: “intro/post é do level”.
+O que existe hoje no log é **PostGame** (vitória/derrota + overlay + restart/exit-to-menu), mas não há evidência de:
 
-## Alternativas consideradas
-
-1) **Manter IntroStage no macro e parametrizar por level**  
-Rejeitado: macro continuaria dependente de lógica específica de gameplay.
+- “PostLevel” separado por level (ex.: “NextLevel” sem sair do macro).
+- Integração com swap local (ADR-0026).
 
 ## Critérios de aceite (DoD)
 
-- Logs [OBS] de IntroStage referenciam levelId/contentId (domínio Level), não route macro.
-- IntroStage não executa em macros sem levels (ex.: Menu).
-- Baseline 3.0 inclui evidência:
-  - “Macro abriu cortina” → “IntroStage (level)” → “Gameplay unblocked”.
+- [x] IntroStage bloqueia `sim.gameplay` e controla InputMode (UI) até confirmação.
+- [x] IntroStage conclui e libera simulação antes de entrar em `Playing`.
+- [ ] PostLevel oferece:
+  - NextLevel (swap local, sem transição macro) quando aplicável;
+  - Restart (macro reset determinístico) quando aplicável;
+  - ExitToMenu (transição macro) quando aplicável.
+- [ ] Logs [OBS] distinguem claramente:
+  - `IntroStage*` vs `PostLevel*` vs `PostGame*`.
 
-## Referências
+## Changelog
 
-- ADR-0015 — Baseline 2.0 fechamento (histórico)
-- ADR-0020 — MacroRoutes vs Levels
-- ADR-0021 — Baseline 3.0
+- 2026-02-25: Atualizado com evidência de IntroStage funcionando em produção; registrado PostLevel como pendência e dependência direta de ADR-0026 (swap local).

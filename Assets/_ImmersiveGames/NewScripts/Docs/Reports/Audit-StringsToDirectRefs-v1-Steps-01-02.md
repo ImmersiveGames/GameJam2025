@@ -3,7 +3,7 @@
 - Data/hora (UTC): 2026-02-16T01:49:51+00:00
 - Branch: `work`
 - Commit: `2e7906d1c0c23e9c7a5cc13d206b19fa74229fa1`
-- Plano-base localizado: `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Post-StringsToDirectRefs-v1-DataCleanup.md`
+- Plano-base localizado: `Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Continuous.md#p-002`
 - Auditoria anterior localizada: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audit-DataCleanup-Post-StringsToDirectRefs-v1.md`
 
 ## Sumário
