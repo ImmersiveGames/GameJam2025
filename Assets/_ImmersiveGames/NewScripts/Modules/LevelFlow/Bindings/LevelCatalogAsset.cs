@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
-        private string _duplicatedRoutesDiagnostics = "[]";
+        private string _sharedRoutesDiagnostics = "[]";
 
         public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
         {
@@ -88,13 +88,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             if (!_routeToLevelCache.TryGetValue(routeId, out levelId) || !levelId.IsValid)
             {
                 return false;
-            }
-
-            if (_routeToLevelCandidates.TryGetValue(routeId, out List<LevelId> candidates) && candidates.Count > 1)
-            {
-                DebugUtility.Log(typeof(LevelCatalogAsset),
-                    $"[OBS][Compat] RouteToLevelAmbiguous routeId='{routeId}' picked='{levelId}' candidates='[{string.Join(", ", candidates)}]'.",
-                    DebugUtility.Colors.Warning);
             }
 
             return true;
@@ -159,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cache.Clear();
             _routeToLevelCache.Clear();
             _routeToLevelCandidates.Clear();
-            _duplicatedRoutesDiagnostics = "[]";
+            _sharedRoutesDiagnostics = "[]";
 
             if (levels == null || levels.Count == 0)
             {
@@ -206,24 +199,26 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
-            int ambiguousRoutes = 0;
-            _duplicatedRoutesDiagnostics = BuildDuplicatedRoutesDiagnostics(out ambiguousRoutes);
+            int sharedRoutes = 0;
+            _sharedRoutesDiagnostics = BuildSharedRoutesDiagnostics(out sharedRoutes);
 
             DebugUtility.Log<LevelCatalogAsset>(
-                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes={ambiguousRoutes} duplicated={_duplicatedRoutesDiagnostics}",
+                $"[OBS][Compat] LevelCatalogBuild duplicatedRoutes=0 sharedRoutes={sharedRoutes} shared={_sharedRoutesDiagnostics}",
                 DebugUtility.Colors.Info);
+
+            LogDeterministicReverseMapForSharedRoutes();
 
             if (warnOnInvalidLevels)
             {
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes={ambiguousRoutes}",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} invalidLevels=0 duplicatedRoutes=0 sharedRoutes={sharedRoutes}",
                     DebugUtility.Colors.Info);
             }
         }
 
-        private string BuildDuplicatedRoutesDiagnostics(out int duplicatedRoutes)
+        private string BuildSharedRoutesDiagnostics(out int sharedRoutes)
         {
-            duplicatedRoutes = 0;
+            sharedRoutes = 0;
 
             StringBuilder builder = new("[");
             bool hasEntries = false;
@@ -247,12 +242,33 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     .Append(string.Join(", ", pair.Value))
                     .Append("]");
 
-                duplicatedRoutes++;
+                sharedRoutes++;
                 hasEntries = true;
             }
 
             builder.Append(']');
             return builder.ToString();
+        }
+
+
+        private void LogDeterministicReverseMapForSharedRoutes()
+        {
+            foreach (var pair in _routeToLevelCandidates)
+            {
+                if (pair.Value == null || pair.Value.Count <= 1)
+                {
+                    continue;
+                }
+
+                if (!_routeToLevelCache.TryGetValue(pair.Key, out LevelId pickedLevelId))
+                {
+                    continue;
+                }
+
+                DebugUtility.Log<LevelCatalogAsset>(
+                    $"[OBS][Compat] RouteToLevelDeterministic routeId='{pair.Key}' picked='{pickedLevelId}' sharedLevels='[{string.Join(", ", pair.Value)}]'.",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private void LogResolutionDedupePerFrame(LevelId levelId, LevelResolution resolution)
