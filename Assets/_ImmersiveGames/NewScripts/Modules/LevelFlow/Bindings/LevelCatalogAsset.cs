@@ -47,6 +47,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
         private readonly Dictionary<LevelId, SceneRouteId> _levelToMacroRouteCache = new();
         private readonly Dictionary<SceneRouteId, List<LevelId>> _macroRouteToLevelsCache = new();
+        private readonly HashSet<SceneRouteId> _ambiguousRoutes = new();
         private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
@@ -84,6 +85,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             EnsureCache();
+
+            if (_ambiguousRoutes.Contains(routeId))
+            {
+                levelId = LevelId.None;
+                return false;
+            }
+
             if (!_routeToLevelCache.TryGetValue(routeId, out levelId) || !levelId.IsValid)
             {
                 return false;
@@ -241,6 +249,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _routeToLevelCache.Clear();
             _levelToMacroRouteCache.Clear();
             _macroRouteToLevelsCache.Clear();
+            _ambiguousRoutes.Clear();
 
             if (levels == null || levels.Count == 0)
             {
@@ -281,7 +290,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 {
                     if (existingLevelId != entry.levelId)
                     {
-                        FailFast($"RouteId duplicado no LevelCatalog com mapeamento ambíguo. routeId='{resolvedRouteId}', firstLevelId='{existingLevelId}', secondLevelId='{entry.levelId}', index={i}.");
+                        _ambiguousRoutes.Add(resolvedRouteId);
                     }
                 }
                 else
@@ -314,8 +323,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
 
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} invalidLevels=0",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} ambiguousRoutesCount={_ambiguousRoutes.Count} invalidLevels=0",
                     DebugUtility.Colors.Info);
+
+                if (_ambiguousRoutes.Count > 0)
+                {
+                    SceneRouteId exampleRouteId = SceneRouteId.None;
+                    foreach (SceneRouteId candidate in _ambiguousRoutes)
+                    {
+                        exampleRouteId = candidate;
+                        break;
+                    }
+
+                    DebugUtility.LogWarning<LevelCatalogAsset>(
+                        $"[OBS][Config] LevelCatalogAmbiguousRoutes routes={_ambiguousRoutes.Count} example='{exampleRouteId}' note='TryResolveLevelId will return false for ambiguous routes; use snapshot/LevelId as canonical.'");
+                }
             }
         }
 
