@@ -130,10 +130,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, resolvedRouteId, normalizedReason, contentId);
             int nextSelectionVersion = ResolveNextSelectionVersion();
 
+            TransitionStyleId swapStyleId = ResolveStyleIdForSwap();
+
             PublishLevelSelected(
                 levelId,
                 resolvedRouteId,
-                TransitionStyleId.None,
+                swapStyleId,
                 contentId,
                 normalizedReason,
                 nextSelectionVersion,
@@ -154,6 +156,19 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             {
                 ct.ThrowIfCancellationRequested();
                 await _worldResetCommands.ResetLevelAsync(levelId, normalizedReason, levelSignature, ct);
+
+                PublishLevelSwapLocalApplied(
+                    levelId,
+                    resolvedRouteId,
+                    macroRouteId,
+                    contentId,
+                    normalizedReason,
+                    nextSelectionVersion,
+                    levelSignature);
+
+                DebugUtility.Log<LevelFlowRuntimeService>(
+                    $"[OBS][LevelFlow] LevelSwapLocalApplied levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
 
                 DebugUtility.Log<LevelFlowRuntimeService>(
                     $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=True notes=''.",
@@ -230,6 +245,31 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return resolvedRouteId;
         }
 
+
+        private TransitionStyleId ResolveStyleIdForSwap()
+        {
+            if (_restartContextService != null
+                && _restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
+                && snapshot.IsValid
+                && snapshot.StyleId.IsValid)
+            {
+                return snapshot.StyleId;
+            }
+
+            if (_navigationCatalog is GameNavigationCatalogAsset assetCatalog)
+            {
+                GameNavigationEntry gameplayEntry = assetCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Gameplay);
+                if (gameplayEntry.StyleId.IsValid)
+                {
+                    return gameplayEntry.StyleId;
+                }
+            }
+
+            DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                "[WARN][OBS][LevelFlow] style_unknown while publishing LevelSelectedEvent during SwapLevelLocalAsync; fallback styleId='none'.");
+            return TransitionStyleId.None;
+        }
+
         private int ResolveNextSelectionVersion()
         {
             if (_restartContextService != null &&
@@ -263,6 +303,25 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             DebugUtility.Log<LevelFlowRuntimeService>(
                 $"[OBS][Level] LevelSelectedEventPublished levelId='{levelId}' routeId='{routeId}' contentId='{contentId}' reason='{reason}' v='{selectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void PublishLevelSwapLocalApplied(
+            LevelId levelId,
+            SceneRouteId routeId,
+            SceneRouteId macroRouteId,
+            string contentId,
+            string reason,
+            int selectionVersion,
+            LevelContextSignature levelSignature)
+        {
+            EventBus<LevelSwapLocalAppliedEvent>.Raise(new LevelSwapLocalAppliedEvent(
+                levelId,
+                routeId,
+                macroRouteId,
+                contentId,
+                reason,
+                selectionVersion,
+                levelSignature.Value));
         }
 
         private static void FailFastConfig(string detail)

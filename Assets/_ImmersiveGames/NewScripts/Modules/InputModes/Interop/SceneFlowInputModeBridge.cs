@@ -3,24 +3,24 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 {
     /// <summary>
     /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
     /// Também sincroniza o GameLoop com a intenção do profile:
-    /// - Gameplay: aplica InputMode e dispara a IntroStageController (o início real ocorre após conclusão explícita da IntroStageController).
+    /// - Gameplay: aplica InputMode.
     /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
     /// </summary>
     public sealed class SceneFlowInputModeBridge : IDisposable
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
+
         // Dedupe por instância para evitar supressão entre instâncias após restarts.
         private string _lastProcessedSignature;
 
@@ -142,37 +142,11 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                 if (isBootState)
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        "[SceneFlowInputModeBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStageController (Restart/Boot cycle).",
+                        "[SceneFlowInputModeBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar fluxo de gameplay.",
                         DebugUtility.Colors.Info);
                     gameLoopService.RequestReady();
                 }
 
-                if (!IsGameplayScene())
-                {
-                    DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [IntroStageController] Cena ativa não é gameplay. IntroStageController ignorada. scene='{SceneManager.GetActiveScene().name}'.",
-                        DebugUtility.Colors.Info);
-                }
-                else
-                {
-                    var coordinator = ResolveIntroStageCoordinator();
-                    if (coordinator == null)
-                    {
-                        DebugUtility.LogWarning<SceneFlowInputModeBridge>(
-                            "[SceneFlowInputModeBridge] [IntroStageController] IIntroStageCoordinator indisponível; IntroStageController não será executada.");
-                    }
-                    else
-                    {
-                        gameLoopService.RequestIntroStageStart();
-                        var introStageContext = new IntroStageContext(
-                            contextSignature: signature,
-                            profileId: evt.Context.TransitionProfileId,
-                            targetScene: evt.Context.TargetActiveScene,
-                            reason: "SceneFlow/Completed");
-
-                        _ = coordinator.RunIntroStageAsync(introStageContext);
-                    }
-                }
                 return;
             }
 
@@ -290,26 +264,5 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 
             return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var service) ? service : null;
         }
-
-        private static IIntroStageCoordinator ResolveIntroStageCoordinator()
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                return null;
-            }
-
-            return DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var service) ? service : null;
-        }
-
-        private static bool IsGameplayScene()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
-            {
-                return classifier.IsGameplayScene();
-            }
-
-            return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", StringComparison.Ordinal);
-        }
     }
 }
-

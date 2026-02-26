@@ -409,5 +409,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
+
+        private static void RegisterLevelStageOrchestrator()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<LevelStageOrchestrator>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[LevelFlow] LevelStageOrchestrator ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var orchestrator = new LevelStageOrchestrator();
+            DependencyManager.Provider.RegisterGlobal(orchestrator);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[LevelFlow] LevelStageOrchestrator registrado (SceneFlowCompleted + LevelSwapLocalApplied).",
+                DebugUtility.Colors.Info);
+        }
+
     }
 }

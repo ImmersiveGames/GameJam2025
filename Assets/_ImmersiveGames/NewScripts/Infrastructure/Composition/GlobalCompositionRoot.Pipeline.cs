@@ -61,6 +61,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterRestartSnapshotContentSwapBridge();
 
             RegisterInputModeSceneFlowBridge();
+            RegisterLevelStageOrchestrator();
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
 
