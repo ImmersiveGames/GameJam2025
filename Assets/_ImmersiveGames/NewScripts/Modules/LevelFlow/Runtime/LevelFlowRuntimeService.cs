@@ -65,6 +65,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
+            SceneRouteId navRouteId = ResolveNavRouteIdForGameplay(typedLevelId, resolvedRouteId, out SceneRouteId macroRouteId);
+
             var (styleId, styleIdTyped, profileId, profileAsset) = ResolveGameplayStyleObservability();
             string normalizedReason = NormalizeReason(reason);
             string selectedContentId = ResolveContentId(typedLevelId);
@@ -85,14 +87,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 levelSignature);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' routeId='{resolvedRouteId}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
-            await _navigationService.StartGameplayRouteAsync(resolvedRouteId, payload, normalizedReason);
+            await _navigationService.StartGameplayRouteAsync(navRouteId, payload, normalizedReason);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayDispatched routeId='{resolvedRouteId}' styleId='{styleId}' profile='{profileId}' profileAsset='{profileAsset}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] StartGameplayDispatched routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' styleId='{styleId}' profile='{profileId}' profileAsset='{profileAsset}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
@@ -211,6 +213,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     $"[WARN][OBS][LevelFlow] SnapshotRouteMismatch snapshotRouteId='{snapshot.RouteId}' resolvedRouteId='{resolvedRouteId}' levelId='{levelId}'.");
             }
 
+            SceneRouteId navRouteId = ResolveNavRouteIdForGameplay(levelId, resolvedRouteId, out SceneRouteId macroRouteId);
+
             string normalizedReason = NormalizeRestartReason(reason);
             string contentId = snapshot.HasContentId ? LevelFlowContentDefaults.Normalize(snapshot.ContentId) : ResolveContentId(levelId);
             TransitionStyleId styleId = ResolveRestartStyleId(snapshot.StyleId);
@@ -227,14 +231,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 levelSignature);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] RestartLastGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] RestartLastGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
-            await _navigationService.StartGameplayRouteAsync(resolvedRouteId, payload, normalizedReason);
+            await _navigationService.StartGameplayRouteAsync(navRouteId, payload, normalizedReason);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] RestartLastGameplayDispatched routeId='{resolvedRouteId}' styleId='{styleId}' reason='{normalizedReason}' v='{nextSelectionVersion}'.",
+                $"[OBS][LevelFlow] RestartLastGameplayDispatched routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' styleId='{styleId}' reason='{normalizedReason}' v='{nextSelectionVersion}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
@@ -322,6 +326,25 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             {
                 return macroRouteId;
             }
+
+            return resolvedRouteId;
+        }
+
+
+        private SceneRouteId ResolveNavRouteIdForGameplay(LevelId levelId, SceneRouteId resolvedRouteId, out SceneRouteId macroRouteId)
+        {
+            macroRouteId = SceneRouteId.None;
+
+            if (_macroRouteCatalog != null &&
+                _macroRouteCatalog.TryResolveMacroRouteId(levelId, out SceneRouteId resolvedMacroRouteId) &&
+                resolvedMacroRouteId.IsValid)
+            {
+                macroRouteId = resolvedMacroRouteId;
+                return resolvedMacroRouteId;
+            }
+
+            DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                $"[WARN][OBS][LevelFlow] macroRoute_unknown levelId='{levelId}' fallback navRouteId='{resolvedRouteId}'.");
 
             return resolvedRouteId;
         }
