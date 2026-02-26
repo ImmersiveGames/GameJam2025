@@ -31,26 +31,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var loaderAdapter = SceneFlowAdapterFactory.CreateLoaderAdapter();
             var fadeAdapter = SceneFlowAdapterFactory.CreateFadeAdapter(DependencyManager.Provider);
 
-            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
+            // Gate composto: (1) WorldLifecycle reset -> (2) LevelPrepare (macro gameplay) -> libera FadeOut.
             ISceneTransitionCompletionGate completionGate = null;
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) && existingGate != null)
             {
                 completionGate = existingGate;
             }
 
-            if (completionGate is not WorldLifecycleResetCompletionGate)
+            if (completionGate is not MacroLevelPrepareCompletionGate)
             {
-                if (completionGate != null)
+                WorldLifecycleResetCompletionGate innerGate = completionGate as WorldLifecycleResetCompletionGate;
+                if (innerGate == null)
                 {
-                    DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                        $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
+                    if (completionGate != null)
+                    {
+                        DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                            $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
+                    }
+
+                    innerGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
                 }
 
-                completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
+                completionGate = new MacroLevelPrepareCompletionGate(innerGate);
                 DependencyManager.Provider.RegisterGlobal(completionGate);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
+                    $"[SceneFlow] ISceneTransitionCompletionGate registrado ({completionGate.GetType().Name}, inner={innerGate.GetType().Name}).",
                     DebugUtility.Colors.Info);
             }
 

@@ -247,11 +247,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterLevelsServices()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var existing) && existing != null)
-            {
-                return;
-            }
-
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
             {
                 throw new InvalidOperationException("IGameNavigationService obrigatório ausente no DI global. Garanta RegisterGameNavigationService no pipeline antes de RegisterLevelsServices.");
@@ -289,20 +284,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             IWorldResetCommands worldResetCommands = null;
             DependencyManager.Provider.TryGetGlobal(out worldResetCommands);
 
-            var runtimeService = new LevelFlowRuntimeService(
-                levelCatalogAsset,
-                navigationService,
-                catalogAsset,
-                styleCatalogAsset,
-                restartContextService,
-                worldResetCommands,
-                levelCatalogAsset,
-                levelCatalogAsset);
-            DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var existing) || existing == null)
+            {
+                var runtimeService = new LevelFlowRuntimeService(
+                    levelCatalogAsset,
+                    navigationService,
+                    catalogAsset,
+                    styleCatalogAsset,
+                    restartContextService,
+                    worldResetCommands,
+                    levelCatalogAsset,
+                    levelCatalogAsset);
+                DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
-                DebugUtility.Colors.Info);
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var existingPrepareService) || existingPrepareService == null)
+            {
+                var prepareService = new LevelMacroPrepareService(
+                    restartContextService,
+                    levelCatalogAsset,
+                    levelCatalogAsset,
+                    levelCatalogAsset,
+                    worldResetCommands,
+                    catalogAsset);
+
+                DependencyManager.Provider.RegisterGlobal<ILevelMacroPrepareService>(prepareService);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] ILevelMacroPrepareService registrado (LevelMacroPrepareService).",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private static void RegisterGlobalIfMissing<T>(T service, string label) where T : class
