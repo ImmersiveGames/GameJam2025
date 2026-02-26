@@ -167,6 +167,64 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
         }
 
+        public async Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            if (_restartContextService == null ||
+                !_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.HasLevelId)
+            {
+                DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                    $"[WARN][OBS][LevelFlow] RestartLastGameplay skipped reason='no_valid_snapshot' requestedReason='{reason ?? "<null>"}'.");
+                return;
+            }
+
+            LevelId levelId = snapshot.LevelId;
+            if (!_levelResolver.TryResolve(levelId, out SceneRouteId resolvedRouteId, out SceneTransitionPayload payload) ||
+                !resolvedRouteId.IsValid)
+            {
+                DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                    $"[WARN][OBS][LevelFlow] RestartLastGameplay skipped reason='level_not_resolved' levelId='{levelId}' requestedReason='{reason ?? "<null>"}'.");
+                return;
+            }
+
+            if (snapshot.RouteId.IsValid && snapshot.RouteId != resolvedRouteId)
+            {
+                DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                    $"[WARN][OBS][LevelFlow] SnapshotRouteMismatch snapshotRouteId='{snapshot.RouteId}' resolvedRouteId='{resolvedRouteId}' levelId='{levelId}'.");
+            }
+
+            string normalizedReason = NormalizeRestartReason(reason);
+            string contentId = snapshot.HasContentId ? LevelFlowContentDefaults.Normalize(snapshot.ContentId) : ResolveContentId(levelId);
+            TransitionStyleId styleId = ResolveRestartStyleId(snapshot.StyleId);
+            int nextSelectionVersion = Math.Max(snapshot.SelectionVersion + 1, 1);
+            LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, resolvedRouteId, normalizedReason, contentId);
+
+            PublishLevelSelected(
+                levelId,
+                resolvedRouteId,
+                styleId,
+                contentId,
+                normalizedReason,
+                nextSelectionVersion,
+                levelSignature);
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][LevelFlow] RestartLastGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
+                DebugUtility.Colors.Info);
+
+            ct.ThrowIfCancellationRequested();
+            await _navigationService.StartGameplayRouteAsync(resolvedRouteId, payload, normalizedReason);
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][LevelFlow] RestartLastGameplayDispatched routeId='{resolvedRouteId}' styleId='{styleId}' reason='{normalizedReason}' v='{nextSelectionVersion}'.",
+                DebugUtility.Colors.Info);
+
+            ct.ThrowIfCancellationRequested();
+        }
+
 
         private (string styleId, TransitionStyleId styleIdTyped, string profileId, string profileAsset) ResolveGameplayStyleObservability()
         {
@@ -216,6 +274,29 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private static string NormalizeSwapReason(string reason)
         {
             return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/SwapLevelLocal" : reason.Trim();
+        }
+
+        private static string NormalizeRestartReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartLastGameplay" : reason.Trim();
+        }
+
+        private TransitionStyleId ResolveRestartStyleId(TransitionStyleId snapshotStyleId)
+        {
+            if (snapshotStyleId.IsValid)
+            {
+                return snapshotStyleId;
+            }
+
+            var (_, fallbackStyleId, _, _) = ResolveGameplayStyleObservability();
+            if (fallbackStyleId.IsValid)
+            {
+                return fallbackStyleId;
+            }
+
+            DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                "[WARN][OBS][LevelFlow] RestartLastGameplay style_unknown -> fallback='none'.");
+            return TransitionStyleId.None;
         }
 
         private SceneRouteId ResolveMacroRouteForSwap(LevelId levelId, SceneRouteId resolvedRouteId)

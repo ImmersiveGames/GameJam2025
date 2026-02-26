@@ -1,8 +1,10 @@
 using System;
+using System.Threading;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -40,6 +42,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private void OnResetRequested(GameResetRequestedEvent evt)
         {
+            string reason = evt?.Reason ?? RestartReason;
+
+            if (DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) && levelFlowRuntime != null)
+            {
+                DebugUtility.Log<RestartNavigationBridge>(
+                    $"[Navigation] GameResetRequestedEvent recebido -> RestartLastGameplayAsync. reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+
+                NavigationTaskRunner.FireAndForget(
+                    levelFlowRuntime.RestartLastGameplayAsync(reason, CancellationToken.None),
+                    typeof(RestartNavigationBridge),
+                    "Restart -> LevelFlow/RestartLastGameplay");
+                return;
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigation) || navigation == null)
             {
                 DebugUtility.LogWarning<RestartNavigationBridge>(
@@ -47,7 +64,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return;
             }
 
-            string reason = evt?.Reason ?? RestartReason;
+            DebugUtility.LogWarning<RestartNavigationBridge>(
+                "[WARN][OBS][Navigation] Restart fallback -> IGameNavigationService.RestartAsync (LevelFlowRuntimeService missing).");
 
             DebugUtility.Log<RestartNavigationBridge>(
                 $"[Navigation] GameResetRequestedEvent recebido -> RestartAsync. reason='{reason}'.",
