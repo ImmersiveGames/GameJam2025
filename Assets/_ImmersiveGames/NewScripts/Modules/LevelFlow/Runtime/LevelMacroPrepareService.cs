@@ -48,33 +48,39 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? DefaultReason : reason.Trim();
+
             if (!_macroRouteCatalog.TryGetLevelsForMacroRoute(macroRouteId, out IReadOnlyList<LevelId> levelIds) ||
                 levelIds == null ||
                 levelIds.Count == 0)
             {
+                DebugUtility.Log<LevelMacroPrepareService>(
+                    $"[OBS][LevelFlow] LevelPrepared source='no_levels_for_macro' macroRouteId='{macroRouteId}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? DefaultReason : reason.Trim();
-
             GameplayStartSnapshot snapshot = GameplayStartSnapshot.Empty;
             bool hasSnapshot = _restartContextService.TryGetCurrent(out snapshot) && snapshot.IsValid && snapshot.HasLevelId;
-            bool useSnapshot = false;
 
-            if (hasSnapshot && snapshot.LevelId.IsValid)
+            SceneRouteId snapshotMacroRouteId = SceneRouteId.None;
+            bool snapshotBelongsToMacro = hasSnapshot &&
+                                          snapshot.LevelId.IsValid &&
+                                          _macroRouteCatalog.TryResolveMacroRouteId(snapshot.LevelId, out snapshotMacroRouteId) &&
+                                          snapshotMacroRouteId.IsValid &&
+                                          snapshotMacroRouteId == macroRouteId;
+
+            if (hasSnapshot && !snapshotBelongsToMacro)
             {
-                if (_macroRouteCatalog.TryResolveMacroRouteId(snapshot.LevelId, out SceneRouteId snapshotMacroRouteId) &&
-                    snapshotMacroRouteId.IsValid &&
-                    snapshotMacroRouteId == macroRouteId)
-                {
-                    useSnapshot = true;
-                }
+                DebugUtility.Log<LevelMacroPrepareService>(
+                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelId='{snapshot.LevelId}' snapshotMacroRouteId='{snapshotMacroRouteId}' reason='not_in_macro'.",
+                    DebugUtility.Colors.Info);
             }
 
-            LevelId selectedLevelId = useSnapshot
-                ? snapshot.LevelId
-                : levelIds[0];
+            bool useSnapshot = snapshotBelongsToMacro;
+            string source = useSnapshot ? "snapshot" : "catalog_first";
 
+            LevelId selectedLevelId = useSnapshot ? snapshot.LevelId : levelIds[0];
             if (!selectedLevelId.IsValid)
             {
                 FailFastConfig($"LevelPrepare sem level válido para macroRouteId='{macroRouteId}'.");
@@ -86,10 +92,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             string contentId = useSnapshot && !string.IsNullOrWhiteSpace(snapshot.ContentId)
-                ? snapshot.ContentId
+                ? snapshot.ContentId.Trim()
                 : ResolveContentIdOrFail(selectedLevelId, macroRouteId);
 
-            int selectionVersion = useSnapshot ? snapshot.SelectionVersion : ResolveSelectionVersionForPublish(hasSnapshot, snapshot);
+            int selectionVersion = useSnapshot
+                ? Math.Max(snapshot.SelectionVersion, 1)
+                : Math.Max(ResolveSelectionVersionForPublish(hasSnapshot, snapshot), 1);
 
             string levelSignature = useSnapshot && !string.IsNullOrWhiteSpace(snapshot.LevelSignature)
                 ? snapshot.LevelSignature
@@ -108,14 +116,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     new LevelContextSignature(levelSignature)));
             }
 
+            ct.ThrowIfCancellationRequested();
             await _worldResetCommands.ResetLevelAsync(
                 selectedLevelId,
                 normalizedReason,
                 new LevelContextSignature(levelSignature),
                 ct);
+            ct.ThrowIfCancellationRequested();
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelPrepared macroRouteId='{macroRouteId}' levelId='{selectedLevelId}' routeId='{resolvedRouteId}' contentId='{contentId}' v='{selectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' levelId='{selectedLevelId}' resolvedRouteId='{resolvedRouteId}' contentId='{contentId}' v='{selectionVersion}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
         }
 
