@@ -18,23 +18,27 @@ MonoBehaviour:
     routeId:
       _value: level.1
     routeRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
+    macroRouteRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
     contentId: content.default
   - levelId:
       _value: level.2
     routeId:
       _value: level.2
     routeRef: {fileID: 11400000, guid: 26626e420f9344b2b95d9ccacac64d20, type: 2}
+    macroRouteRef: {fileID: 11400000, guid: 26626e420f9344b2b95d9ccacac64d20, type: 2}
     contentId: content.default
   - levelId:
       _value: qa.level.nto1.a
     routeId:
       _value: 
     routeRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
+    macroRouteRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
     contentId: content.1
   - levelId:
       _value: qa.level.nto1.b
     routeId:
       _value: 
     routeRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
+    macroRouteRef: {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
     contentId: content.2
   warnOnInvalidLevels: 1
