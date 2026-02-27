@@ -12,7 +12,7 @@ using UnityEditor;
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 {
     /// <summary>
-    /// Catálogo configurável de níveis (LevelId -> SceneRouteId + payload).
+    /// Catálogo configurável de níveis (LevelId -> MacroRouteId(SceneRouteId) + payload).
     /// </summary>
     [CreateAssetMenu(
         fileName = "LevelCatalogAsset",
@@ -22,16 +22,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
     {
         private readonly struct LevelResolution
         {
-            public LevelResolution(LevelDefinition definition, SceneRouteId routeId, SceneTransitionPayload payload, string contentId)
+            public LevelResolution(LevelDefinition definition, SceneRouteId macroRouteId, SceneTransitionPayload payload, string contentId)
             {
                 Definition = definition;
-                RouteId = routeId;
+                MacroRouteId = macroRouteId;
                 Payload = payload;
                 ContentId = contentId;
             }
 
             public LevelDefinition Definition { get; }
-            public SceneRouteId RouteId { get; }
+            public SceneRouteId MacroRouteId { get; }
             public SceneTransitionPayload Payload { get; }
             public string ContentId { get; }
         }
@@ -44,17 +44,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         [SerializeField] private bool warnOnInvalidLevels = true;
 
         private readonly Dictionary<LevelId, LevelResolution> _cache = new();
-        private readonly Dictionary<SceneRouteId, LevelId> _routeToLevelCache = new();
+        private readonly Dictionary<SceneRouteId, LevelId> _macroRouteToLevelCache = new();
         private readonly Dictionary<LevelId, SceneRouteId> _levelToMacroRouteCache = new();
         private readonly Dictionary<SceneRouteId, List<LevelId>> _macroRouteToLevelsCache = new();
-        private readonly HashSet<SceneRouteId> _ambiguousRoutes = new();
+        private readonly HashSet<SceneRouteId> _ambiguousMacroRoutes = new();
         private readonly HashSet<LevelId> _loggedLevelsThisFrame = new();
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
 
-        public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
+        public bool TryResolve(LevelId levelId, out SceneRouteId macroRouteId, out SceneTransitionPayload payload)
         {
-            routeId = SceneRouteId.None;
+            macroRouteId = SceneRouteId.None;
             payload = SceneTransitionPayload.Empty;
 
             if (!levelId.IsValid)
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 return false;
             }
 
-            routeId = resolution.RouteId;
+            macroRouteId = resolution.MacroRouteId;
             payload = resolution.Payload;
             LogResolutionDedupePerFrame(levelId, resolution);
             return true;
@@ -86,13 +86,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             EnsureCache();
 
-            if (_ambiguousRoutes.Contains(routeId))
+            if (_ambiguousMacroRoutes.Contains(routeId))
             {
                 levelId = LevelId.None;
                 return false;
             }
 
-            if (!_routeToLevelCache.TryGetValue(routeId, out levelId) || !levelId.IsValid)
+            if (!_macroRouteToLevelCache.TryGetValue(routeId, out levelId) || !levelId.IsValid)
             {
                 return false;
             }
@@ -246,10 +246,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             _cacheBuilt = true;
             _cache.Clear();
-            _routeToLevelCache.Clear();
+            _macroRouteToLevelCache.Clear();
             _levelToMacroRouteCache.Clear();
             _macroRouteToLevelsCache.Clear();
-            _ambiguousRoutes.Clear();
+            _ambiguousMacroRoutes.Clear();
 
             if (levels == null || levels.Count == 0)
             {
@@ -274,28 +274,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     FailFast($"LevelId duplicado no LevelCatalog. levelId='{entry.levelId}', index={i}.");
                 }
 
-                SceneRouteId resolvedRouteId = entry.ResolveRouteId();
-                if (!resolvedRouteId.IsValid)
-                {
-                    FailFast($"Rota inválida ao resolver levelId='{entry.levelId}' em levels[{i}].");
-                }
-
                 SceneRouteId resolvedMacroRouteId = entry.ResolveMacroRouteId();
                 if (!resolvedMacroRouteId.IsValid)
                 {
-                    FailFast($"MacroRoute inválida ao resolver levelId='{entry.levelId}' em levels[{i}]. routeId='{resolvedRouteId}', macroRouteRef missing/invalid.");
+                    FailFast($"MacroRoute inválida ao resolver levelId='{entry.levelId}' em levels[{i}]. macroRouteRef missing/invalid.");
                 }
 
-                if (_routeToLevelCache.TryGetValue(resolvedRouteId, out LevelId existingLevelId))
+                if (_macroRouteToLevelCache.TryGetValue(resolvedMacroRouteId, out LevelId existingLevelId))
                 {
                     if (existingLevelId != entry.levelId)
                     {
-                        _ambiguousRoutes.Add(resolvedRouteId);
+                        _ambiguousMacroRoutes.Add(resolvedMacroRouteId);
                     }
                 }
                 else
                 {
-                    _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
+                    _macroRouteToLevelCache.Add(resolvedMacroRouteId, entry.levelId);
                 }
 
                 _levelToMacroRouteCache.Add(entry.levelId, resolvedMacroRouteId);
@@ -308,7 +302,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
                 groupedLevels.Add(entry.levelId);
 
-                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
+                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedMacroRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
             if (warnOnInvalidLevels)
@@ -323,29 +317,29 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
 
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} ambiguousRoutesCount={_ambiguousRoutes.Count} invalidLevels=0",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} macroRoutesUniquelyMapped={_macroRouteToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} ambiguousMacroRoutesCount={_ambiguousMacroRoutes.Count} invalidLevels=0",
                     DebugUtility.Colors.Info);
 
-                if (_ambiguousRoutes.Count > 0)
+                if (_ambiguousMacroRoutes.Count > 0)
                 {
                     SceneRouteId exampleRouteId = SceneRouteId.None;
-                    foreach (SceneRouteId candidate in _ambiguousRoutes)
+                    foreach (SceneRouteId candidate in _ambiguousMacroRoutes)
                     {
                         exampleRouteId = candidate;
                         break;
                     }
 
-                    string routeDetails = BuildAmbiguousRouteDetails(maxLevelIdsPerRoute: 5);
+                    string routeDetails = BuildAmbiguousMacroRouteDetails(maxLevelIdsPerRoute: 5);
 
-                    DebugUtility.LogWarning<LevelCatalogAsset>(
-                        $"[OBS][Config] LevelCatalogAmbiguousRoutes routes={_ambiguousRoutes.Count} example='{exampleRouteId}' details='{routeDetails}' note='TryResolveLevelId will return false for ambiguous routes; use snapshot/LevelId as canonical.'");
+                    DebugUtility.LogVerbose<LevelCatalogAsset>(
+                        $"[OBS][Config] LevelCatalogAmbiguousRoutes macroRoutes={_ambiguousMacroRoutes.Count} example='{exampleRouteId}' details='{routeDetails}' note='N levels -> 1 macroRouteId é esperado; TryResolveLevelId permanece best-effort para compat.'");
                 }
             }
         }
 
-        private string BuildAmbiguousRouteDetails(int maxLevelIdsPerRoute)
+        private string BuildAmbiguousMacroRouteDetails(int maxLevelIdsPerRoute)
         {
-            if (_ambiguousRoutes.Count == 0)
+            if (_ambiguousMacroRoutes.Count == 0)
             {
                 return "none";
             }
@@ -353,14 +347,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             int safeLimit = Math.Max(1, maxLevelIdsPerRoute);
             List<string> chunks = new();
 
-            foreach (SceneRouteId routeId in _ambiguousRoutes)
+            foreach (SceneRouteId routeId in _ambiguousMacroRoutes)
             {
                 List<string> levelIds = new();
                 bool hasMore = false;
 
                 foreach (KeyValuePair<LevelId, LevelResolution> kv in _cache)
                 {
-                    if (kv.Value.RouteId != routeId)
+                    if (kv.Value.MacroRouteId != routeId)
                     {
                         continue;
                     }
@@ -398,9 +392,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 return;
             }
 
-            LevelDefinition definition = resolution.Definition;
             DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='{levelId}' routeId='{resolution.RouteId}' asset='{definition.routeRef.name}'.",
+                $"[OBS][SceneFlow] MacroRouteResolvedVia=LevelCatalog levelId='{levelId}' macroRouteId='{resolution.MacroRouteId}' contentId='{resolution.ContentId}'.",
                 DebugUtility.Colors.Info);
         }
 

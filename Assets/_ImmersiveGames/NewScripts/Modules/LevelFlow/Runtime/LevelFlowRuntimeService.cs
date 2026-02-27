@@ -25,7 +25,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly IRestartContextService _restartContextService;
         private readonly ILevelContentResolver _contentResolver;
-        private readonly ILevelMacroRouteCatalog _macroRouteCatalog;
         private readonly IWorldResetCommands _worldResetCommands;
 
         public LevelFlowRuntimeService(
@@ -45,7 +44,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _restartContextService = restartContextService;
             _worldResetCommands = worldResetCommands;
             _contentResolver = contentResolver ?? (levelResolver as ILevelContentResolver);
-            _macroRouteCatalog = macroRouteCatalog ?? (levelResolver as ILevelMacroRouteCatalog);
         }
 
         public async Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default)
@@ -59,27 +57,27 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            if (!_levelResolver.TryResolve(typedLevelId, out var resolvedRouteId, out var payload) || !resolvedRouteId.IsValid)
+            if (!_levelResolver.TryResolve(typedLevelId, out var macroRouteId, out var payload) || !macroRouteId.IsValid)
             {
                 FailFastConfig($"LevelId não resolvido no LevelFlow. levelId='{typedLevelId}', reason='{reason ?? "<null>"}'.");
                 return;
             }
 
-            SceneRouteId navRouteId = ResolveNavRouteIdForGameplay(typedLevelId, resolvedRouteId, out SceneRouteId macroRouteId);
+            SceneRouteId navRouteId = macroRouteId;
 
             var (styleId, styleIdTyped, profileId, profileAsset) = ResolveGameplayStyleObservability();
             string normalizedReason = NormalizeReason(reason);
             string selectedContentId = ResolveContentId(typedLevelId);
             LevelContextSignature levelSignature = LevelContextSignature.Create(
                 typedLevelId,
-                resolvedRouteId,
+                macroRouteId,
                 normalizedReason,
                 selectedContentId);
 
             int nextSelectionVersion = ResolveNextSelectionVersion();
             PublishLevelSelected(
                 typedLevelId,
-                resolvedRouteId,
+                macroRouteId,
                 styleIdTyped,
                 selectedContentId,
                 normalizedReason,
@@ -87,14 +85,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 levelSignature);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
             await _navigationService.StartGameplayRouteAsync(navRouteId, payload, normalizedReason);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayDispatched routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' styleId='{styleId}' profile='{profileId}' profileAsset='{profileAsset}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] StartGameplayDispatched macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' styleId='{styleId}' profile='{profileId}' profileAsset='{profileAsset}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
@@ -113,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             string normalizedReason = NormalizeSwapReason(reason);
 
-            if (!_levelResolver.TryResolve(levelId, out var resolvedRouteId, out _) || !resolvedRouteId.IsValid)
+            if (!_levelResolver.TryResolve(levelId, out var macroRouteId, out _) || !macroRouteId.IsValid)
             {
                 DebugUtility.LogError<LevelFlowRuntimeService>(
                     $"[LevelFlow] LevelSwapLocal ignorado: levelId não resolvido. levelId='{levelId}', reason='{normalizedReason}'.");
@@ -124,19 +122,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (string.IsNullOrWhiteSpace(contentId))
             {
                 DebugUtility.LogError<LevelFlowRuntimeService>(
-                    $"[LevelFlow] LevelSwapLocal ignorado: contentId não resolvido. levelId='{levelId}', routeId='{resolvedRouteId}', reason='{normalizedReason}'.");
+                    $"[LevelFlow] LevelSwapLocal ignorado: contentId não resolvido. levelId='{levelId}', macroRouteId='{macroRouteId}', reason='{normalizedReason}'.");
                 return;
             }
 
-            SceneRouteId macroRouteId = ResolveMacroRouteForSwap(levelId, resolvedRouteId);
-            LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, resolvedRouteId, normalizedReason, contentId);
+            LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, macroRouteId, normalizedReason, contentId);
             int nextSelectionVersion = ResolveNextSelectionVersion();
 
             TransitionStyleId swapStyleId = ResolveStyleIdForSwap();
 
             PublishLevelSelected(
                 levelId,
-                resolvedRouteId,
+                macroRouteId,
                 swapStyleId,
                 contentId,
                 normalizedReason,
@@ -144,13 +141,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 levelSignature);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] LevelSwapLocalRequested levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] LevelSwapLocalRequested levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             if (_worldResetCommands == null)
             {
                 DebugUtility.LogError<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=False notes='MissingIWorldResetCommands'.");
+                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=False notes='MissingIWorldResetCommands'.");
                 return;
             }
 
@@ -161,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
                 PublishLevelSwapLocalApplied(
                     levelId,
-                    resolvedRouteId,
+                    macroRouteId,
                     macroRouteId,
                     contentId,
                     normalizedReason,
@@ -169,17 +166,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     levelSignature);
 
                 DebugUtility.Log<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalApplied levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}'.",
+                    $"[OBS][LevelFlow] LevelSwapLocalApplied levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
 
                 DebugUtility.Log<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=True notes=''.",
+                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=True notes=''.",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=False notes='{ex.GetType().Name}'.");
+                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=False notes='{ex.GetType().Name}'.");
                 throw;
             }
         }
@@ -199,31 +196,31 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             LevelId levelId = snapshot.LevelId;
-            if (!_levelResolver.TryResolve(levelId, out SceneRouteId resolvedRouteId, out SceneTransitionPayload payload) ||
-                !resolvedRouteId.IsValid)
+            if (!_levelResolver.TryResolve(levelId, out SceneRouteId macroRouteId, out SceneTransitionPayload payload) ||
+                !macroRouteId.IsValid)
             {
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
                     $"[WARN][OBS][LevelFlow] RestartLastGameplay skipped reason='level_not_resolved' levelId='{levelId}' requestedReason='{reason ?? "<null>"}'.");
                 return;
             }
 
-            if (snapshot.RouteId.IsValid && snapshot.RouteId != resolvedRouteId)
+            if (snapshot.RouteId.IsValid && snapshot.RouteId != macroRouteId)
             {
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
-                    $"[WARN][OBS][LevelFlow] SnapshotRouteMismatch snapshotRouteId='{snapshot.RouteId}' resolvedRouteId='{resolvedRouteId}' levelId='{levelId}'.");
+                    $"[WARN][OBS][LevelFlow] SnapshotRouteMismatch snapshotRouteId='{snapshot.RouteId}' resolvedMacroRouteId='{macroRouteId}' levelId='{levelId}'.");
             }
 
-            SceneRouteId navRouteId = ResolveNavRouteIdForGameplay(levelId, resolvedRouteId, out SceneRouteId macroRouteId);
+            SceneRouteId navRouteId = macroRouteId;
 
             string normalizedReason = NormalizeRestartReason(reason);
             string contentId = snapshot.HasContentId ? LevelFlowContentDefaults.Normalize(snapshot.ContentId) : ResolveContentId(levelId);
             TransitionStyleId styleId = ResolveRestartStyleId(snapshot.StyleId);
             int nextSelectionVersion = Math.Max(snapshot.SelectionVersion + 1, 1);
-            LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, resolvedRouteId, normalizedReason, contentId);
+            LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, macroRouteId, normalizedReason, contentId);
 
             PublishLevelSelected(
                 levelId,
-                resolvedRouteId,
+                macroRouteId,
                 styleId,
                 contentId,
                 normalizedReason,
@@ -231,14 +228,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 levelSignature);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] RestartLastGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] RestartLastGameplayRequested levelId='{levelId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' reason='{normalizedReason}' v='{nextSelectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
             await _navigationService.StartGameplayRouteAsync(navRouteId, payload, normalizedReason);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] RestartLastGameplayDispatched routeId='{resolvedRouteId}' macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' styleId='{styleId}' reason='{normalizedReason}' v='{nextSelectionVersion}'.",
+                $"[OBS][LevelFlow] RestartLastGameplayDispatched macroRouteId='{macroRouteId}' navRouteId='{navRouteId}' styleId='{styleId}' reason='{normalizedReason}' v='{nextSelectionVersion}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
@@ -317,39 +314,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 "[WARN][OBS][LevelFlow] RestartLastGameplay style_unknown -> fallback='none'.");
             return TransitionStyleId.None;
         }
-
-        private SceneRouteId ResolveMacroRouteForSwap(LevelId levelId, SceneRouteId resolvedRouteId)
-        {
-            if (_macroRouteCatalog != null &&
-                _macroRouteCatalog.TryResolveMacroRouteId(levelId, out SceneRouteId macroRouteId) &&
-                macroRouteId.IsValid)
-            {
-                return macroRouteId;
-            }
-
-            return resolvedRouteId;
-        }
-
-
-        private SceneRouteId ResolveNavRouteIdForGameplay(LevelId levelId, SceneRouteId resolvedRouteId, out SceneRouteId macroRouteId)
-        {
-            macroRouteId = SceneRouteId.None;
-
-            if (_macroRouteCatalog != null &&
-                _macroRouteCatalog.TryResolveMacroRouteId(levelId, out SceneRouteId resolvedMacroRouteId) &&
-                resolvedMacroRouteId.IsValid)
-            {
-                macroRouteId = resolvedMacroRouteId;
-                return resolvedMacroRouteId;
-            }
-
-            DebugUtility.LogWarning<LevelFlowRuntimeService>(
-                $"[WARN][OBS][LevelFlow] macroRoute_unknown levelId='{levelId}' fallback navRouteId='{resolvedRouteId}'.");
-
-            return resolvedRouteId;
-        }
-
-
         private TransitionStyleId ResolveStyleIdForSwap()
         {
             if (_restartContextService != null
@@ -388,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         private static void PublishLevelSelected(
             LevelId levelId,
-            SceneRouteId routeId,
+            SceneRouteId macroRouteId,
             TransitionStyleId styleId,
             string contentId,
             string reason,
@@ -397,7 +361,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
                 levelId,
-                routeId,
+                macroRouteId,
                 styleId,
                 contentId: contentId,
                 reason: reason,
@@ -405,13 +369,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 levelSignature: levelSignature));
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][Level] LevelSelectedEventPublished levelId='{levelId}' routeId='{routeId}' contentId='{contentId}' reason='{reason}' v='{selectionVersion}' levelSignature='{levelSignature}'.",
+                $"[OBS][Level] LevelSelectedEventPublished levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' reason='{reason}' v='{selectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void PublishLevelSwapLocalApplied(
             LevelId levelId,
-            SceneRouteId routeId,
+            SceneRouteId macroRouteId,
             SceneRouteId macroRouteId,
             string contentId,
             string reason,
@@ -420,7 +384,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             EventBus<LevelSwapLocalAppliedEvent>.Raise(new LevelSwapLocalAppliedEvent(
                 levelId,
-                routeId,
+                macroRouteId,
                 macroRouteId,
                 contentId,
                 reason,

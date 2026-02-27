@@ -160,11 +160,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] RestartResolved routeId='{resolvedRouteId}' source='{resolveSource}'.",
+                $"[OBS][Navigation] RestartResolved macroRouteId='{resolvedRouteId}' source='{resolveSource}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] RestartRequested levelId='{_lastStartedGameplayLevelId}', routeId='{resolvedRouteId}', reason='{resolvedReason}'.",
+                $"[OBS][Navigation] RestartRequested levelId='{_lastStartedGameplayLevelId}', macroRouteId='{resolvedRouteId}', reason='{resolvedReason}'.",
                 DebugUtility.Colors.Info);
 
             await StartGameplayRouteAsync(resolvedRouteId, payload, resolvedReason);
@@ -242,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService.");
                 }
 
-                if (!_levelFlowService.TryResolve(levelId, out var resolvedRouteId, out var payload) || !resolvedRouteId.IsValid)
+                if (!_levelFlowService.TryResolve(levelId, out var resolvedMacroRouteId, out var payload) || !resolvedMacroRouteId.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[FATAL][Config] LevelId unresolved in ILevelFlowService. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
@@ -251,14 +251,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 }
 
                 DebugUtility.LogVerbose(typeof(GameNavigationService),
-                    $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
+                    $"[OBS][Navigation] StartGameplayRequested levelId='{levelId}' macroRouteId='{resolvedMacroRouteId}' reason='{reason ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
 
-                UpdateLastLevelId(levelId, resolvedRouteId, source: "LegacyStartGameplayAsync", reason: reason);
-                await StartGameplayRouteAsync(resolvedRouteId, payload, reason);
+                UpdateLastLevelId(levelId, resolvedMacroRouteId, source: "LegacyStartGameplayAsync", reason: reason);
+                await StartGameplayRouteAsync(resolvedMacroRouteId, payload, reason);
 
                 DebugUtility.LogVerbose(typeof(GameNavigationService),
-                    $"[OBS][Navigation] StartGameplayCompleted levelId='{levelId}' routeId='{resolvedRouteId}' reason='{reason ?? "<null>"}'.",
+                    $"[OBS][Navigation] StartGameplayCompleted levelId='{levelId}' macroRouteId='{resolvedMacroRouteId}' reason='{reason ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
