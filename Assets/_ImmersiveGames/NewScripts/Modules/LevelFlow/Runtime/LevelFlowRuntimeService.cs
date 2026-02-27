@@ -156,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 ct.ThrowIfCancellationRequested();
                 await _worldResetCommands.ResetLevelAsync(levelId, normalizedReason, levelSignature, ct);
 
-                SceneRouteId localRouteId = macroRouteId;
+                SceneRouteId localRouteId = SceneRouteId.None;
 
                 PublishLevelSwapLocalApplied(
                     levelId,

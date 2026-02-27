@@ -332,7 +332,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     string routeDetails = BuildAmbiguousMacroRouteDetails(maxLevelIdsPerRoute: 5);
 
                     DebugUtility.LogVerbose<LevelCatalogAsset>(
-                        $"[OBS][Config] LevelCatalogAmbiguousRoutes macroRoutes={_ambiguousMacroRoutes.Count} example='{exampleRouteId}' details='{routeDetails}' note='N levels -> 1 macroRouteId é esperado; TryResolveLevelId permanece best-effort para compat.'");
+                        $"[OBS][Config] LevelCatalogAmbiguousRoutes macroRoutes={_ambiguousMacroRoutes.Count} example='{exampleRouteId}' details='{routeDetails}' note='Esperado quando múltiplos levels compartilham o mesmo macroRouteId; TryResolveLevelId permanece best-effort para compat.'");
                 }
             }
         }
