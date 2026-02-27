@@ -335,10 +335,53 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                         break;
                     }
 
+                    string routeDetails = BuildAmbiguousRouteDetails(maxLevelIdsPerRoute: 5);
+
                     DebugUtility.LogWarning<LevelCatalogAsset>(
-                        $"[OBS][Config] LevelCatalogAmbiguousRoutes routes={_ambiguousRoutes.Count} example='{exampleRouteId}' note='TryResolveLevelId will return false for ambiguous routes; use snapshot/LevelId as canonical.'");
+                        $"[OBS][Config] LevelCatalogAmbiguousRoutes routes={_ambiguousRoutes.Count} example='{exampleRouteId}' details='{routeDetails}' note='TryResolveLevelId will return false for ambiguous routes; use snapshot/LevelId as canonical.'");
                 }
             }
+        }
+
+        private string BuildAmbiguousRouteDetails(int maxLevelIdsPerRoute)
+        {
+            if (_ambiguousRoutes.Count == 0)
+            {
+                return "none";
+            }
+
+            int safeLimit = Math.Max(1, maxLevelIdsPerRoute);
+            List<string> chunks = new();
+
+            foreach (SceneRouteId routeId in _ambiguousRoutes)
+            {
+                List<string> levelIds = new();
+                bool hasMore = false;
+
+                foreach (KeyValuePair<LevelId, LevelResolution> kv in _cache)
+                {
+                    if (kv.Value.RouteId != routeId)
+                    {
+                        continue;
+                    }
+
+                    if (levelIds.Count < safeLimit)
+                    {
+                        levelIds.Add(kv.Key.ToString());
+                    }
+                    else
+                    {
+                        hasMore = true;
+                        break;
+                    }
+                }
+
+                string listed = levelIds.Count > 0 ? string.Join(",", levelIds) : "<none>";
+                string suffix = hasMore ? ",..." : string.Empty;
+                chunks.Add($"{routeId}:[{listed}{suffix}]");
+            }
+
+            return chunks.Count > 0 ? string.Join("; ", chunks) : "none";
         }
 
         private void LogResolutionDedupePerFrame(LevelId levelId, LevelResolution resolution)
