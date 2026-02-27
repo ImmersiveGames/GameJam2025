@@ -156,10 +156,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 ct.ThrowIfCancellationRequested();
                 await _worldResetCommands.ResetLevelAsync(levelId, normalizedReason, levelSignature, ct);
 
+                SceneRouteId localRouteId = macroRouteId;
+
                 PublishLevelSwapLocalApplied(
                     levelId,
                     macroRouteId,
-                    macroRouteId,
+                    localRouteId,
                     contentId,
                     normalizedReason,
                     nextSelectionVersion,
@@ -376,7 +378,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private static void PublishLevelSwapLocalApplied(
             LevelId levelId,
             SceneRouteId macroRouteId,
-            SceneRouteId macroRouteId,
+            SceneRouteId localRouteId,
             string contentId,
             string reason,
             int selectionVersion,
@@ -385,7 +387,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             EventBus<LevelSwapLocalAppliedEvent>.Raise(new LevelSwapLocalAppliedEvent(
                 levelId,
                 macroRouteId,
-                macroRouteId,
+                localRouteId,
                 contentId,
                 reason,
                 selectionVersion,
