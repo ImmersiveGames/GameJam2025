@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.Gates;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -175,6 +176,14 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
 
         private async Task<bool> EnsureGatesOpenAsync(ContentSwapPlan plan, string reason, ContentSwapOptions options)
         {
+            if (!Application.isPlaying)
+            {
+                DebugUtility.Log<InPlaceContentSwapService>(
+                    $"[OBS][ContentSwap] Aborted reason='not_playing' contentId='{plan.contentId}' callerReason='{reason}'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
+
             bool isStrict = _runtimeModeProvider is { IsStrict: true };
 
             if (_gateService == null)
@@ -255,6 +264,11 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
 
             while (AreBlockedTokensActive())
             {
+                if (!Application.isPlaying)
+                {
+                    return false;
+                }
+
                 int elapsed = unchecked(Environment.TickCount - start);
                 if (elapsed >= timeoutMs)
                 {
