@@ -108,8 +108,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                             payload = SceneTransitionPayload.Empty;
                             resolveSource = "legacy_route_only";
 
-                            DebugUtility.LogWarning(typeof(GameNavigationService),
-                                $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{_lastGameplayRouteId}' reason='Restart/MissingILevelFlowService'.");
+                            DebugUtility.LogVerbose(typeof(GameNavigationService),
+                                $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{_lastGameplayRouteId}' reason='Restart/MissingILevelFlowService'.",
+                                DebugUtility.Colors.Info);
                         }
                         else
                         {
@@ -126,8 +127,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                             payload = SceneTransitionPayload.Empty;
                             resolveSource = "legacy_route_only";
 
-                            DebugUtility.LogWarning(typeof(GameNavigationService),
-                                $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{_lastGameplayRouteId}' levelId='{_lastStartedGameplayLevelId}' reason='Restart/LevelResolveFailed'.");
+                            DebugUtility.LogVerbose(typeof(GameNavigationService),
+                                $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{_lastGameplayRouteId}' levelId='{_lastStartedGameplayLevelId}' reason='Restart/LevelResolveFailed'.",
+                                DebugUtility.Colors.Info);
                         }
                         else
                         {

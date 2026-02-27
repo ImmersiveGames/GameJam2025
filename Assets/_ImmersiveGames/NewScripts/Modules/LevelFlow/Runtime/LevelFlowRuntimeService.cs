@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     /// <summary>
     /// Trilho oficial F4 para iniciar gameplay por levelId.
-    /// - Resolve LevelId -> RouteId via ILevelFlowService.
+    /// - Resolve LevelId -> MacroRouteId via ILevelFlowService.
     /// - Dispara navegação sem montar scene lists.
     /// - Não decide reset de mundo (responsabilidade de F2 por policy de rota).
     /// </summary>
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            if (!_levelResolver.TryResolve(typedLevelId, out var resolvedRouteId, out var payload) || !resolvedRouteId.IsValid)
+            if (!_levelResolver.TryResolve(typedLevelId, out var resolvedMacroRouteId, out var payload) || !resolvedMacroRouteId.IsValid)
             {
                 FailFastConfig($"LevelId não resolvido no LevelFlow. levelId='{typedLevelId}', reason='{reason ?? "<null>"}'.");
                 return;
@@ -70,14 +70,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string selectedContentId = ResolveContentId(typedLevelId);
             LevelContextSignature levelSignature = LevelContextSignature.Create(
                 typedLevelId,
-                resolvedRouteId,
+                resolvedMacroRouteId,
                 normalizedReason,
                 selectedContentId);
 
             int nextSelectionVersion = ResolveNextSelectionVersion();
             PublishLevelSelected(
                 typedLevelId,
-                resolvedRouteId,
+                resolvedMacroRouteId,
                 styleIdTyped,
                 selectedContentId,
                 normalizedReason,
@@ -85,14 +85,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 levelSignature);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' routeId='{resolvedRouteId}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] StartGameplayRequested levelId='{typedLevelId}' macroRouteId='{resolvedMacroRouteId}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
-            await _navigationService.StartGameplayRouteAsync(resolvedRouteId, payload, normalizedReason);
+            await _navigationService.StartGameplayRouteAsync(resolvedMacroRouteId, payload, normalizedReason);
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayDispatched routeId='{resolvedRouteId}' styleId='{styleId}' profile='{profileId}' profileAsset='{profileAsset}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] StartGameplayDispatched macroRouteId='{resolvedMacroRouteId}' styleId='{styleId}' profile='{profileId}' profileAsset='{profileAsset}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();

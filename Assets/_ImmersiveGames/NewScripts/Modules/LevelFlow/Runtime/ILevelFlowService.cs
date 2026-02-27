@@ -3,11 +3,11 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     /// <summary>
-    /// Serviço responsável por resolver LevelId -> SceneRouteId + payload.
+    /// Serviço responsável por resolver LevelId -> MacroRouteId (SceneRouteId macro) + payload.
     /// </summary>
     public interface ILevelFlowService
     {
-        bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload);
+        bool TryResolve(LevelId levelId, out SceneRouteId macroRouteId, out SceneTransitionPayload payload);
         bool TryResolveLevelId(SceneRouteId routeId, out LevelId levelId);
     }
 }

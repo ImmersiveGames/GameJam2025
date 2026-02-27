@@ -52,9 +52,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
 
-        public bool TryResolve(LevelId levelId, out SceneRouteId routeId, out SceneTransitionPayload payload)
+        public bool TryResolve(LevelId levelId, out SceneRouteId macroRouteId, out SceneTransitionPayload payload)
         {
-            routeId = SceneRouteId.None;
+            macroRouteId = SceneRouteId.None;
             payload = SceneTransitionPayload.Empty;
 
             if (!levelId.IsValid)
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 return false;
             }
 
-            routeId = resolution.RouteId;
+            macroRouteId = resolution.RouteId;
             payload = resolution.Payload;
             LogResolutionDedupePerFrame(levelId, resolution);
             return true;
@@ -274,28 +274,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     FailFast($"LevelId duplicado no LevelCatalog. levelId='{entry.levelId}', index={i}.");
                 }
 
-                SceneRouteId resolvedRouteId = entry.ResolveRouteId();
-                if (!resolvedRouteId.IsValid)
-                {
-                    FailFast($"Rota inválida ao resolver levelId='{entry.levelId}' em levels[{i}].");
-                }
-
                 SceneRouteId resolvedMacroRouteId = entry.ResolveMacroRouteId();
                 if (!resolvedMacroRouteId.IsValid)
                 {
-                    FailFast($"MacroRoute inválida ao resolver levelId='{entry.levelId}' em levels[{i}]. routeId='{resolvedRouteId}', macroRouteRef missing/invalid.");
+                    FailFast($"MacroRoute inválida ao resolver levelId='{entry.levelId}' em levels[{i}]. macroRouteId='{resolvedMacroRouteId}', macroRouteRef missing/invalid.");
                 }
 
-                if (_routeToLevelCache.TryGetValue(resolvedRouteId, out LevelId existingLevelId))
+                if (_routeToLevelCache.TryGetValue(resolvedMacroRouteId, out LevelId existingLevelId))
                 {
                     if (existingLevelId != entry.levelId)
                     {
-                        _ambiguousRoutes.Add(resolvedRouteId);
+                        _ambiguousRoutes.Add(resolvedMacroRouteId);
                     }
                 }
                 else
                 {
-                    _routeToLevelCache.Add(resolvedRouteId, entry.levelId);
+                    _routeToLevelCache.Add(resolvedMacroRouteId, entry.levelId);
                 }
 
                 _levelToMacroRouteCache.Add(entry.levelId, resolvedMacroRouteId);
@@ -308,7 +302,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
                 groupedLevels.Add(entry.levelId);
 
-                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedRouteId, entry.ToPayload(), entry.ResolveContentId()));
+                _cache.Add(entry.levelId, new LevelResolution(entry, resolvedMacroRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
             if (warnOnInvalidLevels)
@@ -323,7 +317,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
 
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} ambiguousRoutesCount={_ambiguousRoutes.Count} invalidLevels=0",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} macroRoutesResolved={_cache.Count} routesMapped={_routeToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} sharedMacroRoutesCount={_ambiguousRoutes.Count} invalidLevels=0",
                     DebugUtility.Colors.Info);
 
                 if (_ambiguousRoutes.Count > 0)
@@ -335,8 +329,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                         break;
                     }
 
-                    DebugUtility.LogWarning<LevelCatalogAsset>(
-                        $"[OBS][Config] LevelCatalogAmbiguousRoutes routes={_ambiguousRoutes.Count} example='{exampleRouteId}' note='TryResolveLevelId will return false for ambiguous routes; use snapshot/LevelId as canonical.'");
+                    DebugUtility.LogVerbose<LevelCatalogAsset>(
+                        $"[OBS][Config] LevelCatalogSharedMacroRoutes routes={_ambiguousRoutes.Count} exampleMacroRouteId='{exampleRouteId}' note='N levels -> 1 macroRouteId é esperado; TryResolveLevelId permanece best-effort e pode retornar false.'",
+                        DebugUtility.Colors.Info);
                 }
             }
         }
@@ -357,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             LevelDefinition definition = resolution.Definition;
             DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='{levelId}' routeId='{resolution.RouteId}' asset='{definition.routeRef.name}'.",
+                $"[OBS][SceneFlow] MacroRouteResolvedVia=LevelCatalog levelId='{levelId}' macroRouteId='{resolution.RouteId}' macroAsset='{(definition.macroRouteRef != null ? definition.macroRouteRef.name : "<null>")}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -397,7 +392,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
             EditorUtility.SetDirty(this);
             DebugUtility.Log(typeof(LevelCatalogAsset),
-                $"[OBS][Config] LevelCatalogAsset OnValidate migrou routeRef a partir de routeId legado. migrated={migratedCount}, asset='{name}'.",
+                $"[OBS][Config] LevelCatalogAsset OnValidate migrou routeRef legado a partir de routeId legado (compat). migrated={migratedCount}, asset='{name}'.",
                 DebugUtility.Colors.Info);
         }
 
