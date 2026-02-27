@@ -52,9 +52,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         private bool _cacheBuilt;
         private int _lastLoggedFrame = int.MinValue;
 
-        public bool TryResolve(LevelId levelId, out SceneRouteId macroRouteId, out SceneTransitionPayload payload)
+        public bool TryResolve(LevelId levelId, out SceneRouteId macroRouteId, out string contentId, out SceneTransitionPayload payload)
         {
             macroRouteId = SceneRouteId.None;
+            contentId = string.Empty;
             payload = SceneTransitionPayload.Empty;
 
             if (!levelId.IsValid)
@@ -70,7 +71,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             macroRouteId = resolution.MacroRouteId;
+            contentId = LevelFlowContentDefaults.Normalize(resolution.ContentId);
             payload = resolution.Payload;
+
+            if (string.IsNullOrWhiteSpace(contentId))
+            {
+                return false;
+            }
+
             LogResolutionDedupePerFrame(levelId, resolution);
             return true;
         }

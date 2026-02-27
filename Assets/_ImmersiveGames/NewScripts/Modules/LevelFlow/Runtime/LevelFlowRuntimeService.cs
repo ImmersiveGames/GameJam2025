@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Reflection;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
@@ -58,9 +57,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            if (!_levelResolver.TryResolve(typedLevelId, out var macroRouteId, out var payload) || !macroRouteId.IsValid)
+            if (!_levelResolver.TryResolve(typedLevelId, out var macroRouteId, out var contentId, out var payload) ||
+                !macroRouteId.IsValid ||
+                string.IsNullOrWhiteSpace(contentId))
             {
-                FailFastConfig($"LevelId não resolvido no LevelFlow. levelId='{typedLevelId}', reason='{reason ?? "<null>"}'.");
+                FailFastConfig($"LevelId não resolvido no LevelFlow ou contentId inválido. levelId='{typedLevelId}', reason='{reason ?? "<null>"}'.");
                 return;
             }
 
@@ -68,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             var (styleId, styleIdTyped, profileId, profileAsset) = ResolveGameplayStyleObservability();
             string normalizedReason = NormalizeReason(reason);
-            string selectedContentId = ResolvePayloadContentIdOrFail(payload, typedLevelId, normalizedReason, "StartGameplayAsync");
+            string selectedContentId = contentId.Trim();
             LevelContextSignature levelSignature = LevelContextSignature.Create(
                 typedLevelId,
                 macroRouteId,
@@ -112,14 +113,15 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             string normalizedReason = NormalizeSwapReason(reason);
 
-            if (!_levelResolver.TryResolve(levelId, out var macroRouteId, out var payload) || !macroRouteId.IsValid)
+            if (!_levelResolver.TryResolve(levelId, out var macroRouteId, out var contentId, out var payload) ||
+                !macroRouteId.IsValid ||
+                string.IsNullOrWhiteSpace(contentId))
             {
-                DebugUtility.LogError<LevelFlowRuntimeService>(
-                    $"[LevelFlow] LevelSwapLocal ignorado: levelId não resolvido. levelId='{levelId}', reason='{normalizedReason}'.");
+                FailFastConfig($"LevelSwapLocal inválido: levelId não resolvido ou contentId vazio. levelId='{levelId}', reason='{normalizedReason}'.");
                 return;
             }
 
-            string contentId = ResolvePayloadContentIdOrFail(payload, levelId, normalizedReason, "SwapLevelLocalAsync");
+            contentId = contentId.Trim();
 
             LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, macroRouteId, normalizedReason, contentId);
             int nextSelectionVersion = ResolveNextSelectionVersion();
@@ -193,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             LevelId levelId = snapshot.LevelId;
-            if (!_levelResolver.TryResolve(levelId, out SceneRouteId macroRouteId, out SceneTransitionPayload payload) ||
+            if (!_levelResolver.TryResolve(levelId, out SceneRouteId macroRouteId, out _, out SceneTransitionPayload payload) ||
                 !macroRouteId.IsValid)
             {
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
@@ -265,38 +267,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string profileId = style.ProfileId.ToString();
             string profileAsset = style.Profile != null ? style.Profile.name : "<null>";
             return (styleId, gameplayEntry.StyleId, profileId, profileAsset);
-        }
-
-
-
-        private static string ResolvePayloadContentIdOrFail(SceneTransitionPayload payload, LevelId levelId, string reason, string operation)
-        {
-            if (payload == null)
-            {
-                FailFastConfig($"Payload ausente ao resolver contentId. operation='{operation}', levelId='{levelId}', reason='{reason ?? "<null>"}'.");
-                return string.Empty;
-            }
-
-            const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            PropertyInfo contentIdProperty = payload.GetType().GetProperty("ContentId", bindingFlags);
-            string contentId = contentIdProperty?.GetValue(payload) as string;
-
-            if (string.IsNullOrWhiteSpace(contentId))
-            {
-                FieldInfo contentIdField = payload.GetType().GetField("ContentId", bindingFlags);
-                if (contentIdField != null)
-                {
-                    contentId = contentIdField.GetValue(payload) as string;
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(contentId))
-            {
-                FailFastConfig($"payload.ContentId ausente/vazio. operation='{operation}', levelId='{levelId}', reason='{reason ?? "<null>"}', payloadType='{payload.GetType().FullName}'.");
-                return string.Empty;
-            }
-
-            return contentId.Trim();
         }
 
         private string ResolveContentId(LevelId levelId)

@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                             throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService for Restart legacy fallback.");
                         }
                     }
-                    else if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out resolvedRouteId, out var resolvedPayload) || !resolvedRouteId.IsValid)
+                    else if (!_levelFlowService.TryResolve(_lastStartedGameplayLevelId, out resolvedRouteId, out _, out var resolvedPayload) || !resolvedRouteId.IsValid)
                     {
                         if (_lastGameplayRouteId.IsValid)
                         {
@@ -242,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     throw new InvalidOperationException("[FATAL][Config] Missing ILevelFlowService.");
                 }
 
-                if (!_levelFlowService.TryResolve(levelId, out var resolvedMacroRouteId, out var payload) || !resolvedMacroRouteId.IsValid)
+                if (!_levelFlowService.TryResolve(levelId, out var resolvedMacroRouteId, out _, out var payload) || !resolvedMacroRouteId.IsValid)
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[FATAL][Config] LevelId unresolved in ILevelFlowService. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
