@@ -203,6 +203,14 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
                 return true;
             }
 
+            if (_gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
+            {
+                DebugUtility.Log<InPlaceContentSwapService>(
+                    $"[OBS][ContentSwap] GateBypass reason='scene_transition' tokens='{blockedTokens}' contentId='{plan.contentId}' callerReason='{reason}'",
+                    DebugUtility.Colors.Info);
+                return true;
+            }
+
             if (isStrict)
             {
                 DebugUtility.LogError<InPlaceContentSwapService>(
