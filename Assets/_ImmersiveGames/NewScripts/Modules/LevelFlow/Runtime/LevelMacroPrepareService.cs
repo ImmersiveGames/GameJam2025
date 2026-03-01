@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 FailFastConfig($"LevelPrepare sem level válido para macroRouteId='{macroRouteId}'.");
             }
 
-            if (!_levelFlowService.TryResolve(selectedLevelId, out SceneRouteId resolvedRouteId, out _) || !resolvedRouteId.IsValid)
+            if (!_levelFlowService.TryResolve(selectedLevelId, out SceneRouteId resolvedRouteId, out _, out _) || !resolvedRouteId.IsValid)
             {
                 FailFastConfig($"LevelPrepare não conseguiu resolver routeId para levelId='{selectedLevelId}' macroRouteId='{macroRouteId}'.");
             }
