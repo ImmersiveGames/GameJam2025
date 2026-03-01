@@ -15,6 +15,4 @@ MonoBehaviour:
   routeDefinitions:
   - {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
   - {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
-  - {fileID: 11400000, guid: 0b4f973d6e7141159c02b5bb2ecd8364, type: 2}
-  - {fileID: 11400000, guid: 26626e420f9344b2b95d9ccacac64d20, type: 2}
   warnOnInvalidRoutes: 1
