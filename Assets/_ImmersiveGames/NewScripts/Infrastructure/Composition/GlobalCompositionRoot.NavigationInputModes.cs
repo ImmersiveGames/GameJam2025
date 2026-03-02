@@ -322,6 +322,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     DebugUtility.Colors.Info);
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var postLevelActions) || postLevelActions == null)
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
+                {
+                    throw new InvalidOperationException("ILevelFlowRuntimeService obrigatório ausente para registrar IPostLevelActionsService.");
+                }
+
+                postLevelActions = new PostLevelActionsService(
+                    levelFlowRuntime,
+                    levelSwapLocalService,
+                    restartContextService,
+                    levelCatalogAsset,
+                    navigationService);
+
+                DependencyManager.Provider.RegisterGlobal<IPostLevelActionsService>(postLevelActions);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] IPostLevelActionsService registrado (PostLevelActionsService).",
+                    DebugUtility.Colors.Info);
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var existingPrepareService) || existingPrepareService == null)
             {
                 var prepareService = new LevelMacroPrepareService(
