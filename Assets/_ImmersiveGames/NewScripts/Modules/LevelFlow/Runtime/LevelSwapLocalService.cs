@@ -74,12 +74,15 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, macroRouteId, normalizedReason, contentId);
+            LevelId fromLevelId = currentSnapshot.LevelId;
+            LevelId toLevelId = levelId;
+
+            LevelContextSignature levelSignature = LevelContextSignature.Create(toLevelId, macroRouteId, normalizedReason, contentId);
             int nextSelectionVersion = Math.Max(currentSnapshot.SelectionVersion + 1, 1);
             TransitionStyleId styleId = ResolveStyleIdForSwap(currentSnapshot.StyleId);
 
             DebugUtility.Log<LevelSwapLocalService>(
-                $"[OBS][LevelFlow] SwapLocalRequested levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] SwapLocalRequested fromLevelId='{fromLevelId}' toLevelId='{toLevelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             if (_worldResetCommands == null)
@@ -91,15 +94,15 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             using IDisposable gateHandle = AcquireSwapGate();
 
-            PublishLevelSelected(levelId, macroRouteId, styleId, contentId, normalizedReason, nextSelectionVersion, levelSignature);
+            PublishLevelSelected(toLevelId, macroRouteId, styleId, contentId, normalizedReason, nextSelectionVersion, levelSignature);
 
             ct.ThrowIfCancellationRequested();
-            await _worldResetCommands.ResetLevelAsync(levelId, normalizedReason, levelSignature, ct);
+            await _worldResetCommands.ResetLevelAsync(toLevelId, normalizedReason, levelSignature, ct);
 
-            PublishLevelSwapLocalApplied(levelId, macroRouteId, contentId, normalizedReason, nextSelectionVersion, levelSignature);
+            PublishLevelSwapLocalApplied(toLevelId, macroRouteId, contentId, normalizedReason, nextSelectionVersion, levelSignature);
 
             DebugUtility.Log<LevelSwapLocalService>(
-                $"[OBS][LevelFlow] SwapLocalApplied levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] SwapLocalApplied fromLevelId='{fromLevelId}' toLevelId='{toLevelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Success);
         }
 
