@@ -105,8 +105,8 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
         private static void RunInternal(LevelCatalogAsset catalog, bool validateOnly)
         {
             // Mantém validação estrutural de ambiguidade sem depender de reverse lookup routeId -> levelId.
-            catalog.TryResolve(new LevelId(ScenarioLevelAId), out _, out _);
-            catalog.TryResolve(new LevelId(ScenarioLevelBId), out _, out _);
+            catalog.TryResolve(new LevelId(ScenarioLevelAId), out _, out _, out _);
+            catalog.TryResolve(new LevelId(ScenarioLevelBId), out _, out _, out _);
 
             int duplicatedRoutes = CountDuplicatedRoutes(catalog);
             if (duplicatedRoutes <= 0)

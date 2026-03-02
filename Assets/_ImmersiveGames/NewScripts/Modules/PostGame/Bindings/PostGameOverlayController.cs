@@ -1,10 +1,13 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.PostGame;
 using TMPro;
 using UnityEngine;
@@ -43,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         [Inject] private IInputModeService _inputModeService;
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IPostGameOwnershipService _postGameOwnership;
+        [Inject] private IPostLevelActionsService _postLevelActionsService;
 
         private bool _dependenciesInjected;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
@@ -122,13 +126,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             // Ao solicitar restart, o overlay deixa de fazer sentido imediatamente.
             HideImmediate();
 
-            // Caminho único: publicar intenção e deixar a bridge global navegar/resetar.
-            // NÃO publicamos GameResumeRequestedEvent aqui: o PostGame usa gate próprio (state.postgame),
-            // e publicar resume gerava "release ignorado" no GamePauseGateBridge quando não havia ownership.
-            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(RestartReason));
-
-            DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Restart solicitado via overlay. reason='{RestartReason}'.");
+            _ = ExecutePostLevelActionAsync(
+                actionName: "RestartLevel",
+                reason: RestartReason,
+                action: ct => _postLevelActionsService.RestartLevelAsync(RestartReason, ct));
         }
 
         /// <summary>
@@ -148,10 +149,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             // Ao sair para o menu, o overlay não é mais relevante — ocultamos imediatamente.
             HideImmediate();
 
-            // Caminho único: publicar intenção e deixar a bridge global navegar.
-            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
-            DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] ExitToMenu solicitado via overlay. reason='{ExitToMenuReason}'.");
+            _ = ExecutePostLevelActionAsync(
+                actionName: "ExitToMenu",
+                reason: ExitToMenuReason,
+                action: ct => _postLevelActionsService.ExitToMenuAsync(ExitToMenuReason, ct));
+        }
+
+        private async Task ExecutePostLevelActionAsync(string actionName, string reason, Func<CancellationToken, Task> action)
+        {
+            if (_postLevelActionsService == null)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    $"[PostGame] {actionName} cancelado: IPostLevelActionsService indisponível. reason='{reason}'.");
+                _actionRequested = false;
+                return;
+            }
+
+            try
+            {
+                await action(CancellationToken.None);
+                DebugUtility.Log<PostGameOverlayController>(
+                    $"[PostGame] {actionName} solicitado via overlay. reason='{reason}'.");
+            }
+            catch (Exception ex)
+            {
+                _actionRequested = false;
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    $"[PostGame] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
+            }
         }
 
         private void RegisterBindings()
@@ -633,4 +658,3 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 #endif
     }
 }
-

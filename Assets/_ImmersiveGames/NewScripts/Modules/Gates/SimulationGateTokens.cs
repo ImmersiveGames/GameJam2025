@@ -22,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gates
         public const string Loading = "flow.loading";
         public const string ContentSwapTransition = "flow.contentswap_transition";
         public const string ContentSwapInPlace = "flow.contentswap_inplace";
+        public const string LevelSwapLocal = "level.swap_local";
 
         // Simulação de gameplay (deve bloquear apenas lógica de gameplay, não UI).
         public const string GameplaySimulation = "sim.gameplay";

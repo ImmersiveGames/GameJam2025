@@ -222,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             string routeRefLabel = "<unresolved>";
             if (DependencyManager.Provider.TryGetGlobal<ILevelFlowService>(out var levelResolver) &&
                 levelResolver != null &&
-                levelResolver.TryResolve(LevelId.FromName(levelId), out var resolvedRouteId, out _))
+                levelResolver.TryResolve(LevelId.FromName(levelId), out var resolvedRouteId, out _, out _))
             {
                 routeRefLabel = resolvedRouteId.ToString();
             }

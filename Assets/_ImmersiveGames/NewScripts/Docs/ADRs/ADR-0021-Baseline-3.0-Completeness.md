@@ -2,9 +2,9 @@
 
 ## Status
 
-- Estado: **Ativo (baseline de completude)**
+- Estado: **Aceito (Em andamento)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-25
+- Última atualização: 2026-03-01
 - Tipo: Baseline / Contrato verificável por log
 - Escopo: NewScripts (SceneFlow, Navigation, LevelFlow, WorldLifecycle, LoadingHud, GameLoop)
 
@@ -67,9 +67,22 @@ Não cobre ainda (explicitamente):
 
 ### E) Pendências que impedem “Baseline fechado”
 
-- [ ] Swap local de level sem transição macro (ADR-0026) com evidência N→1.
+- [x] Swap local de level sem transição macro (ADR-0026) com evidência N→1.
 - [ ] PostLevel (ADR-0027) com NextLevel/Exit/Restart e logs [OBS] dedicados.
-- [ ] Vínculo macroRoute → catálogo de levels consolidado (ADR-0024).
+- [x] Vínculo macroRoute → catálogo de levels consolidado (ADR-0024).
+
+## Implementação atual (2026-03-01)
+
+Anchors curtas observadas no log atual:
+
+- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
+- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
+- Resets por domínio:
+  - macro: `ResetWorldStarted` / `ResetCompleted`;
+  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
+- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
+- Pause/Resume com token dedicado `state.pause`.
+- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
 
 ## Critérios de saída
 
@@ -81,4 +94,5 @@ Baseline 3.0 pode ser marcado como “Fechado” quando:
 
 ## Changelog
 
+- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
 - 2026-02-25: Atualizado com log canônico mais recente e checklist com status (PASS/pendências) alinhado às ADRs 0022–0027.

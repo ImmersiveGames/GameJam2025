@@ -78,12 +78,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             bool useSnapshot = snapshotBelongsToMacro;
+            bool autoSelectedDefaultLevel = !useSnapshot;
             string source = useSnapshot ? "snapshot" : "catalog_first";
 
             LevelId selectedLevelId = useSnapshot ? snapshot.LevelId : levelIds[0];
             if (!selectedLevelId.IsValid)
             {
                 FailFastConfig($"LevelPrepare sem level válido para macroRouteId='{macroRouteId}'.");
+            }
+
+            if (autoSelectedDefaultLevel)
+            {
+                // Comentário: hardening ADR-0024 — sem activeLevel/snapshot válido, escolhe default explícito do catálogo.
+                DebugUtility.Log<LevelMacroPrepareService>(
+                    $"[OBS][LevelFlow] DefaultLevelAutoSelected macroRouteId='{macroRouteId}' levelId='{selectedLevelId}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
             }
 
             if (!_levelFlowService.TryResolve(selectedLevelId, out SceneRouteId resolvedRouteId, out _, out _) || !resolvedRouteId.IsValid)

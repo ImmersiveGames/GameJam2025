@@ -294,20 +294,38 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             GameplayStartSnapshot snapshot = default;
             bool hasSnapshot = _restartContextService != null && _restartContextService.TryGetCurrent(out snapshot);
-            if (hasSnapshot && snapshot.RouteId == routeId && snapshot.HasLevelId)
+            bool hasSnapshotLevel = hasSnapshot && snapshot.RouteId == routeId && snapshot.HasLevelId;
+            bool hasLastLevelId = _lastStartedGameplayLevelId.IsValid && _lastGameplayRouteId == routeId;
+
+            if (!hasSnapshotLevel && !hasLastLevelId)
+            {
+                // Comentário: regra explícita de hardening (ADR-0024): sem seleção/snapshot válido não há fallback silencioso.
+                DebugUtility.LogWarning(typeof(GameNavigationService),
+                    $"[OBS][Navigation] NoLevelSelected routeId='{routeId}' reason='StartGameplayRouteAsync' hasSnapshot={hasSnapshot.ToString().ToLowerInvariant()} snapshotRouteId='{snapshot.RouteId}' lastLevelId='{(_lastStartedGameplayLevelId.IsValid ? _lastStartedGameplayLevelId.ToString() : "<none>")}'.");
+
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[FATAL][Navigation] FailFastMissingLevel routeId='{routeId}' reason='StartGameplayRouteAsync' policy='require_explicit_level_or_valid_snapshot'.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Navigation] FailFastMissingLevel routeId='{routeId}' reason='StartGameplayRouteAsync'.");
+            }
+
+            if (hasSnapshotLevel)
             {
                 resolvedLevelId = snapshot.LevelId;
                 resolveSource = "snapshot";
-            }
-            else if (_levelFlowService != null && _levelFlowService.TryResolveLevelId(routeId, out var mappedLevelId) && mappedLevelId.IsValid)
-            {
-                resolvedLevelId = mappedLevelId;
-                resolveSource = "legacy_reverse_lookup";
+
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[OBS][Navigation] FallbackApplied source='snapshot' routeId='{routeId}' levelId='{resolvedLevelId}' reason='StartGameplayRouteAsync'.",
+                    DebugUtility.Colors.Info);
             }
             else
             {
-                DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[OBS][Navigation][Compat] ReverseLookupMissingOrAmbiguous routeId='{routeId}' reason='StartGameplayRouteAsync'.");
+                resolvedLevelId = _lastStartedGameplayLevelId;
+                resolveSource = "last_level_id";
+
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[OBS][Navigation] FallbackApplied source='last_level_id' routeId='{routeId}' levelId='{resolvedLevelId}' reason='StartGameplayRouteAsync'.",
+                    DebugUtility.Colors.Info);
             }
 
             UpdateLastLevelId(resolvedLevelId, routeId, source: $"StartGameplayRouteAsync/{resolveSource}", reason: reason);

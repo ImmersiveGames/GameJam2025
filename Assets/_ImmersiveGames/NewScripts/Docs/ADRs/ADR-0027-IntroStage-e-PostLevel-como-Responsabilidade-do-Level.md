@@ -2,9 +2,9 @@
 
 ## Status
 
-- Estado: **Em implementação (IntroStage OK; PostLevel pendente)**
+- Estado: **Aceito (Parcial)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-25
+- Última atualização: 2026-03-01
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (LevelFlow, IntroStageController, PostGame/PostLevel, InputMode, SimulationGate)
 
@@ -52,17 +52,31 @@ O que existe hoje no log é **PostGame** (vitória/derrota + overlay + restart/e
 - “PostLevel” separado por level (ex.: “NextLevel” sem sair do macro).
 - Integração com swap local (ADR-0026).
 
+## Implementação atual (2026-03-01)
+
+Anchors curtas observadas no log atual:
+
+- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
+- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
+- Resets por domínio:
+  - macro: `ResetWorldStarted` / `ResetCompleted`;
+  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
+- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
+- Pause/Resume com token dedicado `state.pause`.
+- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+
 ## Critérios de aceite (DoD)
 
 - [x] IntroStage bloqueia `sim.gameplay` e controla InputMode (UI) até confirmação.
 - [x] IntroStage conclui e libera simulação antes de entrar em `Playing`.
-- [ ] PostLevel oferece:
-  - NextLevel (swap local, sem transição macro) quando aplicável;
-  - Restart (macro reset determinístico) quando aplicável;
-  - ExitToMenu (transição macro) quando aplicável.
-- [ ] Logs [OBS] distinguem claramente:
-  - `IntroStage*` vs `PostLevel*` vs `PostGame*`.
+- [x] Pós-jogo já oferece ações operacionais observáveis:
+  - Restart (`Restart->Boot`, reset determinístico);
+  - ExitToMenu (transição macro para `to-menu`).
+- [ ] PostLevel completo com `NextLevel` (swap local sem transição macro) permanece pendente.
+- [x] Logs [OBS] distinguem claramente `IntroStage*` e `PostGame*`.
+- [ ] Hardening de observabilidade: completar trilha `PostLevel*` dedicada.
 
 ## Changelog
 
+- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
 - 2026-02-25: Atualizado com evidência de IntroStage funcionando em produção; registrado PostLevel como pendência e dependência direta de ADR-0026 (swap local).

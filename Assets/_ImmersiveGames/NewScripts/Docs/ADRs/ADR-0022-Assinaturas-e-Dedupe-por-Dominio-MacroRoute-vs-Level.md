@@ -4,7 +4,7 @@
 
 - Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-25
+- Última atualização: 2026-03-01
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
 
@@ -93,6 +93,19 @@ Sem separação de assinaturas, o dedupe pode bloquear ações legítimas (ex.: 
 - Observabilidade melhora: cada log “fala do seu domínio” e fica simples correlacionar.
 - Simplifica a evolução do F4/F5 do LevelFlow: “StartGameplayAsync(levelId)” passa a ser trilho canônico.
 
+## Implementação atual (2026-03-01)
+
+Anchors curtas observadas no log atual:
+
+- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
+- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
+- Resets por domínio:
+  - macro: `ResetWorldStarted` / `ResetCompleted`;
+  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
+- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
+- Pause/Resume com token dedicado `state.pause`.
+- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+
 ## Critérios de aceite (DoD)
 
 - [x] Existe distinção clara entre `macroSignature` (SceneFlow) e `levelSignature` (LevelFlow).
@@ -102,4 +115,5 @@ Sem separação de assinaturas, o dedupe pode bloquear ações legítimas (ex.: 
 
 ## Changelog
 
+- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
 - 2026-02-25: Marcado como **Implementado**, adicionadas evidências e alinhamento do contrato de logs/dedupe com o comportamento observado no log canônico.

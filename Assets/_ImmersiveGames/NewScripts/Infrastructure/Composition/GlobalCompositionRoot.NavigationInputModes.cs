@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using _ImmersiveGames.NewScripts.Modules.InputModes.Interop;
+using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
@@ -283,6 +284,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var restartContextService = ResolveOrRegisterRestartContextService();
             IWorldResetCommands worldResetCommands = null;
             DependencyManager.Provider.TryGetGlobal(out worldResetCommands);
+            ISimulationGateService simulationGateService = null;
+            DependencyManager.Provider.TryGetGlobal(out simulationGateService);
+
+            ILevelSwapLocalService levelSwapLocalService = null;
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelSwapLocalService>(out levelSwapLocalService) || levelSwapLocalService == null)
+            {
+                levelSwapLocalService = new LevelSwapLocalService(
+                    levelCatalogAsset,
+                    restartContextService,
+                    worldResetCommands,
+                    catalogAsset,
+                    simulationGateService);
+
+                DependencyManager.Provider.RegisterGlobal<ILevelSwapLocalService>(levelSwapLocalService);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] ILevelSwapLocalService registrado (LevelSwapLocalService).",
+                    DebugUtility.Colors.Info);
+            }
 
             if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var existing) || existing == null)
             {
@@ -292,13 +312,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     catalogAsset,
                     styleCatalogAsset,
                     restartContextService,
-                    worldResetCommands,
+                    levelSwapLocalService,
                     levelCatalogAsset,
                     levelCatalogAsset);
                 DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var postLevelActions) || postLevelActions == null)
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
+                {
+                    throw new InvalidOperationException("ILevelFlowRuntimeService obrigatório ausente para registrar IPostLevelActionsService.");
+                }
+
+                postLevelActions = new PostLevelActionsService(
+                    levelFlowRuntime,
+                    levelSwapLocalService,
+                    restartContextService,
+                    levelCatalogAsset,
+                    navigationService);
+
+                DependencyManager.Provider.RegisterGlobal<IPostLevelActionsService>(postLevelActions);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] IPostLevelActionsService registrado (PostLevelActionsService).",
                     DebugUtility.Colors.Info);
             }
 
