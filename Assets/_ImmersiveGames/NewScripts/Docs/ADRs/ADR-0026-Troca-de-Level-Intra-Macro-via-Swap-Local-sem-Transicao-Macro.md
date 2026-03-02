@@ -2,9 +2,9 @@
 
 ## Status
 
-- Estado: **Em implementação**
+- Estado: **Aceito (Em implementação)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-25
+- Última atualização: 2026-03-01
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (LevelFlow, ContentSwap, WorldLifecycle, QA)
 
@@ -53,10 +53,23 @@ O que falta é fechar o trilho “Next/Prev/SelectLevel” sem depender de `Scen
   - que atualize seleção + execute swap local end-to-end.
 - Evidência de QA N→1 (A/B/Sequence) sem `TransitionStarted`.
 
+## Implementação atual (2026-03-01)
+
+Anchors curtas observadas no log atual:
+
+- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
+- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
+- Resets por domínio:
+  - macro: `ResetWorldStarted` / `ResetCompleted`;
+  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
+- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
+- Pause/Resume com token dedicado `state.pause`.
+- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+
 ## Critérios de aceite (DoD)
 
-- [ ] Existe ação runtime “Select/Next/Prev” que altera `levelId` dentro do mesmo macro.
-- [ ] Logs [OBS] demonstram:
+- [x] Existe ação runtime “Select/Next/Prev” que altera `levelId` dentro do mesmo macro.
+- [x] Logs [OBS] demonstram:
   - mesmo macroSignature;
   - levelSignature mudando (v incrementa);
   - ContentSwap/LevelReset executado;
@@ -65,4 +78,5 @@ O que falta é fechar o trilho “Next/Prev/SelectLevel” sem depender de `Scen
 
 ## Changelog
 
+- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
 - 2026-02-25: Atualizado para **Em implementação** com base no log; registrado que os blocos base (ContentSwap in-place + LevelReset) já existem, faltando o trilho end-to-end de swap local.

@@ -2,9 +2,9 @@
 
 ## Status
 
-- Estado: **Aceito (Implementado de forma equivalente)**
+- Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-25
+- Última atualização: 2026-03-01
 - Tipo: Implementação
 - Escopo: NewScripts/Runtime (SceneFlow, WorldLifecycle, LevelFlow, LoadingHud)
 
@@ -66,13 +66,27 @@ Para gameplay (`routeId='level.1'`, profile='gameplay'):
 - LevelFlow:
   - `StartGameplayRequested` + `LevelSelectedEventPublished` (levelSignature)
 
+## Implementação atual (2026-03-01)
+
+Anchors curtas observadas no log atual:
+
+- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
+- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
+- Resets por domínio:
+  - macro: `ResetWorldStarted` / `ResetCompleted`;
+  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
+- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
+- Pause/Resume com token dedicado `state.pause`.
+- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+
 ## Critérios de aceite (DoD)
 
 - [x] Para gameplay, MacroReset ocorre antes de FadeOut macro.
 - [x] Level selection ocorre antes da transição (garante contexto correto para reset/spawn).
 - [x] FadeOut só ocorre após completion gate (WorldLoaded).
-- [ ] Hardening: tornar “LevelPrepare” explícito (log + gate) caso precisemos suportar levels com carga pesada (Addressables/cenas de conteúdo) antes do FadeOut.
+- [x] Hardening: etapa `MacroLoadingPhase='LevelPrepare'` evidenciada no log atual antes do FadeOut.
 
 ## Changelog
 
+- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
 - 2026-02-25: Marcado como **Implementado (equivalente)** com base no log; documentada a estratégia atual (seleção pré-transição + MacroReset pré-FadeOut) e registrado hardening opcional para etapa explícita.

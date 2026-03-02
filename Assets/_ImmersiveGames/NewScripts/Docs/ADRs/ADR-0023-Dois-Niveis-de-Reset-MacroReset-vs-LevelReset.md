@@ -4,7 +4,7 @@
 
 - Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-25
+- Última atualização: 2026-03-01
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (WorldLifecycle, SceneFlow, LevelFlow, ContentSwap)
 
@@ -74,6 +74,19 @@ O projeto precisa:
   - ResetMacro = “reset determinístico completo”
 - Permite evolução incremental de LevelSwap (ADR-0026) usando LevelReset como base.
 
+## Implementação atual (2026-03-01)
+
+Anchors curtas observadas no log atual:
+
+- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
+- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
+- Resets por domínio:
+  - macro: `ResetWorldStarted` / `ResetCompleted`;
+  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
+- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
+- Pause/Resume com token dedicado `state.pause`.
+- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+
 ## Critérios de aceite (DoD)
 
 - [x] Existem dois comandos distinguíveis (Macro vs Level).
@@ -84,4 +97,5 @@ O projeto precisa:
 
 ## Changelog
 
+- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
 - 2026-02-25: Marcado como **Implementado**, adicionadas evidências do log (ResetRequested/ResetCompleted para Level e Macro).

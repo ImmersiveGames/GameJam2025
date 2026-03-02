@@ -2,9 +2,9 @@
 
 ## Status
 
-- Estado: **Em implementação (parcial em produção)**
+- Estado: **Aceito (Implementado com hardening pendente)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-02-25
+- Última atualização: 2026-03-01
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
 
@@ -65,6 +65,19 @@ Definir um contrato explícito:
   - No log atual, o `routeId` usado na transição para gameplay é `level.1` (ou seja, o level ainda está “virando” a route macro).
 - Vínculo explícito **macro → catálogo** ainda não está evidenciado (só vemos catálogo e seleção, não o “owner macro”).
 
+## Implementação atual (2026-03-01)
+
+Anchors curtas observadas no log atual:
+
+- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
+- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
+- Resets por domínio:
+  - macro: `ResetWorldStarted` / `ResetCompleted`;
+  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
+- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
+- Pause/Resume com token dedicado `state.pause`.
+- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+
 ## Critérios de aceite (DoD)
 
 - [ ] Ao entrar em um macro com catálogo, o sistema seleciona automaticamente o default level (sem depender do Menu/Play).
@@ -72,7 +85,7 @@ Definir um contrato explícito:
 - [x] Logs [OBS] mostram:
   - Macro: route/policy/started/ready/completed
   - Level: level selecionado + conteúdo aplicado (levelSignature + v)
-- [ ] QA/Dev demonstra N→1 sem transição macro:
+- [x] QA/Dev demonstra N→1 sem transição macro:
   - mesmo macroRouteId;
   - levelId distintos;
   - contentId distintos;
@@ -80,4 +93,5 @@ Definir um contrato explícito:
 
 ## Changelog
 
+- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
 - 2026-02-25: Atualizado para **parcial** com base no log; adicionadas evidências de LevelCatalog/seleção/snapshot e registradas lacunas (macroRouteId vs level routeId).
