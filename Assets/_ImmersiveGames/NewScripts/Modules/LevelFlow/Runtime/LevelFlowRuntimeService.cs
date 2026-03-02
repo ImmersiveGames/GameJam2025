@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -25,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly ITransitionStyleCatalog _styleCatalog;
         private readonly IRestartContextService _restartContextService;
         private readonly ILevelContentResolver _contentResolver;
-        private readonly IWorldResetCommands _worldResetCommands;
+        private readonly ILevelSwapLocalService _levelSwapLocalService;
 
         public LevelFlowRuntimeService(
             ILevelFlowService levelResolver,
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             IGameNavigationCatalog navigationCatalog = null,
             ITransitionStyleCatalog styleCatalog = null,
             IRestartContextService restartContextService = null,
-            IWorldResetCommands worldResetCommands = null,
+            ILevelSwapLocalService levelSwapLocalService = null,
             ILevelContentResolver contentResolver = null,
             ILevelMacroRouteCatalog macroRouteCatalog = null)
         {
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _navigationCatalog = navigationCatalog;
             _styleCatalog = styleCatalog;
             _restartContextService = restartContextService;
-            _worldResetCommands = worldResetCommands;
+            _levelSwapLocalService = levelSwapLocalService;
             _contentResolver = contentResolver ?? (levelResolver as ILevelContentResolver);
         }
 
@@ -102,82 +101,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public async Task SwapLevelLocalAsync(LevelId levelId, string reason = null, CancellationToken ct = default)
         {
-            ct.ThrowIfCancellationRequested();
-
-            if (!levelId.IsValid)
-            {
-                DebugUtility.LogError<LevelFlowRuntimeService>(
-                    $"[LevelFlow] LevelSwapLocal ignorado: levelId inválido. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
-                return;
-            }
-
-            string normalizedReason = NormalizeSwapReason(reason);
-
-            if (!_levelResolver.TryResolve(levelId, out var macroRouteId, out var contentId, out var payload) ||
-                !macroRouteId.IsValid ||
-                string.IsNullOrWhiteSpace(contentId))
-            {
-                FailFastConfig($"LevelSwapLocal inválido: levelId não resolvido ou contentId vazio. levelId='{levelId}', reason='{normalizedReason}'.");
-                return;
-            }
-
-            contentId = contentId.Trim();
-
-            LevelContextSignature levelSignature = LevelContextSignature.Create(levelId, macroRouteId, normalizedReason, contentId);
-            int nextSelectionVersion = ResolveNextSelectionVersion();
-
-            TransitionStyleId swapStyleId = ResolveStyleIdForSwap();
-
-            PublishLevelSelected(
-                levelId,
-                macroRouteId,
-                swapStyleId,
-                contentId,
-                normalizedReason,
-                nextSelectionVersion,
-                levelSignature);
-
-            DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] LevelSwapLocalRequested levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}'.",
-                DebugUtility.Colors.Info);
-
-            if (_worldResetCommands == null)
-            {
-                DebugUtility.LogError<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=False notes='MissingIWorldResetCommands'.");
-                return;
-            }
-
-            try
-            {
-                ct.ThrowIfCancellationRequested();
-                await _worldResetCommands.ResetLevelAsync(levelId, normalizedReason, levelSignature, ct);
-
-                SceneRouteId localRouteId = SceneRouteId.None;
-
-                PublishLevelSwapLocalApplied(
-                    levelId,
-                    macroRouteId,
-                    localRouteId,
-                    contentId,
-                    normalizedReason,
-                    nextSelectionVersion,
-                    levelSignature);
-
-                DebugUtility.Log<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalApplied levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Info);
-
-                DebugUtility.Log<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=True notes=''.",
-                    DebugUtility.Colors.Success);
-            }
-            catch (Exception ex)
+            if (_levelSwapLocalService == null)
             {
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] LevelSwapLocalCompleted levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' levelSignature='{levelSignature}' reason='{normalizedReason}' success=False notes='{ex.GetType().Name}'.");
-                throw;
+                    $"[OBS][LevelFlow] SwapLocalRejected levelId='{levelId}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
+                return;
             }
+
+            await _levelSwapLocalService.SwapLocalAsync(levelId, reason, ct);
         }
 
         public async Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)
@@ -285,11 +216,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/StartGameplay" : reason.Trim();
         }
 
-        private static string NormalizeSwapReason(string reason)
-        {
-            return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/SwapLevelLocal" : reason.Trim();
-        }
-
         private static string NormalizeRestartReason(string reason)
         {
             return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartLastGameplay" : reason.Trim();
@@ -312,30 +238,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 "[WARN][OBS][LevelFlow] RestartLastGameplay style_unknown -> fallback='none'.");
             return TransitionStyleId.None;
         }
-        private TransitionStyleId ResolveStyleIdForSwap()
-        {
-            if (_restartContextService != null
-                && _restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
-                && snapshot.IsValid
-                && snapshot.StyleId.IsValid)
-            {
-                return snapshot.StyleId;
-            }
-
-            if (_navigationCatalog is GameNavigationCatalogAsset assetCatalog)
-            {
-                GameNavigationEntry gameplayEntry = assetCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Gameplay);
-                if (gameplayEntry.StyleId.IsValid)
-                {
-                    return gameplayEntry.StyleId;
-                }
-            }
-
-            DebugUtility.LogWarning<LevelFlowRuntimeService>(
-                "[WARN][OBS][LevelFlow] style_unknown while publishing LevelSelectedEvent during SwapLevelLocalAsync; fallback styleId='none'.");
-            return TransitionStyleId.None;
-        }
-
         private int ResolveNextSelectionVersion()
         {
             if (_restartContextService != null &&
@@ -369,25 +271,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             DebugUtility.Log<LevelFlowRuntimeService>(
                 $"[OBS][Level] LevelSelectedEventPublished levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' reason='{reason}' v='{selectionVersion}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
-        }
-
-        private static void PublishLevelSwapLocalApplied(
-            LevelId levelId,
-            SceneRouteId macroRouteId,
-            SceneRouteId localRouteId,
-            string contentId,
-            string reason,
-            int selectionVersion,
-            LevelContextSignature levelSignature)
-        {
-            EventBus<LevelSwapLocalAppliedEvent>.Raise(new LevelSwapLocalAppliedEvent(
-                levelId,
-                macroRouteId,
-                localRouteId,
-                contentId,
-                reason,
-                selectionVersion,
-                levelSignature.Value));
         }
 
         private static void FailFastConfig(string detail)
