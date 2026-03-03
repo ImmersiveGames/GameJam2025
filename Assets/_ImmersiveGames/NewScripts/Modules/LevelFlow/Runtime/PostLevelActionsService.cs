@@ -32,16 +32,42 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public async Task RestartLevelAsync(string reason = null, CancellationToken ct = default)
         {
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostLevel/RestartLevel" : reason.Trim();
+            string levelSignature = ResolveCurrentLevelSignature();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionRequested action='RestartLevel' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] PostLevelActionRequested action='RestartLevel' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
-            await _levelFlowRuntimeService.RestartLastGameplayAsync(normalizedReason, ct);
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] RestartUsesLevelReset reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                DebugUtility.Colors.Info);
+
+            await _levelFlowRuntimeService.ResetCurrentLevelAsync(normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='RestartLevel' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] PostLevelActionApplied action='RestartLevel' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Success);
+        }
+
+        private string ResolveCurrentLevelSignature()
+        {
+            if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) || !snapshot.IsValid)
+            {
+                return "<none>";
+            }
+
+            if (!string.IsNullOrWhiteSpace(snapshot.LevelSignature))
+            {
+                return snapshot.LevelSignature;
+            }
+
+            if (!snapshot.HasLevelId || !snapshot.RouteId.IsValid)
+            {
+                return "<none>";
+            }
+
+            string contentId = snapshot.HasContentId ? snapshot.ContentId : string.Empty;
+            return LevelContextSignature.Create(snapshot.LevelId, snapshot.RouteId, snapshot.Reason, contentId).Value;
         }
 
         public async Task NextLevelAsync(string reason = null, CancellationToken ct = default)

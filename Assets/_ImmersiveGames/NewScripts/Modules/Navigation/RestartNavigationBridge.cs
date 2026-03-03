@@ -9,8 +9,8 @@ using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Bridge global: ao receber GameResetRequestedEvent, aciona o IGameNavigationService.
-    /// Mantém o reset oficial via SceneFlow + WorldLifecycle (profile gameplay).
+    /// Bridge global: ao receber GameResetRequestedEvent, aciona o trilho canônico de LevelReset.
+    /// Evita restart por navegação macro para manter o reset local no domínio de Level.
     /// </summary>
     public sealed class RestartNavigationBridge : IDisposable
     {
@@ -46,35 +46,47 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             if (DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) && levelFlowRuntime != null)
             {
+                string levelSignature = ResolveCurrentLevelSignature();
+
                 DebugUtility.Log<RestartNavigationBridge>(
-                    $"[Navigation] GameResetRequestedEvent recebido -> RestartLastGameplayAsync. reason='{reason}'.",
+                    $"[OBS][LevelFlow] RestartUsesLevelReset reason='{reason}' levelSignature='{levelSignature}'.",
                     DebugUtility.Colors.Info);
 
                 NavigationTaskRunner.FireAndForget(
-                    levelFlowRuntime.RestartLastGameplayAsync(reason, CancellationToken.None),
+                    levelFlowRuntime.ResetCurrentLevelAsync(reason, CancellationToken.None),
                     typeof(RestartNavigationBridge),
-                    "Restart -> LevelFlow/RestartLastGameplay");
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigation) || navigation == null)
-            {
-                DebugUtility.LogWarning<RestartNavigationBridge>(
-                    "[Navigation] IGameNavigationService indisponível; Restart ignorado.");
+                    "Restart -> LevelFlow/ResetCurrentLevel");
                 return;
             }
 
             DebugUtility.LogWarning<RestartNavigationBridge>(
-                "[WARN][OBS][Navigation] Restart fallback -> IGameNavigationService.RestartAsync (LevelFlowRuntimeService missing).");
+                "[WARN][OBS][LevelFlow] RestartUsesLevelReset skipped reason='missing_level_flow_runtime_service'.");
+        }
 
-            DebugUtility.Log<RestartNavigationBridge>(
-                $"[Navigation] GameResetRequestedEvent recebido -> RestartAsync. reason='{reason}'.",
-                DebugUtility.Colors.Info);
+        private static string ResolveCurrentLevelSignature()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext) || restartContext == null)
+            {
+                return "<none>";
+            }
 
-            NavigationTaskRunner.FireAndForget(
-                navigation.RestartAsync(reason),
-                typeof(RestartNavigationBridge),
-                $"Restart -> coreIntent=Gameplay");
+            if (!restartContext.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) || !snapshot.IsValid)
+            {
+                return "<none>";
+            }
+
+            if (!string.IsNullOrWhiteSpace(snapshot.LevelSignature))
+            {
+                return snapshot.LevelSignature;
+            }
+
+            if (!snapshot.HasLevelId || !snapshot.RouteId.IsValid)
+            {
+                return "<none>";
+            }
+
+            string contentId = snapshot.HasContentId ? snapshot.ContentId : string.Empty;
+            return LevelContextSignature.Create(snapshot.LevelId, snapshot.RouteId, snapshot.Reason, contentId).Value;
         }
     }
 }
