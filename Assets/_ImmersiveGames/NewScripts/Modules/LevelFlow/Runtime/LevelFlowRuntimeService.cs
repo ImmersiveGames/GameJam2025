@@ -29,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly ILevelSwapLocalService _levelSwapLocalService;
         private readonly IWorldResetCommands _worldResetCommands;
         private readonly ISimulationGateService _simulationGateService;
+        private bool _hasLoggedMissingSwapLocalService;
 
         public LevelFlowRuntimeService(
             ILevelFlowService levelResolver,
@@ -111,6 +112,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             if (_levelSwapLocalService == null)
             {
+                if (!_hasLoggedMissingSwapLocalService)
+                {
+                    _hasLoggedMissingSwapLocalService = true;
+                    DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                        "[WARN][OBS][LevelFlow] SwapLocal service unavailable in LevelFlowRuntimeService (one-time warning). ILevelSwapLocalService is null.");
+                }
+
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
                     $"[OBS][LevelFlow] SwapLocalRejected levelId='{levelId}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
                 return;
