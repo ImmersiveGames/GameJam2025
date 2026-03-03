@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private const string ReasonBaselineNTo1StepA = "QA/Baseline3/LevelSwap/N_to_1/StepA_level2";
         private const string ReasonBaselineNTo1StepB = "QA/Baseline3/LevelSwap/N_to_1/StepB_level1";
         private const string ReasonResetCurrent = "QA/LevelFlow/ResetCurrent";
+        private const string ReasonQaNextLevel = "QA/LevelFlow/NextLevel";
 
         [SerializeField] private string targetLevelId = "level.1";
         [SerializeField] private string proofSwapLevelId = "level.2";
@@ -69,6 +70,48 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private void Qa_ResetCurrentLevel()
         {
             _ = ResetCurrentLevelAsync();
+        }
+
+        [ContextMenu("QA/LevelFlow/NextLevel")]
+        private void Qa_NextLevel()
+        {
+            _ = NextLevelAsync();
+        }
+
+        private async Task NextLevelAsync()
+        {
+            var postLevelActions = ResolveGlobal<IPostLevelActionsService>("IPostLevelActionsService");
+            if (postLevelActions == null)
+            {
+                return;
+            }
+
+            int transitionStartedDuringNextLevel = 0;
+            var transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(_ => transitionStartedDuringNextLevel++);
+            EventBus<SceneTransitionStartedEvent>.Register(transitionStartedBinding);
+
+            DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                $"[OBS][PostLevel] PostLevelActionNextLevelRequested reason='{ReasonQaNextLevel}'.",
+                ColorInfo);
+
+            try
+            {
+                await postLevelActions.NextLevelAsync(ReasonQaNextLevel, CancellationToken.None);
+                bool noMacroTransition = transitionStartedDuringNextLevel == 0;
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[OBS][QA][LevelFlow] NextLevelCompleted reason='{ReasonQaNextLevel}' noMacroTransition='{noMacroTransition.ToString().ToLowerInvariant()}' transitionStartedCount='{transitionStartedDuringNextLevel}'.",
+                    noMacroTransition ? ColorInfo : ColorWarn);
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[WARN][QA][LevelFlow] NextLevelCompleted success=False reason='{ReasonQaNextLevel}' transitionStartedCount='{transitionStartedDuringNextLevel}' notes='{ex.GetType().Name}'.",
+                    ColorWarn);
+            }
+            finally
+            {
+                EventBus<SceneTransitionStartedEvent>.Unregister(transitionStartedBinding);
+            }
         }
 
         private async Task RunBaseline3LevelSwapNTo1Async()
