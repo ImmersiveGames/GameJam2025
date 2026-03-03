@@ -19,6 +19,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private const string ReasonNextInMacro = "QA/LevelFlow/SwapLocal/NextInMacro";
         private const string ReasonToTarget = "QA/LevelFlow/SwapLocal/ToTargetLevelId";
         private const string ReasonProofNoMacroTransition = "QA/LevelFlow/SwapLocal/ProofNoMacroTransition";
+        private const string ReasonSwapToLevel1 = "QA/LevelFlow/SwapLocal/ToLevel1";
+        private const string ReasonSwapToLevel2 = "QA/LevelFlow/SwapLocal/ToLevel2";
 
         [SerializeField] private string targetLevelId = "level.1";
         [SerializeField] private string proofSwapLevelId = "level.2";
@@ -40,6 +42,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private void Qa_SwapLocal_ProofNoMacroTransition()
         {
             _ = SwapToProofLevelAsync();
+        }
+
+        [ContextMenu("QA/LevelFlow/SwapLocal_ToLevel1")]
+        private void Qa_SwapLocal_ToLevel1()
+        {
+            _ = SwapToLevelAsync("level.1", ReasonSwapToLevel1);
+        }
+
+        [ContextMenu("QA/LevelFlow/SwapLocal_ToLevel2")]
+        private void Qa_SwapLocal_ToLevel2()
+        {
+            _ = SwapToLevelAsync("level.2", ReasonSwapToLevel2);
         }
 
         private async Task SwapNextInMacroAsync()
@@ -167,6 +181,42 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
             finally
             {
                 EventBus<SceneTransitionStartedEvent>.Unregister(transitionStartedBinding);
+            }
+        }
+
+        private async Task SwapToLevelAsync(string levelName, string reason)
+        {
+            var swapLocalService = ResolveGlobal<ILevelSwapLocalService>("ILevelSwapLocalService");
+            if (swapLocalService == null)
+            {
+                return;
+            }
+
+            LevelId levelId = LevelId.FromName(levelName);
+            if (!levelId.IsValid)
+            {
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[WARN][QA][LevelFlow] SwapLocal skipped reason='invalid_level' levelId='{levelName ?? "<null>"}'.",
+                    ColorWarn);
+                return;
+            }
+
+            DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                $"[OBS][QA][LevelFlow] SwapLocalRequested mode='direct' toLevelId='{levelId}' reason='{reason}'.",
+                ColorInfo);
+
+            try
+            {
+                await swapLocalService.SwapLocalAsync(levelId, reason, CancellationToken.None);
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[OBS][QA][LevelFlow] SwapLocalCompleted mode='direct' toLevelId='{levelId}' reason='{reason}'.",
+                    ColorInfo);
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[WARN][QA][LevelFlow] SwapLocalCompleted mode='direct' success=False toLevelId='{levelId}' reason='{reason}' notes='{ex.GetType().Name}'.",
+                    ColorWarn);
             }
         }
 
