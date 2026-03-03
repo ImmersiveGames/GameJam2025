@@ -21,6 +21,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private const string ReasonProofNoMacroTransition = "QA/LevelFlow/SwapLocal/ProofNoMacroTransition";
         private const string ReasonSwapToLevel1 = "QA/LevelFlow/SwapLocal/ToLevel1";
         private const string ReasonSwapToLevel2 = "QA/LevelFlow/SwapLocal/ToLevel2";
+        private const string ReasonBaselineNTo1StepA = "QA/Baseline3/LevelSwap/N_to_1/StepA_level2";
+        private const string ReasonBaselineNTo1StepB = "QA/Baseline3/LevelSwap/N_to_1/StepB_level1";
 
         [SerializeField] private string targetLevelId = "level.1";
         [SerializeField] private string proofSwapLevelId = "level.2";
@@ -54,6 +56,26 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private void Qa_SwapLocal_ToLevel2()
         {
             _ = SwapToLevelAsync("level.2", ReasonSwapToLevel2);
+        }
+
+        [ContextMenu("QA/LevelFlow/Run_Baseline3_LevelSwap_N_to_1")]
+        private void Qa_Run_Baseline3_LevelSwap_N_to_1()
+        {
+            _ = RunBaseline3LevelSwapNTo1Async();
+        }
+
+        private async Task RunBaseline3LevelSwapNTo1Async()
+        {
+            DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                "[OBS][QA][LevelFlow] Baseline3RunRequested scenario='LevelSwap_N_to_1' steps='level.2->level.1'.",
+                ColorInfo);
+
+            await SwapToLevelAsync("level.2", ReasonBaselineNTo1StepA);
+            await SwapToLevelAsync("level.1", ReasonBaselineNTo1StepB);
+
+            DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                "[OBS][QA][LevelFlow] Baseline3RunCompleted scenario='LevelSwap_N_to_1' steps='level.2->level.1'.",
+                ColorInfo);
         }
 
         private async Task SwapNextInMacroAsync()
