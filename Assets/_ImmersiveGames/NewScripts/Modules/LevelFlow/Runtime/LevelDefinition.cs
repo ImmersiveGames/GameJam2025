@@ -33,6 +33,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         [Tooltip("ContentId associado ao nível (observability/compat).")]
         public string contentId = LevelFlowContentDefaults.DefaultContentId;
 
+        [Tooltip("Quando true, este level é o default da sua macroRoute (usado ao entrar sem seleção explícita).")]
+        public bool isDefaultForMacroRoute;
+
         public bool IsValid => levelId.IsValid && ResolveMacroRouteId().IsValid;
 
         public SceneRouteId ResolveRouteId()

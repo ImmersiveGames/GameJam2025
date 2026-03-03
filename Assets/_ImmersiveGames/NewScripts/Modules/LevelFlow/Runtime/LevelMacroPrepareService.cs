@@ -78,21 +78,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             bool useSnapshot = snapshotBelongsToMacro;
-            bool autoSelectedDefaultLevel = !useSnapshot;
-            string source = useSnapshot ? "snapshot" : "catalog_first";
+            bool defaultSelected = !useSnapshot;
+            string source = useSnapshot ? "snapshot" : "catalog_default";
 
-            LevelId selectedLevelId = useSnapshot ? snapshot.LevelId : levelIds[0];
+            LevelId selectedLevelId = snapshot.LevelId;
+            if (!useSnapshot)
+            {
+                if (!_macroRouteCatalog.TryGetDefaultLevelForMacroRoute(macroRouteId, out selectedLevelId) || !selectedLevelId.IsValid)
+                {
+                    FailFastConfig($"LevelPrepare exige defaultLevelId configurado para macroRouteId='{macroRouteId}'.");
+                }
+            }
+
             if (!selectedLevelId.IsValid)
             {
                 FailFastConfig($"LevelPrepare sem level válido para macroRouteId='{macroRouteId}'.");
-            }
-
-            if (autoSelectedDefaultLevel)
-            {
-                // Comentário: hardening ADR-0024 — sem activeLevel/snapshot válido, escolhe default explícito do catálogo.
-                DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] DefaultLevelAutoSelected macroRouteId='{macroRouteId}' levelId='{selectedLevelId}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Info);
             }
 
             if (!_levelFlowService.TryResolve(selectedLevelId, out SceneRouteId resolvedRouteId, out _, out _) || !resolvedRouteId.IsValid)
@@ -111,6 +111,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string levelSignature = useSnapshot && !string.IsNullOrWhiteSpace(snapshot.LevelSignature)
                 ? snapshot.LevelSignature
                 : LevelContextSignature.Create(selectedLevelId, resolvedRouteId, normalizedReason, contentId).Value;
+
+            if (defaultSelected)
+            {
+                DebugUtility.Log<LevelMacroPrepareService>(
+                    $"[OBS][LevelFlow] DefaultLevelSelected macroRouteId='{macroRouteId}' defaultLevelId='{selectedLevelId}' levelSignature='{levelSignature}'.",
+                    DebugUtility.Colors.Info);
+            }
 
             if (!useSnapshot)
             {

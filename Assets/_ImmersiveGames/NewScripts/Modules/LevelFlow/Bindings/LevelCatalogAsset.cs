@@ -45,6 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
         private readonly Dictionary<LevelId, LevelResolution> _cache = new();
         private readonly Dictionary<SceneRouteId, LevelId> _macroRouteToLevelCache = new();
+        private readonly Dictionary<SceneRouteId, LevelId> _macroRouteToDefaultLevelCache = new();
         private readonly Dictionary<LevelId, SceneRouteId> _levelToMacroRouteCache = new();
         private readonly Dictionary<SceneRouteId, List<LevelId>> _macroRouteToLevelsCache = new();
         private readonly HashSet<SceneRouteId> _ambiguousMacroRoutes = new();
@@ -160,6 +161,19 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             return true;
         }
 
+        public bool TryGetDefaultLevelForMacroRoute(SceneRouteId macroRouteId, out LevelId defaultLevelId)
+        {
+            defaultLevelId = LevelId.None;
+
+            if (!macroRouteId.IsValid)
+            {
+                return false;
+            }
+
+            EnsureCache();
+            return _macroRouteToDefaultLevelCache.TryGetValue(macroRouteId, out defaultLevelId) && defaultLevelId.IsValid;
+        }
+
         public bool TryGetNextLevelInMacro(LevelId currentLevelId, out LevelId nextLevelId, bool wrapToFirst = true)
         {
             nextLevelId = LevelId.None;
@@ -255,6 +269,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cacheBuilt = true;
             _cache.Clear();
             _macroRouteToLevelCache.Clear();
+            _macroRouteToDefaultLevelCache.Clear();
             _levelToMacroRouteCache.Clear();
             _macroRouteToLevelsCache.Clear();
             _ambiguousMacroRoutes.Clear();
@@ -309,6 +324,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
 
                 groupedLevels.Add(entry.levelId);
+
+                if (entry.isDefaultForMacroRoute)
+                {
+                    if (_macroRouteToDefaultLevelCache.TryGetValue(resolvedMacroRouteId, out LevelId existingDefaultLevelId) &&
+                        existingDefaultLevelId != entry.levelId)
+                    {
+                        FailFast($"MacroRoute com múltiplos defaultLevelId configurados. macroRouteId='{resolvedMacroRouteId}', levelA='{existingDefaultLevelId}', levelB='{entry.levelId}'.");
+                    }
+
+                    _macroRouteToDefaultLevelCache[resolvedMacroRouteId] = entry.levelId;
+                }
 
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedMacroRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
