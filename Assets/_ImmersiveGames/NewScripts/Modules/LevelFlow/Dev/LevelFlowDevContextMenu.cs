@@ -23,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private const string ReasonSwapToLevel2 = "QA/LevelFlow/SwapLocal/ToLevel2";
         private const string ReasonBaselineNTo1StepA = "QA/Baseline3/LevelSwap/N_to_1/StepA_level2";
         private const string ReasonBaselineNTo1StepB = "QA/Baseline3/LevelSwap/N_to_1/StepB_level1";
+        private const string ReasonResetCurrent = "QA/LevelFlow/ResetCurrent";
 
         [SerializeField] private string targetLevelId = "level.1";
         [SerializeField] private string proofSwapLevelId = "level.2";
@@ -64,6 +65,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
             _ = RunBaseline3LevelSwapNTo1Async();
         }
 
+        [ContextMenu("QA/LevelFlow/ResetCurrent")]
+        private void Qa_ResetCurrentLevel()
+        {
+            _ = ResetCurrentLevelAsync();
+        }
+
         private async Task RunBaseline3LevelSwapNTo1Async()
         {
             DebugUtility.Log(typeof(LevelFlowDevContextMenu),
@@ -76,6 +83,33 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
             DebugUtility.Log(typeof(LevelFlowDevContextMenu),
                 "[OBS][QA][LevelFlow] Baseline3RunCompleted scenario='LevelSwap_N_to_1' steps='level.2->level.1'.",
                 ColorInfo);
+        }
+
+        private async Task ResetCurrentLevelAsync()
+        {
+            var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
+            if (levelFlow == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                $"[OBS][QA][LevelFlow] LevelResetRequested reason='{ReasonResetCurrent}'.",
+                ColorInfo);
+
+            try
+            {
+                await levelFlow.ResetCurrentLevelAsync(ReasonResetCurrent, CancellationToken.None);
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[OBS][QA][LevelFlow] LevelResetCompleted reason='{ReasonResetCurrent}'.",
+                    ColorInfo);
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[WARN][QA][LevelFlow] LevelResetCompleted success=False reason='{ReasonResetCurrent}' notes='{ex.GetType().Name}'.",
+                    ColorWarn);
+            }
         }
 
         private async Task SwapNextInMacroAsync()

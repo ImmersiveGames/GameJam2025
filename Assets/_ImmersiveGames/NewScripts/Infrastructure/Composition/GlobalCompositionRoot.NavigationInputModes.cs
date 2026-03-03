@@ -314,7 +314,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     restartContextService,
                     levelSwapLocalService,
                     levelCatalogAsset,
-                    levelCatalogAsset);
+                    levelCatalogAsset,
+                    worldResetCommands,
+                    simulationGateService);
                 DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
