@@ -66,9 +66,22 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return;
             }
 
+            string levelSignature = string.IsNullOrWhiteSpace(updatedSnapshot.LevelSignature)
+                ? LevelContextSignature.Create(
+                        updatedSnapshot.LevelId,
+                        updatedSnapshot.RouteId,
+                        updatedSnapshot.Reason,
+                        updatedSnapshot.ContentId)
+                    .Value
+                : updatedSnapshot.LevelSignature;
+
             DebugUtility.Log(typeof(RestartSnapshotContentSwapBridge),
                 $"[OBS][Navigation] RestartSnapshotContentUpdated routeId='{updatedSnapshot.RouteId}' levelId='{(updatedSnapshot.HasLevelId ? updatedSnapshot.LevelId.ToString() : "<none>")}' contentId='{(updatedSnapshot.HasContentId ? updatedSnapshot.ContentId : "<none>")}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(RestartSnapshotContentSwapBridge),
+                $"[OBS][Level] ContentApplied contentId='{(updatedSnapshot.HasContentId ? updatedSnapshot.ContentId : "<none>")}' levelId='{(updatedSnapshot.HasLevelId ? updatedSnapshot.LevelId.ToString() : "<none>")}' macroRouteId='{updatedSnapshot.RouteId}' v='{updatedSnapshot.SelectionVersion}' levelSignature='{levelSignature}' reason='{(string.IsNullOrWhiteSpace(updatedSnapshot.Reason) ? reason : updatedSnapshot.Reason)}'.",
+                DebugUtility.Colors.Success);
         }
     }
 }
