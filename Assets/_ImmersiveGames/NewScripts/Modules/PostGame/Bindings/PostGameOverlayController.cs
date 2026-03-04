@@ -31,7 +31,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private const string RestartReason = "PostGame/Restart";
         private const string NextLevelReason = "PostGame/NextLevel";
         private const string ExitToMenuReason = "PostGame/ExitToMenu";
-        private const string PostGameGateToken = "state.postgame";
 
         [Header("Overlay")]
         [SerializeField] private CanvasGroup rootCanvasGroup;
@@ -467,9 +466,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 return;
             }
 
-            _postGameGateHandle = _gateService.Acquire(PostGameGateToken);
+            _postGameGateHandle = _gateService.Acquire(SimulationGateTokens.PostGame);
             DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Gate adquirido token='{PostGameGateToken}'.");
+                $"[PostGame] Gate adquirido token='{SimulationGateTokens.PostGame}'.");
         }
 
         private void ReleasePostGameGate(string reason)
@@ -494,7 +493,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             }
 
             DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Gate liberado token='{PostGameGateToken}'.");
+                $"[PostGame] Gate liberado token='{SimulationGateTokens.PostGame}'.");
         }
 
         private void ValidateReferences()

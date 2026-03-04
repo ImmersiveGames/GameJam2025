@@ -7,6 +7,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     {
         bool TryResolveMacroRouteId(LevelId levelId, out SceneRouteId macroRouteId);
         bool TryGetLevelsForMacroRoute(SceneRouteId macroRouteId, out IReadOnlyList<LevelId> levelIds);
+        bool TryGetDefaultLevelId(SceneRouteId macroRouteId, out LevelId defaultLevelId);
         bool TryGetDefaultLevelForMacroRoute(SceneRouteId macroRouteId, out LevelId defaultLevelId);
         bool TryGetNextLevelInMacro(LevelId currentLevelId, out LevelId nextLevelId, bool wrapToFirst = true);
     }

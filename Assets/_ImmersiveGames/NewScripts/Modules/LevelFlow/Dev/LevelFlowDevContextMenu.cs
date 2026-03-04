@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine;
 
@@ -25,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private const string ReasonBaselineNTo1StepB = "QA/Baseline3/LevelSwap/N_to_1/StepB_level1";
         private const string ReasonResetCurrent = "QA/LevelFlow/ResetCurrent";
         private const string ReasonQaNextLevel = "QA/LevelFlow/NextLevel";
+        private const string ReasonStartGameplayNoLevelId = "QA/LevelFlow/StartGameplay_NoLevelId";
 
         [SerializeField] private string targetLevelId = "level.1";
         [SerializeField] private string proofSwapLevelId = "level.2";
@@ -76,6 +78,36 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
         private void Qa_NextLevel()
         {
             _ = NextLevelAsync();
+        }
+
+        [ContextMenu("QA/LevelFlow/StartGameplay_NoLevelId")]
+        private void Qa_StartGameplay_NoLevelId()
+        {
+            _ = StartGameplayNoLevelIdAsync();
+        }
+
+        private async Task StartGameplayNoLevelIdAsync()
+        {
+            var navigation = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
+            if (navigation == null)
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                $"[OBS][QA][LevelFlow] StartGameplay_NoLevelId reason='{ReasonStartGameplayNoLevelId}'.",
+                ColorInfo);
+
+            try
+            {
+                await navigation.NavigateAsync(GameNavigationIntentKind.Gameplay, ReasonStartGameplayNoLevelId);
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[WARN][QA][LevelFlow] StartGameplay_NoLevelId success=False reason='{ReasonStartGameplayNoLevelId}' notes='{ex.GetType().Name}'.",
+                    ColorWarn);
+            }
         }
 
         private async Task NextLevelAsync()

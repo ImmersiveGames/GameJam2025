@@ -80,11 +80,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             bool useSnapshot = snapshotBelongsToMacro;
             bool defaultSelected = !useSnapshot;
             string source = useSnapshot ? "snapshot" : "catalog_default";
+            string levelSelectedReason = defaultSelected ? "MacroLevelPrepare/DefaultLevel" : normalizedReason;
 
             LevelId selectedLevelId = snapshot.LevelId;
             if (!useSnapshot)
             {
-                if (!_macroRouteCatalog.TryGetDefaultLevelForMacroRoute(macroRouteId, out selectedLevelId) || !selectedLevelId.IsValid)
+                if (!_macroRouteCatalog.TryGetDefaultLevelId(macroRouteId, out selectedLevelId) || !selectedLevelId.IsValid)
                 {
                     FailFastConfig($"LevelPrepare exige defaultLevelId configurado para macroRouteId='{macroRouteId}'.");
                 }
@@ -110,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             string levelSignature = useSnapshot && !string.IsNullOrWhiteSpace(snapshot.LevelSignature)
                 ? snapshot.LevelSignature
-                : LevelContextSignature.Create(selectedLevelId, resolvedRouteId, normalizedReason, contentId).Value;
+                : LevelContextSignature.Create(selectedLevelId, resolvedRouteId, levelSelectedReason, contentId).Value;
 
             if (defaultSelected)
             {
@@ -127,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     resolvedRouteId,
                     styleId,
                     contentId,
-                    normalizedReason,
+                    levelSelectedReason,
                     selectionVersion,
                     new LevelContextSignature(levelSignature)));
             }

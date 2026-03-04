@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gates
     {
         // Estado especial suportado (pausa).
         public const string Pause = "state.pause";
+        public const string PostGame = "state.postgame";
 
         // Fluxos (infra)
         public const string SceneTransition = "flow.scene_transition";
