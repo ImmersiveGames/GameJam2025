@@ -43,6 +43,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             var provider = DependencyManager.Provider;
+            int addedCoreServices = 0;
+            int reusedCoreServices = 0;
 
             provider.RegisterForScene<ISceneScopeMarker>(
                 _sceneName,
@@ -83,9 +85,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
                 classifier = new DefaultRunRearmTargetClassifier(runtimeModeProvider, degradedModeReporter);
                 provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
-
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"IRunRearmTargetClassifier registrado para a cena '{_sceneName}'.");
+                addedCoreServices++;
+            }
+            else
+            {
+                reusedCoreServices++;
             }
 
             // Orquestrador de reset de gameplay (por fases) acionável por participantes do WorldLifecycle.
@@ -93,9 +97,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 gameplayReset = new RunRearmOrchestrator(_sceneName);
                 provider.RegisterForScene(_sceneName, gameplayReset, allowOverride: false);
-
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"IRunRearmOrchestrator registrado para a cena '{_sceneName}'.");
+                addedCoreServices++;
+            }
+            else
+            {
+                reusedCoreServices++;
             }
 
             // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
@@ -114,8 +120,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     _sceneName,
                     hookRegistry,
                     allowOverride: false);
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
+                addedCoreServices++;
             }
 
             // Ponte WorldLifecycle soft reset -> Gameplay reset
@@ -124,10 +129,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 _sceneName,
                 playersResetParticipant,
                 allowOverride: false);
-            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"IRunRearmWorldBridge registrado para a cena '{_sceneName}'.");
+            addedCoreServices++;
 
             RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
+
+            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
+                $"[DI][SceneScope] Register summary scene='{_sceneName}': added={addedCoreServices}, reused={reusedCoreServices}, critical=IRunRearmTargetClassifier|IRunRearmOrchestrator.");
 
             RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
@@ -184,8 +191,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             IReadOnlyList<WorldDefinition.SpawnEntry> entries = worldDefinition.Entries;
             int totalEntries = entries?.Count ?? 0;
 
-            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"WorldDefinition entries count: {totalEntries}");
 
             if (entries != null)
             {
@@ -195,14 +200,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     string entryKind = entry.Kind.ToString();
                     string entryPrefabName = entry.Prefab != null ? entry.Prefab.name : "<null>";
 
-                    DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                        $"Spawn entry #{index}: Enabled={entry.Enabled}, Kind={entryKind}, Prefab={entryPrefabName}");
 
                     if (!entry.Enabled)
                     {
                         skippedDisabledCount++;
-                        DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                            $"Spawn entry #{index} SKIPPED_DISABLED: Kind={entryKind}, Prefab={entryPrefabName}");
                         continue;
                     }
 
@@ -222,8 +223,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     registry.Register(service);
                     registeredCount++;
 
-                    DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                        $"Spawn entry #{index} REGISTERED: {service.Name} (Kind={entryKind}, Prefab={entryPrefabName})");
                 }
 
                 DebugUtility.Log(typeof(SceneScopeCompositionRoot),
@@ -342,14 +341,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (registry.Hooks.Contains(hook))
             {
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"Hook de cena já registrado: {hook.GetType().Name}");
                 return;
             }
 
             registry.Register(hook);
-            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"Hook de cena registrado: {hook.GetType().Name}");
         }
 
         private static string BuildTransformPath(Transform transform)
