@@ -39,10 +39,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartUsesLevelReset reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] RestartUsesNavigationRestart reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
-            await _levelFlowRuntimeService.ResetCurrentLevelAsync(normalizedReason, ct);
+            ct.ThrowIfCancellationRequested();
+            await _navigationService.RestartAsync(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] PostLevelActionApplied action='RestartLevel' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
