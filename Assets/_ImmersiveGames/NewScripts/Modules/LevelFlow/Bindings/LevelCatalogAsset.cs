@@ -342,7 +342,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedMacroRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
 
-            ValidateDefaultLevelRequirementsOrFail();
+            ValidateDefaultLevelRequirements();
 
             if (warnOnInvalidLevels)
             {
@@ -370,8 +370,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
                     string routeDetails = BuildAmbiguousMacroRouteDetails(maxLevelIdsPerRoute: 5);
 
-                    DebugUtility.LogVerbose<LevelCatalogAsset>(
-                        $"[OBS][Config] LevelCatalogAmbiguousRoutes macroRoutes={_ambiguousMacroRoutes.Count} example='{exampleRouteId}' details='{routeDetails}' note='Esperado quando múltiplos levels compartilham o mesmo macroRouteId; TryResolveLevelId permanece best-effort para compat.'");
+                    DebugUtility.LogWarning<LevelCatalogAsset>(
+                        $"[WARN][OBS][Config] LevelCatalogAmbiguousRoutes macroRoutes={_ambiguousMacroRoutes.Count} example='{exampleRouteId}' details='{routeDetails}' note='Esperado quando múltiplos levels compartilham o mesmo macroRouteId; TryResolveLevelId permanece best-effort para compat.'");
                 }
             }
         }
@@ -436,7 +436,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 DebugUtility.Colors.Info);
         }
 
-        private void ValidateDefaultLevelRequirementsOrFail()
+        private void ValidateDefaultLevelRequirements()
         {
             foreach (var pair in _macroRouteToLevelsCache)
             {
@@ -454,7 +454,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
                 if (!_macroRouteToDefaultLevelCache.TryGetValue(macroRouteId, out LevelId defaultLevelId) || !defaultLevelId.IsValid)
                 {
-                    FailFast($"MacroRoute com múltiplos levels exige defaultLevelId explícito. macroRouteId='{macroRouteId}', levelsCount={groupedLevels.Count}.");
+                    DebugUtility.LogWarning<LevelCatalogAsset>(
+                        $"[WARN][OBS][Config] MacroRoute com múltiplos levels sem defaultLevelId explícito. macroRouteId='{macroRouteId}', levelsCount={groupedLevels.Count}, note='Validação não-fatal durante migração ADR-0024; default será definido no MacroRoute'.");
                 }
             }
         }
