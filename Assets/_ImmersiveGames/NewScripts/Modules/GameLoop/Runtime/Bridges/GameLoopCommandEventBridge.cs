@@ -104,6 +104,15 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
                 return;
             }
 
+            if (string.Equals(loop.CurrentStateIdName, GameLoopStateId.PostPlay.ToString(), StringComparison.Ordinal))
+            {
+                DebugUtility.Log<GameLoopCommandEventBridge>(
+                    "[OBS][GameLoop] Restart in PostGame -> RequestReady (skip Boot).",
+                    DebugUtility.Colors.Info);
+                loop.RequestReady();
+                return;
+            }
+
             DebugUtility.Log<GameLoopCommandEventBridge>(
                 $"[GameLoop] RestartRequested -> RequestReset (expect Boot cycle). reason='{evt?.Reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
@@ -111,4 +120,3 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         }
     }
 }
-
