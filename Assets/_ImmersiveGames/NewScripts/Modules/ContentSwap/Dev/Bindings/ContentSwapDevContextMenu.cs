@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
-using UnityEditor;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
 {
@@ -15,7 +14,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
         // Paleta do projeto
         private const string ColorInfo = "#A8DEED";
         private const string ColorOk = "#4CAF50";
-        private const string ColorWarn = "#FFC107";
         private const string ColorErr = "#F44336";
 
         [Header("Default ContentIds")]
@@ -40,25 +38,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
         {
             DumpContentSwapContext();
         }
-
-        // ----------------------------
-        // Editor convenience (MenuItem)
-        // ----------------------------
-#if UNITY_EDITOR
-        [MenuItem("Tools/NewScripts/QA/ContentSwap/Select QA_ContentSwap Object", priority = 10)]
-        private static void SelectQaObject()
-        {
-            var obj = GameObject.Find("QA_ContentSwap");
-            if (obj != null)
-            {
-                Selection.activeObject = obj;
-            }
-            else
-            {
-                DebugUtility.Log(typeof(ContentSwapDevContextMenu), "[QA][ContentSwap] QA_ContentSwap não encontrado no Hierarchy (Play Mode).", ColorWarn);
-            }
-        }
-#endif
 
         // ----------------------------
         // Implementations
