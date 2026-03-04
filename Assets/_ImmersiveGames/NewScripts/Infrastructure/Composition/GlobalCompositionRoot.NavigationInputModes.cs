@@ -422,7 +422,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            var bridge = new RestartNavigationBridge();
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            {
+                throw new InvalidOperationException("IGameNavigationService obrigatório ausente para registrar RestartNavigationBridge.");
+            }
+
+            var bridge = new RestartNavigationBridge(navigationService);
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
