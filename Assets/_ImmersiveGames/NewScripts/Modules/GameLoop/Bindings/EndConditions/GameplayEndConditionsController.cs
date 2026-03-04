@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
         [SerializeField] private bool enableDevManualTriggers;
 
         [SerializeField] private KeyCode devVictoryKey = KeyCode.F9;
-        [SerializeField] private KeyCode devDefeatKey = KeyCode.F10;
+        [SerializeField] private KeyCode devDefeatKey = KeyCode.F11;
 
         [Header("Dev-only reasons (opcional)")]
         [SerializeField] private string devVictoryReason = "Gameplay/DevManualVictory";

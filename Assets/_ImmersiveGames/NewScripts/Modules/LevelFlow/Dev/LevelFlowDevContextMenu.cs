@@ -50,13 +50,30 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
             _ = SwapToProofLevelAsync();
         }
 
+        [ContextMenu("QA/Smoke/Baseline 3.0 Levels/D. Swap to L2")]
+        private void Qa_Smoke_B3_D_SwapToL2()
+        {
+            _ = SwapToLevelAsync("level.2", "QA/Smoke/Baseline3/Levels/D/SwapToL2");
+        }
+
+        [ContextMenu("QA/Smoke/Baseline 3.0 Levels/E. LevelReset (stay on L2)")]
+        private void Qa_Smoke_B3_E_LevelReset()
+        {
+            _ = ResetCurrentLevelWithReasonAsync("QA/Smoke/Baseline3/Levels/E/LevelReset");
+        }
+
+        [ContextMenu("QA/Smoke/Baseline 3.0 Levels/D+E. Swap L2 + LevelReset")]
+        private void Qa_Smoke_B3_DE_SwapAndReset()
+        {
+            _ = RunSmokeSwapAndResetAsync();
+        }
+
         [ContextMenu("QA/LevelFlow/SwapLocal_ToLevel1")]
         private void Qa_SwapLocal_ToLevel1()
         {
             _ = SwapToLevelAsync("level.1", ReasonSwapToLevel1);
         }
 
-        [ContextMenu("QA/LevelFlow/SwapLocal_ToLevel2")]
         private void Qa_SwapLocal_ToLevel2()
         {
             _ = SwapToLevelAsync("level.2", ReasonSwapToLevel2);
@@ -68,7 +85,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
             _ = RunBaseline3LevelSwapNTo1Async();
         }
 
-        [ContextMenu("QA/LevelFlow/ResetCurrent")]
         private void Qa_ResetCurrentLevel()
         {
             _ = ResetCurrentLevelAsync();
@@ -349,6 +365,32 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev
                     $"[WARN][QA][LevelFlow] SwapLocalCompleted mode='direct' success=False toLevelId='{levelId}' reason='{reason}' notes='{ex.GetType().Name}'.",
                     ColorWarn);
             }
+        }
+
+        private async Task ResetCurrentLevelWithReasonAsync(string reason)
+        {
+            var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
+            if (levelFlow == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await levelFlow.ResetCurrentLevelAsync(reason, CancellationToken.None);
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.Log(typeof(LevelFlowDevContextMenu),
+                    $"[WARN][QA][LevelFlow] LevelResetCompleted success=False reason='{reason}' notes='{ex.GetType().Name}'.",
+                    ColorWarn);
+            }
+        }
+
+        private async Task RunSmokeSwapAndResetAsync()
+        {
+            await SwapToLevelAsync("level.2", "QA/Smoke/Baseline3/Levels/DE/D");
+            await ResetCurrentLevelWithReasonAsync("QA/Smoke/Baseline3/Levels/DE/E");
         }
 
         private static T? ResolveGlobal<T>(string label) where T : class
