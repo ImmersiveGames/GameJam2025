@@ -4,9 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.Navigation;
 using UnityEditor;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
@@ -25,7 +24,6 @@ namespace _ImmersiveGames.NewScripts.QA.Smoke.Baseline3.Editor
         private const string ReasonStepE = "QA/Smoke/Baseline3/Levels/E/LevelReset";
         private const string ReasonStepDE = "QA/Smoke/Baseline3/Levels/DE/SwapAndReset";
         private const string ReasonStepG = "QA/Smoke/Baseline3/G/PostGameRestart";
-        private const string ReasonStepH = "QA/Smoke/Baseline3/H/Defeat";
 
         [MenuItem(MenuRootLevels + "/D. Swap to L2", priority = 2100)]
         private static void RunD_Menu()
@@ -51,11 +49,6 @@ namespace _ImmersiveGames.NewScripts.QA.Smoke.Baseline3.Editor
             _ = RunRestartAsync();
         }
 
-        [MenuItem(MenuRootBaseline + "/Defeat", priority = 2111)]
-        private static void RunDefeat_Menu()
-        {
-            RunDefeat();
-        }
 
         [Shortcut("QA/Smoke/Baseline 3.0 Levels/Run D+E (Swap L2 + LevelReset)", KeyCode.F8)]
         private static void RunDE_Shortcut()
@@ -69,11 +62,6 @@ namespace _ImmersiveGames.NewScripts.QA.Smoke.Baseline3.Editor
             _ = RunRestartAsync();
         }
 
-        [Shortcut("QA/Smoke/Baseline 3.0/Defeat", KeyCode.F11)]
-        private static void RunDefeat_Shortcut()
-        {
-            RunDefeat();
-        }
 
         private static async Task RunRestartAsync()
         {
@@ -82,30 +70,15 @@ namespace _ImmersiveGames.NewScripts.QA.Smoke.Baseline3.Editor
                 return;
             }
 
-            var postLevelActions = ResolveGlobal<IPostLevelActionsService>("IPostLevelActionsService");
-            if (postLevelActions == null)
+            var navigationService = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
+            if (navigationService == null)
             {
                 return;
             }
 
-            await postLevelActions.RestartLevelAsync(ReasonStepG, CancellationToken.None);
+            await navigationService.RestartAsync(ReasonStepG);
         }
 
-        private static void RunDefeat()
-        {
-            if (!EnsurePlayMode())
-            {
-                return;
-            }
-
-            var endRequest = ResolveGlobal<IGameRunEndRequestService>("IGameRunEndRequestService");
-            if (endRequest == null)
-            {
-                return;
-            }
-
-            endRequest.RequestEnd(GameRunOutcome.Defeat, ReasonStepH);
-        }
 
         private static bool EnsurePlayMode()
         {
