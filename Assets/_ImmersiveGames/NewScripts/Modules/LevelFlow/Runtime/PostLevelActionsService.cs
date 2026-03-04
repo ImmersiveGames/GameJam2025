@@ -1,7 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -39,11 +41,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartUsesNavigationRestart reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] RestartUsesGameResetRequestedEvent reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
-            await _navigationService.RestartAsync(normalizedReason);
+            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(normalizedReason));
 
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] PostLevelActionApplied action='RestartLevel' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
