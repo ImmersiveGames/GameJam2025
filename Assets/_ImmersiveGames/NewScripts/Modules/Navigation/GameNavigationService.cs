@@ -69,18 +69,42 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         public async Task RestartAsync(string reason = null)
         {
-            string resolvedReason = string.IsNullOrWhiteSpace(reason) ? "Restart" : reason.Trim();
+            string resolvedReason = string.IsNullOrWhiteSpace(reason) ? "PostGame/Restart" : reason.Trim();
 
             GameplayStartSnapshot snapshot = default;
             bool hasSnapshot = _restartContextService != null && _restartContextService.TryGetCurrent(out snapshot);
-            if (hasSnapshot)
+            if (hasSnapshot && snapshot.IsValid)
             {
+                string contentId = snapshot.HasContentId ? snapshot.ContentId : string.Empty;
+                int oldSelectionVersion = snapshot.SelectionVersion;
+                int nextSelectionVersion = Math.Max(oldSelectionVersion + 1, 1);
+                string levelSignature = LevelContextSignature
+                    .Create(snapshot.LevelId, snapshot.RouteId, resolvedReason, contentId)
+                    .Value;
+
+                var bumpedSnapshot = new GameplayStartSnapshot(
+                    snapshot.LevelId,
+                    snapshot.RouteId,
+                    snapshot.StyleId,
+                    contentId,
+                    resolvedReason,
+                    nextSelectionVersion,
+                    levelSignature);
+
+                snapshot = _restartContextService.UpdateGameplayStartSnapshot(bumpedSnapshot);
+                hasSnapshot = snapshot.IsValid;
+
                 DebugUtility.Log(typeof(GameNavigationService),
-                    $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.RouteId}', levelId='{(snapshot.HasLevelId ? snapshot.LevelId.ToString() : "<none>")}', contentId='{(snapshot.HasContentId ? snapshot.ContentId : "<none>")}', styleId='{snapshot.StyleId}', v='{snapshot.SelectionVersion}', reason='{(string.IsNullOrWhiteSpace(reason) ? snapshot.Reason : resolvedReason)}', levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                    $"[OBS][Navigation] RestartSnapshotBumped oldV='{oldSelectionVersion}' newV='{snapshot.SelectionVersion}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}' reason='{resolvedReason}'.",
+                    DebugUtility.Colors.Info);
+
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.RouteId}', levelId='{(snapshot.HasLevelId ? snapshot.LevelId.ToString() : "<none>")}', contentId='{(snapshot.HasContentId ? snapshot.ContentId : "<none>")}', styleId='{snapshot.StyleId}', v='{snapshot.SelectionVersion}', reason='{snapshot.Reason}', levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
                     DebugUtility.Colors.Info);
             }
             else
             {
+                hasSnapshot = false;
                 DebugUtility.Log(typeof(GameNavigationService),
                     "[OBS][Navigation] RestartUsingSnapshot status='empty_or_compat'.",
                     DebugUtility.Colors.Info);
@@ -164,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] RestartRequested levelId='{_lastStartedGameplayLevelId}', macroRouteId='{resolvedRouteId}', reason='{resolvedReason}'.",
+                $"[OBS][Navigation] RestartRequested levelId='{(hasSnapshot && snapshot.HasLevelId ? snapshot.LevelId.ToString() : _lastStartedGameplayLevelId.ToString())}', macroRouteId='{resolvedRouteId}', reason='{resolvedReason}'.",
                 DebugUtility.Colors.Info);
 
             await StartGameplayRouteAsync(resolvedRouteId, payload, resolvedReason);

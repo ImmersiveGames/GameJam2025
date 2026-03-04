@@ -333,10 +333,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                     if (_macroRouteToDefaultLevelCache.TryGetValue(resolvedMacroRouteId, out LevelId existingDefaultLevelId) &&
                         existingDefaultLevelId != entry.levelId)
                     {
-                        FailFast($"MacroRoute com múltiplos defaultLevelId configurados. macroRouteId='{resolvedMacroRouteId}', levelA='{existingDefaultLevelId}', levelB='{entry.levelId}'.");
+                        DebugUtility.LogWarning<LevelCatalogAsset>(
+                            $"[WARN][OBS][Config] MacroRoute com múltiplos levels marcados como default. macroRouteId='{resolvedMacroRouteId}', keptDefault='{existingDefaultLevelId}', ignoredDefault='{entry.levelId}', policy='first_in_list_wins'.");
                     }
-
-                    _macroRouteToDefaultLevelCache[resolvedMacroRouteId] = entry.levelId;
+                    else
+                    {
+                        _macroRouteToDefaultLevelCache[resolvedMacroRouteId] = entry.levelId;
+                    }
                 }
 
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedMacroRouteId, entry.ToPayload(), entry.ResolveContentId()));
