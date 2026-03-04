@@ -54,8 +54,6 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostGameOwnershipService : IPostGameOwnershipService
     {
-        private const string PostGameGateToken = "state.postgame";
-
         private bool _isActive;
         private bool _loggedMissingGate;
         private IDisposable _gateHandle;
@@ -154,9 +152,9 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
                 return;
             }
 
-            _gateHandle = gateService.Acquire(PostGameGateToken);
+            _gateHandle = gateService.Acquire(SimulationGateTokens.PostGame);
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[PostGame] Gate adquirido token='{PostGameGateToken}'.",
+                $"[PostGame] Gate adquirido token='{SimulationGateTokens.PostGame}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -180,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             _gateHandle = null;
 
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[PostGame] Gate liberado token='{PostGameGateToken}'.",
+                $"[PostGame] Gate liberado token='{SimulationGateTokens.PostGame}'.",
                 DebugUtility.Colors.Info);
         }
 

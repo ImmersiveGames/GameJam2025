@@ -287,22 +287,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             ISimulationGateService simulationGateService = null;
             DependencyManager.Provider.TryGetGlobal(out simulationGateService);
 
-            ILevelSwapLocalService levelSwapLocalService = null;
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelSwapLocalService>(out levelSwapLocalService) || levelSwapLocalService == null)
-            {
-                levelSwapLocalService = new LevelSwapLocalService(
-                    levelCatalogAsset,
-                    restartContextService,
-                    worldResetCommands,
-                    catalogAsset,
-                    simulationGateService);
-
-                DependencyManager.Provider.RegisterGlobal<ILevelSwapLocalService>(levelSwapLocalService);
-
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][LevelFlow] ILevelSwapLocalService registrado (LevelSwapLocalService).",
-                    DebugUtility.Colors.Info);
-            }
+            ILevelSwapLocalService levelSwapLocalService = EnsureLevelSwapLocalService(
+                levelCatalogAsset,
+                restartContextService,
+                worldResetCommands,
+                catalogAsset,
+                simulationGateService);
 
             if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var existing) || existing == null)
             {
@@ -314,7 +304,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     restartContextService,
                     levelSwapLocalService,
                     levelCatalogAsset,
-                    levelCatalogAsset);
+                    levelCatalogAsset,
+                    worldResetCommands,
+                    simulationGateService);
                 DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
@@ -374,6 +366,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DependencyManager.Provider.RegisterGlobal(service);
         }
 
+        private static ILevelSwapLocalService EnsureLevelSwapLocalService(
+            ILevelFlowService levelFlowService,
+            IRestartContextService restartContextService,
+            IWorldResetCommands worldResetCommands,
+            IGameNavigationCatalog navigationCatalog,
+            ISimulationGateService simulationGateService)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ILevelSwapLocalService>(out var existing) && existing != null)
+            {
+                return existing;
+            }
+
+            var created = new LevelSwapLocalService(
+                levelFlowService,
+                restartContextService,
+                worldResetCommands,
+                navigationCatalog,
+                simulationGateService);
+
+            DependencyManager.Provider.RegisterGlobal<ILevelSwapLocalService>(created);
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][LevelFlow] ILevelSwapLocalService registrado (LevelSwapLocalService).",
+                DebugUtility.Colors.Info);
+
+            return created;
+        }
+
         private static void RegisterExitToMenuNavigationBridge()
         {
             if (DependencyManager.Provider.TryGetGlobal<ExitToMenuNavigationBridge>(out var existing) && existing != null)
@@ -402,7 +422,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            var bridge = new RestartNavigationBridge();
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            {
+                throw new InvalidOperationException("IGameNavigationService obrigatório ausente para registrar RestartNavigationBridge.");
+            }
+
+            var bridge = new RestartNavigationBridge(navigationService);
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

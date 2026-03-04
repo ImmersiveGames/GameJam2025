@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
@@ -39,9 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             if (!levelId.IsValid)
             {
-                DebugUtility.LogWarning<LevelSwapLocalService>(
-                    $"[OBS][LevelFlow] SwapLocalRejected levelId='{levelId}' reason='invalid_level_id' requestedReason='{reason ?? "<null>"}'.");
-                return;
+                FailFastConfig($"SwapLocal exige levelId válido. levelId='{levelId}' requestedReason='{reason ?? "<null>"}'.");
             }
 
             string normalizedReason = NormalizeSwapReason(reason);
@@ -49,9 +48,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 !macroRouteId.IsValid ||
                 string.IsNullOrWhiteSpace(contentId))
             {
-                DebugUtility.LogWarning<LevelSwapLocalService>(
-                    $"[OBS][LevelFlow] SwapLocalRejected levelId='{levelId}' reason='level_unresolved' requestedReason='{normalizedReason}'.");
-                return;
+                FailFastConfig($"SwapLocal não conseguiu resolver macroRouteId/contentId. levelId='{levelId}' requestedReason='{normalizedReason}'.");
             }
 
             contentId = contentId.Trim();
@@ -82,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             TransitionStyleId styleId = ResolveStyleIdForSwap(currentSnapshot.StyleId);
 
             DebugUtility.Log<LevelSwapLocalService>(
-                $"[OBS][LevelFlow] SwapLocalRequested fromLevelId='{fromLevelId}' toLevelId='{toLevelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] LevelSwapLocalRequested fromLevelId='{fromLevelId}' levelId='{toLevelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             if (_worldResetCommands == null)
@@ -102,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             PublishLevelSwapLocalApplied(toLevelId, macroRouteId, contentId, normalizedReason, nextSelectionVersion, levelSignature);
 
             DebugUtility.Log<LevelSwapLocalService>(
-                $"[OBS][LevelFlow] SwapLocalApplied fromLevelId='{fromLevelId}' toLevelId='{toLevelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][LevelFlow] LevelSwapLocalApplied fromLevelId='{fromLevelId}' levelId='{toLevelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{nextSelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -175,12 +172,25 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             EventBus<LevelSwapLocalAppliedEvent>.Raise(new LevelSwapLocalAppliedEvent(
                 levelId,
-                macroRouteId,
                 SceneRouteId.None,
+                macroRouteId,
                 contentId,
                 reason,
                 selectionVersion,
                 levelSignature.Value));
+        }
+
+        private static void FailFastConfig(string detail)
+        {
+            string message = $"[FATAL][Config] {detail}";
+            DebugUtility.LogError<LevelSwapLocalService>(message);
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+            throw new InvalidOperationException(message);
         }
     }
 }

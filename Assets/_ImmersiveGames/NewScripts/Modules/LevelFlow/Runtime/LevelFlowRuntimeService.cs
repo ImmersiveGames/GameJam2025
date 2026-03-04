@@ -3,8 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -25,6 +27,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly IRestartContextService _restartContextService;
         private readonly ILevelContentResolver _contentResolver;
         private readonly ILevelSwapLocalService _levelSwapLocalService;
+        private readonly IWorldResetCommands _worldResetCommands;
+        private readonly ISimulationGateService _simulationGateService;
+        private bool _hasLoggedMissingSwapLocalService;
 
         public LevelFlowRuntimeService(
             ILevelFlowService levelResolver,
@@ -34,7 +39,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             IRestartContextService restartContextService = null,
             ILevelSwapLocalService levelSwapLocalService = null,
             ILevelContentResolver contentResolver = null,
-            ILevelMacroRouteCatalog macroRouteCatalog = null)
+            ILevelMacroRouteCatalog macroRouteCatalog = null,
+            IWorldResetCommands worldResetCommands = null,
+            ISimulationGateService simulationGateService = null)
         {
             _levelResolver = levelResolver ?? throw new ArgumentNullException(nameof(levelResolver));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
@@ -43,6 +50,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _restartContextService = restartContextService;
             _levelSwapLocalService = levelSwapLocalService;
             _contentResolver = contentResolver ?? (levelResolver as ILevelContentResolver);
+            _worldResetCommands = worldResetCommands;
+            _simulationGateService = simulationGateService;
         }
 
         public async Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default)
@@ -103,12 +112,63 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             if (_levelSwapLocalService == null)
             {
+                if (!_hasLoggedMissingSwapLocalService)
+                {
+                    _hasLoggedMissingSwapLocalService = true;
+                    DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                        "[WARN][OBS][LevelFlow] SwapLocal service unavailable in LevelFlowRuntimeService (one-time warning). ILevelSwapLocalService is null.");
+                }
+
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
                     $"[OBS][LevelFlow] SwapLocalRejected levelId='{levelId}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
                 return;
             }
 
             await _levelSwapLocalService.SwapLocalAsync(levelId, reason, ct);
+        }
+
+
+        public async Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            if (_restartContextService == null ||
+                !_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.HasLevelId ||
+                !snapshot.RouteId.IsValid)
+            {
+                FailFastConfig($"ResetCurrentLevelAsync exige seleção atual válida. requestedReason='{reason ?? "<null>"}'.");
+                return;
+            }
+
+            if (_worldResetCommands == null)
+            {
+                FailFastConfig("ResetCurrentLevelAsync exige IWorldResetCommands registrado.");
+                return;
+            }
+
+            string normalizedReason = NormalizeLevelResetReason(reason);
+            LevelId levelId = snapshot.LevelId;
+            SceneRouteId macroRouteId = snapshot.RouteId;
+            string contentId = snapshot.HasContentId ? LevelFlowContentDefaults.Normalize(snapshot.ContentId) : ResolveContentId(levelId);
+            int selectionVersion = Math.Max(snapshot.SelectionVersion, 1);
+            LevelContextSignature levelSignature = string.IsNullOrWhiteSpace(snapshot.LevelSignature)
+                ? LevelContextSignature.Create(levelId, macroRouteId, normalizedReason, contentId)
+                : new LevelContextSignature(snapshot.LevelSignature);
+
+            using IDisposable gateHandle = AcquireLevelResetGate();
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][LevelFlow] LevelResetRequested levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{selectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                DebugUtility.Colors.Info);
+
+            ct.ThrowIfCancellationRequested();
+            await _worldResetCommands.ResetLevelAsync(levelId, normalizedReason, levelSignature, ct);
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][LevelFlow] LevelResetCompleted levelId='{levelId}' macroRouteId='{macroRouteId}' contentId='{contentId}' v='{selectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                DebugUtility.Colors.Success);
         }
 
         public async Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)
@@ -214,6 +274,24 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private static string NormalizeReason(string reason)
         {
             return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/StartGameplay" : reason.Trim();
+        }
+
+        private static string NormalizeLevelResetReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? "LevelFlow/ResetCurrentLevel" : reason.Trim();
+        }
+
+
+        private IDisposable AcquireLevelResetGate()
+        {
+            if (_simulationGateService == null)
+            {
+                DebugUtility.LogWarning<LevelFlowRuntimeService>(
+                    $"[WARN][OBS][LevelFlow] LevelReset gate_not_available token='{SimulationGateTokens.LevelReset}'.");
+                return null;
+            }
+
+            return _simulationGateService.Acquire(SimulationGateTokens.LevelReset);
         }
 
         private static string NormalizeRestartReason(string reason)

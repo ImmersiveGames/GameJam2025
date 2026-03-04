@@ -45,6 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
         private readonly Dictionary<LevelId, LevelResolution> _cache = new();
         private readonly Dictionary<SceneRouteId, LevelId> _macroRouteToLevelCache = new();
+        private readonly Dictionary<SceneRouteId, LevelId> _macroRouteToDefaultLevelCache = new();
         private readonly Dictionary<LevelId, SceneRouteId> _levelToMacroRouteCache = new();
         private readonly Dictionary<SceneRouteId, List<LevelId>> _macroRouteToLevelsCache = new();
         private readonly HashSet<SceneRouteId> _ambiguousMacroRoutes = new();
@@ -160,6 +161,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             return true;
         }
 
+        public bool TryGetDefaultLevelId(SceneRouteId macroRouteId, out LevelId defaultLevelId)
+        {
+            defaultLevelId = LevelId.None;
+
+            if (!macroRouteId.IsValid)
+            {
+                return false;
+            }
+
+            EnsureCache();
+            return _macroRouteToDefaultLevelCache.TryGetValue(macroRouteId, out defaultLevelId) && defaultLevelId.IsValid;
+        }
+
+        public bool TryGetDefaultLevelForMacroRoute(SceneRouteId macroRouteId, out LevelId defaultLevelId)
+            => TryGetDefaultLevelId(macroRouteId, out defaultLevelId);
+
         public bool TryGetNextLevelInMacro(LevelId currentLevelId, out LevelId nextLevelId, bool wrapToFirst = true)
         {
             nextLevelId = LevelId.None;
@@ -255,6 +272,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             _cacheBuilt = true;
             _cache.Clear();
             _macroRouteToLevelCache.Clear();
+            _macroRouteToDefaultLevelCache.Clear();
             _levelToMacroRouteCache.Clear();
             _macroRouteToLevelsCache.Clear();
             _ambiguousMacroRoutes.Clear();
@@ -310,8 +328,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
 
                 groupedLevels.Add(entry.levelId);
 
+                if (entry.isDefaultForMacroRoute)
+                {
+                    if (_macroRouteToDefaultLevelCache.TryGetValue(resolvedMacroRouteId, out LevelId existingDefaultLevelId) &&
+                        existingDefaultLevelId != entry.levelId)
+                    {
+                        FailFast($"MacroRoute com múltiplos defaultLevelId configurados. macroRouteId='{resolvedMacroRouteId}', levelA='{existingDefaultLevelId}', levelB='{entry.levelId}'.");
+                    }
+
+                    _macroRouteToDefaultLevelCache[resolvedMacroRouteId] = entry.levelId;
+                }
+
                 _cache.Add(entry.levelId, new LevelResolution(entry, resolvedMacroRouteId, entry.ToPayload(), entry.ResolveContentId()));
             }
+
+            ValidateDefaultLevelRequirementsOrFail();
 
             if (warnOnInvalidLevels)
             {
@@ -325,7 +356,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
                 }
 
                 DebugUtility.LogVerbose<LevelCatalogAsset>(
-                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} macroRoutesUniquelyMapped={_macroRouteToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} ambiguousMacroRoutesCount={_ambiguousMacroRoutes.Count} invalidLevels=0",
+                    $"[OBS][Config] LevelCatalogBuild levelsResolved={_cache.Count} macroRoutesUniquelyMapped={_macroRouteToLevelCache.Count} macroRoutesMapped={_macroRouteToLevelsCache.Count} macroRouteGroups={_macroRouteToLevelsCache.Count} defaultsConfigured={_macroRouteToDefaultLevelCache.Count} maxLevelsPerMacro={maxLevelsPerMacro} ambiguousMacroRoutesCount={_ambiguousMacroRoutes.Count} invalidLevels=0",
                     DebugUtility.Colors.Info);
 
                 if (_ambiguousMacroRoutes.Count > 0)
@@ -403,6 +434,29 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             DebugUtility.LogVerbose<LevelCatalogAsset>(
                 $"[OBS][SceneFlow] MacroRouteResolvedVia=LevelCatalog levelId='{levelId}' macroRouteId='{resolution.MacroRouteId}' contentId='{resolution.ContentId}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void ValidateDefaultLevelRequirementsOrFail()
+        {
+            foreach (var pair in _macroRouteToLevelsCache)
+            {
+                SceneRouteId macroRouteId = pair.Key;
+                List<LevelId> groupedLevels = pair.Value;
+                if (!macroRouteId.IsValid || groupedLevels == null)
+                {
+                    continue;
+                }
+
+                if (groupedLevels.Count <= 1)
+                {
+                    continue;
+                }
+
+                if (!_macroRouteToDefaultLevelCache.TryGetValue(macroRouteId, out LevelId defaultLevelId) || !defaultLevelId.IsValid)
+                {
+                    FailFast($"MacroRoute com múltiplos levels exige defaultLevelId explícito. macroRouteId='{macroRouteId}', levelsCount={groupedLevels.Count}.");
+                }
+            }
         }
 
 #if UNITY_EDITOR

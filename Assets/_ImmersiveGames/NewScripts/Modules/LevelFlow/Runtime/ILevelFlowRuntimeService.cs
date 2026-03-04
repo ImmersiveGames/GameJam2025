@@ -15,5 +15,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         /// </summary>
         Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default);
         Task SwapLevelLocalAsync(LevelId levelId, string reason = null, CancellationToken ct = default);
+        Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default);
     }
 }

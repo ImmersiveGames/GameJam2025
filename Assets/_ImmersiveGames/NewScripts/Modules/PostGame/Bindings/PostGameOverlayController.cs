@@ -29,8 +29,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
     public sealed class PostGameOverlayController : MonoBehaviour
     {
         private const string RestartReason = "PostGame/Restart";
+        private const string NextLevelReason = "PostGame/NextLevel";
         private const string ExitToMenuReason = "PostGame/ExitToMenu";
-        private const string PostGameGateToken = "state.postgame";
 
         [Header("Overlay")]
         [SerializeField] private CanvasGroup rootCanvasGroup;
@@ -41,6 +41,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         [Header("Buttons")]
         [SerializeField] private Button restartButton;
+        [SerializeField] private Button nextLevelButton;
         [SerializeField] private Button exitToMenuButton;
 
         [Inject] private IInputModeService _inputModeService;
@@ -153,6 +154,32 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 actionName: "ExitToMenu",
                 reason: ExitToMenuReason,
                 action: ct => _postLevelActionsService.ExitToMenuAsync(ExitToMenuReason, ct));
+        }
+
+        /// <summary>
+        /// Deve ser associado no Button.OnClick() do botão de próximo level.
+        /// </summary>
+        public void OnClickNextLevel()
+        {
+            if (_actionRequested)
+            {
+                DebugUtility.LogVerbose<PostGameOverlayController>(
+                    "[PostGame] NextLevel ignorado (ação já solicitada).",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _actionRequested = true;
+            HideImmediate();
+
+            DebugUtility.Log<PostGameOverlayController>(
+                $"[OBS][PostLevel] PostLevelActionNextLevelRequested reason='{NextLevelReason}'.",
+                DebugUtility.Colors.Info);
+
+            _ = ExecutePostLevelActionAsync(
+                actionName: "NextLevel",
+                reason: NextLevelReason,
+                action: ct => _postLevelActionsService.NextLevelAsync(NextLevelReason, ct));
         }
 
         private async Task ExecutePostLevelActionAsync(string actionName, string reason, Func<CancellationToken, Task> action)
@@ -439,9 +466,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 return;
             }
 
-            _postGameGateHandle = _gateService.Acquire(PostGameGateToken);
+            _postGameGateHandle = _gateService.Acquire(SimulationGateTokens.PostGame);
             DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Gate adquirido token='{PostGameGateToken}'.");
+                $"[PostGame] Gate adquirido token='{SimulationGateTokens.PostGame}'.");
         }
 
         private void ReleasePostGameGate(string reason)
@@ -466,7 +493,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             }
 
             DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Gate liberado token='{PostGameGateToken}'.");
+                $"[PostGame] Gate liberado token='{SimulationGateTokens.PostGame}'.");
         }
 
         private void ValidateReferences()
@@ -490,6 +517,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             if (exitToMenuButton == null)
             {
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] exitToMenuButton não configurado no Inspector.");
+            }
+            if (nextLevelButton == null)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] nextLevelButton não configurado no Inspector.");
             }
         }
 
