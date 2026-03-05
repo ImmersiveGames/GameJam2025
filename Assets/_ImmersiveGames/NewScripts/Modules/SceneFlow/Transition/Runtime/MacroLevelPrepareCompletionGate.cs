@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
@@ -28,15 +29,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             if (DependencyManager.Provider == null)
             {
+                string detail = "[SceneFlow] MacroLoadingPhase='LevelPrepare' blocked: DependencyManager.Provider unavailable.";
+                if (!IsDevelopmentEscapeHatch())
+                {
+                    FailFastH1(detail, context);
+                }
+
                 DebugUtility.LogWarning<MacroLevelPrepareCompletionGate>(
-                    "[WARN][OBS][SceneFlow] MacroLoadingPhase='LevelPrepare' skipped: DependencyManager.Provider indisponível.");
+                    $"[WARN][DEGRADED][SceneFlow] MacroLoadingPhase='LevelPrepare' skipped (DEV escape hatch). detail='{detail}' recommendation='register DI provider before transition'.");
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var prepareService) || prepareService == null)
             {
+                string detail = $"[SceneFlow] MacroLoadingPhase='LevelPrepare' blocked: ILevelMacroPrepareService missing. routeId='{context.RouteId}'.";
+                if (!IsDevelopmentEscapeHatch())
+                {
+                    FailFastH1(detail, context);
+                }
+
                 DebugUtility.LogWarning<MacroLevelPrepareCompletionGate>(
-                    $"[WARN][OBS][SceneFlow] MacroLoadingPhase='LevelPrepare' skipped: ILevelMacroPrepareService ausente. routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}'.");
+                    $"[WARN][DEGRADED][SceneFlow] MacroLoadingPhase='LevelPrepare' skipped (DEV escape hatch). routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' recommendation='register ILevelMacroPrepareService in global DI'.");
                 return;
             }
 
@@ -51,5 +64,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             await prepareService.PrepareAsync(context.RouteId, reason);
         }
+
+        private static bool IsDevelopmentEscapeHatch()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return Debug.isDebugBuild;
+#endif
+        }
+
+        private static void FailFastH1(string detail, SceneTransitionContext context)
+        {
+            string message =
+                $"[FATAL][H1] {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.";
+            DebugUtility.LogError<MacroLevelPrepareCompletionGate>(message);
+            throw new InvalidOperationException(message);
+        }
+
     }
 }

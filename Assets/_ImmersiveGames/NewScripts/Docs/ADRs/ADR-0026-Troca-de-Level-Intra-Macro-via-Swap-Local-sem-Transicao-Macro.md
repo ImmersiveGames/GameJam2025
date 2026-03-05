@@ -2,81 +2,47 @@
 
 ## Status
 
-- Estado: **Aceito (Em implementação)**
+- Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-03-01
+- Última atualização: 2026-03-04
 - Tipo: Implementação
-- Escopo: NewScripts/Modules (LevelFlow, ContentSwap, WorldLifecycle, QA)
+- Escopo: NewScripts/Modules (LevelFlow, WorldLifecycle, QA)
 
 ## Resumo
 
-Permitir trocar de level dentro do mesmo macro (Gameplay) **sem** disparar transição macro do SceneFlow, usando um **swap local**:
+Trocar level dentro do mesmo macro sem chamar transição macro do SceneFlow.
 
-- muda `levelId` e/ou `contentId`
-- reaplica conteúdo (ContentSwap) e/ou executa LevelReset
-- preserva cenas macro (GameplayScene + UIGlobal)
+## Decisão
 
-## Contexto
+1. API canônica em runtime:
+   - `ILevelFlowRuntimeService.SwapLevelLocalAsync(LevelId levelId, string reason, CancellationToken ct)`
+2. Execução de swap local em `LevelSwapLocalService.SwapLocalAsync(...)`:
+   - resolve target level/macro;
+   - valida snapshot e macro route atual;
+   - incrementa `selectionVersion`;
+   - publica `LevelSelectedEvent`;
+   - executa `IWorldResetCommands.ResetLevelAsync(...)`;
+   - publica `LevelSwapLocalAppliedEvent`.
+3. QA proof sem transição macro via `LevelFlowDevContextMenu`.
 
-Hoje o sistema já suporta:
+## Implementação atual (fonte de verdade: código)
 
-- Macro transitions (SceneFlow) para entrar/sair do macro.
-- MacroReset e LevelReset (ADR-0023).
-- ContentSwap in-place (modo local).
-
-O que falta é fechar o trilho “Next/Prev/SelectLevel” sem depender de `SceneTransitionService`.
-
-## Decisão (contrato)
-
-- Dentro de um macro com levels:
-  - `SelectLevel(levelId)` atualiza seleção ativa (levelSignature + v).
-  - `ApplyLevelSelection()` executa:
-    - LevelReset (local) e/ou
-    - ContentSwap (in-place) e/ou
-    - hooks de LevelStages (Intro/Post, quando aplicável).
-- A troca local **não** chama `NavigateAsync` / `SceneTransitionService`.
-
-## Implementação atual (2026-02-25)
-
-### O que já existe (base)
-
-- **ContentSwap in-place** observado em log:
-  - `InPlaceContentSwapService [OBS][ContentSwap] ContentSwapRequested ... mode=InPlace ...`
-- **LevelReset** observado em log (ADR-0023):
-  - `ResetRequested kind='Level' ...`
-  - `ResetCompleted kind='Level' ... success=True`
-
-### O que ainda falta (para fechar ADR-0026)
-
-- Uma API canônica de runtime:
-  - `SwapToLevelAsync(nextLevelId, reason)` ou equivalente,
-  - que atualize seleção + execute swap local end-to-end.
-- Evidência de QA N→1 (A/B/Sequence) sem `TransitionStarted`.
-
-## Implementação atual (2026-03-01)
-
-Anchors curtas observadas no log atual:
-
-- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
-- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
-- Resets por domínio:
-  - macro: `ResetWorldStarted` / `ResetCompleted`;
-  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
-- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
-- Pause/Resume com token dedicado `state.pause`.
-- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+- `ILevelFlowRuntimeService` expõe `SwapLevelLocalAsync(...)`.
+- `LevelFlowRuntimeService.SwapLevelLocalAsync(...)` delega para `ILevelSwapLocalService`.
+- `LevelSwapLocalService` executa o fluxo end-to-end e não chama navegação macro.
+- `LevelFlowDevContextMenu` possui comandos de QA:
+  - NextInMacro
+  - ToTargetLevelId
+  - ProofNoMacroTransition (conta `SceneTransitionStartedEvent` e comprova `transitionStartedCount == 0`).
 
 ## Critérios de aceite (DoD)
 
-- [x] Existe ação runtime “Select/Next/Prev” que altera `levelId` dentro do mesmo macro.
-- [x] Logs [OBS] demonstram:
-  - mesmo macroSignature;
-  - levelSignature mudando (v incrementa);
-  - ContentSwap/LevelReset executado;
-  - **sem** SceneFlow TransitionStarted.
-- [x] Blocos base disponíveis: ContentSwap in-place + LevelReset.
+- [x] API canônica de swap local existe no runtime.
+- [x] Serviço dedicado de swap local existe e usa reset de level.
+- [x] `selectionVersion` é incrementado no swap.
+- [x] Existe prova de QA sem transição macro (`ProofNoMacroTransition`).
+- [ ] Hardening: teste automatizado (não manual) para o cenário ProofNoMacroTransition.
 
 ## Changelog
 
-- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
-- 2026-02-25: Atualizado para **Em implementação** com base no log; registrado que os blocos base (ContentSwap in-place + LevelReset) já existem, faltando o trilho end-to-end de swap local.
+- 2026-03-04: status atualizado para Implementado com base no código atual (`SwapLevelLocalAsync` + `LevelSwapLocalService` + QA proof).

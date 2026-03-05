@@ -4,98 +4,51 @@
 
 - Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-03-01
+- Última atualização: 2026-03-04
 - Tipo: Implementação
 - Escopo: NewScripts/Modules (WorldLifecycle, SceneFlow, LevelFlow, ContentSwap)
 
 ## Resumo
 
-Definir e instrumentar **dois níveis de reset**, com objetivos e custos diferentes:
+Manter dois níveis explícitos de reset:
 
-- **MacroReset**: reset completo do “mundo” dentro de um macro (despawn/spawn, hooks, limpeza de estado).
-- **LevelReset**: reset local (conteúdo/variantes/objetivos) sem exigir transição macro.
-
-## Contexto
-
-O projeto precisa:
-
-- Reset determinístico e rastreável (Baseline / evidências por log).
-- Evitar re-carregar cenas macro quando a intenção é apenas “reiniciar o level” ou “trocar conteúdo”.
+- **MacroReset**: reset completo de mundo por macro rota.
+- **LevelReset**: reset local de level/conteúdo, sem transição macro.
 
 ## Decisão
 
-### 1) MacroReset (WorldLifecycle)
+1. Contrato público em `IWorldResetCommands`:
+   - `ResetMacroAsync(SceneRouteId macroRouteId, string reason, string macroSignature, CancellationToken ct)`
+   - `ResetLevelAsync(LevelId levelId, string reason, LevelContextSignature levelSignature, CancellationToken ct)`
+2. `WorldResetCommands` publica eventos V2 canônicos:
+   - `WorldLifecycleResetRequestedV2Event`
+   - `WorldLifecycleResetCompletedV2Event`
+3. `ResetKind` define domínio (`Macro` / `Level`).
 
-- Executa pipeline completo do WorldLifecycle (hooks + despawn + spawn).
-- Deve ser acionado quando:
-  - Entramos em um macro que requer reset (`requiresWorldReset=True`).
-  - Reinício macro (ex.: Restart -> Boot determinístico).
-  - QA: “ResetMacro” para verificar invariantes do pipeline.
+## Implementação atual (fonte de verdade: código)
 
-### 2) LevelReset (Local)
+### MacroReset
 
-- Deve ser mais barato e não depende de transição macro.
-- Pode envolver:
-  - Reaplicar `contentId` (ContentSwap in-place).
-  - Reiniciar objetivos/estado de level.
-  - Opcionalmente disparar um MacroReset se o level exigir (policy futura).
+- `WorldResetCommands.ResetMacroAsync(...)` valida macroRoute/signature, publica `RequestedV2`, aciona `IWorldResetService.TriggerResetAsync(...)` e publica `CompletedV2`.
+- `WorldLifecycleSceneFlowResetDriver` integra `SceneTransitionScenesReadyEvent` com reset de mundo e completion do gate.
 
-### 3) Contrato de eventos e logs
+### LevelReset
 
-- `WorldResetCommands` publica:
-  - `ResetRequested(kind='Macro'| 'Level', ...)`
-  - `ResetCompleted(kind='Macro'| 'Level', success, ...)`
-- Em MacroReset, deve haver `ResetWorldStarted/ResetCompleted` do WorldLifecycle.
+- `WorldResetCommands.ResetLevelAsync(...)` valida `levelId` + `levelSignature`, resolve snapshot atual, publica `RequestedV2`, aciona `IContentSwapChangeService.RequestContentSwapInPlaceAsync(...)` e publica `CompletedV2`.
+- `LevelSwapLocalService.SwapLocalAsync(...)` chama `IWorldResetCommands.ResetLevelAsync(...)` como etapa principal do swap local.
 
-## Implementação atual (2026-02-25)
+### Eventos V2
 
-### Evidências (anchors do log canônico)
-
-- LevelReset:
-  - `WorldResetCommands [OBS][WorldLifecycle] ResetRequested kind='Level' ... levelId='level.1' contentId='content.default' ...`
-  - `InPlaceContentSwapService [OBS][ContentSwap] ContentSwapRequested ... mode=InPlace ...`
-  - `WorldResetCommands [OBS][WorldLifecycle] ResetCompleted kind='Level' ... success=True`
-
-- MacroReset:
-  - `WorldResetCommands [OBS][WorldLifecycle] ResetRequested kind='Macro' ... macroSignature='r:level.1|s:style.gameplay|...'`
-  - `WorldResetOrchestrator [ResetStart][OBS][WorldLifecycle] ResetWorldStarted signature='...'`
-  - `WorldResetOrchestrator [ResetCompleted][OBS][WorldLifecycle] ResetCompleted signature='...'`
-  - `WorldResetCommands [OBS][WorldLifecycle] ResetCompleted kind='Macro' ... success=True`
-
-### Regras validadas pelo log
-
-- MacroReset executa despawn/spawn (ActorRegistry volta a 0 e sobe de novo).
-- LevelReset pode operar sem transição macro (não aparece `TransitionStarted` no trecho de ResetLevel).
-
-## Implicações
-
-- O sistema passa a ter “ferramentas” de QA claras:
-  - ResetLevel = “troca local / reinício local”
-  - ResetMacro = “reset determinístico completo”
-- Permite evolução incremental de LevelSwap (ADR-0026) usando LevelReset como base.
-
-## Implementação atual (2026-03-01)
-
-Anchors curtas observadas no log atual:
-
-- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
-- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
-- Resets por domínio:
-  - macro: `ResetWorldStarted` / `ResetCompleted`;
-  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
-- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
-- Pause/Resume com token dedicado `state.pause`.
-- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+- `WorldLifecycleResetRequestedV2Event` e `WorldLifecycleResetCompletedV2Event` carregam `kind`, `macroRouteId`, `levelId`, `contentId`, `macroSignature`, `levelSignature`, `success/notes`.
 
 ## Critérios de aceite (DoD)
 
-- [x] Existem dois comandos distinguíveis (Macro vs Level).
-- [x] Logs [OBS] exibem kind + ids relevantes + signature/levelSignature quando aplicável.
-- [x] MacroReset executa pipeline completo do WorldLifecycle.
-- [x] LevelReset dispara ContentSwap in-place e completa com sucesso (quando aplicável).
-- [ ] Hardening: políticas por level (ex.: “este level exige MacroReset”) documentadas e validadas.
+- [x] Comandos de reset macro e level existem e são distintos no contrato.
+- [x] `WorldResetCommands` implementa os dois comandos.
+- [x] Eventos V2 são publicados para requested/completed.
+- [x] LevelReset executa por content swap in-place no fluxo atual.
+- [ ] Hardening: política por level para forçar macro reset em cenários específicos.
 
 ## Changelog
 
-- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
-- 2026-02-25: Marcado como **Implementado**, adicionadas evidências do log (ResetRequested/ResetCompleted para Level e Macro).
+- 2026-03-04: ADR auditado contra o código; removidas dependências de evidência por log.

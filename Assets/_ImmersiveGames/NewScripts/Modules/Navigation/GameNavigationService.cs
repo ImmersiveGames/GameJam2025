@@ -29,6 +29,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private string _lastNavigationIntentId = string.Empty;
         private int _navigationInProgress;
 
+        private static int _compatRestartLegacyRouteOnlyCount;
+        private static int _compatStartGameplayRouteFallbackCount;
+        private static int _legacyApiWarningEmitted;
+
         public GameNavigationService(
             ISceneTransitionService sceneFlow,
             IGameNavigationCatalog catalog,
@@ -104,6 +108,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     {
                         if (_lastGameplayRouteId.IsValid)
                         {
+                            if (!IsDevelopmentEscapeHatch())
+                            {
+                                FailFastH1(
+                                    "[NAV] Restart blocked: legacy_route_only is forbidden in strict/production. " +
+                                    $"routeId='{_lastGameplayRouteId}', levelId='{_lastStartedGameplayLevelId}', reason='{resolvedReason}'. " +
+                                    "Use LevelFlow restart with canonical level selection.");
+                            }
+
+                            int compatCount = Interlocked.Increment(ref _compatRestartLegacyRouteOnlyCount);
+                            DebugUtility.LogWarning(typeof(GameNavigationService),
+                                $"[WARN][COMPAT][NAV] Restart legacy_route_only fallback count='{compatCount}' routeId='{_lastGameplayRouteId}' macroRouteId='{_lastGameplayRouteId}' levelId='{_lastStartedGameplayLevelId}' reason='{resolvedReason}' recommendation='use LevelFlow restart'.");
+
                             resolvedRouteId = _lastGameplayRouteId;
                             payload = SceneTransitionPayload.Empty;
                             resolveSource = "legacy_route_only";
@@ -122,6 +138,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     {
                         if (_lastGameplayRouteId.IsValid)
                         {
+                            if (!IsDevelopmentEscapeHatch())
+                            {
+                                FailFastH1(
+                                    "[NAV] Restart blocked: legacy_route_only is forbidden in strict/production after level resolve failure. " +
+                                    $"routeId='{_lastGameplayRouteId}', levelId='{_lastStartedGameplayLevelId}', reason='{resolvedReason}'. " +
+                                    "Use LevelFlow restart with canonical level selection.");
+                            }
+
+                            int compatCount = Interlocked.Increment(ref _compatRestartLegacyRouteOnlyCount);
+                            DebugUtility.LogWarning(typeof(GameNavigationService),
+                                $"[WARN][COMPAT][NAV] Restart legacy_route_only fallback count='{compatCount}' routeId='{_lastGameplayRouteId}' macroRouteId='{_lastGameplayRouteId}' levelId='{_lastStartedGameplayLevelId}' reason='{resolvedReason}' recommendation='use LevelFlow restart'.");
+
                             resolvedRouteId = _lastGameplayRouteId;
                             payload = SceneTransitionPayload.Empty;
                             resolveSource = "legacy_route_only";
@@ -144,6 +172,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 }
                 else if (_lastGameplayRouteId.IsValid)
                 {
+                    if (!IsDevelopmentEscapeHatch())
+                    {
+                        FailFastH1(
+                            "[NAV] Restart blocked: legacy_route_only is forbidden in strict/production (no canonical level). " +
+                            $"routeId='{_lastGameplayRouteId}', reason='{resolvedReason}'. " +
+                            "Use LevelFlow restart with canonical level selection.");
+                    }
+
+                    int compatCount = Interlocked.Increment(ref _compatRestartLegacyRouteOnlyCount);
+                    DebugUtility.LogWarning(typeof(GameNavigationService),
+                        $"[WARN][COMPAT][NAV] Restart legacy_route_only fallback count='{compatCount}' routeId='{_lastGameplayRouteId}' macroRouteId='{_lastGameplayRouteId}' levelId='<none>' reason='{resolvedReason}' recommendation='use LevelFlow restart'.");
+
                     resolvedRouteId = _lastGameplayRouteId;
                     payload = SceneTransitionPayload.Empty;
                     resolveSource = "legacy_route_only";
@@ -193,22 +233,31 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         [Obsolete("Use GoToMenuAsync(reason).")]
         public Task RequestMenuAsync(string reason = null)
         {
-            DebugUtility.LogError(typeof(GameNavigationService),
-                "[FATAL][Config] Obsolete navigation API called: RequestMenuAsync. Use the non-obsolete API.");
-            throw new InvalidOperationException("Obsolete navigation API called: RequestMenuAsync. Use GoToMenuAsync(reason).");
+            WarnLegacyApiUsedOnce("RequestMenuAsync", "GoToMenuAsync(reason)");
+            FailFastH1("[NAV] Legacy API blocked: RequestMenuAsync. Use GoToMenuAsync(reason).");
+            return Task.CompletedTask;
         }
 
         [Obsolete("Use RestartAsync(reason) ou StartGameplayAsync(levelId, reason).")]
         public Task RequestGameplayAsync(string reason = null)
         {
-            DebugUtility.LogError(typeof(GameNavigationService),
-                "[FATAL][Config] Obsolete navigation API called: RequestGameplayAsync. Use the non-obsolete API.");
-            throw new InvalidOperationException("Obsolete navigation API called: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayAsync(levelId, reason).");
+            WarnLegacyApiUsedOnce("RequestGameplayAsync", "RestartAsync(reason) or ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct)");
+            FailFastH1("[NAV] Legacy API blocked: RequestGameplayAsync. Use RestartAsync(reason) or LevelFlow start.");
+            return Task.CompletedTask;
         }
 
         [Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
         public async Task StartGameplayAsync(LevelId levelId, string reason = null)
         {
+            if (!IsDevelopmentEscapeHatch())
+            {
+                FailFastH1(
+                    $"[NAV] Legacy API blocked: StartGameplayAsync(LevelId). levelId='{levelId}', reason='{reason ?? "<null>"}'. " +
+                    "Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct) or StartGameplayRouteAsync(routeId, payload, reason).");
+            }
+
+            WarnLegacyApiUsedOnce("StartGameplayAsync(LevelId)", "ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct)");
+
             if (!levelId.IsValid)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
@@ -314,14 +363,32 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 resolvedLevelId = snapshot.LevelId;
                 resolveSource = "snapshot";
 
+                if (IsDevelopmentEscapeHatch())
+                {
+                    int compatCount = Interlocked.Increment(ref _compatStartGameplayRouteFallbackCount);
+                    DebugUtility.LogWarning(typeof(GameNavigationService),
+                        $"[WARN][COMPAT][NAV] StartGameplayRouteAsync fallback count='{compatCount}' source='snapshot' routeId='{routeId}' levelId='{resolvedLevelId}' reason='{reason ?? "<null>"}'.");
+                }
+
                 DebugUtility.Log(typeof(GameNavigationService),
                     $"[OBS][Navigation] FallbackApplied source='snapshot' routeId='{routeId}' levelId='{resolvedLevelId}' reason='StartGameplayRouteAsync'.",
                     DebugUtility.Colors.Info);
             }
             else
             {
+                if (!IsDevelopmentEscapeHatch())
+                {
+                    FailFastH1(
+                        $"[NAV] StartGameplayRouteAsync requires explicit LevelId selection via LevelFlow. " +
+                        $"routeId='{routeId}', source='last_level_id', reason='{reason ?? "<null>"}'.");
+                }
+
                 resolvedLevelId = _lastStartedGameplayLevelId;
                 resolveSource = "last_level_id";
+
+                int compatCount = Interlocked.Increment(ref _compatStartGameplayRouteFallbackCount);
+                DebugUtility.LogWarning(typeof(GameNavigationService),
+                    $"[WARN][COMPAT][NAV] StartGameplayRouteAsync fallback count='{compatCount}' source='last_level_id' routeId='{routeId}' levelId='{resolvedLevelId}' reason='{reason ?? "<null>"}' recommendation='use explicit LevelFlow selection'.");
 
                 DebugUtility.Log(typeof(GameNavigationService),
                     $"[OBS][Navigation] FallbackApplied source='last_level_id' routeId='{routeId}' levelId='{resolvedLevelId}' reason='StartGameplayRouteAsync'.",
@@ -356,7 +423,46 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         [Obsolete("Prefira NavigateAsync(GameNavigationIntentKind, reason) para core intents; mantenha string para extras/custom.")]
         public Task NavigateAsync(string routeId, string reason = null)
         {
+            if (!IsDevelopmentEscapeHatch())
+            {
+                FailFastH1(
+                    $"[NAV] Legacy API blocked: NavigateAsync(string). routeId='{routeId ?? "<null>"}', reason='{reason ?? "<null>"}'. " +
+                    "Use NavigateAsync(GameNavigationIntentKind, reason).",
+                    includeCompatHint: false);
+            }
+
+            WarnLegacyApiUsedOnce("NavigateAsync(string)", "NavigateAsync(GameNavigationIntentKind, reason)");
             return ExecuteIntentAsync(routeId, reason);
+        }
+
+        private static bool IsDevelopmentEscapeHatch()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return false;
+#endif
+        }
+
+        private static void WarnLegacyApiUsedOnce(string apiName, string recommendation)
+        {
+            if (Interlocked.CompareExchange(ref _legacyApiWarningEmitted, 1, 0) != 0)
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(typeof(GameNavigationService),
+                $"[WARN][LEGACY_API_USED] api='{apiName}' recommendation='{recommendation}'.");
+        }
+
+        private static void FailFastH1(string detail, bool includeCompatHint = true)
+        {
+            string suffix = includeCompatHint
+                ? " DEV escape hatch may allow compat paths with [WARN][COMPAT]."
+                : string.Empty;
+            string message = $"[FATAL][H1] {detail}{suffix}";
+            DebugUtility.LogError(typeof(GameNavigationService), message);
+            throw new InvalidOperationException(message);
         }
 
         private async Task ExecuteIntentAsync(string intentId, string reason = null)

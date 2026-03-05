@@ -2,81 +2,57 @@
 
 ## Status
 
-- Estado: **Aceito (Parcial)**
+- Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-03-01
+- Última atualização: 2026-03-04
 - Tipo: Implementação
-- Escopo: NewScripts/Modules (LevelFlow, IntroStageController, PostGame/PostLevel, InputMode, SimulationGate)
+- Escopo: NewScripts/Modules (LevelFlow, IntroStage, PostGame/PostLevel)
 
 ## Resumo
 
-Mover a responsabilidade de **stages do gameplay** para o domínio de Level:
+A responsabilidade de entrada e ações pós-level está no domínio de level:
 
-- **IntroStage**: bloquear simulação e input de gameplay até confirmação do jogador.
-- **PostLevel**: encerrar/avaliar o level (vitória/derrota), preparar next/exit, e decidir transição macro (Menu) ou swap local (próximo level).
-
-## Contexto
-
-- Hoje já existe um GameLoop (Boot/Ready/IntroStage/Playing/PostGame) e gates (`sim.gameplay`, `flow.scene_transition`, etc.).
-- O risco arquitetural é Intro/Post virar “coisa do macro” e ficar acoplado ao SceneFlow.
+- IntroStage disparada por orquestração de level.
+- Ações de pós-level encapsuladas em serviço dedicado (`Restart`, `NextLevel`, `ExitToMenu`).
 
 ## Decisão
 
-- `LevelFlow` (ou um coordenador de stages do level) deve ser o ponto de orquestração:
-  - **quando** iniciar IntroStage (tipicamente após entrar em gameplay e world reset),
-  - **quando** concluir IntroStage e liberar simulação,
-  - **quando** finalizar level e entrar em PostLevel,
-  - **quais** ações o PostLevel oferece (Restart, ExitToMenu, NextLevel).
+1. `LevelStageOrchestrator` é dono do gatilho de IntroStage:
+   - após `SceneTransitionCompletedEvent` em gameplay;
+   - após `LevelSwapLocalAppliedEvent`.
+2. `IPostLevelActionsService` encapsula ações pós-level:
+   - `RestartLevelAsync`
+   - `NextLevelAsync`
+   - `ExitToMenuAsync`
+3. `PostGameOverlayController` invoca `IPostLevelActionsService`, mantendo UI desacoplada da regra de navegação/swap.
 
-- SceneFlow continua responsável apenas por:
-  - transições macro (Menu ↔ Gameplay),
-  - gates macro (WorldLoaded),
-  - fade/loading HUD.
+## Implementação atual (fonte de verdade: código)
 
-## Implementação atual (2026-02-25)
+### IntroStage no domínio Level
 
-### IntroStage (evidência: OK)
+- `LevelStageOrchestrator` assina eventos de transição/swap, aplica dedupe por `SelectionVersion` e inicia IntroStage via `IIntroStageCoordinator`.
 
-O log canônico mostra:
+### PostLevel actions
 
-- `IntroStageStarted ... reason='SceneFlow/Completed'`
-- `GameplaySimulationBlocked token='sim.gameplay'`
-- `ConfirmToStartIntroStageStep` requisitando InputMode UI (`FrontendMenu`) durante intro
-- `IntroStageCompleted ... GameplaySimulationUnblocked token='sim.gameplay'`
-- GameLoop transita para `Playing` após conclusão
+- `IPostLevelActionsService` define o contrato das três ações.
+- `PostLevelActionsService` implementa:
+  - restart via `ILevelFlowRuntimeService.RestartLastGameplayAsync(...)`;
+  - next level via `ILevelSwapLocalService.SwapLocalAsync(...)` + `TryGetNextLevelInMacro(...)`;
+  - exit via `IGameNavigationService.ExitToMenuAsync(...)`.
+- `PostGameOverlayController` injeta `IPostLevelActionsService` e aciona Restart/Exit pela interface.
 
-### PostLevel (lacuna)
+### DI global
 
-O que existe hoje no log é **PostGame** (vitória/derrota + overlay + restart/exit-to-menu), mas não há evidência de:
-
-- “PostLevel” separado por level (ex.: “NextLevel” sem sair do macro).
-- Integração com swap local (ADR-0026).
-
-## Implementação atual (2026-03-01)
-
-Anchors curtas observadas no log atual:
-
-- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
-- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
-- Resets por domínio:
-  - macro: `ResetWorldStarted` / `ResetCompleted`;
-  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
-- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
-- Pause/Resume com token dedicado `state.pause`.
-- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+- `GlobalCompositionRoot` registra `LevelStageOrchestrator` e `IPostLevelActionsService`.
 
 ## Critérios de aceite (DoD)
 
-- [x] IntroStage bloqueia `sim.gameplay` e controla InputMode (UI) até confirmação.
-- [x] IntroStage conclui e libera simulação antes de entrar em `Playing`.
-- [x] Pós-jogo já oferece ações operacionais observáveis:
-  - Restart (`Restart->Boot`, reset determinístico);
-  - ExitToMenu (transição macro para `to-menu`).
-- [ ] PostLevel completo com `NextLevel` (swap local sem transição macro) permanece pendente.
-- [x] Logs [OBS] distinguem claramente `IntroStage*` e `PostGame*`.
-- [ ] Hardening de observabilidade: completar trilha `PostLevel*` dedicada.
+- [x] IntroStage é iniciada por orquestrador de level (não por SceneFlow diretamente).
+- [x] IntroStage após swap local está implementada.
+- [x] Serviço de ações pós-level existe com Restart/NextLevel/ExitToMenu.
+- [x] UI de pós-jogo usa o serviço de domínio (não chama navegação/swap diretamente).
+- [ ] Hardening: unificar nomenclatura observável entre “PostGame” e “PostLevel” para reduzir ambiguidade semântica.
 
 ## Changelog
 
-- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
-- 2026-02-25: Atualizado com evidência de IntroStage funcionando em produção; registrado PostLevel como pendência e dependência direta de ADR-0026 (swap local).
+- 2026-03-04: status atualizado para Implementado; decisão e implementação alinhadas às classes/métodos atuais.
