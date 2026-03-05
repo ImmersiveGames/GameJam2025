@@ -7,8 +7,6 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using UnityEditor;
-using UnityEditor.ShortcutManagement;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA.Smoke.Baseline3.Editor
 {
@@ -45,19 +43,6 @@ namespace _ImmersiveGames.NewScripts.QA.Smoke.Baseline3.Editor
 
         [MenuItem(MenuRootBaseline + "/Restart (PostGame/Restart)", priority = 2110)]
         private static void RunRestart_Menu()
-        {
-            _ = RunRestartAsync();
-        }
-
-
-        [Shortcut("QA/Smoke/Baseline 3.0 Levels/Run D+E (Swap L2 + LevelReset)", KeyCode.F8)]
-        private static void RunDE_Shortcut()
-        {
-            _ = LevelSmokeSteps.RunDE_SwapL2ThenResetAsync();
-        }
-
-        [Shortcut("QA/Smoke/Baseline 3.0/Restart (PostGame/Restart)", KeyCode.F10)]
-        private static void RunRestart_Shortcut()
         {
             _ = RunRestartAsync();
         }

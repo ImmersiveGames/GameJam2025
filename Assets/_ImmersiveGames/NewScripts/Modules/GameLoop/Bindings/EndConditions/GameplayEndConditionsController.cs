@@ -1,9 +1,15 @@
+using System.Threading;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.QA.Smoke.Baseline3;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 {
     /// <summary>
@@ -39,6 +45,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
         [SerializeField] private KeyCode devVictoryKey = KeyCode.F9;
         [SerializeField] private KeyCode devDefeatKey = KeyCode.F11;
 
+        [Header("Baseline 3.0 Smoke (dev-only)")]
+        [SerializeField] private Baseline3LevelsSmokeConfigAsset baseline3LevelsSmokeConfig;
+        [SerializeField] private float smokeDeDelaySeconds = 0.5f;
+
         [Header("Dev-only reasons (opcional)")]
         [SerializeField] private string devVictoryReason = "Gameplay/DevManualVictory";
         [SerializeField] private string devDefeatReason = "Gameplay/DevManualDefeat";
@@ -49,18 +59,32 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 
         [Inject] private IGameRunEndRequestService _endRequest;
 
+        private IGameNavigationService _navigationService;
+        private ILevelSwapLocalService _levelSwapLocalService;
+        private IPostLevelActionsService _postLevelActionsService;
+
         private float _startTime;
         private bool _requested;
         private bool _loggedMissingService;
+        private bool _smokeHotkeyInProgress;
+        private bool _defeatKeyMigratedLogged;
 
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
         private bool _subscribed;
 
+        private const string ReasonSmokeG = "QA/Smoke/Baseline3/G/PostGameRestart";
+        private const string ReasonSmokeDeD = "QA/Smoke/Baseline3/Levels/DE/D";
+        private const string ReasonSmokeDeE = "QA/Smoke/Baseline3/Levels/DE/E";
+
         private void Awake()
         {
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
             _runEndedBinding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            MigrateDefeatKeyIfNeeded("Awake");
+#endif
         }
 
         private void OnEnable()
@@ -72,7 +96,28 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 
             // Best-effort: tenta resolver já no enable (caso não tenha sido injetado).
             TryResolveEndRequestService();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            MigrateDefeatKeyIfNeeded("OnEnable");
+#endif
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (smokeDeDelaySeconds < 0.35f)
+            {
+                smokeDeDelaySeconds = 0.35f;
+            }
+
+            if (smokeDeDelaySeconds > 0.75f)
+            {
+                smokeDeDelaySeconds = 0.75f;
+            }
+
+            MigrateDefeatKeyIfNeeded("OnValidate");
+        }
+#endif
 
         private void OnDisable()
         {
@@ -109,6 +154,18 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (enableDevManualTriggers)
             {
+                if (Input.GetKeyDown(KeyCode.F8))
+                {
+                    _ = TryRunSmokeDeSequenceAsync();
+                    return;
+                }
+
+                if (Input.GetKeyDown(KeyCode.F10))
+                {
+                    _ = TryRunSmokeRestartAsync();
+                    return;
+                }
+
                 if (Input.GetKeyDown(devVictoryKey))
                 {
                     _requested = true;
@@ -118,6 +175,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 
                 if (Input.GetKeyDown(devDefeatKey))
                 {
+                    DebugUtility.Log(typeof(GameplayEndConditionsController),
+                        $"[OBS][Smoke][Hotkey] key=F11 step=H reason='{devDefeatReason}'.",
+                        DebugUtility.Colors.Info);
+
                     _requested = true;
                     _endRequest.RequestEnd(GameRunOutcome.Defeat, devDefeatReason);
                     return;
@@ -155,6 +216,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
         {
             _requested = false;
             _loggedMissingService = false;
+            _smokeHotkeyInProgress = false;
 
             _startTime = useUnscaledTime ? Time.unscaledTime : Time.time;
 
@@ -215,6 +277,137 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 
             return false;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private bool TryResolveSmokeServices()
+        {
+            if (baseline3LevelsSmokeConfig == null || !baseline3LevelsSmokeConfig.IsValid)
+            {
+                DebugUtility.LogWarning(typeof(GameplayEndConditionsController),
+                    "[FATAL][Smoke][Levels] Baseline3LevelsSmokeConfigAsset missing or invalid on GameplayEndConditionsController.");
+                return false;
+            }
+
+            if (_navigationService == null)
+            {
+                _navigationService = ResolveGlobal<IGameNavigationService>("IGameNavigationService");
+            }
+
+            if (_levelSwapLocalService == null)
+            {
+                _levelSwapLocalService = ResolveGlobal<ILevelSwapLocalService>("ILevelSwapLocalService");
+            }
+
+            if (_postLevelActionsService == null)
+            {
+                _postLevelActionsService = ResolveGlobal<IPostLevelActionsService>("IPostLevelActionsService");
+            }
+
+            return _navigationService != null && _levelSwapLocalService != null && _postLevelActionsService != null;
+        }
+
+        private async Task TryRunSmokeRestartAsync()
+        {
+            if (_smokeHotkeyInProgress)
+            {
+                return;
+            }
+
+            if (!TryResolveSmokeServices())
+            {
+                return;
+            }
+
+            _smokeHotkeyInProgress = true;
+            try
+            {
+                DebugUtility.Log(typeof(GameplayEndConditionsController),
+                    $"[OBS][Smoke][Hotkey] key=F10 step=G reason='{ReasonSmokeG}'.",
+                    DebugUtility.Colors.Info);
+
+                await _navigationService.RestartAsync(ReasonSmokeG);
+            }
+            finally
+            {
+                _smokeHotkeyInProgress = false;
+            }
+        }
+
+        private async Task TryRunSmokeDeSequenceAsync()
+        {
+            if (_smokeHotkeyInProgress)
+            {
+                return;
+            }
+
+            if (!TryResolveSmokeServices())
+            {
+                return;
+            }
+
+            _smokeHotkeyInProgress = true;
+            try
+            {
+                string target = baseline3LevelsSmokeConfig.SwapTargetLevel.ToString();
+
+                DebugUtility.Log(typeof(GameplayEndConditionsController),
+                    $"[OBS][Smoke][Hotkey] key=F8 step=DE reason='{ReasonSmokeDeD}|{ReasonSmokeDeE}' target='{target}'.",
+                    DebugUtility.Colors.Info);
+
+                await _levelSwapLocalService.SwapLocalAsync(
+                    baseline3LevelsSmokeConfig.SwapTargetLevel,
+                    ReasonSmokeDeD,
+                    CancellationToken.None);
+
+                int delayMs = Mathf.RoundToInt(smokeDeDelaySeconds * 1000f);
+                await Task.Delay(delayMs);
+
+                await _postLevelActionsService.RestartLevelAsync(ReasonSmokeDeE, CancellationToken.None);
+            }
+            finally
+            {
+                _smokeHotkeyInProgress = false;
+            }
+        }
+
+        private static T ResolveGlobal<T>(string label) where T : class
+        {
+            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
+            {
+                DebugUtility.LogWarning(typeof(GameplayEndConditionsController),
+                    "[FATAL][Smoke][Levels] DependencyManager.Provider is null.");
+                return null;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
+            {
+                DebugUtility.LogWarning(typeof(GameplayEndConditionsController),
+                    $"[FATAL][Smoke][Levels] Missing global service='{label}'.");
+                return null;
+            }
+
+            return service;
+        }
+
+        private void MigrateDefeatKeyIfNeeded(string source)
+        {
+            if (devDefeatKey != KeyCode.F10)
+            {
+                return;
+            }
+
+            devDefeatKey = KeyCode.F11;
+
+            if (_defeatKeyMigratedLogged)
+            {
+                return;
+            }
+
+            _defeatKeyMigratedLogged = true;
+            DebugUtility.Log(typeof(GameplayEndConditionsController),
+                $"[OBS][QA] Migrated devDefeatKey from F10 to F11 source='{source}'.",
+                DebugUtility.Colors.Info);
+        }
+#endif
     }
 }
-
