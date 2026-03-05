@@ -10,6 +10,10 @@ using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.QA.Smoke.Baseline3;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 {
     /// <summary>
@@ -44,6 +48,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 
         [SerializeField] private KeyCode devVictoryKey = KeyCode.F9;
         [SerializeField] private KeyCode devDefeatKey = KeyCode.F11;
+        [SerializeField] private KeyCode devSmokeDEKey = KeyCode.F8;
+        [SerializeField] private KeyCode devMacroRestartKey = KeyCode.F10;
 
         [Header("Baseline 3.0 Smoke (dev-only)")]
         [SerializeField] private Baseline3LevelsSmokeConfigAsset baseline3LevelsSmokeConfig;
@@ -116,6 +122,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
             }
 
             MigrateDefeatKeyIfNeeded("OnValidate");
+            TryAutoAssignBaseline3ConfigInEditor();
         }
 #endif
 
@@ -154,13 +161,13 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (enableDevManualTriggers)
             {
-                if (Input.GetKeyDown(KeyCode.F8))
+                if (Input.GetKeyDown(devSmokeDEKey))
                 {
                     _ = TryRunSmokeDeSequenceAsync();
                     return;
                 }
 
-                if (Input.GetKeyDown(KeyCode.F10))
+                if (Input.GetKeyDown(devMacroRestartKey))
                 {
                     _ = TryRunSmokeRestartAsync();
                     return;
@@ -388,6 +395,37 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.EndConditions
 
             return service;
         }
+
+#if UNITY_EDITOR
+        private void TryAutoAssignBaseline3ConfigInEditor()
+        {
+            if (baseline3LevelsSmokeConfig != null)
+            {
+                return;
+            }
+
+            string[] guids = AssetDatabase.FindAssets("t:Baseline3LevelsSmokeConfigAsset");
+            if (guids == null || guids.Length != 1)
+            {
+                DebugUtility.LogWarning(typeof(GameplayEndConditionsController),
+                    $"[FATAL][Smoke][Levels] Expected exactly 1 Baseline3LevelsSmokeConfigAsset, found='{(guids == null ? 0 : guids.Length)}'.");
+                return;
+            }
+
+            string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+            var loaded = AssetDatabase.LoadAssetAtPath<Baseline3LevelsSmokeConfigAsset>(assetPath);
+            if (loaded == null)
+            {
+                DebugUtility.LogWarning(typeof(GameplayEndConditionsController),
+                    "[FATAL][Smoke][Levels] Failed to load Baseline3LevelsSmokeConfigAsset from AssetDatabase.");
+                return;
+            }
+
+            baseline3LevelsSmokeConfig = loaded;
+            EditorUtility.SetDirty(this);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(this);
+        }
+#endif
 
         private void MigrateDefeatKeyIfNeeded(string source)
         {
