@@ -4,116 +4,55 @@
 
 - Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-03-01
+- Última atualização: 2026-03-05
 - Tipo: Implementação
-- Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
+- Escopo: NewScripts/Modules (SceneFlow, LevelFlow, WorldLifecycle)
 
 ## Resumo
 
-Padronizar **assinaturas** e **dedupe** separando claramente dois domínios:
+Separação canônica entre:
 
-- **MacroRoute / SceneFlow**: assinatura macro para transições de cenas (load/unload/active/fade/profile).
-- **Level / LevelFlow**: assinatura de level para seleção e conteúdo (levelId + contentId) dentro de um macro.
+- **MacroSignature (SceneFlow)** para transições macro de cena.
+- **LevelSignature (LevelFlow)** para seleção/aplicação de level/conteúdo dentro do macro.
 
-Objetivo: evitar acoplamento/ambiguidade (ex.: usar “macroSignature” como se fosse “levelSignature”), e permitir resets locais sem disparar transição macro.
-
-## Contexto
-
-O projeto possui:
-
-- **SceneFlow** orquestrando transições macro por `routeId` (Menu, Gameplay base etc).
-- **LevelFlow** selecionando level e conteúdo dentro de um macro que suporta levels.
-- **WorldLifecycle** executando reset macro (spawn/despawn) e reset local (quando aplicável).
-
-Sem separação de assinaturas, o dedupe pode bloquear ações legítimas (ex.: reset local) e a observabilidade fica confusa (logs misturam “macro route” com “level”).
+Também há dedupe por domínio para evitar reentrância duplicada sem bloquear fluxos locais de level.
 
 ## Decisão
 
-### 1) Duas assinaturas canônicas
+1) **Assinatura macro**
+- Fonte canônica: `SceneTransitionContext.ContextSignature`.
+- Construção padrão: `SceneTransitionContext.ComputeSignature(...)` com `route/style/profile/profileAsset/active/fade/load/unload`.
+- Consumo canônico: `SceneTransitionSignature.Compute(context)`.
 
-#### Assinatura Macro (SceneFlow)
+2) **Assinatura level**
+- Tipo canônico: `LevelContextSignature`.
+- Construção canônica: `LevelContextSignature.Create(levelId, routeId, reason, contentId)`.
 
-- Nome: `macroSignature` (ou simplesmente `signature` nos eventos de SceneFlow).
-- Fonte: `SceneTransitionService` / `SceneFlowSignatureCache`.
-- Componentes mínimos:
-  - `routeId`
-  - `styleId`
-  - `profileId` e `profileAsset`
-  - `activeScene`
-  - `useFade` (ou equivalente)
-  - `scenesToLoad` / `scenesToUnload` (ou um hash determinístico delas)
+3) **Dedupe macro**
+- `SceneTransitionService.ShouldDedupe(signature)` dedupa start/start e completed/start em janela curta.
+- `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(signature)` dedupa reset por assinatura em _in-flight_ + janela recente.
 
-> Esta assinatura **não** carrega `levelId`/`contentId`. Level é um domínio separado.
+4) **Dedupe level**
+- Fluxos de seleção/troca usam `SelectionVersion` monotônico.
+- `LevelStageOrchestrator` ignora eventos já processados por `_lastProcessedSelectionVersion`.
 
-#### Assinatura Level (LevelFlow)
+## Implementação atual (fonte de verdade = código)
 
-- Nome: `levelSignature`.
-- Fonte: `LevelFlowRuntimeService` (ou serviço equivalente de seleção).
-- Componentes mínimos:
-  - `levelId`
-  - `routeId` (micro-route/route do level, se existir)
-  - `contentId`
-  - `reason`
-  - `v` (versão incremental, monotônica, por macro)
-
-### 2) Dedupe por domínio
-
-- **Macro dedupe**:
-  - `SceneTransitionService` pode dedupar transições macro por `macroSignature`.
-  - `SceneFlowInputModeBridge` e similares podem dedupar re-aplicações por `macroSignature`.
-
-- **Level dedupe**:
-  - `LevelFlowRuntimeService` dedupa eventos de seleção/aplicação por `{macroRouteId, levelId, contentId, v}` (ou por `levelSignature`).
-  - Um reset local (LevelReset) **não** deve ser bloqueado por dedupe macro.
-
-### 3) Contrato de logs [OBS]
-
-- Logs do SceneFlow devem sempre incluir a **macro signature**.
-- Logs do LevelFlow devem sempre incluir a **level signature**.
-- Bridges (Navigation/Restart/ContentSwap) devem registrar **ambas** quando fizer sentido:
-  - `macroSignature` para “onde estou” (contexto macro)
-  - `levelSignature` para “o que está selecionado/aplicado” (contexto de level)
-
-## Implementação atual (2026-02-25)
-
-### Evidências (anchors do log canônico)
-
-- SceneFlow usa assinatura macro (`signature='r:...|s:...|p:...|pa:...|a:...|f:...'`) em:
-  - `TransitionStarted`, `ScenesReady`, `TransitionCompleted`.
-- LevelFlow publica e propaga assinatura de level:
-  - `levelSignature='level:level.1|route:level.1|content:content.default|reason:Menu/PlayButton'` com `v='1'`/`v='2'`.
-- Há dedupe explícito por assinatura macro em bridges:
-  - `SceneFlowInputModeBridge ... reset dedupe. signature='...'`.
-- Restart usa snapshot com contexto de level e não depende da assinatura macro para decidir “o que reiniciar”:
-  - `RestartUsingSnapshot routeId='level.1', levelId='level.1', contentId='content.default', styleId='style.gameplay' ...`.
-
-## Implicações
-
-- Dedupe macro fica estável e previsível (não interfere em trocas locais de level/conteúdo).
-- Observabilidade melhora: cada log “fala do seu domínio” e fica simples correlacionar.
-- Simplifica a evolução do F4/F5 do LevelFlow: “StartGameplayAsync(levelId)” passa a ser trilho canônico.
-
-## Implementação atual (2026-03-01)
-
-Anchors curtas observadas no log atual:
-
-- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
-- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
-- Resets por domínio:
-  - macro: `ResetWorldStarted` / `ResetCompleted`;
-  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
-- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
-- Pause/Resume com token dedicado `state.pause`.
-- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+- MacroSignature em `SceneTransitionContext.ContextSignature` e `ComputeSignature(...)`.
+- SceneFlow consome a assinatura via `SceneTransitionSignature.Compute(...)`.
+- Dedupe macro no `SceneTransitionService.ShouldDedupe(...)`.
+- Dedupe de reset macro no `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(...)`.
+- LevelSignature em `LevelContextSignature` + `Create(...)`.
+- Versionamento de seleção em `LevelSelectedEvent.SelectionVersion`.
+- Orquestração IntroStage com dedupe por versão em `LevelStageOrchestrator`.
 
 ## Critérios de aceite (DoD)
 
-- [x] Existe distinção clara entre `macroSignature` (SceneFlow) e `levelSignature` (LevelFlow).
-- [x] Logs [OBS] exibem assinaturas corretas em seus domínios.
-- [x] Dedupe macro não bloqueia reset/troca local de level/conteúdo.
-- [ ] Hardening: adicionar testes/QA que validem colisão (mesmo macroSignature com levelSignature diferentes) sem transição macro.
+- [x] MacroSignature e LevelSignature são separadas por contrato e implementação.
+- [x] Dedupe macro implementado em SceneFlow e no driver de reset do WorldLifecycle.
+- [x] Dedupe level por `SelectionVersion` implementado no orquestrador de stages.
+- [ ] Hardening: testes automatizados cobrindo colisão (mesma macroSignature com levelSignature diferente).
 
 ## Changelog
 
-- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
-- 2026-02-25: Marcado como **Implementado**, adicionadas evidências e alinhamento do contrato de logs/dedupe com o comportamento observado no log canônico.
+- 2026-03-05: ADR reescrito para refletir exclusivamente a implementação atual em código (sem depender de logs).
