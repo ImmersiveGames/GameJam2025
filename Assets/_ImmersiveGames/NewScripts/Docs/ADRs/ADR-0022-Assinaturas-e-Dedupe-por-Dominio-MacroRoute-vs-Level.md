@@ -1,35 +1,35 @@
-# ADR-0022 — Assinaturas e Dedupe por Domínio (MacroRoute vs Level)
+# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
-- Data (decisão): 2026-02-19
-- Última atualização: 2026-03-04
-- Tipo: Implementação
+- Data (decisao): 2026-02-19
+- Ultima atualizacao: 2026-03-05
+- Tipo: Implementacao
 - Escopo: NewScripts/Modules (SceneFlow, LevelFlow, WorldLifecycle)
 
 ## Resumo
 
-Separar assinatura e dedupe por domínio:
+Separar assinatura e dedupe por dominio:
 
-- **Macro / SceneFlow**: assinatura de transição de cena (`SceneTransitionContext.ContextSignature`).
-- **Level / LevelFlow**: assinatura de seleção de level (`LevelContextSignature`).
+- **Macro / SceneFlow**: assinatura de transicao de cena (`SceneTransitionContext.ContextSignature`).
+- **Level / LevelFlow**: assinatura de selecao de level (`LevelContextSignature`).
 
-## Decisão
+## Decisao
 
-1. A assinatura canônica do macro é `SceneTransitionContext.ContextSignature` (calculada por `ComputeSignature` quando não vem da request).
-2. A assinatura canônica do level é `LevelContextSignature`.
+1. A assinatura canonica do macro e `SceneTransitionContext.ContextSignature`.
+2. A assinatura canonica do level e `LevelContextSignature`.
 3. O dedupe macro ocorre em duas camadas:
-   - `SceneTransitionService.ShouldDedupe(...)` (dedupe de `TransitionAsync`).
-   - `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(...)` (dedupe de reset por assinatura no ScenesReady).
-4. Dedupe de level é por `SelectionVersion` monotônico e guardas do fluxo de stage (`LevelStageOrchestrator`).
+   - `SceneTransitionService.ShouldDedupe(...)`.
+   - `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(...)`.
+4. Dedupe de level e por `SelectionVersion` monotonico (`LevelStageOrchestrator`).
 
-## Implementação atual (fonte de verdade: código)
+## Implementacao atual (fonte de verdade: codigo)
 
 ### Assinatura macro (SceneFlow)
 
-- `SceneTransitionContext` expõe `ContextSignature` e calcula assinatura com `route/style/profile/profileAsset/active/fade/load/unload` em `ComputeSignature(...)`.
-- `SceneTransitionSignature.Compute(...)` retorna explicitamente `context.ContextSignature` como assinatura canônica.
+- `SceneTransitionContext` expoe `ContextSignature` e calcula assinatura em `ComputeSignature(...)`.
+- `SceneTransitionSignature.Compute(...)` retorna `context.ContextSignature`.
 
 ### Assinatura level (LevelFlow)
 
@@ -38,21 +38,22 @@ Separar assinatura e dedupe por domínio:
 
 ### Dedupe macro
 
-- `SceneTransitionService.ShouldDedupe(...)` evita start duplicado em janela curta, comparando assinatura com último start/completed.
-- `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(...)` evita reset duplicado quando assinatura está in-flight ou recém concluída.
+- `SceneTransitionService.ShouldDedupe(...)` evita start duplicado em janela curta.
+- `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(...)` evita reset duplicado em in-flight/recent.
 
 ### Dedupe level
 
-- `LevelStageOrchestrator` mantém `_lastProcessedSelectionVersion` e ignora eventos/snapshots com versão menor/igual.
-- `LevelSwapLocalService` e `LevelFlowRuntimeService` incrementam `selectionVersion` a partir do snapshot atual.
+- `LevelStageOrchestrator` mantem `_lastProcessedSelectionVersion` e ignora versao menor/igual.
+- `LevelSwapLocalService` e `LevelFlowRuntimeService` incrementam `selectionVersion`.
 
-## Critérios de aceite (DoD)
+## Criterios de aceite (DoD)
 
-- [x] Existe distinção explícita entre assinatura macro e assinatura de level.
-- [x] Dedupe macro implementado em `SceneTransitionService` + `WorldLifecycleSceneFlowResetDriver`.
-- [x] Dedupe de level baseado em `SelectionVersion` no orquestrador de stages.
-- [ ] Hardening: testes automatizados para colisão controlada (mesma macro signature com level signatures diferentes).
+- [x] Distincao explicita entre assinatura macro e assinatura de level.
+- [x] Dedupe macro em `SceneTransitionService` + `WorldLifecycleSceneFlowResetDriver`.
+- [x] Dedupe level por `SelectionVersion` no orquestrador de stages.
+- [ ] Hardening: testes automatizados para colisao controlada.
 
 ## Changelog
 
-- 2026-03-04: ADR auditado contra o código; seção de implementação migrada para evidências de classes/métodos.
+- 2026-03-05: revisado com base nas auditorias de 2026-03-04/2026-03-05 e no codigo atual.
+- 2026-03-04: ADR auditado contra o codigo; implementacao migrada para evidencias de classes/metodos.

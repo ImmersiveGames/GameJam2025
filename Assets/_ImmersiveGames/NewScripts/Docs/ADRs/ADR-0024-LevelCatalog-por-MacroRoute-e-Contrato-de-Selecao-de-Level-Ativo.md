@@ -1,51 +1,52 @@
-# ADR-0024 — LevelCatalog por MacroRoute e Contrato de Seleção de Level Ativo
+# ADR-0024 - LevelCatalog por MacroRoute e Contrato de Selecao de Level Ativo
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
-- Data (decisão): 2026-02-19
-- Última atualização: 2026-03-04
-- Tipo: Implementação
+- Data (decisao): 2026-02-19
+- Ultima atualizacao: 2026-03-05
+- Tipo: Implementacao
 - Escopo: NewScripts/Modules (LevelFlow, Navigation)
 
 ## Resumo
 
-Padronizar a relação **macroRoute -> catálogo de levels** e garantir seleção determinística de level ativo por macro.
+Padronizar a relacao **macroRoute -> catalogo de levels** e garantir selecao deterministica de level ativo por macro.
 
-## Decisão
+## Decisao
 
-1. `LevelDefinition` usa `macroRouteRef` obrigatório como referência canônica da macro rota.
-2. `LevelCatalogAsset` mantém caches explícitos:
+1. `LevelDefinition` usa `macroRouteRef` obrigatorio como referencia canonica da macro rota.
+2. `LevelCatalogAsset` mantem caches explicitos:
    - level -> macroRoute
-   - macroRoute -> level (único quando não ambíguo)
+   - macroRoute -> level (unico quando nao ambiguo)
    - macroRoute -> lista de levels
-3. Quando necessário preparar um macro sem snapshot válido, o default é o primeiro level do grupo da macro (`catalog_first`).
+3. Sem snapshot valido para o macro, o default e o primeiro level do grupo (`catalog_first`).
 
-## Implementação atual (fonte de verdade: código)
+## Implementacao atual (fonte de verdade: codigo)
 
-### Vínculo canônico Level -> MacroRoute
+### Vinculo canonico Level -> MacroRoute
 
-- `LevelDefinition.ResolveMacroRouteId()` usa `macroRouteRef` obrigatório e falha rápido quando ausente/inválido.
-- `LevelDefinition.IsValid` depende de `levelId` válido + macro route válida.
+- `LevelDefinition.ResolveMacroRouteId()` usa `macroRouteRef` obrigatorio e falha rapido quando ausente/invalido.
+- `LevelDefinition.IsValid` depende de `levelId` valido + macro route valida.
 
-### Catálogo e caches por macro
+### Catalogo e caches por macro
 
-- `LevelCatalogAsset.EnsureCache()` constrói `_levelToMacroRouteCache`, `_macroRouteToLevelCache`, `_macroRouteToLevelsCache` e detecta ambiguidade.
-- `LevelCatalogAsset.TryGetLevelsForMacroRoute(...)` e `TryGetNextLevelInMacro(...)` expõem fluxo por macro.
+- `LevelCatalogAsset.EnsureCache()` constroi `_levelToMacroRouteCache`, `_macroRouteToLevelCache`, `_macroRouteToLevelsCache` e detecta ambiguidade.
+- `LevelCatalogAsset.TryGetLevelsForMacroRoute(...)` e `TryGetNextLevelInMacro(...)` expoem fluxo por macro.
 - `LevelCatalogAsset.TryResolve(...)` resolve `levelId` para `macroRouteId + contentId + payload`.
 
-### Seleção determinística no prepare macro
+### Selecao deterministica no prepare macro
 
-- `LevelMacroPrepareService.PrepareAsync(...)` usa snapshot atual se pertencer à macro.
-- Se não houver snapshot aplicável, seleciona `levelIds[0]` do catálogo (`source='catalog_first'`) e publica `LevelSelectedEvent` antes do reset local.
+- `LevelMacroPrepareService.PrepareAsync(...)` usa snapshot atual se pertencer a macro.
+- Sem snapshot aplicavel, seleciona `levelIds[0]` (`source='catalog_first'`) e publica `LevelSelectedEvent` antes do reset local.
 
-## Critérios de aceite (DoD)
+## Criterios de aceite (DoD)
 
-- [x] `LevelDefinition` exige `macroRouteRef` para resolução canônica.
-- [x] `LevelCatalogAsset` mantém e usa caches por macro route.
-- [x] Existe fallback determinístico de seleção de level por macro em `LevelMacroPrepareService`.
-- [ ] Hardening: suporte a default explícito por macro (além do primeiro da lista) no asset/contrato.
+- [x] `LevelDefinition` exige `macroRouteRef` para resolucao canonica.
+- [x] `LevelCatalogAsset` mantem e usa caches por macro route.
+- [x] Existe fallback deterministico de selecao de level por macro em `LevelMacroPrepareService`.
+- [ ] Hardening: suporte a default explicito por macro no asset/contrato.
 
 ## Changelog
 
-- 2026-03-04: ADR auditado contra o código; status atualizado para Implementado.
+- 2026-03-05: revisado com base nas auditorias de 2026-03-04/2026-03-05 e no codigo atual.
+- 2026-03-04: ADR auditado contra o codigo; status atualizado para Implementado.

@@ -1,113 +1,108 @@
-# H1 Hardening Changes ‚Äî anti-retrocesso rota/level
+# H1 Hardening Changes ó anti-retrocesso rota/level
 
 Data: 2026-03-05
 Escopo: `Assets/_ImmersiveGames/NewScripts/**`
-Base: invent√°rio H0 + hardening solicitado (sem pipeline paralelo).
+Base: invent·rio H0 + hardening solicitado (sem pipeline paralelo).
 
 ## Resumo
 
-Este pacote H1 endurece caminhos LEGACY/COMPAT/FALLBACK em runtime para impedir regress√£o de mistura rota/level em produ√ß√£o.
+Este pacote H1 endurece caminhos LEGACY/COMPAT/FALLBACK em runtime para impedir regress„o de mistura rota/level em produÁ„o.
 
-- Em **Strict/Production**: caminhos legados cr√≠ticos agora fazem fail-fast com anchor `[FATAL][H1]`.
-- Em **DEV** (`UNITY_EDITOR`/`DEVELOPMENT_BUILD`/`DebugBuild`): mant√©m escape hatch expl√≠cito com `[WARN][COMPAT]` ou `[WARN][DEGRADED]`.
-- Objetivo: preservar diagn√≥sticos em desenvolvimento, mas bloquear retrocesso operacional em produ√ß√£o.
+- Em **Strict/Production**: caminhos legados crÌticos fazem fail-fast com anchor `[FATAL][H1]`.
+- Em **DEV** (`UNITY_EDITOR`/`DEVELOPMENT_BUILD`/`DebugBuild`): escape hatch permanece apenas para caminhos `[WARN][COMPAT]` e `[WARN][DEGRADED]` previstos.
+- APIs de navegaÁ„o `[Obsolete]` ficam bloqueadas em todos os ambientes (DEV e Strict/Production).
 
 ---
 
-## Mudan√ßas por arquivo
+## MudanÁas por arquivo
 
-## 1) Navigation
+## 1) Core
+
+### `Core/Logging/HardFailFastH1.cs`
+
+#### A) helper ˙nico de fail-fast H1
+- Novo helper centralizado para os fail-fast H1 deste pacote.
+- Comportamento unificado:
+  - loga `[FATAL][H1] ...`
+  - em `UNITY_EDITOR`: `UnityEditor.EditorApplication.isPlaying = false`
+  - em player: `Application.Quit()`
+  - lanÁa `InvalidOperationException`
+
+---
+
+## 2) Navigation
 
 ### `Modules/Navigation/GameNavigationService.cs`
 
-#### A) `RestartAsync` ‚Äî bloqueio de `legacy_route_only`
-- **Antes:** restart podia cair em `resolveSource='legacy_route_only'` usando apenas `_lastGameplayRouteId`.
-- **Agora (Strict/Production):** fail-fast com `[FATAL][H1]` quando branch legacy seria usado.
-- **Agora (DEV):** mant√©m fallback com log expl√≠cito `[WARN][COMPAT][NAV]` e contador (`_compatRestartLegacyRouteOnlyCount`).
+#### B) `RestartAsync` ó bloqueio de `legacy_route_only`
+- **Strict/Production:** fail-fast `[FATAL][H1]` quando branch legacy seria usado.
+- **DEV:** fallback mantido com `[WARN][COMPAT][NAV]` + contador (`_compatRestartLegacyRouteOnlyCount`).
 
-Anchor de log:
-- `[FATAL][H1] [NAV] Restart blocked: legacy_route_only is forbidden...`
-- `[WARN][COMPAT][NAV] Restart legacy_route_only fallback ... recommendation='use LevelFlow restart'`
+#### C) `StartGameplayRouteAsync` ó fallback endurecido
+- **Strict/Production:** fallback `last_level_id` gera fail-fast `[FATAL][H1]`.
+- **DEV:** fallback permitido com `[WARN][COMPAT][NAV]` + contador (`_compatStartGameplayRouteFallbackCount`).
 
-#### B) `StartGameplayRouteAsync` ‚Äî fallback endurecido
-- **Antes:** fallback para `snapshot` ou `last_level_id` em aus√™ncia de sele√ß√£o expl√≠cita.
-- **Agora (Strict/Production):**
-  - `snapshot` s√≥ ocorre no branch validado (`snapshot.RouteId == routeId && snapshot.HasLevelId`).
-  - `last_level_id` gera fail-fast `[FATAL][H1]` (exige sele√ß√£o expl√≠cita via LevelFlow).
-- **Agora (DEV):** fallback permitido com `[WARN][COMPAT][NAV]` + contador (`_compatStartGameplayRouteFallbackCount`).
-
-Anchor de log:
-- `[FATAL][H1] [NAV] StartGameplayRouteAsync requires explicit LevelId selection via LevelFlow...`
-- `[WARN][COMPAT][NAV] StartGameplayRouteAsync fallback ... source='last_level_id' ...`
-
-#### F) APIs `[Obsolete]` ‚Äî mitiga√ß√£o anti-uso
-- M√©todos endurecidos na implementa√ß√£o:
+#### D) APIs `[Obsolete]`
+- MÈtodos:
   - `RequestMenuAsync`
   - `RequestGameplayAsync`
   - `StartGameplayAsync(LevelId, ...)`
   - `NavigateAsync(string, ...)`
-- **Strict/Production:** bloqueio com `[FATAL][H1]`.
-- **DEV:** aviso 1x por sess√£o `[WARN][LEGACY_API_USED]` (latch est√°tico `_legacyApiWarningEmitted`).
-
----
+- **Strict/Production e DEV:** bloqueio com `[FATAL][H1]`.
+- Warn 1x por sess„o `[WARN][LEGACY_API_USED]` (`_legacyApiWarningEmitted`) È emitido antes do fail-fast para diagnÛstico.
 
 ### `Modules/Navigation/RestartNavigationBridge.cs`
 
-#### C) fallback operacional do bridge
-- **Antes:** se `ILevelFlowRuntimeService` faltasse, bridge chamava `IGameNavigationService.RestartAsync`.
-- **Agora (Strict/Production):** fail-fast `[FATAL][H1][NAV][DI]` e sem fallback.
-- **Agora (DEV):** fallback mantido com `[WARN][COMPAT][NAV]` e recomenda√ß√£o de corrigir DI.
+#### E) fallback operacional do bridge
+- **Strict/Production:** fail-fast `[FATAL][H1][NAV][DI]` e sem fallback.
+- **DEV:** fallback mantido com `[WARN][COMPAT][NAV]` e recomendaÁ„o de corrigir DI.
 
 ---
 
-## 2) SceneFlow
+## 3) SceneFlow
 
 ### `Modules/SceneFlow/Transition/Runtime/MacroLevelPrepareCompletionGate.cs`
 
-#### D) skip silencioso de LevelPrepare
-- **Antes:** aus√™ncia de provider/servi√ßo resultava em `skipped` e seguia.
-- **Agora (Strict/Production):** fail-fast `[FATAL][H1]` (n√£o segue sem LevelPrepare).
-- **Agora (DEV):** skip permitido apenas com `[WARN][DEGRADED][SceneFlow]` + recomenda√ß√£o de corre√ß√£o.
-
-Anchor de log:
-- `[FATAL][H1] ... MacroLoadingPhase='LevelPrepare' blocked ...`
-- `[WARN][DEGRADED][SceneFlow] MacroLoadingPhase='LevelPrepare' skipped (DEV escape hatch)...`
+#### F) skip silencioso de LevelPrepare
+- **Strict/Production:** fail-fast `[FATAL][H1]` (n„o segue sem LevelPrepare).
+- **DEV:** skip permitido apenas com `[WARN][DEGRADED][SceneFlow]` + recomendaÁ„o de correÁ„o.
 
 ---
 
-## 3) WorldLifecycle
+## 4) WorldLifecycle
 
 ### `Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs`
 
-#### E) required reset sem servi√ßo cr√≠tico
-- **Antes:** caminho best-effort podia liberar completion mesmo sem `WorldResetService`.
-- **Agora (Strict/Production):** fail-fast `[FATAL][H1][WorldLifecycle]` quando reset √© required e servi√ßo falha/ausente; n√£o libera completion por fallback.
-- **Agora (DEV):** best-effort mantido com `[WARN][DEGRADED][WorldLifecycle]` e contador (`_degradedFallbackCount`).
-
-Anchor de log:
-- `[FATAL][H1][WorldLifecycle] Reset required but WorldResetService missing...`
-- `[WARN][DEGRADED][WorldLifecycle] WorldResetService missing in DI (DEV escape hatch)...`
+#### G) reset required sem swallow silencioso
+- `ExecuteResetWhenRequiredAsync` n„o engole mais falha de `WorldResetService.TriggerResetAsync`.
+- Se `TriggerResetAsync` falhar:
+  - **Strict/Production:** fail-fast com `[FATAL][H1][WorldLifecycle]`.
+  - **DEV:** registra `[WARN][DEGRADED][WorldLifecycle]` e retorna `shouldPublishCompletion=true`.
+- Se `WorldResetService` faltar:
+  - **Strict/Production:** fail-fast com `[FATAL][H1][WorldLifecycle]`.
+  - **DEV:** fallback degradado com `[WARN][DEGRADED][WorldLifecycle]` e completion publish.
+- Garantia: reset required sempre termina em completion (service/fallback DEV) ou fail-fast em Strict.
 
 ---
 
 ## Comportamento final (matriz)
 
-| Cen√°rio | Strict/Production | DEV |
+| Cen·rio | Strict/Production | DEV |
 |---|---|---|
 | Restart via `legacy_route_only` | Bloqueado (`[FATAL][H1]`) | Permitido com `[WARN][COMPAT][NAV]` |
 | `StartGameplayRouteAsync` com `last_level_id` fallback | Bloqueado (`[FATAL][H1]`) | Permitido com `[WARN][COMPAT][NAV]` |
 | Restart bridge sem `ILevelFlowRuntimeService` | Bloqueado (`[FATAL][H1][NAV][DI]`) | Permitido com `[WARN][COMPAT][NAV]` |
-| `LevelPrepare` skip por DI/servi√ßo ausente | Bloqueado (`[FATAL][H1]`) | Permitido com `[WARN][DEGRADED][SceneFlow]` |
+| `LevelPrepare` skip por DI/serviÁo ausente | Bloqueado (`[FATAL][H1]`) | Permitido com `[WARN][DEGRADED][SceneFlow]` |
 | Reset required sem `WorldResetService` | Bloqueado (`[FATAL][H1][WorldLifecycle]`) | Permitido com `[WARN][DEGRADED][WorldLifecycle]` |
-| Uso de API `[Obsolete]` de navega√ß√£o | Bloqueado (`[FATAL][H1]`) | Warn 1x (`[WARN][LEGACY_API_USED]`) e comportamento legado controlado |
+| Uso de API `[Obsolete]` de navegaÁ„o | Bloqueado (`[FATAL][H1]`) | Bloqueado (`[FATAL][H1]`) com warn 1x (`[WARN][LEGACY_API_USED]`) |
+| Fail-fast H1 (helper ˙nico) | `[FATAL][H1]` + stop imediato | `[FATAL][H1]` + stop imediato |
 
 ---
 
-## Anchors de log adicionados
+## Anchors de log preservados
 
 - `[FATAL][H1]`
-- `[WARN][COMPAT][NAV]`
-- `[WARN][DEGRADED][SceneFlow]`
-- `[WARN][DEGRADED][WorldLifecycle]`
+- `[WARN][COMPAT]`
+- `[WARN][DEGRADED]`
 - `[WARN][LEGACY_API_USED]`
 

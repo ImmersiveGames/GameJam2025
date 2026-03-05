@@ -460,9 +460,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             string suffix = includeCompatHint
                 ? " DEV escape hatch may allow compat paths with [WARN][COMPAT]."
                 : string.Empty;
-            string message = $"[FATAL][H1] {detail}{suffix}";
-            DebugUtility.LogError(typeof(GameNavigationService), message);
-            throw new InvalidOperationException(message);
+
+            HardFailFastH1.Trigger(typeof(GameNavigationService), $"{detail}{suffix}");
         }
 
         private async Task ExecuteIntentAsync(string intentId, string reason = null)
@@ -652,3 +651,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
     }
 }
+

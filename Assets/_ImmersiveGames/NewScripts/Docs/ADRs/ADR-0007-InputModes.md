@@ -1,4 +1,4 @@
-﻿# ADR-0007: Formalizar InputModes e responsabilidade do módulo
+# ADR-0007: Formalizar InputModes e responsabilidade do módulo
 
 ## Status
 

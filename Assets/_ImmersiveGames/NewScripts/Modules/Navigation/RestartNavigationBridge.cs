@@ -67,9 +67,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             if (!IsDevelopmentEscapeHatch())
             {
-                string fatal = "[FATAL][H1][NAV][DI] LevelFlowRuntimeService missing. Restart fallback to IGameNavigationService is forbidden in strict/production.";
-                DebugUtility.LogError<RestartNavigationBridge>(fatal);
-                throw new InvalidOperationException(fatal);
+                HardFailFastH1.Trigger(typeof(RestartNavigationBridge), "[FATAL][H1][NAV][DI] LevelFlowRuntimeService missing. Restart fallback to IGameNavigationService is forbidden in strict/production.");
             }
 
             DebugUtility.LogWarning<RestartNavigationBridge>(
@@ -96,3 +94,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
     }
 }
+

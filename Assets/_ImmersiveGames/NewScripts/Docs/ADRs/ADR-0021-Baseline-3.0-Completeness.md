@@ -1,98 +1,76 @@
-# ADR-0021 — Baseline 3.0 (Completeness)
+# ADR-0021 - Baseline 3.0 (Completeness)
 
 ## Status
 
-- Estado: **Aceito (Em andamento)**
-- Data (decisão): 2026-02-19
-- Última atualização: 2026-03-01
-- Tipo: Baseline / Contrato verificável por log
+- Estado: **Aceito (Fechado)**
+- Data (decisao): 2026-02-19
+- Ultima atualizacao: 2026-03-05
+- Tipo: Baseline / Completeness
 - Escopo: NewScripts (SceneFlow, Navigation, LevelFlow, WorldLifecycle, LoadingHud, GameLoop)
 
 ## Objetivo
 
-Definir um baseline “3.0” de completude: um conjunto de invariantes e evidências mínimas para considerar o trilho Macro↔Level está sólido o suficiente para avançar em refatorações maiores.
+Definir e fechar um baseline 3.0 de completude: invariantes minimos para garantir que o trilho Macro-Level esta solido para evolucao sem regressao.
 
-## Evidência canônica atual (2026-02-25)
+## Fonte de verdade atual
 
-Fonte: log “Commit 1 minimal” enviado no chat (boot → menu → start gameplay level.1 → intro → playing → postgame → restart → exit-to-menu + resets QA).
+- Codigo atual do repositorio.
+- Auditoria ADR-0022..ADR-0027: `Docs/Reports/Audits/2026-03-04/ADR-0022-0027-Code-Audit.md`.
+- Hardening H1: `Docs/Reports/Audits/2026-03-05/H1-Hardening-Changes.md`.
 
-Anchors principais observados:
+## Escopo do baseline (cobertura atual)
 
-- SceneFlow completo: `TransitionStarted` → `ScenesReady` → `TransitionCompleted` (Menu e Gameplay).
-- Política de reset por rota: `RouteAppliedPolicy requiresWorldReset=False (Frontend)` e `True (Gameplay)`.
-- Níveis de reset: `WorldResetCommands ResetRequested kind='Level'` e `kind='Macro'` + `ResetCompleted`.
-- LevelFlow trilho canônico: `StartGameplayAsync(levelId)` + `LevelSelectedEventPublished` + `levelSignature`.
-- IntroStage: bloqueio/liberação de `sim.gameplay` e sincronização com GameLoop.
+Cobre:
 
-## Escopo do baseline
-
-Cobre o mínimo para:
-
-- Entrar em Menu (frontend) sem reset.
-- Entrar em Gameplay (macro com levels) com reset determinístico.
-- Reiniciar e sair para menu sem regressões de gate/input.
-- Executar reset macro e reset level via QA.
-
-Não cobre ainda (explicitamente):
-
-- Swap local de level (ADR-0026).
-- PostLevel completo (ADR-0027).
+- Menu/frontend sem reset indevido.
+- Gameplay com reset e selecao de level deterministicos.
+- Restart/Exit-to-menu sem trilho paralelo em Strict/Production.
+- Reset em dois niveis (Macro e Level).
+- Swap local intra-macro sem transicao macro.
+- IntroStage e acoes pos-level no dominio de Level.
 
 ## Checklist de completude (Baseline 3.0)
 
 ### A) SceneFlow / Macro transitions
 
-- [x] `RouteApplied` + `RouteAppliedPolicy` com `requiresWorldReset` (fonte/razão).
+- [x] `RouteApplied` + politica de reset por rota (`requiresWorldReset`).
 - [x] `TransitionStarted/ScenesReady/TransitionCompleted` com assinatura macro consistente.
-- [x] Fade + Loading HUD seguem ordem: Show após FadeIn; Hide antes do FadeOut.
+- [x] Fade + Loading HUD em ordem correta de pipeline.
+- [x] `LevelPrepare` no completion gate antes do FadeOut (`MacroLevelPrepareCompletionGate`).
 
 ### B) WorldLifecycle / Resets
 
-- [x] MacroReset executa pipeline completo (hooks + despawn + spawn) e registra tempos/ordem.
-- [x] Reset completion gate libera a transição (SceneFlowGate).
-- [x] Two-level reset via `WorldResetCommands` (Macro vs Level) com `ResetCompleted success=True`.
+- [x] MacroReset executa pipeline completo.
+- [x] Completion gate do SceneFlow e liberado corretamente.
+- [x] Two-level reset (`Macro` vs `Level`) via `WorldResetCommands`.
+- [x] Reset required: Strict/Production = fail-fast H1; DEV = degraded fallback com completion.
 
-### C) LevelFlow / seleção e snapshot
+### C) LevelFlow / selecao e snapshot
 
-- [x] Trilho canônico: `StartGameplayAsync(levelId, reason)`.
-- [x] Seleção observável: `LevelSelectedEventPublished` + `levelSignature` + `v` monotônico.
-- [x] Restart usa snapshot (não depende de re-seleção manual).
+- [x] Trilho canonico: `StartGameplayAsync(levelId, reason)` via LevelFlow runtime.
+- [x] Selecao observavel com `selectionVersion` e `levelSignature`.
+- [x] Restart prioriza snapshot canonico.
+- [x] Swap local intra-macro sem transicao macro (ADR-0026).
 
 ### D) GameLoop / gates / InputMode
 
 - [x] `flow.scene_transition` fecha/abre corretamente.
-- [x] IntroStage bloqueia `sim.gameplay`, troca InputMode para UI e depois retorna a Gameplay.
-- [x] Pause/Resume usa token dedicado (`state.pause`).
-- [x] PostGame usa token dedicado (`state.postgame`) e ações restart/exit.
+- [x] IntroStage bloqueia/libera `sim.gameplay` e alterna InputMode.
+- [x] Pause/Resume e PostGame usam tokens dedicados.
+- [x] Pos-level (Restart/NextLevel/ExitToMenu) via servico de dominio (ADR-0027).
 
-### E) Pendências que impedem “Baseline fechado”
+## Criterios de saida
 
-- [x] Swap local de level sem transição macro (ADR-0026) com evidência N→1.
-- [ ] PostLevel (ADR-0027) com NextLevel/Exit/Restart e logs [OBS] dedicados.
-- [x] Vínculo macroRoute → catálogo de levels consolidado (ADR-0024).
+Baseline 3.0 e considerado fechado quando:
 
-## Implementação atual (2026-03-01)
+1. ADR-0022..ADR-0027 estao implementados e auditados contra codigo.
+2. Caminhos criticos legacy/compat/fallback possuem hardening H1 em Strict/Production.
+3. Documentacao ADR e auditorias estao sincronizadas com o comportamento real.
 
-Anchors curtas observadas no log atual:
-
-- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
-- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
-- Resets por domínio:
-  - macro: `ResetWorldStarted` / `ResetCompleted`;
-  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
-- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
-- Pause/Resume com token dedicado `state.pause`.
-- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
-
-## Critérios de saída
-
-Baseline 3.0 pode ser marcado como “Fechado” quando:
-
-1) ADR-0026 e ADR-0027 estiverem fechados (evidências em log).
-2) ADR-0024 estiver fechado (macroRouteId separado e vínculo explícito macro→catálogo).
-3) Existir um “log canônico” único para o baseline (A–E) com anchors estáveis.
+**Situacao atual:** criterios atendidos.
 
 ## Changelog
 
-- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
-- 2026-02-25: Atualizado com log canônico mais recente e checklist com status (PASS/pendências) alinhado às ADRs 0022–0027.
+- 2026-03-05: baseline marcado como fechado; alinhado as auditorias de 2026-03-04 e 2026-03-05.
+- 2026-03-01: atualizacao de status e checklist baseada no estado daquele momento.
+- 2026-02-25: checklist inicial alinhado as ADRs 0022-0027.

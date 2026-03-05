@@ -164,22 +164,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     completionReason = result.failureReason;
                 }
             }
-            catch (Exception ex)
-            {
-                if (!IsDevelopmentEscapeHatch())
-                {
-                    string fatal =
-                        $"[FATAL][H1][WorldLifecycle] Reset required but service missing/failed. routeId='{routeId}', signature='{signature}', targetScene='{targetScene}', reason='{completionReason}', ex='{ex.GetType().Name}'.";
-                    DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(fatal);
-                    throw new InvalidOperationException(fatal, ex);
-                }
-
-                // Best-effort somente em DEV: evita deadlock durante desenvolvimento.
-                int degradedCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
-                DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WARN][DEGRADED][WorldLifecycle] ResetWorld fallback completion enabled (DEV). count='{degradedCount}' signature='{signature}' targetScene='{targetScene}' ex='{ex.GetType().Name}'.");
-                shouldPublishCompletion = true;
-            }
             finally
             {
                 if (shouldPublishCompletion)
@@ -204,43 +188,48 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     $"[WorldLifecycle] Usando WorldResetService (Lifecycle) para executar reset. signature='{signature}', targetScene='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
+                var request = new WorldResetRequest(
+                    contextSignature: signature,
+                    reason: string.IsNullOrWhiteSpace(decisionReason) ? WorldResetReasons.SceneFlowScenesReady : decisionReason,
+                    profileName: profileName,
+                    targetScene: targetScene,
+                    origin: WorldResetOrigin.SceneFlow,
+                    sourceSignature: signature,
+                    isGameplayProfile: true);
+
                 try
                 {
-                    var request = new WorldResetRequest(
-                        contextSignature: signature,
-                        reason: string.IsNullOrWhiteSpace(decisionReason) ? WorldResetReasons.SceneFlowScenesReady : decisionReason,
-                        profileName: profileName,
-                        targetScene: targetScene,
-                        origin: WorldResetOrigin.SceneFlow,
-                        sourceSignature: signature,
-                        isGameplayProfile: true);
-
                     await resetService.TriggerResetAsync(request);
+                    return (false, string.Empty);
                 }
                 catch (Exception ex)
                 {
-                    DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
-                        $"[WorldLifecycle] WorldResetService falhou durante TriggerResetAsync. signature='{signature}', targetScene='{targetScene}', ex='{ex}'.");
-                }
+                    if (!IsDevelopmentEscapeHatch())
+                    {
+                        HardFailFastH1.Trigger(typeof(WorldLifecycleSceneFlowResetDriver),
+                            $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService.TriggerResetAsync failed. signature='{signature}', targetScene='{targetScene}', profile='{profileName}', ex='{ex.GetType().Name}'.",
+                            ex);
+                    }
 
-                return (false, string.Empty);
+                    int degradedOnFailureCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
+                    DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
+                        $"[WARN][DEGRADED][WorldLifecycle] ResetWorld fallback completion enabled (DEV). count='{degradedOnFailureCount}' signature='{signature}' targetScene='{targetScene}' ex='{ex.GetType().Name}'.");
+                    return (true, WorldResetReasons.FailedNoResetService);
+                }
             }
 
             if (!IsDevelopmentEscapeHatch())
             {
-                string fatal =
-                    $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService missing in DI. signature='{signature}', targetScene='{targetScene}', profile='{profileName}'.";
-                DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(fatal);
-                throw new InvalidOperationException(fatal);
+                HardFailFastH1.Trigger(typeof(WorldLifecycleSceneFlowResetDriver),
+                    $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService missing in DI. signature='{signature}', targetScene='{targetScene}', profile='{profileName}'.");
             }
 
-            int degradedCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
+            int degradedMissingServiceCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
             DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                $"[WARN][DEGRADED][WorldLifecycle] WorldResetService missing in DI (DEV escape hatch). count='{degradedCount}' signature='{signature}' targetScene='{targetScene}'.");
+                $"[WARN][DEGRADED][WorldLifecycle] WorldResetService missing in DI (DEV escape hatch). count='{degradedMissingServiceCount}' signature='{signature}' targetScene='{targetScene}'.");
 
             return (true, WorldResetReasons.FailedNoResetService);
         }
-
 
         private static string ResolveTargetSceneName(SceneTransitionContext context)
         {
@@ -384,3 +373,4 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+

@@ -1,40 +1,40 @@
-# ADR-0027 — IntroStage e PostLevel como Responsabilidade do Level
+# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
-- Data (decisão): 2026-02-19
-- Última atualização: 2026-03-04
-- Tipo: Implementação
+- Data (decisao): 2026-02-19
+- Ultima atualizacao: 2026-03-05
+- Tipo: Implementacao
 - Escopo: NewScripts/Modules (LevelFlow, IntroStage, PostGame/PostLevel)
 
 ## Resumo
 
-A responsabilidade de entrada e ações pós-level está no domínio de level:
+A responsabilidade de entrada e acoes pos-level esta no dominio de level:
 
-- IntroStage disparada por orquestração de level.
-- Ações de pós-level encapsuladas em serviço dedicado (`Restart`, `NextLevel`, `ExitToMenu`).
+- IntroStage disparada por orquestracao de level.
+- Acoes de pos-level encapsuladas em servico dedicado (`Restart`, `NextLevel`, `ExitToMenu`).
 
-## Decisão
+## Decisao
 
-1. `LevelStageOrchestrator` é dono do gatilho de IntroStage:
-   - após `SceneTransitionCompletedEvent` em gameplay;
-   - após `LevelSwapLocalAppliedEvent`.
-2. `IPostLevelActionsService` encapsula ações pós-level:
+1. `LevelStageOrchestrator` e dono do gatilho de IntroStage:
+   - apos `SceneTransitionCompletedEvent` em gameplay;
+   - apos `LevelSwapLocalAppliedEvent`.
+2. `IPostLevelActionsService` encapsula acoes pos-level:
    - `RestartLevelAsync`
    - `NextLevelAsync`
    - `ExitToMenuAsync`
-3. `PostGameOverlayController` invoca `IPostLevelActionsService`, mantendo UI desacoplada da regra de navegação/swap.
+3. `PostGameOverlayController` invoca `IPostLevelActionsService`, mantendo UI desacoplada da regra de navegacao/swap.
 
-## Implementação atual (fonte de verdade: código)
+## Implementacao atual (fonte de verdade: codigo)
 
-### IntroStage no domínio Level
+### IntroStage no dominio Level
 
-- `LevelStageOrchestrator` assina eventos de transição/swap, aplica dedupe por `SelectionVersion` e inicia IntroStage via `IIntroStageCoordinator`.
+- `LevelStageOrchestrator` assina eventos de transicao/swap, aplica dedupe por `SelectionVersion` e inicia IntroStage via `IIntroStageCoordinator`.
 
 ### PostLevel actions
 
-- `IPostLevelActionsService` define o contrato das três ações.
+- `IPostLevelActionsService` define o contrato das tres acoes.
 - `PostLevelActionsService` implementa:
   - restart via `ILevelFlowRuntimeService.RestartLastGameplayAsync(...)`;
   - next level via `ILevelSwapLocalService.SwapLocalAsync(...)` + `TryGetNextLevelInMacro(...)`;
@@ -45,14 +45,15 @@ A responsabilidade de entrada e ações pós-level está no domínio de level:
 
 - `GlobalCompositionRoot` registra `LevelStageOrchestrator` e `IPostLevelActionsService`.
 
-## Critérios de aceite (DoD)
+## Criterios de aceite (DoD)
 
-- [x] IntroStage é iniciada por orquestrador de level (não por SceneFlow diretamente).
-- [x] IntroStage após swap local está implementada.
-- [x] Serviço de ações pós-level existe com Restart/NextLevel/ExitToMenu.
-- [x] UI de pós-jogo usa o serviço de domínio (não chama navegação/swap diretamente).
-- [ ] Hardening: unificar nomenclatura observável entre “PostGame” e “PostLevel” para reduzir ambiguidade semântica.
+- [x] IntroStage e iniciada por orquestrador de level (nao por SceneFlow diretamente).
+- [x] IntroStage apos swap local esta implementada.
+- [x] Servico de acoes pos-level existe com Restart/NextLevel/ExitToMenu.
+- [x] UI de pos-jogo usa o servico de dominio (nao chama navegacao/swap diretamente).
+- [ ] Hardening: unificar nomenclatura observavel entre PostGame e PostLevel para reduzir ambiguidade semantica.
 
 ## Changelog
 
-- 2026-03-04: status atualizado para Implementado; decisão e implementação alinhadas às classes/métodos atuais.
+- 2026-03-05: revisado com base nas auditorias de 2026-03-04/2026-03-05 e no codigo atual.
+- 2026-03-04: status atualizado para Implementado; decisao e implementacao alinhadas as classes/metodos atuais.

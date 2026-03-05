@@ -76,11 +76,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private static void FailFastH1(string detail, SceneTransitionContext context)
         {
-            string message =
-                $"[FATAL][H1] {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.";
-            DebugUtility.LogError<MacroLevelPrepareCompletionGate>(message);
-            throw new InvalidOperationException(message);
+            HardFailFastH1.Trigger(typeof(MacroLevelPrepareCompletionGate),
+                $"{detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
         }
 
     }
 }
+
