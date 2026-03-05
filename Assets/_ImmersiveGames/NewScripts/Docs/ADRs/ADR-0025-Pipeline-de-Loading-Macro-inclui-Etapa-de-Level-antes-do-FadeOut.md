@@ -4,89 +4,38 @@
 
 - Estado: **Aceito (Implementado)**
 - Data (decisão): 2026-02-19
-- Última atualização: 2026-03-01
+- Última atualização: 2026-03-04
 - Tipo: Implementação
-- Escopo: NewScripts/Runtime (SceneFlow, WorldLifecycle, LevelFlow, LoadingHud)
+- Escopo: NewScripts/Runtime (SceneFlow, WorldLifecycle, LevelFlow, Loading)
 
 ## Resumo
 
-Garantir que, ao entrar em um macro com levels (ex.: Gameplay), o “loading macro” só conclua (FadeOut) quando o **level estiver pronto**.
+Garantir que, para macro gameplay, o FadeOut só aconteça após:
 
-## Contexto
+1. Gate de reset macro/world lifecycle.
+2. Preparação de level no domínio de level.
 
-O SceneFlow possui:
+## Decisão
 
-1) FadeIn  
-2) Load/Unload scenes macro  
-3) `ScenesReady` + gates (WorldLoaded)  
-4) FadeOut (conclusão visual)
+1. `SceneTransitionService` chama `AwaitCompletionGateAsync(...)` antes de `RunFadeOutIfNeeded(...)`.
+2. O gate usado no DI é `MacroLevelPrepareCompletionGate(inner=WorldLifecycleResetCompletionGate)`.
+3. `MacroLevelPrepareCompletionGate` chama `ILevelMacroPrepareService.PrepareAsync(...)` para profile gameplay.
+4. `LevelMacroPrepareService` garante seleção/aplicação do level (com `ResetLevelAsync`) antes de liberar o pipeline.
 
-Se o FadeOut ocorrer antes do level estar preparado, o jogador verá “pop-in”, HUD inconsistente ou input/state incorreto.
+## Implementação atual (fonte de verdade: código)
 
-## Decisão (contrato)
-
-Antes do FadeOut macro, deve estar pronto:
-
-- política de reset aplicada (se requer MacroReset);
-- world reset concluído (quando aplicável);
-- level selecionado e conteúdo aplicado (quando aplicável);
-- gates corretos (SceneFlow gate + Simulation gate) preservando a ordem.
-
-## Implementação atual (2026-02-25)
-
-### Sequência observada no log
-
-Para gameplay (`routeId='level.1'`, profile='gameplay'):
-
-1) `TransitionStarted` → `FadeInStarted/Completed`
-2) `RouteExecutionPlan` → load/unload macro
-3) **MacroReset executado dentro da transição**:
-   - `ResetWorldStarted` → despawn/spawn → `ResetCompleted`
-4) `ScenesReady`
-5) Completion gate concluído (cached) → `LoadingHudHide (BeforeFadeOut)` → `FadeOutStarted/Completed`
-6) `TransitionCompleted`
-
-### Como o “Level antes do FadeOut” é garantido hoje
-
-- A **seleção do level** ocorre **antes** da transição macro iniciar:
-  - `MenuPlay -> StartGameplayAsync levelId='level.1'`
-  - `LevelSelectedEventPublished ... levelSignature=...`
-- O **MacroReset** durante a transição executa spawn/despawn e deixa o mundo pronto **antes** do FadeOut.
-
-> Observação: não existe (ainda) uma etapa “LevelPrepare” explícita no SceneFlow, mas o efeito (level pronto antes do FadeOut) é atingido por:  
-> **(a)** seleção/snapshot pré-transição + **(b)** MacroReset pré-FadeOut.
-
-## Observabilidade mínima (logs [OBS])
-
-- Macro:
-  - `TransitionStarted`, `ScenesReady`, `TransitionCompleted`
-  - `RouteAppliedPolicy requiresWorldReset=...`
-- WorldLifecycle:
-  - `ResetWorldStarted`, `ResetCompleted`
-- LevelFlow:
-  - `StartGameplayRequested` + `LevelSelectedEventPublished` (levelSignature)
-
-## Implementação atual (2026-03-01)
-
-Anchors curtas observadas no log atual:
-
-- `routeId='to-menu'` e `routeId='to-gameplay'` nos trilhos macro de navegação.
-- `MacroLoadingPhase='LevelPrepare'` antes da conclusão visual da transição.
-- Resets por domínio:
-  - macro: `ResetWorldStarted` / `ResetCompleted`;
-  - level: `ResetRequested kind='Level'` + `LevelPrepared`.
-- IntroStage: bloqueio/liberação de `sim.gameplay` (block/unblock) no fluxo de entrada em gameplay.
-- Pause/Resume com token dedicado `state.pause`.
-- Pós-partida: `PostGame`, `Restart->Boot` e `ExitToMenu` evidenciados.
+- `SceneTransitionService.TransitionAsync(...)`: ordem `ScenesReady -> AwaitCompletionGateAsync -> BeforeFadeOut -> FadeOut`.
+- `GlobalCompositionRoot.SceneFlowWorldLifecycle.RegisterSceneFlowNative()`: registra gate composto com `MacroLevelPrepareCompletionGate` envolvendo `WorldLifecycleResetCompletionGate`.
+- `MacroLevelPrepareCompletionGate.AwaitBeforeFadeOutAsync(...)`: executa inner gate, filtra profile gameplay e aciona `ILevelMacroPrepareService`.
+- `LevelMacroPrepareService.PrepareAsync(...)`: resolve level alvo por snapshot/catalog, publica seleção quando necessário e executa `IWorldResetCommands.ResetLevelAsync(...)`.
 
 ## Critérios de aceite (DoD)
 
-- [x] Para gameplay, MacroReset ocorre antes de FadeOut macro.
-- [x] Level selection ocorre antes da transição (garante contexto correto para reset/spawn).
-- [x] FadeOut só ocorre após completion gate (WorldLoaded).
-- [x] Hardening: etapa `MacroLoadingPhase='LevelPrepare'` evidenciada no log atual antes do FadeOut.
+- [x] FadeOut ocorre após completion gate no pipeline.
+- [x] Etapa `LevelPrepare` está implementada no gate macro (não apenas por efeito indireto).
+- [x] `LevelPrepare` usa serviço de domínio (`ILevelMacroPrepareService`) e chama reset local (`ResetLevelAsync`).
+- [x] DI global registra o gate composto e o serviço de prepare.
 
 ## Changelog
 
-- 2026-03-01: Atualização de status, seção de implementação atual e revisão de DoD/observabilidade com base no log mais recente.
-- 2026-02-25: Marcado como **Implementado (equivalente)** com base no log; documentada a estratégia atual (seleção pré-transição + MacroReset pré-FadeOut) e registrado hardening opcional para etapa explícita.
+- 2026-03-04: ADR auditado contra o código; seção de decisão alinhada ao shape real (`MacroLevelPrepareCompletionGate` + `LevelMacroPrepareService`).
