@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -64,8 +65,15 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return;
             }
 
+            if (!IsDevelopmentEscapeHatch())
+            {
+                string fatal = "[FATAL][H1][NAV][DI] LevelFlowRuntimeService missing. Restart fallback to IGameNavigationService is forbidden in strict/production.";
+                DebugUtility.LogError<RestartNavigationBridge>(fatal);
+                throw new InvalidOperationException(fatal);
+            }
+
             DebugUtility.LogWarning<RestartNavigationBridge>(
-                "[WARN][OBS][Navigation] Restart fallback -> IGameNavigationService.RestartAsync (LevelFlowRuntimeService missing).");
+                "[WARN][COMPAT][NAV] Restart fallback -> IGameNavigationService.RestartAsync (LevelFlowRuntimeService missing). recommendation='fix DI and use LevelFlow restart'.");
 
             DebugUtility.Log<RestartNavigationBridge>(
                 $"[Navigation] GameResetRequestedEvent recebido -> RestartAsync. reason='{reason}'.",
@@ -76,5 +84,15 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 typeof(RestartNavigationBridge),
                 $"Restart -> coreIntent=Gameplay");
         }
+
+        private static bool IsDevelopmentEscapeHatch()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return Debug.isDebugBuild;
+#endif
+        }
+
     }
 }

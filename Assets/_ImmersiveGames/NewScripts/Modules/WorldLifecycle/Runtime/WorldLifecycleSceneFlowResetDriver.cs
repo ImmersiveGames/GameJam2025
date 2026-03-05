@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
@@ -29,6 +30,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         private readonly HashSet<string> _inFlightSignatures = new(StringComparer.Ordinal);
         private readonly Dictionary<string, int> _completedTicks = new(StringComparer.Ordinal);
         private bool _disposed;
+        private static int _degradedFallbackCount;
 
         // Reasons canônicos (Contrato de Observability) em WorldResetReasons.
 
@@ -164,9 +166,18 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
             catch (Exception ex)
             {
-                // Best-effort: loga, mas NAO impede liberacao do gate.
-                DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] Erro durante ResetWorld (ScenesReady). signature='{signature}', targetScene='{targetScene}', ex='{ex}'");
+                if (!IsDevelopmentEscapeHatch())
+                {
+                    string fatal =
+                        $"[FATAL][H1][WorldLifecycle] Reset required but service missing/failed. routeId='{routeId}', signature='{signature}', targetScene='{targetScene}', reason='{completionReason}', ex='{ex.GetType().Name}'.";
+                    DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(fatal);
+                    throw new InvalidOperationException(fatal, ex);
+                }
+
+                // Best-effort somente em DEV: evita deadlock durante desenvolvimento.
+                int degradedCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
+                DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
+                    $"[WARN][DEGRADED][WorldLifecycle] ResetWorld fallback completion enabled (DEV). count='{degradedCount}' signature='{signature}' targetScene='{targetScene}' ex='{ex.GetType().Name}'.");
                 shouldPublishCompletion = true;
             }
             finally
@@ -215,8 +226,17 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 return (false, string.Empty);
             }
 
-            DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(
-                $"[{ResetLogTags.Failed}][DEGRADED_MODE] [WorldLifecycle] WorldResetService ausente no DI. Reset nao executado. signature='{signature}', targetScene='{targetScene}'.");
+            if (!IsDevelopmentEscapeHatch())
+            {
+                string fatal =
+                    $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService missing in DI. signature='{signature}', targetScene='{targetScene}', profile='{profileName}'.";
+                DebugUtility.LogError<WorldLifecycleSceneFlowResetDriver>(fatal);
+                throw new InvalidOperationException(fatal);
+            }
+
+            int degradedCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
+            DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
+                $"[WARN][DEGRADED][WorldLifecycle] WorldResetService missing in DI (DEV escape hatch). count='{degradedCount}' signature='{signature}' targetScene='{targetScene}'.");
 
             return (true, WorldResetReasons.FailedNoResetService);
         }
@@ -345,6 +365,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     _completedTicks.Clear();
                 }
             }
+        }
+
+
+        private static bool IsDevelopmentEscapeHatch()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return true;
+#else
+            return Debug.isDebugBuild;
+#endif
         }
 
         private static void LogDuplicateGuard(string signature, string profile, string target, string guardReason)
