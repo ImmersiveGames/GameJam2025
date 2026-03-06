@@ -42,6 +42,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private LoadingHudController _controller;
         private bool _disabled;
+        private string _lastEnsureLogSignature = string.Empty;
+        private int _lastEnsureLogFrame = -1;
 
         public LoadingHudService(IRuntimeModeProvider runtimeModeProvider, IDegradedModeReporter degradedModeReporter)
         {
@@ -56,9 +58,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                 return Task.CompletedTask;
             }
 
-            DebugUtility.LogVerbose<LoadingHudService>(
-                $"[LoadingHudEnsure] signature='{signature}'.",
-                DebugUtility.Colors.Info);
+            int currentFrame = Time.frameCount;
+            if (string.Equals(signature, _lastEnsureLogSignature, StringComparison.Ordinal) &&
+                currentFrame == _lastEnsureLogFrame)
+            {
+                DebugUtility.LogVerbose<LoadingHudService>(
+                    $"[OBS][Loading] LoadingHudEnsure dedupe_same_frame signature='{signature}' frame={currentFrame}.",
+                    DebugUtility.Colors.Info);
+            }
+            else
+            {
+                _lastEnsureLogSignature = signature ?? string.Empty;
+                _lastEnsureLogFrame = currentFrame;
+
+                DebugUtility.LogVerbose<LoadingHudService>(
+                    $"[LoadingHudEnsure] signature='{signature}'.",
+                    DebugUtility.Colors.Info);
+            }
 
             // Validacao sincrona (Strict): cena precisa existir no Build Settings.
             if (_runtime != null && _runtime.IsStrict)
@@ -333,5 +349,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         }
     }
 }
+
+
+
 
 

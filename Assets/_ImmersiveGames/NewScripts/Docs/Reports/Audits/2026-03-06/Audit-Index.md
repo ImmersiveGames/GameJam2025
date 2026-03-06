@@ -143,3 +143,18 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v2.md`
 - status: Duplicated by design (live + snapshot)
+
+## SF-1.2a Status
+- live doc: `Docs/Modules/SceneFlow.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v2.md`
+- status: Inventory only (no code changes)
+
+## SF-1.2b Status
+- live doc: `Docs/Modules/SceneFlow.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v3.md`
+- status: Hardening minimo aplicado (behavior-preserving)
+
+## GRS-1.2 Status
+- live doc: `Docs/Modules/Gates-Readiness-StateDependent.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent-Cleanup-Audit-v2.md`
+- status: Hardening minimo aplicado (behavior-preserving)

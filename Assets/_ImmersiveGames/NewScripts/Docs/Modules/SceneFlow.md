@@ -59,3 +59,23 @@
 - `Modules/SceneFlow/Transition/Adapters/NoFadeAdapter.cs`: fallback compat para transicoes sem fade.
 - Fluxo inline de dados de cena em `SceneTransitionService` e explicitamente legado/desativado (fail-fast sem `RouteId` valido).
 - Caminhos de degrade do completion gate (`Completion gate falhou/abortou -> prosseguindo`) permanecem por contrato de robustez do baseline.
+
+## F) SF-1.2a (inventory only)
+
+- Inventario estatico concluido em `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v2.md`.
+- Candidatos mapeados: `NoOpTransitionCompletionGate`, `NoFadeAdapter`, fallback de completion gate em `AwaitCompletionGateAsync`, e sobreposicoes de assinatura (`SceneFlowSignatureCache` / dedupe no `SceneTransitionService` / guards no `LoadingHudOrchestrator`).
+- Nesta etapa nao houve move/delete/rename de codigo; somente inventario e recomendacoes.
+
+## G) SF-1.2b (hardening mínimo, behavior-preserving)
+
+- Hardening aplicado em:
+  - `Modules/SceneFlow/Loading/Runtime/LoadingHudService.cs`
+  - `Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+- Ajustes principais:
+  - dedupe same-frame de `LoadingHudEnsure` com log `[OBS][Loading] ... dedupe_same_frame`.
+  - dedupe de transicao por assinatura ajustado para:
+    - coalescer apenas `same signature` in-flight,
+    - dedupar apenas `same signature` no mesmo frame,
+    - aceitar `same signature` apos `Completed`.
+  - fallback do completion gate manteve politica best-effort e ganhou log `[OBS][SceneFlow] CompletionGateFallback ...`.
+- Evidencia completa: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v3.md`.

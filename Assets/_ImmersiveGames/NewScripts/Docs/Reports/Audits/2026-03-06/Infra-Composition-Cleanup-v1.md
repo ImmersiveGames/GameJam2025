@@ -105,3 +105,51 @@
   - `rg --line-number "private static (void|IRestartContextService) (RegisterInputModesFromRuntimeConfig|ReportInputModesDegraded|ResolveOrRegisterRestartContextService|RegisterGameNavigationService|RegisterLevelsServices|RegisterExitToMenuNavigationBridge|RegisterMacroRestartCoordinator|RegisterLevelSelectedRestartSnapshotBridge|RegisterInputModeSceneFlowBridge|RegisterLevelStageOrchestrator)\(" Infrastructure/Composition`
   - `rg --line-number "RegisterInputModesFromRuntimeConfig\(|RegisterGameNavigationService\(|RegisterLevelsServices\(|RegisterExitToMenuNavigationBridge\(|RegisterMacroRestartCoordinator\(|RegisterLevelSelectedRestartSnapshotBridge\(|RegisterInputModeSceneFlowBridge\(|RegisterLevelStageOrchestrator\(" Infrastructure/Composition/GlobalCompositionRoot.Pipeline.cs`
   - `rg --line-number "RegisterLevelsServices\(|installLevels:\s*RegisterLevelsServices" Infrastructure/Composition`
+
+## 8) IC-1.2b applied (behavior-preserving)
+- Data: 2026-03-06
+- Escopo: split por dominio em `Infrastructure/Composition/**` usando apenas o workspace local como fonte da verdade.
+
+### Arquivos criados/modificados
+- Criado: `Infrastructure/Composition/GlobalCompositionRoot.SceneFlow.cs`
+- Criado: `Infrastructure/Composition/GlobalCompositionRoot.WorldLifecycle.cs`
+- Modificado: `Infrastructure/Composition/GlobalCompositionRoot.Pipeline.cs`
+- Modificado: `Infrastructure/Composition/GlobalCompositionRoot.SceneFlowWorldLifecycle.cs` (wrapper leve)
+- Modificado: `Infrastructure/Composition/GlobalCompositionRoot.FadeLoading.cs` (wrapper leve)
+
+### Metodos movidos por arquivo
+- Para `GlobalCompositionRoot.SceneFlow.cs`:
+  - `InstallSceneFlowServices`
+  - `RegisterSceneFlowNative`
+  - `RegisterSceneFlowSignatureCache`
+  - `RegisterSceneFlowRouteResetPolicy`
+  - `ResolveOrRegisterRouteResolverRequired`
+  - `RegisterSceneFlowFadeModule`
+  - `TryResolveFadeSceneName`
+  - `TryValidateFadeSceneInBuildSettings`
+  - `TryResolveBuildSettingsScenePath`
+  - `PreloadFadeSceneAsync`
+  - `HandleFadeBootstrapFailure`
+  - `HandleFadeRuntimeFailure`
+  - `ShouldDegradeFadeInRuntime`
+  - `RegisterSceneFlowLoadingIfAvailable`
+- Para `GlobalCompositionRoot.WorldLifecycle.cs`:
+  - `InstallWorldLifecycleServices`
+
+### Validacoes `rg` (static)
+- Unicidade de metodos movidos:
+  - comando: `rg --line-number "^\s*private\s+static\s+.*\b(InstallSceneFlowServices|RegisterSceneFlowNative|RegisterSceneFlowSignatureCache|RegisterSceneFlowRouteResetPolicy|ResolveOrRegisterRouteResolverRequired|RegisterSceneFlowFadeModule|TryResolveFadeSceneName|TryValidateFadeSceneInBuildSettings|TryResolveBuildSettingsScenePath|PreloadFadeSceneAsync|HandleFadeBootstrapFailure|HandleFadeRuntimeFailure|ShouldDegradeFadeInRuntime|RegisterSceneFlowLoadingIfAvailable|InstallWorldLifecycleServices)\b" Infrastructure/Composition`
+  - resultado: 15 metodos, 1 ocorrencia cada.
+- Callsites/pipeline preservados:
+  - comando: `rg --line-number "RegisterEssentialServicesOnly|InstallSceneFlowServices|InstallWorldLifecycleServices|InstallCompositionModules" Infrastructure/Composition/GlobalCompositionRoot.Pipeline.cs`
+  - resultado: nomes mantidos; `InstallSceneFlowServices` e `InstallWorldLifecycleServices` continuam referenciados no `GlobalCompositionContext`; ordem de `RegisterEssentialServicesOnly()` inalterada.
+- Dependencia legacy nao reintroduzida em callsites canonicos:
+  - comando: `rg --line-number "RegisterRestartSnapshotContentSwapBridge|RestartNavigationBridge|RestartSnapshotContentSwapBridge" Infrastructure/Composition Modules`
+  - resultado: apenas declaracoes em `Modules/Navigation/Legacy/*`; nenhum callsite canonico em `Infrastructure/Composition`.
+  - comando adicional: `rg --line-number "new\s+(RestartNavigationBridge|RestartSnapshotContentSwapBridge)|RegisterIfMissing\s*\(\s*\(\)\s*=>\s*new\s+(RestartNavigationBridge|RestartSnapshotContentSwapBridge)" Infrastructure/Composition Modules`
+  - resultado: `0 matches`.
+
+### Garantia de comportamento
+- Split estrutural apenas por realocacao de metodos.
+- Sem mudanca de assinatura/visibilidade/logs canonicamente existentes.
+- Sem mudanca de ordem de pipeline, `#if` ou callsites do pipeline.

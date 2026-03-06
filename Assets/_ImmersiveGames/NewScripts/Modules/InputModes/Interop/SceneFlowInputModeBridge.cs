@@ -29,6 +29,8 @@ public sealed class SceneFlowInputModeBridge : IDisposable
 
         // Dedupe por instÃ¢ncia para evitar supressÃ£o entre instÃ¢ncias apÃ³s restarts.
         private string _lastProcessedSignature;
+        private string _lastStartedSignature;
+        private int _lastStartedFrame = -1;
 
         public SceneFlowInputModeBridge()
         {
@@ -55,6 +57,19 @@ public sealed class SceneFlowInputModeBridge : IDisposable
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
             string signature = SceneTransitionSignature.Compute(evt.Context);
+            int frame = UnityEngine.Time.frameCount;
+
+            if (string.Equals(_lastStartedSignature, signature, StringComparison.Ordinal) &&
+                _lastStartedFrame == frame)
+            {
+                DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
+                    $"[OBS][GRS] InputModeBridge dedupe event='SceneTransitionStarted' signature='{signature}' frame={frame} reason='duplicate_same_frame'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastStartedSignature = signature;
+            _lastStartedFrame = frame;
             _lastProcessedSignature = string.Empty;
 
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
@@ -272,5 +287,9 @@ public sealed class SceneFlowInputModeBridge : IDisposable
         }
     }
 }
+
+
+
+
 
 

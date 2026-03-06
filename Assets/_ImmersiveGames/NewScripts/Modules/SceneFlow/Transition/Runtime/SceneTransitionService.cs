@@ -26,10 +26,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneTransitionService : ISceneTransitionService
     {
-        // Dedupe: bloqueia reentrÃ¢ncia por assinatura idÃªntica numa janela curta.
-        // Ajuste conforme necessÃ¡rio. 750ms tem sido suficiente para capturar "double start" acidental.
-        private const int DuplicateSignatureWindowMs = 750;
-
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
         private readonly ISceneTransitionCompletionGate _completionGate;
@@ -43,11 +39,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private long _transitionIdSeq;
 
-        private string _lastStartedSignature = string.Empty;
-        private int _lastStartedTick;
-
         private string _lastCompletedSignature = string.Empty;
-        private int _lastCompletedTick;
+        private string _inFlightSignature = string.Empty;
+        private string _lastRequestedSignature = string.Empty;
+        private int _lastRequestedFrame = -1;
 
         public SceneTransitionService(
             ISceneFlowLoaderAdapter? loaderAdapter,
@@ -106,11 +101,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             // Dedupe por assinatura: evita "double start" no mesmo contexto em janela curta.
             // Isto nÃ£o substitui correÃ§Ã£o do caller, mas impede o pior: reentrÃ¢ncia/interleaving.
-            if (ShouldDedupe(signature))
+            if (ShouldDedupeSameFrame(signature))
             {
-                DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Dedupe: TransitionAsync ignorado (signature repetida em janela curta). " +
-                    $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
+                DebugUtility.LogVerbose<SceneTransitionService>(
+                    $"[SceneFlow] Dedupe: TransitionAsync ignorado (mesmo frame/mesma assinatura). signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
+                return;
+            }
+
+            if (IsInFlightSameSignature(signature))
+            {
+                DebugUtility.Log<SceneTransitionService>(
+                    $"[OBS][SceneFlow] TransitionRequestCoalesced reason='in_flight_same_signature' signature='{signature}'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
@@ -133,11 +135,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return;
             }
 
+            if (string.Equals(signature, _lastCompletedSignature, StringComparison.Ordinal))
+            {
+                DebugUtility.Log<SceneTransitionService>(
+                    $"[OBS][SceneFlow] TransitionRequestAccepted reason='completed_allows_same_signature' signature='{signature}'.",
+                    DebugUtility.Colors.Info);
+            }
+
             long transitionId = Interlocked.Increment(ref _transitionIdSeq);
 
             try
             {
-                MarkStarted(signature);
+                _inFlightSignature = signature ?? string.Empty;
 
                 DebugUtility.Log<SceneTransitionService>(
                     $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' " +
@@ -190,6 +199,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
             finally
             {
+                _inFlightSignature = string.Empty;
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 _transitionGate.Release();
             }
@@ -342,48 +352,41 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 request.Reason);
         }
 
-        private bool ShouldDedupe(string signature)
+        private bool ShouldDedupeSameFrame(string signature)
         {
             if (string.IsNullOrWhiteSpace(signature))
             {
                 return false;
             }
 
-            int now = Environment.TickCount;
+            int currentFrame = Time.frameCount;
+            bool shouldDedupe = string.Equals(signature, _lastRequestedSignature, StringComparison.Ordinal) &&
+                currentFrame == _lastRequestedFrame;
 
-            // Caso 1: repetiÃ§Ã£o imediatamente apÃ³s Start anterior (start-start).
-            if (string.Equals(signature, _lastStartedSignature, StringComparison.Ordinal))
-            {
-                int dt = unchecked(now - _lastStartedTick);
-                if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
-                {
-                    return true;
-                }
-            }
+            _lastRequestedSignature = signature ?? string.Empty;
+            _lastRequestedFrame = currentFrame;
 
-            // Caso 2: repetiÃ§Ã£o logo apÃ³s Completed (completed-start).
-            if (string.Equals(signature, _lastCompletedSignature, StringComparison.Ordinal))
-            {
-                int dt = unchecked(now - _lastCompletedTick);
-                if (dt >= 0 && dt <= DuplicateSignatureWindowMs)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return shouldDedupe;
         }
 
-        private void MarkStarted(string? signature)
+        private bool IsInFlightSameSignature(string signature)
         {
-            _lastStartedSignature = signature ?? string.Empty;
-            _lastStartedTick = Environment.TickCount;
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return false;
+            }
+
+            if (Interlocked.CompareExchange(ref _transitionInProgress, 0, 0) != 1)
+            {
+                return false;
+            }
+
+            return string.Equals(_inFlightSignature, signature, StringComparison.Ordinal);
         }
 
         private void MarkCompleted(string? signature)
         {
             _lastCompletedSignature = signature ?? string.Empty;
-            _lastCompletedTick = Environment.TickCount;
         }
 
         private async Task AwaitCompletionGateAsync(SceneTransitionContext context)
@@ -410,7 +413,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 // Gate e best effort: nao deve travar a transicao.
                 DebugUtility.LogWarning<SceneTransitionService>(
                     $"[SceneFlow] Completion gate falhou/abortou. Prosseguindo com FadeOut. ex={ex.GetType().Name}: {ex.Message}");
+
+                string fallbackReason = ResolveCompletionGateFallbackReason(ex);
+                DebugUtility.Log<SceneTransitionService>(
+                    $"[OBS][SceneFlow] CompletionGateFallback applied='true' reason='{fallbackReason}' signature='{SceneTransitionSignature.Compute(context)}'.",
+                    DebugUtility.Colors.Info);
             }
+        }
+
+        private static string ResolveCompletionGateFallbackReason(Exception ex)
+        {
+            if (ex is TimeoutException)
+            {
+                return "timeout";
+            }
+
+            if (ex is OperationCanceledException)
+            {
+                return "abort";
+            }
+
+            return "exception";
         }
 
         private static bool IsFatalH1Exception(Exception ex)
@@ -771,6 +794,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
     }
 
 }
+
+
+
+
+
+
+
+
+
 
 
 

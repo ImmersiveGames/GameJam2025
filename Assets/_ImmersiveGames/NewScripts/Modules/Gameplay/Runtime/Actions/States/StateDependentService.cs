@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -9,15 +9,15 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
 {
     /// <summary>
-    /// Gate de ações baseado em:
-    /// - SimulationGate (bloqueia quando gate fechado, ex.: transição/reset)
+    /// Gate de aÃ§Ãµes baseado em:
+    /// - SimulationGate (bloqueia quando gate fechado, ex.: transiÃ§Ã£o/reset)
     /// - Pausa (token Pause e eventos de pausa)
-    /// - Readiness (GameplayReady) para liberar ações quando o mundo + fluxo estão prontos
-    /// - GameLoop (opcional): usado quando expõe estados que indicam "jogável" vs "não jogável"
+    /// - Readiness (GameplayReady) para liberar aÃ§Ãµes quando o mundo + fluxo estÃ£o prontos
+    /// - GameLoop (opcional): usado quando expÃµe estados que indicam "jogÃ¡vel" vs "nÃ£o jogÃ¡vel"
     ///
     /// Ajuste importante:
-    /// - Logs de "Move bloqueado/liberado" são emitidos SOMENTE quando a situação muda
-    ///   E apenas após o primeiro consumo de CanExecuteAction(Move) (clean option).
+    /// - Logs de "Move bloqueado/liberado" sÃ£o emitidos SOMENTE quando a situaÃ§Ã£o muda
+    ///   E apenas apÃ³s o primeiro consumo de CanExecuteAction(Move) (clean option).
     /// </summary>
     public sealed class StateDependentService : IStateDependentService
     {
@@ -67,6 +67,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         private const float NonGameplayBlockedLogCooldownSeconds = 1f;
         private float _lastNonGameplayBlockedLogTimestamp = float.NegativeInfinity;
         private string _lastNonGameplayBlockedLogKey = string.Empty;
+        private int _lastResetFrame = -1;
+        private string _lastResetReason = string.Empty;
 
         public StateDependentService(ISimulationGateService gateService = null)
         {
@@ -76,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             TryResolveGameLoopService();
             TryRegisterEvents();
 
-            // Clean option: NÃO logar nada no construtor (evita "Move bloqueada" no bootstrap).
+            // Clean option: NÃƒO logar nada no construtor (evita "Move bloqueada" no bootstrap).
         }
 
         public bool CanExecuteGameplayAction(GameplayAction action)
@@ -209,8 +211,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
                     SyncMoveDecisionLogIfChanged();
                 });
 
-                _gameResetBinding = new EventBinding<GameResetRequestedEvent>(_ =>
+                _gameResetBinding = new EventBinding<GameResetRequestedEvent>(evt =>
                 {
+                    string reason = evt?.Reason ?? string.Empty;
+                    int frame = Time.frameCount;
+                    if (_lastResetFrame == frame && string.Equals(_lastResetReason, reason, StringComparison.Ordinal))
+                    {
+                        DebugUtility.LogVerbose<StateDependentService>(
+                            $"[OBS][GRS] StateDependent reset dedupe event='GameResetRequestedEvent' reason='{reason}' frame={frame} reasonCode='duplicate_same_frame'.",
+                            DebugUtility.Colors.Info);
+                        return;
+                    }
+
+                    _lastResetFrame = frame;
+                    _lastResetReason = reason;
+
                     SetState(ServiceState.Ready);
                     SyncMoveDecisionLogIfChanged();
                 });
@@ -301,8 +316,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         }
 
         /// <summary>
-        /// Pausa "pura" significa: pause está ativo e é o ÚNICO token ativo.
-        /// Isso permite classificar pause como "Paused" e não como "GateClosed" genérico.
+        /// Pausa "pura" significa: pause estÃ¡ ativo e Ã© o ÃšNICO token ativo.
+        /// Isso permite classificar pause como "Paused" e nÃ£o como "GateClosed" genÃ©rico.
         /// </summary>
         private bool IsPausedOnlyByGate()
         {
@@ -368,7 +383,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
 
         private void SyncMoveDecisionLogIfChanged()
         {
-            // Clean option: se ninguém perguntou por Move ainda, não loga transições automáticas via eventos.
+            // Clean option: se ninguÃ©m perguntou por Move ainda, nÃ£o loga transiÃ§Ãµes automÃ¡ticas via eventos.
             if (!_moveLoggingArmed)
             {
                 return;
@@ -384,7 +399,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             string loopStateName,
             bool force = false)
         {
-            // Clean option: só loga depois de armado.
+            // Clean option: sÃ³ loga depois de armado.
             if (!_moveLoggingArmed)
             {
                 return;
@@ -438,4 +453,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         }
     }
 }
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -8,10 +8,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 {
     /// <summary>
     /// Orquestra readiness do jogo em resposta ao Scene Flow.
-    /// Bloqueia simulação durante transições de cena usando ISimulationGateService
+    /// Bloqueia simulaÃ§Ã£o durante transiÃ§Ãµes de cena usando ISimulationGateService
     /// e emite snapshots de readiness via EventBus para consumidores (ex.: StateDependentService).
     ///
-    /// Nota: baseline/QA pode não disparar Scene Flow; para isso existe SetGameplayReady(...) para sinalização manual.
+    /// Nota: baseline/QA pode nÃ£o disparar Scene Flow; para isso existe SetGameplayReady(...) para sinalizaÃ§Ã£o manual.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameReadinessService : IDisposable
@@ -50,14 +50,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
             DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado nos eventos de Scene Flow.");
 
-            // Snapshot inicial (útil em bootstrap/QA). Publica apenas se houver mudança (primeira vez sempre publica).
+            // Snapshot inicial (Ãºtil em bootstrap/QA). Publica apenas se houver mudanÃ§a (primeira vez sempre publica).
             PublishSnapshot("bootstrap", force: false);
         }
 
         public bool IsGameplayReady => _gameplayReady;
 
         /// <summary>
-        /// API explícita para QA/baseline quando não há Scene Flow.
+        /// API explÃ­cita para QA/baseline quando nÃ£o hÃ¡ Scene Flow.
         /// </summary>
         public void SetGameplayReady(bool gameplayReady, string reason)
         {
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
             _gameplayReady = gameplayReady;
 
-            // Manual/QA: sempre publica (mesmo se valor repetido), por ser uma intenção explícita.
+            // Manual/QA: sempre publica (mesmo se valor repetido), por ser uma intenÃ§Ã£o explÃ­cita.
             PublishSnapshot(reason, force: true);
         }
 
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             AcquireGate();
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context={evt.Context}");
+                $"[Readiness] SceneTransitionStarted â†’ gate adquirido e jogo marcado como NOT READY. Context={evt.Context}");
 
             PublishSnapshot("scene_transition_started", force: true);
         }
@@ -114,9 +114,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
         private void OnSceneTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context={evt.Context}");
+                $"[Readiness] SceneTransitionScenesReady â†’ fase WorldLoaded sinalizada. Context={evt.Context}");
 
-            // Ainda não marca gameplayReady, apenas sinaliza fase intermediária.
+            // Ainda nÃ£o marca gameplayReady, apenas sinaliza fase intermediÃ¡ria.
             PublishSnapshot("scene_transition_scenes_ready", force: true);
         }
 
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
         {
             ReleaseGateHandle();
 
-            // Semântica correta: GameplayReady só deve subir em transição de gameplay.
+            // SemÃ¢ntica correta: GameplayReady sÃ³ deve subir em transiÃ§Ã£o de gameplay.
             bool isGameplayTransition = evt.Context.TransitionProfileId.IsGameplay;
             _gameplayReady = isGameplayTransition;
 
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
                 : "NonGameplayReady";
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionCompleted → gate liberado e fase {readinessPhase} marcada. " +
+                $"[Readiness] SceneTransitionCompleted â†’ gate liberado e fase {readinessPhase} marcada. " +
                 $"gameplayReady={_gameplayReady}. Context={evt.Context}");
 
             PublishSnapshot(
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
         private void OnGateChanged(bool isOpen)
         {
-            // "Clean option": só publica se o snapshot realmente mudar.
+            // "Clean option": sÃ³ publica se o snapshot realmente mudar.
             PublishSnapshot(isOpen ? "gate_opened" : "gate_closed", force: false);
         }
 
@@ -156,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             if (_gateService == null)
             {
                 DebugUtility.LogError<GameReadinessService>(
-                    "[Readiness] ISimulationGateService indisponível. Não foi possível bloquear a simulação durante a transição.");
+                    "[Readiness] ISimulationGateService indisponÃ­vel. NÃ£o foi possÃ­vel bloquear a simulaÃ§Ã£o durante a transiÃ§Ã£o.");
                 return;
             }
 
@@ -220,7 +220,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             return a.GameplayReady == b.GameplayReady &&
                    a.GateOpen == b.GateOpen &&
                    a.ActiveTokens == b.ActiveTokens;
-            // Observação: reason NÃO entra na igualdade (clean option), pois não altera comportamento de consumers.
+            // ObservaÃ§Ã£o: reason NÃƒO entra na igualdade (clean option), pois nÃ£o altera comportamento de consumers.
         }
     }
 }
+
+
+

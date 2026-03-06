@@ -5,8 +5,6 @@ using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
 using _ImmersiveGames.NewScripts.Modules.Gates;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -133,16 +131,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterPostPlayOwnershipService();
         }
 
-        private static void InstallWorldLifecycleServices()
-        {
-            RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
-            RegisterIfMissing(() => new WorldResetService());
-            RegisterIfMissing<IWorldResetCommands>(() => new WorldResetCommands());
-
-            var gateService = ResolveSimulationGateServiceOrNull();
-            RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
-        }
-
         private static void InstallNavigationServices()
         {
             RegisterGameNavigationService();
@@ -166,22 +154,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterWorldLifecycleQaInstaller();
             RegisterIntroStageRuntimeDebugGui();
 #endif
-        }
-
-        private static void InstallSceneFlowServices()
-        {
-            // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
-            RegisterSceneFlowFadeModule();
-
-            RegisterSceneFlowTransitionProfiles();
-            RegisterSceneFlowRoutesRequired();
-            RegisterSceneFlowNative();
-            RegisterSceneFlowSignatureCache();
-            RegisterSceneFlowRouteResetPolicy();
-
-            // ADR-0010: mantem o Loading no final da instalacao do SceneFlow
-            // para preservar o ponto de registro equivalente do pipeline.
-            RegisterSceneFlowLoadingIfAvailable();
         }
     }
 }

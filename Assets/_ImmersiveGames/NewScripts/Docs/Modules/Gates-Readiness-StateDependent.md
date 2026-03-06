@@ -78,3 +78,14 @@
   - possível via wiring de cena/prefab (`MonoBehaviour` + `Awake`), apesar do registro canônico ocorrer em `GlobalCompositionRoot.RegisterInputModesFromRuntimeConfig`.
 - `Modules/SceneFlow/Readiness/Bindings/GameplaySceneMarker.cs` e `Runtime/SceneScopeMarker.cs`:
   - dependem de presença em cena; não conclusivo por análise textual apenas.
+
+## GRS-1.2 (hardening mínimo, behavior-preserving)
+
+- Ownership mantido:
+  - `GameReadinessService` segue owner de readiness/gate de transição.
+  - `SceneFlowInputModeBridge` segue limitado a InputMode/GameLoop sync.
+  - `StateDependentService` segue como consumer auxiliar de reset (sem ownership de restart).
+- Hardening aplicado:
+  - `SceneFlowInputModeBridge`: dedupe same-frame no `SceneTransitionStartedEvent` com log `[OBS][GRS]`.
+  - `StateDependentService`: dedupe same-frame (`reason+frame`) no `GameResetRequestedEvent` com log `[OBS][GRS]`.
+- Evidência completa: `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent-Cleanup-Audit-v2.md`.
