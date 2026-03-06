@@ -1,0 +1,45 @@
+﻿# GameLoop
+
+## Status atual (Baseline 3.1)
+
+- Baseline 3.1 mantida sem mudanca funcional.
+- Trilho canonico:
+  - `GameLoopService` + state machine
+  - `GameCommands` como API de comandos
+  - `GameRunOutcomeService` (publisher idempotente de `GameRunEndedEvent`)
+  - `GameRunStateService` (snapshot de estado/resultado)
+  - `GameLoopSceneFlowCoordinator` para sync de start plan com SceneFlow/WorldLifecycle
+  - IntroStage via `IIntroStageCoordinator` + `IIntroStageControlService`
+
+## Ownership
+
+| Componente | Owner de | Nao-owner de | Anchors |
+|---|---|---|---|
+| `Runtime/Services/GameLoopService.cs` | Ciclo de estados da run | Macro restart | publish `GameRunStartedEvent` |
+| `Commands/GameCommands.cs` | Emissao de comandos definitivos (pause/resume/restart/exit/run-end request) | Consumo de reset | `[GameCommands] RequestRestart ...` |
+| `Runtime/Bridges/GameLoopCommandEventBridge.cs` | Bridge pause/resume/exit -> `IGameLoopService` | Listener de reset (`GameResetRequestedEvent`) | `[OBS][LEGACY] ... listener disabled ...` |
+| `Runtime/Bridges/GameLoopSceneFlowCoordinator.cs` | Sync StartPlan/SceneFlow -> `RequestReady` | Start gameplay efetivo (fica no pipeline IntroStage/LevelFlow) | `[GameLoopSceneFlow] Sync concluído ... RequestReady()` |
+| `Runtime/Services/GameRunOutcomeService.cs` | Publicar `GameRunEndedEvent` no maximo uma vez por run | Controle de overlay/UI | `[GameLoop] Publicando GameRunEndedEvent ...` |
+| `Runtime/Services/GameRunStateService.cs` | Snapshot de resultado/reason para UI/sistemas | Publicacao de fim de run | `GameRunStateService registrado ...` |
+| `IntroStage/Runtime/*` + `IntroStageControlService.cs` | IntroStage policy/complete/skip | Selecao de level | `[IntroStageController] ...` |
+
+## Timeline (encaixe no A-E)
+
+1. `SceneFlow` completa transicao de start plan (`GameLoopSceneFlowCoordinator`).
+2. Coordinator sincroniza para `RequestReady`.
+3. `LevelFlow`/IntroStage pipeline decide quando liberar start efetivo.
+4. `GameLoopService` entra em `Playing` e publica `GameRunStartedEvent`.
+5. Durante run: comandos definitivos (`pause/resume/exit`) trafegam por `GameLoopCommandEventBridge`.
+6. Fim de run: `GameRunOutcomeService` publica `GameRunEndedEvent` (idempotente).
+7. `PostGameOwnershipService`/UI consomem estado pos-run.
+
+## LEGACY/Compat
+
+- Em `GameLoopCommandEventBridge`, listener de `GameResetRequestedEvent` permanece explicitamente desativado (owner canonico do reset: `MacroRestartCoordinator`, modulo Navigation).
+- Nao houve move para `Modules/GameLoop/Legacy/**` em GL-1.1 por falta de evidencia conclusiva de inatividade em runtime.
+
+## Requires manual confirmation (LF/GL hygiene)
+
+- `Bindings/Bootstrap/GameStartRequestEmitter.cs` (MonoBehaviour + RuntimeInitializeOnLoadMethod)
+- `Bindings/Inputs/GamePauseHotkeyController.cs` (MonoBehaviour, possivel binding de cena)
+- `IntroStage/Dev/Editor/IntroStageDevTools.cs` (editor/dev)
