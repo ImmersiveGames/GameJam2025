@@ -78,3 +78,30 @@
 
 ## 6) Notes
 - Cleanup focado em higiene de Infrastructure/Composition; nenhum contrato publico de modulo foi alterado.
+
+## 7) IC-1.2a applied (behavior-preserving)
+- Data: 2026-03-06
+- Objetivo aplicado: split estrutural do hotspot `GlobalCompositionRoot.NavigationInputModes.cs` em parciais por dominio, sem mudanca intencional de comportamento.
+- Metodos movidos:
+  - `Infrastructure/Composition/GlobalCompositionRoot.InputModes.cs`
+    - `RegisterInputModesFromRuntimeConfig`
+    - `ReportInputModesDegraded`
+    - `RegisterInputModeSceneFlowBridge`
+  - `Infrastructure/Composition/GlobalCompositionRoot.Navigation.cs`
+    - `ResolveOrRegisterRestartContextService`
+    - `RegisterGameNavigationService`
+    - `RegisterExitToMenuNavigationBridge`
+    - `RegisterMacroRestartCoordinator`
+    - `RegisterLevelSelectedRestartSnapshotBridge`
+  - `Infrastructure/Composition/GlobalCompositionRoot.LevelFlow.cs`
+    - `RegisterLevelsServices`
+    - `RegisterLevelStageOrchestrator`
+- Wrapper legado:
+  - `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` mantido leve, sem logica duplicada.
+- Garantias:
+  - Behavior-preserving: metodos mantidos com mesmo nome, assinatura, visibilidade e fluxo fail-fast.
+  - Ordem e callsites do pipeline preservados.
+- Comandos `rg` usados na verificacao:
+  - `rg --line-number "private static (void|IRestartContextService) (RegisterInputModesFromRuntimeConfig|ReportInputModesDegraded|ResolveOrRegisterRestartContextService|RegisterGameNavigationService|RegisterLevelsServices|RegisterExitToMenuNavigationBridge|RegisterMacroRestartCoordinator|RegisterLevelSelectedRestartSnapshotBridge|RegisterInputModeSceneFlowBridge|RegisterLevelStageOrchestrator)\(" Infrastructure/Composition`
+  - `rg --line-number "RegisterInputModesFromRuntimeConfig\(|RegisterGameNavigationService\(|RegisterLevelsServices\(|RegisterExitToMenuNavigationBridge\(|RegisterMacroRestartCoordinator\(|RegisterLevelSelectedRestartSnapshotBridge\(|RegisterInputModeSceneFlowBridge\(|RegisterLevelStageOrchestrator\(" Infrastructure/Composition/GlobalCompositionRoot.Pipeline.cs`
+  - `rg --line-number "RegisterLevelsServices\(|installLevels:\s*RegisterLevelsServices" Infrastructure/Composition`
