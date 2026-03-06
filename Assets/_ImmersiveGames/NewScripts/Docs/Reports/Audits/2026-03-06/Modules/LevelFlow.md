@@ -1,4 +1,4 @@
-# LevelFlow Module Audit
+﻿# LevelFlow Module Audit
 
 ## A) Scope
 - Entra: `Modules/LevelFlow/**` (`Runtime`, `Bindings`, `Config`, `Dev`).
@@ -25,17 +25,17 @@
 
 ## E) LEGACY/Compat
 - Caminhos por `LevelId` em `ILevelSwapLocalService` e `IWorldResetCommands` estao marcados `[Obsolete]` e bloqueados por fail-fast.
-- `LevelCatalogAsset` mantem partes de compat/legacy de resolucao.
+- `LevelCatalogAsset` e interfaces antigas foram isolados em `Modules/LevelFlow/Legacy/**` como trilha de compat.
 
 ## F) Redundancy Candidates
 - `Modules/LevelFlow/Runtime/LevelMacroPrepareService.cs` e `Modules/LevelFlow/Runtime/LevelSwapLocalService.cs` publicam `LevelSelectedEvent`; risco medio de semantica divergente.
 - `Modules/LevelFlow/Runtime/LevelStageOrchestrator.cs` dedupe por `selectionVersion` e `levelSignature`; risco medio junto a outros dedupes de dominio.
-- `Modules/LevelFlow/Bindings/LevelCatalogAsset.cs` contem trilha LEGACY (`MacroRouteResolvedViaLevelCatalogLegacy`); risco baixo/medio.
+- `Modules/LevelFlow/Legacy/Bindings/LevelCatalogAsset.cs` contem trilha LEGACY (`MacroRouteResolvedViaLevelCatalogLegacy`); risco baixo/medio.
 
 ## G) Deletion/Merge Plan (DOC-ONLY)
 - Formalizar contrato unico de `LevelSelectedEvent` por origem (`macro_prepare` vs `swap_local`).
 - Extrair regra de dedupe de IntroStage para um componente dedicado reutilizavel.
-- Isolar e deprecar fluxo legacy de `LevelCatalogAsset` apos inventario de uso.
+- Planejar remocao de `Modules/LevelFlow/Legacy/**` em LF-1.2 apos validacao de build/log e assets editor/QA.
 
 | FilePath | Type (Runtime/Editor/Shared) | Public Entry Points | EventBus IN | EventBus OUT | DI Provides | Notes (Canon/Legacy/Dead) |
 |---|---|---|---|---|---|---|
@@ -46,4 +46,4 @@
 | Modules/LevelFlow/Runtime/PostLevelActionsService.cs | Runtime | `RestartLevelAsync`, `NextLevelAsync` | N/A | `GameResetRequestedEvent` (indireto via `GameCommands`) | `IPostLevelActionsService` | Canon |
 | Modules/LevelFlow/Runtime/LevelSelectedEvent.cs | Shared | event contract | N/A | N/A | N/A | Canon |
 | Modules/LevelFlow/Runtime/LevelSwapLocalAppliedEvent.cs | Shared | event contract | N/A | N/A | N/A | Canon |
-| Modules/LevelFlow/Bindings/LevelCatalogAsset.cs | Shared | catalog API | N/A | N/A | N/A | Canon + Legacy paths |
+| Modules/LevelFlow/Legacy/Bindings/LevelCatalogAsset.cs | Shared | catalog API | N/A | N/A | N/A | Canon + Legacy paths |

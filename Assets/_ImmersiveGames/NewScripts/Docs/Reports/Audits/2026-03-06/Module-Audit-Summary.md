@@ -1,4 +1,4 @@
-# Module Audit Summary (Baseline 3.1) - 2026-03-06
+﻿# Module Audit Summary (Baseline 3.1) - 2026-03-06
 
 ## Core
 **Canonical Rail:** O trilho canonico de base e `Core/Events/EventBus.cs` + `Core/Composition/DependencyManager.cs` + `Core/Logging/DebugUtility.cs`. Os modulos de dominio publicam/consomem eventos pelo `EventBus<T>` e resolvem servicos pelo `DependencyManager.Provider`, com o `GlobalCompositionRoot` apenas compondo dependencias.
@@ -17,7 +17,7 @@
 **Canonical Rail:** `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` chama `RegisterEssentialServicesOnly` em `GlobalCompositionRoot.Pipeline.cs`, instala `IGlobalCompositionModule` por stage, e registra servicos canonicos de runtime por metodos especializados (`GameLoop`, `SceneFlow`, `WorldLifecycle`, `Navigation`, `Levels`, `ContentSwap`, `DevQA`).
 
 **Top 5 redundancias**
-- `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` teve o registro legacy `RegisterRestartSnapshotContentSwapBridge()` removido no cleanup canônico.
+- `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` teve o registro legacy `RegisterRestartSnapshotContentSwapBridge()` removido no cleanup canÃ´nico.
 - `Infrastructure/Composition/Modules/*.cs` repetem padrao de gate por stage com logica quase identica.
 - Registro de bridges cross-modulo concentrado em `NavigationInputModes.cs` com mistura de Navigation/LevelFlow/InputMode.
 - Duplicidade de pontos de configuracao SceneFlow entre `GlobalCompositionRoot.SceneFlowWorldLifecycle.cs` e `GlobalCompositionRoot.FadeLoading.cs`.
@@ -82,8 +82,8 @@
 **Canonical Rail:** `GameNavigationService` executa navegacao por route/profile. Restart canonico e `MacroRestartCoordinator` ouvindo `GameResetRequestedEvent` e disparando `ILevelFlowRuntimeService.StartGameplayDefaultAsync`.
 
 **Top 5 redundancias**
-- `Modules/Navigation/Legacy/RestartNavigationBridge.cs` mantido como legado desativado (fora do trilho canônico).
-- `Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs` mantido como no-op legado (fora do trilho canônico).
+- `Modules/Navigation/Legacy/RestartNavigationBridge.cs` mantido como legado desativado (fora do trilho canÃ´nico).
+- `Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs` mantido como no-op legado (fora do trilho canÃ´nico).
 - `GameNavigationService` mantem APIs compat marcadas como legacy.
 - `LevelSelectedRestartSnapshotBridge` e `IRestartContextService` duplicam parte do fluxo de contexto de restart.
 - Catalogos de intents/rotas/estilos cruzam `Modules/Navigation/**` e `Modules/SceneFlow/Navigation/**`.
@@ -92,18 +92,23 @@
 **Ordem recomendada de limpeza:** 5/10.
 
 ## LevelFlow
-**Canonical Rail:** `LevelFlowRuntimeService` inicia gameplay default, `LevelMacroPrepareService` seleciona/aplica nivel no macro entry, `LevelSwapLocalService` realiza troca intra-macro, e `LevelStageOrchestrator` coordena IntroStage por `SceneTransitionCompleted` e `LevelSwapLocalAppliedEvent`.
+**Canonical Rail:** `LevelFlowRuntimeService` inicia gameplay default/restart, `LevelMacroPrepareService` prepara/limpa o nivel no gate macro do SceneFlow, `LevelSwapLocalService` aplica swaps locais intra-macro e `LevelStageOrchestrator` coordena IntroStage por `SceneTransitionCompletedEvent` + `LevelSwapLocalAppliedEvent`.
 
 **Top 5 redundancias**
-- Dupla publicacao de `LevelSelectedEvent` (prepare e swap local).
-- Dedupe por `selectionVersion/levelSignature` em multiplos pontos (`LevelStageOrchestrator`, snapshots, eventos).
-- `LevelCatalogAsset` mantem caminhos LEGACY/compat para resolucao antiga.
-- Restart macro via `PostLevelActionsService -> GameCommands` convive com APIs de restart em outros servicos.
-- Fluxo local (`SwapLocal`) e macro (`Prepare`) compartilham pecas de assinatura/contexto.
+- Dupla publicacao de `LevelSelectedEvent` (prepare macro + swap local), com ownership dividido por contexto.
+- Dedupe por `selectionVersion/levelSignature` concentrado em `LevelStageOrchestrator` (manter alinhado com producers).
+- Trilha de catalogo antiga (`LevelCatalogAsset` + interfaces antigas) era estruturalmente redundante ao trilho canonico.
+- API legacy por `LevelId` continua presente em overloads obsoletos para compat (fail-fast).
+- Rotas de QA/Dev exercitam caminhos nao-canônicos e podem mascarar redundancias em runtime.
 
 **Risco de mudanca:** High  
 **Ordem recomendada de limpeza:** 7/10.
 
+**LF-1.1 aplicado:** isolamento de compat para `Modules/LevelFlow/Legacy/**`:
+- `Modules/LevelFlow/Legacy/Bindings/LevelCatalogAsset.cs`
+- `Modules/LevelFlow/Legacy/Runtime/ILevelFlowService.cs`
+- `Modules/LevelFlow/Legacy/Runtime/ILevelMacroRouteCatalog.cs`
+- `Modules/LevelFlow/Legacy/Runtime/ILevelContentResolver.cs`
 ## ContentSwap
 **Canonical Rail:** `ContentSwapContextService` + `InPlaceContentSwapService` (registrado como `IContentSwapChangeService`) aplicam swap in-place orientado a contexto. Integracoes de restart compat foram explicitamente neutralizadas no Navigation.
 

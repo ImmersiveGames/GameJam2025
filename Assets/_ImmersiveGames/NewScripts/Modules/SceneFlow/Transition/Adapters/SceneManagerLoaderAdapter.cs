@@ -7,7 +7,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
     /// <summary>
     /// Implementação padrão de loader usando SceneManager (fallback).
     /// </summary>
-    public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
+        /// <summary>
+    /// OWNER: operacoes de load/unload/set-active de cena no adapter.
+    /// NAO E OWNER: ordem de fases da transicao (definida em SceneTransitionService).
+    /// PUBLISH/CONSUME: nao publica eventos; consumido por SceneTransitionService.
+    /// Fases tocadas: ApplyRoute (loads/unloads/active).
+    /// </summary>
+public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
     {
         public async Task LoadSceneAsync(string sceneName)
         {
@@ -102,3 +108,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
         }
     }
 }
+
+

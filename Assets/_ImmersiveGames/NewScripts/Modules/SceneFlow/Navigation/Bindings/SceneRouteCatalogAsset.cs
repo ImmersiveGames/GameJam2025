@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -12,6 +12,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
     /// <summary>
     /// Catalogo configuravel de rotas do SceneFlow (SceneRouteId -> SceneRouteDefinition).
     /// Opera somente com referencias diretas em routeDefinitions.
+    /// OWNER: fonte de configuracao e cache de rotas do catalogo.
+    /// NAO E OWNER: execucao da transicao e gates de runtime.
+    /// PUBLISH/CONSUME: sem EventBus; consumido por SceneRouteCatalogResolver.
+    /// Fases tocadas: RouteExecutionPlan (fonte de dados).
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneRouteCatalogAsset",
@@ -222,4 +226,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         }
     }
 }
+
 

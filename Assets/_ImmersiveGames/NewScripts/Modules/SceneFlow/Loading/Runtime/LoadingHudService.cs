@@ -21,7 +21,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
     /// Observacao:
     /// - A cena precisa existir em Build Settings e conter 1x LoadingHudController.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+        /// <summary>
+    /// OWNER: ciclo tecnico de ensure/show/hide da LoadingHudScene e controller.
+    /// NAO E OWNER: ordem das fases da transicao (definida pelo orchestrator/SceneTransitionService).
+    /// PUBLISH/CONSUME: sem EventBus; consumido por LoadingHudOrchestrator.
+    /// Fases tocadas: suporte tecnico para Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed.
+    /// </summary>
+[DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudService : ILoadingHudService
     {
         private const string FeatureName = "loadinghud";
@@ -327,3 +333,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         }
     }
 }
+
+

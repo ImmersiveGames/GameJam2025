@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -15,13 +15,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
 
     /// <summary>
-    /// Implementação nativa do pipeline de Scene Flow emitindo eventos do NewScripts.
+    /// ImplementaÃ§Ã£o nativa do pipeline de Scene Flow emitindo eventos do NewScripts.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+        /// <summary>
+    /// OWNER: pipeline canonico de transicao e timeline de fases do SceneFlow.
+    /// NAO E OWNER: reset de mundo/level (delegado para gates e modulos externos).
+    /// PUBLISH/CONSUME: publica Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed; consome request via API.
+    /// Fases tocadas: TransitionStarted, FadeIn, LoadedScenesSnapshot(before_apply_route), RouteExecutionPlan, ApplyRoute, LoadedScenesSnapshot(after_apply_route), ScenesReady, BeforeFadeOut, FadeOut, TransitionCompleted.
+    /// </summary>
+[DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneTransitionService : ISceneTransitionService
     {
-        // Dedupe: bloqueia reentrância por assinatura idêntica numa janela curta.
-        // Ajuste conforme necessário. 750ms tem sido suficiente para capturar "double start" acidental.
+        // Dedupe: bloqueia reentrÃ¢ncia por assinatura idÃªntica numa janela curta.
+        // Ajuste conforme necessÃ¡rio. 750ms tem sido suficiente para capturar "double start" acidental.
         private const int DuplicateSignatureWindowMs = 750;
 
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
@@ -81,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             if (!_navigationPolicy.CanTransition(hydratedRequest, out var denialReason))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Transição bloqueada por policy. " +
+                    $"[SceneFlow] TransiÃ§Ã£o bloqueada por policy. " +
                     $"signature='{signature}', routeId='{context.RouteId}', styleId='{context.StyleId}', " +
                     $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', " +
                     $"policyReason='{Sanitize(denialReason)}'.");
@@ -91,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             if (routeDefinition.HasValue && !_routeGuard.CanTransitionRoute(hydratedRequest, routeDefinition.Value, out denialReason))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Transição bloqueada por route guard. " +
+                    $"[SceneFlow] TransiÃ§Ã£o bloqueada por route guard. " +
                     $"signature='{signature}', routeId='{context.RouteId}', kind='{routeDefinition.Value.RouteKind}', " +
                     $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', " +
                     $"guardReason='{Sanitize(denialReason)}'.");
@@ -99,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
 
             // Dedupe por assinatura: evita "double start" no mesmo contexto em janela curta.
-            // Isto não substitui correção do caller, mas impede o pior: reentrância/interleaving.
+            // Isto nÃ£o substitui correÃ§Ã£o do caller, mas impede o pior: reentrÃ¢ncia/interleaving.
             if (ShouldDedupe(signature))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
@@ -108,20 +114,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return;
             }
 
-            // Pre-checagem concorrente (rápida).
+            // Pre-checagem concorrente (rÃ¡pida).
             if (Interlocked.CompareExchange(ref _transitionInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Uma transição já está em andamento (_transitionInProgress ativo). Ignorando solicitação concorrente. " +
+                    $"[SceneFlow] Uma transiÃ§Ã£o jÃ¡ estÃ¡ em andamento (_transitionInProgress ativo). Ignorando solicitaÃ§Ã£o concorrente. " +
                     $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
                 return;
             }
 
-            // Garante exclusão mútua (não bloqueante).
+            // Garante exclusÃ£o mÃºtua (nÃ£o bloqueante).
             if (!_transitionGate.Wait(0))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Uma transição já está em andamento. Ignorando solicitação concorrente. " +
+                    $"[SceneFlow] Uma transiÃ§Ã£o jÃ¡ estÃ¡ em andamento. Ignorando solicitaÃ§Ã£o concorrente. " +
                     $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 return;
@@ -141,8 +147,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
 
-                // FadeIn é a primeira etapa visual. O HUD de Loading pode ser "ensured" em paralelo,
-                // mas deve aparecer apenas após o FadeIn estar concluído (Opção A+).
+                // FadeIn Ã© a primeira etapa visual. O HUD de Loading pode ser "ensured" em paralelo,
+                // mas deve aparecer apenas apÃ³s o FadeIn estar concluÃ­do (OpÃ§Ã£o A+).
                 await RunFadeInIfNeeded(context, transitionId, signature);
 
                 if (context.UseFade)
@@ -152,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
                 await RunSceneOperationsAsync(context);
 
-                // 1) Momento em que "cenas estão prontas" (load/unload/active done).
+                // 1) Momento em que "cenas estÃ£o prontas" (load/unload/active done).
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
                 DebugUtility.Log<SceneTransitionService>(
@@ -179,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             catch (Exception ex)
             {
                 DebugUtility.LogError<SceneTransitionService>(
-                    $"[SceneFlow] Erro durante transição: {ex}");
+                    $"[SceneFlow] Erro durante transiÃ§Ã£o: {ex}");
                 throw;
             }
             finally
@@ -289,23 +295,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 {
                     DebugUtility.LogWarning<SceneTransitionService>(
                         $"[OBS][Deprecated] Inline scene data foi detectado sem RouteId. " +
-                        $"Fluxo legado desativado; request será abortada. " +
+                        $"Fluxo legado desativado; request serÃ¡ abortada. " +
                         $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.");
                 }
 
-                FailFastTransitionRequest(request, "RouteId ausente/inválido.");
+                FailFastTransitionRequest(request, "RouteId ausente/invÃ¡lido.");
                 return request;
             }
 
             if (_routeResolver == null)
             {
-                FailFastTransitionRequest(request, $"ISceneRouteResolver indisponível para routeId='{request.RouteId}'.");
+                FailFastTransitionRequest(request, $"ISceneRouteResolver indisponÃ­vel para routeId='{request.RouteId}'.");
                 return request;
             }
 
             if (!_routeResolver.TryResolve(request.RouteId, out var resolvedRoute))
             {
-                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' não encontrado no catálogo de rotas.");
+                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' nÃ£o encontrado no catÃ¡logo de rotas.");
                 return request;
             }
 
@@ -345,7 +351,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             int now = Environment.TickCount;
 
-            // Caso 1: repetição imediatamente após Start anterior (start-start).
+            // Caso 1: repetiÃ§Ã£o imediatamente apÃ³s Start anterior (start-start).
             if (string.Equals(signature, _lastStartedSignature, StringComparison.Ordinal))
             {
                 int dt = unchecked(now - _lastStartedTick);
@@ -355,7 +361,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 }
             }
 
-            // Caso 2: repetição logo após Completed (completed-start).
+            // Caso 2: repetiÃ§Ã£o logo apÃ³s Completed (completed-start).
             if (string.Equals(signature, _lastCompletedSignature, StringComparison.Ordinal))
             {
                 int dt = unchecked(now - _lastCompletedTick);
@@ -390,7 +396,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 await _completionGate.AwaitBeforeFadeOutAsync(context);
 
                 DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
+                    $"[SceneFlow] Completion gate concluÃ­do. Prosseguindo para FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
             }
             catch (Exception ex)
             {
@@ -454,7 +460,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private static void LogObsFade(string phase, long transitionId, string signature, string profile)
         {
-            // Comentário: âncora canônica (auditável) para ADR-0009 / Item A (Strict/Release).
+            // ComentÃ¡rio: Ã¢ncora canÃ´nica (auditÃ¡vel) para ADR-0009 / Item A (Strict/Release).
             DebugUtility.Log<SceneTransitionService>(
                 $"[OBS][Fade] {phase} id={transitionId} signature='{signature}' profile='{profile}'.");
         }
@@ -543,7 +549,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 if (!forceLoad && _loaderAdapter.IsSceneLoaded(sceneName))
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>(
-                        $"[SceneFlow] Cena '{sceneName}' já está carregada. Pulando load.");
+                        $"[SceneFlow] Cena '{sceneName}' jÃ¡ estÃ¡ carregada. Pulando load.");
                     continue;
                 }
 
@@ -566,7 +572,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             if (!success)
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Não foi possível definir a cena ativa para '{targetActiveScene}'. Cena atual='{_loaderAdapter.GetActiveSceneName()}'.");
+                    $"[SceneFlow] NÃ£o foi possÃ­vel definir a cena ativa para '{targetActiveScene}'. Cena atual='{_loaderAdapter.GetActiveSceneName()}'.");
             }
             else
             {
@@ -623,7 +629,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 !string.Equals(tempActive, _loaderAdapter.GetActiveSceneName(), StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Reload: definindo cena ativa temporária '{tempActive}'.");
+                    $"[SceneFlow] Reload: definindo cena ativa temporÃ¡ria '{tempActive}'.");
                 await SetActiveSceneAsync(tempActive);
             }
 
@@ -631,7 +637,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             await LoadScenesAsync(reloadScenes, forceLoad: true);
 
             DebugUtility.LogVerbose<SceneTransitionService>(
-                $"[SceneFlow] Reload concluído. TargetActiveScene='{context.TargetActiveScene}'.");
+                $"[SceneFlow] Reload concluÃ­do. TargetActiveScene='{context.TargetActiveScene}'.");
         }
 
         private async Task UnloadScenesForReloadAsync(IReadOnlyList<string> reloadScenes)
@@ -641,7 +647,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 if (!_loaderAdapter.IsSceneLoaded(sceneName))
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>(
-                        $"[SceneFlow] Reload: cena '{sceneName}' já está descarregada. Pulando unload.");
+                        $"[SceneFlow] Reload: cena '{sceneName}' jÃ¡ estÃ¡ descarregada. Pulando unload.");
                     continue;
                 }
 
@@ -765,5 +771,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
     }
 
 }
+
+
 
 

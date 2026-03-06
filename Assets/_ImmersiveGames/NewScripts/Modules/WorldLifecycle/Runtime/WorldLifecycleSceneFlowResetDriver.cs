@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -12,17 +12,23 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Driver canônico (produção) para integrar SceneFlow → WorldLifecycle.
+    /// Driver canÃ´nico (produÃ§Ã£o) para integrar SceneFlow â†’ WorldLifecycle.
     ///
     /// Responsabilidades:
-    /// - Ao receber SceneTransitionScenesReadyEvent, resolve política por rota/contexto e dispara ResetWorld quando aplicável.
+    /// - Ao receber SceneTransitionScenesReadyEvent, resolve polÃ­tica por rota/contexto e dispara ResetWorld quando aplicÃ¡vel.
     /// - Publica WorldLifecycleResetCompletedEvent(signature) apenas em SKIP/fallback para liberar o completion gate do SceneFlow.
     ///
-    /// Observações:
-    /// - Não depende de "coordinator" obsoleto.
-    /// - É best-effort: nunca deve travar o fluxo (sempre publica ResetCompleted).
+    /// ObservaÃ§Ãµes:
+    /// - NÃ£o depende de "coordinator" obsoleto.
+    /// - Ã‰ best-effort: nunca deve travar o fluxo (sempre publica ResetCompleted).
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+        /// <summary>
+    /// OWNER: handoff SceneFlow -> WorldResetService para macro reset por transicao.
+    /// NAO E OWNER: eventos V2 de comando/telemetria (permanecem em WorldResetCommands).
+    /// PUBLISH/CONSUME: consome SceneTransitionScenesReadyEvent; publica WorldLifecycleResetCompletedEvent em SKIP/fallback.
+    /// Fases tocadas: ScenesReady e Gate (sinaliza completion V1 antes do BeforeFadeOut).
+    /// </summary>
+[DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleSceneFlowResetDriver : IDisposable
     {
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
@@ -32,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         private bool _disposed;
         private static int _degradedFallbackCount;
 
-        // Reasons canônicos (Contrato de Observability) em WorldResetReasons.
+        // Reasons canÃ´nicos (Contrato de Observability) em WorldResetReasons.
 
         // Janela curta para dedupe de assinatura (evita reset duplicado no mesmo frame).
         private const int DuplicateSignatureWindowMs = 750;
@@ -63,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            // Event handler não pode ser async; delega para Task com tratamento interno.
+            // Event handler nÃ£o pode ser async; delega para Task com tratamento interno.
             _ = HandleScenesReadyAsync(evt);
         }
 
@@ -244,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private static void PublishResetCompleted(string signature, string reason, string routeId, string profile, string target, string decisionSource)
         {
-            // Publica apenas em SKIP/fallback: o completion gate depende disso para não degradar em timeout.
+            // Publica apenas em SKIP/fallback: o completion gate depende disso para nÃ£o degradar em timeout.
             LogObsResetCompleted(
                 signature: signature,
                 routeId: routeId,
@@ -266,7 +272,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string decisionSource,
             string reason)
         {
-            // Observabilidade canônica (Contrato): ResetRequested com sourceSignature/reason/profile/target.
+            // Observabilidade canÃ´nica (Contrato): ResetRequested com sourceSignature/reason/profile/target.
             DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
                 $"[OBS][WorldLifecycle] ResetRequested signature='{signature ?? string.Empty}' sourceSignature='{sourceSignature ?? string.Empty}' routeId='{routeId ?? string.Empty}' profile='{profile ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
                 DebugUtility.Colors.Info);
@@ -280,7 +286,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string decisionSource,
             string reason)
         {
-            // Observabilidade canônica (Contrato): ResetCompleted correlacionável ao gate (signature) e reason final.
+            // Observabilidade canÃ´nica (Contrato): ResetCompleted correlacionÃ¡vel ao gate (signature) e reason final.
             DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
                 $"[OBS][WorldLifecycle] ResetCompleted signature='{signature ?? string.Empty}' routeId='{routeId ?? string.Empty}' profile='{profile ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
                 DebugUtility.Colors.Success);
@@ -373,4 +379,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+
+
+
 

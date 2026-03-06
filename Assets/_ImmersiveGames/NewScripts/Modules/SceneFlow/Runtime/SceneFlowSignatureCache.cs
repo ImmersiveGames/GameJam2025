@@ -1,12 +1,18 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+﻿using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 {
 
     /// <summary>
-    /// Observa SceneTransitionStarted/Completed e guarda a última assinatura disponível.
+    /// Observa SceneTransitionStarted/Completed e guarda a Ãºltima assinatura disponÃ­vel.
     /// </summary>
-    public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.IDisposable
+        /// <summary>
+    /// OWNER: cache da ultima assinatura/profile/cena para consumidores de leitura.
+    /// NAO E OWNER: dedupe de fluxo de transicao ou controle de gates.
+    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; nao publica eventos.
+    /// Fases tocadas: TransitionStarted e TransitionCompleted.
+    /// </summary>
+public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.IDisposable
     {
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
@@ -64,3 +70,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
         }
     }
 }
+
+

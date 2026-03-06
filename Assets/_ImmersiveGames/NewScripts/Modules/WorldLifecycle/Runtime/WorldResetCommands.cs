@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -203,3 +203,4 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+

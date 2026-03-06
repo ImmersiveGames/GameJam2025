@@ -12,7 +12,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
     /// - Em transicoes com Fade: a HUD e "ensured" no Started, mas so fica visivel após FadeIn concluir.
     /// - Em transicoes sem Fade: mantem o comportamento antigo (Show já no Started).
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+        /// <summary>
+    /// OWNER: orquestracao de visibilidade da HUD ao longo dos eventos do SceneFlow.
+    /// NAO E OWNER: carregamento tecnico da cena HUD (delegado ao LoadingHudService).
+    /// PUBLISH/CONSUME: consome Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed; nao publica eventos.
+    /// Fases tocadas: TransitionStarted, FadeIn completed, ScenesReady, BeforeFadeOut, TransitionCompleted.
+    /// </summary>
+[DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudOrchestrator
     {
 
@@ -345,3 +351,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         }
     }
 }
+
+

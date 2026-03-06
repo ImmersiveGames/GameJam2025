@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,13 +16,13 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Orquestra o ciclo de reset do mundo de forma determinística.
-    /// Responsável por garantir a ordem: Acquire Gate → (Hooks) → Despawn → (Hooks) → Spawn → (Hooks) → Release Gate.
+    /// Orquestra o ciclo de reset do mundo de forma determinÃ­stica.
+    /// ResponsÃ¡vel por garantir a ordem: Acquire Gate â†’ (Hooks) â†’ Despawn â†’ (Hooks) â†’ Spawn â†’ (Hooks) â†’ Release Gate.
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
         // Guardrail de QA: manter a ordem das fases como exatamente descrita aqui.
-        // Não reorganizar o fluxo do reset ou mover responsabilidades entre classes.
+        // NÃ£o reorganizar o fluxo do reset ou mover responsabilidades entre classes.
         private readonly ISimulationGateService _gateService;
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
         private readonly IActorRegistry _actorRegistry;
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         private readonly string _sceneName;
         private readonly WorldLifecycleHookRegistry _hookRegistry;
         private readonly Dictionary<Transform, ActorHookCacheEntry> _actorHookCache = new();
-        // Sentinel compartilhado para "nenhum hook encontrado" — nunca deve ser mutado.
+        // Sentinel compartilhado para "nenhum hook encontrado" â€” nunca deve ser mutado.
         private static readonly List<(string Label, IActorLifecycleHook Hook)> EmptyActorHookList = new();
 
         private const long SlowHookWarningMs = 50;
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (scopes.Any(t => t == WorldResetScope.World))
             {
                 DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                    "WorldResetScope.World não é suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
+                    "WorldResetScope.World nÃ£o Ã© suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
                 return;
             }
 
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 if (service == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        $"{stepName} service é nulo e será ignorado.");
+                        $"{stepName} service Ã© nulo e serÃ¡ ignorado.");
                     continue;
                 }
 
@@ -167,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     if (hookEntry.Hook == null)
                     {
                         DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                            $"{hookName} hook '{hookEntry.Label}' é nulo e será ignorado.");
+                            $"{hookName} hook '{hookEntry.Label}' Ã© nulo e serÃ¡ ignorado.");
                         continue;
                     }
 
@@ -220,7 +220,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 if (actor == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        $"{hookName} actor é nulo e será ignorado.");
+                        $"{hookName} actor Ã© nulo e serÃ¡ ignorado.");
                     continue;
                 }
 
@@ -316,7 +316,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (_actorRegistry == null)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                    "ActorRegistry ausente ao criar snapshot de atores. Nenhum hook de ator será executado.");
+                    "ActorRegistry ausente ao criar snapshot de atores. Nenhum hook de ator serÃ¡ executado.");
                 return actors;
             }
 
@@ -585,7 +585,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         /// <summary>
         /// Limpa o cache de hooks por ator ao final de cada ciclo de reset.
-        /// Mantém a semântica de cache por ciclo, mesmo em caso de falhas.
+        /// MantÃ©m a semÃ¢ntica de cache por ciclo, mesmo em caso de falhas.
         /// </summary>
         private void ClearActorHookCacheForCycle()
         {
@@ -613,7 +613,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
 
             DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                $"Nenhum spawn service disponível para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirá apenas com hooks.");
+                $"Nenhum spawn service disponÃ­vel para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirÃ¡ apenas com hooks.");
         }
 
         private IDisposable TryAcquireGate(string gateToken, out bool gateAcquired)
@@ -623,7 +623,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (_gateService == null || string.IsNullOrWhiteSpace(gateToken))
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                    "ISimulationGateService ausente: reset seguirá sem gate.");
+                    "ISimulationGateService ausente: reset seguirÃ¡ sem gate.");
                 return null;
             }
 
@@ -656,8 +656,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private async Task RunResetPipelineAsync(WorldResetContext? context)
         {
-            // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
-            // hooks pós-despawn/pré-spawn → (scoped participants) → hooks pré-spawn → spawn → hooks de atores → hooks finais.
+            // Ordem fixa do reset: hooks prÃ©-despawn â†’ hooks de atores â†’ despawn â†’
+            // hooks pÃ³s-despawn/prÃ©-spawn â†’ (scoped participants) â†’ hooks prÃ©-spawn â†’ spawn â†’ hooks de atores â†’ hooks finais.
             await RunHookStepAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
             await RunActorHooksBeforeDespawnAsync();
 
@@ -787,7 +787,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         private async Task RunScopedParticipantsResetAsync(WorldResetContext context)
         {
             // Soft reset executa apenas participantes que declaram escopo via IRunRearmWorldParticipant.
-            // Caso seja necessário um hook global no futuro, isso deve acontecer por meio de um escopo/interface explícitos.
+            // Caso seja necessÃ¡rio um hook global no futuro, isso deve acontecer por meio de um escopo/interface explÃ­citos.
             List<IRunRearmWorldParticipant> participants = CollectScopedParticipants();
             if (participants.Count == 0)
             {
@@ -802,7 +802,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 if (participant == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        "Scoped reset participant é nulo e será ignorado.");
+                        "Scoped reset participant Ã© nulo e serÃ¡ ignorado.");
                     continue;
                 }
 
@@ -980,5 +980,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+
 
 

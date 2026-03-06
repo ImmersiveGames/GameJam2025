@@ -11,7 +11,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
     /// <summary>
     /// Adapter NewScripts: aplica referência direta de SceneTransitionProfile em FadeConfig.
     /// </summary>
-    public sealed class SceneFlowFadeAdapter : ISceneFlowFadeAdapter
+        /// <summary>
+    /// OWNER: traducao profile -> FadeConfig e execucao de fade via IFadeService.
+    /// NAO E OWNER: decisao de quando iniciar/encerrar fases da transicao.
+    /// PUBLISH/CONSUME: nao publica eventos; consumido por SceneTransitionService.
+    /// Fases tocadas: FadeIn e FadeOut.
+    /// </summary>
+public sealed class SceneFlowFadeAdapter : ISceneFlowFadeAdapter
     {
         private readonly IFadeService _fadeService;
 
@@ -138,3 +144,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
 
     }
 }
+
+

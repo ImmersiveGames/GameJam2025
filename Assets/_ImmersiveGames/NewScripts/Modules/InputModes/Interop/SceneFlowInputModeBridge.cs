@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -12,16 +12,22 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 {
     /// <summary>
     /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
-    /// Também sincroniza o GameLoop com a intenção do profile:
+    /// TambÃ©m sincroniza o GameLoop com a intenÃ§Ã£o do profile:
     /// - Gameplay: aplica InputMode.
-    /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
+    /// - Startup/Frontend: garante que o GameLoop nÃ£o fique ativo em menu/frontend.
     /// </summary>
-    public sealed class SceneFlowInputModeBridge : IDisposable
+        /// <summary>
+    /// OWNER: sincronizacao InputMode/GameLoop orientada por eventos de transicao.
+    /// NAO E OWNER: execucao da transicao de cena e seus gates.
+    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; nao publica eventos.
+    /// Fases tocadas: TransitionStarted e TransitionCompleted.
+    /// </summary>
+public sealed class SceneFlowInputModeBridge : IDisposable
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
 
-        // Dedupe por instância para evitar supressão entre instâncias após restarts.
+        // Dedupe por instÃ¢ncia para evitar supressÃ£o entre instÃ¢ncias apÃ³s restarts.
         private string _lastProcessedSignature;
 
         public SceneFlowInputModeBridge()
@@ -100,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura jÃ¡ processada). signature='{signature}' profile='{profile}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -129,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     return;
                 }
 
-                // Se já está Playing, não faz nada (evita ruído).
+                // Se jÃ¡ estÃ¡ Playing, nÃ£o faz nada (evita ruÃ­do).
                 if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
@@ -157,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura jÃ¡ processada). signature='{signature}' profile='{profile}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -173,8 +179,8 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     scene: activeScene,
                     profile: profile);
 
-                // Correção-alvo:
-                // Menu/Frontend não deve “rodar run”. Se algo iniciou o GameLoop antes,
+                // CorreÃ§Ã£o-alvo:
+                // Menu/Frontend nÃ£o deve â€œrodar runâ€. Se algo iniciou o GameLoop antes,
                 // encerramos a run aqui para evitar ficar em Playing no menu.
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
@@ -204,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                 && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura jÃ¡ processada). signature='{signature}' profile='{profile}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -224,7 +230,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             string scene,
             string profile)
         {
-            // Observabilidade canônica (Contrato): Request mode/map/reason/signature/scene/profile.
+            // Observabilidade canÃ´nica (Contrato): Request mode/map/reason/signature/scene/profile.
             DebugUtility.LogVerbose(typeof(SceneFlowInputModeBridge),
                 $"[OBS][InputMode] Requested mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' profile='{profile ?? string.Empty}' reason='{reason ?? string.Empty}' (delegated).",
                 DebugUtility.Colors.Info);
@@ -266,3 +272,5 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         }
     }
 }
+
+

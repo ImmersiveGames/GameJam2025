@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,6 +16,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
     /// <summary>
     /// Servico canonico do reset do WorldLifecycle.
     /// Fonte de verdade para policy/guards/validation/orchestration.
+    /// Ownership (Baseline 3.1):
+    /// - OWNER do macro reset (world reset) no runtime.
+    /// - API canonica chamada por SceneFlow driver e comandos de macro reset.
+    /// - Encapsula construcao/execucao do WorldResetOrchestrator sem expor detalhes.
     /// </summary>
     public sealed class WorldResetService : IWorldResetService
     {
@@ -41,6 +45,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
 
         public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
+            // WL-1.1: este metodo e o ponto de entrada canonico para world reset.
+            // Nao alterar fluxo/callsites nesta etapa.
             EnsureDependencies();
 
             string ctx = string.IsNullOrWhiteSpace(request.ContextSignature) ? string.Empty : request.ContextSignature;

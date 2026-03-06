@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -7,7 +7,13 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
-    [DebugLevel(DebugLevel.Verbose)]
+        /// <summary>
+    /// OWNER: gate de LevelPrepare/Clear no fim da transicao macro (apos gate interno).
+    /// NAO E OWNER: resolucao de rota e aplicacao de load/unload de cenas.
+    /// PUBLISH/CONSUME: nao publica eventos; consome contexto e chama ILevelMacroPrepareService.
+    /// Fases tocadas: Gate entre ScenesReady e BeforeFadeOut (fase LevelPrepare).
+    /// </summary>
+[DebugLevel(DebugLevel.Verbose)]
     public sealed class MacroLevelPrepareCompletionGate : ISceneTransitionCompletionGate
     {
         private readonly ISceneTransitionCompletionGate _innerGate;
@@ -57,3 +63,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         }
     }
 }
+
+
