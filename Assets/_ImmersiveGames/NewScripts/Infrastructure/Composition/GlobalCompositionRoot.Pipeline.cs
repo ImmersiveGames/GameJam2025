@@ -58,7 +58,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterExitToMenuNavigationBridge();
             RegisterRestartNavigationBridge();
             RegisterLevelSelectedRestartSnapshotBridge();
-            RegisterRestartSnapshotContentSwapBridge();
 
             RegisterInputModeSceneFlowBridge();
             RegisterLevelStageOrchestrator();
@@ -185,3 +184,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
     }
 }
+

@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using _ImmersiveGames.NewScripts.Modules.InputModes.Interop;
 using _ImmersiveGames.NewScripts.Modules.Gates;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
@@ -176,16 +175,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 throw new InvalidOperationException(
                     "Missing required NewScriptsBootstrapConfigAsset.transitionStyleCatalog (TransitionStyleCatalogAsset).");
             }
-
-            var levelCatalogAsset = bootstrapConfig.LevelCatalog;
-            if (levelCatalogAsset == null)
+            var sceneRouteCatalogAsset = bootstrapConfig.SceneRouteCatalog;
+            if (sceneRouteCatalogAsset == null)
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    "[FATAL][Config] Missing required LevelCatalogAsset in NewScriptsBootstrapConfigAsset.levelCatalog.");
+                    "[FATAL][Config] Missing required SceneRouteCatalogAsset in NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
                 throw new InvalidOperationException(
-                    "Missing required NewScriptsBootstrapConfigAsset.levelCatalog (LevelCatalogAsset).");
+                    "Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
             }
-
             const string catalogsVia = "BootstrapConfig";
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=navigationCatalog asset={catalogAsset.name}",
@@ -196,12 +193,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=transitionStyleCatalog asset={styleCatalogAsset.name}",
                 DebugUtility.Colors.Info);
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=levelCatalog asset={levelCatalogAsset.name}",
-                DebugUtility.Colors.Info);
 
             RegisterGlobalIfMissing<ITransitionStyleCatalog>(styleCatalogAsset, "ITransitionStyleCatalog");
-            RegisterGlobalIfMissing<ILevelFlowService>(levelCatalogAsset, "ILevelFlowService");
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var sceneRouteResolver) || sceneRouteResolver == null)
             {
@@ -219,7 +212,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"navigationVia={catalogsVia} navigationAsset={catalogAsset.name}, " +
                 $"intentsVia={catalogsVia} intentsAsset={intentCatalogAsset.name}, " +
                 $"stylesVia={catalogsVia} stylesAsset={styleCatalogAsset.name}, " +
-                $"levelsVia={catalogsVia} levelsAsset={levelCatalogAsset.name}, " +
                 $"rawRoutesCount={rawRoutesCount}, " +
                 $"builtRouteIdsCount={builtRouteIdsCount}, " +
                 $"hasToGameplay={hasToGameplay}.",
@@ -232,15 +224,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 catalogAsset,
                 sceneRouteResolver,
                 styleCatalogAsset,
-                levelCatalogAsset,
                 intentCatalogAsset,
-                restartContextService);
+                restartContextService,
+                sceneRouteCatalogAsset);
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Navigation] GameNavigationService registrado. " +
-                $"bootstrapVia={bootstrapVia} navigationVia={catalogsVia} intentsVia={catalogsVia} stylesVia={catalogsVia} levelsVia={catalogsVia} " +
-                $"(assets: navigation={catalogAsset.name}, intents={intentCatalogAsset.name}, styles={styleCatalogAsset.name}, levels={levelCatalogAsset.name}).",
+                $"bootstrapVia={bootstrapVia} navigationVia={catalogsVia} intentsVia={catalogsVia} stylesVia={catalogsVia} " +
+                $"(assets: navigation={catalogAsset.name}, intents={intentCatalogAsset.name}, styles={styleCatalogAsset.name}).",
                 DebugUtility.Colors.Info);
 
 
@@ -254,15 +246,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             var bootstrapConfig = GetRequiredBootstrapConfig(out _);
-            var levelCatalogAsset = bootstrapConfig.LevelCatalog;
-            if (levelCatalogAsset == null)
+            var sceneRouteCatalogAsset = bootstrapConfig.SceneRouteCatalog;
+            if (sceneRouteCatalogAsset == null)
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    "[FATAL][Config] Missing required LevelCatalogAsset in NewScriptsBootstrapConfigAsset.levelCatalog.");
+                    "[FATAL][Config] Missing required SceneRouteCatalogAsset in NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
                 throw new InvalidOperationException(
-                    "Missing required NewScriptsBootstrapConfigAsset.levelCatalog (LevelCatalogAsset).");
+                    "Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
             }
-
             var catalogAsset = bootstrapConfig.NavigationCatalog;
             if (catalogAsset == null)
             {
@@ -284,6 +275,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var restartContextService = ResolveOrRegisterRestartContextService();
             IWorldResetCommands worldResetCommands = null;
             DependencyManager.Provider.TryGetGlobal(out worldResetCommands);
+            if (worldResetCommands == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required IWorldResetCommands in global DI before LevelFlow services registration.");
+                throw new InvalidOperationException(
+                    "Missing required IWorldResetCommands in global DI.");
+            }
+
             ISimulationGateService simulationGateService = null;
             DependencyManager.Provider.TryGetGlobal(out simulationGateService);
 
@@ -291,11 +290,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!DependencyManager.Provider.TryGetGlobal<ILevelSwapLocalService>(out levelSwapLocalService) || levelSwapLocalService == null)
             {
                 levelSwapLocalService = new LevelSwapLocalService(
-                    levelCatalogAsset,
                     restartContextService,
                     worldResetCommands,
                     catalogAsset,
-                    simulationGateService);
+                    simulationGateService,
+                    sceneRouteCatalogAsset);
 
                 DependencyManager.Provider.RegisterGlobal<ILevelSwapLocalService>(levelSwapLocalService);
 
@@ -307,18 +306,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var existing) || existing == null)
             {
                 var runtimeService = new LevelFlowRuntimeService(
-                    levelCatalogAsset,
                     navigationService,
-                    catalogAsset,
-                    styleCatalogAsset,
                     restartContextService,
-                    levelSwapLocalService,
-                    levelCatalogAsset,
-                    levelCatalogAsset);
+                    levelSwapLocalService);
                 DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayAsync(string,...)).",
+                    "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayDefaultAsync(reason,...)).",
                     DebugUtility.Colors.Info);
             }
 
@@ -333,7 +327,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     levelFlowRuntime,
                     levelSwapLocalService,
                     restartContextService,
-                    levelCatalogAsset,
+                    sceneRouteCatalogAsset,
                     navigationService);
 
                 DependencyManager.Provider.RegisterGlobal<IPostLevelActionsService>(postLevelActions);
@@ -347,11 +341,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 var prepareService = new LevelMacroPrepareService(
                     restartContextService,
-                    levelCatalogAsset,
-                    levelCatalogAsset,
-                    levelCatalogAsset,
                     worldResetCommands,
-                    catalogAsset);
+                    catalogAsset,
+                    sceneRouteCatalogAsset);
 
                 DependencyManager.Provider.RegisterGlobal<ILevelMacroPrepareService>(prepareService);
 
@@ -486,3 +478,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

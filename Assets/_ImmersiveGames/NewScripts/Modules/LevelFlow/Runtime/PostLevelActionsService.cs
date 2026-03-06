@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
@@ -12,20 +13,20 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly ILevelFlowRuntimeService _levelFlowRuntimeService;
         private readonly ILevelSwapLocalService _levelSwapLocalService;
         private readonly IRestartContextService _restartContextService;
-        private readonly ILevelMacroRouteCatalog _macroRouteCatalog;
+        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
         private readonly IGameNavigationService _navigationService;
 
         public PostLevelActionsService(
             ILevelFlowRuntimeService levelFlowRuntimeService,
             ILevelSwapLocalService levelSwapLocalService,
             IRestartContextService restartContextService,
-            ILevelMacroRouteCatalog macroRouteCatalog,
+            SceneRouteCatalogAsset sceneRouteCatalog,
             IGameNavigationService navigationService)
         {
             _levelFlowRuntimeService = levelFlowRuntimeService ?? throw new ArgumentNullException(nameof(levelFlowRuntimeService));
             _levelSwapLocalService = levelSwapLocalService ?? throw new ArgumentNullException(nameof(levelSwapLocalService));
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
-            _macroRouteCatalog = macroRouteCatalog ?? throw new ArgumentNullException(nameof(macroRouteCatalog));
+            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
         }
 
@@ -54,25 +55,51 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
-                !snapshot.HasLevelId)
+                !snapshot.HasLevelRef ||
+                !_sceneRouteCatalog.TryGetAsset(snapshot.RouteId, out var routeAsset) ||
+                routeAsset == null ||
+                routeAsset.LevelCollection == null)
             {
                 DebugUtility.LogWarning<PostLevelActionsService>(
-                    $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_snapshot'.");
+                    $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_snapshot_or_collection'.");
                 return;
             }
 
-            if (!_macroRouteCatalog.TryGetNextLevelInMacro(snapshot.LevelId, out LevelId nextLevelId, wrapToFirst: true) ||
-                !nextLevelId.IsValid)
+            var collection = routeAsset.LevelCollection;
+            if (!collection.TryValidateRuntime(out string collectionError))
             {
-                DebugUtility.LogWarning<PostLevelActionsService>(
-                    $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' success=False reason='{normalizedReason}' notes='no_next_level' currentLevelId='{snapshot.LevelId}'.");
-                return;
+                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel invalid LevelCollection. routeId='{snapshot.RouteId}' detail='{collectionError}'.");
             }
 
-            await _levelSwapLocalService.SwapLocalAsync(nextLevelId, normalizedReason, ct);
+            int currentIndex = -1;
+            for (int i = 0; i < collection.Levels.Count; i++)
+            {
+                if (ReferenceEquals(collection.Levels[i], snapshot.LevelRef))
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            if (currentIndex < 0)
+            {
+                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel current levelRef not found in route collection. routeId='{snapshot.RouteId}' levelRef='{snapshot.LevelRef.name}'.");
+            }
+
+            int nextIndex = (currentIndex + 1) % collection.Levels.Count;
+            var nextLevelRef = collection.Levels[nextIndex];
+            if (nextLevelRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel resolved null at index='{nextIndex}'. routeId='{snapshot.RouteId}'.");
+            }
+
+            await _levelSwapLocalService.SwapLocalAsync(nextLevelRef, normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' reason='{normalizedReason}' nextLevelId='{nextLevelId}'.",
+                $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' reason='{normalizedReason}' nextLevelRef='{nextLevelRef.name}'.",
                 DebugUtility.Colors.Success);
         }
 

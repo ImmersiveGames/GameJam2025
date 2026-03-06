@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
@@ -11,8 +10,8 @@ using UnityEditor;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
     /// <summary>
-    /// Catálogo configurável de rotas do SceneFlow (SceneRouteId -> SceneRouteDefinition).
-    /// Opera somente com referências diretas em routeDefinitions.
+    /// Catalogo configuravel de rotas do SceneFlow (SceneRouteId -> SceneRouteDefinition).
+    /// Opera somente com referencias diretas em routeDefinitions.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneRouteCatalogAsset",
@@ -38,10 +37,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [SerializeField] private List<SceneRouteDefinitionAsset> routeDefinitions = new();
 
         [Header("Validation")]
-        [Tooltip("Quando true, registra warning se houver rotas inválidas/duplicadas.")]
+        [Tooltip("Quando true, registra warning se houver rotas invalidas/duplicadas.")]
         [SerializeField] private bool warnOnInvalidRoutes = true;
 
         private readonly Dictionary<SceneRouteId, SceneRouteDefinition> _cache = new();
+        private readonly Dictionary<SceneRouteId, SceneRouteDefinitionAsset> _assetCache = new();
         private bool _cacheBuilt;
 
         public bool TryGet(SceneRouteId routeId, out SceneRouteDefinition route)
@@ -55,6 +55,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             EnsureCache();
             return _cache.TryGetValue(routeId, out route);
+        }
+
+        public bool TryGetAsset(SceneRouteId routeId, out SceneRouteDefinitionAsset routeAsset)
+        {
+            routeAsset = null;
+
+            if (!routeId.IsValid)
+            {
+                return false;
+            }
+
+            EnsureCache();
+            return _assetCache.TryGetValue(routeId, out routeAsset) && routeAsset != null;
         }
 
 #if UNITY_EDITOR
@@ -92,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 string assetPath = name;
 #endif
                 DebugUtility.LogError(typeof(SceneRouteCatalogAsset),
-                    $"[FATAL][Config] SceneRouteCatalogAsset inválido durante OnValidate. asset='{assetPath}', detail='{ex.Message}'.");
+                    $"[FATAL][Config] SceneRouteCatalogAsset invalido durante OnValidate. asset='{assetPath}', detail='{ex.Message}'.");
             }
         }
 
@@ -105,6 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             _cacheBuilt = true;
             _cache.Clear();
+            _assetCache.Clear();
 
             int viaAssetRefCount = 0;
 
@@ -122,6 +136,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
                     viaAssetRefCount++;
                     _cache.Add(routeId, routeDefinition);
+                    _assetCache.Add(routeId, routeAsset);
 
                     DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
                         $"[OBS][Config] RouteResolvedVia=AssetRef routeId='{routeId}' asset='{routeAsset.name}'.",
@@ -132,7 +147,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             if (warnOnInvalidRoutes && _cache.Count == 0)
             {
                 DebugUtility.LogWarning<SceneRouteCatalogAsset>(
-                    "[SceneFlow] SceneRouteCatalog não contém rotas válidas.");
+                    "[SceneFlow] SceneRouteCatalog nao contem rotas validas.");
             }
 
             DebugUtility.LogVerbose<SceneRouteCatalogAsset>(
@@ -158,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             routeId = routeAsset.RouteId;
             if (!routeId.IsValid)
             {
-                FailFast($"RouteDefinitionAsset inválido em routeDefinitions[{index}] (routeId vazio). asset='{routeAsset.name}'.");
+                FailFast($"RouteDefinitionAsset invalido em routeDefinitions[{index}] (routeId vazio). asset='{routeAsset.name}'.");
             }
 
             routeDefinition = routeAsset.ToDefinition();
@@ -172,13 +187,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             {
                 FailFast(
                     $"routeId='{routeId}' resolvida via {source} requer TargetActiveScene para routeKind='{routeKind}', " +
-                    "mas 'targetActiveSceneKey' está ausente/nulo.");
+                    "mas 'targetActiveSceneKey' esta ausente/nulo.");
             }
         }
 
         private static bool RequiresActiveScene(SceneRouteKind routeKind)
         {
-            // Regra explícita: rotas de gameplay devem sempre definir cena ativa alvo.
+            // Comentario: rotas de gameplay devem sempre definir cena ativa alvo.
             return routeKind == SceneRouteKind.Gameplay;
         }
 
@@ -186,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             if (routeKind == SceneRouteKind.Unspecified)
             {
-                FailFast($"routeId='{routeId}' resolvida via {source} possui RouteKind='{SceneRouteKind.Unspecified}' (inválido para policy de reset).");
+                FailFast($"routeId='{routeId}' resolvida via {source} possui RouteKind='{SceneRouteKind.Unspecified}' (invalido para policy de reset).");
             }
 
             if (routeKind == SceneRouteKind.Gameplay && !requiresWorldReset)
@@ -207,3 +222,4 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         }
     }
 }
+

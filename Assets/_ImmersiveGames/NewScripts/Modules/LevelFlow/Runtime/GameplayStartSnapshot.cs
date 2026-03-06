@@ -1,72 +1,67 @@
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
-    /// <summary>
-    /// Snapshot canônico do último start de gameplay.
-    /// Serve como base para restart sem depender de lookup reverso Route->Level.
-    /// </summary>
     public readonly struct GameplayStartSnapshot
     {
         public GameplayStartSnapshot(
-            LevelId levelId,
+            LevelDefinitionAsset levelRef,
             SceneRouteId routeId,
-            TransitionStyleId styleId,
-            string contentId,
             string reason,
             int selectionVersion,
-            string levelSignature)
+            string levelSignature,
+            TransitionStyleId styleId = default)
         {
-            LevelId = levelId;
+            LevelRef = levelRef;
             RouteId = routeId;
             StyleId = styleId;
-            ContentId = Sanitize(contentId);
             Reason = Sanitize(reason);
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
 
-            // Hardening: assinatura de nível deve permanecer consistente com os campos canônicos.
-            // LevelSignature != MacroSignature (macro é responsabilidade de outro domínio).
             string normalizedLevelSignature = Sanitize(levelSignature);
             if (string.IsNullOrWhiteSpace(normalizedLevelSignature))
             {
-                normalizedLevelSignature = LevelContextSignature
-                    .Create(LevelId, RouteId, Reason, ContentId)
-                    .Value;
+                string levelName = levelRef != null ? levelRef.name : "<null>";
+                normalizedLevelSignature = $"level:{levelName}|route:{RouteId}|reason:{Reason}";
             }
 
             LevelSignature = normalizedLevelSignature;
         }
 
-        public LevelId LevelId { get; }
+        public LevelDefinitionAsset LevelRef { get; }
         public SceneRouteId RouteId { get; }
         public TransitionStyleId StyleId { get; }
-        public string ContentId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
         public string LevelSignature { get; }
 
-        // Compatibilidade temporária: manter API antiga sem alterar comportamento.
-        // LevelSignature != MacroSignature (macro virá em etapa futura separada).
-        [System.Obsolete("Use LevelSignature. ContextSignature no snapshot representa assinatura de nível por compatibilidade.")]
-        public string ContextSignature => LevelSignature;
-
-        public bool HasLevelId => LevelId.IsValid;
-        public bool HasContentId => !string.IsNullOrWhiteSpace(ContentId);
+        public bool HasLevelRef => LevelRef != null;
         public bool IsValid => RouteId.IsValid;
 
+        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelRef.")]
+        public LevelId LevelId => HasLevelRef ? LevelId.FromName(LevelRef.name) : LevelId.None;
+
+        [System.Obsolete("Legacy compatibility only. Canonical flow does not use contentId.")]
+        public string ContentId => string.Empty;
+
+        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelRef.")]
+        public bool HasLevelId => HasLevelRef;
+
+        [System.Obsolete("Legacy compatibility only. Canonical flow does not use contentId.")]
+        public bool HasContentId => false;
+
         public static GameplayStartSnapshot Empty => new(
-            LevelId.None,
+            null,
             SceneRouteId.None,
-            TransitionStyleId.None,
-            string.Empty,
             string.Empty,
             0,
-            string.Empty);
+            string.Empty,
+            TransitionStyleId.None);
 
         public override string ToString()
         {
-            return $"levelId='{(HasLevelId ? LevelId.ToString() : "<none>")}', routeId='{RouteId}', styleId='{StyleId}', contentId='{(HasContentId ? ContentId : "<none>")}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', levelSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
+            return $"levelRef='{(HasLevelRef ? LevelRef.name : "<none>")}', routeId='{RouteId}', styleId='{StyleId}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', levelSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
         }
 
         private static string Sanitize(string value)

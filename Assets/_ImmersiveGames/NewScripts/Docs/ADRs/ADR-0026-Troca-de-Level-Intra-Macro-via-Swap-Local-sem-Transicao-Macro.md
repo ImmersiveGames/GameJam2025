@@ -16,34 +16,39 @@ Trocar level dentro do mesmo macro sem chamar transicao macro do SceneFlow.
 
 1. API canonica em runtime:
    - `ILevelFlowRuntimeService.SwapLevelLocalAsync(LevelId levelId, string reason, CancellationToken ct)`
-2. Execucao de swap local em `LevelSwapLocalService.SwapLocalAsync(...)`:
-   - resolve target level/macro;
-   - valida snapshot e macro route atual;
-   - incrementa `selectionVersion`;
-   - publica `LevelSelectedEvent`;
-   - executa `IWorldResetCommands.ResetLevelAsync(...)`;
-   - publica `LevelSwapLocalAppliedEvent`.
-3. QA proof sem transicao macro via `LevelFlowDevContextMenu`.
+2. `LevelSwapLocalService.SwapLocalAsync(...)` executa swap local usando apenas o contexto da macro atual.
+3. A fonte de verdade para levels no swap e `SceneRouteDefinitionAsset.LevelCollection`.
+4. Sem fallback/degrade: qualquer inconsistencia de configuracao gera `[FATAL][H1][LevelFlow]`.
 
 ## Implementacao atual (fonte de verdade: codigo)
 
 - `ILevelFlowRuntimeService` expoe `SwapLevelLocalAsync(...)`.
 - `LevelFlowRuntimeService.SwapLevelLocalAsync(...)` delega para `ILevelSwapLocalService`.
-- `LevelSwapLocalService` executa o fluxo end-to-end e nao chama navegacao macro.
-- `LevelFlowDevContextMenu` possui comandos de QA:
-  - NextInMacro
-  - ToTargetLevelId
-  - ProofNoMacroTransition (`SceneTransitionStartedEvent` com `transitionStartedCount == 0`).
+- `LevelSwapLocalService`:
+  - resolve macro atual pelo snapshot gameplay;
+  - resolve route asset no `SceneRouteCatalogAsset`;
+  - exige `LevelCollection` valida da macro;
+  - valida `targetLevelId` dentro da colecao;
+  - publica `LevelSelectedEvent`;
+  - executa `ResetLevelAsync(...)`;
+  - aplica unload/load aditivo via `LevelAdditiveSceneRuntimeApplier`;
+  - publica `LevelSwapLocalAppliedEvent`.
+- Nao ha transicao macro no swap local.
+
+## Estado real no codigo (2026-03-05)
+
+- Swap local usa somente `LevelCollectionAsset`/`LevelDefinitionAsset` para aplicacao de cenas do level.
+- `LevelCatalogAsset` nao e usado como fallback para selecao/aplicacao no fluxo de swap local.
+- Inconsistencias de rota/colecao/level quebram em fail-fast duro com contexto (`routeId`, `routeKind`, `signature`, `reason`).
 
 ## Criterios de aceite (DoD)
 
 - [x] API canonica de swap local existe no runtime.
-- [x] Servico dedicado de swap local existe e usa reset de level.
-- [x] `selectionVersion` e incrementado no swap.
-- [x] Existe prova de QA sem transicao macro (`ProofNoMacroTransition`).
-- [ ] Hardening: teste automatizado para o cenario ProofNoMacroTransition.
+- [x] Swap local aplica unload/load aditivo sem transicao macro.
+- [x] Fonte de levels no swap e apenas `LevelCollectionAsset` da macro.
+- [x] Sem fallback/degrade para configuracao invalida.
 
 ## Changelog
 
+- 2026-03-05: atualizado para estado real no codigo com politica no-fallback no swap local.
 - 2026-03-05: revisado com base nas auditorias de 2026-03-04/2026-03-05 e no codigo atual.
-- 2026-03-04: status atualizado para Implementado com base no codigo atual (`SwapLevelLocalAsync` + `LevelSwapLocalService` + QA proof).

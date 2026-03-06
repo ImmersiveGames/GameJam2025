@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
@@ -30,27 +29,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             if (DependencyManager.Provider == null)
             {
                 string detail = "[SceneFlow] MacroLoadingPhase='LevelPrepare' blocked: DependencyManager.Provider unavailable.";
-                if (!IsDevelopmentEscapeHatch())
-                {
-                    FailFastH1(detail, context);
-                }
-
-                DebugUtility.LogWarning<MacroLevelPrepareCompletionGate>(
-                    $"[WARN][DEGRADED][SceneFlow] MacroLoadingPhase='LevelPrepare' skipped (DEV escape hatch). detail='{detail}' recommendation='register DI provider before transition'.");
-                return;
+                FailFastH1(detail, context);
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var prepareService) || prepareService == null)
             {
                 string detail = $"[SceneFlow] MacroLoadingPhase='LevelPrepare' blocked: ILevelMacroPrepareService missing. routeId='{context.RouteId}'.";
-                if (!IsDevelopmentEscapeHatch())
-                {
-                    FailFastH1(detail, context);
-                }
-
-                DebugUtility.LogWarning<MacroLevelPrepareCompletionGate>(
-                    $"[WARN][DEGRADED][SceneFlow] MacroLoadingPhase='LevelPrepare' skipped (DEV escape hatch). routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' recommendation='register ILevelMacroPrepareService in global DI'.");
-                return;
+                FailFastH1(detail, context);
             }
 
             string reason = string.IsNullOrWhiteSpace(context.Reason)
@@ -65,15 +50,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             await prepareService.PrepareAsync(context.RouteId, reason);
         }
 
-        private static bool IsDevelopmentEscapeHatch()
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            return true;
-#else
-            return Debug.isDebugBuild;
-#endif
-        }
-
         private static void FailFastH1(string detail, SceneTransitionContext context)
         {
             HardFailFastH1.Trigger(typeof(MacroLevelPrepareCompletionGate),
@@ -82,4 +58,3 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
     }
 }
-

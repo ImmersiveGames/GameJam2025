@@ -1,13 +1,27 @@
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
-    /// <summary>
-    /// Evento canônico de seleção de level para correlação entre navegação, conteúdo e gameplay.
-    /// </summary>
     public readonly struct LevelSelectedEvent : IEvent
     {
+        public LevelSelectedEvent(
+            SceneRouteId macroRouteId,
+            LevelDefinitionAsset levelRef,
+            int selectionVersion,
+            string reason,
+            string levelSignature)
+        {
+            MacroRouteId = macroRouteId;
+            LevelRef = levelRef;
+            SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
+            StyleId = TransitionStyleId.None;
+        }
+
+        [System.Obsolete("Legacy ctor. Canonical flow uses LevelDefinitionAsset reference.")]
         public LevelSelectedEvent(
             LevelId levelId,
             SceneRouteId routeId,
@@ -17,21 +31,28 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             int selectionVersion,
             LevelContextSignature levelSignature)
         {
-            LevelId = levelId;
-            RouteId = routeId;
-            StyleId = styleId;
-            ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            MacroRouteId = routeId;
+            LevelRef = null;
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
-            LevelSignature = levelSignature;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            LevelSignature = levelSignature.IsValid ? levelSignature.Value : string.Empty;
+            StyleId = styleId;
         }
 
-        public LevelId LevelId { get; }
-        public SceneRouteId RouteId { get; }
-        public TransitionStyleId StyleId { get; }
-        public string ContentId { get; }
-        public string Reason { get; }
+        public SceneRouteId MacroRouteId { get; }
+        public LevelDefinitionAsset LevelRef { get; }
         public int SelectionVersion { get; }
-        public LevelContextSignature LevelSignature { get; }
+        public string Reason { get; }
+        public string LevelSignature { get; }
+        public TransitionStyleId StyleId { get; }
+
+        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelRef.")]
+        public LevelId LevelId => LevelRef != null ? LevelId.FromName(LevelRef.name) : LevelId.None;
+
+        [System.Obsolete("Legacy compatibility only. Canonical flow uses MacroRouteId.")]
+        public SceneRouteId RouteId => MacroRouteId;
+
+        [System.Obsolete("Legacy compatibility only. Canonical flow does not use contentId.")]
+        public string ContentId => string.Empty;
     }
 }

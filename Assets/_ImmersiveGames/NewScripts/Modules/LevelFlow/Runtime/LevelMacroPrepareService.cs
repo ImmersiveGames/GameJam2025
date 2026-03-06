@@ -1,13 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
@@ -17,181 +16,179 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private const string DefaultReason = "SceneFlow/LevelPrepare";
 
         private readonly IRestartContextService _restartContextService;
-        private readonly ILevelMacroRouteCatalog _macroRouteCatalog;
-        private readonly ILevelFlowService _levelFlowService;
-        private readonly ILevelContentResolver _levelContentResolver;
         private readonly IWorldResetCommands _worldResetCommands;
-        private readonly IGameNavigationCatalog _navigationCatalog;
+        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
 
         public LevelMacroPrepareService(
             IRestartContextService restartContextService,
-            ILevelMacroRouteCatalog macroRouteCatalog,
-            ILevelFlowService levelFlowService,
-            ILevelContentResolver levelContentResolver,
             IWorldResetCommands worldResetCommands,
-            IGameNavigationCatalog navigationCatalog = null)
+            object _navigationCatalog = null,
+            SceneRouteCatalogAsset sceneRouteCatalog = null)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
-            _macroRouteCatalog = macroRouteCatalog ?? throw new ArgumentNullException(nameof(macroRouteCatalog));
-            _levelFlowService = levelFlowService ?? throw new ArgumentNullException(nameof(levelFlowService));
-            _levelContentResolver = levelContentResolver ?? throw new ArgumentNullException(nameof(levelContentResolver));
             _worldResetCommands = worldResetCommands ?? throw new ArgumentNullException(nameof(worldResetCommands));
-            _navigationCatalog = navigationCatalog;
+            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
         }
 
         public async Task PrepareAsync(SceneRouteId macroRouteId, string reason, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? DefaultReason : reason.Trim();
             if (!macroRouteId.IsValid)
             {
-                return;
+                FailFastConfig(macroRouteId, SceneRouteKind.Unspecified, ComputeSignature(macroRouteId, SceneRouteKind.Unspecified, normalizedReason), normalizedReason, "Macro route id is invalid.");
             }
 
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? DefaultReason : reason.Trim();
-
-            if (!_macroRouteCatalog.TryGetLevelsForMacroRoute(macroRouteId, out IReadOnlyList<LevelId> levelIds) ||
-                levelIds == null ||
-                levelIds.Count == 0)
-            {
-                DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] LevelPrepared source='no_levels_for_macro' macroRouteId='{macroRouteId}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
+            SceneRouteDefinitionAsset routeAsset = ResolveRouteAssetOrFail(macroRouteId, normalizedReason);
+            SceneRouteKind routeKind = routeAsset.RouteKind;
+            string prepareSignature = ComputeSignature(macroRouteId, routeKind, normalizedReason);
+            LevelCollectionAsset levelCollection = ResolveLevelCollectionOrFail(routeAsset, macroRouteId, prepareSignature, normalizedReason);
 
             GameplayStartSnapshot snapshot = GameplayStartSnapshot.Empty;
-            bool hasSnapshot = _restartContextService.TryGetCurrent(out snapshot) && snapshot.IsValid && snapshot.HasLevelId;
+            bool hasSnapshot = _restartContextService.TryGetCurrent(out snapshot) && snapshot.IsValid && snapshot.HasLevelRef;
 
-            SceneRouteId snapshotMacroRouteId = SceneRouteId.None;
             bool snapshotBelongsToMacro = hasSnapshot &&
-                                          snapshot.LevelId.IsValid &&
-                                          _macroRouteCatalog.TryResolveMacroRouteId(snapshot.LevelId, out snapshotMacroRouteId) &&
-                                          snapshotMacroRouteId.IsValid &&
-                                          snapshotMacroRouteId == macroRouteId;
+                                          snapshot.RouteId.IsValid &&
+                                          snapshot.RouteId == macroRouteId &&
+                                          snapshot.LevelRef != null &&
+                                          levelCollection.Contains(snapshot.LevelRef);
 
             if (hasSnapshot && !snapshotBelongsToMacro)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelId='{snapshot.LevelId}' snapshotMacroRouteId='{snapshotMacroRouteId}' reason='not_in_macro'.",
+                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(snapshot.LevelRef != null ? snapshot.LevelRef.name : "<none>")}' snapshotRouteId='{snapshot.RouteId}' reason='not_in_collection_or_macro'.",
                     DebugUtility.Colors.Info);
             }
 
             bool useSnapshot = snapshotBelongsToMacro;
-            bool autoSelectedDefaultLevel = !useSnapshot;
-            string source = useSnapshot ? "snapshot" : "catalog_first";
+            string source = useSnapshot ? "snapshot" : "catalog_index_0";
 
-            LevelId selectedLevelId = useSnapshot ? snapshot.LevelId : levelIds[0];
-            if (!selectedLevelId.IsValid)
-            {
-                FailFastConfig($"LevelPrepare sem level válido para macroRouteId='{macroRouteId}'.");
-            }
-
-            if (autoSelectedDefaultLevel)
-            {
-                // Comentário: hardening ADR-0024 — sem activeLevel/snapshot válido, escolhe default explícito do catálogo.
-                DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] DefaultLevelAutoSelected macroRouteId='{macroRouteId}' levelId='{selectedLevelId}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Info);
-            }
-
-            if (!_levelFlowService.TryResolve(selectedLevelId, out SceneRouteId resolvedRouteId, out _, out _) || !resolvedRouteId.IsValid)
-            {
-                FailFastConfig($"LevelPrepare não conseguiu resolver routeId para levelId='{selectedLevelId}' macroRouteId='{macroRouteId}'.");
-            }
-
-            string contentId = useSnapshot && !string.IsNullOrWhiteSpace(snapshot.ContentId)
-                ? snapshot.ContentId.Trim()
-                : ResolveContentIdOrFail(selectedLevelId, macroRouteId);
-
-            int selectionVersion = useSnapshot
-                ? Math.Max(snapshot.SelectionVersion, 1)
-                : Math.Max(ResolveSelectionVersionForPublish(hasSnapshot, snapshot), 1);
-
-            string levelSignature = useSnapshot && !string.IsNullOrWhiteSpace(snapshot.LevelSignature)
-                ? snapshot.LevelSignature
-                : LevelContextSignature.Create(selectedLevelId, resolvedRouteId, normalizedReason, contentId).Value;
+            LevelDefinitionAsset selectedLevelRef = ResolveSelectedLevelDefinitionOrFail(levelCollection, useSnapshot, snapshot, macroRouteId, routeKind, prepareSignature, normalizedReason);
+            selectedLevelRef.ValidateOrFailFast($"LevelPrepare routeId='{macroRouteId}' reason='{normalizedReason}'");
 
             if (!useSnapshot)
             {
-                TransitionStyleId styleId = ResolveStyleId(snapshot, hasSnapshot);
-                EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
-                    selectedLevelId,
-                    resolvedRouteId,
-                    styleId,
-                    contentId,
-                    normalizedReason,
-                    selectionVersion,
-                    new LevelContextSignature(levelSignature)));
+                DebugUtility.Log<LevelMacroPrepareService>(
+                    $"[OBS][LevelFlow] LevelDefaultSelected source='catalog_index_0' index=0 levelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
             }
+
+            int selectionVersion = hasSnapshot
+                ? Math.Max(snapshot.SelectionVersion + 1, 1)
+                : 1;
+
+            string levelSignature = CreateLevelSignature(selectedLevelRef, macroRouteId, normalizedReason);
+
+            EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
+                macroRouteId,
+                selectedLevelRef,
+                selectionVersion,
+                normalizedReason,
+                levelSignature));
 
             ct.ThrowIfCancellationRequested();
             await _worldResetCommands.ResetLevelAsync(
-                selectedLevelId,
+                selectedLevelRef,
                 normalizedReason,
                 new LevelContextSignature(levelSignature),
                 ct);
             ct.ThrowIfCancellationRequested();
 
+            LevelDefinitionAsset previousLevelRef = snapshotBelongsToMacro ? snapshot.LevelRef : null;
+            (int scenesAdded, int scenesRemoved) = await LevelAdditiveSceneRuntimeApplier.ApplyAsync(
+                previousLevelRef,
+                selectedLevelRef,
+                ct);
+
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' levelId='{selectedLevelId}' resolvedRouteId='{resolvedRouteId}' contentId='{contentId}' v='{selectionVersion}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] LevelApplied levelRef='{selectedLevelRef.name}' scenesAdded={scenesAdded} scenesRemoved={scenesRemoved} macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log<LevelMacroPrepareService>(
+                $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' levelRef='{selectedLevelRef.name}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private string ResolveContentIdOrFail(LevelId levelId, SceneRouteId macroRouteId)
+        private static LevelDefinitionAsset ResolveSelectedLevelDefinitionOrFail(
+            LevelCollectionAsset levelCollection,
+            bool useSnapshot,
+            GameplayStartSnapshot snapshot,
+            SceneRouteId macroRouteId,
+            SceneRouteKind routeKind,
+            string signature,
+            string reason)
         {
-            if (_levelContentResolver.TryResolveContentId(levelId, out string contentId) && !string.IsNullOrWhiteSpace(contentId))
+            if (useSnapshot && snapshot.LevelRef != null)
             {
-                return contentId.Trim();
+                return snapshot.LevelRef;
             }
 
-            FailFastConfig($"LevelPrepare não conseguiu resolver contentId para levelId='{levelId}' macroRouteId='{macroRouteId}'.");
-            return string.Empty;
+            LevelDefinitionAsset defaultLevel = levelCollection.GetDefaultOrNull();
+            if (defaultLevel == null)
+            {
+                FailFastConfig(macroRouteId, routeKind, signature, reason, "Gameplay route LevelCollection default (index 0) is missing.");
+            }
+
+            return defaultLevel;
         }
 
-        private int ResolveSelectionVersionForPublish(bool hasSnapshot, GameplayStartSnapshot snapshot)
+        private SceneRouteDefinitionAsset ResolveRouteAssetOrFail(SceneRouteId macroRouteId, string reason)
         {
-            if (hasSnapshot)
+            string signature = ComputeSignature(macroRouteId, SceneRouteKind.Unspecified, reason);
+
+            if (_sceneRouteCatalog == null)
             {
-                return snapshot.SelectionVersion + 1;
+                FailFastConfig(macroRouteId, SceneRouteKind.Unspecified, signature, reason, "BootstrapConfig.SceneRouteCatalog is null.");
             }
 
-            return 1;
+            if (!_sceneRouteCatalog.TryGetAsset(macroRouteId, out SceneRouteDefinitionAsset routeAsset) || routeAsset == null)
+            {
+                FailFastConfig(macroRouteId, SceneRouteKind.Unspecified, signature, reason, "RouteAsset missing from SceneRouteCatalogAsset.");
+            }
+
+            return routeAsset;
         }
 
-        private TransitionStyleId ResolveStyleId(GameplayStartSnapshot snapshot, bool hasSnapshot)
+        private LevelCollectionAsset ResolveLevelCollectionOrFail(
+            SceneRouteDefinitionAsset routeAsset,
+            SceneRouteId macroRouteId,
+            string signature,
+            string reason)
         {
-            if (hasSnapshot && snapshot.StyleId.IsValid)
+            if (routeAsset.RouteKind != SceneRouteKind.Gameplay)
             {
-                return snapshot.StyleId;
+                FailFastConfig(macroRouteId, routeAsset.RouteKind, signature, reason, "LevelPrepare invoked for non-gameplay route.");
             }
 
-            if (_navigationCatalog is GameNavigationCatalogAsset assetCatalog)
+            if (routeAsset.LevelCollection == null)
             {
-                GameNavigationEntry gameplayEntry = assetCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Gameplay);
-                if (gameplayEntry.StyleId.IsValid)
-                {
-                    return gameplayEntry.StyleId;
-                }
+                FailFastConfig(macroRouteId, routeAsset.RouteKind, signature, reason, "Gameplay route without LevelCollection.");
             }
 
-            DebugUtility.LogWarning<LevelMacroPrepareService>(
-                "[WARN][OBS][LevelFlow] style_unknown while publishing LevelSelectedEvent during LevelPrepare; fallback styleId='none'.");
-            return TransitionStyleId.None;
+            if (!routeAsset.LevelCollection.TryValidateRuntime(out string collectionError))
+            {
+                FailFastConfig(macroRouteId, routeAsset.RouteKind, signature, reason, $"Gameplay route LevelCollection invalid. detail='{collectionError}'.");
+            }
+
+            return routeAsset.LevelCollection;
         }
 
-        private static void FailFastConfig(string detail)
+        private static string ComputeSignature(SceneRouteId routeId, SceneRouteKind routeKind, string reason)
         {
-            string message = $"[FATAL][Config] {detail}";
-            DebugUtility.LogError<LevelMacroPrepareService>(message);
+            return $"{routeId}|{routeKind}|{reason ?? DefaultReason}";
+        }
 
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+        private static string CreateLevelSignature(LevelDefinitionAsset levelRef, SceneRouteId routeId, string reason)
+        {
+            string levelName = levelRef != null ? levelRef.name : "<null>";
+            return $"level:{levelName}|route:{routeId}|reason:{reason}";
+        }
 
-            throw new InvalidOperationException(message);
+        private static void FailFastConfig(SceneRouteId routeId, SceneRouteKind routeKind, string signature, string reason, string configReason)
+        {
+            HardFailFastH1.Trigger(typeof(LevelMacroPrepareService),
+                $"[FATAL][H1][LevelFlow] LevelPrepare configuration error. routeId='{routeId}' routeKind='{routeKind}' signature='{signature}' reason='{reason}' detail='{configReason}'");
         }
     }
 }

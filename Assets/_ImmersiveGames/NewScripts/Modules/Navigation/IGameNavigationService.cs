@@ -1,11 +1,11 @@
-Ôªøusing System.Threading.Tasks;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Servi√ßo de navega√ß√£o de produ√ß√£o (NewScripts).
-    /// Mant√©m rotas/planos centralizados e dispara transi√ß√µes via SceneFlow.
+    /// ServiÁo de navegaÁ„o de produÁ„o (NewScripts).
+    /// MantÈm rotas/planos centralizados e dispara transiÁıes via SceneFlow.
     /// </summary>
     public interface IGameNavigationService
     {
@@ -15,50 +15,51 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         Task GoToMenuAsync(string reason = null);
 
         /// <summary>
-        /// Reinicia o gameplay atual usando o intent can√¥nico de gameplay.
+        /// Reinicia o gameplay atual usando o intent canÙnico de gameplay.
         /// </summary>
         Task RestartAsync(string reason = null);
 
         /// <summary>
-        /// Sai do gameplay para Menu (sem√¢ntica de p√≥s-jogo/pause).
+        /// Sai do gameplay para Menu (sem‚ntica de pÛs-jogo/pause).
         /// </summary>
         Task ExitToMenuAsync(string reason = null);
 
         /// <summary>
         /// Inicia gameplay a partir de um LevelId (LEGACY).
-        /// Preferir ILevelFlowRuntimeService.StartGameplayAsync(string, ...).
+        /// Preferir ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct) ou StartGameplayRouteAsync(routeId,...).
         /// </summary>
-        [System.Obsolete("Use ILevelFlowRuntimeService.StartGameplayAsync(levelId, reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
+        [System.Obsolete("Legacy API blocked. Use ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
         Task StartGameplayAsync(LevelId levelId, string reason = null);
 
 
         /// <summary>
-        /// Inicia gameplay a partir de um SceneRouteId j√° resolvido pelo LevelFlow.
+        /// Inicia gameplay a partir de um SceneRouteId j· resolvido pelo LevelFlow.
         /// </summary>
         Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null);
 
 
         /// <summary>
-        /// Navega√ß√£o por intent core tipado (slots expl√≠citos no cat√°logo).
+        /// NavegaÁ„o por intent core tipado (slots explÌcitos no cat·logo).
         /// </summary>
         Task NavigateAsync(GameNavigationIntentKind intent, string reason = null);
 
         /// <summary>
-        /// Compatibilidade tempor√°ria: navegar por id de intent/rota (inclui extras/custom intents).
+        /// Compatibilidade tempor·ria: navegar por id de intent/rota (inclui extras/custom intents).
         /// </summary>
         [System.Obsolete("Prefira NavigateAsync(GameNavigationIntentKind, reason) para core intents; mantenha string para extras/custom.")]
         Task NavigateAsync(string routeId, string reason = null);
 
         /// <summary>
-        /// Compatibilidade tempor√°ria para menu.
+        /// Compatibilidade tempor·ria para menu.
         /// </summary>
         [System.Obsolete("Use GoToMenuAsync(reason).")]
         Task RequestMenuAsync(string reason = null);
 
         /// <summary>
-        /// Compatibilidade tempor√°ria para gameplay sem LevelId expl√≠cito.
+        /// Compatibilidade tempor·ria para gameplay sem LevelId explÌcito.
         /// </summary>
-        [System.Obsolete("Use RestartAsync(reason) para replay r√°pido ou StartGameplayAsync(levelId, reason) quando houver sele√ß√£o de fase.")]
+        [System.Obsolete("Legacy API blocked. Use RestartAsync(reason) ou ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct).")]
         Task RequestGameplayAsync(string reason = null);
     }
 }
+

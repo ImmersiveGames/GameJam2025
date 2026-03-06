@@ -11,10 +11,6 @@ using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
-    /// <summary>
-    /// Orquestrador de estágios de level no domínio LevelFlow.
-    /// Centraliza o gatilho da IntroStage para evitar ownership no bridge de InputMode.
-    /// </summary>
     public sealed class LevelStageOrchestrator : IDisposable
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _sceneTransitionCompletedBinding;
@@ -57,11 +53,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!TryResolveRestartContext(out var restartContextService)
                 || !restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
                 || !snapshot.IsValid
-                || !snapshot.HasLevelId
-                || !snapshot.HasContentId)
+                || !snapshot.HasLevelRef)
             {
                 DebugUtility.LogVerbose<LevelStageOrchestrator>(
-                    "[LevelFlow] IntroStage via SceneFlowCompleted ignorada: snapshot canônico indisponível/inválido.",
+                    "[LevelFlow] IntroStage via SceneFlowCompleted ignored: canonical snapshot unavailable/invalid.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -75,11 +70,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             string activeSceneName = SceneManager.GetActiveScene().name;
             string levelSignature = string.IsNullOrWhiteSpace(snapshot.LevelSignature)
-                ? LevelContextSignature.Create(snapshot.LevelId, snapshot.RouteId, "SceneFlow/Completed", snapshot.ContentId).Value
+                ? $"level:{snapshot.LevelRef.name}|route:{snapshot.RouteId}|reason:SceneFlow/Completed"
                 : snapshot.LevelSignature;
 
             DebugUtility.Log<LevelStageOrchestrator>(
-                $"[OBS][IntroStageController] IntroStageStartRequested source='SceneFlowCompleted' levelId='{snapshot.LevelId}' contentId='{snapshot.ContentId}' v='{snapshot.SelectionVersion}' reason='SceneFlow/Completed' levelSignature='{levelSignature}'.",
+                $"[OBS][IntroStageController] IntroStageStartRequested source='SceneFlowCompleted' levelRef='{snapshot.LevelRef.name}' v='{snapshot.SelectionVersion}' reason='SceneFlow/Completed' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             gameLoopService.RequestIntroStageStart();
@@ -116,11 +111,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 : evt.Reason;
             string activeSceneName = SceneManager.GetActiveScene().name;
             string levelSignature = string.IsNullOrWhiteSpace(evt.LevelSignature)
-                ? LevelContextSignature.Create(evt.LevelId, evt.RouteId, normalizedReason, evt.ContentId).Value
+                ? $"level:{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}|route:{evt.MacroRouteId}|reason:{normalizedReason}"
                 : evt.LevelSignature;
 
             DebugUtility.Log<LevelStageOrchestrator>(
-                $"[OBS][IntroStageController] IntroStageStartRequested source='LevelSwapLocal' levelId='{evt.LevelId}' contentId='{evt.ContentId}' v='{evt.SelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
+                $"[OBS][IntroStageController] IntroStageStartRequested source='LevelSwapLocal' levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' v='{evt.SelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             gameLoopService.RequestIntroStageStart();
@@ -133,9 +128,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _ = coordinator.RunIntroStageAsync(context);
         }
 
-        private static bool TryResolveIntroStageDependencies(
-            out IGameLoopService gameLoopService,
-            out IIntroStageCoordinator coordinator)
+        private static bool TryResolveIntroStageDependencies(out IGameLoopService gameLoopService, out IIntroStageCoordinator coordinator)
         {
             gameLoopService = null;
             coordinator = null;
@@ -148,14 +141,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out gameLoopService) || gameLoopService == null)
             {
                 DebugUtility.LogWarning<LevelStageOrchestrator>(
-                    "[LevelFlow] IGameLoopService indisponível; IntroStage não será iniciada.");
+                    "[LevelFlow] IGameLoopService unavailable; IntroStage will not start.");
                 return false;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out coordinator) || coordinator == null)
             {
                 DebugUtility.LogWarning<LevelStageOrchestrator>(
-                    "[LevelFlow] IIntroStageCoordinator indisponível; IntroStage não será iniciada.");
+                    "[LevelFlow] IIntroStageCoordinator unavailable; IntroStage will not start.");
                 return false;
             }
 

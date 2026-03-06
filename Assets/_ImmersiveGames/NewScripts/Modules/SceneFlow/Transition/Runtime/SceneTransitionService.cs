@@ -394,12 +394,34 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
             catch (Exception ex)
             {
-                // Gate é "best effort": não deve travar a transição.
+                if (IsFatalH1Exception(ex))
+                {
+                    DebugUtility.LogError<SceneTransitionService>(
+                        $"[SceneFlow] Completion gate abortado por fail-fast H1. Interrompendo transicao. ex={ex.GetType().Name}: {ex.Message}");
+                    throw;
+                }
+
+                // Gate e best effort: nao deve travar a transicao.
                 DebugUtility.LogWarning<SceneTransitionService>(
                     $"[SceneFlow] Completion gate falhou/abortou. Prosseguindo com FadeOut. ex={ex.GetType().Name}: {ex.Message}");
             }
         }
 
+        private static bool IsFatalH1Exception(Exception ex)
+        {
+            if (ex == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(ex.Message) &&
+                ex.Message.IndexOf("[FATAL][H1]", StringComparison.Ordinal) >= 0)
+            {
+                return true;
+            }
+
+            return ex.InnerException != null && IsFatalH1Exception(ex.InnerException);
+        }
         private async Task RunFadeInIfNeeded(SceneTransitionContext context, long transitionId, string signature)
         {
             if (!context.UseFade || context.TransitionProfile == null)
@@ -743,3 +765,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
     }
 
 }
+
+

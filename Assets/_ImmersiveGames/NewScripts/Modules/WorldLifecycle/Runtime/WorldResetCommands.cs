@@ -5,17 +5,13 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
-    /// <summary>
-    /// Implementação de comandos explícitos de reset (macro x level).
-    /// Mantém compatibilidade com reset legado e adiciona observabilidade V2.
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldResetCommands : IWorldResetCommands
     {
@@ -25,21 +21,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
             if (!macroRouteId.IsValid)
             {
-                FailFastConfig($"ResetMacroAsync recebeu macroRouteId inválido. reason='{reason ?? "<null>"}'.");
-                return;
+                FailFastConfig($"ResetMacroAsync received invalid macroRouteId. reason='{reason ?? "<null>"}'.");
             }
 
             string normalizedReason = NormalizeReason(reason, "WorldReset/Macro");
             string normalizedMacroSignature = NormalizeSignature(macroSignature);
 
-            PublishRequested(
-                kind: ResetKind.Macro,
-                macroRouteId: macroRouteId,
-                levelId: LevelId.None,
-                contentId: string.Empty,
-                reason: normalizedReason,
-                macroSignature: normalizedMacroSignature,
-                levelSignature: LevelContextSignature.Empty);
+            PublishRequested(ResetKind.Macro, macroRouteId, LevelId.None, string.Empty, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty);
 
             try
             {
@@ -47,135 +35,73 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 WorldResetResult resetResult = await resetService.TriggerResetAsync(normalizedMacroSignature, normalizedReason);
                 bool success = resetResult == WorldResetResult.Completed;
 
-                // Mantemos note explícito para telemetria de bloqueio por validação.
                 string notes = resetResult switch
                 {
-                    WorldResetResult.SkippedValidation => "ValidationFailed: ContextSignature vazia",
+                    WorldResetResult.SkippedValidation => "ValidationFailed: ContextSignatureEmpty",
                     WorldResetResult.Failed => "ResetFailed",
                     _ => string.Empty
                 };
 
-                PublishCompleted(
-                    kind: ResetKind.Macro,
-                    macroRouteId: macroRouteId,
-                    levelId: LevelId.None,
-                    contentId: string.Empty,
-                    reason: normalizedReason,
-                    macroSignature: normalizedMacroSignature,
-                    levelSignature: LevelContextSignature.Empty,
-                    success: success,
-                    notes: notes);
+                PublishCompleted(ResetKind.Macro, macroRouteId, LevelId.None, string.Empty, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, success, notes);
             }
             catch (Exception ex)
             {
-                PublishCompleted(
-                    kind: ResetKind.Macro,
-                    macroRouteId: macroRouteId,
-                    levelId: LevelId.None,
-                    contentId: string.Empty,
-                    reason: normalizedReason,
-                    macroSignature: normalizedMacroSignature,
-                    levelSignature: LevelContextSignature.Empty,
-                    success: false,
-                    notes: ex.GetType().Name);
+                PublishCompleted(ResetKind.Macro, macroRouteId, LevelId.None, string.Empty, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, false, ex.GetType().Name);
                 throw;
             }
         }
 
-        public async Task ResetLevelAsync(LevelId levelId, string reason, LevelContextSignature levelSignature, CancellationToken ct)
+        public async Task ResetLevelAsync(LevelDefinitionAsset levelRef, string reason, LevelContextSignature levelSignature, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
-            if (!levelId.IsValid)
+            if (levelRef == null)
             {
-                FailFastConfig($"ResetLevelAsync recebeu levelId inválido. reason='{reason ?? "<null>"}'.");
-                return;
+                FailFastConfig($"ResetLevelAsync received null levelRef. reason='{reason ?? "<null>"}'.");
             }
 
             if (!levelSignature.IsValid)
             {
-                FailFastConfig($"ResetLevelAsync recebeu levelSignature vazia. levelId='{levelId}', reason='{reason ?? "<null>"}'.");
-                return;
+                FailFastConfig($"ResetLevelAsync received empty levelSignature. levelRef='{levelRef.name}', reason='{reason ?? "<null>"}'.");
             }
 
             string normalizedReason = NormalizeReason(reason, "WorldReset/Level");
-
             var restartContext = ResolveGlobalOrFail<IRestartContextService>("IRestartContextService");
             var contentSwap = ResolveGlobalOrFail<IContentSwapChangeService>("IContentSwapChangeService");
 
             if (!restartContext.TryGetCurrent(out GameplayStartSnapshot snapshot) || !snapshot.IsValid)
             {
-                FailFastConfig($"ResetLevelAsync sem snapshot válido no RestartContext. levelId='{levelId}', reason='{normalizedReason}'.");
-                return;
+                FailFastConfig($"ResetLevelAsync without valid gameplay snapshot. levelRef='{levelRef.name}', reason='{normalizedReason}'.");
             }
 
-            if (!snapshot.HasLevelId || snapshot.LevelId != levelId)
+            if (!snapshot.HasLevelRef || !ReferenceEquals(snapshot.LevelRef, levelRef))
             {
-                FailFastConfig($"ResetLevelAsync com levelId divergente do snapshot atual. expected='{snapshot.LevelId}', got='{levelId}', reason='{normalizedReason}'.");
-                return;
+                FailFastConfig($"ResetLevelAsync levelRef mismatch. expected='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}', got='{levelRef.name}', reason='{normalizedReason}'.");
             }
 
-            string contentId = ResolveCurrentContentIdOrFail(snapshot);
+            string canonicalContentToken = $"level-ref:{levelRef.name}";
             SceneRouteId macroRouteId = snapshot.RouteId;
 
-            PublishRequested(
-                kind: ResetKind.Level,
-                macroRouteId: macroRouteId,
-                levelId: levelId,
-                contentId: contentId,
-                reason: normalizedReason,
-                macroSignature: string.Empty,
-                levelSignature: levelSignature);
+            PublishRequested(ResetKind.Level, macroRouteId, LevelId.None, canonicalContentToken, normalizedReason, string.Empty, levelSignature);
 
             try
             {
-                await contentSwap.RequestContentSwapInPlaceAsync(contentId, normalizedReason);
-
-                PublishCompleted(
-                    kind: ResetKind.Level,
-                    macroRouteId: macroRouteId,
-                    levelId: levelId,
-                    contentId: contentId,
-                    reason: normalizedReason,
-                    macroSignature: string.Empty,
-                    levelSignature: levelSignature,
-                    success: true,
-                    notes: string.Empty);
+                await contentSwap.RequestContentSwapInPlaceAsync(canonicalContentToken, normalizedReason);
+                PublishCompleted(ResetKind.Level, macroRouteId, LevelId.None, canonicalContentToken, normalizedReason, string.Empty, levelSignature, true, string.Empty);
             }
             catch (Exception ex)
             {
-                PublishCompleted(
-                    kind: ResetKind.Level,
-                    macroRouteId: macroRouteId,
-                    levelId: levelId,
-                    contentId: contentId,
-                    reason: normalizedReason,
-                    macroSignature: string.Empty,
-                    levelSignature: levelSignature,
-                    success: false,
-                    notes: ex.GetType().Name);
+                PublishCompleted(ResetKind.Level, macroRouteId, LevelId.None, canonicalContentToken, normalizedReason, string.Empty, levelSignature, false, ex.GetType().Name);
                 throw;
             }
         }
 
-        private static string ResolveCurrentContentIdOrFail(GameplayStartSnapshot snapshot)
+        [Obsolete("Legacy LevelId path is disabled in canonical LevelFlow.")]
+        public Task ResetLevelAsync(LevelId levelId, string reason, LevelContextSignature levelSignature, CancellationToken ct)
         {
-            if (snapshot.HasContentId)
-            {
-                return snapshot.ContentId;
-            }
-
-            if (DependencyManager.Provider != null &&
-                DependencyManager.Provider.TryGetGlobal<IContentSwapContextService>(out var contextService) &&
-                contextService != null &&
-                contextService.Current.IsValid &&
-                !string.IsNullOrWhiteSpace(contextService.Current.contentId))
-            {
-                return contextService.Current.contentId.Trim();
-            }
-
-            FailFastConfig($"ResetLevelAsync sem contentId atual resolvível. routeId='{snapshot.RouteId}', levelId='{snapshot.LevelId}'.");
-            return string.Empty;
+            HardFailFastH1.Trigger(typeof(WorldResetCommands),
+                $"[FATAL][H1][LevelFlow] Legacy ResetLevelAsync(LevelId) is disabled. levelId='{levelId}' reason='{reason}' levelSignature='{levelSignature}'.");
+            return Task.CompletedTask;
         }
 
         private static IWorldResetService ResolveMacroResetServiceOrFail()
@@ -192,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 return byConcrete;
             }
 
-            FailFastConfig("IWorldResetService/WorldResetService indisponível no DI global para ResetMacroAsync.");
+            FailFastConfig("IWorldResetService/WorldResetService missing in global DI for ResetMacroAsync.");
             return null;
         }
 
@@ -200,14 +126,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         {
             if (DependencyManager.Provider == null)
             {
-                FailFastConfig($"DependencyManager.Provider nulo ao resolver {label}.");
-                return null;
+                FailFastConfig($"DependencyManager.Provider is null while resolving {label}.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
             {
-                FailFastConfig($"Serviço global obrigatório ausente: {label}.");
-                return null;
+                FailFastConfig($"Missing required global service: {label}.");
             }
 
             return service;
@@ -275,15 +199,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private static void FailFastConfig(string detail)
         {
-            string message = $"[FATAL][Config] {detail}";
-            DebugUtility.LogError<WorldResetCommands>(message);
-
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
-            throw new InvalidOperationException(message);
+            HardFailFastH1.Trigger(typeof(WorldResetCommands), $"[FATAL][H1][LevelFlow] {detail}");
         }
     }
 }

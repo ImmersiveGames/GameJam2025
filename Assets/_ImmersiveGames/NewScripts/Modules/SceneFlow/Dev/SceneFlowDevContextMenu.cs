@@ -21,18 +21,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
         private const string ColorErr = "#F44336";
 
         private const string ReasonEnterGameplay = "QA/StartGameplay";
-        private const string QaStartLevelId = "level.1";
+        
         private const string ReasonQaRestart = "QA/RestartGameplay";
         private const string ReasonQaExitToMenu = "QA/ExitToMenu";
         private const string ReasonForceReset = "QA/WorldLifecycle/ForceResetWorld";
-        private const string QaNTo1LevelA = "qa.level.nto1.a";
-        private const string QaNTo1LevelB = "qa.level.nto1.b";
         private const string ReasonQaNTo1StartA = "QA/LevelFlow/NTo1/A";
         private const string ReasonQaNTo1StartB = "QA/LevelFlow/NTo1/B";
         private const string ReasonQaResetMacroGameplay = "QA/WorldLifecycle/ResetMacro/Gameplay";
         private const string ReasonQaResetLevelCurrent = "QA/WorldLifecycle/ResetLevel/Current";
 
-        [ContextMenu("QA/StartGameplay (levelId)")]
+        [ContextMenu("QA/StartGameplay (default)")]
         private void Qa_EnterGameplay()
         {
             var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
@@ -42,14 +40,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][LevelFlow] QA EnterGameplay -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonEnterGameplay}'.",
+                $"[OBS][LevelFlow] QA EnterGameplay -> StartGameplayDefaultAsync reason='{ReasonEnterGameplay}'.",
                 ColorInfo);
 
-            _ = levelFlow.StartGameplayAsync(QaStartLevelId, ReasonEnterGameplay);
+            _ = levelFlow.StartGameplayDefaultAsync(ReasonEnterGameplay);
         }
 
 
-        [ContextMenu("QA/RestartGameplay (levelId)")]
+        [ContextMenu("QA/RestartGameplay (default)")]
         private void Qa_RestartNavigation()
         {
             var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
@@ -59,10 +57,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][LevelFlow] QA Restart -> StartGameplayAsync levelId='{LevelId.Normalize(QaStartLevelId)}' reason='{ReasonQaRestart}'.",
+                $"[OBS][LevelFlow] QA Restart -> StartGameplayDefaultAsync reason='{ReasonQaRestart}'.",
                 ColorInfo);
 
-            _ = levelFlow.StartGameplayAsync(QaStartLevelId, ReasonQaRestart);
+            _ = levelFlow.StartGameplayDefaultAsync(ReasonQaRestart);
         }
 
         [ContextMenu("QA/ExitToMenu")]
@@ -170,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 restartContext == null ||
                 !restartContext.TryGetCurrent(out var snapshot) ||
                 !snapshot.IsValid ||
-                !snapshot.HasLevelId)
+                !snapshot.HasLevelRef)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
                     "[QA][WorldLifecycle] Snapshot de restart inválido para Reset Level (Current).",
@@ -178,25 +176,25 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 return;
             }
 
-            var levelSignature = LevelContextSignature.Create(snapshot.LevelId, snapshot.RouteId, ReasonQaResetLevelCurrent, snapshot.HasContentId ? snapshot.ContentId : string.Empty);
+            var levelSignature = new LevelContextSignature($"level:{snapshot.LevelRef.name}|route:{snapshot.RouteId}|reason:{ReasonQaResetLevelCurrent}");
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[QA][WorldLifecycle] ResetLevel comando levelId='{snapshot.LevelId}' reason='{ReasonQaResetLevelCurrent}'.",
+                $"[QA][WorldLifecycle] ResetLevel comando levelRef='{snapshot.LevelRef.name}' reason='{ReasonQaResetLevelCurrent}'.",
                 ColorInfo);
 
-            await commands.ResetLevelAsync(snapshot.LevelId, ReasonQaResetLevelCurrent, levelSignature, CancellationToken.None);
+            await commands.ResetLevelAsync(snapshot.LevelRef, ReasonQaResetLevelCurrent, levelSignature, CancellationToken.None);
         }
 
         [ContextMenu("QA/LevelFlow/NTo1/Start A")]
         private void Qa_LevelFlowNTo1_StartA()
         {
-            _ = StartNTo1LevelAsync(QaNTo1LevelA, ReasonQaNTo1StartA);
+            _ = StartNTo1LevelAsync("A", ReasonQaNTo1StartA);
         }
 
         [ContextMenu("QA/LevelFlow/NTo1/Start B")]
         private void Qa_LevelFlowNTo1_StartB()
         {
-            _ = StartNTo1LevelAsync(QaNTo1LevelB, ReasonQaNTo1StartB);
+            _ = StartNTo1LevelAsync("B", ReasonQaNTo1StartB);
         }
 
         [ContextMenu("QA/LevelFlow/NTo1/Run Sequence A->B")]
@@ -207,11 +205,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 
         private async Task RunNTo1SequenceAsync()
         {
-            await StartNTo1LevelAsync(QaNTo1LevelA, ReasonQaNTo1StartA);
-            await StartNTo1LevelAsync(QaNTo1LevelB, ReasonQaNTo1StartB);
+            await StartNTo1LevelAsync("A", ReasonQaNTo1StartA);
+            await StartNTo1LevelAsync("B", ReasonQaNTo1StartB);
         }
 
-        private async Task StartNTo1LevelAsync(string levelId, string reason)
+        private async Task StartNTo1LevelAsync(string scenario, string reason)
         {
             var levelFlow = ResolveGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
             if (levelFlow == null)
@@ -219,19 +217,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 return;
             }
 
-            string routeRefLabel = "<unresolved>";
-            if (DependencyManager.Provider.TryGetGlobal<ILevelFlowService>(out var levelResolver) &&
-                levelResolver != null &&
-                levelResolver.TryResolve(LevelId.FromName(levelId), out var resolvedRouteId, out _, out _))
-            {
-                routeRefLabel = resolvedRouteId.ToString();
-            }
-
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[QA][LevelFlow] NTo1 start levelId='{levelId}' routeRef='{routeRefLabel}'.",
+                $"[QA][LevelFlow] NTo1 start scenario='{scenario}' route='to-gameplay' mode='route_only'.",
                 ColorInfo);
 
-            await levelFlow.StartGameplayAsync(levelId, reason);
+            await levelFlow.StartGameplayDefaultAsync(reason);
         }
 
         private static T? ResolveGlobal<T>(string label) where T : class
@@ -381,3 +371,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 #endif
     }
 }
+
+
+
+
