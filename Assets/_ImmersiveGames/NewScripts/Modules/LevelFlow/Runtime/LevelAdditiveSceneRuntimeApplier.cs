@@ -11,7 +11,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     public static class LevelAdditiveSceneRuntimeApplier
     {
         private static readonly object StateSync = new object();
-        private static readonly HashSet<int> ActiveAppliedSceneIndices = new HashSet<int>();
+        private static readonly HashSet<int> _activeAppliedBuildIndexes = new HashSet<int>();
+        private static LevelDefinitionAsset _activeAppliedLevelRef;
 
         public static bool HasActiveAppliedLevelContent
         {
@@ -19,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             {
                 lock (StateSync)
                 {
-                    return ActiveAppliedSceneIndices.Count > 0;
+                    return _activeAppliedBuildIndexes.Count > 0;
                 }
             }
         }
@@ -30,7 +31,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             {
                 lock (StateSync)
                 {
-                    return ActiveAppliedSceneIndices.Count;
+                    return _activeAppliedBuildIndexes.Count;
+                }
+            }
+        }
+
+        public static LevelDefinitionAsset ActiveAppliedLevelRef
+        {
+            get
+            {
+                lock (StateSync)
+                {
+                    return _activeAppliedLevelRef;
                 }
             }
         }
@@ -58,18 +70,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
             else
             {
-                HashSet<int> candidateUnloadBuildIndexes = new HashSet<int>();
+                HashSet<int> candidateUnloadBuildIndexes;
                 if (previousLevelRef != null)
                 {
                     previousLevelRef.ValidateOrFailFast("LevelAdditiveApply/Previous");
-                    AddBuildIndexes(candidateUnloadBuildIndexes, previousLevelRef.AdditiveScenes);
+                    candidateUnloadBuildIndexes = BuildBuildIndexSetOrFail(previousLevelRef.AdditiveScenes, "Previous");
+                }
+                else
+                {
+                    candidateUnloadBuildIndexes = GetActiveAppliedBuildIndexesSnapshot();
                 }
 
                 unloadedIndices = await UnloadIndicesAsync(candidateUnloadBuildIndexes, targetBuildIndexes, ct);
                 loadedIndices = await LoadIndicesAsync(targetBuildIndexes, ct);
             }
 
-            UpdateActiveState(targetBuildIndexes);
+            UpdateActiveState(targetBuildIndexes, targetLevelRef);
 
             DebugUtility.Log(typeof(LevelAdditiveSceneRuntimeApplier),
                 $"[OBS][LevelFlow] LevelAdditiveApplySummary targetLevelRef='{targetLevelRef.name}' loadedIndices=[{string.Join(",", loadedIndices)}] unloadedIndices=[{string.Join(",", unloadedIndices)}] loadedCount={loadedIndices.Count} unloadedCount={unloadedIndices.Count} activeCount={ActiveAppliedSceneCount}.",
@@ -80,20 +96,28 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public static async Task<int> ClearAsync(LevelDefinitionAsset previousLevelRef, CancellationToken ct)
         {
-            if (previousLevelRef == null)
+            HashSet<int> previousBuildIndexes;
+            string previousLabel;
+            if (previousLevelRef != null)
             {
-                FailFast("Clear requested with null previousLevelRef.");
+                previousLevelRef.ValidateOrFailFast("LevelAdditiveClear/Previous");
+                previousBuildIndexes = BuildBuildIndexSetOrFail(previousLevelRef.AdditiveScenes, "Previous");
+                previousLabel = previousLevelRef.name;
+            }
+            else
+            {
+                previousBuildIndexes = GetActiveAppliedBuildIndexesSnapshot();
+                LevelDefinitionAsset activeLevelRef = ActiveAppliedLevelRef;
+                previousLabel = activeLevelRef != null ? activeLevelRef.name : "<none>";
             }
 
-            previousLevelRef.ValidateOrFailFast("LevelAdditiveClear/Previous");
-            HashSet<int> previousBuildIndexes = BuildBuildIndexSetOrFail(previousLevelRef.AdditiveScenes, "Previous");
             HashSet<int> emptyTarget = new HashSet<int>();
             List<int> unloadedIndices = await UnloadIndicesAsync(previousBuildIndexes, emptyTarget, ct);
 
             ClearActiveState();
 
             DebugUtility.Log(typeof(LevelAdditiveSceneRuntimeApplier),
-                $"[OBS][LevelFlow] LevelAdditiveClearSummary previousLevelRef='{previousLevelRef.name}' unloadedIndices=[{string.Join(",", unloadedIndices)}] unloadedCount={unloadedIndices.Count} activeCount={ActiveAppliedSceneCount}.",
+                $"[OBS][LevelFlow] LevelAdditiveClearSummary previousLevelRef='{previousLabel}' unloadedIndices=[{string.Join(",", unloadedIndices)}] unloadedCount={unloadedIndices.Count} activeCount={ActiveAppliedSceneCount}.",
                 DebugUtility.Colors.Info);
 
             return unloadedIndices.Count;
@@ -221,15 +245,25 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return loadedIndices;
         }
 
-        private static void UpdateActiveState(HashSet<int> buildIndexes)
+        private static HashSet<int> GetActiveAppliedBuildIndexesSnapshot()
         {
             lock (StateSync)
             {
-                ActiveAppliedSceneIndices.Clear();
+                return new HashSet<int>(_activeAppliedBuildIndexes);
+            }
+        }
+
+        private static void UpdateActiveState(HashSet<int> buildIndexes, LevelDefinitionAsset activeLevelRef)
+        {
+            lock (StateSync)
+            {
+                _activeAppliedBuildIndexes.Clear();
                 foreach (int index in buildIndexes)
                 {
-                    ActiveAppliedSceneIndices.Add(index);
+                    _activeAppliedBuildIndexes.Add(index);
                 }
+
+                _activeAppliedLevelRef = activeLevelRef;
             }
         }
 
@@ -237,7 +271,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             lock (StateSync)
             {
-                ActiveAppliedSceneIndices.Clear();
+                _activeAppliedBuildIndexes.Clear();
+                _activeAppliedLevelRef = null;
             }
         }
 

@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             InstallCompositionModules();
 
             RegisterExitToMenuNavigationBridge();
-            RegisterRestartNavigationBridge();
+            RegisterMacroRestartCoordinator();
             RegisterLevelSelectedRestartSnapshotBridge();
 
             RegisterInputModeSceneFlowBridge();
@@ -184,4 +184,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
     }
 }
+
 

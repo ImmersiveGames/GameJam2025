@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Modules.InputModes.Interop;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -384,21 +385,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterRestartNavigationBridge()
+        private static void RegisterMacroRestartCoordinator()
         {
-            if (DependencyManager.Provider.TryGetGlobal<RestartNavigationBridge>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<MacroRestartCoordinator>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Navigation] RestartNavigationBridge ja registrado no DI global.",
+                    "[Navigation] MacroRestartCoordinator ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            var bridge = new RestartNavigationBridge();
+            var bridge = new MacroRestartCoordinator();
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Navigation] RestartNavigationBridge registrado no DI global.",
+                "[Navigation] MacroRestartCoordinator registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -478,6 +479,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
     }
 }
+
 
 
 

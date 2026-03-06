@@ -114,6 +114,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             ct.ThrowIfCancellationRequested();
 
             LevelDefinitionAsset previousLevelRef = snapshotBelongsToMacro ? snapshot.LevelRef : null;
+            string previousSource = previousLevelRef != null
+                ? "snapshot"
+                : (LevelAdditiveSceneRuntimeApplier.HasActiveAppliedLevelContent ? "applier_state" : "none");
+            string previousRefLabel = previousLevelRef != null
+                ? previousLevelRef.name
+                : (LevelAdditiveSceneRuntimeApplier.ActiveAppliedLevelRef != null ? LevelAdditiveSceneRuntimeApplier.ActiveAppliedLevelRef.name : "<none>");
+
+            DebugUtility.Log<LevelMacroPrepareService>(
+                $"[OBS][LevelFlow] LevelPreparePreviousResolved source='{previousSource}' prevLevelRef='{previousRefLabel}' targetLevelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
             (int scenesAdded, int scenesRemoved) = await LevelAdditiveSceneRuntimeApplier.ApplyAsync(
                 previousLevelRef,
                 selectedLevelRef,
@@ -245,4 +256,5 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+
 

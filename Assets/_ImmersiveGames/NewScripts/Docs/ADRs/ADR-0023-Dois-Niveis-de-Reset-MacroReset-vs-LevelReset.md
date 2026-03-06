@@ -23,6 +23,11 @@
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
 - `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
 
+- `lastlog:2744` `RestartMacroToDefaultRequested reason='PostGame/Restart' clearedSelection=True`
+- `lastlog:2745` `LevelDefaultSelected source='catalog_index_0' ... levelRef='Level1'`
+- `lastlog:2746` `LevelAdditiveApplySummary ... loadedIndices=[7] unloadedIndices=[8] loadedCount=1 unloadedCount=1`
+- `lastlog:2747` `LevelPrepared source='catalog_index_0' ... levelRef='Level1'` (nao snapshot)
 ## Gap parcial
 
 - Eventos V2 ainda carregam campos `levelId/contentId` por compatibilidade de telemetria.
+

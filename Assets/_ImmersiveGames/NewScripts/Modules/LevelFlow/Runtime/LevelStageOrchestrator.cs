@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly EventBinding<LevelSwapLocalAppliedEvent> _levelSwapLocalAppliedBinding;
 
         private int _lastProcessedSelectionVersion = -1;
+        private string _lastProcessedLevelSignature = string.Empty;
 
         public LevelStageOrchestrator()
         {
@@ -61,17 +62,46 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            if (snapshot.SelectionVersion <= _lastProcessedSelectionVersion)
+            string levelSig = snapshot.LevelSignature;
+            if (!string.IsNullOrWhiteSpace(levelSig))
             {
-                return;
+                if (string.Equals(levelSig, _lastProcessedLevelSignature, StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<LevelStageOrchestrator>(
+                        $"[LevelFlow] IntroStage via SceneFlowCompleted skipped reason='dedupe_level_signature' levelSignature='{levelSig}' routeId='{snapshot.RouteId}'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                _lastProcessedLevelSignature = levelSig;
+                _lastProcessedSelectionVersion = snapshot.SelectionVersion;
+            }
+            else
+            {
+                if (snapshot.SelectionVersion < _lastProcessedSelectionVersion)
+                {
+                    int previousVersion = _lastProcessedSelectionVersion;
+                    int nextVersion = snapshot.SelectionVersion;
+                    _lastProcessedSelectionVersion = -1;
+                    _lastProcessedLevelSignature = string.Empty;
+
+                    DebugUtility.Log<LevelStageOrchestrator>(
+                        $"[OBS][LevelFlow] LevelStageDedupeReset reason='selection_version_rewind' prev='{previousVersion}' next='{nextVersion}' routeId='{snapshot.RouteId}'.",
+                        DebugUtility.Colors.Info);
+                }
+
+                if (snapshot.SelectionVersion <= _lastProcessedSelectionVersion)
+                {
+                    return;
+                }
+
+                _lastProcessedSelectionVersion = snapshot.SelectionVersion;
             }
 
-            _lastProcessedSelectionVersion = snapshot.SelectionVersion;
-
             string activeSceneName = SceneManager.GetActiveScene().name;
-            string levelSignature = string.IsNullOrWhiteSpace(snapshot.LevelSignature)
+            string levelSignature = string.IsNullOrWhiteSpace(levelSig)
                 ? $"level:{snapshot.LevelRef.name}|route:{snapshot.RouteId}|reason:SceneFlow/Completed"
-                : snapshot.LevelSignature;
+                : levelSig;
 
             DebugUtility.Log<LevelStageOrchestrator>(
                 $"[OBS][IntroStageController] IntroStageStartRequested source='SceneFlowCompleted' levelRef='{snapshot.LevelRef.name}' v='{snapshot.SelectionVersion}' reason='SceneFlow/Completed' levelSignature='{levelSignature}'.",
@@ -105,6 +135,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             _lastProcessedSelectionVersion = evt.SelectionVersion;
+            _lastProcessedLevelSignature = string.IsNullOrWhiteSpace(evt.LevelSignature)
+                ? string.Empty
+                : evt.LevelSignature;
 
             string normalizedReason = string.IsNullOrWhiteSpace(evt.Reason)
                 ? "LevelFlow/SwapLevelLocal"

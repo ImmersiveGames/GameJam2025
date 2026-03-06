@@ -1,7 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 
@@ -30,19 +32,27 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
         }
 
-        public async Task RestartLevelAsync(string reason = null, CancellationToken ct = default)
+        public Task RestartLevelAsync(string reason = null, CancellationToken ct = default)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostLevel/RestartLevel" : reason.Trim();
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostGame/Restart" : reason.Trim();
+            _ = ct;
 
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] PostLevelActionRequested action='RestartLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            await _levelFlowRuntimeService.RestartLastGameplayAsync(normalizedReason, ct);
+            IGameCommands gameCommands = ResolveGameCommandsOrFail(normalizedReason);
+            gameCommands.RequestRestart(normalizedReason);
+
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] RestartMacroRequested reason='{normalizedReason}' dispatched='GameResetRequestedEvent'.",
+                DebugUtility.Colors.Info);
 
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] PostLevelActionApplied action='RestartLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
+
+            return Task.CompletedTask;
         }
 
         public async Task NextLevelAsync(string reason = null, CancellationToken ct = default)
@@ -117,6 +127,23 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] PostLevelActionApplied action='ExitToMenu' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
+        }
+
+        private static IGameCommands ResolveGameCommandsOrFail(string reason)
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
+                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing DependencyManager.Provider. reason='{reason}'.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameCommands>(out var gameCommands) || gameCommands == null)
+            {
+                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
+                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing IGameCommands. reason='{reason}'.");
+            }
+
+            return gameCommands;
         }
     }
 }

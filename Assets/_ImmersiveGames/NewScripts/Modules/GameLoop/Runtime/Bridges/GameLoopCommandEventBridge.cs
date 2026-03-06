@@ -9,7 +9,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
     ///
     /// Regras (alinhadas ao GameLoop.md):
     /// - NÃO consome eventos de intenção de start (GameStartCommandEvent). Start é coordenado via SceneFlow.
-    /// - Consome apenas eventos definitivos: pause/resume/reset.
+    /// - Consome apenas eventos definitivos: pause/resume/exit-to-menu.
+    /// - MacroRestart canônico é coordenado por MacroRestartCoordinator (sem listener de reset aqui).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameLoopCommandEventBridge : IDisposable
@@ -17,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         private readonly EventBinding<GamePauseCommandEvent> _onPause;
         private readonly EventBinding<GameResumeRequestedEvent> _onResume;
         private readonly EventBinding<GameExitToMenuRequestedEvent> _onExitToMenu;
-        private readonly EventBinding<GameResetRequestedEvent> _onResetRequested;
 
         private bool _disposed;
 
@@ -26,15 +26,17 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             _onPause = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _onResume = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
             _onExitToMenu = new EventBinding<GameExitToMenuRequestedEvent>(OnExitToMenuRequested);
-            _onResetRequested = new EventBinding<GameResetRequestedEvent>(OnGameResetRequested);
 
             EventBus<GamePauseCommandEvent>.Register(_onPause);
             EventBus<GameResumeRequestedEvent>.Register(_onResume);
             EventBus<GameExitToMenuRequestedEvent>.Register(_onExitToMenu);
-            EventBus<GameResetRequestedEvent>.Register(_onResetRequested);
 
             DebugUtility.LogVerbose<GameLoopCommandEventBridge>(
-                "[GameLoop] Bridge de entrada registrado no EventBus (pause/resume/reset).");
+                "[GameLoop] Bridge de entrada registrado no EventBus (pause/resume/exit).",
+                DebugUtility.Colors.Info);
+            DebugUtility.LogVerbose<GameLoopCommandEventBridge>(
+                "[OBS][LEGACY] GameResetRequestedEvent listener disabled in GameLoopCommandEventBridge; MacroRestartCoordinator owns canonical restart.",
+                DebugUtility.Colors.Info);
         }
 
         public void Dispose()
@@ -49,7 +51,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             EventBus<GamePauseCommandEvent>.Unregister(_onPause);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResume);
             EventBus<GameExitToMenuRequestedEvent>.Unregister(_onExitToMenu);
-            EventBus<GameResetRequestedEvent>.Unregister(_onResetRequested);
         }
 
         private static bool TryResolveLoop(out IGameLoopService loop)
@@ -96,19 +97,5 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
                 $"[GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing). reason='{evt?.Reason ?? "<null>"}'.");
             loop.RequestReady();
         }
-
-        private void OnGameResetRequested(GameResetRequestedEvent evt)
-        {
-            if (!TryResolveLoop(out var loop))
-            {
-                return;
-            }
-
-            DebugUtility.Log<GameLoopCommandEventBridge>(
-                $"[GameLoop] RestartRequested -> RequestReset (expect Boot cycle). reason='{evt?.Reason ?? "<null>"}'.",
-                DebugUtility.Colors.Info);
-            loop.RequestReset();
-        }
     }
 }
-
