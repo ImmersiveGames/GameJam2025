@@ -1,4 +1,4 @@
-﻿# Module Audit Summary (Baseline 3.1) - 2026-03-06
+# Module Audit Summary (Baseline 3.1) - 2026-03-06
 
 ## Core
 **Canonical Rail:** O trilho canonico de base e `Core/Events/EventBus.cs` + `Core/Composition/DependencyManager.cs` + `Core/Logging/DebugUtility.cs`. Os modulos de dominio publicam/consomem eventos pelo `EventBus<T>` e resolvem servicos pelo `DependencyManager.Provider`, com o `GlobalCompositionRoot` apenas compondo dependencias.
@@ -17,7 +17,7 @@
 **Canonical Rail:** `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` chama `RegisterEssentialServicesOnly` em `GlobalCompositionRoot.Pipeline.cs`, instala `IGlobalCompositionModule` por stage, e registra servicos canonicos de runtime por metodos especializados (`GameLoop`, `SceneFlow`, `WorldLifecycle`, `Navigation`, `Levels`, `ContentSwap`, `DevQA`).
 
 **Top 5 redundancias**
-- `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` teve o registro legacy `RegisterRestartSnapshotContentSwapBridge()` removido no cleanup canÃ´nico.
+- `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` teve o registro legacy `RegisterRestartSnapshotContentSwapBridge()` removido no cleanup canÃƒÆ’Ã‚Â´nico.
 - `Infrastructure/Composition/Modules/*.cs` repetem padrao de gate por stage com logica quase identica.
 - Registro de bridges cross-modulo concentrado em `NavigationInputModes.cs` com mistura de Navigation/LevelFlow/InputMode.
 - Duplicidade de pontos de configuracao SceneFlow entre `GlobalCompositionRoot.SceneFlowWorldLifecycle.cs` e `GlobalCompositionRoot.FadeLoading.cs`.
@@ -82,8 +82,8 @@
 **Canonical Rail:** `GameNavigationService` executa navegacao por route/profile. Restart canonico e `MacroRestartCoordinator` ouvindo `GameResetRequestedEvent` e disparando `ILevelFlowRuntimeService.StartGameplayDefaultAsync`.
 
 **Top 5 redundancias**
-- `Modules/Navigation/Legacy/RestartNavigationBridge.cs` mantido como legado desativado (fora do trilho canÃ´nico).
-- `Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs` mantido como no-op legado (fora do trilho canÃ´nico).
+- `Modules/Navigation/Legacy/RestartNavigationBridge.cs` mantido como legado desativado (fora do trilho canÃƒÆ’Ã‚Â´nico).
+- `Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs` mantido como no-op legado (fora do trilho canÃƒÆ’Ã‚Â´nico).
 - `GameNavigationService` mantem APIs compat marcadas como legacy.
 - `LevelSelectedRestartSnapshotBridge` e `IRestartContextService` duplicam parte do fluxo de contexto de restart.
 - Catalogos de intents/rotas/estilos cruzam `Modules/Navigation/**` e `Modules/SceneFlow/Navigation/**`.
@@ -99,7 +99,7 @@
 - Dedupe por `selectionVersion/levelSignature` concentrado em `LevelStageOrchestrator` (manter alinhado com producers).
 - Trilha de catalogo antiga (`LevelCatalogAsset` + interfaces antigas) era estruturalmente redundante ao trilho canonico.
 - API legacy por `LevelId` continua presente em overloads obsoletos para compat (fail-fast).
-- Rotas de QA/Dev exercitam caminhos nao-canônicos e podem mascarar redundancias em runtime.
+- Rotas de QA/Dev exercitam caminhos nao-canÃƒÂ´nicos e podem mascarar redundancias em runtime.
 
 **Risco de mudanca:** High  
 **Ordem recomendada de limpeza:** 7/10.
@@ -110,30 +110,41 @@
 - `Modules/LevelFlow/Legacy/Runtime/ILevelMacroRouteCatalog.cs`
 - `Modules/LevelFlow/Legacy/Runtime/ILevelContentResolver.cs`
 ## ContentSwap
-**Canonical Rail:** `ContentSwapContextService` + `InPlaceContentSwapService` (registrado como `IContentSwapChangeService`) aplicam swap in-place orientado a contexto. Integracoes de restart compat foram explicitamente neutralizadas no Navigation.
+**Canonical Rail:** `ContentSwapContextService` mantÃƒÂ©m `Current/Pending` e publica eventos de contexto; `InPlaceContentSwapService` (registrado como `IContentSwapChangeService`) ÃƒÂ© o owner canÃƒÂ´nico do request in-place/commit. O consumer canÃƒÂ´nico externo ÃƒÂ© `Modules/WorldLifecycle/Runtime/WorldResetCommands.cs` no reset de nÃƒÂ­vel.
 
-**Top 5 redundancias**
-- `RestartSnapshotContentSwapBridge` existe, mas e no-op no trilho canonico.
-- `ContentSwapDevBootstrapper` e instalador dev coexistem com pipeline DevQA global.
-- Eventos de ContentSwap coexistem com trilho LevelFlow de selecao/aplicacao.
-- Modo e plano (`ContentSwapMode`, `ContentSwapPlan`) tem sobreposicao semantica com fluxo de level/local swap.
-- Multiplas entradas dev para a mesma operacao de swap.
+**Top 5 redundÃƒÂ¢ncias**
+- InstalaÃƒÂ§ÃƒÂ£o Dev potencialmente duplicada: `GlobalCompositionRoot.DevQA.cs` e `ContentSwapDevBootstrapper`.
+- Consumidor legado externo (`Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs`) ainda escuta `ContentSwapCommittedEvent`.
+- Eventos `ContentSwapPendingSet/Cleared` hoje servem majoritariamente observabilidade (poucos consumers runtime).
+- Overlap semÃƒÂ¢ntico de contrato de nÃƒÂ­vel (`contentId` legado em LevelFlow) vs token canÃƒÂ´nico `level-ref:<name>` usado por WorldReset+ContentSwap.
+- CoexistÃƒÂªncia de snapshot antigo (`Modules/ContentSwap.md`) com snapshot CS-1.1 (`Modules/ContentSwap-Cleanup-Audit-v1.md`) requer ÃƒÂ­ndice claro.
 
-**Risco de mudanca:** Med  
+**Risco de mudanÃƒÂ§a:** Med  
 **Ordem recomendada de limpeza:** 8/10.
 
+**CS-1.1 aplicado (behavior-preserving):**
+- Snapshot criado em `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v1.md`.
+- Doc vivo criado em `Docs/Modules/ContentSwap.md`.
+- Nenhum move de `.cs` nesta etapa (resultado DOC-only).
+
 ## DevQA
-**Canonical Rail:** Em `UNITY_EDITOR || DEVELOPMENT_BUILD`, `GlobalCompositionRoot.DevQA.cs` aciona instaladores (`IntroStageDevInstaller`, `ContentSwapDevInstaller`, `SceneFlowDevInstaller`, `LevelFlowDevInstaller`) e GUI runtime de debug (`IntroStageRuntimeDebugGui`).
+**Canonical Rail:** instalação Dev/QA centralizada em `CompositionInstallStage.DevQA` (`GlobalCompositionRoot.Pipeline.cs`) via `InstallDevQaServices()` e `GlobalCompositionRoot.DevQA.cs`, incluindo IntroStage/ContentSwap/SceneFlow/LevelFlow installers, `IntroStageRuntimeDebugGui` e hotkey de WorldLifecycle.
 
-**Top 5 redundancias**
-- Instaladores Dev distribuidos por modulos com padrao quase identico de `EnsureInstalled()`.
-- Context menus Dev de SceneFlow/LevelFlow/ContentSwap com responsabilidades parcialmente sobrepostas.
-- Drivers dev de WorldLifecycle/Gameplay coexistem com fluxo de producao.
-- Varios pontos de compile-flag (`UNITY_EDITOR`, `DEVELOPMENT_BUILD`, `NEWSCRIPTS_DEV`, `NEWSCRIPTS_QA`).
-- Instrumentacao de QA espalhada entre modulos e composicao.
+**Top 5 redundâncias**
+- `ContentSwapDevBootstrapper` coexistia com installer central de ContentSwap (paralelo).
+- Hotkey de WorldLifecycle era instalado fora do trilho central DevQA (bootstrap runtime independente).
+- ContextMenus QA em arquivos de runtime (`PauseOverlayController`, `PostGameOverlayController`) mantêm acoplamento de debug com código de produção.
+- Flags não totalmente unificadas no repositório (`NEWSCRIPTS_QA` permanece em tooling de Gameplay/Editor).
+- Tooling editor continua distribuído por múltiplos módulos (`SceneFlow/Editor`, `Navigation/Dev/Editor`, `Gameplay/Editor/RunRearm`).
 
-**Risco de mudanca:** Low  
-**Ordem recomendada de limpeza:** 10/10 (por ultimo, apos estabilizar runtime).
+**Risco de mudança:** Low-Med  
+**Ordem recomendada de limpeza:** 10/10 (após runtime estável).
+
+**DQ-1.2 aplicado (behavior-preserving):**
+- `ContentSwapDevBootstrapper` desativado como caminho paralelo (LEGACY no-op com log `[OBS][LEGACY][DevQA]`).
+- Hotkey DEV de WorldLifecycle centralizado via `RegisterWorldLifecycleQaInstaller()` no trilho DevQA canônico.
+- Guards dos arquivos alterados consolidados em `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- Snapshot criado em `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v2.md`.
 
 ## Global Redundancy Hotspots (Top 10)
 1. `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs`

@@ -1,4 +1,5 @@
-ï»¿#nullable enable
+#nullable enable
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime
 {
@@ -8,13 +9,15 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void InstallAfterSceneLoad()
         {
-            // Garante que a infra esteja em Play Mode e evita mexer em produÃ§Ã£o.
             if (!Application.isPlaying)
             {
                 return;
             }
 
-            ContentSwapDevInstaller.EnsureInstalled();
+            // DQ-1.2: caminho paralelo desativado para manter um trilho canônico de instalação via GlobalCompositionRoot.DevQA.
+            DebugUtility.LogVerbose(typeof(ContentSwapDevBootstrapper),
+                "[OBS][LEGACY][DevQA] ContentSwapDevBootstrapper desativado; instalação canônica via GlobalCompositionRoot.DevQA.",
+                DebugUtility.Colors.Info);
         }
 #endif
     }

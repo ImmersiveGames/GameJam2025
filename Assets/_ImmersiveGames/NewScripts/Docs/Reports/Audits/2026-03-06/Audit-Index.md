@@ -124,5 +124,22 @@ Date: 2026-03-06
 | WorldLifecycle | `Docs/Modules/WorldLifecycle.md` | `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle.md` | Duplicated by design (live + snapshot) |
 | Navigation | `Docs/Modules/Navigation.md` | `Docs/Reports/Audits/2026-03-06/Modules/Navigation.md` | Duplicated by design (live + snapshot) |
 | LevelFlow | `Docs/Modules/LevelFlow.md` | `Docs/Reports/Audits/2026-03-06/Modules/LevelFlow.md` | Duplicated by design (live + snapshot) |
-| ContentSwap | - | `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap.md` | Snapshot only |
-| DevQA | - | `Docs/Reports/Audits/2026-03-06/Modules/DevQA.md` | Snapshot only |
+| ContentSwap | `Docs/Modules/ContentSwap.md` | `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap.md` | Duplicated by design (live + snapshot) |
+| DevQA | `Docs/Modules/DevQA.md` | `Docs/Reports/Audits/2026-03-06/Modules/DevQA.md` | Duplicated by design (live + snapshot) |
+
+## CS-1.1 Status
+- live doc: `Docs/Modules/ContentSwap.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v1.md`
+- status: Duplicated by design (live + snapshot)
+
+
+## DQ-1.1 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v1.md`
+- status: Duplicated by design (live + snapshot)
+
+
+## DQ-1.2 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v2.md`
+- status: Duplicated by design (live + snapshot)

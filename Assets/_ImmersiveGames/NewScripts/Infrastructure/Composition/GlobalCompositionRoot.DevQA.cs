@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev;
+using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -54,6 +55,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
                     $"[QA][LevelFlow] Falha ao instalar LevelFlowDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
+        }
+
+        private static void RegisterWorldLifecycleQaInstaller()
+        {
+            try
+            {
+                WorldResetRequestHotkeyDevBootstrap.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                    $"[QA][WorldLifecycle] Falha ao instalar WorldResetRequestHotkeyBridge no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

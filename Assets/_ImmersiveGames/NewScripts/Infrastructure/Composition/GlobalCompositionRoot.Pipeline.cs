@@ -163,6 +163,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterIntroStageQaInstaller();
             RegisterContentSwapQaInstaller();
             RegisterSceneFlowQaInstaller();
+            RegisterWorldLifecycleQaInstaller();
             RegisterIntroStageRuntimeDebugGui();
 #endif
         }

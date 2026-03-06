@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_DEV
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev
@@ -7,9 +7,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev
     {
         private const string HotkeyObjectName = "[WorldLifecycle] Reset Hotkey (Dev)";
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Initialize()
+        public static void EnsureInstalled()
         {
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
             if (Object.FindAnyObjectByType<WorldResetRequestHotkeyBridge>() != null)
             {
                 return;
