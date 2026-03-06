@@ -1,5 +1,17 @@
 # ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
 
+## Status atual (2026-03-06)
+- Status: **DONE**
+- Implementado no codigo:
+  - Dedupe local por `LevelSignature` no `LevelStageOrchestrator`.
+  - Rewind de `SelectionVersion` tratado apenas como fallback sem assinatura.
+  - `LevelSignature` propagada em snapshot e consumida no IntroStage.
+- Evidencia:
+  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+- LEGACY / Compat (nao canonico):
+  - Dedupe por `SelectionVersion` isolado ao fallback quando `LevelSignature` estiver vazia.
+
 ## Status
 
 - Estado: **Aceito (Implementado)**
@@ -26,3 +38,4 @@
 ## Observacao LEGADO
 
 - Onde aparecer `levelId/contentId` como identidade de level, considerar LEGADO e migrar para `levelRef`.
+

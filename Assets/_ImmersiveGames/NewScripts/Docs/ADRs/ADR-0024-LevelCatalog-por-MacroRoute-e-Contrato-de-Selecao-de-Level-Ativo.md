@@ -1,5 +1,18 @@
 # ADR-0024 - LevelCollection por MacroRoute e Contrato de Selecao de Level Ativo
 
+## Status atual (2026-03-06)
+- Status: **DONE**
+- Implementado no codigo:
+  - `LevelCollection` por macro gameplay como fonte unica de levels.
+  - Default fixo por `levels[0]` no `LevelPrepare`.
+  - Identidade local por `levelRef` (`LevelDefinitionAsset`) + `LevelSignature`.
+  - `LevelPrepare` executa no gate antes do FadeOut.
+- Evidencia:
+  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+- LEGACY / Compat (nao canonico):
+  - Referencias a `levelId/contentId` como identidade de negocio.
+
 ## Status
 
 - Estado: **Aceito (Implementado)**
@@ -29,3 +42,4 @@
 ## Observacao LEGADO
 
 - Referencias a `LevelCatalog`, `levelId` e `contentId` como identidade pertencem ao legado.
+

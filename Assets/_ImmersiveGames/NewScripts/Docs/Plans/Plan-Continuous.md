@@ -1,3 +1,15 @@
+## Baseline congelada (3.1) - NAO MEXER SEM NOVA EVIDENCIA
+- Freeze: `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+- Componentes canonicos:
+  - `MacroRestartCoordinator`
+  - `LevelMacroPrepareService`
+  - `LevelAdditiveSceneRuntimeApplier`
+  - `LevelStageOrchestrator`
+  - `MacroLevelPrepareCompletionGate`
+- Proibido reintroduzir:
+  - fallbacks de restart/navigation no trilho canonico
+  - listeners duplicados de `GameResetRequestedEvent`
+  - decisoes canonicas por `levelId/contentId` string no runtime
 
 > Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # Planos — Trilho contínuo (canônico)
@@ -615,5 +627,6 @@ O “Plano 2.2” original foi referenciado como movido no `Docs/CHANGELOG.md`, 
 Recupere pelo histórico do repositório (git) usando o caminho citado no changelog:
 
 - `Archive/Plans/Plano-2.2.md`
+
 
 

@@ -1,3 +1,15 @@
+## Baseline congelada (3.1) - NAO MEXER SEM NOVA EVIDENCIA
+- Freeze: `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+- Componentes canonicos:
+  - `MacroRestartCoordinator`
+  - `LevelMacroPrepareService`
+  - `LevelAdditiveSceneRuntimeApplier`
+  - `LevelStageOrchestrator`
+  - `MacroLevelPrepareCompletionGate`
+- Proibido reintroduzir:
+  - fallbacks de restart/navigation no trilho canonico
+  - listeners duplicados de `GameResetRequestedEvent`
+  - decisoes canonicas por `levelId/contentId` string no runtime
 
 > Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # Revisão de Arquitetura — Macro Routes vs Levels (Intenção do Projeto)
@@ -174,5 +186,6 @@ A sua intenção é sólida, mas o “ponto de falha” típico é sempre o mesm
 > *se o runtime não distingue assinaturas macro vs local, o sistema vai continuar tratando level como rota disfarçada.*
 
 A maior melhoria arquitetural, portanto, é **formalizar a camada local** como trilho independente, com contratos e telemetria, e integrar isso no pipeline de loading do macro sem acoplamento cíclico.
+
 
 

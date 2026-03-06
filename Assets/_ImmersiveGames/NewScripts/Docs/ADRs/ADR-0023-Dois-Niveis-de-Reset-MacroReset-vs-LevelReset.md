@@ -1,5 +1,19 @@
 # ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
 
+## Status atual (2026-03-06)
+- Status: **DONE**
+- Implementado no codigo:
+  - `MacroRestartCoordinator` e owner unico de `GameResetRequestedEvent` com coalescing/debounce.
+  - `GameLoopCommandEventBridge` sem reset listener.
+  - `RestartNavigationBridge` desativado (LEGACY).
+  - Macro restart usa `effectiveReason` com runId para evitar dedupe falso entre restarts.
+  - `LevelStageOrchestrator` dedupe por `LevelSignature` com regra de rewind no fallback.
+- Evidencia:
+  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+- LEGACY / Compat (nao canonico):
+  - `RestartNavigationBridge` existe apenas como stub de legado desativado.
+
 ## Status
 
 - Estado: **Aceito (Parcial)**
@@ -30,4 +44,5 @@
 ## Gap parcial
 
 - Eventos V2 ainda carregam campos `levelId/contentId` por compatibilidade de telemetria.
+
 

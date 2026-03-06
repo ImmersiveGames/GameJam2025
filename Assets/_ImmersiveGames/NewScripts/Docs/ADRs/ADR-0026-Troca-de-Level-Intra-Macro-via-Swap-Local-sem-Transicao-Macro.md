@@ -1,5 +1,17 @@
 # ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
 
+## Status atual (2026-03-06)
+- Status: **DONE**
+- Implementado no codigo:
+  - `LevelSwapLocalService` aplica unload/load local sem transicao macro.
+  - Restart local (`Level2 -> Level2`) faz reload local (unload+load do mesmo set).
+  - QA confirma `transitionStartedCount='0'` no swap local.
+- Evidencia:
+  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+- LEGACY / Compat (nao canonico):
+  - Troca de level via trilho macro/fallback no caminho canonicamente local.
+
 ## Status
 
 - Estado: **Aceito (Implementado)**
@@ -25,3 +37,4 @@
 ## Observacao LEGADO
 
 - APIs por `LevelId` devem ser tratadas como LEGADO fora do trilho canônico.
+

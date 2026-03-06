@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -28,8 +29,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.Gates;
             InstallCompositionModules();
 
-            // Resolve ISimulationGateService UMA vez para os consumidores (reduz repetição de TryGetGlobal).
-            DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
+            // Resolve ISimulationGateService UMA vez para os consumidores (reduz repeticao de TryGetGlobal).
+            var gateService = ResolveSimulationGateServiceOrNull();
 
             RegisterPauseBridge(gateService);
 
@@ -123,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterGameRunEndRequestService();
             RegisterGameCommands();
 
-            // Resolve IGameLoopService UMA vez para serviços dependentes.
+            // Resolve IGameLoopService UMA vez para servicos dependentes.
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
 
             RegisterGameRunStatusService(gameLoopService);
@@ -138,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterIfMissing(() => new WorldResetService());
             RegisterIfMissing<IWorldResetCommands>(() => new WorldResetCommands());
 
-            DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
+            var gateService = ResolveSimulationGateServiceOrNull();
             RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
         }
 
@@ -177,12 +178,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterSceneFlowSignatureCache();
             RegisterSceneFlowRouteResetPolicy();
 
-            // ADR-0010: mantém o Loading no final da instalação do SceneFlow
+            // ADR-0010: mantem o Loading no final da instalacao do SceneFlow
             // para preservar o ponto de registro equivalente do pipeline.
             RegisterSceneFlowLoadingIfAvailable();
         }
-
     }
 }
-
-

@@ -1,3 +1,15 @@
+## Baseline congelada (3.1) - NAO MEXER SEM NOVA EVIDENCIA
+- Freeze: `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+- Componentes canonicos:
+  - `MacroRestartCoordinator`
+  - `LevelMacroPrepareService`
+  - `LevelAdditiveSceneRuntimeApplier`
+  - `LevelStageOrchestrator`
+  - `MacroLevelPrepareCompletionGate`
+- Proibido reintroduzir:
+  - fallbacks de restart/navigation no trilho canonico
+  - listeners duplicados de `GameResetRequestedEvent`
+  - decisoes canonicas por `levelId/contentId` string no runtime
 
 > Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # SceneFlow / Navigation / LevelFlow Refactor Plan v2.1.3
@@ -98,5 +110,6 @@ Introduzir um **catálogo de profiles por referência direta** (ScriptableObject
 **Ordem recomendada (histórico executado):** F1 → F3 → F2 → F4 → F5.
 
 **Estado atual:** F1–F5 concluídos; próximos ciclos entram como hardening incremental e regressão contínua.
+
 
 

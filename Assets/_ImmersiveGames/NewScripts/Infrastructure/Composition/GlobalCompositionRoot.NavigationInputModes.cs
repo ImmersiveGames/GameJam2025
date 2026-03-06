@@ -195,7 +195,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"[OBS][Config] CatalogResolvedVia={catalogsVia} field=transitionStyleCatalog asset={styleCatalogAsset.name}",
                 DebugUtility.Colors.Info);
 
-            RegisterGlobalIfMissing<ITransitionStyleCatalog>(styleCatalogAsset, "ITransitionStyleCatalog");
+            RegisterIfMissing<ITransitionStyleCatalog>(
+                () => styleCatalogAsset,
+                "[Navigation] ITransitionStyleCatalog ja registrado no DI global. Registro ignorado.",
+                null);
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var sceneRouteResolver) || sceneRouteResolver == null)
             {
@@ -353,148 +356,44 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     DebugUtility.Colors.Info);
             }
         }
-
-        private static void RegisterGlobalIfMissing<T>(T service, string label) where T : class
-        {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[Navigation] {label} já registrado no DI global. Registro ignorado.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal(service);
-        }
-
         private static void RegisterExitToMenuNavigationBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ExitToMenuNavigationBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Navigation] ExitToMenuNavigationBridge ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new ExitToMenuNavigationBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Navigation] ExitToMenuNavigationBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
+            RegisterIfMissing(
+                () => new ExitToMenuNavigationBridge(),
+                "[Navigation] ExitToMenuNavigationBridge ja registrado no DI global.",
+                "[Navigation] ExitToMenuNavigationBridge registrado no DI global.");
         }
 
         private static void RegisterMacroRestartCoordinator()
         {
-            if (DependencyManager.Provider.TryGetGlobal<MacroRestartCoordinator>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Navigation] MacroRestartCoordinator ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new MacroRestartCoordinator();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Navigation] MacroRestartCoordinator registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-
-        private static void RegisterRestartSnapshotContentSwapBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<RestartSnapshotContentSwapBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Navigation] RestartSnapshotContentSwapBridge ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new RestartSnapshotContentSwapBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Navigation] RestartSnapshotContentSwapBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
+            RegisterIfMissing(
+                () => new MacroRestartCoordinator(),
+                "[Navigation] MacroRestartCoordinator ja registrado no DI global.",
+                "[Navigation] MacroRestartCoordinator registrado no DI global.");
         }
 
         private static void RegisterLevelSelectedRestartSnapshotBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<LevelSelectedRestartSnapshotBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Navigation] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new LevelSelectedRestartSnapshotBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Navigation] LevelSelectedRestartSnapshotBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
+            RegisterIfMissing(
+                () => new LevelSelectedRestartSnapshotBridge(),
+                "[Navigation] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
+                "[Navigation] LevelSelectedRestartSnapshotBridge registrado no DI global.");
         }
 
         private static void RegisterInputModeSceneFlowBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<SceneFlowInputModeBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[InputMode] SceneFlowInputModeBridge ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new SceneFlowInputModeBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[InputMode] SceneFlowInputModeBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
+            RegisterIfMissing(
+                () => new SceneFlowInputModeBridge(),
+                "[InputMode] SceneFlowInputModeBridge ja registrado no DI global.",
+                "[InputMode] SceneFlowInputModeBridge registrado no DI global.");
         }
-
 
         private static void RegisterLevelStageOrchestrator()
         {
-            if (DependencyManager.Provider.TryGetGlobal<LevelStageOrchestrator>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[LevelFlow] LevelStageOrchestrator ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var orchestrator = new LevelStageOrchestrator();
-            DependencyManager.Provider.RegisterGlobal(orchestrator);
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[LevelFlow] LevelStageOrchestrator registrado (SceneFlowCompleted + LevelSwapLocalApplied).",
-                DebugUtility.Colors.Info);
+            RegisterIfMissing(
+                () => new LevelStageOrchestrator(),
+                "[LevelFlow] LevelStageOrchestrator ja registrado no DI global.",
+                "[LevelFlow] LevelStageOrchestrator registrado (SceneFlowCompleted + LevelSwapLocalApplied).");
         }
-
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

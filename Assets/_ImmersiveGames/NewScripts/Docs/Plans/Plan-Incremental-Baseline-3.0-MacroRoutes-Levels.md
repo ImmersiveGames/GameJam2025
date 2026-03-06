@@ -1,3 +1,15 @@
+## Baseline congelada (3.1) - NAO MEXER SEM NOVA EVIDENCIA
+- Freeze: `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+- Componentes canonicos:
+  - `MacroRestartCoordinator`
+  - `LevelMacroPrepareService`
+  - `LevelAdditiveSceneRuntimeApplier`
+  - `LevelStageOrchestrator`
+  - `MacroLevelPrepareCompletionGate`
+- Proibido reintroduzir:
+  - fallbacks de restart/navigation no trilho canonico
+  - listeners duplicados de `GameResetRequestedEvent`
+  - decisoes canonicas por `levelId/contentId` string no runtime
 
 > Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # Plano incremental — Macro Routes vs Levels (Baseline 3.0)
@@ -266,4 +278,5 @@ O maior risco prático (já observado) é **dedupe por assinatura macro** engoli
 Por isso, F1 é o primeiro passo técnico real.
 
 A “jogada” arquitetural central é: **LevelLocalFlow como trilho canônico**, integrado ao SceneFlow por um **pipeline de steps**, sem acoplamento cíclico.
+
 

@@ -1,5 +1,17 @@
 # ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
 
+## Status atual (2026-03-06)
+- Status: **DONE**
+- Implementado no codigo:
+  - IntroStage/PostLevel sob responsabilidade do dominio de level.
+  - Assinatura de IntroStage por `levelSignature` (`level:...|route:...|reason:...`).
+  - Macros sem `LevelCollection` nao executam stages de level; fazem clear.
+- Evidencia:
+  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+- LEGACY / Compat (nao canonico):
+  - Fluxos de stage orientados por `contentId/levelId` fora do trilho por `levelRef`.
+
 ## Status
 
 - Estado: **Aceito (Implementado)**
@@ -26,3 +38,4 @@
 ## Observacao LEGADO
 
 - Referencias a `levelId/contentId` como identidade de stage sao LEGADO no canônico atual.
+
