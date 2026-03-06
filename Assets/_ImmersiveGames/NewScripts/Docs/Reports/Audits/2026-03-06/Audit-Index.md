@@ -113,3 +113,16 @@ Date: 2026-03-06
 | Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md | index | - |  |
 | Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md | index | - |  |
 | Docs/Standards/Standards.md | index | - |  |
+## Live vs Snapshot per module
+| Module | Live doc (`Docs/Modules`) | Snapshot audit (`Docs/Reports/Audits/2026-03-06/Modules`) | Status |
+|---|---|---|---|
+| Core | - | `Docs/Reports/Audits/2026-03-06/Modules/Core.md` | Snapshot only |
+| Infrastructure-Composition | - | `Docs/Reports/Audits/2026-03-06/Modules/Infrastructure-Composition.md` | Snapshot only |
+| Gates-Readiness-StateDependent | `Docs/Modules/Gates-Readiness-StateDependent.md` | `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent.md` | Duplicated by design (live + snapshot) |
+| GameLoop | `Docs/Modules/GameLoop.md` | `Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md` | Duplicated by design (live + snapshot) |
+| SceneFlow | `Docs/Modules/SceneFlow.md` | `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow.md` | Duplicated by design (live + snapshot) |
+| WorldLifecycle | `Docs/Modules/WorldLifecycle.md` | `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle.md` | Duplicated by design (live + snapshot) |
+| Navigation | `Docs/Modules/Navigation.md` | `Docs/Reports/Audits/2026-03-06/Modules/Navigation.md` | Duplicated by design (live + snapshot) |
+| LevelFlow | `Docs/Modules/LevelFlow.md` | `Docs/Reports/Audits/2026-03-06/Modules/LevelFlow.md` | Duplicated by design (live + snapshot) |
+| ContentSwap | - | `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap.md` | Snapshot only |
+| DevQA | - | `Docs/Reports/Audits/2026-03-06/Modules/DevQA.md` | Snapshot only |
