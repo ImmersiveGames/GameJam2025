@@ -1,3 +1,5 @@
+
+> Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # Plano Geral — Trilho Macro (Routes) vs Trilho Local (Levels)
 
 > Documento de entendimento/arquitetura (não é decisão final nem plano de implementação detalhado).
@@ -199,3 +201,4 @@ Exemplos (não normativos; só sinalizam o que queremos ver como contrato):
 
 1. Criar um ADR de completude (Baseline 3.0) para registrar **DoD e evidências**.
 2. Depois, propor **plano incremental** (fases) e abrir ADR por fase (implementação).
+

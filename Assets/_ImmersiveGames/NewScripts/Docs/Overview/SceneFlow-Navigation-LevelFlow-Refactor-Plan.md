@@ -1,3 +1,5 @@
+
+> Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # SceneFlow / Navigation / LevelFlow Refactor Plan v2.1.3
 
 > Objetivo macro (inalterado): ter pontos de configuração e modularidade para **cenas**, **transições** e **níveis**, com o mínimo de duplicação de dados e decisões explícitas (evidence-based).
@@ -18,7 +20,7 @@
 | `routeId` | Existe como `SceneRouteId`, mas ainda convive com duplicação de dados de cena em pontos adjacentes (Navigation/LevelFlow). | `SceneRouteId` vira fonte única de scene data (load/unload/active) e demais módulos só referenciam a rota. |
 | `styleId` | `TransitionStyleId` já existe, mas sua semântica ainda não está explícita em todo o plano/documentação. | `TransitionStyleId` é contrato navegável e resolve deterministicamente `SceneFlowProfileId` + `UseFade`. |
 | `profileId` | `SceneFlowProfileId` já é o ID tipado real; ainda há risco de confusão textual com o nome antigo (`SceneTransitionProfileId`). | `SceneFlowProfileId` permanece ID tipado do profile de transição, sem ambiguidade de nomenclatura. |
-| `levelId` | Presente no LevelFlow, mas trilho end-to-end ainda não é o único caminho operacional (fluxos paralelos sobrevivem). | `levelId` entra pelo trilho oficial `StartGameplayAsync(levelId)`, com QA/Dev operando no mesmo caminho de produção. |
+| `levelId` | Presente no LevelFlow, mas trilho end-to-end ainda não é o único caminho operacional (fluxos paralelos sobrevivem). | `levelId` entra pelo trilho oficial `StartGameplayLegacy(levelId)`, com QA/Dev operando no mesmo caminho de produção. |
 
 ## Correções aplicadas nesta revisão (v2.1.3)
 
@@ -83,10 +85,10 @@ Introduzir um **catálogo de profiles por referência direta** (ScriptableObject
 
 - **F3 (status atual):** concluído no código atual — SceneRouteCatalog é a fonte única de Scene Data; LevelDefinition/GameNavigationCatalogAsset mantêm apenas campos LEGACY ignorados com warning de observabilidade.
 - **F2 (concluído):** Decisão de Reset/WorldLifecycle centralizada em `IRouteResetPolicy.Resolve(...) -> RouteResetDecision`, aplicada pelo driver canônico do WorldLifecycle.
-- **F4 (concluído):** LevelFlow end-to-end pelo trilho oficial `StartGameplayAsync(levelId)` para entrada inicial de gameplay (Menu Play e QA usando o mesmo caminho de produção).
-- **F5 (concluído):** Hardening fechado com logs canônicos `[OBS][Navigation]` nos trilhos explícitos (`StartGameplayAsync`, `RestartAsync`, `ExitToMenuAsync`, `GoToMenuAsync/Navigate`) e ContextMenus QA operáveis para `StartGameplayAsync(levelId)`, `RestartAsync` e `ExitToMenuAsync`.
-- **Evidência F4:** `MenuPlayButtonBinder` chama `StartGameplayAsync(LevelId.FromName(startLevelId), reason)` com log `[OBS][Navigation] MenuPlay -> StartGameplayAsync ...`.
-- **Evidência F4:** `SceneFlowDevContextMenu` QA usa `StartGameplayAsync(level.1)` e expõe ações explícitas para `RestartAsync`/`ExitToMenuAsync` com logs `[OBS][Navigation]`.
+- **F4 (concluído):** LevelFlow end-to-end pelo trilho oficial `StartGameplayLegacy(levelId)` para entrada inicial de gameplay (Menu Play e QA usando o mesmo caminho de produção).
+- **F5 (concluído):** Hardening fechado com logs canônicos `[OBS][Navigation]` nos trilhos explícitos (`StartGameplayAsync`, `RestartAsync`, `ExitToMenuAsync`, `GoToMenuAsync/Navigate`) e ContextMenus QA operáveis para `StartGameplayLegacy(levelId)`, `RestartAsync` e `ExitToMenuAsync`.
+- **Evidência F4:** `MenuPlayButtonBinder` chama `StartGameplayLegacy(LevelId.FromName(startLevelId), reason)` com log `[OBS][Navigation] MenuPlay -> StartGameplayAsync ...`.
+- **Evidência F4:** `SceneFlowDevContextMenu` QA usa `StartGameplayLegacy(level.1)` e expõe ações explícitas para `RestartAsync`/`ExitToMenuAsync` com logs `[OBS][Navigation]`.
 - **Evidência F5:** `GameNavigationService.ExecuteEntryAsync(...)` publica anchor canônico `[OBS][Navigation] NavigateAsync -> ...` com `intentId`, `sceneRouteId`, `styleId`, `reason` e `signature`.
 - **Evidência F2:** `SceneRouteDefinition` expõe `RouteKind` como metadado da rota para decisão de reset por policy.
 - **Evidência F2:** `WorldLifecycleSceneFlowResetDriver` resolve decisão via `_routeResetPolicy.Resolve(context.RouteId, context)` sem duplicar regra no driver.
@@ -96,3 +98,5 @@ Introduzir um **catálogo de profiles por referência direta** (ScriptableObject
 **Ordem recomendada (histórico executado):** F1 → F3 → F2 → F4 → F5.
 
 **Estado atual:** F1–F5 concluídos; próximos ciclos entram como hardening incremental e regressão contínua.
+
+

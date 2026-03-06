@@ -5,55 +5,24 @@
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
 - Ultima atualizacao: 2026-03-05
-- Tipo: Implementacao
-- Escopo: NewScripts/Modules (SceneFlow, LevelFlow, WorldLifecycle)
 
-## Resumo
+## Decisao canonica atual
 
-Separar assinatura e dedupe por dominio:
+- Macro assinatura: `SceneTransitionContext.ContextSignature`.
+- Level assinatura: `levelSignature` baseada em `levelRef` (`level:...|route:...|reason:...`).
+- Dedupe de level por `SelectionVersion`.
+- `levelId/contentId` nao definem identidade canonica de level. (LEGADO)
 
-- **Macro / SceneFlow**: assinatura de transicao de cena (`SceneTransitionContext.ContextSignature`).
-- **Level / LevelFlow**: assinatura de selecao de level (`LevelContextSignature`).
+## Evidencia (log)
 
-## Decisao
+- `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
+- `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
+- `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
+- `lastlog:2181` `LevelAdditiveClearSummary ...`
+- `lastlog:2185` `LevelCleared ...`
+- `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
+- `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
 
-1. A assinatura canonica do macro e `SceneTransitionContext.ContextSignature`.
-2. A assinatura canonica do level e `LevelContextSignature`.
-3. O dedupe macro ocorre em duas camadas:
-   - `SceneTransitionService.ShouldDedupe(...)`.
-   - `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(...)`.
-4. Dedupe de level e por `SelectionVersion` monotonico (`LevelStageOrchestrator`).
+## Observacao LEGADO
 
-## Implementacao atual (fonte de verdade: codigo)
-
-### Assinatura macro (SceneFlow)
-
-- `SceneTransitionContext` expoe `ContextSignature` e calcula assinatura em `ComputeSignature(...)`.
-- `SceneTransitionSignature.Compute(...)` retorna `context.ContextSignature`.
-
-### Assinatura level (LevelFlow)
-
-- `LevelContextSignature.Create(...)` monta `level:{levelId}|route:{routeId}|content:{contentId}|reason:{reason}`.
-- `LevelFlowRuntimeService` e `LevelSwapLocalService` publicam `LevelSelectedEvent` com `selectionVersion` + `levelSignature`.
-
-### Dedupe macro
-
-- `SceneTransitionService.ShouldDedupe(...)` evita start duplicado em janela curta.
-- `WorldLifecycleSceneFlowResetDriver.ShouldSkipDuplicate(...)` evita reset duplicado em in-flight/recent.
-
-### Dedupe level
-
-- `LevelStageOrchestrator` mantem `_lastProcessedSelectionVersion` e ignora versao menor/igual.
-- `LevelSwapLocalService` e `LevelFlowRuntimeService` incrementam `selectionVersion`.
-
-## Criterios de aceite (DoD)
-
-- [x] Distincao explicita entre assinatura macro e assinatura de level.
-- [x] Dedupe macro em `SceneTransitionService` + `WorldLifecycleSceneFlowResetDriver`.
-- [x] Dedupe level por `SelectionVersion` no orquestrador de stages.
-- [ ] Hardening: testes automatizados para colisao controlada.
-
-## Changelog
-
-- 2026-03-05: revisado com base nas auditorias de 2026-03-04/2026-03-05 e no codigo atual.
-- 2026-03-04: ADR auditado contra o codigo; implementacao migrada para evidencias de classes/metodos.
+- Onde aparecer `levelId/contentId` como identidade de level, considerar LEGADO e migrar para `levelRef`.

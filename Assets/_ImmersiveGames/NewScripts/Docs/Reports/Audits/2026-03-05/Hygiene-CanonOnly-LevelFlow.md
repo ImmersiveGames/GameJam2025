@@ -19,9 +19,9 @@
 - Nenhum.
 
 ## APIs bloqueadas (legacy/quarentena logica)
-- `ILevelFlowRuntimeService.StartGameplayAsync(string levelId, ...)`
+- `ILevelFlowRuntimeService.StartGameplayLegacy(string levelId, ...)`
   - Runtime: `HardFailFastH1` em `LevelFlowRuntimeService`.
-- `IGameNavigationService.StartGameplayAsync(LevelId, ...)`
+- `IGameNavigationService.StartGameplayLegacy(LevelId, ...)`
   - Runtime: `HardFailFastH1` em `GameNavigationService`.
 - `IGameNavigationService.RequestGameplayAsync(...)`
   - Runtime: `HardFailFastH1` em `GameNavigationService`.
@@ -89,27 +89,27 @@ Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:77:            if (string.IsNull
 Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:112:        public bool TryResolveContentId(LevelId levelId, out string contentId)
 Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:114:            contentId = LevelFlowContentDefaults.DefaultContentId;
 Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:127:            contentId = LevelFlowContentDefaults.Normalize(resolution.ContentId);
-Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:404:                $"[OBS][SceneFlow] MacroRouteResolvedVia=LevelCatalog levelId='{levelId}' macroRouteId='{resolution.MacroRouteId}' contentId='{resolution.ContentId}'.",
+Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:404:                $"[OBS][SceneFlow] MacroRouteResolvedViaLevelCatalogLegacy levelId='{levelId}' macroRouteId='{resolution.MacroRouteId}' contentId='{resolution.ContentId}'.",
 Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:501:                string normalizedContentId = LevelFlowContentDefaults.Normalize(definition.contentId);
 Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:502:                if (string.Equals(definition.contentId, normalizedContentId, StringComparison.Ordinal))
 Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:507:                definition.contentId = normalizedContentId;
 Modules/LevelFlow\Bindings\LevelCatalogAsset.cs:518:                $"[OBS][Compat] LevelCatalogAsset OnValidate contentId default aplicado. migrated={migratedCount}, default='{LevelFlowContentDefaults.DefaultContentId}', asset='{name}'.",
 ```
 
-### `StartGameplayAsync(`
+### `StartGameplayLegacy(`
 ```text
-Modules\LevelFlow\Runtime\LevelFlowRuntimeService.cs:28:        public Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default)
-Modules\LevelFlow\Runtime\LevelFlowRuntimeService.cs:32:                $"[FATAL][H1][LevelFlow] Legacy StartGameplayAsync(levelId) is disabled. levelId='{levelId}' reason='{normalizedReason}'. Use StartGameplayDefaultAsync.");
-Modules\LevelFlow\Runtime\ILevelFlowRuntimeService.cs:9:        Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default);
-Modules\Navigation\IGameNavigationService.cs:32:        Task StartGameplayAsync(LevelId levelId, string reason = null);
-Modules\Navigation\GameNavigationService.cs:128:        public Task StartGameplayAsync(LevelId levelId, string reason = null)
-Modules\Navigation\GameNavigationService.cs:130:            WarnLegacyApiUsedOnce("StartGameplayAsync(LevelId)", "ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct)");
-Modules\Navigation\GameNavigationService.cs:132:                $"[FATAL][H1][Navigation] Legacy API blocked: StartGameplayAsync(LevelId). levelId='{levelId}' reason='{reason ?? "<null>"}'.");
+Modules\LevelFlow\Runtime\LevelFlowRuntimeService.cs:28:        public Task StartGameplayLegacy(string levelId, string reason = null, CancellationToken ct = default)
+Modules\LevelFlow\Runtime\LevelFlowRuntimeService.cs:32:                $"[FATAL][H1][LevelFlow] Legacy StartGameplayLegacy(levelId) is disabled. levelId='{levelId}' reason='{normalizedReason}'. Use StartGameplayDefaultAsync.");
+Modules\LevelFlow\Runtime\ILevelFlowRuntimeService.cs:9:        Task StartGameplayLegacy(string levelId, string reason = null, CancellationToken ct = default);
+Modules\Navigation\IGameNavigationService.cs:32:        Task StartGameplayLegacy(LevelId levelId, string reason = null);
+Modules\Navigation\GameNavigationService.cs:128:        public Task StartGameplayLegacy(LevelId levelId, string reason = null)
+Modules\Navigation\GameNavigationService.cs:130:            WarnLegacyApiUsedOnce("StartGameplayLegacy(LevelId)", "ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct)");
+Modules\Navigation\GameNavigationService.cs:132:                $"[FATAL][H1][Navigation] Legacy API blocked: StartGameplayLegacy(LevelId). levelId='{levelId}' reason='{reason ?? "<null>"}'.");
 ```
 
 ## Checklist final
-- [x] `Menu -> Gameplay` nao chama `StartGameplayAsync(levelId, ...)`.
-- [x] Nao ha callsite `.StartGameplayAsync(` em `Modules/**` e `Infrastructure/**`.
+- [x] `Menu -> Gameplay` nao chama `StartGameplayLegacy(levelId, ...)`.
+- [x] Nao ha callsite `.StartGameplayLegacy(` em `Modules/**` e `Infrastructure/**`.
 - [x] Start canônico usa route-only (`to-gameplay`) e delega selecao default para `LevelPrepare`.
 - [x] `GameNavigationService.StartGameplayRouteAsync(...)` valida `Gameplay + LevelCollection` e falha com `HardFailFastH1` se invalido.
 - [x] Nao ha branch canônico de StartGameplay consultando `LevelCatalogAsset`.
@@ -117,3 +117,5 @@ Modules\Navigation\GameNavigationService.cs:132:                $"[FATAL][H1][Na
 ## Observacao de validacao
 - Este hardening foi validado por inspeção estatica/grep no escopo `NewScripts`.
 - Nao foi executado playmode/build Unity neste passo.
+
+

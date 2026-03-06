@@ -47,7 +47,7 @@ Cobre:
 
 ### C) LevelFlow / selecao e snapshot
 
-- [x] Trilho canonico: `StartGameplayAsync(levelId, reason)` via LevelFlow runtime.
+- [x] Trilho canonico: `StartGameplayLegacy(levelId, reason)` via LevelFlow runtime.
 - [x] Selecao observavel com `selectionVersion` e `levelSignature`.
 - [x] Restart prioriza snapshot canonico.
 - [x] Swap local intra-macro sem transicao macro (ADR-0026).
@@ -74,3 +74,4 @@ Baseline 3.0 e considerado fechado quando:
 - 2026-03-05: baseline marcado como fechado; alinhado as auditorias de 2026-03-04 e 2026-03-05.
 - 2026-03-01: atualizacao de status e checklist baseada no estado daquele momento.
 - 2026-02-25: checklist inicial alinhado as ADRs 0022-0027.
+

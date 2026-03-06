@@ -5,7 +5,7 @@ Este audit mapeia o estado **real** de SceneFlow + LevelFlow + ContentSwap no c�
 A assinatura macro hoje é centralizada em `SceneTransitionContext.ContextSignature`, calculada por `ComputeSignature(...)` quando não vem pronta na request.
 O pipeline macro em produção está ordenado como: `Started -> FadeIn -> ScenesReady -> CompletionGate -> BeforeFadeOut -> FadeOut -> Completed`.
 Há dedupe explícito no `SceneTransitionService` (janela curta por signature), além de guards adicionais no `WorldLifecycleSceneFlowResetDriver` para `ScenesReady` duplicado.
-No LevelFlow, o entrypoint canônico é `ILevelFlowRuntimeService.StartGameplayAsync(...)`; o serviço resolve `LevelId -> RouteId`, publica `LevelSelectedEvent` e delega para Navigation/SceneFlow.
+No LevelFlow, o entrypoint canônico é `ILevelFlowRuntimeService.StartGameplayLegacy(...)`; o serviço resolve `LevelId -> RouteId`, publica `LevelSelectedEvent` e delega para Navigation/SceneFlow.
 Entrypoints de QA para LevelFlow/NTo1 estão em `SceneFlowDevContextMenu` e chamam o mesmo serviço canônico.
 No ContentSwap, o contrato público é `IContentSwapChangeService` e a implementação atual é **InPlace-only**, com guard de in-flight e sem integração com SceneFlow Fade/LoadingHUD.
 O QA de ContentSwap (G01) chama diretamente `RequestContentSwapInPlaceAsync(...)` com reason estável (`QA/ContentSwap/InPlace/NoVisuals`).
@@ -24,10 +24,10 @@ Para B3-F1 e B3-F4, os riscos imediatos estão concentrados em estabilidade de s
 | WorldLifecycle/Guard dedupe | Runtime | `Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs` | Em `ScenesReady`, evita reset duplicado (`in_flight`/`recent`) e registra guard. | `ResetWorld guard: ScenesReady duplicado`, `GuardDuplicatePrefix:in_flight/recent` |
 | Completion gate (before FadeOut) | Runtime | `Modules/WorldLifecycle/Runtime/WorldLifecycleResetCompletionGate.cs` | Implementa `ISceneTransitionCompletionGate`; aguarda `WorldLifecycleResetCompletedEvent` por signature antes de liberar FadeOut. | `[SceneFlowGate] ...`, `[ResetTimeoutProceed] ... Timeout aguardando ...` |
 | Loading HUD assinatura ativa | Runtime | `Modules/SceneFlow/Loading/Runtime/LoadingHudOrchestrator.cs` | Guarda assinatura ativa/pendente; ignora eventos com assinatura divergente. | `[Loading] Evento ignorado (assinatura nao corresponde)...`, `[Loading] ScenesReady com assinatura diferente...` |
-| LevelFlow entrypoint canônico | Interface | `Modules/LevelFlow/Runtime/ILevelFlowRuntimeService.cs` | API oficial para iniciar gameplay por `levelId`. | `StartGameplayAsync(string levelId, string reason = null, ...)` |
+| LevelFlow entrypoint canônico | Interface | `Modules/LevelFlow/Runtime/ILevelFlowRuntimeService.cs` | API oficial para iniciar gameplay por `levelId`. | `StartGameplayLegacy(string levelId, string reason = null, ...)` |
 | LevelFlow resolução | Interface | `Modules/LevelFlow/Runtime/ILevelFlowService.cs` | Resolve `LevelId -> SceneRouteId + payload`; reverse lookup opcional. | `TryResolve(...)`, `TryResolveLevelId(...)` |
-| LevelFlow produção (UI) | Binding | `Modules/Navigation/Bindings/MenuPlayButtonBinder.cs` | Botão Play do frontend chama `ILevelFlowRuntimeService.StartGameplayAsync(...)`. | `[OBS][LevelFlow] MenuPlay -> StartGameplayAsync ...` |
-| LevelFlow QA (NTo1) | Dev/QA | `Modules/SceneFlow/Dev/SceneFlowDevContextMenu.cs` | Ações `QA/LevelFlow/NTo1/*` e `QA/StartGameplay` chamam `StartGameplayAsync(...)`. | `[QA][LevelFlow] NTo1 start ...`, `[OBS][LevelFlow] QA EnterGameplay ...` |
+| LevelFlow produção (UI) | Binding | `Modules/Navigation/Bindings/MenuPlayButtonBinder.cs` | Botão Play do frontend chama `ILevelFlowRuntimeService.StartGameplayLegacy(...)`. | `[OBS][LevelFlow] MenuPlay -> StartGameplayAsync ...` |
+| LevelFlow QA (NTo1) | Dev/QA | `Modules/SceneFlow/Dev/SceneFlowDevContextMenu.cs` | Ações `QA/LevelFlow/NTo1/*` e `QA/StartGameplay` chamam `StartGameplayLegacy(...)`. | `[QA][LevelFlow] NTo1 start ...`, `[OBS][LevelFlow] QA EnterGameplay ...` |
 | ContentSwap entrypoint canônico | Interface | `Modules/ContentSwap/Runtime/IContentSwapChangeService.cs` | Contrato de troca de conteúdo InPlace. | `RequestContentSwapInPlaceAsync(...)` |
 | ContentSwap InPlace runtime | Runtime | `Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs` | Executa fluxo InPlace-only; guard de in-flight; valida gates; commit no contexto. | `[OBS][ContentSwap] ContentSwapRequested ... mode=InPlace ...`, `Já existe uma troca ... Ignorando (InPlace).`, `ignorado Fade/LoadingHUD` |
 | ContentSwap QA | Dev/QA | `Modules/ContentSwap/Dev/Bindings/ContentSwapDevContextMenu.cs` | Menu QA G01 aciona `IContentSwapChangeService` com reason estável. | `QA/ContentSwap/G01 - InPlace (NoVisuals)`, `[QA][ContentSwap] G01 start...` |
@@ -71,3 +71,4 @@ rg -n "StartGameplayAsync\(|ILevelFlowRuntimeService|ILevelFlowService" Assets/_
 rg -n "IContentSwapChangeService|RequestContentSwapInPlaceAsync\(" Assets/_ImmersiveGames/NewScripts/Modules -g '!*.meta'
 rg -n "QA/Levels|LevelChange|InPlace" Assets/_ImmersiveGames/NewScripts/Modules -g '!*.meta'
 ```
+

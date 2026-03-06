@@ -12,12 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14301cfefefbb9f4f98f52e9b0934bae, type: 3}
   m_Name: Level2
   m_EditorClassIdentifier: 
-  levelId:
-    _value: level1
   additiveScenes:
-  - sceneAsset: {fileID: 102900000, guid: 2039167f662f2e34a99f630eadbe66c0, type: 3}
-    buildIndex: 7
-    sceneName: SceneTest
+  - sceneAsset: {fileID: 102900000, guid: 8909e7e8399536a44976a552663e97d1, type: 3}
+    buildIndex: 8
+    sceneName: SceneTest2
   hasIntroStage: 1
   hasPostLevelStage: 1
   allowLocalCurtainIn: 1

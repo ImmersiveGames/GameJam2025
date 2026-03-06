@@ -49,7 +49,7 @@ Fonte de verdade: código do repositório atual.
 | HIGH | RuntimeFallback | `RestartNavigationBridge.OnResetRequested` | `Modules/Navigation/RestartNavigationBridge.cs` | `EventBus<GameResetRequestedEvent>` (binding no construtor); callers diretos adicionais não encontrados | Se `ILevelFlowRuntimeService` faltar, volta para `IGameNavigationService.RestartAsync`. |
 | HIGH | BestEffort | `MacroLevelPrepareCompletionGate.AwaitBeforeFadeOutAsync` | `Modules/SceneFlow/Transition/Runtime/MacroLevelPrepareCompletionGate.cs` | `SceneTransitionService.AwaitCompletionGateAsync` (via `ISceneTransitionCompletionGate`); gate registrado em `GlobalCompositionRoot.SceneFlowWorldLifecycle.RegisterSceneFlowNative`; callers adicionais não encontrados | Pode pular LevelPrepare em ausência de DI/serviço, mantendo fluxo visual. |
 | HIGH | BestEffort | `WorldLifecycleSceneFlowResetDriver.HandleScenesReadyAsync` / `ExecuteResetWhenRequiredAsync` | `Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs` | `EventBus<SceneTransitionScenesReadyEvent>`; registro em `GlobalCompositionRoot.Pipeline.InstallWorldLifecycleServices`; callers adicionais não encontrados | Driver libera completion em SKIP/fallback para evitar deadlock, mas reset pode não executar. |
-| MED | DeprecatedAPI | `IGameNavigationService.StartGameplayAsync(LevelId)` e `GameNavigationService.StartGameplayAsync(LevelId)` | `Modules/Navigation/IGameNavigationService.cs`, `Modules/Navigation/GameNavigationService.cs` | Tipado na interface global; callers explícitos no escopo principal não encontrados (uso canônico é `ILevelFlowRuntimeService`) | Entry point legado ainda disponível para consumo indevido. |
+| MED | DeprecatedAPI | `IGameNavigationService.StartGameplayLegacy(LevelId)` e `GameNavigationService.StartGameplayLegacy(LevelId)` | `Modules/Navigation/IGameNavigationService.cs`, `Modules/Navigation/GameNavigationService.cs` | Tipado na interface global; callers explícitos no escopo principal não encontrados (uso canônico é `ILevelFlowRuntimeService`) | Entry point legado ainda disponível para consumo indevido. |
 | MED | DeprecatedAPI | `IGameNavigationService.NavigateAsync(string)` / `RequestMenuAsync` / `RequestGameplayAsync` | `Modules/Navigation/IGameNavigationService.cs`, `Modules/Navigation/GameNavigationService.cs` | callers não encontrados para overload string no escopo alvo | API string-based mantém trilho paralelo ao intent tipado. |
 | MED | CompatShim | `LevelDefinition.routeId` / `routeRef` (legado) | `Modules/LevelFlow/Runtime/LevelDefinition.cs` | `LevelCatalogAsset.TryMigrateLegacyRouteRefsInEditor`; `LevelCatalogAsset.TryMigrateMacroRouteRefsInEditor`; uso runtime direto não encontrado | Campos legados podem reintroduzir configuração híbrida route/level. |
 | MED | RuntimeFallback | `LevelCatalogAsset.TryResolveLevelId(SceneRouteId, out LevelId)` | `Modules/LevelFlow/Bindings/LevelCatalogAsset.cs` | callers não encontrados | Em macro route ambígua, método permanece best-effort para compat e pode falhar sem sinal forte ao chamador. |
@@ -87,7 +87,7 @@ Fonte de verdade: código do repositório atual.
   - Excerpt:
     - `FallbackApplied source='snapshot' ...`
     - `FallbackApplied source='last_level_id' ...`
-    - `FailFastMissingLevel ... require_explicit_level_or_valid_snapshot`
+    - `old_failfast_marker_removed ... old_snapshot_policy_marker_removed`
 
 - **`RestartNavigationBridge.OnResetRequested`**
   - Categoria: `RuntimeFallback` | RuntimeRisk: `HIGH`
@@ -96,7 +96,7 @@ Fonte de verdade: código do repositório atual.
   - Excerpt:
     - `Restart fallback -> IGameNavigationService.RestartAsync (LevelFlowRuntimeService missing)`
 
-- **`IGameNavigationService` e `GameNavigationService` APIs `[Obsolete]`** (`StartGameplayAsync(LevelId)`, `NavigateAsync(string)`, `RequestMenuAsync`, `RequestGameplayAsync`)
+- **`IGameNavigationService` e `GameNavigationService` APIs `[Obsolete]`** (`StartGameplayLegacy(LevelId)`, `NavigateAsync(string)`, `RequestMenuAsync`, `RequestGameplayAsync`)
   - Categoria: `DeprecatedAPI` | RuntimeRisk: `MED`
   - Como entra aqui: interface global; callers diretos de overload string não encontrados no escopo principal.
   - Impacto: mantém entrypoints paralelos ao trilho tipado/core, facilitando bypass por consumo legado.
@@ -240,7 +240,7 @@ Fonte de verdade: código do repositório atual.
 
 ### Entrypoints canônicos (runtime atual)
 
-- `ILevelFlowRuntimeService.StartGameplayAsync(string levelId, ...)`
+- `ILevelFlowRuntimeService.StartGameplayLegacy(string levelId, ...)`
 - `ILevelFlowRuntimeService.SwapLevelLocalAsync(LevelId, ...)`
 - `ILevelFlowRuntimeService.RestartLastGameplayAsync(...)`
 - `IGameNavigationService.StartGameplayRouteAsync(SceneRouteId, payload, ...)` (rota já resolvida pelo LevelFlow)
@@ -250,7 +250,7 @@ Fonte de verdade: código do repositório atual.
 
 ### Entrypoints paralelos/antigos ainda presentes
 
-- `IGameNavigationService.StartGameplayAsync(LevelId, ...)` `[Obsolete]`
+- `IGameNavigationService.StartGameplayLegacy(LevelId, ...)` `[Obsolete]`
   - Como é chamado hoje: callers diretos não encontrados no escopo principal.
 - `IGameNavigationService.NavigateAsync(string routeId, ...)` `[Obsolete]`
   - Como é chamado hoje: callers diretos não encontrados no escopo principal.
@@ -289,3 +289,6 @@ Fonte de verdade: código do repositório atual.
 
 - Itens com “callers não encontrados” foram mantidos explicitamente assim para evitar inferência indevida.
 - Este inventário não altera runtime code e não propõe refatoração nesta entrega H0.
+
+
+

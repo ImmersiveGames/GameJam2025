@@ -1,3 +1,5 @@
+
+> Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # Revisão de Arquitetura — Macro Routes vs Levels (Intenção do Projeto)
 
 Data: 2026-02-19
@@ -172,4 +174,5 @@ A sua intenção é sólida, mas o “ponto de falha” típico é sempre o mesm
 > *se o runtime não distingue assinaturas macro vs local, o sistema vai continuar tratando level como rota disfarçada.*
 
 A maior melhoria arquitetural, portanto, é **formalizar a camada local** como trilho independente, com contratos e telemetria, e integrar isso no pipeline de loading do macro sem acoplamento cíclico.
+
 

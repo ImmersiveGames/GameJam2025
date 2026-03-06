@@ -1,3 +1,5 @@
+
+> Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # Plano incremental — Macro Routes vs Levels (Baseline 3.0)
 
 Data: 2026-02-19
@@ -264,3 +266,4 @@ O maior risco prático (já observado) é **dedupe por assinatura macro** engoli
 Por isso, F1 é o primeiro passo técnico real.
 
 A “jogada” arquitetural central é: **LevelLocalFlow como trilho canônico**, integrado ao SceneFlow por um **pipeline de steps**, sem acoplamento cíclico.
+

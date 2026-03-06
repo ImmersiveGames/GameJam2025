@@ -401,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
             }
 
             DebugUtility.LogVerbose<LevelCatalogAsset>(
-                $"[OBS][SceneFlow] MacroRouteResolvedVia=LevelCatalog levelId='{levelId}' macroRouteId='{resolution.MacroRouteId}' contentId='{resolution.ContentId}'.",
+                $"[OBS][LEGACY][SceneFlow] MacroRouteResolvedViaLevelCatalogLegacy levelId='{levelId}' macroRouteId='{resolution.MacroRouteId}' contentId='{resolution.ContentId}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -552,3 +552,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings
         }
     }
 }
+

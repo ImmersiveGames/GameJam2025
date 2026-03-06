@@ -125,15 +125,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return Task.CompletedTask;
         }
 
-        [Obsolete("Legacy API blocked. Use ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
-        public Task StartGameplayAsync(LevelId levelId, string reason = null)
-        {
-            WarnLegacyApiUsedOnce("StartGameplayAsync(LevelId)", "ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct)");
-            HardFailFastH1.Trigger(typeof(GameNavigationService),
-                $"[FATAL][H1][Navigation] Legacy API blocked: StartGameplayAsync(LevelId). levelId='{levelId}' reason='{reason ?? "<null>"}'.");
-            return Task.CompletedTask;
-        }
-
         public async Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null)
         {
             if (!routeId.IsValid)
@@ -399,6 +390,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
     }
 }
+
+
 
 
 

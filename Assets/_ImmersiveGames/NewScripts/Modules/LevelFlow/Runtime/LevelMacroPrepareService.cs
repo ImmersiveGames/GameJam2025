@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
         }
 
-        public async Task PrepareAsync(SceneRouteId macroRouteId, string reason, CancellationToken ct = default)
+        public async Task PrepareOrClearAsync(SceneRouteId macroRouteId, string reason, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -43,6 +43,24 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             SceneRouteDefinitionAsset routeAsset = ResolveRouteAssetOrFail(macroRouteId, normalizedReason);
             SceneRouteKind routeKind = routeAsset.RouteKind;
             string prepareSignature = ComputeSignature(macroRouteId, routeKind, normalizedReason);
+
+            if (routeAsset.LevelCollection != null && routeKind == SceneRouteKind.Gameplay)
+            {
+                await PrepareGameplayAsync(routeAsset, macroRouteId, routeKind, prepareSignature, normalizedReason, ct);
+                return;
+            }
+
+            await ClearActiveLevelAsync(macroRouteId, routeKind, prepareSignature, normalizedReason, ct);
+        }
+
+        private async Task PrepareGameplayAsync(
+            SceneRouteDefinitionAsset routeAsset,
+            SceneRouteId macroRouteId,
+            SceneRouteKind routeKind,
+            string prepareSignature,
+            string normalizedReason,
+            CancellationToken ct)
+        {
             LevelCollectionAsset levelCollection = ResolveLevelCollectionOrFail(routeAsset, macroRouteId, prepareSignature, normalizedReason);
 
             GameplayStartSnapshot snapshot = GameplayStartSnapshot.Empty;
@@ -107,6 +125,41 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             DebugUtility.Log<LevelMacroPrepareService>(
                 $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' levelRef='{selectedLevelRef.name}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private async Task ClearActiveLevelAsync(
+            SceneRouteId destinationRouteId,
+            SceneRouteKind destinationRouteKind,
+            string signature,
+            string reason,
+            CancellationToken ct)
+        {
+            if (!_restartContextService.TryGetCurrent(out GameplayStartSnapshot snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.HasLevelRef ||
+                snapshot.LevelRef == null)
+            {
+                if (LevelAdditiveSceneRuntimeApplier.HasActiveAppliedLevelContent)
+                {
+                    FailFastConfig(destinationRouteId, destinationRouteKind, signature, reason,
+                        $"Level clear state mismatch: no active snapshot but applier reports active content. activeCount='{LevelAdditiveSceneRuntimeApplier.ActiveAppliedSceneCount}'.");
+                }
+
+                DebugUtility.Log<LevelMacroPrepareService>(
+                    $"[OBS][LevelFlow] LevelClearSkipped reason='no_active_level' destinationRouteId='{destinationRouteId}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            LevelDefinitionAsset previousLevelRef = snapshot.LevelRef;
+            previousLevelRef.ValidateOrFailFast($"LevelClear destinationRouteId='{destinationRouteId}' reason='{reason}'");
+
+            int scenesRemoved = await LevelAdditiveSceneRuntimeApplier.ClearAsync(previousLevelRef, ct);
+            _restartContextService.Clear($"LevelFlow/ClearOnMacroExit/{reason}");
+
+            DebugUtility.Log<LevelMacroPrepareService>(
+                $"[OBS][LevelFlow] LevelCleared macroRouteId='{destinationRouteId}' previousLevelRef='{previousLevelRef.name}' scenesRemoved={scenesRemoved} reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -192,3 +245,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+

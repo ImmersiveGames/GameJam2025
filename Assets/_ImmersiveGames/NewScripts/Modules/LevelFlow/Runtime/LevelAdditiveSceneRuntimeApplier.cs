@@ -10,6 +10,31 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     public static class LevelAdditiveSceneRuntimeApplier
     {
+        private static readonly object StateSync = new object();
+        private static readonly HashSet<int> ActiveAppliedSceneIndices = new HashSet<int>();
+
+        public static bool HasActiveAppliedLevelContent
+        {
+            get
+            {
+                lock (StateSync)
+                {
+                    return ActiveAppliedSceneIndices.Count > 0;
+                }
+            }
+        }
+
+        public static int ActiveAppliedSceneCount
+        {
+            get
+            {
+                lock (StateSync)
+                {
+                    return ActiveAppliedSceneIndices.Count;
+                }
+            }
+        }
+
         public static async Task<(int added, int removed)> ApplyAsync(
             LevelDefinitionAsset previousLevelRef,
             LevelDefinitionAsset targetLevelRef,
@@ -21,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             targetLevelRef.ValidateOrFailFast("LevelAdditiveApply/Target");
-            HashSet<int> targetBuildIndexes = BuildTargetBuildIndexSetOrFail(targetLevelRef.AdditiveScenes);
+            HashSet<int> targetBuildIndexes = BuildBuildIndexSetOrFail(targetLevelRef.AdditiveScenes, "Target");
             HashSet<int> candidateUnloadBuildIndexes = new HashSet<int>();
 
             if (previousLevelRef != null)
@@ -30,12 +55,47 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 AddBuildIndexes(candidateUnloadBuildIndexes, previousLevelRef.AdditiveScenes);
             }
 
+            List<int> unloadedIndices = await UnloadIndicesAsync(candidateUnloadBuildIndexes, targetBuildIndexes, ct);
+            List<int> loadedIndices = await LoadIndicesAsync(targetBuildIndexes, ct);
+
+            UpdateActiveState(targetBuildIndexes);
+
+            DebugUtility.Log(typeof(LevelAdditiveSceneRuntimeApplier),
+                $"[OBS][LevelFlow] LevelAdditiveApplySummary targetLevelRef='{targetLevelRef.name}' loadedIndices=[{string.Join(",", loadedIndices)}] unloadedIndices=[{string.Join(",", unloadedIndices)}] loadedCount={loadedIndices.Count} unloadedCount={unloadedIndices.Count} activeCount={ActiveAppliedSceneCount}.",
+                DebugUtility.Colors.Info);
+
+            return (loadedIndices.Count, unloadedIndices.Count);
+        }
+
+        public static async Task<int> ClearAsync(LevelDefinitionAsset previousLevelRef, CancellationToken ct)
+        {
+            if (previousLevelRef == null)
+            {
+                FailFast("Clear requested with null previousLevelRef.");
+            }
+
+            previousLevelRef.ValidateOrFailFast("LevelAdditiveClear/Previous");
+            HashSet<int> previousBuildIndexes = BuildBuildIndexSetOrFail(previousLevelRef.AdditiveScenes, "Previous");
+            HashSet<int> emptyTarget = new HashSet<int>();
+            List<int> unloadedIndices = await UnloadIndicesAsync(previousBuildIndexes, emptyTarget, ct);
+
+            ClearActiveState();
+
+            DebugUtility.Log(typeof(LevelAdditiveSceneRuntimeApplier),
+                $"[OBS][LevelFlow] LevelAdditiveClearSummary previousLevelRef='{previousLevelRef.name}' unloadedIndices=[{string.Join(",", unloadedIndices)}] unloadedCount={unloadedIndices.Count} activeCount={ActiveAppliedSceneCount}.",
+                DebugUtility.Colors.Info);
+
+            return unloadedIndices.Count;
+        }
+
+        private static async Task<List<int>> UnloadIndicesAsync(HashSet<int> candidateUnloadBuildIndexes, HashSet<int> keepLoadedSet, CancellationToken ct)
+        {
             List<int> unloadedIndices = new List<int>();
             foreach (int buildIndex in candidateUnloadBuildIndexes)
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (targetBuildIndexes.Contains(buildIndex))
+                if (keepLoadedSet.Contains(buildIndex))
                 {
                     continue;
                 }
@@ -61,6 +121,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 unloadedIndices.Add(buildIndex);
             }
 
+            return unloadedIndices;
+        }
+
+        private static async Task<List<int>> LoadIndicesAsync(HashSet<int> targetBuildIndexes, CancellationToken ct)
+        {
             List<int> loadedIndices = new List<int>();
             foreach (int buildIndex in targetBuildIndexes)
             {
@@ -87,19 +152,35 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 loadedIndices.Add(buildIndex);
             }
 
-            DebugUtility.Log(typeof(LevelAdditiveSceneRuntimeApplier),
-                $"[OBS][LevelFlow] LevelAdditiveApplySummary targetLevelRef='{targetLevelRef.name}' loadedIndices=[{string.Join(",", loadedIndices)}] unloadedIndices=[{string.Join(",", unloadedIndices)}] loadedCount={loadedIndices.Count} unloadedCount={unloadedIndices.Count}.",
-                DebugUtility.Colors.Info);
-
-            return (loadedIndices.Count, unloadedIndices.Count);
+            return loadedIndices;
         }
 
-        private static HashSet<int> BuildTargetBuildIndexSetOrFail(IReadOnlyList<SceneBuildIndexRef> refs)
+        private static void UpdateActiveState(HashSet<int> buildIndexes)
+        {
+            lock (StateSync)
+            {
+                ActiveAppliedSceneIndices.Clear();
+                foreach (int index in buildIndexes)
+                {
+                    ActiveAppliedSceneIndices.Add(index);
+                }
+            }
+        }
+
+        private static void ClearActiveState()
+        {
+            lock (StateSync)
+            {
+                ActiveAppliedSceneIndices.Clear();
+            }
+        }
+
+        private static HashSet<int> BuildBuildIndexSetOrFail(IReadOnlyList<SceneBuildIndexRef> refs, string sourceLabel)
         {
             HashSet<int> set = new HashSet<int>();
             if (refs == null)
             {
-                FailFast("Target additive scene list is null.");
+                FailFast($"{sourceLabel} additive scene list is null.");
             }
 
             for (int i = 0; i < refs.Count; i++)
@@ -107,12 +188,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 SceneBuildIndexRef sceneRef = refs[i];
                 if (sceneRef == null)
                 {
-                    FailFast($"Target additive scene reference is null at index={i}.");
+                    FailFast($"{sourceLabel} additive scene reference is null at index={i}.");
                 }
 
                 if (sceneRef.BuildIndex < 0)
                 {
-                    FailFast($"Target additive scene has invalid buildIndex at index={i}. buildIndex='{sceneRef.BuildIndex}' sceneName='{sceneRef.SceneName}'.");
+                    FailFast($"{sourceLabel} additive scene has invalid buildIndex at index={i}. buildIndex='{sceneRef.BuildIndex}' sceneName='{sceneRef.SceneName}'.");
                 }
 
                 set.Add(sceneRef.BuildIndex);

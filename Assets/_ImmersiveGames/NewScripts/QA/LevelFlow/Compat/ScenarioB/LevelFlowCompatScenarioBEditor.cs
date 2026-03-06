@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
                 if (RunExplicitStartGameplayScenario())
                 {
                     Debug.Log(
-                        $"[PASS][Compat] ScenarioB run completed StartGameplayAsync levelA='{ScenarioLevelAId}' reasonA='{ScenarioReasonA}' levelB='{ScenarioLevelBId}' reasonB='{ScenarioReasonB}' duplicatedRoutes={duplicatedRoutes}.");
+                        $"[PASS][Compat] ScenarioB run completed StartGameplayDefaultAsync scenarioA='{ScenarioLevelAId}' reasonA='{ScenarioReasonA}' levelB='{ScenarioLevelBId}' reasonB='{ScenarioReasonB}' duplicatedRoutes={duplicatedRoutes}.");
                 }
             }
         }
@@ -140,8 +140,8 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
                 return false;
             }
 
-            levelFlow.StartGameplayAsync(ScenarioLevelAId, ScenarioReasonA).GetAwaiter().GetResult();
-            levelFlow.StartGameplayAsync(ScenarioLevelBId, ScenarioReasonB).GetAwaiter().GetResult();
+            levelFlow.StartGameplayDefaultAsync(ScenarioReasonA).GetAwaiter().GetResult();
+            levelFlow.StartGameplayDefaultAsync(ScenarioReasonB).GetAwaiter().GetResult();
             return true;
         }
 
@@ -314,3 +314,4 @@ namespace _ImmersiveGames.NewScripts.QA.LevelFlow.Compat.ScenarioB
     }
 }
 #endif
+

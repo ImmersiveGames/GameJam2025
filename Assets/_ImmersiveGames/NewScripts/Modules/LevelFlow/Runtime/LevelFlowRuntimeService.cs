@@ -24,15 +24,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _levelSwapLocalService = levelSwapLocalService;
         }
 
-        [Obsolete("Legacy API. Use StartGameplayDefaultAsync(reason, ct).")]
-        public Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default)
-        {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/StartGameplayLegacy" : reason.Trim();
-            HardFailFastH1.Trigger(typeof(LevelFlowRuntimeService),
-                $"[FATAL][H1][LevelFlow] Legacy StartGameplayAsync(levelId) is disabled. levelId='{levelId}' reason='{normalizedReason}'. Use StartGameplayDefaultAsync.");
-            return Task.CompletedTask;
-        }
-
         public async Task StartGameplayDefaultAsync(string reason = null, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
@@ -85,4 +76,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+
+
 

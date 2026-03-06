@@ -5,45 +5,26 @@
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
 - Ultima atualizacao: 2026-03-05
-- Tipo: Implementacao
-- Escopo: NewScripts/Runtime (SceneFlow, WorldLifecycle, LevelFlow, Loading)
 
-## Resumo
+## Decisao canonica atual
 
-Garantir que, para macro gameplay, o FadeOut so acontece apos:
+- Gate roda para qualquer `RouteId` valido antes do FadeOut.
+- `PrepareOrClearAsync(...)`:
+  - gameplay + `LevelCollection` => prepare;
+  - macro sem `LevelCollection` => clear.
+- `LevelClear` e idempotente (`no_active_level` => skip) e sem fallback indevido.
 
-1. Gate de reset macro/world lifecycle.
-2. Preparacao de level no dominio de level (`LevelPrepare`).
+## Evidencia (log)
 
-## Decisao
+- `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
+- `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
+- `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
+- `lastlog:2181` `LevelAdditiveClearSummary ...`
+- `lastlog:2185` `LevelCleared ...`
+- `lastlog:2254` `LevelClearSkipped reason='no_active_level' ...`
+- `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
+- `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
 
-1. `SceneTransitionService` executa `AwaitCompletionGateAsync(...)` antes de `RunFadeOutIfNeeded(...)`.
-2. O gate no DI e `MacroLevelPrepareCompletionGate(inner=WorldLifecycleResetCompletionGate)`.
-3. `MacroLevelPrepareCompletionGate` chama obrigatoriamente `ILevelMacroPrepareService.PrepareAsync(...)` em gameplay.
-4. Ausencia de DI provider ou do servico de prepare gera fail-fast `[FATAL][H1]` (sem escape hatch).
+## Observacao LEGADO
 
-## Implementacao atual (fonte de verdade: codigo)
-
-- `SceneTransitionService.TransitionAsync(...)`: ordem `ScenesReady -> AwaitCompletionGateAsync -> BeforeFadeOut -> FadeOut`.
-- `GlobalCompositionRoot.SceneFlowWorldLifecycle.RegisterSceneFlowNative()`: registra gate composto com `MacroLevelPrepareCompletionGate` envolvendo `WorldLifecycleResetCompletionGate`.
-- `MacroLevelPrepareCompletionGate.AwaitBeforeFadeOutAsync(...)`:
-  - executa o gate interno;
-  - filtra profile gameplay;
-  - exige `ILevelMacroPrepareService` e aciona `PrepareAsync(...)`.
-- `LevelMacroPrepareService.PrepareAsync(...)`:
-  - exige `SceneRouteCatalogAsset` + route asset + `LevelCollection` valida;
-  - seleciona default index 0 quando necessario;
-  - executa reset de level + aplicacao das cenas aditivas;
-  - falha duro em configuracao invalida.
-
-## Criterios de aceite (DoD)
-
-- [x] FadeOut ocorre apos completion gate no pipeline.
-- [x] Etapa `LevelPrepare` e obrigatoria em gameplay.
-- [x] Nao existe skip/degrade de `LevelPrepare` por falta de servico.
-- [x] DI global registra gate composto e servico de prepare.
-
-## Changelog
-
-- 2026-03-05: atualizado para refletir `LevelPrepare` obrigatorio sem fallback/degrade.
-- 2026-03-05: revisado com base nas auditorias de 2026-03-04/2026-03-05 e no codigo atual.
+- `PrepareAsync(...)` e contrato anterior (LEGADO), substituido por `PrepareOrClearAsync(...)`.

@@ -18,17 +18,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
         [SerializeField] private GameNavigationIntentCatalogAsset navigationIntentCatalog;
         [SerializeField] private TransitionStyleCatalogAsset transitionStyleCatalog;
-        [SerializeField] private LevelCatalogAsset levelCatalog;
-        [SerializeField] private LevelId startGameplayLevelId;
+        [SerializeField, HideInInspector] private LevelCatalogAsset levelCatalog;
+        [SerializeField, HideInInspector] private LevelId startGameplayLevelId;
         [SerializeField] private SceneRouteCatalogAsset sceneRouteCatalog;
         [SerializeField] private SceneTransitionProfileCatalogAsset transitionProfileCatalog;
         [SerializeField] private SceneKeyAsset fadeSceneKey;
 
+        private static bool _legacyFieldsWarned;
+
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
         public GameNavigationIntentCatalogAsset NavigationIntentCatalog => navigationIntentCatalog;
         public TransitionStyleCatalogAsset TransitionStyleCatalog => transitionStyleCatalog;
-        public LevelCatalogAsset LevelCatalog => levelCatalog;
-        public LevelId StartGameplayLevelId => startGameplayLevelId;
         public SceneRouteCatalogAsset SceneRouteCatalog => sceneRouteCatalog;
         public SceneTransitionProfileCatalogAsset TransitionProfileCatalog => transitionProfileCatalog;
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
@@ -36,10 +36,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            if (!_legacyFieldsWarned && (levelCatalog != null || startGameplayLevelId.IsValid))
+            {
+                _legacyFieldsWarned = true;
+                DebugUtility.Log(typeof(NewScriptsBootstrapConfigAsset),
+                    $"[OBS][LEGACY] Bootstrap legacy fields are ignored in canonical flow. asset='{name}' hasLevelCatalog='{(levelCatalog != null)}' hasStartGameplayLevelId='{startGameplayLevelId.IsValid}'.",
+                    DebugUtility.Colors.Info);
+            }
+
             if (navigationIntentCatalog == null)
             {
                 string message =
-                    $"[FATAL][Config] NewScriptsBootstrapConfigAsset inválido: navigationIntentCatalog obrigatório e não configurado. asset='{name}'.";
+                    $"[FATAL][Config] NewScriptsBootstrapConfigAsset invalido: navigationIntentCatalog obrigatorio e nao configurado. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(NewScriptsBootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);
@@ -60,6 +68,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
             }
         }
 #endif
-
     }
 }

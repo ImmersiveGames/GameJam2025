@@ -6,6 +6,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     public interface ILevelMacroPrepareService
     {
-        Task PrepareAsync(SceneRouteId macroRouteId, string reason, CancellationToken ct = default);
+        Task PrepareOrClearAsync(SceneRouteId macroRouteId, string reason, CancellationToken ct = default);
     }
 }

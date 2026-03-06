@@ -1,3 +1,5 @@
+
+> Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
 # Planos — Trilho contínuo (canônico)
 
 Este arquivo unifica os planos de execução em um **trilho contínuo**, organizado por **atividades (ActivityId)**.
@@ -500,7 +502,7 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 - Evidência (runtime): snapshot em `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + atualização de `Docs/Reports/Evidence/LATEST.md`
 
 ### Critério de sucesso
-- `MenuPlayButtonBinder` chama `StartGameplayAsync(...)`.
+- `MenuPlayButtonBinder` chama `StartGameplayLegacy(...)`.
 - `GameNavigationCatalogAsset.TryGet("to-gameplay", ...)` retorna entry válido.
 - `GameNavigationService` deixa de logar erro de rota desconhecida para `to-gameplay`.
 - Boot registra observabilidade `[OBS][Navigation] ... tryResolve('to-gameplay')=True`.
@@ -613,3 +615,5 @@ O “Plano 2.2” original foi referenciado como movido no `Docs/CHANGELOG.md`, 
 Recupere pelo histórico do repositório (git) usando o caminho citado no changelog:
 
 - `Archive/Plans/Plano-2.2.md`
+
+

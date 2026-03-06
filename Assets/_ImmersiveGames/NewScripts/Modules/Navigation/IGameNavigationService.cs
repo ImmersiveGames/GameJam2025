@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -23,13 +22,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         /// Sai do gameplay para Menu (semântica de pós-jogo/pause).
         /// </summary>
         Task ExitToMenuAsync(string reason = null);
-
-        /// <summary>
-        /// Inicia gameplay a partir de um LevelId (LEGACY).
-        /// Preferir ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct) ou StartGameplayRouteAsync(routeId,...).
-        /// </summary>
-        [System.Obsolete("Legacy API blocked. Use ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct) ou IGameNavigationService.StartGameplayRouteAsync(routeId, payload, reason).") ]
-        Task StartGameplayAsync(LevelId levelId, string reason = null);
 
 
         /// <summary>
@@ -62,4 +54,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         Task RequestGameplayAsync(string reason = null);
     }
 }
+
+
 

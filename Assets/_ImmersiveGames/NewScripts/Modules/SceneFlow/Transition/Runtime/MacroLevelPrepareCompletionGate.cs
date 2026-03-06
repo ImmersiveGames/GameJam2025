@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             await _innerGate.AwaitBeforeFadeOutAsync(context);
 
-            if (context.TransitionProfileId != SceneFlowProfileId.Gameplay || !context.RouteId.IsValid)
+            if (!context.RouteId.IsValid)
             {
                 return;
             }
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 $"[OBS][SceneFlow] MacroLoadingPhase='LevelPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            await prepareService.PrepareAsync(context.RouteId, reason);
+            await prepareService.PrepareOrClearAsync(context.RouteId, reason);
         }
 
         private static void FailFastH1(string detail, SceneTransitionContext context)
@@ -55,6 +55,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             HardFailFastH1.Trigger(typeof(MacroLevelPrepareCompletionGate),
                 $"{detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
         }
-
     }
 }
