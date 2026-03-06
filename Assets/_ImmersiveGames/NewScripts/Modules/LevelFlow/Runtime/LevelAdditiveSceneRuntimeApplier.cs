@@ -47,16 +47,27 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             targetLevelRef.ValidateOrFailFast("LevelAdditiveApply/Target");
             HashSet<int> targetBuildIndexes = BuildBuildIndexSetOrFail(targetLevelRef.AdditiveScenes, "Target");
-            HashSet<int> candidateUnloadBuildIndexes = new HashSet<int>();
 
-            if (previousLevelRef != null)
+            bool forceReload = previousLevelRef != null && ReferenceEquals(previousLevelRef, targetLevelRef);
+            List<int> loadedIndices;
+            List<int> unloadedIndices;
+
+            if (forceReload)
             {
-                previousLevelRef.ValidateOrFailFast("LevelAdditiveApply/Previous");
-                AddBuildIndexes(candidateUnloadBuildIndexes, previousLevelRef.AdditiveScenes);
+                (loadedIndices, unloadedIndices) = await ReloadSameLevelAsync(targetBuildIndexes, ct);
             }
+            else
+            {
+                HashSet<int> candidateUnloadBuildIndexes = new HashSet<int>();
+                if (previousLevelRef != null)
+                {
+                    previousLevelRef.ValidateOrFailFast("LevelAdditiveApply/Previous");
+                    AddBuildIndexes(candidateUnloadBuildIndexes, previousLevelRef.AdditiveScenes);
+                }
 
-            List<int> unloadedIndices = await UnloadIndicesAsync(candidateUnloadBuildIndexes, targetBuildIndexes, ct);
-            List<int> loadedIndices = await LoadIndicesAsync(targetBuildIndexes, ct);
+                unloadedIndices = await UnloadIndicesAsync(candidateUnloadBuildIndexes, targetBuildIndexes, ct);
+                loadedIndices = await LoadIndicesAsync(targetBuildIndexes, ct);
+            }
 
             UpdateActiveState(targetBuildIndexes);
 
@@ -86,6 +97,61 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Info);
 
             return unloadedIndices.Count;
+        }
+
+        private static async Task<(List<int> loadedIndices, List<int> unloadedIndices)> ReloadSameLevelAsync(HashSet<int> levelBuildIndexes, CancellationToken ct)
+        {
+            List<int> unloadedIndices = new List<int>();
+            List<int> loadedIndices = new List<int>();
+
+            // Comentario: quando previous==target, forcamos unload->load de todo o set aditivo do level.
+            foreach (int buildIndex in levelBuildIndexes)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                Scene loadedScene = SceneManager.GetSceneByBuildIndex(buildIndex);
+                if (loadedScene.IsValid() && loadedScene.isLoaded)
+                {
+                    AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(loadedScene);
+                    if (unloadOperation == null)
+                    {
+                        FailFast($"UnloadSceneAsync returned null for buildIndex='{buildIndex}' during reload.");
+                    }
+
+                    while (!unloadOperation.isDone)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        await Task.Yield();
+                    }
+                }
+
+                unloadedIndices.Add(buildIndex);
+            }
+
+            foreach (int buildIndex in levelBuildIndexes)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                Scene loadedScene = SceneManager.GetSceneByBuildIndex(buildIndex);
+                if (!loadedScene.IsValid() || !loadedScene.isLoaded)
+                {
+                    AsyncOperation loadOperation = SceneManager.LoadSceneAsync(buildIndex, LoadSceneMode.Additive);
+                    if (loadOperation == null)
+                    {
+                        FailFast($"LoadSceneAsync returned null for buildIndex='{buildIndex}' during reload.");
+                    }
+
+                    while (!loadOperation.isDone)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        await Task.Yield();
+                    }
+                }
+
+                loadedIndices.Add(buildIndex);
+            }
+
+            return (loadedIndices, unloadedIndices);
         }
 
         private static async Task<List<int>> UnloadIndicesAsync(HashSet<int> candidateUnloadBuildIndexes, HashSet<int> keepLoadedSet, CancellationToken ct)
