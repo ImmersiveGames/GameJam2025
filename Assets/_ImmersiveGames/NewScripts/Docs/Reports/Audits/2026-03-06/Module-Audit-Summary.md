@@ -14,11 +14,11 @@
 **Ordem recomendada de limpeza:** 9/10 (depois dos modulos de fluxo/runtime).
 
 ## Infrastructure-Composition
-**Canonical Rail:** `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` chama `RegisterEssentialServicesOnly` em `GlobalCompositionRoot.Pipeline.cs`, instala `IGlobalCompositionModule` por stage, e registra servicos canonicos de runtime por metodos especializados (`GameLoop`, `SceneFlow`, `WorldLifecycle`, `Navigation`, `Levels`, `ContentSwap`, `DevQA`).
+**Canonical Rail:** `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` chama `RegisterEssentialServicesOnly` em `GlobalCompositionRoot.Pipeline.cs`, que faz dispatch direto por stage em `InstallCompositionModules()` e registra servicos canonicos de runtime por metodos especializados (`GameLoop`, `SceneFlow`, `WorldLifecycle`, `Navigation`, `Levels`, `ContentSwap`, `DevQA`).
 
 **Top 5 redundancias**
 - `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` teve o registro legacy `RegisterRestartSnapshotContentSwapBridge()` removido no cleanup canÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nico.
-- `Infrastructure/Composition/Modules/*.cs` repetem padrao de gate por stage com logica quase identica.
+- `Infrastructure/Composition/Modules/*.cs` (boilerplate de gate por stage) foi removido no IC-1.3; dispatch agora e direto no pipeline.
 - Registro de bridges cross-modulo concentrado em `NavigationInputModes.cs` com mistura de Navigation/LevelFlow/InputMode.
 - Duplicidade de pontos de configuracao SceneFlow entre `GlobalCompositionRoot.SceneFlowWorldLifecycle.cs` e `GlobalCompositionRoot.FadeLoading.cs`.
 - `SceneScopeCompositionRoot.cs` e `GlobalCompositionRoot.*` compartilham responsabilidade de boot DI em escopos diferentes.
@@ -246,3 +246,15 @@
 - Fallbacks em `WorldResetService` e `WorldLifecycleSceneFlowResetDriver` roteados para helper V1 (sem `Raise` direto).
 - V2 permanece exclusivo em `WorldResetCommands`.
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`.
+
+## CS-1.2 update (behavior-preserving)
+- `ContentSwapContextService` confirmado como publisher único de eventos de estado (PendingSet/PendingCleared/Committed).
+- `InPlaceContentSwapService` mantido como executor canônico delegando publish ao context service.
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v2.md`.
+
+
+## IC-1.3 update (behavior-preserving)
+- Mecanismo `Infrastructure/Composition/Modules/*.cs` removido (boilerplate trivial de stage-gate).
+- `InstallCompositionModules()` agora faz dispatch direto por `_compositionInstallStage` no `GlobalCompositionRoot.Pipeline.cs`.
+- Ordem de `RegisterEssentialServicesOnly()` preservada; sem mudança em `Modules/**`.
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Infra-Composition-Cleanup-v2.md`.

@@ -1,6 +1,5 @@
-﻿﻿using _ImmersiveGames.NewScripts.Core.Composition;
+﻿using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition.Modules;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
@@ -11,6 +10,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
+        private enum CompositionInstallStage
+        {
+            RuntimePolicy,
+            Gates,
+            GameLoop,
+            SceneFlow,
+            WorldLifecycle,
+            Navigation,
+            Levels,
+            ContentSwap,
+            DevQA
+        }
+
         private static CompositionInstallStage _compositionInstallStage;
 
         // --------------------------------------------------------------------
@@ -74,34 +86,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void InstallCompositionModules()
         {
-            var modules = new IGlobalCompositionModule[]
+            switch (_compositionInstallStage)
             {
-                new RuntimePolicyCompositionModule(),
-                new GatesCompositionModule(),
-                new GameLoopCompositionModule(),
-                new SceneFlowCompositionModule(),
-                new WorldLifecycleCompositionModule(),
-                new NavigationCompositionModule(),
-                new LevelsCompositionModule(),
-                new ContentSwapCompositionModule(),
-                new DevQaCompositionModule()
-            };
-
-            var context = new GlobalCompositionContext(
-                _compositionInstallStage,
-                installRuntimePolicy: RegisterRuntimePolicyServices,
-                installSceneFlow: InstallSceneFlowServices,
-                installLevels: RegisterLevelsServices,
-                installGates: InstallGatesServices,
-                installGameLoop: InstallGameLoopServices,
-                installWorldLifecycle: InstallWorldLifecycleServices,
-                installNavigation: InstallNavigationServices,
-                installContentSwap: InstallContentSwapServices,
-                installDevQa: InstallDevQaServices);
-
-            for (int i = 0; i < modules.Length; i++)
-            {
-                modules[i].Install(context);
+                case CompositionInstallStage.RuntimePolicy:
+                    RegisterRuntimePolicyServices();
+                    break;
+                case CompositionInstallStage.Gates:
+                    InstallGatesServices();
+                    break;
+                case CompositionInstallStage.GameLoop:
+                    InstallGameLoopServices();
+                    break;
+                case CompositionInstallStage.SceneFlow:
+                    InstallSceneFlowServices();
+                    break;
+                case CompositionInstallStage.WorldLifecycle:
+                    InstallWorldLifecycleServices();
+                    break;
+                case CompositionInstallStage.Navigation:
+                    InstallNavigationServices();
+                    break;
+                case CompositionInstallStage.Levels:
+                    RegisterLevelsServices();
+                    break;
+                case CompositionInstallStage.ContentSwap:
+                    InstallContentSwapServices();
+                    break;
+                case CompositionInstallStage.DevQA:
+                    InstallDevQaServices();
+                    break;
             }
         }
 

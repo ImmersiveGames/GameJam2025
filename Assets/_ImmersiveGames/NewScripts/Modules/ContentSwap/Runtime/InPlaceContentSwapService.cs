@@ -12,6 +12,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class InPlaceContentSwapService : IContentSwapChangeService
     {
+        // OWNER boundary: executor canonico do request InPlace (validacao/gates/fluxo).
+        // Publish de eventos de estado permanece centralizado no ContentSwapContextService.
         private const string DegradedFeature = "content_swap";
         private const int GatePollIntervalMs = 50;
 
@@ -136,6 +138,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
 
         private void CommitSwap(ContentSwapPlan plan, string normalizedReason)
         {
+            // Delega o publish de PendingSet/Committed ao ContextService (single publisher de estado).
             _contentSwapContext.SetPending(plan, normalizedReason);
 
             if (!_contentSwapContext.TryCommitPending(normalizedReason, out _))
@@ -317,3 +320,5 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 }
+
+

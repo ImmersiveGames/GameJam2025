@@ -187,3 +187,12 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/WorldLifecycle.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`
 - status: V1/V2 publishers consolidated (behavior-preserving)
+
+## CS-1.2 Status
+- live doc: `Docs/Modules/ContentSwap.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v2.md`
+- status: ContentSwap state event publishing centralized in ContextService (behavior-preserving)
+
+## IC-1.3 Status
+- snapshot: `Docs/Reports/Audits/2026-03-06/Infra-Composition-Cleanup-v2.md`
+- status: Composition stage-module boilerplate removed; direct stage dispatch in pipeline (behavior-preserving)

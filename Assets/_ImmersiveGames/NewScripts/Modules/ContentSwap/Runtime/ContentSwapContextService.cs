@@ -1,14 +1,16 @@
-#nullable enable
+﻿#nullable enable
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
 {
     /// <summary>
-    /// Implementação simples e segura para armazenar o ContentSwap atual e pending.
+    /// ImplementaÃ§Ã£o simples e segura para armazenar o ContentSwap atual e pending.
     /// Publica eventos para auditoria e permite logs padronizados.
     /// </summary>
     public sealed class ContentSwapContextService : IContentSwapContextService
     {
+        // OWNER boundary: estado Current/Pending e publish dos eventos de estado (PendingSet/Cleared/Committed).
+        // Nao executa fluxo de request/gates; isso pertence ao InPlaceContentSwapService.
         private readonly object _lock = new();
 
         private ContentSwapPlan _current = ContentSwapPlan.None;
@@ -56,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
         {
             if (!plan.IsValid)
             {
-                DebugUtility.LogWarning<ContentSwapContextService>("[ContentSwapContext] Ignorando SetPending com ContentSwapPlan inválido.");
+                DebugUtility.LogWarning<ContentSwapContextService>("[ContentSwapContext] Ignorando SetPending com ContentSwapPlan invÃ¡lido.");
                 return;
             }
 
@@ -135,3 +137,4 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime
         }
     }
 }
+
