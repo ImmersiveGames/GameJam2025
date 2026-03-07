@@ -225,3 +225,4 @@
 - `Modules/Gameplay/Editor/RunRearm/**` normalizado para `#if UNITY_EDITOR`.
 - `PostGameOverlayController` teve helpers QA isolados no guard DevQA; `PauseOverlayController` ja estava no padrao.
 - Sem alteracao de comportamento de producao.
+- Release excludes DevQA by compile guards; DevBuild required for QA harness.

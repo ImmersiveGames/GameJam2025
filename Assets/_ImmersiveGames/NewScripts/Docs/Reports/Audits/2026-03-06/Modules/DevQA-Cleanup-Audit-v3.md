@@ -55,3 +55,7 @@ rg -n "RunRearm" -g "*.prefab" -g "*.unity" -g "*.asset" .
 - `Modules/Gameplay/Editor/RunRearm/RunRearmKindDevEaterActor.cs`
 - `Modules/Gameplay/Editor/RunRearm/RunRearmDevStepLogger.cs`
 - `Modules/PostGame/Bindings/PostGameOverlayController.cs`
+
+## Validated behavior
+- Release build: DevQA nao compila por guard.
+- Dev build: DevQA compila e funciona.

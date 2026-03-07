@@ -52,3 +52,14 @@
 - `PauseOverlayController` permanece com ContextMenu QA protegido por `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - `PostGameOverlayController` teve helper/guard QA (`_qaGuardBusy`, `BeginQaRiskCommand`, `EndQaRiskCommand`) isolados no mesmo guard DevQA.
 - Evidencia estatica e rationale em `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`.
+
+Nota de compilacao (DQ-1.3): o codigo DevQA deve compilar apenas em `UNITY_EDITOR` ou `DEVELOPMENT_BUILD`; builds release de Player excluem esse codigo via guards de pre-processamento para evitar referencias a namespaces/artefatos Dev fora do escopo de QA.
+
+## Build Matrix (Contract)
+| Ambiente | UNITY_EDITOR | DEVELOPMENT_BUILD | DevQA Tools (QA_*) | Hotkeys/ContextMenus | Evidencia esperada em log |
+|---|---|---|---|---|---|
+| Editor | true | n/a | ON | ON | logs [QA]/[DevQA] presentes |
+| Dev Build | false | true | ON | ON | logs [QA]/[DevQA] presentes |
+| Release | false | false | OFF | OFF | ausencia de logs de DevQA |
+
+Se precisar de QA em build distribuido, use Development Build (ou crie um simbolo/variant proprio; fora do escopo do baseline).

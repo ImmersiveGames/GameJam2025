@@ -1,6 +1,7 @@
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 // Assets/_ImmersiveGames/NewScripts/QA/ContentSwap/ContentSwapDevInstaller.cs
 // Instalador do QA de ContentSwap em Editor/Development.
-// Comentários em português; código em inglês.
+// ComentÃ¡rios em portuguÃªs; cÃ³digo em inglÃªs.
 
 #nullable enable
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -12,8 +13,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime
     /// Garante que exista um GameObject com o componente ContentSwapDevContextMenu no Play Mode.
     ///
     /// Regras:
-    /// - O chamador deve instalar apenas em Editor/Development (este arquivo não referência UnityEditor).
-    /// - O GameObject é criado como DontDestroyOnLoad para ser acessível em qualquer cena.
+    /// - O chamador deve instalar apenas em Editor/Development (este arquivo nÃ£o referÃªncia UnityEditor).
+    /// - O GameObject Ã© criado como DontDestroyOnLoad para ser acessÃ­vel em qualquer cena.
     /// </summary>
     public static class ContentSwapDevInstaller
     {
@@ -35,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime
             if (existing != null)
             {
                 EnsureName(existing.gameObject);
-                DebugUtility.Log(typeof(ContentSwapDevInstaller), "[QA][ContentSwap] ContentSwapDevContextMenu já instalado (instância existente).", ColorVerbose);
+                DebugUtility.Log(typeof(ContentSwapDevInstaller), "[QA][ContentSwap] ContentSwapDevContextMenu jÃ¡ instalado (instÃ¢ncia existente).", ColorVerbose);
                 return;
             }
 
@@ -76,3 +77,5 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime
         }
     }
 }
+#endif
+

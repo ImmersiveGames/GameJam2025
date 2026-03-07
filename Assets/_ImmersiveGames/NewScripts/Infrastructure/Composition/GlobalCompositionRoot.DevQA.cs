@@ -1,3 +1,5 @@
+﻿// DevQA compile-only for editor/dev builds; excluded from release player builds.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime;
@@ -81,3 +83,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // --------------------------------------------------------------------
     }
 }
+#endif
+
