@@ -1,3 +1,4 @@
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -6,6 +7,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     {
         private readonly object _sync = new();
         private GameplayStartSnapshot _current = GameplayStartSnapshot.Empty;
+        private GameplayStartSnapshot _lastGameplayStartSnapshot = GameplayStartSnapshot.Empty;
+        private int _selectionVersionCounter;
 
         public GameplayStartSnapshot Current
         {
@@ -27,9 +30,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             lock (_sync)
             {
-                int persistedVersion = snapshot.SelectionVersion > 0
+                int candidateVersion = snapshot.SelectionVersion > 0
                     ? snapshot.SelectionVersion
-                    : _current.SelectionVersion + 1;
+                    : _selectionVersionCounter + 1;
+                int persistedVersion = Math.Max(candidateVersion, _selectionVersionCounter + 1);
 
                 _current = new GameplayStartSnapshot(
                     snapshot.LevelRef,
@@ -37,6 +41,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     snapshot.Reason,
                     persistedVersion,
                     snapshot.LevelSignature);
+
+                _lastGameplayStartSnapshot = _current;
+                _selectionVersionCounter = _current.SelectionVersion;
 
                 DebugUtility.Log<RestartContextService>(
                     $"[OBS][Navigation] GameplayStartSnapshotUpdated levelRef='{(_current.HasLevelRef ? _current.LevelRef.name : "<none>")}' routeId='{_current.RouteId}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
@@ -48,11 +55,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public bool TryGetCurrent(out GameplayStartSnapshot snapshot)
         {
-            return TryGetLastGameplayStartSnapshot(out snapshot);
-        }
-
-        public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
-        {
             lock (_sync)
             {
                 snapshot = _current;
@@ -60,17 +62,28 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
         }
 
-        public void Clear(string reason = null)
+        public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
         {
             lock (_sync)
             {
+                snapshot = _lastGameplayStartSnapshot;
+                return _lastGameplayStartSnapshot.IsValid;
+            }
+        }
+
+        public void Clear(string reason = null)
+        {
+            int lastSelectionVersion;
+
+            lock (_sync)
+            {
                 _current = GameplayStartSnapshot.Empty;
+                lastSelectionVersion = _lastGameplayStartSnapshot.SelectionVersion;
             }
 
             DebugUtility.Log<RestartContextService>(
-                $"[OBS][Navigation] RestartContextCleared reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
+                $"[OBS][Navigation] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
                 DebugUtility.Colors.Info);
         }
     }
 }
-

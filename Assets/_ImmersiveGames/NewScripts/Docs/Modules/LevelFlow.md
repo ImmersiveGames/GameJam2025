@@ -40,3 +40,9 @@
 Notas:
 - Esses itens continuam existentes para editor/QA/compat, mas fora do trilho canonico Baseline 3.1.
 - Candidatos a remocao definitiva ficam para LF-1.2 com validacao adicional.
+
+## LF-1.2 monotonic selectionVersion
+
+- `selectionVersion` agora e monotônico por snapshot histórico (`last`) no `LevelMacroPrepareService`.
+- `RestartContextService.Clear(...)` limpa apenas o `current`, mantendo `last`/contador para evitar rewind após MacroRestart.
+- Isso evita regressão para `v=1` quando o `current` foi limpo, sem alterar contratos públicos/event payloads.

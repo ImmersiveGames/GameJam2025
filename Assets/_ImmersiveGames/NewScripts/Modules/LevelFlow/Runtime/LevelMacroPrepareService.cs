@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -63,26 +63,31 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             LevelCollectionAsset levelCollection = ResolveLevelCollectionOrFail(routeAsset, macroRouteId, prepareSignature, normalizedReason);
 
-            GameplayStartSnapshot snapshot = GameplayStartSnapshot.Empty;
-            bool hasSnapshot = _restartContextService.TryGetCurrent(out snapshot) && snapshot.IsValid && snapshot.HasLevelRef;
+            GameplayStartSnapshot currentSnapshot = GameplayStartSnapshot.Empty;
+            bool hasCurrentSnapshot = _restartContextService.TryGetCurrent(out currentSnapshot) && currentSnapshot.IsValid && currentSnapshot.HasLevelRef;
 
-            bool snapshotBelongsToMacro = hasSnapshot &&
-                                          snapshot.RouteId.IsValid &&
-                                          snapshot.RouteId == macroRouteId &&
-                                          snapshot.LevelRef != null &&
-                                          levelCollection.Contains(snapshot.LevelRef);
+            GameplayStartSnapshot lastSnapshot = GameplayStartSnapshot.Empty;
+            bool hasLastSnapshot = _restartContextService.TryGetLastGameplayStartSnapshot(out lastSnapshot) &&
+                                   lastSnapshot.IsValid &&
+                                   lastSnapshot.HasLevelRef;
 
-            if (hasSnapshot && !snapshotBelongsToMacro)
+            bool snapshotBelongsToMacro = hasCurrentSnapshot &&
+                                          currentSnapshot.RouteId.IsValid &&
+                                          currentSnapshot.RouteId == macroRouteId &&
+                                          currentSnapshot.LevelRef != null &&
+                                          levelCollection.Contains(currentSnapshot.LevelRef);
+
+            if (hasCurrentSnapshot && !snapshotBelongsToMacro)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(snapshot.LevelRef != null ? snapshot.LevelRef.name : "<none>")}' snapshotRouteId='{snapshot.RouteId}' reason='not_in_collection_or_macro'.",
+                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(currentSnapshot.LevelRef != null ? currentSnapshot.LevelRef.name : "<none>")}' snapshotRouteId='{currentSnapshot.RouteId}' reason='not_in_collection_or_macro'.",
                     DebugUtility.Colors.Info);
             }
 
             bool useSnapshot = snapshotBelongsToMacro;
             string source = useSnapshot ? "snapshot" : "catalog_index_0";
 
-            LevelDefinitionAsset selectedLevelRef = ResolveSelectedLevelDefinitionOrFail(levelCollection, useSnapshot, snapshot, macroRouteId, routeKind, prepareSignature, normalizedReason);
+            LevelDefinitionAsset selectedLevelRef = ResolveSelectedLevelDefinitionOrFail(levelCollection, useSnapshot, currentSnapshot, macroRouteId, routeKind, prepareSignature, normalizedReason);
             selectedLevelRef.ValidateOrFailFast($"LevelPrepare routeId='{macroRouteId}' reason='{normalizedReason}'");
 
             if (!useSnapshot)
@@ -92,9 +97,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     DebugUtility.Colors.Info);
             }
 
-            int selectionVersion = hasSnapshot
-                ? Math.Max(snapshot.SelectionVersion + 1, 1)
+            int selectionVersion = hasLastSnapshot
+                ? Math.Max(lastSnapshot.SelectionVersion + 1, 1)
                 : 1;
+
+            if (!hasCurrentSnapshot && hasLastSnapshot)
+            {
+                DebugUtility.Log<LevelMacroPrepareService>(
+                    $"[OBS][LevelFlow] SelectionVersionSource source='last_snapshot' prev='{lastSnapshot.SelectionVersion}' next='{selectionVersion}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
+            }
 
             string levelSignature = CreateLevelSignature(selectedLevelRef, macroRouteId, normalizedReason);
 
@@ -113,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 ct);
             ct.ThrowIfCancellationRequested();
 
-            LevelDefinitionAsset previousLevelRef = snapshotBelongsToMacro ? snapshot.LevelRef : null;
+            LevelDefinitionAsset previousLevelRef = snapshotBelongsToMacro ? currentSnapshot.LevelRef : null;
             string previousSource = previousLevelRef != null
                 ? "snapshot"
                 : (LevelAdditiveSceneRuntimeApplier.HasActiveAppliedLevelContent ? "applier_state" : "none");
@@ -256,5 +268,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+
 
 

@@ -201,3 +201,10 @@ Date: 2026-03-06
 - live doc: `Docs/Reports/Audits/2026-03-06/Modules/Infrastructure-Composition.md` (snapshot-as-live for infra composition)
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Infra-SceneScope-Cleanup-Audit-v1.md`
 - status: SceneScopeCompositionRoot split into partials (RunRearm + DevQA) behavior-preserving
+
+## GP-1.1 Status
+- live doc: `Docs/Modules/Gameplay.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Gameplay-Cleanup-Audit-v1.md`
+- status: Gameplay runtime/dev/editor boundaries audited; orphan Editor tooling moved to Legacy (behavior-preserving)
+
+

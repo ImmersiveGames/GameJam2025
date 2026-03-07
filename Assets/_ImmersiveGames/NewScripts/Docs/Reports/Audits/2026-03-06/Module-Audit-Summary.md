@@ -264,3 +264,12 @@
 - Bloco DevQA (WorldLifecycleHookLoggerA) isolado em arquivo com guard `UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - Ordem de boot de cena, contratos e pipeline preservados.
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Infra-SceneScope-Cleanup-Audit-v1.md`.
+
+## GP-1.1 update (behavior-preserving)
+- Gameplay separado por trilho: runtime canônico mantido e tooling órfão de QA isolado em `Modules/Gameplay/Legacy/Editor/RunRearm/**`.
+- Moves aplicados com prova estática (sem callsites canônicos, sem refs em assets, GUID scans sem matches).
+- Sem alteração de contratos/payloads/order/callsites do pipeline global.
+- Live doc: `Docs/Modules/Gameplay.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Gameplay-Cleanup-Audit-v1.md`
+
+
