@@ -43,7 +43,7 @@
 
 ## Status DQ-1.2 (2026-03-06)
 - Trilho canonico reforcado: instalacao DevQA centralizada em `GlobalCompositionRoot.Pipeline.cs` (`CompositionInstallStage.DevQA`) + `GlobalCompositionRoot.DevQA.cs`.
-- `ContentSwapDevBootstrapper` foi desativado como caminho paralelo (mantido como LEGACY no-op com log `[OBS][LEGACY][DevQA]`).
+- `ContentSwapDevBootstrapper` foi colocado em quarentena como legacy shim sem auto-install; o owner canonico permanece `GlobalCompositionRoot.DevQA` -> `ContentSwapDevInstaller.EnsureInstalled()`.
 - Hotkey DEV de WorldLifecycle foi centralizado no installer DevQA (`RegisterWorldLifecycleQaInstaller` -> `WorldResetRequestHotkeyDevBootstrap.EnsureInstalled()`).
 - Guards consolidados nos arquivos alterados para `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
 
@@ -158,3 +158,8 @@ public sealed partial class PauseOverlayController
 - Allowed bootstrap inventory remains `Core/Logging/DebugUtility.cs` and `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` as canonical runtime `RuntimeInitializeOnLoadMethod` sites.
 - `NEWSCRIPTS_QA` and `NEWSCRIPTS_DEV` remain absent from code; residual `NEWSCRIPTS_MODE` and `NEWSCRIPTS_BASELINE_ASSERTS` are documented as `DEPRECATED` in the DQ-1.6 audit, with no refactor in this step to avoid bootstrap/assert behavior changes.
 - Behavior-preserving in Release; DevBuild/Editor keeps QA harness.
+## Status DQ-1.7 (2026-03-07)
+- `Modules/ContentSwap/Legacy/Dev/Runtime/ContentSwapDevBootstrapper.cs` remains only as a legacy shim and no longer auto-installs via `RuntimeInitializeOnLoadMethod`.
+- ContentSwap DevQA remains installed only via `GlobalCompositionRoot.DevQA` -> `RegisterContentSwapQaInstaller()` -> `ContentSwapDevInstaller.EnsureInstalled()`.
+- `ContentSwapDevBootstrapper.EnsureInstalled()` remains as an explicit legacy shim, with an `[OBS][LEGACY][DevQA]` log and delegation to `ContentSwapDevInstaller.EnsureInstalled()`.
+- Release behavior-preserving; DevBuild/Editor QA harness remains via `GlobalCompositionRoot.DevQA`.
