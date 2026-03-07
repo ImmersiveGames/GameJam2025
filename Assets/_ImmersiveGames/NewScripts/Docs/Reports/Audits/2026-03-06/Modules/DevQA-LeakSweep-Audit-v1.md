@@ -81,3 +81,27 @@ Resultado:
 ## Before/After mínimo
 - Antes (scan A): `Modules/SceneFlow/Navigation/Bindings/TransitionStyleCatalogAsset.cs:149: [ContextMenu("Validate Transition Profiles")]`
 - Depois (scan B + pós-check): ocorrência removida do runtime; agora em `Modules/SceneFlow/Navigation/Dev/TransitionStyleCatalogAsset.DevQA.cs:8`.
+
+## DQ-1.4.1 update — SceneRouteDefinitionAsset
+
+Alvo: `Modules/SceneFlow/Navigation/Bindings/SceneRouteDefinitionAsset.cs`.
+
+Before (evidência):
+- `10:using UnityEditor;`
+- `75:string assetPath = AssetDatabase.GetAssetPath(this);`
+- `85:string assetPath = AssetDatabase.GetAssetPath(this);`
+
+Ação aplicada (behavior-preserving):
+- classe runtime convertida para `partial` (arquivo original preservado no mesmo caminho);
+- bloco editor/validation extraído para `Modules/SceneFlow/Navigation/Dev/SceneRouteDefinitionAsset.DevQA.cs`;
+- arquivo DevQA inteiro sob `#if UNITY_EDITOR || DEVELOPMENT_BUILD`;
+- `using UnityEditor;` e chamadas `AssetDatabase` mantidas sob `#if UNITY_EDITOR` no arquivo DevQA.
+
+After (pós-check runtime):
+- `rg -n "UnityEditor|ContextMenu|MenuItem|AssetDatabase|FindAssets" Modules/SceneFlow/Navigation/Bindings/SceneRouteDefinitionAsset.cs`
+- resultado: sem matches (exit code 1).
+
+## DQ-1.4.2 update — GameNavigationCatalogAsset
+- O que vazava: referência runtime a `UnityEditor.EditorApplication.isPlaying` em `Modules/Navigation/GameNavigationCatalogAsset.cs:1024`.
+- Para onde foi: hook editor-only extraído para `Modules/Navigation/Dev/GameNavigationCatalogAsset.DevQA.cs` (classe parcial, guard de arquivo `UNITY_EDITOR || DEVELOPMENT_BUILD`).
+- Prova pós-check: `rg -n "UnityEditor|ContextMenu|MenuItem|AssetDatabase|FindAssets" Modules/Navigation/GameNavigationCatalogAsset.cs` => sem matches.

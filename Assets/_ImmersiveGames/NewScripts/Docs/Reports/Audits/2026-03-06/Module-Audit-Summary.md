@@ -312,3 +312,17 @@
 - Suspeitos remanescentes em runtime classificados como `A` (fail-fast/config/runtime critical) ou `C` (manual confirmation) sem mudança nesta etapa.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+
+## DQ-1.4.1 update (behavior-preserving)
+- `SceneRouteDefinitionAsset` (runtime binding) convertido para `partial` sem mudança de lógica runtime.
+- Bloco editor-only (OnValidate + AssetDatabase + build-index editor helper) movido para `Modules/SceneFlow/Navigation/Dev/SceneRouteDefinitionAsset.DevQA.cs`.
+- Runtime file ficou sem `UnityEditor`, `AssetDatabase`, `ContextMenu` e `MenuItem`.
+- Live doc: `Docs/Modules/DevQA.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+
+## DQ-1.4.2 update (behavior-preserving)
+- `GameNavigationCatalogAsset` convertido para `partial` sem mover campos serializados nem alterar lógica/runtime.
+- Chamada editor-only (`EditorApplication.isPlaying=false`) saiu do runtime e foi para `Modules/Navigation/Dev/GameNavigationCatalogAsset.DevQA.cs`.
+- Pós-check confirma runtime limpo de `UnityEditor/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
+- Live doc: `Docs/Modules/DevQA.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`

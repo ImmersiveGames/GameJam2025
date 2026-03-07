@@ -225,3 +225,13 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 - status: Leak sweep executed; one embedded DevQA block extracted via partial (`TransitionStyleCatalogAsset`), remaining runtime suspects classified A/C.
+
+## DQ-1.4.1 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- status: `SceneRouteDefinitionAsset` leak extraído para parcial DevQA; runtime sem símbolos Editor.
+
+## DQ-1.4.2 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- status: `GameNavigationCatalogAsset` runtime leak de UnityEditor isolado em `Modules/Navigation/Dev/GameNavigationCatalogAsset.DevQA.cs`.

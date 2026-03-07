@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         fileName = "GameNavigationCatalogAsset",
         menuName = "ImmersiveGames/NewScripts/Modules/Navigation/Catalogs/GameNavigationCatalogAsset",
         order = 30)]
-    public sealed class GameNavigationCatalogAsset : ScriptableObject, IGameNavigationCatalog, ISerializationCallbackReceiver
+    public sealed partial class GameNavigationCatalogAsset : ScriptableObject, IGameNavigationCatalog, ISerializationCallbackReceiver
     {
         private static readonly GameNavigationIntentKind[] LegacyRequiredCoreIntentsFallback =
         {
@@ -1021,11 +1021,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             DebugUtility.LogError(typeof(GameNavigationCatalogAsset), message);
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
+            StopPlayModeInEditor();
 #else
             Application.Quit();
 #endif
             throw new InvalidOperationException(message);
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        static partial void StopPlayModeInEditor();
+#endif
+
     }
 }
+

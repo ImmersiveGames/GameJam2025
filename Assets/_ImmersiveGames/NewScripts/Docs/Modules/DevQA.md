@@ -77,3 +77,13 @@ Se precisar de QA em build distribuido, use Development Build (ou crie um simbol
 - `PauseOverlayController.DevQA` validado: `using UnityEditor;` permanece sob `#if UNITY_EDITOR` e sem vazamento no runtime.
 - Suspeitos restantes foram classificados como runtime-critical (`A`) ou manual confirmation (`C`) no snapshot DQ-1.4.
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`.
+
+## DQ-1.4.1 Pattern (partial + DevQA)
+- Mantenha o arquivo runtime principal no mesmo path e torne a classe `partial` quando necessário.
+- Extraia blocos Editor/QA para `.../Dev/<Class>.DevQA.cs` com guard de arquivo `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- Em arquivos DevQA, `using UnityEditor;` e APIs `UnityEditor.*` ficam sob `#if UNITY_EDITOR`.
+
+## Leaks corrigidos (DQ-1.4.x)
+- DQ-1.4.1: `SceneRouteDefinitionAsset` (SceneFlow Navigation) extraído para parcial DevQA.
+- DQ-1.4.2: `GameNavigationCatalogAsset` (Navigation) removeu `UnityEditor` do runtime via parcial DevQA.
+- Padrão aplicado: runtime principal preservado + classe `partial` + arquivo `Dev/*.DevQA.cs` com guards de build/editor.
