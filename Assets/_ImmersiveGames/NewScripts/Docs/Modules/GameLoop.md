@@ -63,3 +63,10 @@
 - Start em Release garantido por install canônico no stage GameLoop (`InstallGameLoopServices`), sem depender de DevQA.
 - `GameStartRequestEmitter` permanece idempotente via `EnsureInstalled()` e publisher de `GameStartRequestedEvent`.
 - `GamePauseHotkeyController` permanece classificado como legacy (movido para `Modules/GameLoop/Legacy/Bindings/Inputs/`).
+
+## Status PA-1.1 (Live, 2026-03-07)
+- `PauseOverlayController` foi convertido para `partial` sem alteração de fluxo runtime (pause/resume/overlay/input mode/gates).
+- Tooling DevQA (`ContextMenu` QA de Pause/Resume) foi isolado em `Modules/GameLoop/Pause/Dev/PauseOverlayController.DevQA.cs`.
+- Arquivo runtime `Modules/GameLoop/Pause/Bindings/PauseOverlayController.cs` ficou sem `UnityEditor`, `ContextMenu`, `MenuItem`, `AssetDatabase` e `FindAssets`.
+- Build matrix preservada: DevQA disponível apenas em `UNITY_EDITOR || DEVELOPMENT_BUILD`; release exclui tooling Dev.
+- Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/Pause-Cleanup-Audit-v1.md`.

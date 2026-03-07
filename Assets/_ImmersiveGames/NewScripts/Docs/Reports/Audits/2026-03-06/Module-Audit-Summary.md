@@ -273,3 +273,32 @@
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Gameplay-Cleanup-Audit-v1.md`
 
 
+
+## PostGame
+**Canonical Rail:** `GameLoopService` aciona entrada/saída de pós-jogo e resolve `IPostGameOwnershipService`; `PostGameOverlayController` apenas exibe UI e delega ações para `IPostLevelActionsService`; restart macro continua em `GameCommands -> GameResetRequestedEvent -> Navigation/MacroRestartCoordinator`.
+
+**Top 5 redundancias**
+- Bloco QA/ContextMenu coexistia dentro do arquivo runtime de overlay.
+- `UnityEditor` e diálogo de confirmação ficavam acoplados ao controller principal.
+- Guard de reentrância QA (`_qaGuardBusy`) residia no mesmo arquivo do trilho canônico.
+- Sinais de DevQA e runtime apareciam no mesmo artefato, elevando ruído de manutenção.
+- Ausência de doc vivo específico de PostGame no baseline.
+
+**Risco de mudanca:** Low-Med
+**Ordem recomendada de limpeza:** 11/11 (após estabilização dos trilhos macro).
+
+## PG-1.1 update (behavior-preserving)
+- `PostGameOverlayController` virou `partial` e manteve somente runtime canônico em `Modules/PostGame/Bindings/PostGameOverlayController.cs`.
+- DevQA foi isolado para `Modules/PostGame/Dev/PostGameOverlayController.DevQA.cs` sob `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- Uso de `UnityEditor` ficou restrito a bloco `#if UNITY_EDITOR` no arquivo DevQA.
+- Sem alteração de contratos/eventos/payloads e sem mudança de ownership de restart macro.
+- Live doc: `Docs/Modules/PostGame.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/PostGame-Cleanup-Audit-v1.md`
+
+## PA-1.1 update (behavior-preserving)
+- `PauseOverlayController` mantido no mesmo arquivo runtime (`Modules/GameLoop/Pause/Bindings/PauseOverlayController.cs`) e convertido para `partial`.
+- Bloco DevQA/ContextMenu isolado em `Modules/GameLoop/Pause/Dev/PauseOverlayController.DevQA.cs` com guard `UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- `UnityEditor` restrito ao parcial DevQA sob `#if UNITY_EDITOR`.
+- Fluxo runtime (pause/resume/overlay/input mode) e logs âncora preservados.
+- Live doc: `Docs/Modules/GameLoop.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Pause-Cleanup-Audit-v1.md`

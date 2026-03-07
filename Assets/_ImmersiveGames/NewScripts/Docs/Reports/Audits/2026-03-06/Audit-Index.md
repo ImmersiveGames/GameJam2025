@@ -208,3 +208,15 @@ Date: 2026-03-06
 - status: Gameplay runtime/dev/editor boundaries audited; orphan Editor tooling moved to Legacy (behavior-preserving)
 
 
+
+## PG-1.1 Status
+- live doc: `Docs/Modules/PostGame.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/PostGame-Cleanup-Audit-v1.md`
+- status: DevQA isolation applied in PostGame overlay via partial split (behavior-preserving)
+- notes: runtime contracts/timeline preserved; release excludes DevQA by compile guards.
+
+## PA-1.1 Status
+- live doc: `Docs/Modules/GameLoop.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Pause-Cleanup-Audit-v1.md`
+- status: DevQA isolation applied in PauseOverlayController via partial split (behavior-preserving)
+- notes: runtime file preserved in place (no move), no UnityEditor/ContextMenu leakage in runtime bindings.
