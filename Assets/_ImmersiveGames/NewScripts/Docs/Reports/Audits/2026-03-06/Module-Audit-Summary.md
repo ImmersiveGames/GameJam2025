@@ -355,3 +355,8 @@
 - status: Guard governance contract formalized and evidenced from local workspace only (behavior-preserving).
 - notes: Release remains isolated from Editor APIs; DevBuild/Editor keeps QA harness coverage.
 - notes: `NEWSCRIPTS_QA` and `NEWSCRIPTS_DEV` are absent from code; `NEWSCRIPTS_MODE` and `NEWSCRIPTS_BASELINE_ASSERTS` remain only as deprecated documented residuals.
+## DQ-1.9 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v4.md`
+- status: RuntimeInitializeOnLoadMethod allowlist documented and frozen for runtime-governance review (DOC-only).
+- notes: Outside `Dev/Editor/Legacy/QA`, only `Core/Logging/DebugUtility.cs` and `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` are allowed.

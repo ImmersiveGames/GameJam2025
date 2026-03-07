@@ -255,3 +255,7 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v1.md`
 - status: Guard governance contract formalized; strict runtime/editor leak sweep remains clean; residual `NEWSCRIPTS_MODE` / `NEWSCRIPTS_BASELINE_ASSERTS` documented as deprecated.
+## DQ-1.9 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v4.md`
+- status: RuntimeInitializeOnLoadMethod allowlist frozen to two runtime bootstrap files; PR review gate documented.

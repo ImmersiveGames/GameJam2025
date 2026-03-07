@@ -163,3 +163,15 @@ public sealed partial class PauseOverlayController
 - ContentSwap DevQA remains installed only via `GlobalCompositionRoot.DevQA` -> `RegisterContentSwapQaInstaller()` -> `ContentSwapDevInstaller.EnsureInstalled()`.
 - `ContentSwapDevBootstrapper.EnsureInstalled()` remains as an explicit legacy shim, with an `[OBS][LEGACY][DevQA]` log and delegation to `ContentSwapDevInstaller.EnsureInstalled()`.
 - Release behavior-preserving; DevBuild/Editor QA harness remains via `GlobalCompositionRoot.DevQA`.
+### Allowlist: RuntimeInitializeOnLoadMethod
+- Allowed runtime bootstrap sites outside `Dev/**`, `Editor/**`, `Legacy/**`, `QA/**`:
+  - `Core/Logging/DebugUtility.cs`
+    - justification: reset/bootstrap logging state before systems come up.
+  - `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`
+    - justification: canonical composition bootstrap entrypoint.
+- Rule:
+  - any new `RuntimeInitializeOnLoadMethod` outside this allowlist requires a new audit, fresh `rg` evidence, and an explicit decision recorded in docs.
+## Status DQ-1.9 (2026-03-07)
+- `RuntimeInitializeOnLoadMethod` allowlist is frozen for runtime-governance review.
+- Outside `Dev/Editor/Legacy/QA`, the only allowed files are `Core/Logging/DebugUtility.cs` and `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`.
+- Any expansion of that allowlist now requires a new audit plus explicit evidence and decision.
