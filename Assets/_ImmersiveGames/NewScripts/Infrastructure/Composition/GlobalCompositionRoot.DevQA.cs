@@ -3,14 +3,29 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Runtime;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Dev;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
+        private static void RegisterGameLoopQaInstaller()
+        {
+            try
+            {
+                GameStartRequestEmitter.EnsureInstalled();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                    $"[QA][GameLoop] Falha ao aplicar isolamento do GameStartRequestEmitter legado. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
+        }
+
         private static void RegisterIntroStageQaInstaller()
         {
             try
@@ -73,15 +88,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
         }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private static void RegisterIntroStageRuntimeDebugGui()
         {
             IntroStageRuntimeDebugGui.EnsureInstalled();
         }
-#endif
 
         // --------------------------------------------------------------------
     }
 }
 #endif
-

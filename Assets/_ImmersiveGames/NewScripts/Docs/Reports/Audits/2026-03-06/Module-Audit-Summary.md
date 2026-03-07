@@ -226,3 +226,17 @@
 - `PostGameOverlayController` teve helpers QA isolados no guard DevQA; `PauseOverlayController` ja estava no padrao.
 - Sem alteracao de comportamento de producao.
 - Release excludes DevQA by compile guards; DevBuild required for QA harness.
+
+## GL-1.2 (behavior-preserving)
+- Snapshot criado: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v2.md`.
+- Inventário A/B/C consolidado com evidência rg.
+- `IntroStageDevTools` isolado em `#if UNITY_EDITOR`.
+- `GameStartRequestEmitter` e `GamePauseHotkeyController` mantidos no trilho runtime canônico.
+- Restart canônico preservado; nenhum listener ativo de `GameResetRequestedEvent` em `Modules/GameLoop/**`.
+
+## GL-1.3 (behavior-preserving)
+- Snapshot criado: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`.
+- `GameStartRequestEmitter` migrou para trilho DevQA canônico (`EnsureInstalled`) e perdeu bootstrap automático legado.
+- `GamePauseHotkeyController` foi movido para `Modules/GameLoop/Legacy/Bindings/Inputs/` com guard de Editor/DevBuild.
+- Nenhum listener ativo de `GameResetRequestedEvent` no GameLoop; restart canônico preservado.
+- Release excludes DevQA by compile guards; DevBuild required for QA harness.

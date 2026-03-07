@@ -43,3 +43,17 @@
 - `Bindings/Bootstrap/GameStartRequestEmitter.cs` (MonoBehaviour + RuntimeInitializeOnLoadMethod)
 - `Bindings/Inputs/GamePauseHotkeyController.cs` (MonoBehaviour, possivel binding de cena)
 - `IntroStage/Dev/Editor/IntroStageDevTools.cs` (editor/dev)
+
+## Status GL-1.2 (Live, 2026-03-06)
+- Triagem A/B/C atualizada com evidência estática (runtime canônico vs compat/legacy vs dev/editor).
+- `IntroStageDevTools` ficou explicitamente isolado em `#if UNITY_EDITOR` (arquivo `Modules/GameLoop/IntroStage/Dev/Editor/IntroStageDevTools.cs`).
+- `GameStartRequestEmitter` e `GamePauseHotkeyController` mantidos como runtime canônico (sem mudança funcional).
+- Restart canônico preservado: `GameCommands -> GameResetRequestedEvent -> MacroRestartCoordinator`.
+- Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v2.md`.
+
+## Status GL-1.3 (Live, 2026-03-06)
+- `GameStartRequestEmitter`: bootstrap automático legado removido (sem `RuntimeInitializeOnLoadMethod`) e isolamento via `EnsureInstalled()` no trilho canônico DevQA.
+- `GamePauseHotkeyController`: classificado como dead/legacy por evidência estática (sem refs em assets e sem callsite canônico) e movido para `Modules/GameLoop/Legacy/Bindings/Inputs/`.
+- Itens GL-1.3 isolados por `#if UNITY_EDITOR || DEVELOPMENT_BUILD` (Release exclui DevQA/DevTools alterados).
+- Restart canônico preservado: `GameCommands -> GameResetRequestedEvent -> MacroRestartCoordinator`.
+- Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`.

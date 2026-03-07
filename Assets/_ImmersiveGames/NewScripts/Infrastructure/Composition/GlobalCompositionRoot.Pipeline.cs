@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Composition;
+﻿using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition.Modules;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
@@ -148,6 +148,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void InstallDevQaServices()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+            RegisterGameLoopQaInstaller();
             RegisterIntroStageQaInstaller();
             RegisterContentSwapQaInstaller();
             RegisterSceneFlowQaInstaller();
@@ -157,3 +158,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
+
+
+

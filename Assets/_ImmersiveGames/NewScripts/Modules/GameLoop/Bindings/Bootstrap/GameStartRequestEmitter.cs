@@ -1,12 +1,15 @@
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap
 {
     /// <summary>
-    /// PRODUÇÃO:
-    /// Emite GameStartRequestedEvent (REQUEST) uma única vez ao iniciar a cena.
+    /// LEGACY/DevQA:
+    /// emissor de GameStartRequestedEvent mantido apenas para diagnostico em dev.
+    /// O trilho canônico de start permanece no GameLoopSceneFlowCoordinator.
     /// </summary>
     [DefaultExecutionOrder(-900)]
     [DebugLevel(DebugLevel.Verbose)]
@@ -14,9 +17,13 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap
     {
         private static bool _hasRequested;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void ResetGuard()
+        public static void EnsureInstalled()
         {
+            // Observabilidade: bootstrap automatico legado foi desativado.
+            DebugUtility.LogVerbose(typeof(GameStartRequestEmitter),
+                "[OBS][LEGACY][DevQA] GameStartRequestEmitter auto-bootstrap disabled; canonical start is GameLoopSceneFlowCoordinator.",
+                DebugUtility.Colors.Info);
+
             _hasRequested = false;
         }
 
@@ -37,3 +44,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap
         }
     }
 }
+#endif

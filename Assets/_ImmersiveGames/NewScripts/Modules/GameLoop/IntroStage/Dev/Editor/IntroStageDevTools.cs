@@ -1,3 +1,4 @@
+﻿#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev.Editor
@@ -25,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev.Editor
             Selection.activeObject = go;
         }
 
-        // Mantém o comando habilitado apenas durante o Play Mode.
+        // MantÃ©m o comando habilitado apenas durante o Play Mode.
         [MenuItem("ImmersiveGames/NewScripts/QA/LevelFlow/IntroStage/Select QA_IntroStage Object", true, 1290)]
         private static bool ValidateSelectQaIntroStage()
         {
@@ -34,3 +35,5 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev.Editor
 
     }
 }
+#endif
+
