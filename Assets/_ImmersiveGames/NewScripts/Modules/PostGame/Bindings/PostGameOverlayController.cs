@@ -58,7 +58,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private bool _actionRequested;
 
         // Guard rail para impedir reentrada em comandos QA de risco.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private bool _qaGuardBusy;
+#endif
 
         private void Awake()
         {
@@ -495,6 +497,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
 
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private bool BeginQaRiskCommand(string commandName, string reason)
         {
             if (!Application.isPlaying)
@@ -540,6 +543,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 $"[QA][PostGame] Guard liberado. reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
+
+#endif
 
         // --------------------------------------------------------------------
         // QA / Context Menu (Editor + DevBuild)
@@ -658,3 +663,4 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 #endif
     }
 }
+

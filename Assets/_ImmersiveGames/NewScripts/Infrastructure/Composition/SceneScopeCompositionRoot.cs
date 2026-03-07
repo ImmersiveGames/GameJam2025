@@ -8,7 +8,9 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Interop;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev;
+#endif
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
 using UnityEngine;
@@ -310,10 +312,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             /* Aqui é ume exemplo de hook no ciclo do mundo.*/
              var hookA = EnsureHookComponent<WorldLifecycleHookLoggerA>(worldRoot);
 
             RegisterHookIfMissing(hookRegistry, hookA);
+#endif
         }
 
         private static T EnsureHookComponent<T>(Transform worldRoot)
@@ -363,5 +367,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
+
 
 

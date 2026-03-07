@@ -45,3 +45,10 @@
 - `ContentSwapDevBootstrapper` foi desativado como caminho paralelo (mantido como LEGACY no-op com log `[OBS][LEGACY][DevQA]`).
 - Hotkey DEV de WorldLifecycle foi centralizado no installer DevQA (`RegisterWorldLifecycleQaInstaller` -> `WorldResetRequestHotkeyDevBootstrap.EnsureInstalled()`).
 - Guards consolidados nos arquivos alterados para `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+## Status DQ-1.3 (2026-03-06)
+- `WorldLifecycleHookLoggerA` agora esta isolado por `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- Callsite de registro em `SceneScopeCompositionRoot.RegisterSceneLifecycleHooks` tambem esta sob `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- `Modules/Gameplay/Editor/RunRearm/**` normalizado para `#if UNITY_EDITOR`.
+- `PauseOverlayController` permanece com ContextMenu QA protegido por `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- `PostGameOverlayController` teve helper/guard QA (`_qaGuardBusy`, `BeginQaRiskCommand`, `EndQaRiskCommand`) isolados no mesmo guard DevQA.
+- Evidencia estatica e rationale em `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`.

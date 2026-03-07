@@ -218,3 +218,10 @@
   - inventário de ownership real de `SceneTransitionStartedEvent`, `SceneTransitionCompletedEvent`, `GameResetRequestedEvent` com evidência `rg`.
   - hardening idempotente local em `SceneFlowInputModeBridge` (started same-frame) e `StateDependentService` (reset same-frame).
 - Sem novo owner de gate/readiness e sem alteração de contratos/pipeline.
+
+## DQ-1.3 (behavior-preserving)
+- Snapshot criado: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`.
+- `WorldLifecycleHookLoggerA` e seu callsite em composition isolados por `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- `Modules/Gameplay/Editor/RunRearm/**` normalizado para `#if UNITY_EDITOR`.
+- `PostGameOverlayController` teve helpers QA isolados no guard DevQA; `PauseOverlayController` ja estava no padrao.
+- Sem alteracao de comportamento de producao.

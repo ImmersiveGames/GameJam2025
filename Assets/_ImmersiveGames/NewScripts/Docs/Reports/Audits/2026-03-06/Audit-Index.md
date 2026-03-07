@@ -158,3 +158,8 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/Gates-Readiness-StateDependent.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent-Cleanup-Audit-v2.md`
 - status: Hardening minimo aplicado (behavior-preserving)
+
+## DQ-1.3 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`
+- status: Hardening/isolamento DevQA aplicado (behavior-preserving)
