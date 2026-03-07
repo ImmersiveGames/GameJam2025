@@ -15,6 +15,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldResetCommands : IWorldResetCommands
     {
+        // OWNER boundary: eventos V2 de commands/telemetria (RequestedV2/CompletedV2).
+        // Nao e owner do gate V1 de SceneFlow (Started/Completed), que fica no WorldResetOrchestrator.
         public async Task ResetMacroAsync(SceneRouteId macroRouteId, string reason, string macroSignature, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
@@ -203,4 +205,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+
+
 

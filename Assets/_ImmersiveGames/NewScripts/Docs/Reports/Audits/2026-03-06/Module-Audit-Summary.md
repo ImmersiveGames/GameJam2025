@@ -240,3 +240,9 @@
 - `GamePauseHotkeyController` foi movido para `Modules/GameLoop/Legacy/Bindings/Inputs/` com guard de Editor/DevBuild.
 - Nenhum listener ativo de `GameResetRequestedEvent` no GameLoop; restart canônico preservado.
 - Release excludes DevQA by compile guards; DevBuild required for QA harness.
+
+## WL-1.2 update (behavior-preserving)
+- V1 gate publish centralizado em `WorldResetOrchestrator` (helpers V1).
+- Fallbacks em `WorldResetService` e `WorldLifecycleSceneFlowResetDriver` roteados para helper V1 (sem `Raise` direto).
+- V2 permanece exclusivo em `WorldResetCommands`.
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`.

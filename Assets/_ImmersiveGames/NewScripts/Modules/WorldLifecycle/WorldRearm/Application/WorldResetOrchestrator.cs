@@ -17,6 +17,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
     /// </summary>
     public sealed class WorldResetOrchestrator
     {
+        // OWNER boundary: pipeline macro reset (guards/validation/execute) e publish V1 para gate.
+        // Nao e owner de V2 (commands/telemetria), que permanece em WorldResetCommands.
         private readonly IWorldResetPolicy _policy;
         private readonly IReadOnlyList<IWorldResetGuard> _guards;
         private readonly WorldResetValidationPipeline _validation;
@@ -147,14 +149,25 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             return WorldResetResult.Failed;
         }
 
+        internal static void PublishResetStartedV1(string contextSignature, string reason)
+        {
+            EventBus<WorldLifecycleResetStartedEvent>.Raise(
+                new WorldLifecycleResetStartedEvent(contextSignature ?? string.Empty, reason ?? string.Empty));
+        }
+
+        internal static void PublishResetCompletedV1(string contextSignature, string reason)
+        {
+            EventBus<WorldLifecycleResetCompletedEvent>.Raise(
+                new WorldLifecycleResetCompletedEvent(contextSignature ?? string.Empty, reason ?? string.Empty));
+        }
+
         private static void PublishResetStarted(WorldResetRequest request)
         {
             DebugUtility.LogVerbose<WorldResetOrchestrator>(
                 $"[{ResetLogTags.Start}][OBS][WorldLifecycle] ResetWorldStarted signature='{request.ContextSignature}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<WorldLifecycleResetStartedEvent>.Raise(
-                new WorldLifecycleResetStartedEvent(request.ContextSignature, request.Reason));
+            PublishResetStartedV1(request.ContextSignature, request.Reason);
         }
 
         private static void PublishResetCompleted(WorldResetRequest request, string reason)
@@ -165,8 +178,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                 $"[{ResetLogTags.Completed}][OBS][WorldLifecycle] ResetCompleted signature='{request.ContextSignature}' reason='{completionReason}'.",
                 DebugUtility.Colors.Success);
 
-            EventBus<WorldLifecycleResetCompletedEvent>.Raise(
-                new WorldLifecycleResetCompletedEvent(request.ContextSignature, completionReason));
+            PublishResetCompletedV1(request.ContextSignature, completionReason);
         }
 
         private void LogDegraded(string message)
@@ -189,5 +201,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         }
     }
 }
+
 
 

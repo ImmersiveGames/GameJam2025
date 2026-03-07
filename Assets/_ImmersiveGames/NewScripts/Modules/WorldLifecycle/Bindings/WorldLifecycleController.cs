@@ -15,6 +15,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
     [DisallowMultipleComponent]
     public sealed class WorldLifecycleController : MonoBehaviour
     {
+        // OWNER boundary: bootstrap/queue de reset local da cena via WorldLifecycleOrchestrator.
+        // Nao publica eventos V1/V2 de gate/telemetria do trilho macro.
         [Header("Lifecycle")]
         [Tooltip("Quando true, o controller executa ResetWorldAsync automaticamente no Start(). " +
                  "Para testes automatizados, um runner deve desligar isto antes do Start().")]
@@ -449,6 +451,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
         }
     }
 }
+
 
 
 

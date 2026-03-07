@@ -137,7 +137,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
                     $"[{ResetLogTags.Skipped}] [ResetSkip] [WorldLifecycle] ResetWorld SKIP. signature='{signature}', routeId='{routeId}', profile='{context.TransitionProfileName}', targetScene='{targetScene}', decisionSource='{decisionSource}', reason='{skippedReason}'.",
-                    DebugUtility.Colors.Info);
+                DebugUtility.Colors.Info);
 
                 PublishResetCompleted(signature, skippedReason, routeId, context.TransitionProfileName, targetScene, decisionSource);
                 MarkCompleted(signature);
@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             {
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
                     $"[WorldLifecycle] Usando WorldResetService (Lifecycle) para executar reset. signature='{signature}', targetScene='{targetScene}'.",
-                    DebugUtility.Colors.Info);
+                DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
                     contextSignature: signature,
@@ -250,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private static void PublishResetCompleted(string signature, string reason, string routeId, string profile, string target, string decisionSource)
         {
-            // Publica apenas em SKIP/fallback: o completion gate depende disso para nÃ£o degradar em timeout.
+            // Publica apenas em SKIP/fallback: o completion gate depende disso para nao degradar em timeout.
             LogObsResetCompleted(
                 signature: signature,
                 routeId: routeId,
@@ -259,8 +259,11 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 decisionSource: decisionSource,
                 reason: reason);
 
-            EventBus<WorldLifecycleResetCompletedEvent>.Raise(
-                new WorldLifecycleResetCompletedEvent(signature ?? string.Empty, reason));
+            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
+                $"[OBS][WorldLifecycle] V1FallbackPublish signature='{signature ?? string.Empty}' reason='{reason ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}'.",
+                DebugUtility.Colors.Info);
+
+            WorldResetOrchestrator.PublishResetCompletedV1(signature ?? string.Empty, reason);
         }
 
         private static void LogObsResetRequested(
@@ -379,6 +382,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+
+
 
 
 

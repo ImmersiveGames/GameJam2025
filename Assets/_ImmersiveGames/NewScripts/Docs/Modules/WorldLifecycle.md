@@ -43,3 +43,17 @@ No estado atual, o SceneFlow publica `SceneTransitionScenesReadyEvent`, o `World
 ## Referências
 
 - Audit detalhado: `Docs/Reports/Audits/2026-03-06/WorldLifecycle-Cleanup-Audit-v1.md`
+
+## WL-1.2 (publishers V1/V2 consolidation, behavior-preserving)
+
+- V1 (`WorldLifecycleResetStartedEvent` / `WorldLifecycleResetCompletedEvent`) agora tem publish central explícito no `WorldResetOrchestrator` via helpers:
+  - `PublishResetStartedV1(...)`
+  - `PublishResetCompletedV1(...)`
+- `WorldResetService` (fallback em catch) e `WorldLifecycleSceneFlowResetDriver` (SKIP/fallback) não fazem mais `EventBus<V1>.Raise` direto; ambos roteiam para o helper do `WorldResetOrchestrator`.
+- V2 (`WorldLifecycleResetRequestedV2Event` / `WorldLifecycleResetCompletedV2Event`) permanece exclusivamente em `WorldResetCommands` (owner de commands/telemetria).
+- Boundarys explícitos:
+  - `WorldResetOrchestrator`: owner pipeline macro + publish V1 gate.
+  - `WorldLifecycleController` / `WorldLifecycleOrchestrator`: trilho local/scoped por cena.
+  - `WorldResetCommands`: owner V2 commands/telemetria.
+
+Evidência detalhada: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`.

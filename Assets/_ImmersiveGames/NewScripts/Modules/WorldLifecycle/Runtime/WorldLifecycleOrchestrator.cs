@@ -21,6 +21,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
+        // OWNER boundary: reset local/scoped por cena (controller rail).
+        // Nao e owner de publish V1/V2 no trilho macro SceneFlow.
         // Guardrail de QA: manter a ordem das fases como exatamente descrita aqui.
         // NÃ£o reorganizar o fluxo do reset ou mover responsabilidades entre classes.
         private readonly ISimulationGateService _gateService;
@@ -980,6 +982,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+
 
 
 

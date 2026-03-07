@@ -182,3 +182,8 @@ Date: 2026-03-06
 - status: CODE consolidation applied (behavior-preserving)
 
 
+
+## WL-1.2 Status
+- live doc: `Docs/Modules/WorldLifecycle.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`
+- status: V1/V2 publishers consolidated (behavior-preserving)
