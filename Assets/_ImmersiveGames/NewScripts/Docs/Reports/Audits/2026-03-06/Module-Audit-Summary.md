@@ -1,4 +1,4 @@
-﻿# Module Audit Summary (Baseline 3.1) - 2026-03-06
+# Module Audit Summary (Baseline 3.1) - 2026-03-06
 
 ## Core
 **Canonical Rail:** O trilho canonico de base e `Core/Events/EventBus.cs` + `Core/Composition/DependencyManager.cs` + `Core/Logging/DebugUtility.cs`. Os modulos de dominio publicam/consomem eventos pelo `EventBus<T>` e resolvem servicos pelo `DependencyManager.Provider`, com o `GlobalCompositionRoot` apenas compondo dependencias.
@@ -17,7 +17,7 @@
 **Canonical Rail:** `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` chama `RegisterEssentialServicesOnly` em `GlobalCompositionRoot.Pipeline.cs`, que faz dispatch direto por stage em `InstallCompositionModules()` e registra servicos canonicos de runtime por metodos especializados (`GameLoop`, `SceneFlow`, `WorldLifecycle`, `Navigation`, `Levels`, `ContentSwap`, `DevQA`).
 
 **Top 5 redundancias**
-- `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` teve o registro legacy `RegisterRestartSnapshotContentSwapBridge()` removido no cleanup canÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nico.
+- `Infrastructure/Composition/GlobalCompositionRoot.NavigationInputModes.cs` teve o registro legacy `RegisterRestartSnapshotContentSwapBridge()` removido no cleanup canonico.
 - `Infrastructure/Composition/Modules/*.cs` (boilerplate de gate por stage) foi removido no IC-1.3; dispatch agora e direto no pipeline.
 - Registro de bridges cross-modulo concentrado em `NavigationInputModes.cs` com mistura de Navigation/LevelFlow/InputMode.
 - Duplicidade de pontos de configuracao SceneFlow entre `GlobalCompositionRoot.SceneFlowWorldLifecycle.cs` e `GlobalCompositionRoot.FadeLoading.cs`.
@@ -82,8 +82,8 @@
 **Canonical Rail:** `GameNavigationService` executa navegacao por route/profile. Restart canonico e `MacroRestartCoordinator` ouvindo `GameResetRequestedEvent` e disparando `ILevelFlowRuntimeService.StartGameplayDefaultAsync`.
 
 **Top 5 redundancias**
-- `Modules/Navigation/Legacy/RestartNavigationBridge.cs` mantido como legado desativado (fora do trilho canÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nico).
-- `Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs` mantido como no-op legado (fora do trilho canÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â´nico).
+- `Modules/Navigation/Legacy/RestartNavigationBridge.cs` mantido como legado desativado (fora do trilho canonico).
+- `Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs` mantido como no-op legado (fora do trilho canonico).
 - `GameNavigationService` mantem APIs compat marcadas como legacy.
 - `LevelSelectedRestartSnapshotBridge` e `IRestartContextService` duplicam parte do fluxo de contexto de restart.
 - Catalogos de intents/rotas/estilos cruzam `Modules/Navigation/**` e `Modules/SceneFlow/Navigation/**`.
@@ -99,7 +99,7 @@
 - Dedupe por `selectionVersion/levelSignature` concentrado em `LevelStageOrchestrator` (manter alinhado com producers).
 - Trilha de catalogo antiga (`LevelCatalogAsset` + interfaces antigas) era estruturalmente redundante ao trilho canonico.
 - API legacy por `LevelId` continua presente em overloads obsoletos para compat (fail-fast).
-- Rotas de QA/Dev exercitam caminhos nao-canÃƒÆ’Ã‚Â´nicos e podem mascarar redundancias em runtime.
+- Rotas de QA/Dev exercitam caminhos nao-canonicos e podem mascarar redundancias em runtime.
 
 **Risco de mudanca:** High  
 **Ordem recomendada de limpeza:** 7/10.
@@ -110,16 +110,16 @@
 - `Modules/LevelFlow/Legacy/Runtime/ILevelMacroRouteCatalog.cs`
 - `Modules/LevelFlow/Legacy/Runtime/ILevelContentResolver.cs`
 ## ContentSwap
-**Canonical Rail:** `ContentSwapContextService` mantÃƒÆ’Ã‚Â©m `Current/Pending` e publica eventos de contexto; `InPlaceContentSwapService` (registrado como `IContentSwapChangeService`) ÃƒÆ’Ã‚Â© o owner canÃƒÆ’Ã‚Â´nico do request in-place/commit. O consumer canÃƒÆ’Ã‚Â´nico externo ÃƒÆ’Ã‚Â© `Modules/WorldLifecycle/Runtime/WorldResetCommands.cs` no reset de nÃƒÆ’Ã‚Â­vel.
+**Canonical Rail:** `ContentSwapContextService` mantem `Current/Pending` e publica eventos de contexto; `InPlaceContentSwapService` (registrado como `IContentSwapChangeService`) e o owner canonico do request in-place/commit. O consumer canonico externo e `Modules/WorldLifecycle/Runtime/WorldResetCommands.cs` no reset de nivel.
 
-**Top 5 redundÃƒÆ’Ã‚Â¢ncias**
-- InstalaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o Dev potencialmente duplicada: `GlobalCompositionRoot.DevQA.cs` e `ContentSwapDevBootstrapper`.
+**Top 5 redundancias**
+- Instalacao Dev potencialmente duplicada: `GlobalCompositionRoot.DevQA.cs` e `ContentSwapDevBootstrapper`.
 - Consumidor legado externo (`Modules/Navigation/Legacy/RestartSnapshotContentSwapBridge.cs`) ainda escuta `ContentSwapCommittedEvent`.
 - Eventos `ContentSwapPendingSet/Cleared` hoje servem majoritariamente observabilidade (poucos consumers runtime).
-- Overlap semÃƒÆ’Ã‚Â¢ntico de contrato de nÃƒÆ’Ã‚Â­vel (`contentId` legado em LevelFlow) vs token canÃƒÆ’Ã‚Â´nico `level-ref:<name>` usado por WorldReset+ContentSwap.
-- CoexistÃƒÆ’Ã‚Âªncia de snapshot antigo (`Modules/ContentSwap.md`) com snapshot CS-1.1 (`Modules/ContentSwap-Cleanup-Audit-v1.md`) requer ÃƒÆ’Ã‚Â­ndice claro.
+- Overlap semantico de contrato de nivel (`contentId` legado em LevelFlow) vs token canonico `level-ref:<name>` usado por WorldReset+ContentSwap.
+- Coexistencia de snapshot antigo (`Modules/ContentSwap.md`) com snapshot CS-1.1 (`Modules/ContentSwap-Cleanup-Audit-v1.md`) requer indice claro.
 
-**Risco de mudanÃƒÆ’Ã‚Â§a:** Med  
+**Risco de mudanca:** Med  
 **Ordem recomendada de limpeza:** 8/10.
 
 **CS-1.1 aplicado (behavior-preserving):**
@@ -128,21 +128,21 @@
 - Nenhum move de `.cs` nesta etapa (resultado DOC-only).
 
 ## DevQA
-**Canonical Rail:** instalaÃ§Ã£o Dev/QA centralizada em `CompositionInstallStage.DevQA` (`GlobalCompositionRoot.Pipeline.cs`) via `InstallDevQaServices()` e `GlobalCompositionRoot.DevQA.cs`, incluindo IntroStage/ContentSwap/SceneFlow/LevelFlow installers, `IntroStageRuntimeDebugGui` e hotkey de WorldLifecycle.
+**Canonical Rail:** instalacao Dev/QA centralizada em `CompositionInstallStage.DevQA` (`GlobalCompositionRoot.Pipeline.cs`) via `InstallDevQaServices()` e `GlobalCompositionRoot.DevQA.cs`, incluindo IntroStage/ContentSwap/SceneFlow/LevelFlow installers, `IntroStageRuntimeDebugGui` e hotkey de WorldLifecycle.
 
-**Top 5 redundÃ¢ncias**
+**Top 5 redundancias**
 - `ContentSwapDevBootstrapper` coexistia com installer central de ContentSwap (paralelo).
 - Hotkey de WorldLifecycle era instalado fora do trilho central DevQA (bootstrap runtime independente).
-- ContextMenus QA em arquivos de runtime (`PauseOverlayController`, `PostGameOverlayController`) mantÃªm acoplamento de debug com cÃ³digo de produÃ§Ã£o.
-- Flags nÃ£o totalmente unificadas no repositÃ³rio (`NEWSCRIPTS_QA` permanece em tooling de Gameplay/Editor).
-- Tooling editor continua distribuÃ­do por mÃºltiplos mÃ³dulos (`SceneFlow/Editor`, `Navigation/Dev/Editor`, `Gameplay/Editor/RunRearm`).
+- ContextMenus QA em arquivos de runtime (`PauseOverlayController`, `PostGameOverlayController`) mantem acoplamento de debug com codigo de producao.
+- Flags nao totalmente unificadas no repositorio (`NEWSCRIPTS_QA` permanece em tooling de Gameplay/Editor).
+- Tooling editor continua distribu?do por multiplos modulos (`SceneFlow/Editor`, `Navigation/Dev/Editor`, `Gameplay/Editor/RunRearm`).
 
-**Risco de mudanÃ§a:** Low-Med  
-**Ordem recomendada de limpeza:** 10/10 (apÃ³s runtime estÃ¡vel).
+**Risco de mudanca:** Low-Med  
+**Ordem recomendada de limpeza:** 10/10 (apos runtime est?vel).
 
 **DQ-1.2 aplicado (behavior-preserving):**
 - `ContentSwapDevBootstrapper` desativado como caminho paralelo (LEGACY no-op com log `[OBS][LEGACY][DevQA]`).
-- Hotkey DEV de WorldLifecycle centralizado via `RegisterWorldLifecycleQaInstaller()` no trilho DevQA canÃ´nico.
+- Hotkey DEV de WorldLifecycle centralizado via `RegisterWorldLifecycleQaInstaller()` no trilho DevQA canonico.
 - Guards dos arquivos alterados consolidados em `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - Snapshot criado em `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v2.md`.
 
@@ -214,10 +214,10 @@
 
 ## GRS-1.2 (behavior-preserving)
 - Snapshot criado: `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent-Cleanup-Audit-v2.md`.
-- Ações de cleanup:
-  - inventário de ownership real de `SceneTransitionStartedEvent`, `SceneTransitionCompletedEvent`, `GameResetRequestedEvent` com evidência `rg`.
+- Acoes de cleanup:
+  - inventario de ownership real de `SceneTransitionStartedEvent`, `SceneTransitionCompletedEvent`, `GameResetRequestedEvent` com evidencia `rg`.
   - hardening idempotente local em `SceneFlowInputModeBridge` (started same-frame) e `StateDependentService` (reset same-frame).
-- Sem novo owner de gate/readiness e sem alteração de contratos/pipeline.
+- Sem novo owner de gate/readiness e sem alteracao de contratos/pipeline.
 
 ## DQ-1.3 (behavior-preserving)
 - Snapshot criado: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`.
@@ -229,16 +229,16 @@
 
 ## GL-1.2 (behavior-preserving)
 - Snapshot criado: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v2.md`.
-- Inventário A/B/C consolidado com evidência rg.
+- Inventario A/B/C consolidado com evidencia rg.
 - `IntroStageDevTools` isolado em `#if UNITY_EDITOR`.
-- `GameStartRequestEmitter` e `GamePauseHotkeyController` mantidos no trilho runtime canônico.
-- Restart canônico preservado; nenhum listener ativo de `GameResetRequestedEvent` em `Modules/GameLoop/**`.
+- `GameStartRequestEmitter` e `GamePauseHotkeyController` mantidos no trilho runtime canonico.
+- Restart canonico preservado; nenhum listener ativo de `GameResetRequestedEvent` em `Modules/GameLoop/**`.
 
 ## GL-1.3 (behavior-preserving)
 - Snapshot criado: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`.
-- `GameStartRequestEmitter` migrou para trilho DevQA canônico (`EnsureInstalled`) e perdeu bootstrap automático legado.
+- `GameStartRequestEmitter` migrou para trilho DevQA canonico (`EnsureInstalled`) e perdeu bootstrap automatico legado.
 - `GamePauseHotkeyController` foi movido para `Modules/GameLoop/Legacy/Bindings/Inputs/` com guard de Editor/DevBuild.
-- Nenhum listener ativo de `GameResetRequestedEvent` no GameLoop; restart canônico preservado.
+- Nenhum listener ativo de `GameResetRequestedEvent` no GameLoop; restart canonico preservado.
 - Release excludes DevQA by compile guards; DevBuild required for QA harness.
 
 ## WL-1.2 update (behavior-preserving)
@@ -248,50 +248,50 @@
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`.
 
 ## CS-1.2 update (behavior-preserving)
-- `ContentSwapContextService` confirmado como publisher único de eventos de estado (PendingSet/PendingCleared/Committed).
-- `InPlaceContentSwapService` mantido como executor canônico delegando publish ao context service.
+- `ContentSwapContextService` confirmado como publisher unico de eventos de estado (PendingSet/PendingCleared/Committed).
+- `InPlaceContentSwapService` mantido como executor canonico delegando publish ao context service.
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v2.md`.
 
 
 ## IC-1.3 update (behavior-preserving)
 - Mecanismo `Infrastructure/Composition/Modules/*.cs` removido (boilerplate trivial de stage-gate).
 - `InstallCompositionModules()` agora faz dispatch direto por `_compositionInstallStage` no `GlobalCompositionRoot.Pipeline.cs`.
-- Ordem de `RegisterEssentialServicesOnly()` preservada; sem mudança em `Modules/**`.
+- Ordem de `RegisterEssentialServicesOnly()` preservada; sem mudancaa em `Modules/**`.
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Infra-Composition-Cleanup-v2.md`.
 
 ## IC-1.4 update (behavior-preserving)
-- `SceneScopeCompositionRoot` deixou de ser monolítico: split em `SceneScopeCompositionRoot.cs` + `SceneScopeCompositionRoot.RunRearm.cs` + `SceneScopeCompositionRoot.DevQA.cs`.
+- `SceneScopeCompositionRoot` deixou de ser monolitico: split em `SceneScopeCompositionRoot.cs` + `SceneScopeCompositionRoot.RunRearm.cs` + `SceneScopeCompositionRoot.DevQA.cs`.
 - Bloco DevQA (WorldLifecycleHookLoggerA) isolado em arquivo com guard `UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - Ordem de boot de cena, contratos e pipeline preservados.
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Infra-SceneScope-Cleanup-Audit-v1.md`.
 
 ## GP-1.1 update (behavior-preserving)
-- Gameplay separado por trilho: runtime canônico mantido e tooling órfão de QA isolado em `Modules/Gameplay/Legacy/Editor/RunRearm/**`.
-- Moves aplicados com prova estática (sem callsites canônicos, sem refs em assets, GUID scans sem matches).
-- Sem alteração de contratos/payloads/order/callsites do pipeline global.
+- Gameplay separado por trilho: runtime canonico mantido e tooling orfao de QA isolado em `Modules/Gameplay/Legacy/Editor/RunRearm/**`.
+- Moves aplicados com prova estatica (sem callsites canonicos, sem refs em assets, GUID scans sem matches).
+- Sem alteracao de contratos/payloads/order/callsites do pipeline global.
 - Live doc: `Docs/Modules/Gameplay.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Gameplay-Cleanup-Audit-v1.md`
 
 
 
 ## PostGame
-**Canonical Rail:** `GameLoopService` aciona entrada/saída de pós-jogo e resolve `IPostGameOwnershipService`; `PostGameOverlayController` apenas exibe UI e delega ações para `IPostLevelActionsService`; restart macro continua em `GameCommands -> GameResetRequestedEvent -> Navigation/MacroRestartCoordinator`.
+**Canonical Rail:** `GameLoopService` aciona entrada/saida de pos-jogo e resolve `IPostGameOwnershipService`; `PostGameOverlayController` apenas exibe UI e delega acoes para `IPostLevelActionsService`; restart macro continua em `GameCommands -> GameResetRequestedEvent -> Navigation/MacroRestartCoordinator`.
 
 **Top 5 redundancias**
 - Bloco QA/ContextMenu coexistia dentro do arquivo runtime de overlay.
-- `UnityEditor` e diálogo de confirmação ficavam acoplados ao controller principal.
-- Guard de reentrância QA (`_qaGuardBusy`) residia no mesmo arquivo do trilho canônico.
-- Sinais de DevQA e runtime apareciam no mesmo artefato, elevando ruído de manutenção.
-- Ausência de doc vivo específico de PostGame no baseline.
+- `UnityEditor` e dialogo de confirmacao ficavam acoplados ao controller principal.
+- Guard de reentrancia QA (`_qaGuardBusy`) residia no mesmo arquivo do trilho canonico.
+- Sinais de DevQA e runtime apareciam no mesmo artefato, elevando ruido de manutencao.
+- Ausencia de doc vivo especifico de PostGame no baseline.
 
 **Risco de mudanca:** Low-Med
-**Ordem recomendada de limpeza:** 11/11 (após estabilização dos trilhos macro).
+**Ordem recomendada de limpeza:** 11/11 (apos estabilizacao dos trilhos macro).
 
 ## PG-1.1 update (behavior-preserving)
-- `PostGameOverlayController` virou `partial` e manteve somente runtime canônico em `Modules/PostGame/Bindings/PostGameOverlayController.cs`.
+- `PostGameOverlayController` virou `partial` e manteve somente runtime canonico em `Modules/PostGame/Bindings/PostGameOverlayController.cs`.
 - DevQA foi isolado para `Modules/PostGame/Dev/PostGameOverlayController.DevQA.cs` sob `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - Uso de `UnityEditor` ficou restrito a bloco `#if UNITY_EDITOR` no arquivo DevQA.
-- Sem alteração de contratos/eventos/payloads e sem mudança de ownership de restart macro.
+- Sem alteracao de contratos/eventos/payloads e sem mudancaa de ownership de restart macro.
 - Live doc: `Docs/Modules/PostGame.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/PostGame-Cleanup-Audit-v1.md`
 
@@ -299,45 +299,45 @@
 - `PauseOverlayController` mantido no mesmo arquivo runtime (`Modules/GameLoop/Pause/Bindings/PauseOverlayController.cs`) e convertido para `partial`.
 - Bloco DevQA/ContextMenu isolado em `Modules/GameLoop/Pause/Dev/PauseOverlayController.DevQA.cs` com guard `UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - `UnityEditor` restrito ao parcial DevQA sob `#if UNITY_EDITOR`.
-- Fluxo runtime (pause/resume/overlay/input mode) e logs âncora preservados.
+- Fluxo runtime (pause/resume/overlay/input mode) e logs ancora preservados.
 - Live doc: `Docs/Modules/GameLoop.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Pause-Cleanup-Audit-v1.md`
 
 ## DQ-1.4 update (behavior-preserving)
-- Leak sweep global executado em `Modules/**` para símbolos Editor/DevQA, com filtro de suspeitos fora de `Dev/Editor/Legacy`.
-- `TransitionStyleCatalogAsset` (SceneFlow Navigation bindings) teve tooling de validação (`ContextMenu`) extraído para parcial DevQA:
+- Leak sweep global executado em `Modules/**` para simbolos Editor/DevQA, com filtro de suspeitos fora de `Dev/Editor/Legacy`.
+- `TransitionStyleCatalogAsset` (SceneFlow Navigation bindings) teve tooling de validacao (`ContextMenu`) extraido para parcial DevQA:
   - runtime: `Modules/SceneFlow/Navigation/Bindings/TransitionStyleCatalogAsset.cs`
   - dev: `Modules/SceneFlow/Navigation/Dev/TransitionStyleCatalogAsset.DevQA.cs`
 - `PauseOverlayController.DevQA` validado conforme hardening PA-1.1 (`using UnityEditor` somente no arquivo Dev sob guard editor).
-- Suspeitos remanescentes em runtime classificados como `A` (fail-fast/config/runtime critical) ou `C` (manual confirmation) sem mudança nesta etapa.
+- Suspeitos remanescentes em runtime classificados como `A` (fail-fast/config/runtime critical) ou `C` (manual confirmation) sem mudancaa nesta etapa.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 
 ## DQ-1.4.1 update (behavior-preserving)
-- `SceneRouteDefinitionAsset` (runtime binding) convertido para `partial` sem mudança de lógica runtime.
+- `SceneRouteDefinitionAsset` (runtime binding) convertido para `partial` sem mudancaa de logica runtime.
 - Bloco editor-only (OnValidate + AssetDatabase + build-index editor helper) movido para `Modules/SceneFlow/Navigation/Dev/SceneRouteDefinitionAsset.DevQA.cs`.
 - Runtime file ficou sem `UnityEditor`, `AssetDatabase`, `ContextMenu` e `MenuItem`.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 
 ## DQ-1.4.2 update (behavior-preserving)
-- `GameNavigationCatalogAsset` convertido para `partial` sem mover campos serializados nem alterar lógica/runtime.
+- `GameNavigationCatalogAsset` convertido para `partial` sem mover campos serializados nem alterar logica/runtime.
 - Chamada editor-only (`EditorApplication.isPlaying=false`) saiu do runtime e foi para `Modules/Navigation/Dev/GameNavigationCatalogAsset.DevQA.cs`.
-- Pós-check confirma runtime limpo de `UnityEditor/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
+- P?s-check confirma runtime limpo de `UnityEditor/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 
 ## DQ-1.4.3 update (behavior-preserving)
-- `SceneRouteResetPolicy` convertido para `partial` sem alterar contratos/regras de decisão de reset.
+- `SceneRouteResetPolicy` convertido para `partial` sem alterar contratos/regras de decisao de reset.
 - `EditorApplication.isPlaying` saiu do runtime e foi isolado em `Modules/WorldLifecycle/Dev/SceneRouteResetPolicy.DevQA.cs`.
-- Pós-check confirma runtime limpo de `UnityEditor/EditorApplication/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
+- P?s-check confirma runtime limpo de `UnityEditor/EditorApplication/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 
 ## DQ-1.4.4+ update (behavior-preserving)
 - Batch leak sweep aplicado em 6 arquivos runtime: `MenuQuitButtonBinder`, `GameNavigationIntentCatalogAsset`, `GameLoopSceneFlowCoordinator`, `SceneTransitionService`, `SceneBuildIndexRef`, `SceneRouteCatalogAsset`.
-- Extrações criadas em `Modules/**/Dev/*.DevQA.cs` com padrão `partial + guard de build/editor`; runtime principal preservado no mesmo path.
-- Prova pós-cleanup: varredura global fora de `Dev/Editor/Legacy` para `UnityEditor|EditorApplication|AssetDatabase|FindAssets|ContextMenu|MenuItem|InitializeOnLoad|RuntimeInitializeOnLoadMethod` retornou sem matches.
+- Extracoes criadas em `Modules/**/Dev/*.DevQA.cs` com padrao `partial + guard de build/editor`; runtime principal preservado no mesmo path.
+- Prova pos-cleanup: varredura global fora de `Dev/Editor/Legacy` para `UnityEditor|EditorApplication|AssetDatabase|FindAssets|ContextMenu|MenuItem|InitializeOnLoad|RuntimeInitializeOnLoadMethod` retornou sem matches.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 
@@ -348,3 +348,10 @@
 - Remaining matches in requested broader regex are only `RuntimeInitializeOnLoadMethod` sites (allowed by policy).
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
+
+## DQ-1.6 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v1.md`
+- status: Guard governance contract formalized and evidenced from local workspace only (behavior-preserving).
+- notes: Release remains isolated from Editor APIs; DevBuild/Editor keeps QA harness coverage.
+- notes: `NEWSCRIPTS_QA` and `NEWSCRIPTS_DEV` are absent from code; `NEWSCRIPTS_MODE` and `NEWSCRIPTS_BASELINE_ASSERTS` remain only as deprecated documented residuals.

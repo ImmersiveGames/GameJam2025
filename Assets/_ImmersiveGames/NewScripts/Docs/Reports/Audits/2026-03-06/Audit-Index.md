@@ -1,4 +1,4 @@
-﻿# Audit Index (Docs Layout Normalization)
+# Audit Index (Docs Layout Normalization)
 
 Date: 2026-03-06
 
@@ -168,7 +168,7 @@ Date: 2026-03-06
 ## GL-1.2 Status
 - live doc: `Docs/Modules/GameLoop.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v2.md`
-- status: Cleanup mÃ­nimo aplicado (behavior-preserving)
+- status: Cleanup m?nimo aplicado (behavior-preserving)
 - Release excludes DevQA by compile guards; DevBuild required for QA harness.
 
 ## GL-1.3 Status
@@ -229,7 +229,7 @@ Date: 2026-03-06
 ## DQ-1.4.1 Status
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
-- status: `SceneRouteDefinitionAsset` leak extraído para parcial DevQA; runtime sem símbolos Editor.
+- status: `SceneRouteDefinitionAsset` leak extraido para parcial DevQA; runtime sem simbolos Editor.
 
 ## DQ-1.4.2 Status
 - live doc: `Docs/Modules/DevQA.md`
@@ -244,9 +244,14 @@ Date: 2026-03-06
 ## DQ-1.4.4+ Status
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
-- status: batch leak sweep aplicado em 6 runtimes com extração para DevQA partials; global sweep fora de `Dev/Editor/Legacy` com 0 matches para tokens de Editor/DevQA.
+- status: batch leak sweep aplicado em 6 runtimes com extracao para DevQA partials; global sweep fora de `Dev/Editor/Legacy` com 0 matches para tokens de Editor/DevQA.
 
 ## DQ-1.5 Status
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
 - status: DONE - Editor API leak sweep full-fix applied; QA tooling moved to `Editor/QA`; runtime files cleaned via partial editor hooks.
+
+## DQ-1.6 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v1.md`
+- status: Guard governance contract formalized; strict runtime/editor leak sweep remains clean; residual `NEWSCRIPTS_MODE` / `NEWSCRIPTS_BASELINE_ASSERTS` documented as deprecated.
