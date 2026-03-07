@@ -1,9 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Core.Events
@@ -11,29 +8,12 @@ namespace _ImmersiveGames.NewScripts.Core.Events
     /// <summary>
     /// Utilitário de limpeza/gerenciamento do EventBus no NewScripts (sem dependências do legado).
     /// </summary>
-    public static class EventBusUtil
+    public static partial class EventBusUtil
     {
         private static readonly HashSet<Type> _eventTypes = new();
         private static readonly HashSet<(Type Scope, Type Event)> _filteredEventTypes = new();
 
         public static IReadOnlyCollection<Type> EventTypes => _eventTypes;
-
-#if UNITY_EDITOR
-        [InitializeOnLoadMethod]
-        private static void InitializeEditor()
-        {
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-        }
-
-        private static void OnPlayModeStateChanged(PlayModeStateChange change)
-        {
-            if (change == PlayModeStateChange.ExitingPlayMode)
-            {
-                ClearAllBuses();
-            }
-        }
-#endif
 
         internal static void RegisterEventType(Type eventType)
         {

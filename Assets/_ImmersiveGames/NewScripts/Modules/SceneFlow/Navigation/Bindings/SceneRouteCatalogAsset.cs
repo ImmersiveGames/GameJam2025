@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
@@ -21,22 +18,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         fileName = "SceneRouteCatalogAsset",
         menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Catalogs/SceneRouteCatalogAsset",
         order = 30)]
-    public sealed class SceneRouteCatalogAsset : ScriptableObject, ISceneRouteCatalog
+    public sealed partial class SceneRouteCatalogAsset : ScriptableObject, ISceneRouteCatalog
     {
-#if UNITY_EDITOR
-        public readonly struct DebugRouteItem
-        {
-            public DebugRouteItem(SceneRouteId routeId, SceneRouteDefinition routeDefinition)
-            {
-                RouteId = routeId;
-                RouteDefinition = routeDefinition;
-            }
-
-            public SceneRouteId RouteId { get; }
-            public SceneRouteDefinition RouteDefinition { get; }
-        }
-#endif
-
         [Header("Routes (Direct References)")]
         [SerializeField] private List<SceneRouteDefinitionAsset> routeDefinitions = new();
 
@@ -74,7 +57,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             return _assetCache.TryGetValue(routeId, out routeAsset) && routeAsset != null;
         }
 
-#if UNITY_EDITOR
+        public readonly struct DebugRouteItem
+        {
+            public DebugRouteItem(SceneRouteId routeId, SceneRouteDefinition routeDefinition)
+            {
+                RouteId = routeId;
+                RouteDefinition = routeDefinition;
+            }
+
+            public SceneRouteId RouteId { get; }
+            public SceneRouteDefinition RouteDefinition { get; }
+        }
+
         public IReadOnlyList<DebugRouteItem> DebugGetRoutesSnapshot()
         {
             EnsureCache();
@@ -86,31 +80,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             return snapshot;
         }
-#endif
 
         private void OnEnable()
         {
             _cacheBuilt = false;
-        }
-
-        private void OnValidate()
-        {
-            _cacheBuilt = false;
-
-            try
-            {
-                EnsureCache();
-            }
-            catch (Exception ex)
-            {
-#if UNITY_EDITOR
-                string assetPath = AssetDatabase.GetAssetPath(this);
-#else
-                string assetPath = name;
-#endif
-                DebugUtility.LogError(typeof(SceneRouteCatalogAsset),
-                    $"[FATAL][Config] SceneRouteCatalogAsset invalido durante OnValidate. asset='{assetPath}', detail='{ex.Message}'.");
-            }
         }
 
         private void EnsureCache()
@@ -226,5 +199,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         }
     }
 }
+
+
 
 

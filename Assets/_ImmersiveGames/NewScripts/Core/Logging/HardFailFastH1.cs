@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Core.Logging
 {
-    public static class HardFailFastH1
+    public static partial class HardFailFastH1
     {
         public static void Trigger<T>(string detail, Exception innerException = null)
         {
@@ -20,16 +20,23 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
             DebugUtility.LogError(ownerType ?? typeof(HardFailFastH1), message);
 
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+            StopPlayModeOrQuit();
 
             throw innerException == null
                 ? new InvalidOperationException(message)
                 : new InvalidOperationException(message, innerException);
         }
+
+        private static void StopPlayModeOrQuit()
+        {
+            RequestEditorStopPlayMode();
+
+            if (!Application.isEditor)
+            {
+                Application.Quit();
+            }
+        }
+
+        static partial void RequestEditorStopPlayMode();
     }
 }
-

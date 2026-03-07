@@ -1,11 +1,12 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Core.Logging
 {
     /// <summary>
     /// Aplica configurações do DebugUtility a partir de um DebugLogSettings serializado.
     /// </summary>
-    public sealed class DebugManagerConfig : MonoBehaviour
+    public sealed partial class DebugManagerConfig : MonoBehaviour
     {
         [SerializeField] private DebugLogSettings settings;
         [SerializeField] private bool applyOnAwake = true;
@@ -18,7 +19,6 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             }
         }
 
-        [ContextMenu("Dev/Debug/Apply Settings")]
         public void ApplyConfiguration()
         {
             if (settings == null)
@@ -56,7 +56,6 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 $"[DebugManagerConfig] Settings aplicados (Editor={isEditor}). Global={globalEnabled}, Verbose={verboseEnabled}, Fallbacks={fallbacksEnabled}, RepeatedVerbose={repeatedVerboseEnabled}, DefaultLevel={defaultLevel}.");
         }
 
-        [ContextMenu("Dev/Debug/Print Current Debug State")]
         public void PrintCurrentDebugState()
         {
             DebugUtility.Log(typeof(DebugManagerConfig),
@@ -64,5 +63,4 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         }
     }
 }
-
 #endif

@@ -240,3 +240,13 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 - status: `SceneRouteResetPolicy` runtime leak isolado em `Modules/WorldLifecycle/Dev/SceneRouteResetPolicy.DevQA.cs`.
+
+## DQ-1.4.4+ Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- status: batch leak sweep aplicado em 6 runtimes com extração para DevQA partials; global sweep fora de `Dev/Editor/Legacy` com 0 matches para tokens de Editor/DevQA.
+
+## DQ-1.5 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
+- status: DONE - Editor API leak sweep full-fix applied; QA tooling moved to `Editor/QA`; runtime files cleaned via partial editor hooks.

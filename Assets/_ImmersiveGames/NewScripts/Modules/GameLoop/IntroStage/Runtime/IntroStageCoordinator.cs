@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
     public sealed class IntroStageCoordinator : IIntroStageCoordinator
     {
         private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
-        // Fail-safe operacional: evita travar o fluxo se nenhum sinal canônico for emitido.
+        // Fail-safe operacional: evita travar o fluxo se nenhum sinal canÃ´nico for emitido.
         private const int IntroStageCompletionTimeoutMs = 20000;
         private int _inProgress;
 
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             var simulationGate = ResolveSimulationGateService();
             bool simulationGateAcquired = false;
 
-            // ADR-0013: RequestStart deve acontecer APÓS IntroStageCompleted + liberação do gate.
+            // ADR-0013: RequestStart deve acontecer APÃ“S IntroStageCompleted + liberaÃ§Ã£o do gate.
             bool requestStartAfterComplete = false;
             string requestStartReason = "IntroStageController/Completed";
 
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             if (gameLoop == null)
             {
                 DebugUtility.LogWarning<IntroStageCoordinator>(
-                    "[IntroStageController] IGameLoopService indisponível. IntroStageController seguirá sem sincronizar estado do GameLoop.");
+                    "[IntroStageController] IGameLoopService indisponÃ­vel. IntroStageController seguirÃ¡ sem sincronizar estado do GameLoop.");
             }
 
             try
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 if (controlService == null)
                 {
                     DebugUtility.LogWarning<IntroStageCoordinator>(
-                        "[IntroStageController] IIntroStageControlService indisponível. IntroStageController será concluída imediatamente.");
+                        "[IntroStageController] IIntroStageControlService indisponÃ­vel. IntroStageController serÃ¡ concluÃ­da imediatamente.");
 
                     gameLoop?.RequestIntroStageStart();
                     simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
@@ -76,11 +76,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
 
                 DebugUtility.Log<IntroStageCoordinator>(
-                    "[IntroStageController] IntroStageController ativa: simulação gameplay bloqueada; aguardando confirmação (UI).",
+                    "[IntroStageController] IntroStageController ativa: simulaÃ§Ã£o gameplay bloqueada; aguardando confirmaÃ§Ã£o (UI).",
                     DebugUtility.Colors.Info);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 DebugUtility.LogVerbose<IntroStageCoordinator>(
-                    "[QA][IntroStageController] ContextMenu/MenuItem disponíveis para Complete/Skip em Editor/Dev.",
+                    "[QA][IntroStageController] EditorQAActions disponÃ­veis para Complete/Skip em Editor/Dev.",
                     DebugUtility.Colors.Info);
 #endif
 
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             }
 
             DebugUtility.LogVerbose<IntroStageCoordinator>(
-                $"[IntroStageController] Solicitando RequestStart após término da IntroStageController. reason='{NormalizeReason(reason)}'.",
+                $"[IntroStageController] Solicitando RequestStart apÃ³s tÃ©rmino da IntroStageController. reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestStart();
@@ -297,7 +297,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             if (gateService == null)
             {
                 DebugUtility.LogWarning<IntroStageCoordinator>(
-                    "[IntroStageController] ISimulationGateService indisponível; simulação gameplay pode não ser bloqueada durante IntroStageController.");
+                    "[IntroStageController] ISimulationGateService indisponÃ­vel; simulaÃ§Ã£o gameplay pode nÃ£o ser bloqueada durante IntroStageController.");
                 return false;
             }
 
@@ -381,6 +381,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         }
     }
 }
+
+
 
 
 

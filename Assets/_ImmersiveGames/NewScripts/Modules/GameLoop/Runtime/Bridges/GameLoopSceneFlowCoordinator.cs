@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -12,14 +12,14 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 {
     /// <summary>
-    /// Sincroniza a conclusão do SceneFlow (SceneTransitionCompleted) com o WorldLifecycle reset (WorldLifecycleResetCompleted)
-    /// e coloca o GameLoop no estado correto para o perfil de transição.
+    /// Sincroniza a conclusÃ£o do SceneFlow (SceneTransitionCompleted) com o WorldLifecycle reset (WorldLifecycleResetCompleted)
+    /// e coloca o GameLoop no estado correto para o perfil de transiÃ§Ã£o.
     ///
-    /// Regra Strict/Release (ADR-0013): o SceneFlow NÃO deve forçar RequestStart() em gameplay;
-    /// o start efetivo é responsabilidade do pipeline de início de nível (ex.: LevelStartPipeline/IntroStageCoordinator)
-    /// que só libera o início após IntroStageController completar.
+    /// Regra Strict/Release (ADR-0013): o SceneFlow NÃƒO deve forÃ§ar RequestStart() em gameplay;
+    /// o start efetivo Ã© responsabilidade do pipeline de inÃ­cio de nÃ­vel (ex.: LevelStartPipeline/IntroStageCoordinator)
+    /// que sÃ³ libera o inÃ­cio apÃ³s IntroStageController completar.
     /// </summary>
-    public sealed class GameLoopSceneFlowCoordinator : IDisposable
+    public sealed partial class GameLoopSceneFlowCoordinator : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly SceneTransitionRequest _startPlan;
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             if (_startPlan == null)
             {
                 DebugUtility.LogWarning(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] Coordinator registrado com startPlan NULL. Start será ignorado até corrigir o GlobalCompositionRoot.");
+                    "[GameLoopSceneFlow] Coordinator registrado com startPlan NULL. Start serÃ¡ ignorado atÃ© corrigir o GlobalCompositionRoot.");
                 return;
             }
 
@@ -92,14 +92,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             if (_startPlan == null)
             {
                 DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] Start REQUEST recebido, mas startPlan é NULL. Abortando.");
+                    "[GameLoopSceneFlow] Start REQUEST recebido, mas startPlan Ã© NULL. Abortando.");
                 return;
             }
 
             if (_startInProgress)
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] Start REQUEST ignorado (já em progresso).");
+                    "[GameLoopSceneFlow] Start REQUEST ignorado (jÃ¡ em progresso).");
                 return;
             }
 
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             ResetStartState();
 
             DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
-                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...");
+                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transiÃ§Ã£o de cenas...");
 
             _ = StartTransitionAsync();
         }
@@ -162,9 +162,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             string message = $"[FATAL][Fade] {detail}";
             DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator), message);
 
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#endif
+            DevStopPlayModeInEditor();
             if (!Application.isEditor)
             {
                 Application.Quit();
@@ -172,6 +170,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
             throw new InvalidOperationException(message);
         }
+
+        static partial void DevStopPlayModeInEditor();
 
         private static bool ShouldDegradeFadeInRuntime()
         {
@@ -255,7 +255,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             _worldResetCompleted = true;
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                $"[GameLoopSceneFlow] WorldLifecycle reset concluído (ou skip). reason='{evt.Reason ?? "<null>"}'.");
+                $"[GameLoopSceneFlow] WorldLifecycle reset concluÃ­do (ou skip). reason='{evt.Reason ?? "<null>"}'.");
 
             TryIssueGameLoopSync();
         }
@@ -321,7 +321,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
             {
                 DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] IGameLoopService indisponível no DI global; não foi possível sincronizar GameLoop.");
+                    "[GameLoopSceneFlow] IGameLoopService indisponÃ­vel no DI global; nÃ£o foi possÃ­vel sincronizar GameLoop.");
 
                 _startInProgress = false;
                 return;
@@ -329,10 +329,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
             _syncIssued = true;
 
-            // Importante: este coordinator é usado para o startPlan de produção.
+            // Importante: este coordinator Ã© usado para o startPlan de produÃ§Ã£o.
             // Regra Strict/Release:
             // - Em frontend/startup: apenas manter o GameLoop em Ready.
-            // - Em gameplay: também manter em Ready (NÃO RequestStart aqui). O início efetivo acontece após IntroStageController completar.
+            // - Em gameplay: tambÃ©m manter em Ready (NÃƒO RequestStart aqui). O inÃ­cio efetivo acontece apÃ³s IntroStageController completar.
             //   (ex.: LevelStartPipeline/IntroStageCoordinator chama RequestStart no momento correto)
             var profileId = _startPlan?.TransitionProfileId ?? default;
 
@@ -341,7 +341,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             string profileLabel = profileId.IsValid ? profileId.Value : "<none>";
 
             DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                $"[GameLoopSceneFlow] Sync concluído. profileId='{profileLabel}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
+                $"[GameLoopSceneFlow] Sync concluÃ­do. profileId='{profileLabel}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestReady();
@@ -350,6 +350,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         }
     }
 }
+
+
 
 
 

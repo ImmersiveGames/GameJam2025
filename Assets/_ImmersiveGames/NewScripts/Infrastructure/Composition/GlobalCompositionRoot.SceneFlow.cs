@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
@@ -14,9 +14,6 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -43,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[SceneFlow] SceneTransitionService já registrado no DI global.",
+                    "[SceneFlow] SceneTransitionService jÃ¡ registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -67,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     if (completionGate != null)
                     {
                         DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                            $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
+                            $"[SceneFlow] ISceneTransitionCompletionGate nÃ£o Ã© WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
                     }
 
                     innerGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
@@ -124,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[SceneFlow] ISceneFlowSignatureCache já registrado no DI global.",
+                    "[SceneFlow] ISceneFlowSignatureCache jÃ¡ registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -142,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IRouteResetPolicy>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[SceneFlow] IRouteResetPolicy já registrado no DI global.",
+                    "[SceneFlow] IRouteResetPolicy jÃ¡ registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -164,8 +161,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return existingResolver;
             }
             throw new InvalidOperationException(
-                "[SceneFlow] ISceneRouteResolver obrigatório ausente no DI global. " +
-                "Garanta a execução de RegisterSceneFlowRoutesRequired no pipeline antes de RegisterSceneFlowNative.");
+                "[SceneFlow] ISceneRouteResolver obrigatÃ³rio ausente no DI global. " +
+                "Garanta a execuÃ§Ã£o de RegisterSceneFlowRoutesRequired no pipeline antes de RegisterSceneFlowNative.");
         }
 
         private static void RegisterSceneFlowFadeModule()
@@ -235,7 +232,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 if (buildIndex < 0)
                 {
                     failureReason =
-                        $"FadeScene inválida no Build Settings: path='{buildScenePath}' retornou buildIndex={buildIndex}. " +
+                        $"FadeScene invÃ¡lida no Build Settings: path='{buildScenePath}' retornou buildIndex={buildIndex}. " +
                         $"Corrija em File > Build Settings e garanta a cena habilitada. asset='{bootstrapAssetName}', field='fadeSceneKey', keyAsset='{fadeSceneKeyAssetName}', scene='{fadeSceneName}'.";
                     return false;
                 }
@@ -256,30 +253,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static string TryResolveBuildSettingsScenePath(string fadeSceneName)
         {
-#if UNITY_EDITOR
-            EditorBuildSettingsScene[] buildScenes = EditorBuildSettings.scenes;
-            if (buildScenes == null)
-            {
-                return string.Empty;
-            }
-
-            for (int i = 0; i < buildScenes.Length; i++)
-            {
-                EditorBuildSettingsScene scene = buildScenes[i];
-                if (scene == null || !scene.enabled || string.IsNullOrWhiteSpace(scene.path))
-                {
-                    continue;
-                }
-
-                string scenePath = scene.path.Trim();
-                string sceneFileName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
-                if (string.Equals(sceneFileName, fadeSceneName, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return scenePath;
-                }
-            }
-#endif
-            return string.Empty;
+            string scenePath = string.Empty;
+            TryResolveBuildSettingsScenePathEditor(fadeSceneName, ref scenePath);
+            return scenePath ?? string.Empty;
         }
 
         private static async System.Threading.Tasks.Task PreloadFadeSceneAsync(IFadeService fadeService, string fadeSceneName)
@@ -331,16 +307,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var tag = isConfigFatal ? "[FATAL][Config][Fade]" : "[FATAL][Fade]";
             DebugUtility.LogError(typeof(GlobalCompositionRoot), $"{tag} {reason}");
 
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#endif
-            if (!Application.isEditor)
-            {
-                Application.Quit();
-            }
+            StopPlayModeOrQuit();
 
             throw new System.InvalidOperationException($"{tag} {reason}");
         }
+
+        static partial void TryResolveBuildSettingsScenePathEditor(string fadeSceneName, ref string scenePath);
 
         private static bool ShouldDegradeFadeInRuntime()
         {
@@ -354,8 +326,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void RegisterSceneFlowLoadingIfAvailable()
         {
             // ADR-0010: LoadingHudService depende da policy Strict/Release + reporter de degraded.
-            // Mantemos best-effort: se por algum motivo os serviços não estiverem disponíveis,
-            // ainda assim injetamos nulls e deixamos o próprio serviço decidir como degradar.
+            // Mantemos best-effort: se por algum motivo os serviÃ§os nÃ£o estiverem disponÃ­veis,
+            // ainda assim injetamos nulls e deixamos o prÃ³prio serviÃ§o decidir como degradar.
             DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeMode);
             DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
 
@@ -368,7 +340,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<LoadingHudOrchestrator>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Loading] LoadingHudOrchestrator já registrado no DI global.",
+                    "[Loading] LoadingHudOrchestrator jÃ¡ registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -381,3 +353,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
+
+
+

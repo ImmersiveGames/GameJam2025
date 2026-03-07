@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
     /// Fases tocadas: TransitionStarted, FadeIn, LoadedScenesSnapshot(before_apply_route), RouteExecutionPlan, ApplyRoute, LoadedScenesSnapshot(after_apply_route), ScenesReady, BeforeFadeOut, FadeOut, TransitionCompleted.
     /// </summary>
 [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SceneTransitionService : ISceneTransitionService
+    public sealed partial class SceneTransitionService : ISceneTransitionService
     {
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
@@ -227,11 +227,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 $"[FATAL][Config] SceneTransitionProfile ausente na request com UseFade=true. routeId='{request.RouteId}', styleId='{request.StyleId}', requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
 
             DebugUtility.LogError<SceneTransitionService>(message);
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+            DevStopPlayModeInEditor();
+            if (!Application.isEditor)
+            {
+                Application.Quit();
+            }
             throw new InvalidOperationException(message);
         }
 
@@ -241,11 +241,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 $"[FATAL][Config] {detail} requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
 
             DebugUtility.LogError<SceneTransitionService>(message);
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+            DevStopPlayModeInEditor();
+            if (!Application.isEditor)
+            {
+                Application.Quit();
+            }
             throw new InvalidOperationException(message);
         }
 
@@ -805,11 +805,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             public Task AwaitBeforeFadeOutAsync(SceneTransitionContext context) => Task.CompletedTask;
         }
+        static partial void DevStopPlayModeInEditor();
+
         private static string Sanitize(string s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 
 }
+
+
 
 
 

@@ -333,3 +333,18 @@
 - Pós-check confirma runtime limpo de `UnityEditor/EditorApplication/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+
+## DQ-1.4.4+ update (behavior-preserving)
+- Batch leak sweep aplicado em 6 arquivos runtime: `MenuQuitButtonBinder`, `GameNavigationIntentCatalogAsset`, `GameLoopSceneFlowCoordinator`, `SceneTransitionService`, `SceneBuildIndexRef`, `SceneRouteCatalogAsset`.
+- Extrações criadas em `Modules/**/Dev/*.DevQA.cs` com padrão `partial + guard de build/editor`; runtime principal preservado no mesmo path.
+- Prova pós-cleanup: varredura global fora de `Dev/Editor/Legacy` para `UnityEditor|EditorApplication|AssetDatabase|FindAssets|ContextMenu|MenuItem|InitializeOnLoad|RuntimeInitializeOnLoadMethod` retornou sem matches.
+- Live doc: `Docs/Modules/DevQA.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+
+## DQ-1.5 update (behavior-preserving)
+- Full Editor API leak sweep applied in `Core`/`Infrastructure` runtime files and QA tooling path.
+- `QA/**` moved to `Editor/QA/**` (with `.meta`), keeping editor harness out of runtime scan/build.
+- Runtime leaks (`UnityEditor|EditorApplication|AssetDatabase|FindAssets|MenuItem|ContextMenu`) outside `Dev/Editor/Legacy/QA` now return 0 matches.
+- Remaining matches in requested broader regex are only `RuntimeInitializeOnLoadMethod` sites (allowed by policy).
+- Live doc: `Docs/Modules/DevQA.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`

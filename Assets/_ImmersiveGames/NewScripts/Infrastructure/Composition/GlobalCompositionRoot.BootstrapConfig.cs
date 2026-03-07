@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
@@ -15,22 +15,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static string cachedBootstrapConfigVia = "None";
         private static bool fatalAbortRequested;
 
-
         private static void FailFast(string message)
         {
             fatalAbortRequested = true;
 
             DebugUtility.LogError(typeof(GlobalCompositionRoot), $"[FATAL][Config] {message}");
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#endif
+            StopPlayModeOrQuit();
+
+            throw new InvalidOperationException($"[FATAL][Config] {message}");
+        }
+
+        private static void StopPlayModeOrQuit()
+        {
+            RequestEditorStopPlayMode();
+
             if (!Application.isEditor)
             {
                 Application.Quit();
             }
-
-            throw new InvalidOperationException($"[FATAL][Config] {message}");
         }
+
+        static partial void RequestEditorStopPlayMode();
 
         private static NewScriptsBootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
         {

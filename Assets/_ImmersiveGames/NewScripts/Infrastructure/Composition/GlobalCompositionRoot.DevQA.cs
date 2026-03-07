@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][IntroStageController] Falha ao instalar IntroStageDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][IntroStageController] Falha ao instalar IntroStageDevTools no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][ContentSwap] Falha ao instalar ContentSwapDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][ContentSwap] Falha ao instalar ContentSwapDevTools no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][SceneFlow] Falha ao instalar SceneFlowDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][SceneFlow] Falha ao instalar SceneFlowDevTools no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
 
             try
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             catch (Exception ex)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[QA][LevelFlow] Falha ao instalar LevelFlowDevContextMenu no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[QA][LevelFlow] Falha ao instalar LevelFlowDevTools no bootstrap. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -83,3 +83,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     }
 }
 #endif
+

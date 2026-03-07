@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -9,17 +9,17 @@ using UnityEngine.Serialization;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Catálogo canônico de intents de navegação.
+    /// CatÃ¡logo canÃ´nico de intents de navegaÃ§Ã£o.
     ///
     /// Estrutura:
-    /// - Core: intents canônicos do domínio (pode conter aliases oficiais).
-    /// - Custom: intents não-canônicos/expansões de projeto.
+    /// - Core: intents canÃ´nicos do domÃ­nio (pode conter aliases oficiais).
+    /// - Custom: intents nÃ£o-canÃ´nicos/expansÃµes de projeto.
     /// </summary>
     [CreateAssetMenu(
         fileName = "GameNavigationIntentCatalogAsset",
         menuName = "ImmersiveGames/NewScripts/Modules/Navigation/Catalogs/GameNavigationIntentCatalogAsset",
         order = 31)]
-    public sealed class GameNavigationIntentCatalogAsset : ScriptableObject
+    public sealed partial class GameNavigationIntentCatalogAsset : ScriptableObject
     {
         private static readonly NavigationIntentId MenuCanonicalId = NavigationIntentId.FromName("to-menu");
         private static readonly NavigationIntentId GameplayCanonicalId = NavigationIntentId.FromName("to-gameplay");
@@ -32,17 +32,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         [Serializable]
         public sealed class IntentEntry
         {
-            [Tooltip("Id canônico da intent.")]
+            [Tooltip("Id canÃ´nico da intent.")]
             public NavigationIntentId intentId;
 
-            [Tooltip("Referência direta da rota para a intent.")]
+            [Tooltip("ReferÃªncia direta da rota para a intent.")]
             public SceneRouteDefinitionAsset routeRef;
 
-            [Tooltip("Style de transição associado à intent.")]
+            [Tooltip("Style de transiÃ§Ã£o associado Ã  intent.")]
             public TransitionStyleId styleId;
 
             [FormerlySerializedAs("criticalRequired")]
-            [Tooltip("Campo legado sem efeito de fail-fast. A criticidade canônica é fixa em to-menu/to-gameplay.")]
+            [Tooltip("Campo legado sem efeito de fail-fast. A criticidade canÃ´nica Ã© fixa em to-menu/to-gameplay.")]
             public bool criticalRequired;
 
             public void Normalize()
@@ -51,10 +51,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
         }
 
-        [Header("Core (canônico + aliases oficiais)")]
+        [Header("Core (canÃ´nico + aliases oficiais)")]
         [SerializeField] private List<IntentEntry> core = new();
 
-        [Header("Custom (extensões não-canônicas)")]
+        [Header("Custom (extensÃµes nÃ£o-canÃ´nicas)")]
         [SerializeField] private List<IntentEntry> custom = new();
 
         public NavigationIntentId Menu => TryGetCoreIntentId(MenuCanonicalId);
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             if (core == null || core.Count == 0)
             {
-                FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: bloco Core vazio. asset='{name}'.");
+                FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog invÃ¡lido: bloco Core vazio. asset='{name}'.");
             }
 
             var seen = new HashSet<NavigationIntentId>();
@@ -151,35 +151,35 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 IntentEntry entry = entries[i];
                 if (entry == null)
                 {
-                    FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: entry nula. asset='{name}', block='{(isCore ? "Core" : "Custom")}', index={i}.");
+                    FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog invÃ¡lido: entry nula. asset='{name}', block='{(isCore ? "Core" : "Custom")}', index={i}.");
                 }
 
                 if (!entry.intentId.IsValid)
                 {
-                    FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: intentId vazio. asset='{name}', block='{(isCore ? "Core" : "Custom")}', index={i}.");
+                    FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog invÃ¡lido: intentId vazio. asset='{name}', block='{(isCore ? "Core" : "Custom")}', index={i}.");
                 }
 
                 if (!seen.Add(entry.intentId))
                 {
-                    FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: intent duplicada. asset='{name}', intentId='{entry.intentId}'.");
+                    FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog invÃ¡lido: intent duplicada. asset='{name}', intentId='{entry.intentId}'.");
                 }
 
                 if (isCore)
                 {
                     if (IsMandatoryCoreIntent(entry.intentId) && entry.routeRef == null)
                     {
-                        FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: Core exige routeRef. asset='{name}', intentId='{entry.intentId}'.");
+                        FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog invÃ¡lido: Core exige routeRef. asset='{name}', intentId='{entry.intentId}'.");
                     }
 
                     if (IsMandatoryCoreIntent(entry.intentId) && !entry.styleId.IsValid)
                     {
-                        FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: Core exige styleId válido. asset='{name}', intentId='{entry.intentId}'.");
+                        FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog invÃ¡lido: Core exige styleId vÃ¡lido. asset='{name}', intentId='{entry.intentId}'.");
                     }
 
                     if (!IsMandatoryCoreIntent(entry.intentId) && (entry.routeRef == null || !entry.styleId.IsValid))
                     {
                         DebugUtility.Log(typeof(GameNavigationIntentCatalogAsset),
-                            $"[OBS][Config] Core extra opcional com configuração parcial/ausente (permitido). asset='{name}', intentId='{entry.intentId}'.",
+                            $"[OBS][Config] Core extra opcional com configuraÃ§Ã£o parcial/ausente (permitido). asset='{name}', intentId='{entry.intentId}'.",
                             DebugUtility.Colors.Info);
                     }
                 }
@@ -196,17 +196,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             NavigationIntentId resolved = TryGetCoreIntentId(canonicalId);
             if (!resolved.IsValid)
             {
-                FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog inválido: intent canônica ausente no Core. asset='{name}', intentId='{canonicalId}'.");
+                FailFastConfig($"[FATAL][Config] GameNavigationIntentCatalog invÃ¡lido: intent canÃ´nica ausente no Core. asset='{name}', intentId='{canonicalId}'.");
             }
         }
 
         private static void FailFastConfig(string message)
         {
             DebugUtility.LogError(typeof(GameNavigationIntentCatalogAsset), message);
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#endif
+            DevStopPlayModeInEditor();
             throw new InvalidOperationException(message);
         }
+
+        static partial void DevStopPlayModeInEditor();
     }
 }
+

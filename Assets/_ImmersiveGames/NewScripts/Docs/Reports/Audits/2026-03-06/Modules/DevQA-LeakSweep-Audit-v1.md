@@ -110,3 +110,37 @@ After (p�s-check runtime):
 - O que vazava: `UnityEditor.EditorApplication` no runtime (`Modules/WorldLifecycle/Runtime/SceneRouteResetPolicy.cs:63`).
 - Para onde foi: hook editor-only movido para `Modules/WorldLifecycle/Dev/SceneRouteResetPolicy.DevQA.cs` (classe partial + guard de arquivo `UNITY_EDITOR || DEVELOPMENT_BUILD`).
 - Prova p�s-check: `rg -n "UnityEditor|ContextMenu|MenuItem|AssetDatabase|FindAssets|EditorApplication" Modules/WorldLifecycle/Runtime/SceneRouteResetPolicy.cs` => sem matches.
+
+## DQ-1.4.4+ update (batch)
+- Behavior-preserving: apenas isolamento DevQA/Editor; sem mudança de contratos públicos/pipeline/callsites.
+- Runtime files limpos:
+  - `Modules/Navigation/Bindings/MenuQuitButtonBinder.cs`
+  - `Modules/Navigation/GameNavigationIntentCatalogAsset.cs`
+  - `Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs`
+  - `Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+  - `Modules/LevelFlow/Config/SceneBuildIndexRef.cs`
+  - `Modules/SceneFlow/Navigation/Bindings/SceneRouteCatalogAsset.cs`
+- DevQA files criados:
+  - `Modules/Navigation/Dev/MenuQuitButtonBinder.DevQA.cs`
+  - `Modules/Navigation/Dev/GameNavigationIntentCatalogAsset.DevQA.cs`
+  - `Modules/GameLoop/Dev/GameLoopSceneFlowCoordinator.DevQA.cs`
+  - `Modules/SceneFlow/Transition/Dev/SceneTransitionService.DevQA.cs`
+  - `Modules/LevelFlow/Config/Dev/SceneBuildIndexRef.DevQA.cs`
+  - `Modules/SceneFlow/Navigation/Dev/SceneRouteCatalogAsset.DevQA.cs`
+
+### Evidência (before)
+Comando global (fora Dev/Editor/Legacy):
+`rg -n "UnityEditor|EditorApplication|AssetDatabase|FindAssets|ContextMenu|MenuItem|InitializeOnLoad|RuntimeInitializeOnLoadMethod" C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Modules -g "*.cs" -g "!**/Dev/**" -g "!**/Editor/**" -g "!**/Legacy/**"`
+
+Trechos relevantes:
+- `Modules/Navigation/Bindings/MenuQuitButtonBinder.cs:23`
+- `Modules/Navigation/GameNavigationIntentCatalogAsset.cs:207`
+- `Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs:166`
+- `Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs:231`
+- `Modules/LevelFlow/Config/SceneBuildIndexRef.cs:6,34`
+- `Modules/SceneFlow/Navigation/Bindings/SceneRouteCatalogAsset.cs:7,107`
+
+### Evidência (after)
+- Runtime limpo por arquivo (6 comandos `rg -n "UnityEditor|EditorApplication|AssetDatabase|FindAssets|ContextMenu|MenuItem" <runtime_file>`): sem matches.
+- Guards dos DevQA files presentes (`#if UNITY_EDITOR || DEVELOPMENT_BUILD` + `#if UNITY_EDITOR` para APIs editor): confirmado.
+- Prova final: global sweep outside Dev/Editor/Legacy = 0 matches.

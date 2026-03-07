@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
     /// No Editor: encerra Play Mode.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class MenuQuitButtonBinder : FrontendButtonBinderBase
+    public sealed partial class MenuQuitButtonBinder : FrontendButtonBinderBase
     {
         protected override bool OnClickCore(string actionReason)
         {
@@ -19,13 +19,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
                 $"[Quit] Quit solicitado. reason='{actionReason}'.");
 
 #if UNITY_EDITOR
-            // Editor: encerrar Play Mode.
-            UnityEditor.EditorApplication.isPlaying = false;
+            DevStopPlayModeInEditor();
 #else
             // Build: encerrar aplicação.
             Application.Quit();
 #endif
             return true;
         }
+
+        partial void DevStopPlayModeInEditor();
     }
 }
