@@ -235,3 +235,8 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
 - status: `GameNavigationCatalogAsset` runtime leak de UnityEditor isolado em `Modules/Navigation/Dev/GameNavigationCatalogAsset.DevQA.cs`.
+
+## DQ-1.4.3 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- status: `SceneRouteResetPolicy` runtime leak isolado em `Modules/WorldLifecycle/Dev/SceneRouteResetPolicy.DevQA.cs`.

@@ -326,3 +326,10 @@
 - Pós-check confirma runtime limpo de `UnityEditor/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
 - Live doc: `Docs/Modules/DevQA.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+
+## DQ-1.4.3 update (behavior-preserving)
+- `SceneRouteResetPolicy` convertido para `partial` sem alterar contratos/regras de decisão de reset.
+- `EditorApplication.isPlaying` saiu do runtime e foi isolado em `Modules/WorldLifecycle/Dev/SceneRouteResetPolicy.DevQA.cs`.
+- Pós-check confirma runtime limpo de `UnityEditor/EditorApplication/AssetDatabase/ContextMenu/MenuItem` no arquivo alvo.
+- Live doc: `Docs/Modules/DevQA.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`

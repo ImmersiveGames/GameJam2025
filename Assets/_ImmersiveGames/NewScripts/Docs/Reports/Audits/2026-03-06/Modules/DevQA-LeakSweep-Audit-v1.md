@@ -105,3 +105,8 @@ After (pós-check runtime):
 - O que vazava: referência runtime a `UnityEditor.EditorApplication.isPlaying` em `Modules/Navigation/GameNavigationCatalogAsset.cs:1024`.
 - Para onde foi: hook editor-only extraído para `Modules/Navigation/Dev/GameNavigationCatalogAsset.DevQA.cs` (classe parcial, guard de arquivo `UNITY_EDITOR || DEVELOPMENT_BUILD`).
 - Prova pós-check: `rg -n "UnityEditor|ContextMenu|MenuItem|AssetDatabase|FindAssets" Modules/Navigation/GameNavigationCatalogAsset.cs` => sem matches.
+
+## DQ-1.4.3 update — SceneRouteResetPolicy
+- O que vazava: `UnityEditor.EditorApplication` no runtime (`Modules/WorldLifecycle/Runtime/SceneRouteResetPolicy.cs:63`).
+- Para onde foi: hook editor-only movido para `Modules/WorldLifecycle/Dev/SceneRouteResetPolicy.DevQA.cs` (classe partial + guard de arquivo `UNITY_EDITOR || DEVELOPMENT_BUILD`).
+- Prova pós-check: `rg -n "UnityEditor|ContextMenu|MenuItem|AssetDatabase|FindAssets|EditorApplication" Modules/WorldLifecycle/Runtime/SceneRouteResetPolicy.cs` => sem matches.
