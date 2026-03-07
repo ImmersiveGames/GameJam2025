@@ -1,5 +1,6 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Core.Logging;
+using UnityEngine;
 
 #if UNITY_EDITOR
 using UnityEditor;

@@ -220,3 +220,8 @@ Date: 2026-03-06
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Pause-Cleanup-Audit-v1.md`
 - status: DevQA isolation applied in PauseOverlayController via partial split (behavior-preserving)
 - notes: runtime file preserved in place (no move), no UnityEditor/ContextMenu leakage in runtime bindings.
+
+## DQ-1.4 Status
+- live doc: `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- status: Leak sweep executed; one embedded DevQA block extracted via partial (`TransitionStyleCatalogAsset`), remaining runtime suspects classified A/C.

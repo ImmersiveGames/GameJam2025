@@ -63,3 +63,17 @@ Nota de compilacao (DQ-1.3): o codigo DevQA deve compilar apenas em `UNITY_EDITO
 | Release | false | false | OFF | OFF | ausencia de logs de DevQA |
 
 Se precisar de QA em build distribuido, use Development Build (ou crie um simbolo/variant proprio; fora do escopo do baseline).
+
+## Leak Sweep Policy (DQ-1.4)
+- Runtime files (`Modules/**` fora de `Dev/Editor/Legacy`) não devem carregar tooling DevQA/Editor embutido quando a extração estrutural for segura.
+- Padrão preferencial: `partial` no runtime + arquivo `.../Dev/<Class>.DevQA.cs`.
+- Arquivo DevQA inteiro sob `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- Qualquer `using UnityEditor;` e chamadas `UnityEditor.*` devem ficar sob `#if UNITY_EDITOR`.
+- Em casos de fail-fast/runtime crítico (ex.: `Application.Quit`/`EditorApplication.isPlaying` em guard editor), manter no runtime e classificar como `A` (sem mudança nesta etapa).
+
+## Status DQ-1.4 (2026-03-07)
+- Leak sweep executado em `Modules/**` com exclusão de `Dev/Editor/Legacy` para identificar vazamentos reais no trilho runtime.
+- `TransitionStyleCatalogAsset` teve `ContextMenu` de validação extraído para parcial DevQA (`Modules/SceneFlow/Navigation/Dev/TransitionStyleCatalogAsset.DevQA.cs`).
+- `PauseOverlayController.DevQA` validado: `using UnityEditor;` permanece sob `#if UNITY_EDITOR` e sem vazamento no runtime.
+- Suspeitos restantes foram classificados como runtime-critical (`A`) ou manual confirmation (`C`) no snapshot DQ-1.4.
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`.

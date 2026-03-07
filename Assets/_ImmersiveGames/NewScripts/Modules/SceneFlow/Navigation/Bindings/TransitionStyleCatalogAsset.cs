@@ -6,9 +6,6 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using UnityEngine;
 using UnityEngine.Serialization;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
@@ -19,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         fileName = "TransitionStyleCatalogAsset",
         menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Catalogs/TransitionStyleCatalogAsset",
         order = 30)]
-    public sealed class TransitionStyleCatalogAsset : ScriptableObject, ITransitionStyleCatalog
+    public sealed partial class TransitionStyleCatalogAsset : ScriptableObject, ITransitionStyleCatalog
     {
         [Serializable]
         public sealed class StyleEntry
@@ -144,48 +141,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             DebugUtility.LogError<TransitionStyleCatalogAsset>(message);
             throw new InvalidOperationException(message);
         }
-
-#if UNITY_EDITOR
-        [ContextMenu("Validate Transition Profiles")]
-        private void ValidateTransitionProfileReferences()
-        {
-            if (styles == null)
-            {
-                return;
-            }
-
-            int invalidEntriesCount = 0;
-            int noFadeEntriesCount = 0;
-
-            for (int i = 0; i < styles.Count; i++)
-            {
-                StyleEntry entry = styles[i];
-                if (entry == null)
-                {
-                    invalidEntriesCount++;
-                    continue;
-                }
-
-                if (!entry.profileId.IsValid || entry.profileRef == null)
-                {
-                    invalidEntriesCount++;
-                }
-
-                if (!entry.useFade)
-                {
-                    noFadeEntriesCount++;
-                }
-            }
-
-            if (invalidEntriesCount > 0 || noFadeEntriesCount > 0)
-            {
-                DebugUtility.Log(typeof(TransitionStyleCatalogAsset),
-                    $"[OBS][Config] TransitionStyleCatalog OnValidate summary: invalidEntries={invalidEntriesCount}, noFadeEntries={noFadeEntriesCount}, asset='{name}'.",
-                    DebugUtility.Colors.Info);
-            }
-        }
-#else
-        private void ValidateTransitionProfileReferences() { }
-#endif
+        partial void ValidateTransitionProfileReferences();
     }
 }
+
+

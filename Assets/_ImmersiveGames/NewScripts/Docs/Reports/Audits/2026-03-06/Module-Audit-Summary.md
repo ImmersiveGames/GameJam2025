@@ -302,3 +302,13 @@
 - Fluxo runtime (pause/resume/overlay/input mode) e logs âncora preservados.
 - Live doc: `Docs/Modules/GameLoop.md`
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Pause-Cleanup-Audit-v1.md`
+
+## DQ-1.4 update (behavior-preserving)
+- Leak sweep global executado em `Modules/**` para símbolos Editor/DevQA, com filtro de suspeitos fora de `Dev/Editor/Legacy`.
+- `TransitionStyleCatalogAsset` (SceneFlow Navigation bindings) teve tooling de validação (`ContextMenu`) extraído para parcial DevQA:
+  - runtime: `Modules/SceneFlow/Navigation/Bindings/TransitionStyleCatalogAsset.cs`
+  - dev: `Modules/SceneFlow/Navigation/Dev/TransitionStyleCatalogAsset.DevQA.cs`
+- `PauseOverlayController.DevQA` validado conforme hardening PA-1.1 (`using UnityEditor` somente no arquivo Dev sob guard editor).
+- Suspeitos remanescentes em runtime classificados como `A` (fail-fast/config/runtime critical) ou `C` (manual confirmation) sem mudança nesta etapa.
+- Live doc: `Docs/Modules/DevQA.md`
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
