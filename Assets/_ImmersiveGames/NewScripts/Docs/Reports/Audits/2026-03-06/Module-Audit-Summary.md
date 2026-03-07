@@ -258,3 +258,9 @@
 - `InstallCompositionModules()` agora faz dispatch direto por `_compositionInstallStage` no `GlobalCompositionRoot.Pipeline.cs`.
 - Ordem de `RegisterEssentialServicesOnly()` preservada; sem mudança em `Modules/**`.
 - Snapshot: `Docs/Reports/Audits/2026-03-06/Infra-Composition-Cleanup-v2.md`.
+
+## IC-1.4 update (behavior-preserving)
+- `SceneScopeCompositionRoot` deixou de ser monolítico: split em `SceneScopeCompositionRoot.cs` + `SceneScopeCompositionRoot.RunRearm.cs` + `SceneScopeCompositionRoot.DevQA.cs`.
+- Bloco DevQA (WorldLifecycleHookLoggerA) isolado em arquivo com guard `UNITY_EDITOR || DEVELOPMENT_BUILD`.
+- Ordem de boot de cena, contratos e pipeline preservados.
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Infra-SceneScope-Cleanup-Audit-v1.md`.

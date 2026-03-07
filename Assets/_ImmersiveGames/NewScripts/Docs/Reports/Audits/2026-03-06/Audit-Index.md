@@ -196,3 +196,8 @@ Date: 2026-03-06
 ## IC-1.3 Status
 - snapshot: `Docs/Reports/Audits/2026-03-06/Infra-Composition-Cleanup-v2.md`
 - status: Composition stage-module boilerplate removed; direct stage dispatch in pipeline (behavior-preserving)
+
+## IC-1.4 Status
+- live doc: `Docs/Reports/Audits/2026-03-06/Modules/Infrastructure-Composition.md` (snapshot-as-live for infra composition)
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Infra-SceneScope-Cleanup-Audit-v1.md`
+- status: SceneScopeCompositionRoot split into partials (RunRearm + DevQA) behavior-preserving

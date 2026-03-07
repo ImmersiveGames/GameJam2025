@@ -1,16 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Interop;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev;
-#endif
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
 using UnityEngine;
@@ -18,9 +12,9 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     /// <summary>
-    /// Inicializa serviços de escopo de cena para o NewScripts e garante limpeza determinística.
+    /// Inicializa serviÃ§os de escopo de cena para o NewScripts e garante limpeza determinÃ­stica.
     /// </summary>
-    public sealed class SceneScopeCompositionRoot : MonoBehaviour
+    public sealed partial class SceneScopeCompositionRoot : MonoBehaviour
     {
         [SerializeField]
         private WorldDefinition worldDefinition;
@@ -32,13 +26,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private void Awake()
         {
-            // A cena correta para o escopo é a cena do GameObject, não a ActiveScene (especialmente em Additive).
+            // A cena correta para o escopo Ã© a cena do GameObject, nÃ£o a ActiveScene (especialmente em Additive).
             var scene = gameObject.scene;
             _sceneName = scene.name;
 
             if (_registered)
             {
-                // Não é um problema em fluxo additive; reduzimos ruído (warning) para verbose.
+                // NÃ£o Ã© um problema em fluxo additive; reduzimos ruÃ­do (warning) para verbose.
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
                     $"Scene scope already created (ignored): {_sceneName}");
                 return;
@@ -74,39 +68,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 spawnRegistry,
                 allowOverride: false);
 
-            // ----------------------------
-            // Gameplay Reset (Groups/Targets)
-            // ----------------------------
-            // Classificador de alvos (Players/Eater/ActorIdSet/All) para reset de gameplay.
-            if (!provider.TryGetForScene<IRunRearmTargetClassifier>(_sceneName, out var classifier) || classifier == null)
-            {
-                provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
-                provider.TryGetGlobal<IDegradedModeReporter>(out var degradedModeReporter);
-
-                classifier = new DefaultRunRearmTargetClassifier(runtimeModeProvider, degradedModeReporter);
-                provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
-
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"IRunRearmTargetClassifier registrado para a cena '{_sceneName}'.");
-            }
-
-            // Orquestrador de reset de gameplay (por fases) acionável por participantes do WorldLifecycle.
-            if (!provider.TryGetForScene<IRunRearmOrchestrator>(_sceneName, out var gameplayReset) || gameplayReset == null)
-            {
-                gameplayReset = new RunRearmOrchestrator(_sceneName);
-                provider.RegisterForScene(_sceneName, gameplayReset, allowOverride: false);
-
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"IRunRearmOrchestrator registrado para a cena '{_sceneName}'.");
-            }
-
             // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
             // Nunca criar o WorldLifecycleHookRegistry no controller/orchestrator.
             WorldLifecycleHookRegistry hookRegistry;
             if (provider.TryGetForScene<WorldLifecycleHookRegistry>(_sceneName, out var existingRegistry))
             {
                 DebugUtility.LogError(typeof(SceneScopeCompositionRoot),
-                    $"WorldLifecycleHookRegistry já existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
+                    $"WorldLifecycleHookRegistry jÃ¡ existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
                 hookRegistry = existingRegistry;
             }
             else
@@ -120,16 +88,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
-            // Ponte WorldLifecycle soft reset -> Gameplay reset
-            var playersResetParticipant = new PlayersRunRearmWorldParticipant();
-            provider.RegisterForScene<IRunRearmWorldParticipant>(
-                _sceneName,
-                playersResetParticipant,
-                allowOverride: false);
-            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"IRunRearmWorldBridge registrado para a cena '{_sceneName}'.");
-
-            RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
+            RegisterRunRearmServices(provider, hookRegistry, worldRoot);
 
             RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
@@ -166,8 +125,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 // Esperado em cenas sem spawn (Ready). Evita WARNING no fluxo normal.
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"WorldDefinition não atribuída (scene='{_sceneName}'). " +
-                    "Isto é permitido em cenas sem spawn (ex.: Ready). Serviços de spawn não serão registrados.");
+                    $"WorldDefinition nÃ£o atribuÃ­da (scene='{_sceneName}'). " +
+                    "Isto Ã© permitido em cenas sem spawn (ex.: Ready). ServiÃ§os de spawn nÃ£o serÃ£o registrados.");
 
                 DebugUtility.Log(typeof(SceneScopeCompositionRoot),
                     "Spawn services registered from definition: 0");
@@ -214,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     if (service == null)
                     {
                         failedCreateCount++;
-                        // Mantém WARNING: aqui já é indicação real de configuração/entrada problemática.
+                        // MantÃ©m WARNING: aqui jÃ¡ Ã© indicaÃ§Ã£o real de configuraÃ§Ã£o/entrada problemÃ¡tica.
                         DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
                             $"Spawn entry #{index} FAILED_CREATE: Kind={entryKind}, Prefab={entryPrefabName}");
                         continue;
@@ -243,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!scene.IsValid())
             {
                 DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
-                    $"EnsureWorldRoot recebeu uma cena inválida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
+                    $"EnsureWorldRoot recebeu uma cena invÃ¡lida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
             }
 
             GameObject[] rootObjects = targetScene.GetRootGameObjects();
@@ -296,64 +255,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             WorldLifecycleHookRegistry hookRegistry,
             Transform worldRoot)
         {
-            if (hookRegistry == null)
-            {
-                // Anômalo; mantém WARNING.
-                DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
-                    "WorldLifecycleHookRegistry ausente; hooks de cena não serão registrados.");
-                return;
-            }
-
-            if (worldRoot == null)
-            {
-                // Anômalo; mantém WARNING.
-                DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
-                    "WorldRoot ausente; hooks de cena não serão adicionados.");
-                return;
-            }
-
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            /* Aqui é ume exemplo de hook no ciclo do mundo.*/
-             var hookA = EnsureHookComponent<WorldLifecycleHookLoggerA>(worldRoot);
-
-            RegisterHookIfMissing(hookRegistry, hookA);
+            RegisterSceneLifecycleHooksDevQa(hookRegistry, worldRoot);
 #endif
-        }
-
-        private static T EnsureHookComponent<T>(Transform worldRoot)
-            where T : Component
-        {
-            var existing = worldRoot.GetComponent<T>();
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            return worldRoot.gameObject.AddComponent<T>();
-        }
-
-        private static void RegisterHookIfMissing(
-            WorldLifecycleHookRegistry registry,
-            IWorldLifecycleHook hook)
-        {
-            if (hook == null)
-            {
-                // Anômalo; mantém WARNING.
-                DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
-                    "Hook de cena nulo; registro ignorado.");
-                return;
-            }
-
-            if (registry.Hooks.Contains(hook))
-            {
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"Hook de cena já registrado: {hook.GetType().Name}");
-                return;
-            }
-
-            registry.Register(hook);
-            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"Hook de cena registrado: {hook.GetType().Name}");
         }
 
         private static string BuildTransformPath(Transform transform)
@@ -367,6 +271,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
+
+
+
 
 
 
