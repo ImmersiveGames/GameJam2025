@@ -17,6 +17,8 @@ public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.I
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
 
+        // Boundary: read-model da ultima assinatura observada (Started/Completed).
+        // Nao decide aceite/rejeicao de request; dedupe canonico fica no SceneTransitionService.
         private string _lastSignature = string.Empty;
         private SceneFlowProfileId _lastProfileId;
         private string _lastTargetScene = string.Empty;
@@ -70,5 +72,6 @@ public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.I
         }
     }
 }
+
 
 

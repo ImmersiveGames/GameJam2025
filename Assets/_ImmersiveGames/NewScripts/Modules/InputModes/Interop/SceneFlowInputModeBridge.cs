@@ -59,8 +59,11 @@ public sealed class SceneFlowInputModeBridge : IDisposable
             string signature = SceneTransitionSignature.Compute(evt.Context);
             int frame = UnityEngine.Time.frameCount;
 
-            if (string.Equals(_lastStartedSignature, signature, StringComparison.Ordinal) &&
-                _lastStartedFrame == frame)
+            if (SceneFlowSameFrameDedupe.ShouldDedupe(
+                    ref _lastStartedFrame,
+                    ref _lastStartedSignature,
+                    frame,
+                    signature))
             {
                 DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
                     $"[OBS][GRS] InputModeBridge dedupe event='SceneTransitionStarted' signature='{signature}' frame={frame} reason='duplicate_same_frame'.",
@@ -68,8 +71,6 @@ public sealed class SceneFlowInputModeBridge : IDisposable
                 return;
             }
 
-            _lastStartedSignature = signature;
-            _lastStartedFrame = frame;
             _lastProcessedSignature = string.Empty;
 
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
@@ -287,6 +288,8 @@ public sealed class SceneFlowInputModeBridge : IDisposable
         }
     }
 }
+
+
 
 
 

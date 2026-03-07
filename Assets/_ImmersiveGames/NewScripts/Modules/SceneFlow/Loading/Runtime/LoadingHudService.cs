@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Bindings;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -59,8 +60,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             }
 
             int currentFrame = Time.frameCount;
-            if (string.Equals(signature, _lastEnsureLogSignature, StringComparison.Ordinal) &&
-                currentFrame == _lastEnsureLogFrame)
+            if (SceneFlowSameFrameDedupe.ShouldDedupe(
+                    ref _lastEnsureLogFrame,
+                    ref _lastEnsureLogSignature,
+                    currentFrame,
+                    signature))
             {
                 DebugUtility.LogVerbose<LoadingHudService>(
                     $"[OBS][Loading] LoadingHudEnsure dedupe_same_frame signature='{signature}' frame={currentFrame}.",
@@ -68,9 +72,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             }
             else
             {
-                _lastEnsureLogSignature = signature ?? string.Empty;
-                _lastEnsureLogFrame = currentFrame;
-
                 DebugUtility.LogVerbose<LoadingHudService>(
                     $"[LoadingHudEnsure] signature='{signature}'.",
                     DebugUtility.Colors.Info);
@@ -349,6 +350,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         }
     }
 }
+
+
+
+
 
 
 

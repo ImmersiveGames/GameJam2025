@@ -1,4 +1,4 @@
-# Audit Index (Docs Layout Normalization)
+﻿# Audit Index (Docs Layout Normalization)
 
 Date: 2026-03-06
 
@@ -168,7 +168,7 @@ Date: 2026-03-06
 ## GL-1.2 Status
 - live doc: `Docs/Modules/GameLoop.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v2.md`
-- status: Cleanup mínimo aplicado (behavior-preserving)
+- status: Cleanup mÃ­nimo aplicado (behavior-preserving)
 - Release excludes DevQA by compile guards; DevBuild required for QA harness.
 
 ## GL-1.3 Status
@@ -176,3 +176,9 @@ Date: 2026-03-06
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`
 - status: Redundancy reduction applied (behavior-preserving)
 - Release excludes DevQA by compile guards; DevBuild required for QA harness.
+
+## SF-1.3b.2a Status
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Signature-Dedupe-Audit-v2.md`
+- status: CODE consolidation applied (behavior-preserving)
+
+

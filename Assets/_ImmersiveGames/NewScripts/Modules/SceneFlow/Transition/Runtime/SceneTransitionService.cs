@@ -39,6 +39,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private long _transitionIdSeq;
 
+        // Boundary: este servico e o owner canonico do dedupe de request (same-frame + in-flight).
+        // Consumers externos podem ser apenas idempotentes de efeito colateral.
         private string _lastCompletedSignature = string.Empty;
         private string _inFlightSignature = string.Empty;
         private string _lastRequestedSignature = string.Empty;
@@ -808,6 +810,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
     }
 
 }
+
 
 
 
