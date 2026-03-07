@@ -57,3 +57,9 @@
 - Itens GL-1.3 isolados por `#if UNITY_EDITOR || DEVELOPMENT_BUILD` (Release exclui DevQA/DevTools alterados).
 - Restart canônico preservado: `GameCommands -> GameResetRequestedEvent -> MacroRestartCoordinator`.
 - Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`.
+
+## Status GL-1.3b (Live, 2026-03-06)
+- Validacao por GUID dos alvos `GameStartRequestEmitter` e `GamePauseHotkeyController`: sem referencias em `.unity/.prefab/.asset` dentro do workspace local.
+- Start em Release garantido por install canônico no stage GameLoop (`InstallGameLoopServices`), sem depender de DevQA.
+- `GameStartRequestEmitter` permanece idempotente via `EnsureInstalled()` e publisher de `GameStartRequestedEvent`.
+- `GamePauseHotkeyController` permanece classificado como legacy (movido para `Modules/GameLoop/Legacy/Bindings/Inputs/`).

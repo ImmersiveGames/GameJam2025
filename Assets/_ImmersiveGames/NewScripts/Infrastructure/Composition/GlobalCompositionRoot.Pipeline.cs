@@ -1,7 +1,8 @@
-﻿using _ImmersiveGames.NewScripts.Core.Composition;
+﻿﻿using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition.Modules;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
 using _ImmersiveGames.NewScripts.Modules.Gates;
@@ -121,6 +122,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             RegisterGameRunEndRequestService();
             RegisterGameCommands();
+            GameStartRequestEmitter.EnsureInstalled();
 
             // Resolve IGameLoopService UMA vez para servicos dependentes.
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
@@ -148,7 +150,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void InstallDevQaServices()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterGameLoopQaInstaller();
             RegisterIntroStageQaInstaller();
             RegisterContentSwapQaInstaller();
             RegisterSceneFlowQaInstaller();
@@ -158,6 +159,3 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
-
-
-

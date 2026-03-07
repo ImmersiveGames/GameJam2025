@@ -53,12 +53,11 @@
   - Eventos V2 (`WorldLifecycleResetRequestedV2Event`, `WorldLifecycleResetCompletedV2Event`) são publicados por `WorldResetCommands` em `Modules/WorldLifecycle`.
   - Esses V2 nao substituem o gate-critical V1 do SceneFlow.
 
-## E) LEGACY/Compat (sem remocao nesta etapa)
+## E) LEGACY/Compat (atualizado em SF-1.3b.1)
 
-- `Modules/SceneFlow/Transition/Adapters/NoOpTransitionCompletionGate.cs`: implementacao compat/no-op do gate.
-- `Modules/SceneFlow/Transition/Adapters/NoFadeAdapter.cs`: fallback compat para transicoes sem fade.
-- Fluxo inline de dados de cena em `SceneTransitionService` e explicitamente legado/desativado (fail-fast sem `RouteId` valido).
-- Caminhos de degrade do completion gate (`Completion gate falhou/abortou -> prosseguindo`) permanecem por contrato de robustez do baseline.
+- Fallbacks NoFadeAdapter e NoOpTransitionCompletionGate foram consolidados como classes privadas inline no owner canônico SceneTransitionService (não existem mais como arquivos separados em Transition/Adapters).
+- Fluxo inline de dados de cena em SceneTransitionService permanece explicitamente legado/desativado (fail-fast sem RouteId válido).
+- Caminhos de degrade do completion gate (Completion gate falhou/abortou -> prosseguindo) permanecem por contrato de robustez do baseline.
 
 ## F) SF-1.2a (inventory only)
 
@@ -79,3 +78,4 @@
     - aceitar `same signature` apos `Completed`.
   - fallback do completion gate manteve politica best-effort e ganhou log `[OBS][SceneFlow] CompletionGateFallback ...`.
 - Evidencia completa: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v3.md`.
+

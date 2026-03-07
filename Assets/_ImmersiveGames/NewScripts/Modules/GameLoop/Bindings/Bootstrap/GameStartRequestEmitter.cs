@@ -1,5 +1,4 @@
-﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
-using _ImmersiveGames.NewScripts.Core.Events;
+﻿using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using UnityEngine;
@@ -7,23 +6,52 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap
 {
     /// <summary>
-    /// LEGACY/DevQA:
-    /// emissor de GameStartRequestedEvent mantido apenas para diagnostico em dev.
-    /// O trilho canônico de start permanece no GameLoopSceneFlowCoordinator.
+    /// Emite GameStartRequestedEvent (REQUEST) uma única vez ao iniciar a cena.
     /// </summary>
     [DefaultExecutionOrder(-900)]
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameStartRequestEmitter : MonoBehaviour
     {
+        private const string EmitterObjectName = "[GameLoop]_GameStartRequestEmitter";
+
         private static bool _hasRequested;
+        private static bool _installed;
 
         public static void EnsureInstalled()
         {
-            // Observabilidade: bootstrap automatico legado foi desativado.
-            DebugUtility.LogVerbose(typeof(GameStartRequestEmitter),
-                "[OBS][LEGACY][DevQA] GameStartRequestEmitter auto-bootstrap disabled; canonical start is GameLoopSceneFlowCoordinator.",
-                DebugUtility.Colors.Info);
+            if (_installed)
+            {
+                return;
+            }
 
+            var existing = Object.FindFirstObjectByType<GameStartRequestEmitter>(FindObjectsInactive.Include);
+            if (existing != null)
+            {
+                _installed = true;
+                return;
+            }
+
+            var go = GameObject.Find(EmitterObjectName);
+            if (go == null)
+            {
+                go = new GameObject(EmitterObjectName);
+                Object.DontDestroyOnLoad(go);
+            }
+
+            if (!go.TryGetComponent<GameStartRequestEmitter>(out _))
+            {
+                go.AddComponent<GameStartRequestEmitter>();
+            }
+
+            _installed = true;
+
+            DebugUtility.LogVerbose(typeof(GameStartRequestEmitter),
+                "[OBS][GameLoop] GameStartRequestEmitter ensured in runtime bootstrap.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void Awake()
+        {
             _hasRequested = false;
         }
 
@@ -44,4 +72,3 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap
         }
     }
 }
-#endif

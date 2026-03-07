@@ -788,12 +788,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             return string.Empty;
         }
+        private sealed class NoFadeAdapter : ISceneFlowFadeAdapter
+        {
+            public bool IsAvailable => false;
 
+            public void ConfigureFromProfile(_ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings.SceneTransitionProfile profile, string profileLabel) { }
+
+            public Task FadeInAsync(string? contextSignature = null) => Task.CompletedTask;
+
+            public Task FadeOutAsync(string? contextSignature = null) => Task.CompletedTask;
+        }
+
+        private sealed class NoOpTransitionCompletionGate : ISceneTransitionCompletionGate
+        {
+            public Task AwaitBeforeFadeOutAsync(SceneTransitionContext context) => Task.CompletedTask;
+        }
         private static string Sanitize(string s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 
 }
+
 
 
 

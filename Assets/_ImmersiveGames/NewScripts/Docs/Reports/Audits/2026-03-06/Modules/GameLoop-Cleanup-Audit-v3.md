@@ -59,3 +59,22 @@ rg -n "GameStartRequestEmitter|GamePauseHotkeyController" -g "*.unity" -g "*.pre
 ## Behavior-preserving note
 - Produção (Release): sem novo fluxo e sem reintrodução de listener de reset no GameLoop.
 - Mudanças restritas a isolamento/legado e centralização DevQA com observabilidade `[OBS][LEGACY]`.
+
+## GL-1.3b - validation + fix
+
+### GUID checks
+- `GamePauseHotkeyController.cs.meta` guid=`667975ca949338b4caf32e93a7bffd8d`
+  - `rg -n "667975ca949338b4caf32e93a7bffd8d" -g "*.unity" -g "*.prefab" -g "*.asset" .` -> **OK (sem match)**
+- `GameStartRequestEmitter.cs.meta` guid=`6b0991d8d89925c4ea21a173477c7f05`
+  - `rg -n "6b0991d8d89925c4ea21a173477c7f05" -g "*.unity" -g "*.prefab" -g "*.asset" .` -> **OK (sem match)**
+
+### Start-in-Release check
+- Publisher canônico encontrado:
+  - `Modules/GameLoop/Bindings/Bootstrap/GameStartRequestEmitter.cs:71` (`EventBus<GameStartRequestedEvent>.Raise(...)`)
+- Install do emissor:
+  - `Infrastructure/Composition/GlobalCompositionRoot.Pipeline.cs:125` (`GameStartRequestEmitter.EnsureInstalled();`)
+  - chamada em stage GameLoop (sem guard DevQA): **OK**
+
+### Decision
+- GL-1.3b aplicado: Start em Release não depende de DevQA.
+- Callsite do emissor removido de `GlobalCompositionRoot.DevQA.cs` e centralizado no trilho canônico de GameLoop.
