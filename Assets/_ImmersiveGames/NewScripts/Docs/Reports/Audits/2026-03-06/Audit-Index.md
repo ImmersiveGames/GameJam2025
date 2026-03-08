@@ -45,6 +45,7 @@ Date: 2026-03-06
 | Docs/Canon/Canon-Index.md | index | - |  |
 | Docs/CHANGELOG.md | index | - |  |
 | Docs/Guides.md | index | - |  |
+| Docs/Modules/Core.md | module_doc | - | Created by CORE-1.1 live inventory. |
 | Docs/Modules/GameLoop.md | module_doc | - |  |
 | Docs/Modules/Gates-Readiness-StateDependent.md | module_doc | - |  |
 | Docs/Modules/LevelFlow.md | module_doc | - |  |
@@ -84,6 +85,18 @@ Date: 2026-03-06
 | Docs/Reports/Audits/2026-03-06/LevelFlow-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 |  |
 | Docs/Reports/Audits/2026-03-06/Module-Audit-Summary.md | summary | 2026-03-06 |  |
 | Docs/Reports/Audits/2026-03-06/Modules/ContentSwap.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 | CORE-1.1 snapshot audit (inventory only, DOC-only). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v2.md | audit_doc | 2026-03-06 | CORE-1.2a snapshot audit (FilteredEventBus legacy isolation, behavior-preserving). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v3.md | audit_doc | 2026-03-06 | CORE-1.2b snapshot audit (DebugManagerConfig moved to Dev, behavior-preserving). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v4.md | audit_doc | 2026-03-06 | CORE-1.2b snapshot audit (DebugLogSettings classified B dev-only and moved to Dev). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v5.md | audit_doc | 2026-03-06 | CORE-1.2c snapshot audit (InjectableEventBus classified A canonical). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v6.md | audit_doc | 2026-03-06 | CORE-1.2d snapshot audit (FilteredEventBus classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v7.md | audit_doc | 2026-03-06 | CORE-1.2e snapshot audit (Core/Fsm stack classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v8.md | audit_doc | 2026-03-06 | CORE-1.2f snapshot audit (Preconditions classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v9.md | audit_doc | 2026-03-06 | CORE-1.2g snapshot audit (SceneServiceCleaner classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2h snapshot audit (EventBusUtil classified C reserve; editor hook already isolated). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Gates-v1.md | audit_doc | 2026-03-06 | CORE-1.2i gates snapshot (Reserve vs Legacy governance and PR/CI checks). |
+| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 | RM-1.1 snapshot audit (RuntimeMode + Logging governance, DOC-only). |
 | Docs/Reports/Audits/2026-03-06/Modules/Core.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/DevQA.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
@@ -116,7 +129,7 @@ Date: 2026-03-06
 ## Live vs Snapshot per module
 | Module | Live doc (`Docs/Modules`) | Snapshot audit (`Docs/Reports/Audits/2026-03-06/Modules`) | Status |
 |---|---|---|---|
-| Core | - | `Docs/Reports/Audits/2026-03-06/Modules/Core.md` | Snapshot only |
+| Core | `Docs/Modules/Core.md` | `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v1.md` | Duplicated by design (live + snapshot) |
 | Infrastructure-Composition | - | `Docs/Reports/Audits/2026-03-06/Modules/Infrastructure-Composition.md` | Snapshot only |
 | Gates-Readiness-StateDependent | `Docs/Modules/Gates-Readiness-StateDependent.md` | `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent.md` | Duplicated by design (live + snapshot) |
 | GameLoop | `Docs/Modules/GameLoop.md` | `Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md` | Duplicated by design (live + snapshot) |
@@ -259,3 +272,78 @@ Date: 2026-03-06
 - live doc: `Docs/Modules/DevQA.md`
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v4.md`
 - status: RuntimeInitializeOnLoadMethod allowlist frozen to two runtime bootstrap files; PR review gate documented.
+## CORE-1.1 Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v1.md`
+- status: Inventory done (DOC-only); `CORE-1.2` in progress
+- notes: local leak sweep in `Core/**` found no Editor API leaks; top B/C candidates documented for code stage
+
+## CORE-1.2a Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v2.md`
+- status: DONE - `FilteredEventBus.Legacy.cs` isolated to `Core/Events/Legacy` (behavior-preserving)
+- notes: namespace/tipos intactos; zero callsites em `Infrastructure/**` e `Modules/**`; sem refs em assets
+
+## CORE-1.2b Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v3.md`
+- status: DONE - `DebugManagerConfig.cs` moved to `Dev/Core/Logging` (behavior-preserving)
+- notes: `DebugManagerConfig` moved to `Dev/Core/Logging`; `DebugLogSettings` was classified separately in v4
+
+## CORE-1.2b DebugLogSettings Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v4.md`
+- status: DONE - classified `B dev-only`; script and asset moved to `Dev/Core/Logging`
+- notes: no runtime loader, no scene/prefab refs, GUID scans clean outside the asset itself
+
+
+## CORE-1.2c Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v5.md`
+- status: DONE - `InjectableEventBus<T>` classified `A canonical`
+- notes: internal default backend of `EventBus<T>`; no asset refs and no Editor leak
+
+## CORE-1.2d Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v6.md`
+- status: DONE - `FilteredEventBus<TScope, TEvent>` classified `C reserve`
+- notes: no callsites in `Modules/**`/`Infrastructure/**`, no asset refs, retained as non-dead reserve surface
+
+## CORE-1.2e Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v7.md`
+- status: DONE - `Core/Fsm` stack classified `C reserve`
+- notes: no callsites in `Modules/**`/`Infrastructure/**`, no asset refs, may return to canonical during future migration
+
+## CORE-1.2f Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v8.md`
+- status: DONE - `Preconditions.cs` classified `C reserve`
+- notes: only internal Core usage found; no asset refs and no Editor leak
+
+## CORE-1.2g Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v9.md`
+- status: DONE - `SceneServiceCleaner.cs` classified `C reserve`
+- notes: only internal Core usage found via `SceneServiceRegistry`; no asset refs and no Editor leak
+
+## CORE-1.2h Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
+- status: DONE - `EventBusUtil` classified `C reserve`; editor hook already isolated under `Editor/**`
+- notes: no callsites in `Modules/**`/`Infrastructure/**`, no asset refs, and strict runtime leak sweep outside `Editor/Dev/Legacy/QA` stayed clean
+
+
+## CORE-1.2i Status
+- live doc: `Docs/Modules/Core.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Gates-v1.md`
+- status: DONE - governance DOC-only for `Reserve <> Legacy`, promotion path and PR/CI gates
+- notes: strict leak sweep, runtime init allowlist and reserve promotion probe documented from local workspace evidence
+
+
+## RM-1.1 Status
+- live doc: `Docs/Modules/RuntimeMode-Logging.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v1.md`
+- status: DONE - RuntimeMode + Logging governance audited from local workspace only (DOC-only)
+- notes: two runtime entrypoints, canonical runtime policy in `DebugUtility`/`RuntimeModeConfig`, and dev-only logging writer isolated in `Dev/Core/Logging`
+

@@ -1,3 +1,4 @@
+// LEGACY: isolado em Core/Events/Legacy. Nao usar em codigo novo. Mantido por compatibilidade.
 namespace _ImmersiveGames.NewScripts.Core.Events
 {
     /// <summary>
@@ -28,3 +29,4 @@ namespace _ImmersiveGames.NewScripts.Core.Events
             FilteredEventBus<object, TEvent>.ClearAll();
     }
 }
+
