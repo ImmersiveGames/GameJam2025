@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -25,6 +26,13 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static string _lastPolicyKey;
         private static int _lastPolicyFrame = -1;
         private static int _policyApplyTick;
+        private static bool _hasAppliedPolicy;
+        private static bool _lastAppliedGlobalDebugEnabled;
+        private static bool _lastAppliedVerboseEnabled;
+        private static bool _lastAppliedFallbacksEnabled;
+        private static bool _lastAppliedRepeatedVerboseEnabled;
+        private static DebugLevel _lastAppliedDefaultLevel = DebugLevel.Logs;
+        private static string _lastAppliedSource;
 
         private static readonly Dictionary<Type, DebugLevel> _scriptDebugLevels = new();
         private static readonly Dictionary<object, DebugLevel> _localLevels = new();
@@ -68,6 +76,13 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _lastPolicyFrame = -1;
             _lastPolicyKey = null;
             _policyApplyTick = 0;
+            _hasAppliedPolicy = false;
+            _lastAppliedGlobalDebugEnabled = true;
+            _lastAppliedVerboseEnabled = Application.isEditor;
+            _lastAppliedFallbacksEnabled = Application.isEditor;
+            _lastAppliedRepeatedVerboseEnabled = true;
+            _lastAppliedDefaultLevel = DebugLevel.Logs;
+            _lastAppliedSource = null;
 
             _messagePool.Clear();
 
@@ -117,6 +132,34 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 defaultLevel,
                 "BootstrapPolicy");
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public static async void Dev_ForceReapplyLastLoggingPolicyForEvidence()
+        {
+            if (!_hasAppliedPolicy)
+            {
+                LogRuntimeModeObs("[OBS][RuntimeMode] LoggingPolicyEvidenceSkipped reason='no_last_policy'");
+                return;
+            }
+
+            ApplyLoggingPolicyInternal(
+                _lastAppliedGlobalDebugEnabled,
+                _lastAppliedVerboseEnabled,
+                _lastAppliedFallbacksEnabled,
+                _lastAppliedRepeatedVerboseEnabled,
+                _lastAppliedDefaultLevel,
+                _lastAppliedSource);
+
+            await Task.Yield();
+
+            ApplyLoggingPolicyInternal(
+                _lastAppliedGlobalDebugEnabled,
+                _lastAppliedVerboseEnabled,
+                _lastAppliedFallbacksEnabled,
+                _lastAppliedRepeatedVerboseEnabled,
+                _lastAppliedDefaultLevel,
+                _lastAppliedSource);
+        }
+#endif
         #endregion
 
         #region Log estático por Type
@@ -295,13 +338,13 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
             if (policyFrame == _lastPolicyFrame && string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
             {
-                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_frame key='{policyKey}'");
+                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_frame' key='{policyKey}'");
                 return;
             }
 
             if (string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
             {
-                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_key key='{policyKey}'");
+                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_key' key='{policyKey}'");
                 return;
             }
 
@@ -313,6 +356,13 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
             _lastPolicyKey = policyKey;
             _lastPolicyFrame = policyFrame;
+            _hasAppliedPolicy = true;
+            _lastAppliedGlobalDebugEnabled = globalDebugEnabled;
+            _lastAppliedVerboseEnabled = verboseEnabled;
+            _lastAppliedFallbacksEnabled = fallbacksEnabled;
+            _lastAppliedRepeatedVerboseEnabled = repeatedVerboseEnabled;
+            _lastAppliedDefaultLevel = defaultLevel;
+            _lastAppliedSource = source;
 
             LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplied source='{source}' key='{policyKey}'");
         }
@@ -449,4 +499,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         #endregion
     }
 }
+
+
+
 

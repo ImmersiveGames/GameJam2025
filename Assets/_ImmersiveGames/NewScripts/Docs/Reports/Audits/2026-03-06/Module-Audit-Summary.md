@@ -428,6 +428,11 @@
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v2.md`
 - runtime writer consolidado em `Core/Logging/DebugUtility.cs`; `GlobalCompositionRoot.Entry.cs` virou delegador de bootstrap policy.
 - idempotencia adicionada com anchors `[OBS][RuntimeMode] LoggingPolicyApplied`, `dedupe_same_frame` e `dedupe_same_key`.
+**RM-1.3 status:** DONE (behavior-preserving).
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v3.md`
+- dedupe logs normalizados para `LoggingPolicyApplySkipped reason=...`; trigger dev-only adicionado para gerar evidencia sob demanda.
+- menu editor-only: `ImmersiveGames/NewScripts/Dev/Force LoggingPolicy Reapply Evidence`.
+
 
 
 

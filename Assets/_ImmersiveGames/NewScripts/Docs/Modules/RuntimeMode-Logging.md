@@ -1,4 +1,4 @@
-# RuntimeMode + Logging
+﻿# RuntimeMode + Logging
 
 ## Build matrix (Editor / DevBuild / Release)
 | Build | O que compila / entra | O que nao entra | Defines / simbolos reais |
@@ -54,10 +54,24 @@ Anchor: `[InputMode] InputModes desabilitado via RuntimeModeConfig; IInputModeSe
 - Single owner runtime: `DebugUtility` agora concentra o apply real da logging policy no runtime.
 - 2-phase apply preservado: `EarlyDefault` em `SubsystemRegistration` e `BootstrapPolicy` quando `GlobalCompositionRoot.Entry` inicializa o bootstrap.
 - `GlobalCompositionRoot.Entry` deixou de escrever policy diretamente; ele agora apenas calcula inputs e chama `DebugUtility.ApplyLoggingPolicyFromBootstrap(...)`.
-- Idempotencia adicionada por `policyKey` + frame guard, com novos anchors:
+- Idempotencia adicionada por `policyKey` + frame guard, com anchors atuais:
   - `[OBS][RuntimeMode] LoggingPolicyApplied source=... key=...`
-  - `[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_frame key=...`
-  - `[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_key key=...`
+  - `[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_frame' key=...`
+  - `[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_key' key=...`
 - Comportamento intencional preservado: o boot continua com default early e promote para default verbose no bootstrap, sem tocar no trilho `Dev/Core/Logging` nesta etapa.
+
+
+
+
+## RM-1.3
+- Invariante 1: o boot continua em 2 fases, `EarlyDefault` seguido de `BootstrapPolicy`; keys diferentes nao devem ser dedupadas.
+- Invariante 2: reaplicacao da mesma `policyKey` deve gerar observabilidade explicita, sem reaplicar a policy.
+- Anchors canonicos de hardening:
+  - `[OBS][RuntimeMode] LoggingPolicyApplied source=... key=...`
+  - `[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_frame' key=...`
+  - `[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_key' key=...`
+- Evidencia manual em Editor: usar o menu `ImmersiveGames/NewScripts/Dev/Force LoggingPolicy Reapply Evidence` durante Play Mode.
+- Evidencia manual em DevBuild: chamar `DebugUtility.Dev_ForceReapplyLastLoggingPolicyForEvidence()` a partir do harness Dev/QA existente.
+- Sequencia esperada de log para a evidencia: primeiro um `dedupe_same_frame`, depois um `dedupe_same_key`, sem alterar a ordem do boot.
 
 
