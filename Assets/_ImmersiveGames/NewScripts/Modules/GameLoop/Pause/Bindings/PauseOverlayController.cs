@@ -43,8 +43,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         [SerializeField] private string showReason = "PauseOverlay/Show";
         [SerializeField] private string hideReason = "PauseOverlay/Hide";
 
-        [Inject] private IInputModeService _inputModeService;
-
+        
         private bool _dependenciesInjected;
 
         // Run lifecycle gating (mesma regra do Hotkey)
@@ -195,7 +194,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         {
             EnsureDependenciesInjected();
 
-            // Fecha o overlay (idempotente). Não publica resume aqui; quem coordena é o fluxo de saída.
             TrySetOverlayActive(false);
 
             EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
@@ -203,15 +201,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
                 $"[PauseOverlay] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado. reason='{ExitToMenuReason}'.",
                 DebugUtility.Colors.Info);
 
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetFrontendMenu("PauseOverlay/ReturnToMenuFrontend");
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "PauseOverlay/ReturnToMenuFrontend", "PauseOverlay"));
         }
 
         public void Toggle()
@@ -228,8 +219,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
                 Show();
             }
         }
-
-        // =========================
         // Event reactions (NO publish)
         // =========================
 
@@ -312,7 +301,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         {
             EnsureDependenciesInjected();
 
-            // Idempotente: se já estiver oculto, não faz barulho.
             if (overlayRoot != null && !overlayRoot.activeSelf)
             {
                 return;
@@ -332,31 +320,15 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 
         private void ApplyPauseInputMode()
         {
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetPauseOverlay(showReason);
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.PauseOverlay, showReason, "PauseOverlay"));
         }
 
         private void ApplyGameplayInputMode()
         {
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetGameplay(hideReason);
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.Gameplay, hideReason, "PauseOverlay"));
         }
-
-        // =========================
         // DI + UI toggling
         // =========================
 
@@ -407,5 +379,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         }
     }
 }
+
+
+
+
+
 
 

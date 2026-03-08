@@ -1,15 +1,25 @@
 ﻿# RuntimeMode + Logging
 
-## Build matrix (Editor / DevBuild / Release)
-| Build | O que compila / entra | O que nao entra | Defines / simbolos reais |
-|---|---|---|---|
-| Editor | `GlobalCompositionRoot.Entry` boota se `NEWSCRIPTS_MODE` estiver ativo; `DebugUtility` inicia e defaulta verbose/fallbacks por `Application.isEditor`; tooling `Dev/**` e `Editor/**` compila por `UNITY_EDITOR` ou `UNITY_EDITOR || DEVELOPMENT_BUILD` | nada de player-only; policy continua best-effort | `UNITY_EDITOR`, `NEWSCRIPTS_MODE`, `NEWSCRIPTS_BASELINE_ASSERTS` |
-| DevBuild | runtime canonico + trilho `Dev/**` guardado por `UNITY_EDITOR || DEVELOPMENT_BUILD`; `UnityRuntimeModeProvider` resolve `Strict`; QA entra aqui | `Editor/**` puro nao compila no player | `DEVELOPMENT_BUILD`, `NEWSCRIPTS_MODE`, `NEWSCRIPTS_BASELINE_ASSERTS` |
-| Release | runtime canonico; `UnityRuntimeModeProvider` tambem resolve `Strict` fora do Editor; `DebugManagerConfig`/`DebugLogSettings` nao entram | `Dev/**`, `Editor/**`, tooling QA | `NEWSCRIPTS_MODE`, `NEWSCRIPTS_BASELINE_ASSERTS` |
+## Build matrix
+- Fonte unica: `Docs/Shared/Build-Matrix.md`.
+- Este modulo referencia a matriz compartilhada para evitar drift entre RuntimeMode/Logging e DevQA.
+- Leitura local: `RuntimeMode/Logging` consome o contrato `Editor / DevBuild / Release`, mas nao redefine a tabela aqui.
 
-- QA entra no trilho `DevBuild` por guards `UNITY_EDITOR || DEVELOPMENT_BUILD`; no player release esse trilho nao compila.
-- `DEBUG` e `TRACE` nao apareceram como toggles de governanca no escopo auditado.
-- `NEWSCRIPTS_MODE` e o gate bruto de boot do `GlobalCompositionRoot`; `RuntimeModeConfig` governa policy de strict/release e degraded reporting apos o boot.
+## Governanca de Flags
+| Flag / family | Tipo | Owner canonico | Proposito | Risco de drift |
+|---|---|---|---|---|
+| `UNITY_EDITOR` | compile-time | `Editor/**`, `Modules/**/Editor/**`, blocos editor-only em `Dev/**` | liberar tooling, `MenuItem`, `ContextMenu`, validacao e evidencia editor-only | alto se vazar para runtime fora de `Editor/**` |
+| `DEVELOPMENT_BUILD` | compile-time | trilho `Dev/**`, `GlobalCompositionRoot.DevQA`, helpers DevBuild | habilitar harness DevQA em player distribuido e hooks de evidencia | medio se virar substituto informal de policy runtime |
+| `NEWSCRIPTS_BASELINE_ASSERTS` | compile-time | `Infrastructure/Composition/GlobalCompositionRoot.Baseline.cs`, `Infrastructure/Observability/Baseline/**` | ligar asserts/invariantes de baseline sem alterar o boot principal | medio se se espalhar para features fora de baseline |
+| `NEWSCRIPTS_MODE` | runtime gate / compile symbol observado | `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs` + observabilidade em `Core/Logging/DebugUtility.cs` | ligar/desligar o bootstrap canonico do NewScripts no startup | alto porque impacta o boot inteiro |
+| `NEWSCRIPTS_*` residual | familia de guards | inventario em `Infrastructure/**`, `Modules/**`, `Core/**` | documentar simbolos remanescentes e evitar policy paralela | alto se novos simbolos entrarem sem doc shared |
+
+## Layering contract
+- Build/guard governance tem uma unica fonte de verdade em `Docs/Shared/Build-Matrix.md`.
+- `RuntimeMode/Logging` e owner do boot logging e da policy runtime: `EarlyDefault`, `BootstrapPolicy`, dedupe e `policyKey`.
+- `DevQA` pode oferecer harness, menu de evidencia e installers de dev, mas nao muda boot order nem cria writer paralelo de logging policy.
+- A allowlist de `RuntimeInitializeOnLoadMethod` fora de `Dev/**`, `Editor/**`, `Legacy/**`, `QA/**` permanece congelada em `DebugUtility` e `GlobalCompositionRoot.Entry`.
+- Qualquer novo toggle `NEWSCRIPTS_*` ou novo bootstrap point exige evidencia local e atualizacao no doc shared.
 
 ## Ownership table
 | Component | Owner de | Nao-owner de | Anchors |
@@ -73,5 +83,17 @@ Anchor: `[InputMode] InputModes desabilitado via RuntimeModeConfig; IInputModeSe
 - Evidencia manual em Editor: usar o menu `ImmersiveGames/NewScripts/Dev/Force LoggingPolicy Reapply Evidence` durante Play Mode.
 - Evidencia manual em DevBuild: chamar `DebugUtility.Dev_ForceReapplyLastLoggingPolicyForEvidence()` a partir do harness Dev/QA existente.
 - Sequencia esperada de log para a evidencia: primeiro um `dedupe_same_frame`, depois um `dedupe_same_key`, sem alterar a ordem do boot.
+
+## RM-1.4
+- `policyKey` agora nasce exclusivamente em `DebugUtility.BuildLoggingPolicyKey(...)`.
+- O contrato da key e estavel/deterministico: ordem fixa de campos, shape fixo de string e sem depender de iteracao de colecoes ou valores nao-deterministicos.
+- Se a key passar a incluir colecoes no futuro, elas devem ser ordenadas deterministicamente antes da serializacao.
+- O contrato continua servindo aos anchors `LoggingPolicyApplied` e `LoggingPolicyApplySkipped`, sem mudar a ordem do boot `EarlyDefault -> BootstrapPolicy`.
+
+## PolicyKey Contract (RM-1.4)
+- Ordem fixa atual: `buildVariant|newscriptsMode|global=...;verbose=...;default=...;repeated=...|fallbacks=...|source`.
+- A serializacao deve permanecer previsivel e culture-safe; quando houver formatos numericos, usar `InvariantCulture`.
+- A key nao pode incluir frame, timestamp, GUID aleatorio ou qualquer dado que inviabilize o dedupe por igualdade textual.
+
 
 

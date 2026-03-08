@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
-
     public readonly struct PostGameOwnershipContext
     {
         public string Signature { get; }
@@ -31,13 +31,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         public string Reason { get; }
         public string NextState { get; }
 
-        public PostGameOwnershipExitContext(
-            string signature,
-            string sceneName,
-            string profile,
-            int frame,
-            string reason,
-            string nextState)
+        public PostGameOwnershipExitContext(string signature, string sceneName, string profile, int frame, string reason, string nextState)
         {
             Signature = signature;
             SceneName = sceneName;
@@ -48,9 +42,6 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         }
     }
 
-    /// <summary>
-    /// Implementação padrão que aplica InputMode UI e gate de simulação no PostGame.
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostGameOwnershipService : IPostGameOwnershipService
     {
@@ -88,49 +79,27 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
 
         private static void ApplyPostGameInputMode(PostGameOwnershipContext context)
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
-            {
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
-                return;
-            }
-
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' " +
-                $"signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetFrontendMenu("PostGame/Entered");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "PostGame/Entered", "PostGame", context.Signature));
         }
 
         private void ApplyExitInputMode(PostGameOwnershipExitContext context)
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
-            {
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
-                return;
-            }
-
             bool applyGameplay = context.NextState == "Playing";
             string modeName = applyGameplay ? "Gameplay" : "FrontendMenu";
             string mapName = applyGameplay ? "Player" : "UI";
+            string reason = $"PostGame/{context.Reason}";
 
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='PostGame/{context.Reason}' " +
-                $"signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
+                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='{reason}' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
 
-            if (applyGameplay)
-            {
-                inputMode.SetGameplay($"PostGame/{context.Reason}");
-            }
-            else
-            {
-                inputMode.SetFrontendMenu($"PostGame/{context.Reason}");
-            }
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(applyGameplay ? InputModeRequestKind.Gameplay : InputModeRequestKind.FrontendMenu, reason, "PostGame", context.Signature));
         }
 
         private void AcquireGate()
@@ -149,15 +118,12 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
                 }
 
                 _loggedMissingGate = true;
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    "[PostGame] ISimulationGateService indisponível. Gate não será adquirido.");
+                DebugUtility.LogWarning<PostGameOwnershipService>("[PostGame] ISimulationGateService indisponivel. Gate nao sera adquirido.");
                 return;
             }
 
             _gateHandle = gateService.Acquire(PostGameGateToken);
-            DebugUtility.Log<PostGameOwnershipService>(
-                $"[PostGame] Gate adquirido token='{PostGameGateToken}'.",
-                DebugUtility.Colors.Info);
+            DebugUtility.Log<PostGameOwnershipService>($"[PostGame] Gate adquirido token='{PostGameGateToken}'.", DebugUtility.Colors.Info);
         }
 
         private void ReleaseGate(string reason)
@@ -173,22 +139,11 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    $"[PostGame] Falha ao liberar gate ({reason}): {ex}");
+                DebugUtility.LogWarning<PostGameOwnershipService>($"[PostGame] Falha ao liberar gate ({reason}): {ex}");
             }
 
             _gateHandle = null;
-
-            DebugUtility.Log<PostGameOwnershipService>(
-                $"[PostGame] Gate liberado token='{PostGameGateToken}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static IInputModeService ResolveInputModeService()
-        {
-            return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service)
-                ? service
-                : null;
+            DebugUtility.Log<PostGameOwnershipService>($"[PostGame] Gate liberado token='{PostGameGateToken}'.", DebugUtility.Colors.Info);
         }
 
         private static ISimulationGateService ResolveGateService()

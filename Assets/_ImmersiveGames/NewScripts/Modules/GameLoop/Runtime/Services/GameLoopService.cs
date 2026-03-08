@@ -308,28 +308,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
 
         private void ApplyGameplayInputMode()
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
-            {
-                return;
-            }
-
             var info = BuildSignatureInfo();
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' " +
-                $"signature='{info.Signature}' scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
+                $"[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' signature='{info.Signature}' scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetGameplay("GameLoop/Playing");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.Gameplay, "GameLoop/Playing", "GameLoop", info.Signature));
         }
-
-        private static IInputModeService ResolveInputModeService()
-        {
-            return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service)
-                ? service
-                : null;
-        }
-
         private static IPostGameOwnershipService ResolvePostPlayOwnershipService()
         {
             return DependencyManager.Provider.TryGetGlobal<IPostGameOwnershipService>(out var service)
@@ -444,4 +430,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         }
     }
 }
+
+
+
+
 

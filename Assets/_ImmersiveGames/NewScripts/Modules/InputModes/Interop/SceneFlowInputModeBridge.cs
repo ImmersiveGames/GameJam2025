@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -11,25 +11,25 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 {
     /// <summary>
-    /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
-    /// TambÃ©m sincroniza o GameLoop com a intenÃ§Ã£o do profile:
-    /// - Gameplay: aplica InputMode.
-    /// - Startup/Frontend: garante que o GameLoop nÃ£o fique ativo em menu/frontend.
+    /// Bridge global para sincronizar InputMode/GameLoop com base nos eventos do SceneFlow.
+    /// Tambem sincroniza o GameLoop com a intencao do profile:
+    /// - Gameplay: solicita InputMode de gameplay.
+    /// - Startup/Frontend: solicita InputMode de menu e garante GameLoop inativo.
     /// </summary>
-        /// <summary>
+    /// <summary>
     /// OWNER: sincronizacao InputMode/GameLoop orientada por eventos de transicao.
     /// NAO E OWNER: execucao da transicao de cena e seus gates.
-    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; nao publica eventos.
+    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; publica apenas request events.
     /// Fases tocadas: TransitionStarted e TransitionCompleted.
     /// </summary>
-public sealed class SceneFlowInputModeBridge : IDisposable
+    public sealed class SceneFlowInputModeBridge : IDisposable
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
 
-        // Dedupe por instÃ¢ncia para evitar supressÃ£o entre instÃ¢ncias apÃ³s restarts.
-        private string _lastProcessedSignature;
-        private string _lastStartedSignature;
+        // Dedupe por instancia para evitar supressao entre instancias apos restarts.
+        private string _lastProcessedSignature = string.Empty;
+        private string _lastStartedSignature = string.Empty;
         private int _lastStartedFrame = -1;
 
         public SceneFlowInputModeBridge()
@@ -80,29 +80,19 @@ public sealed class SceneFlowInputModeBridge : IDisposable
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            var inputModeService = ResolveInputModeService();
-            if (inputModeService == null)
-            {
-                DebugUtility.LogWarning<SceneFlowInputModeBridge>(
-                    "[InputMode] IInputModeService indisponivel; transicao ignorada.");
-                ReportInputModesDegraded("missing_service",
-                    "SceneFlowInputModeBridge could not resolve IInputModeService.");
-                return;
-            }
-
             string profile = evt.Context.TransitionProfileName;
             string signature = SceneTransitionSignature.Compute(evt.Context);
             string dedupeKey = $"{profile}|{signature}";
             string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
-            // ===== Gameplay =====
             if (evt.Context.TransitionProfileId == SceneFlowProfileId.Gameplay)
             {
-                inputModeService.SetGameplay("SceneFlow/Completed:Gameplay");
+                EventBus<InputModeRequestEvent>.Raise(
+                    new InputModeRequestEvent(InputModeRequestKind.Gameplay, "SceneFlow/Completed:Gameplay", "SceneFlow", signature));
 
                 LogObsInputModeApplied(
                     mode: "Gameplay",
-                    map: "Player",
+                    map: InputModesDefaults.PlayerActionMapName,
                     reason: "SceneFlow/Completed:Gameplay",
                     signature: signature,
                     scene: activeScene,
@@ -122,7 +112,7 @@ public sealed class SceneFlowInputModeBridge : IDisposable
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura jÃ¡ processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' profile='{profile}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -140,7 +130,6 @@ public sealed class SceneFlowInputModeBridge : IDisposable
                     "[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop.",
                     DebugUtility.Colors.Info);
 
-                // Se veio de um PauseOverlay por qualquer motivo, prefira Resume.
                 if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
@@ -151,12 +140,10 @@ public sealed class SceneFlowInputModeBridge : IDisposable
                     return;
                 }
 
-                // Se jÃ¡ estÃ¡ Playing, nÃ£o faz nada (evita ruÃ­do).
                 if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        "[SceneFlowInputModeBridge] [GameLoop] RequestStart ignored (already active). " +
-                        "source=SceneFlow/Completed:Gameplay state=Playing.",
+                        "[SceneFlowInputModeBridge] [GameLoop] RequestStart ignored (already active). source=SceneFlow/Completed:Gameplay state=Playing.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -172,32 +159,29 @@ public sealed class SceneFlowInputModeBridge : IDisposable
                 return;
             }
 
-            // ===== Frontend/Startup =====
             if (evt.Context.TransitionProfileId.IsStartupOrFrontend)
             {
                 if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura jÃ¡ processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' profile='{profile}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 _lastProcessedSignature = dedupeKey;
-                inputModeService.SetFrontendMenu("SceneFlow/Completed:Frontend");
+                EventBus<InputModeRequestEvent>.Raise(
+                    new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "SceneFlow/Completed:Frontend", "SceneFlow", signature));
 
                 LogObsInputModeApplied(
                     mode: "FrontendMenu",
-                    map: "UI",
+                    map: InputModesDefaults.MenuActionMapName,
                     reason: "SceneFlow/Completed:Frontend",
                     signature: signature,
                     scene: activeScene,
                     profile: profile);
 
-                // CorreÃ§Ã£o-alvo:
-                // Menu/Frontend nÃ£o deve â€œrodar runâ€. Se algo iniciou o GameLoop antes,
-                // encerramos a run aqui para evitar ficar em Playing no menu.
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
                 {
@@ -205,15 +189,13 @@ public sealed class SceneFlowInputModeBridge : IDisposable
                 }
 
                 string state = gameLoopService.CurrentStateIdName;
-
                 if (string.Equals(state, nameof(GameLoopStateId.Playing), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.Paused), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] Frontend completed com estado ativo ('{state}'). " +
-                        "Solicitando RequestReady() para garantir menu inativo.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] Frontend completed com estado ativo ('{state}'). Solicitando RequestReady() para garantir menu inativo.",
                         DebugUtility.Colors.Info);
 
                     gameLoopService.RequestReady();
@@ -226,7 +208,7 @@ public sealed class SceneFlowInputModeBridge : IDisposable
                 && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura jÃ¡ processada). signature='{signature}' profile='{profile}'.",
+                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' profile='{profile}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -246,35 +228,9 @@ public sealed class SceneFlowInputModeBridge : IDisposable
             string scene,
             string profile)
         {
-            // Observabilidade canÃ´nica (Contrato): Request mode/map/reason/signature/scene/profile.
             DebugUtility.LogVerbose(typeof(SceneFlowInputModeBridge),
                 $"[OBS][InputMode] Requested mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' profile='{profile ?? string.Empty}' reason='{reason ?? string.Empty}' (delegated).",
                 DebugUtility.Colors.Info);
-        }
-
-        private static IInputModeService ResolveInputModeService()
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                return null;
-            }
-
-            return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service) ? service : null;
-        }
-
-        private static void ReportInputModesDegraded(string reason, string detail)
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var reporter) || reporter == null)
-            {
-                return;
-            }
-
-            reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
         }
 
         private static IGameLoopService ResolveGameLoopService()
@@ -288,11 +244,3 @@ public sealed class SceneFlowInputModeBridge : IDisposable
         }
     }
 }
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-# DevQA (Baseline 3.1)
+﻿# DevQA (Baseline 3.1)
 
 ## O que existe
 - Pipeline canonico de instalacao DevQA:
@@ -58,13 +58,9 @@
 Nota de compilacao (DQ-1.3): o codigo DevQA deve compilar apenas em `UNITY_EDITOR` ou `DEVELOPMENT_BUILD`; builds release de Player excluem esse codigo via guards de pre-processamento para evitar referencias a namespaces/artefatos Dev fora do escopo de QA.
 
 ## Build Matrix (Contract)
-| Ambiente | UNITY_EDITOR | DEVELOPMENT_BUILD | DevQA Tools (QA_*) | Hotkeys/ContextMenus | Evidencia esperada em log |
-|---|---|---|---|---|---|
-| Editor | true | n/a | ON | ON | logs [QA]/[DevQA] presentes |
-| Dev Build | false | true | ON | ON | logs [QA]/[DevQA] presentes |
-| Release | false | false | OFF | OFF | ausencia de logs de DevQA |
-
-Se precisar de QA em build distribuido, use Development Build (ou crie um simbolo/variant proprio; fora do escopo do baseline).
+- Fonte unica: Docs/Shared/Build-Matrix.md.
+- Este modulo nao replica mais a tabela completa para evitar drift de governanca com RuntimeMode/Logging.
+- Regra operacional que permanece aqui: se precisar de QA em build distribuido, use Development Build; Release continua excluindo DevQA por guards.
 
 ## Leak Sweep Policy (DQ-1.4)
 - Runtime files (`Modules/**` fora de `Dev/Editor/Legacy`) nao devem carregar tooling DevQA/Editor embutido quando a extracao estrutural for segura.

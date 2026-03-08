@@ -99,6 +99,12 @@ Date: 2026-03-06
 | Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 | RM-1.1 snapshot audit (RuntimeMode + Logging governance, DOC-only). |
 | Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v2.md | audit_doc | 2026-03-06 | RM-1.2 snapshot audit (single-owner runtime logging policy + idempotence). |
 | Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v3.md | audit_doc | 2026-03-06 | RM-1.3 snapshot audit (idempotence evidence hardening + DEV-only trigger). |
+| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md | audit_doc | 2026-03-08 | RM-1.4 snapshot audit (policyKey contract stabilized via canonical builder). |
+| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Guard-Governance-Audit-v1.md | audit_doc | 2026-03-08 | RM-1.5 snapshot audit (flags/toggles governance + shared build matrix contract). |
+| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v1.md | audit_doc | 2026-03-08 | IM-1.1 snapshot audit (InputModes inventory + simplification candidates, DOC-only). |
+| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v2.md | audit_doc | 2026-03-08 | IM-1.2a snapshot audit (InputModeBootstrap legacy isolation; canonical registration preserved). |
+| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v5.md | audit_doc | 2026-03-08 | IM-1.2d snapshot audit (single-writer InputModeCoordinator + request rail). |
+| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md | audit_doc | 2026-03-10 | IM-1.2e freeze snapshot (single-writer + request rail + gating evidence, DOC-only). |
 | Docs/Reports/Audits/2026-03-06/Modules/Core.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/DevQA.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
@@ -363,3 +369,58 @@ Date: 2026-03-06
 - status: DONE - idempotence hardening completed; DEV-only evidence trigger added
 - notes: runtime boot order unchanged; dedupe observability explicit; no Editor leak introduced outside `Dev/**`/`Editor/**`
 
+## RM-1.4 Status
+- live doc: `Docs/Modules/RuntimeMode-Logging.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md`
+- status: DONE - policyKey contract extracted to canonical builder and kept deterministic
+- notes: boot order unchanged; Entry still only calls `ApplyLoggingPolicyFromBootstrap(...)`; no UnityEditor leak outside `Dev/**`/`Editor/**`
+
+## RM-1.5 Status
+- live docs: `Docs/Shared/Build-Matrix.md`, `Docs/Modules/RuntimeMode-Logging.md`, `Docs/Modules/DevQA.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Guard-Governance-Audit-v1.md`
+- status: DONE - build matrix consolidated into shared doc; layering contract documented
+- notes: DOC-only; no `.cs` changed; allowlist/runtimeinit contract unchanged
+## RM-1.6 Status
+- tooling: `Tools/Gates/Run-NewScripts-RgGates.ps1`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Guard-Governance-Audit-v1.md`
+- status: DONE - canonical rg gates script created; docs updated to remove gate ambiguity
+- notes: DOC/tooling-only; no `.cs` changed; script is the single execution source for gates A / A2 / B
+
+## IM-1.1 Status
+- live doc: `Docs/Modules/InputModes.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v1.md`
+- status: DONE - canonical InputModes audit captured; IM-1.2 candidates documented
+- notes: DOC-only; no `.cs` changed; runtime-init hits in sweep remain only the shared allowlist
+
+## IM-1.2a Status
+- live doc: `Docs/Modules/InputModes.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v2.md`
+- status: DONE - InputModeBootstrap isolated to Legacy; canonical registration remains in GlobalCompositionRoot.InputModes
+- notes: contracts intact; no pipeline change; no new leak outside Legacy/Dev/Editor/QA
+
+
+
+## IM-1.2b Status
+- live doc: `Docs/Modules/InputModes.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v3.md`
+- status: DONE - ActionMap defaults consolidated to InputModesDefaults; composition root is the canonical resolver
+- notes: no pipeline change; no public contract change; runtime/editor leak sweep remained clean
+
+
+
+## IM-1.2c Status
+- live doc: Docs/Modules/InputModes.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v4.md
+- status: DONE - full inventory of direct IInputModeService writers/requestors captured; single-writer contract documented
+- notes: DOC-only; no .cs changed; next code step should introduce request rail before removing direct writers
+
+## IM-1.2d Status
+- live doc: `Docs/Modules/InputModes.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v5.md`
+- status: Single-writer InputModes applied via `InputModeCoordinator`; request rail migrated from direct writers (behavior-preserving target)
+
+## IM-1.2e Status
+- live doc: `Docs/Modules/InputModes.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md`
+- status: DONE (DOC freeze)
+- notes: single-writer + request rail + gating/hardening frozen from workspace local evidence

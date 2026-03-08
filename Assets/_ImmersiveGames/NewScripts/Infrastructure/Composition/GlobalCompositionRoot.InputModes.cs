@@ -11,12 +11,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
+        private static bool _inputModeDefaultsAppliedLogged;
+        private static bool _inputModeRuntimeRailSkippedLogged;
+
         private static void RegisterInputModesFromRuntimeConfig()
         {
             if (!DependencyManager.HasInstance)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    "[InputMode] DependencyManager indisponível. Registro do IInputModeService ignorado.");
+                    "[InputMode] DependencyManager indisponivel. Registro do IInputModeService ignorado.");
                 ReportInputModesDegraded("missing_dependency_manager",
                     "DependencyManager not available during global composition.");
                 return;
@@ -35,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 if (logVerbose)
                 {
                     DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        "[InputMode] InputModes desabilitado via RuntimeModeConfig; IInputModeService não será registrado.",
+                        "[InputMode] InputModes desabilitado via RuntimeModeConfig; IInputModeService nao sera registrado.",
                         DebugUtility.Colors.Info);
                 }
 
@@ -49,24 +52,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 if (logVerbose)
                 {
                     DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        "[InputMode] IInputModeService já registrado no DI global.",
+                        "[InputMode] IInputModeService ja registrado no DI global.",
                         DebugUtility.Colors.Info);
                 }
 
                 return;
             }
 
-            string playerMapName = settings?.playerActionMapName;
-            string menuMapName = settings?.menuActionMapName;
+            (string playerMapName, string menuMapName) = InputModesDefaults.ResolveFrom(config);
 
-            if (string.IsNullOrWhiteSpace(playerMapName))
+            if (logVerbose
+                && !_inputModeDefaultsAppliedLogged
+                && (settings == null
+                    || string.IsNullOrWhiteSpace(settings.playerActionMapName)
+                    || string.IsNullOrWhiteSpace(settings.menuActionMapName)))
             {
-                playerMapName = "Player";
-            }
-
-            if (string.IsNullOrWhiteSpace(menuMapName))
-            {
-                menuMapName = "UI";
+                _inputModeDefaultsAppliedLogged = true;
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][InputMode] ActionMapDefaultsApplied reason='blank_config' player='{playerMapName}' menu='{menuMapName}'.",
+                    DebugUtility.Colors.Info);
             }
 
             try
@@ -103,12 +107,64 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
         }
 
+        private static void RegisterInputModeCoordinator()
+        {
+            RegisterIfMissing(
+                () => new InputModeCoordinator(),
+                "[InputMode] InputModeCoordinator ja registrado no DI global.",
+                "[InputMode] InputModeCoordinator registrado no DI global.");
+        }
+
         private static void RegisterInputModeSceneFlowBridge()
         {
+            // O trilho runtime de request/coordinator so pode existir quando o servico canonico ja estiver registrado.
+            if (!ShouldRegisterInputModeRuntimeRail())
+            {
+                return;
+            }
+
+            RegisterInputModeCoordinator();
             RegisterIfMissing(
                 () => new SceneFlowInputModeBridge(),
                 "[InputMode] SceneFlowInputModeBridge ja registrado no DI global.",
                 "[InputMode] SceneFlowInputModeBridge registrado no DI global.");
+        }
+
+        private static bool ShouldRegisterInputModeRuntimeRail()
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                LogInputModeRuntimeRailSkippedOnce();
+                return false;
+            }
+
+            var provider = DependencyManager.Provider;
+            if (provider == null)
+            {
+                LogInputModeRuntimeRailSkippedOnce();
+                return false;
+            }
+
+            if (!provider.TryGetGlobal<IInputModeService>(out var service) || service == null)
+            {
+                LogInputModeRuntimeRailSkippedOnce();
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void LogInputModeRuntimeRailSkippedOnce()
+        {
+            if (_inputModeRuntimeRailSkippedLogged)
+            {
+                return;
+            }
+
+            _inputModeRuntimeRailSkippedLogged = true;
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][InputMode] InputModeCoordinator/Bridge skipped reason='input_modes_disabled_or_not_registered'.",
+                DebugUtility.Colors.Info);
         }
     }
 }

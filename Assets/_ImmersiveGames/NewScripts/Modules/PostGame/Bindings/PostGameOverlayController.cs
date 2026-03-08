@@ -39,8 +39,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         [SerializeField] private Button restartButton;
         [SerializeField] private Button exitToMenuButton;
 
-        [Inject] private IInputModeService _inputModeService;
-        [Inject] private ISimulationGateService _gateService;
+                [Inject] private ISimulationGateService _gateService;
         [Inject] private IPostGameOwnershipService _postGameOwnership;
         [Inject] private IPostLevelActionsService _postLevelActionsService;
 
@@ -357,31 +356,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private void ApplyPostGameInputMode(string reason)
         {
             EnsureDependenciesInjected();
-
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetFrontendMenu(reason);
-                return;
-            }
-
-            DebugUtility.LogWarning<PostGameOverlayController>(
-                "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, reason, "PostGameOverlay"));
         }
 
         private void ApplyGameplayInputMode(string reason)
         {
             EnsureDependenciesInjected();
-
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetGameplay(reason);
-                return;
-            }
-
-            DebugUtility.LogWarning<PostGameOverlayController>(
-                "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.Gameplay, reason, "PostGameOverlay"));
         }
-
         private bool ShouldOverlayManageOwnership()
         {
             return _postGameOwnership == null || !_postGameOwnership.IsOwnerEnabled;
@@ -487,4 +471,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         }
     }
 }
+
+
+
 

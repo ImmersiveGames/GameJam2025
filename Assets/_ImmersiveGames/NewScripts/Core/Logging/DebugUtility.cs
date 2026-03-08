@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static readonly Dictionary<string, string> _messagePool = new();
 
         private const string RepeatedCallColor = "#FFD54F";
-        private const string AlertIcon = "⚠️";
+        private const string AlertIcon = "âš ï¸";
 
         public static class Colors
         {
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             LogInternal("DebugUtility inicializado antes de todos os sistemas.");
         }
 
-        #region Configurações
+        #region ConfiguraÃ§Ãµes
         public static bool IsGlobalDebugEnabled => _globalDebugEnabled;
         public static bool IsVerboseLoggingEnabled => _verboseLoggingEnabled;
         public static bool IsFallbacksEnabled => _logFallbacks;
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 #endif
         #endregion
 
-        #region Log estático por Type
+        #region Log estÃ¡tico por Type
         public static void Log(Type type, string message, string color = null, Object context = null)
         {
             if (!ShouldLog(type, null, DebugLevel.Logs))
@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         }
         #endregion
 
-        #region Log genérico por tipo (T)
+        #region Log genÃ©rico por tipo (T)
         public static void Log<T>(string message, string color = null, Object context = null, T instance = null) where T : class
         {
             var type = typeof(T);
@@ -329,11 +329,15 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             DebugLevel defaultLevel,
             string source)
         {
-            string buildVariant = GetBuildVariant();
-            string newscriptsMode = GetNewscriptsModeState();
-            string verbosity = $"global={globalDebugEnabled};verbose={verboseEnabled};default={defaultLevel};repeated={repeatedVerboseEnabled}";
-            string colors = $"fallbacks={fallbacksEnabled}";
-            string policyKey = $"{buildVariant}|{newscriptsMode}|{verbosity}|{colors}|{source}";
+            string policyKey = BuildLoggingPolicyKey(
+                GetBuildVariant(),
+                GetNewscriptsModeState(),
+                globalDebugEnabled,
+                verboseEnabled,
+                defaultLevel,
+                repeatedVerboseEnabled,
+                fallbacksEnabled,
+                source);
             int policyFrame = GetPolicyFrame();
 
             if (policyFrame == _lastPolicyFrame && string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
@@ -367,6 +371,28 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplied source='{source}' key='{policyKey}'");
         }
 
+        // policyKey e um contrato estavel/deterministico usado para dedupe e evidencia.
+        private static string BuildLoggingPolicyKey(
+            string buildVariant,
+            string newscriptsMode,
+            bool globalDebugEnabled,
+            bool verboseEnabled,
+            DebugLevel defaultLevel,
+            bool repeatedVerboseEnabled,
+            bool fallbacksEnabled,
+            string source)
+        {
+            var builder = new StringBuilder(128);
+            builder.Append(buildVariant)
+                   .Append('|').Append(newscriptsMode)
+                   .Append("|global=").Append(globalDebugEnabled)
+                   .Append(";verbose=").Append(verboseEnabled)
+                   .Append(";default=").Append(defaultLevel)
+                   .Append(";repeated=").Append(repeatedVerboseEnabled)
+                   .Append("|fallbacks=").Append(fallbacksEnabled)
+                   .Append('|').Append(source);
+            return builder.ToString();
+        }
         private static int GetPolicyFrame()
         {
             int frame = Time.frameCount;
@@ -491,7 +517,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 return false;
             }
 
-            // Suprime apenas spam de observabilidade idempotente de catálogo.
+            // Suprime apenas spam de observabilidade idempotente de catÃ¡logo.
             return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
                    message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
                    message.Contains("[OBS][Config] SceneRouteCatalogBuild", StringComparison.Ordinal);
@@ -499,6 +525,8 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         #endregion
     }
 }
+
+
 
 
 
