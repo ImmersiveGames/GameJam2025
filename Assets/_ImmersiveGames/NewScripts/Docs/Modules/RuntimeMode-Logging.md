@@ -29,8 +29,8 @@
 Anchor: `NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.` e `DebugUtility inicializado antes de todos os sistemas.`
 2. `Infrastructure/Composition/GlobalCompositionRoot.Entry.Initialize` roda em `RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)` e verifica `NEWSCRIPTS_MODE`.
 Anchor: `NEWSCRIPTS_MODE desativado: GlobalCompositionRoot ignorado.`
-3. `GlobalCompositionRoot.InitializeLogging()` aplica a policy default de runtime: `DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose)`.
-Anchor: `NewScripts logging configured.`
+3. `GlobalCompositionRoot.InitializeLogging()` calcula os inputs de bootstrap e delega o apply para `DebugUtility.ApplyLoggingPolicyFromBootstrap(...)`.
+Anchor: `NewScripts logging configured.` + `[OBS][RuntimeMode] LoggingPolicyApplied source='BootstrapPolicy' ...`
 4. `EnsureDependencyProvider()` cria o DI global, ainda antes da policy de runtime mode/config.
 Anchor: `DependencyManager created for global scope.`
 5. `RegisterEssentialServicesOnly()` entra no stage `RuntimePolicy` e chama `RegisterRuntimePolicyServices()`.
@@ -48,3 +48,16 @@ Anchor: `[InputMode] InputModes desabilitado via RuntimeModeConfig; IInputModeSe
 ## Status atual
 - `RM-1.1`: inventory done (DOC-only).
 - Nao houve alteracao de `.cs` nesta etapa.
+
+
+## RM-1.2
+- Single owner runtime: `DebugUtility` agora concentra o apply real da logging policy no runtime.
+- 2-phase apply preservado: `EarlyDefault` em `SubsystemRegistration` e `BootstrapPolicy` quando `GlobalCompositionRoot.Entry` inicializa o bootstrap.
+- `GlobalCompositionRoot.Entry` deixou de escrever policy diretamente; ele agora apenas calcula inputs e chama `DebugUtility.ApplyLoggingPolicyFromBootstrap(...)`.
+- Idempotencia adicionada por `policyKey` + frame guard, com novos anchors:
+  - `[OBS][RuntimeMode] LoggingPolicyApplied source=... key=...`
+  - `[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_frame key=...`
+  - `[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_key key=...`
+- Comportamento intencional preservado: o boot continua com default early e promote para default verbose no bootstrap, sem tocar no trilho `Dev/Core/Logging` nesta etapa.
+
+

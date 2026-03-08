@@ -22,6 +22,9 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static bool _logFallbacks = true;
         private static bool _repeatedCallVerboseEnabled = true;
         private static DebugLevel _defaultDebugLevel = DebugLevel.Logs;
+        private static string _lastPolicyKey;
+        private static int _lastPolicyFrame = -1;
+        private static int _policyApplyTick;
 
         private static readonly Dictionary<Type, DebugLevel> _scriptDebugLevels = new();
         private static readonly Dictionary<object, DebugLevel> _localLevels = new();
@@ -54,12 +57,6 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 #if NEWSCRIPTS_MODE
             Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.");
 #endif
-            _globalDebugEnabled = true;
-            _verboseLoggingEnabled = Application.isEditor;
-            _logFallbacks = Application.isEditor;
-            _repeatedCallVerboseEnabled = true;
-            _defaultDebugLevel = DebugLevel.Logs;
-
             _scriptDebugLevels.Clear();
             _localLevels.Clear();
             _attributeLevels.Clear();
@@ -68,8 +65,19 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _callTracker.Clear();
             _repeatedCallTracker.Clear();
             _lastTrackedFrame = -1;
+            _lastPolicyFrame = -1;
+            _lastPolicyKey = null;
+            _policyApplyTick = 0;
 
             _messagePool.Clear();
+
+            ApplyLoggingPolicyInternal(
+                globalDebugEnabled: true,
+                verboseEnabled: Application.isEditor,
+                fallbacksEnabled: Application.isEditor,
+                repeatedVerboseEnabled: true,
+                defaultLevel: DebugLevel.Logs,
+                source: "EarlyDefault");
 
             LogInternal("DebugUtility inicializado antes de todos os sistemas.");
         }
@@ -93,6 +101,22 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
         public static void RegisterScriptDebugLevel(Type type, DebugLevel level) => _scriptDebugLevels[type] = level;
         public static void SetLocalDebugLevel(object instance, DebugLevel level) => _localLevels[instance] = level;
+
+        public static void ApplyLoggingPolicyFromBootstrap(
+            DebugLevel defaultLevel,
+            bool verboseEnabled,
+            bool fallbacksEnabled,
+            bool globalDebugEnabled = true,
+            bool repeatedVerboseEnabled = true)
+        {
+            ApplyLoggingPolicyInternal(
+                globalDebugEnabled,
+                verboseEnabled,
+                fallbacksEnabled,
+                repeatedVerboseEnabled,
+                defaultLevel,
+                "BootstrapPolicy");
+        }
         #endregion
 
         #region Log estático por Type
@@ -254,6 +278,83 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             return string.IsNullOrEmpty(color) ? message : $"<color={color}>{message}</color>";
         }
 
+        private static void ApplyLoggingPolicyInternal(
+            bool globalDebugEnabled,
+            bool verboseEnabled,
+            bool fallbacksEnabled,
+            bool repeatedVerboseEnabled,
+            DebugLevel defaultLevel,
+            string source)
+        {
+            string buildVariant = GetBuildVariant();
+            string newscriptsMode = GetNewscriptsModeState();
+            string verbosity = $"global={globalDebugEnabled};verbose={verboseEnabled};default={defaultLevel};repeated={repeatedVerboseEnabled}";
+            string colors = $"fallbacks={fallbacksEnabled}";
+            string policyKey = $"{buildVariant}|{newscriptsMode}|{verbosity}|{colors}|{source}";
+            int policyFrame = GetPolicyFrame();
+
+            if (policyFrame == _lastPolicyFrame && string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
+            {
+                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_frame key='{policyKey}'");
+                return;
+            }
+
+            if (string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
+            {
+                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApply dedupe_same_key key='{policyKey}'");
+                return;
+            }
+
+            _globalDebugEnabled = globalDebugEnabled;
+            _verboseLoggingEnabled = verboseEnabled;
+            _logFallbacks = fallbacksEnabled;
+            _repeatedCallVerboseEnabled = repeatedVerboseEnabled;
+            _defaultDebugLevel = defaultLevel;
+
+            _lastPolicyKey = policyKey;
+            _lastPolicyFrame = policyFrame;
+
+            LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplied source='{source}' key='{policyKey}'");
+        }
+
+        private static int GetPolicyFrame()
+        {
+            int frame = Time.frameCount;
+            if (frame >= 0)
+            {
+                return frame;
+            }
+
+            _policyApplyTick++;
+            return -_policyApplyTick;
+        }
+
+        private static string GetBuildVariant()
+        {
+#if UNITY_EDITOR
+#if DEVELOPMENT_BUILD
+            return "DevBuild";
+#else
+            return "Editor";
+#endif
+#else
+            return "Release";
+#endif
+        }
+
+        private static string GetNewscriptsModeState()
+        {
+#if NEWSCRIPTS_MODE
+            return "Enabled";
+#else
+            return "Disabled";
+#endif
+        }
+
+        private static void LogRuntimeModeObs(string message)
+        {
+            Debug.Log(ApplyColor(BuildLogMessage("INFO", typeof(DebugUtility), message), Colors.Info));
+        }
         private static void LogInternal(string message, Object context = null)
         {
             if (!ShouldLog(null, null, DebugLevel.Logs))
@@ -348,3 +449,4 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         #endregion
     }
 }
+

@@ -97,6 +97,7 @@ Date: 2026-03-06
 | Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2h snapshot audit (EventBusUtil classified C reserve; editor hook already isolated). |
 | Docs/Reports/Audits/2026-03-06/Modules/Core-Gates-v1.md | audit_doc | 2026-03-06 | CORE-1.2i gates snapshot (Reserve vs Legacy governance and PR/CI checks). |
 | Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 | RM-1.1 snapshot audit (RuntimeMode + Logging governance, DOC-only). |
+| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v2.md | audit_doc | 2026-03-06 | RM-1.2 snapshot audit (single-owner runtime logging policy + idempotence). |
 | Docs/Reports/Audits/2026-03-06/Modules/Core.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/DevQA.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
@@ -346,4 +347,11 @@ Date: 2026-03-06
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v1.md`
 - status: DONE - RuntimeMode + Logging governance audited from local workspace only (DOC-only)
 - notes: two runtime entrypoints, canonical runtime policy in `DebugUtility`/`RuntimeModeConfig`, and dev-only logging writer isolated in `Dev/Core/Logging`
+
+
+## RM-1.2 Status
+- live doc: `Docs/Modules/RuntimeMode-Logging.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v2.md`
+- status: DONE - runtime logging policy consolidated to single owner (`DebugUtility`) with idempotent apply
+- notes: two-phase apply preserved; `GlobalCompositionRoot.Entry` now delegates; no intentional baseline behavior change
 

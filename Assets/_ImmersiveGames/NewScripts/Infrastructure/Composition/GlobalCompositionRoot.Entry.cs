@@ -95,7 +95,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void InitializeLogging()
         {
-            DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
+            bool verboseEnabled = Application.isEditor;
+            bool fallbacksEnabled = Application.isEditor;
+
+            DebugUtility.ApplyLoggingPolicyFromBootstrap(
+                defaultLevel: DebugLevel.Verbose,
+                verboseEnabled: verboseEnabled,
+                fallbacksEnabled: fallbacksEnabled,
+                globalDebugEnabled: true,
+                repeatedVerboseEnabled: true);
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot), "NewScripts logging configured.");
         }
 
@@ -112,3 +120,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
     }
 }
+
