@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.DevQA;
             InstallCompositionModules();
 
-            RegisterExitToMenuNavigationBridge();
+            RegisterExitToMenuCoordinator();
             RegisterMacroRestartCoordinator();
             RegisterLevelSelectedRestartSnapshotBridge();
 

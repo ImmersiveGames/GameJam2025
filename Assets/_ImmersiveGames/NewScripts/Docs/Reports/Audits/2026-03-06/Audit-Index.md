@@ -105,6 +105,8 @@ Date: 2026-03-06
 | Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v2.md | audit_doc | 2026-03-08 | IM-1.2a snapshot audit (InputModeBootstrap legacy isolation; canonical registration preserved). |
 | Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v5.md | audit_doc | 2026-03-08 | IM-1.2d snapshot audit (single-writer InputModeCoordinator + request rail). |
 | Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md | audit_doc | 2026-03-10 | IM-1.2e freeze snapshot (single-writer + request rail + gating evidence, DOC-only). |
+| Docs/Reports/Audits/2026-03-06/Modules/GRS-Pause-Resume-Exit-Audit-v1.md | audit_doc | 2026-03-10 | GRS-1.3a snapshot audit (pause/resume/exit overlap hardening, behavior-preserving). |
+| Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v1.md | audit_doc | 2026-03-10 | GRS-1.3b snapshot audit (ExitToMenu single-owner coordinator, behavior-preserving). |
 | Docs/Reports/Audits/2026-03-06/Modules/Core.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/DevQA.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
@@ -424,3 +426,16 @@ Date: 2026-03-06
 - snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md`
 - status: DONE (DOC freeze)
 - notes: single-writer + request rail + gating/hardening frozen from workspace local evidence
+
+## GRS-1.3a Status
+- live doc: `Docs/Modules/Gates-Readiness-StateDependent.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GRS-Pause-Resume-Exit-Audit-v1.md`
+- status: DONE - same-frame idempotency applied to runtime pause/resume/exit consumers (behavior-preserving)
+- notes: no event payloads/contracts changed; no pipeline order change; legacy/baseline observers kept untouched
+
+## GRS-1.3b Status
+- live docs: `Docs/Modules/Navigation.md`, `Docs/Modules/Gates-Readiness-StateDependent.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v1.md`
+- status: DONE - `GameExitToMenuRequestedEvent` consolidated to `ExitToMenuCoordinator` as single owner (behavior-preserving)
+- notes: GameLoop bridge no longer consumes exit; legacy navigation bridge moved to `Modules/Navigation/Legacy/` and disabled; pipeline callsite preserved in place
+

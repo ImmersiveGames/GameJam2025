@@ -56,7 +56,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 
         private EventBinding<GamePauseCommandEvent> _onPauseCommand;
         private EventBinding<GameResumeRequestedEvent> _onResumeRequested;
-        private EventBinding<GameExitToMenuRequestedEvent> _onExitToMenu;
+        private int _lastPauseFrame = -1;
+        private string _lastPauseKey = string.Empty;
+        private int _lastResumeFrame = -1;
+        private string _lastResumeKey = string.Empty;
 
         private void Awake()
         {
@@ -67,14 +70,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             EventBus<GameRunStartedEvent>.Register(_onRunStarted);
             EventBus<GameRunEndedEvent>.Register(_onRunEnded);
 
-            // Pause/Resume/Exit -> UI reaction
+            // Pause/Resume -> UI reaction
             _onPauseCommand = new EventBinding<GamePauseCommandEvent>(OnPauseCommand);
-            _onResumeRequested = new EventBinding<GameResumeRequestedEvent>(_ => OnResumeRequested());
-            _onExitToMenu = new EventBinding<GameExitToMenuRequestedEvent>(_ => OnExitToMenu());
+            _onResumeRequested = new EventBinding<GameResumeRequestedEvent>(OnResumeRequested);
 
             EventBus<GamePauseCommandEvent>.Register(_onPauseCommand);
             EventBus<GameResumeRequestedEvent>.Register(_onResumeRequested);
-            EventBus<GameExitToMenuRequestedEvent>.Register(_onExitToMenu);
         }
 
         private void Start()
@@ -104,7 +105,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 
             EventBus<GamePauseCommandEvent>.Unregister(_onPauseCommand);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResumeRequested);
-            EventBus<GameExitToMenuRequestedEvent>.Unregister(_onExitToMenu);
         }
 
         private void OnDisable()
@@ -239,26 +239,47 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             HideLocal("GameRunEnded", applyGameplayInputMode: false);
         }
 
-        private void OnExitToMenu()
+        private void OnResumeRequested(GameResumeRequestedEvent evt)
         {
-            ResetFlagsForMenu();
-            HideLocal("ExitToMenu");
-        }
+            string key = BuildResumeKey(evt);
+            int frame = Time.frameCount;
+            if (_lastResumeFrame == frame && string.Equals(_lastResumeKey, key, System.StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                    $"[OBS][GRS] GameResumeRequestedEvent dedupe_same_frame consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
 
-        private void OnResumeRequested()
-        {
-            // Resume sempre oculta overlay.
+            _lastResumeFrame = frame;
+            _lastResumeKey = key;
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
             HideLocal("ResumeRequested");
         }
 
         private void OnPauseCommand(GamePauseCommandEvent e)
         {
-            // Pausa só deve abrir overlay durante run ativa e antes do final da run.
-            // (No fim da run, GameRunStateService publica pause para congelar simulação;
-            // isso NÃO deve abrir PauseOverlay.)
+            string key = BuildPauseKey(e);
+            int frame = Time.frameCount;
+            if (_lastPauseFrame == frame && string.Equals(_lastPauseKey, key, System.StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                    $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastPauseFrame = frame;
+            _lastPauseKey = key;
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[OBS][GRS] GamePauseCommandEvent consumed consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
             if (!_runActive || _runEnded)
             {
-                // Mesmo se vier pause, garante overlay oculto.
                 HideLocal("PauseCommandIgnored_NotActiveOrEnded");
                 return;
             }
@@ -269,15 +290,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             }
             else
             {
-                // Suporte opcional caso alguma origem publique GamePauseCommandEvent(false).
                 HideLocal("PauseCommandFalse");
             }
-        }
-
-        private void ResetFlagsForMenu()
-        {
-            _runActive = false;
-            _runEnded = false;
         }
 
         // Local UI-only helpers (no EventBus)
@@ -329,7 +343,21 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(InputModeRequestKind.Gameplay, hideReason, "PauseOverlay"));
         }
+
+        private static string BuildPauseKey(GamePauseCommandEvent evt)
+        {
+            bool isPaused = evt is { IsPaused: true };
+            return $"pause|isPaused={isPaused}|reason=<null>";
+        }
+
+        private static string BuildResumeKey(GameResumeRequestedEvent evt)
+        {
+            return "resume|reason=<null>";
+        }
+
         // DI + UI toggling
+        // =========================
+
         // =========================
 
         private void EnsureDependenciesInjected()
@@ -379,6 +407,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         }
     }
 }
+
 
 
 

@@ -89,3 +89,32 @@
   - `SceneFlowInputModeBridge`: dedupe same-frame no `SceneTransitionStartedEvent` com log `[OBS][GRS]`.
   - `StateDependentService`: dedupe same-frame (`reason+frame`) no `GameResetRequestedEvent` com log `[OBS][GRS]`.
 - Evidência completa: `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent-Cleanup-Audit-v2.md`.
+
+## GRS-1.3a - Pause/Resume/Exit overlap hardening (same-frame idempotency)
+
+- Runtime consumers endurecidos nesta etapa:
+  - `Modules/Gates/Interop/GamePauseGateBridge.cs`
+  - `Modules/Gameplay/Runtime/Actions/States/StateDependentService.cs`
+  - `Modules/GameLoop/Runtime/Bridges/GameLoopCommandEventBridge.cs`
+  - `Modules/GameLoop/Pause/Bindings/PauseOverlayController.cs`
+  - `Modules/Navigation/ExitToMenuNavigationBridge.cs`
+- Consumers inventariados mas nao endurecidos nesta etapa:
+  - `Modules/GameLoop/Legacy/Bindings/Inputs/GamePauseHotkeyController.cs` (Legacy)
+  - `Infrastructure/Observability/Baseline/BaselineInvariantAsserter.cs` (observabilidade, sem ownership de fluxo)
+- Contrato de observabilidade `[OBS][GRS]`:
+  - consume: `[OBS][GRS] <EventName> consumed consumer='<TypeName>' key='<key>' frame='<frame>'`
+  - dedupe: `[OBS][GRS] <EventName> dedupe_same_frame consumer='<TypeName>' key='<key>' frame='<frame>'`
+- Chaves same-frame normalizadas:
+  - pause: `pause|isPaused=<true/false>|reason=<normalized>`
+  - resume: `resume|reason=<normalized>`
+  - exit: `exit|reason=<normalized>`
+- Nota: hardening behavior-preserving; esta etapa nao define single-owner para pause/resume/exit e nao remove consumidores.
+
+## GRS-1.3b - ExitToMenu single-owner (coordinator)
+
+- Owner can?nico do `GameExitToMenuRequestedEvent`: `Modules/Navigation/Runtime/ExitToMenuCoordinator.cs`.
+- `GameLoopCommandEventBridge` n?o consome mais `ExitToMenu`; ficou limitado a pause/resume.
+- `GamePauseGateBridge` n?o escuta mais `ExitToMenu` no EventBus; a libera??o do gate de pause agora ? acionada pelo coordinator via DI para preservar ownership do handle.
+- `PauseOverlayController` e `StateDependentService` deixaram de registrar listener direto de `ExitToMenu`; o trilho can?nico agora centraliza a orquestra??o e reduz overlap estrutural.
+- Nota: behavior-preserving; sem mudan?a de payload/contrato do evento e sem mudan?a de ordem do pipeline.
+

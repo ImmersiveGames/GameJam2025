@@ -26,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Inputs
 
         private EventBinding<GamePauseCommandEvent> _onPauseCommand;
         private EventBinding<GameResumeRequestedEvent> _onResumeRequested;
-        private EventBinding<GameExitToMenuRequestedEvent> _onExitToMenu;
 
         private void Awake()
         {
@@ -41,11 +40,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Inputs
             // Isso mantÃ©m o toggle robusto mesmo quando pause vem de outra origem.
             _onPauseCommand = new EventBinding<GamePauseCommandEvent>(OnPauseCommand);
             _onResumeRequested = new EventBinding<GameResumeRequestedEvent>(_ => _paused = false);
-            _onExitToMenu = new EventBinding<GameExitToMenuRequestedEvent>(_ => ResetFlagsForMenu());
 
             EventBus<GamePauseCommandEvent>.Register(_onPauseCommand);
             EventBus<GameResumeRequestedEvent>.Register(_onResumeRequested);
-            EventBus<GameExitToMenuRequestedEvent>.Register(_onExitToMenu);
         }
 
         private void OnDestroy()
@@ -55,7 +52,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Inputs
 
             EventBus<GamePauseCommandEvent>.Unregister(_onPauseCommand);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResumeRequested);
-            EventBus<GameExitToMenuRequestedEvent>.Unregister(_onExitToMenu);
         }
 
         private void Update()

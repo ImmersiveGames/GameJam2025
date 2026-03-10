@@ -139,12 +139,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterExitToMenuNavigationBridge()
+        private static void RegisterExitToMenuCoordinator()
         {
             RegisterIfMissing(
-                () => new ExitToMenuNavigationBridge(),
-                "[Navigation] ExitToMenuNavigationBridge ja registrado no DI global.",
-                "[Navigation] ExitToMenuNavigationBridge registrado no DI global.");
+                () => new ExitToMenuCoordinator(),
+                "[Navigation] ExitToMenuCoordinator ja registrado no DI global.",
+                "[Navigation] ExitToMenuCoordinator registrado no DI global.");
         }
 
         private static void RegisterMacroRestartCoordinator()

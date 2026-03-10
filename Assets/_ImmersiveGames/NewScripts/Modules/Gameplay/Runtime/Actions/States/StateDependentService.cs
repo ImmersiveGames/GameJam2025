@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -9,15 +9,15 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
 {
     /// <summary>
-    /// Gate de aÃ§Ãµes baseado em:
-    /// - SimulationGate (bloqueia quando gate fechado, ex.: transiÃ§Ã£o/reset)
+    /// Gate de ações baseado em:
+    /// - SimulationGate (bloqueia quando gate fechado, ex.: transição/reset)
     /// - Pausa (token Pause e eventos de pausa)
-    /// - Readiness (GameplayReady) para liberar aÃ§Ãµes quando o mundo + fluxo estÃ£o prontos
-    /// - GameLoop (opcional): usado quando expÃµe estados que indicam "jogÃ¡vel" vs "nÃ£o jogÃ¡vel"
+    /// - Readiness (GameplayReady) para liberar ações quando o mundo + fluxo estão prontos
+    /// - GameLoop (opcional): usado quando expõe estados que indicam "jogável" vs "não jogável"
     ///
     /// Ajuste importante:
-    /// - Logs de "Move bloqueado/liberado" sÃ£o emitidos SOMENTE quando a situaÃ§Ã£o muda
-    ///   E apenas apÃ³s o primeiro consumo de CanExecuteAction(Move) (clean option).
+    /// - Logs de "Move bloqueado/liberado" são emitidos SOMENTE quando a situação muda
+    ///   E apenas após o primeiro consumo de CanExecuteAction(Move) (clean option).
     /// </summary>
     public sealed class StateDependentService : IStateDependentService
     {
@@ -44,7 +44,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         private EventBinding<GameRunEndedEvent> _gameRunEndedBinding;
         private EventBinding<GamePauseCommandEvent> _gamePauseBinding;
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
-        private EventBinding<GameExitToMenuRequestedEvent> _gameExitToMenuBinding;
         private EventBinding<GameResetRequestedEvent> _gameResetBinding;
         private EventBinding<ReadinessChangedEvent> _readinessBinding;
 
@@ -69,6 +68,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         private string _lastNonGameplayBlockedLogKey = string.Empty;
         private int _lastResetFrame = -1;
         private string _lastResetReason = string.Empty;
+        private int _lastPauseFrame = -1;
+        private string _lastPauseKey = string.Empty;
+        private int _lastResumeFrame = -1;
+        private string _lastResumeKey = string.Empty;
 
         public StateDependentService(ISimulationGateService gateService = null)
         {
@@ -78,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             TryResolveGameLoopService();
             TryRegisterEvents();
 
-            // Clean option: NÃƒO logar nada no construtor (evita "Move bloqueada" no bootstrap).
+            // Clean option: NÃO logar nada no construtor (evita "Move bloqueada" no bootstrap).
         }
 
         public bool CanExecuteGameplayAction(GameplayAction action)
@@ -144,7 +147,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             EventBus<GameRunEndedEvent>.Unregister(_gameRunEndedBinding);
             EventBus<GamePauseCommandEvent>.Unregister(_gamePauseBinding);
             EventBus<GameResumeRequestedEvent>.Unregister(_gameResumeBinding);
-            EventBus<GameExitToMenuRequestedEvent>.Unregister(_gameExitToMenuBinding);
             EventBus<GameResetRequestedEvent>.Unregister(_gameResetBinding);
             EventBus<ReadinessChangedEvent>.Unregister(_readinessBinding);
 
@@ -193,23 +195,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
                     SyncMoveDecisionLogIfChanged();
                 });
 
-                _gamePauseBinding = new EventBinding<GamePauseCommandEvent>(evt =>
-                {
-                    OnGamePause(evt);
-                    SyncMoveDecisionLogIfChanged();
-                });
+                _gamePauseBinding = new EventBinding<GamePauseCommandEvent>(OnGamePauseEvent);
 
-                _gameResumeBinding = new EventBinding<GameResumeRequestedEvent>(_ =>
-                {
-                    SetState(ServiceState.Playing);
-                    SyncMoveDecisionLogIfChanged();
-                });
-
-                _gameExitToMenuBinding = new EventBinding<GameExitToMenuRequestedEvent>(_ =>
-                {
-                    SetState(ServiceState.Ready);
-                    SyncMoveDecisionLogIfChanged();
-                });
+                _gameResumeBinding = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
 
                 _gameResetBinding = new EventBinding<GameResetRequestedEvent>(evt =>
                 {
@@ -241,7 +229,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
                 EventBus<GameRunEndedEvent>.Register(_gameRunEndedBinding);
                 EventBus<GamePauseCommandEvent>.Register(_gamePauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_gameResumeBinding);
-                EventBus<GameExitToMenuRequestedEvent>.Register(_gameExitToMenuBinding);
                 EventBus<GameResetRequestedEvent>.Register(_gameResetBinding);
                 EventBus<ReadinessChangedEvent>.Register(_readinessBinding);
 
@@ -253,6 +240,50 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             }
         }
 
+        private void OnGamePauseEvent(GamePauseCommandEvent evt)
+        {
+            string key = BuildPauseKey(evt);
+            int frame = Time.frameCount;
+            if (_lastPauseFrame == frame && string.Equals(_lastPauseKey, key, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<StateDependentService>(
+                    $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='StateDependentService' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastPauseFrame = frame;
+            _lastPauseKey = key;
+            DebugUtility.LogVerbose<StateDependentService>(
+                $"[OBS][GRS] GamePauseCommandEvent consumed consumer='StateDependentService' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
+            OnGamePause(evt);
+            SyncMoveDecisionLogIfChanged();
+        }
+
+        private void OnGameResumeRequested(GameResumeRequestedEvent evt)
+        {
+            string key = BuildResumeKey(evt);
+            int frame = Time.frameCount;
+            if (_lastResumeFrame == frame && string.Equals(_lastResumeKey, key, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<StateDependentService>(
+                    $"[OBS][GRS] GameResumeRequestedEvent dedupe_same_frame consumer='StateDependentService' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastResumeFrame = frame;
+            _lastResumeKey = key;
+            DebugUtility.LogVerbose<StateDependentService>(
+                $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='StateDependentService' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
+            SetState(ServiceState.Playing);
+            SyncMoveDecisionLogIfChanged();
+        }
+
         private void OnGamePause(GamePauseCommandEvent evt)
         {
             SetState(evt is { IsPaused: true } ? ServiceState.Paused : ServiceState.Playing);
@@ -262,6 +293,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         {
             _hasReadinessSnapshot = true;
             _gameplayReady = evt.Snapshot.GameplayReady;
+        }
+
+        private static string BuildPauseKey(GamePauseCommandEvent evt)
+        {
+            bool isPaused = evt is { IsPaused: true };
+            return $"pause|isPaused={isPaused}|reason=<null>";
+        }
+
+        private static string BuildResumeKey(GameResumeRequestedEvent evt)
+        {
+            return "resume|reason=<null>";
         }
 
         private void SetState(ServiceState next)
@@ -316,8 +358,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         }
 
         /// <summary>
-        /// Pausa "pura" significa: pause estÃ¡ ativo e Ã© o ÃšNICO token ativo.
-        /// Isso permite classificar pause como "Paused" e nÃ£o como "GateClosed" genÃ©rico.
+        /// Pausa "pura" significa: pause está ativo e é o ÚNICO token ativo.
+        /// Isso permite classificar pause como "Paused" e não como "GateClosed" genérico.
         /// </summary>
         private bool IsPausedOnlyByGate()
         {
@@ -383,7 +425,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
 
         private void SyncMoveDecisionLogIfChanged()
         {
-            // Clean option: se ninguÃ©m perguntou por Move ainda, nÃ£o loga transiÃ§Ãµes automÃ¡ticas via eventos.
+            // Clean option: se ninguém perguntou por Move ainda, não loga transições automáticas via eventos.
             if (!_moveLoggingArmed)
             {
                 return;
@@ -399,7 +441,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             string loopStateName,
             bool force = false)
         {
-            // Clean option: sÃ³ loga depois de armado.
+            // Clean option: só loga depois de armado.
             if (!_moveLoggingArmed)
             {
                 return;
@@ -453,6 +495,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         }
     }
 }
+
 
 
 
