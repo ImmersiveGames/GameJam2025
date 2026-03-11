@@ -47,13 +47,13 @@
 ## Status GL-1.2 (Live, 2026-03-06)
 - Triagem A/B/C atualizada com evidência estática (runtime canônico vs compat/legacy vs dev/editor).
 - `IntroStageDevTools` ficou explicitamente isolado em `#if UNITY_EDITOR` (arquivo `Modules/GameLoop/IntroStage/Dev/Editor/IntroStageDevTools.cs`).
-- `GameStartRequestEmitter` e `GamePauseHotkeyController` mantidos como runtime canônico (sem mudança funcional).
+- `GameStartRequestEmitter` mantido como runtime canonico (sem mudanca funcional); `GamePauseHotkeyController` foi removido em `BATCH-CLEANUP-STD-2` apos prova de tipo morto.
 - Restart canônico preservado: `GameCommands -> GameResetRequestedEvent -> MacroRestartCoordinator`.
-- Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v2.md`.
+- Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`.
 
 ## Status GL-1.3 (Live, 2026-03-06)
 - `GameStartRequestEmitter`: bootstrap automático legado removido (sem `RuntimeInitializeOnLoadMethod`) e isolamento via `EnsureInstalled()` no trilho canônico DevQA.
-- `GamePauseHotkeyController`: classificado como dead/legacy por evidência estática (sem refs em assets e sem callsite canônico) e movido para `Modules/GameLoop/Legacy/Bindings/Inputs/`.
+- `GamePauseHotkeyController`: classificado como dead/legacy por evidencia estatica e removido em `BATCH-CLEANUP-STD-2` apos prova de callsite + GUID.
 - Itens GL-1.3 isolados por `#if UNITY_EDITOR || DEVELOPMENT_BUILD` (Release exclui DevQA/DevTools alterados).
 - Restart canônico preservado: `GameCommands -> GameResetRequestedEvent -> MacroRestartCoordinator`.
 - Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`.
@@ -62,7 +62,7 @@
 - Validacao por GUID dos alvos `GameStartRequestEmitter` e `GamePauseHotkeyController`: sem referencias em `.unity/.prefab/.asset` dentro do workspace local.
 - Start em Release garantido por install canônico no stage GameLoop (`InstallGameLoopServices`), sem depender de DevQA.
 - `GameStartRequestEmitter` permanece idempotente via `EnsureInstalled()` e publisher de `GameStartRequestedEvent`.
-- `GamePauseHotkeyController` permanece classificado como legacy (movido para `Modules/GameLoop/Legacy/Bindings/Inputs/`).
+- `GamePauseHotkeyController` nao permanece no workspace local; foi removido em `BATCH-CLEANUP-STD-2`.
 
 ## Status PA-1.1 (Live, 2026-03-07)
 - `PauseOverlayController` foi convertido para `partial` sem alteração de fluxo runtime (pause/resume/overlay/input mode/gates).
@@ -70,3 +70,8 @@
 - Arquivo runtime `Modules/GameLoop/Pause/Bindings/PauseOverlayController.cs` ficou sem `UnityEditor`, `ContextMenu`, `MenuItem`, `AssetDatabase` e `FindAssets`.
 - Build matrix preservada: DevQA disponível apenas em `UNITY_EDITOR || DEVELOPMENT_BUILD`; release exclui tooling Dev.
 - Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/Pause-Cleanup-Audit-v1.md`.
+## BATCH-CLEANUP-STD-2
+- Removed in `BATCH-CLEANUP-STD-2`: `Modules/GameLoop/Legacy/Bindings/Inputs/GamePauseHotkeyController.cs`.
+- Rationale: binding legacy sem callsite em `.cs` fora do proprio arquivo e sem referencia por GUID em assets.
+
+

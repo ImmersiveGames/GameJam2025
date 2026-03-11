@@ -40,9 +40,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             DebugUtility.LogVerbose<GameLoopCommandEventBridge>(
                 "[OBS][LEGACY] GameResetRequestedEvent listener disabled in GameLoopCommandEventBridge; MacroRestartCoordinator owns canonical restart.",
                 DebugUtility.Colors.Info);
-            DebugUtility.LogVerbose<GameLoopCommandEventBridge>(
-                "[OBS][LEGACY] ExitToMenu listener disabled in GameLoopCommandEventBridge; ExitToMenuCoordinator owns canonical exit.",
-                DebugUtility.Colors.Info);
         }
 
         public void Dispose()

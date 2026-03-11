@@ -5,7 +5,6 @@ using System.IO;
 using System.Text;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -24,7 +23,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         private const string TransitionStyleCatalogPath = "Assets/Resources/Navigation/TransitionStyleCatalog.asset";
         private const string TransitionProfileCatalogPath = "Assets/Resources/SceneFlow/SceneTransitionProfileCatalog.asset";
         private const string DefaultTransitionProfilePath = "Assets/Resources/SceneFlow/Profiles/DefaultTransitionProfile.asset";
-        private const string LevelCatalogPath = "Assets/Resources/Navigation/LevelCatalog.asset";
         private const string RuntimeModeConfigPath = "Assets/Resources/RuntimeModeConfig.asset";
         private const string BootstrapConfigPath = "Assets/Resources/NewScriptsBootstrapConfig.asset";
 
@@ -74,7 +72,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                 TransitionStyleCatalog = LoadAssetAtPath<TransitionStyleCatalogAsset>(TransitionStyleCatalogPath, context),
                 TransitionProfileCatalog = LoadAssetAtPath<SceneTransitionProfileCatalogAsset>(TransitionProfileCatalogPath, context),
                 DefaultTransitionProfile = LoadAssetAtPath<SceneTransitionProfile>(DefaultTransitionProfilePath, context),
-                LevelCatalog = LoadAssetAtPath<LevelCatalogAsset>(LevelCatalogPath, context),
                 RuntimeModeConfig = LoadAssetAtPath<RuntimeModeConfig>(RuntimeModeConfigPath, context),
                 BootstrapConfig = LoadAssetAtPath<NewScriptsBootstrapConfigAsset>(BootstrapConfigPath, context)
             };
@@ -723,7 +720,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             public TransitionStyleCatalogAsset TransitionStyleCatalog;
             public SceneTransitionProfileCatalogAsset TransitionProfileCatalog;
             public SceneTransitionProfile DefaultTransitionProfile;
-            public LevelCatalogAsset LevelCatalog;
             public RuntimeModeConfig RuntimeModeConfig;
             public NewScriptsBootstrapConfigAsset BootstrapConfig;
         }
@@ -766,3 +762,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         }
     }
 }
+
+

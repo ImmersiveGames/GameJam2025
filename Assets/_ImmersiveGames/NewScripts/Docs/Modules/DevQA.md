@@ -74,7 +74,7 @@ Nota de compilacao (DQ-1.3): o codigo DevQA deve compilar apenas em `UNITY_EDITO
 - `TransitionStyleCatalogAsset` teve `ContextMenu` de validacao extraido para parcial DevQA (`Modules/SceneFlow/Navigation/Dev/TransitionStyleCatalogAsset.DevQA.cs`).
 - `PauseOverlayController.DevQA` validado: `using UnityEditor;` permanece sob `#if UNITY_EDITOR` e sem vazamento no runtime.
 - Suspeitos restantes foram classificados como runtime-critical (`A`) ou manual confirmation (`C`) no snapshot DQ-1.4.
-- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`.
+- Snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`.
 
 ## DQ-1.4.1 Pattern (partial + DevQA)
 - Mantenha o arquivo runtime principal no mesmo path e torne a classe `partial` quando necessario.
@@ -171,3 +171,4 @@ public sealed partial class PauseOverlayController
 - `RuntimeInitializeOnLoadMethod` allowlist is frozen for runtime-governance review.
 - Outside `Dev/Editor/Legacy/QA`, the only allowed files are `Core/Logging/DebugUtility.cs` and `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`.
 - Any expansion of that allowlist now requires a new audit plus explicit evidence and decision.
+

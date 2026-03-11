@@ -17,6 +17,9 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 {
     /// <summary>
@@ -42,6 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         [SerializeField] private GameObject overlayRoot;
         [SerializeField] private string showReason = "PauseOverlay/Show";
         [SerializeField] private string hideReason = "PauseOverlay/Hide";
+        [SerializeField] private bool enableEscapeHotkey = true;
 
         
         private bool _dependenciesInjected;
@@ -60,6 +64,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         private string _lastPauseKey = string.Empty;
         private int _lastResumeFrame = -1;
         private string _lastResumeKey = string.Empty;
+        private int _lastEscapeToggleFrame = -1;
 
         private void Awake()
         {
@@ -219,6 +224,39 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
                 Show();
             }
         }
+
+        private void Update()
+        {
+            if (!enableEscapeHotkey)
+            {
+                return;
+            }
+
+            if (!_runActive || _runEnded)
+            {
+                return;
+            }
+
+            if (!WasEscapePressedThisFrame())
+            {
+                return;
+            }
+
+            int frame = Time.frameCount;
+            if (_lastEscapeToggleFrame == frame)
+            {
+                return;
+            }
+
+            bool willResume = overlayRoot != null && overlayRoot.activeSelf;
+
+            _lastEscapeToggleFrame = frame;
+            Toggle();
+
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[OBS][PauseOverlay] EscapeHotkeyToggle action='{(willResume ? "resume" : "pause")}' runActive='{_runActive}' runEnded='{_runEnded}'",
+                DebugUtility.Colors.Info);
+        }
         // Event reactions (NO publish)
         // =========================
 
@@ -355,6 +393,16 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             return "resume|reason=<null>";
         }
 
+        private static bool WasEscapePressedThisFrame()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.Escape);
+#endif
+        }
+
         // DI + UI toggling
         // =========================
 
@@ -407,6 +455,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         }
     }
 }
+
+
+
+
+
 
 
 

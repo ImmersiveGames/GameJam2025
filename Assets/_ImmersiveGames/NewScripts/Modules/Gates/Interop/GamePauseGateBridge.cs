@@ -5,7 +5,6 @@
  * - Fix: ownership deterministico. Bridge NUNCA libera token que nao foi adquirido por ela.
  * - Hardening: Release NAO depende de gate resolvido (evita leak em teardown) e protege Provider nulo.
  * - Fix: Resume sem ownership nao gera ruido ("release ignorado") - evento pode ocorrer fora do ciclo de pause.
- * - GRS-1.3b: ExitToMenu via EventBus foi desativado; ExitToMenuCoordinator libera ownership explicitamente via DI.
  */
 
 using System;
@@ -68,10 +67,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gates.Interop
 
         internal void ReleaseForExitToMenu(string reason)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim();
-            DebugUtility.LogVerbose<GamePauseGateBridge>(
-                $"[PauseBridge] ExitToMenuCoordinator -> liberando gate Pause (se adquirido por esta bridge). reason='{normalizedReason}'.",
-                DebugUtility.Colors.Info);
             ReleasePauseGate(ReasonExitToMenuRequested);
         }
 
@@ -85,9 +80,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gates.Interop
 
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
                     "[PauseBridge] Registrado nos eventos GamePauseCommandEvent/GameResumeRequestedEvent -> SimulationGate.");
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[OBS][LEGACY] ExitToMenu listener disabled in GamePauseGateBridge; ExitToMenuCoordinator releases pause ownership explicitly.",
-                    DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {

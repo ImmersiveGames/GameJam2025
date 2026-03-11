@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bindings;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -18,7 +17,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
         [SerializeField] private GameNavigationIntentCatalogAsset navigationIntentCatalog;
         [SerializeField] private TransitionStyleCatalogAsset transitionStyleCatalog;
-        [SerializeField, HideInInspector] private LevelCatalogAsset levelCatalog;
+        // LEGACY placeholder - catalogo legado removido; nao e usado no runtime canonico;
+        // mantido apenas para evitar churn de serializacao em assets antigos.
+        [SerializeField, HideInInspector] private UnityEngine.Object levelCatalog;
         [SerializeField, HideInInspector] private LevelId startGameplayLevelId;
         [SerializeField] private SceneRouteCatalogAsset sceneRouteCatalog;
         [SerializeField] private SceneTransitionProfileCatalogAsset transitionProfileCatalog;
@@ -70,3 +71,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 #endif
     }
 }
+
+

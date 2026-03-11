@@ -61,7 +61,7 @@
 
 ## F) SF-1.2a (inventory only)
 
-- Inventario estatico concluido em `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v2.md`.
+- Inventario estatico concluido em `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v5.md`.
 - Candidatos mapeados: `NoOpTransitionCompletionGate`, `NoFadeAdapter`, fallback de completion gate em `AwaitCompletionGateAsync`, e sobreposicoes de assinatura (`SceneFlowSignatureCache` / dedupe no `SceneTransitionService` / guards no `LoadingHudOrchestrator`).
 - Nesta etapa nao houve move/delete/rename de codigo; somente inventario e recomendacoes.
 
@@ -77,11 +77,12 @@
     - dedupar apenas `same signature` no mesmo frame,
     - aceitar `same signature` apos `Completed`.
   - fallback do completion gate manteve politica best-effort e ganhou log `[OBS][SceneFlow] CompletionGateFallback ...`.
-- Evidencia completa: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v3.md`.
+- Evidencia completa: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v5.md`.
 
 
 ## H) SF-1.3b.2a (signature/dedupe/cache audit)
 - Inventário e consolidação CODE concluídos em `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Signature-Dedupe-Audit-v2.md`.
 - Escopo coberto: camadas de dedupe/cache em `SceneTransitionService`, `SceneFlowSignatureCache`, `LoadingHud*`, `SceneFlowInputModeBridge` e consumers correlatos.
 - Consolidação aplicada: helper compartilhado para idempotência same-frame em consumers (HUD/InputMode), mantendo ownership canônico no SceneTransitionService.
+
 

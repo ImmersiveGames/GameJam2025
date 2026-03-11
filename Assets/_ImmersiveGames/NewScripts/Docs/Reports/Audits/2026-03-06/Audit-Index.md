@@ -85,28 +85,31 @@ Date: 2026-03-06
 | Docs/Reports/Audits/2026-03-06/LevelFlow-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 |  |
 | Docs/Reports/Audits/2026-03-06/Module-Audit-Summary.md | summary | 2026-03-06 |  |
 | Docs/Reports/Audits/2026-03-06/Modules/ContentSwap.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 | CORE-1.1 snapshot audit (inventory only, DOC-only). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v2.md | audit_doc | 2026-03-06 | CORE-1.2a snapshot audit (FilteredEventBus legacy isolation, behavior-preserving). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v3.md | audit_doc | 2026-03-06 | CORE-1.2b snapshot audit (DebugManagerConfig moved to Dev, behavior-preserving). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v4.md | audit_doc | 2026-03-06 | CORE-1.2b snapshot audit (DebugLogSettings classified B dev-only and moved to Dev). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v5.md | audit_doc | 2026-03-06 | CORE-1.2c snapshot audit (InjectableEventBus classified A canonical). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v6.md | audit_doc | 2026-03-06 | CORE-1.2d snapshot audit (FilteredEventBus classified C reserve). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v7.md | audit_doc | 2026-03-06 | CORE-1.2e snapshot audit (Core/Fsm stack classified C reserve). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v8.md | audit_doc | 2026-03-06 | CORE-1.2f snapshot audit (Preconditions classified C reserve). |
-| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v9.md | audit_doc | 2026-03-06 | CORE-1.2g snapshot audit (SceneServiceCleaner classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.1 snapshot audit (inventory only, DOC-only). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2a snapshot audit (FilteredEventBus legacy isolation, behavior-preserving). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2b snapshot audit (DebugManagerConfig moved to Dev, behavior-preserving). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2b snapshot audit (DebugLogSettings classified B dev-only and moved to Dev). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2c snapshot audit (InjectableEventBus classified A canonical). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2d snapshot audit (FilteredEventBus classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2e snapshot audit (Core/Fsm stack classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2f snapshot audit (Preconditions classified C reserve). |
+| Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2g snapshot audit (SceneServiceCleaner classified C reserve). |
 | Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md | audit_doc | 2026-03-06 | CORE-1.2h snapshot audit (EventBusUtil classified C reserve; editor hook already isolated). |
 | Docs/Reports/Audits/2026-03-06/Modules/Core-Gates-v1.md | audit_doc | 2026-03-06 | CORE-1.2i gates snapshot (Reserve vs Legacy governance and PR/CI checks). |
-| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v1.md | audit_doc | 2026-03-06 | RM-1.1 snapshot audit (RuntimeMode + Logging governance, DOC-only). |
-| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v2.md | audit_doc | 2026-03-06 | RM-1.2 snapshot audit (single-owner runtime logging policy + idempotence). |
-| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v3.md | audit_doc | 2026-03-06 | RM-1.3 snapshot audit (idempotence evidence hardening + DEV-only trigger). |
+| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md | audit_doc | 2026-03-06 | RM-1.1 snapshot audit (RuntimeMode + Logging governance, DOC-only). |
+| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md | audit_doc | 2026-03-06 | RM-1.2 snapshot audit (single-owner runtime logging policy + idempotence). |
+| Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md | audit_doc | 2026-03-06 | RM-1.3 snapshot audit (idempotence evidence hardening + DEV-only trigger). |
 | Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md | audit_doc | 2026-03-08 | RM-1.4 snapshot audit (policyKey contract stabilized via canonical builder). |
 | Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Guard-Governance-Audit-v1.md | audit_doc | 2026-03-08 | RM-1.5 snapshot audit (flags/toggles governance + shared build matrix contract). |
-| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v1.md | audit_doc | 2026-03-08 | IM-1.1 snapshot audit (InputModes inventory + simplification candidates, DOC-only). |
-| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v2.md | audit_doc | 2026-03-08 | IM-1.2a snapshot audit (InputModeBootstrap legacy isolation; canonical registration preserved). |
-| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v5.md | audit_doc | 2026-03-08 | IM-1.2d snapshot audit (single-writer InputModeCoordinator + request rail). |
+| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md | audit_doc | 2026-03-08 | IM-1.1 snapshot audit (InputModes inventory + simplification candidates, DOC-only). |
+| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md | audit_doc | 2026-03-08 | IM-1.2a snapshot audit (InputModeBootstrap legacy isolation; canonical registration preserved). |
+| Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md | audit_doc | 2026-03-08 | IM-1.2d snapshot audit (single-writer InputModeCoordinator + request rail). |
 | Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md | audit_doc | 2026-03-10 | IM-1.2e freeze snapshot (single-writer + request rail + gating evidence, DOC-only). |
 | Docs/Reports/Audits/2026-03-06/Modules/GRS-Pause-Resume-Exit-Audit-v1.md | audit_doc | 2026-03-10 | GRS-1.3a snapshot audit (pause/resume/exit overlap hardening, behavior-preserving). |
-| Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v1.md | audit_doc | 2026-03-10 | GRS-1.3b snapshot audit (ExitToMenu single-owner coordinator, behavior-preserving). |
+| Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v2.md | audit_doc | 2026-03-10 | GRS-1.3b snapshot audit (ExitToMenu single-owner coordinator, behavior-preserving). |
+
+| Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-2.md | audit_doc | 2026-03-10 | Batch cleanup standard aplicado em bridges legacy de Navigation (proof-first delete, behavior-preserving). |
+
 | Docs/Reports/Audits/2026-03-06/Modules/Core.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/DevQA.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
 | Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md | audit_doc | 2026-03-06 | Snapshot module audit (dated), not live module doc. |
@@ -139,7 +142,7 @@ Date: 2026-03-06
 ## Live vs Snapshot per module
 | Module | Live doc (`Docs/Modules`) | Snapshot audit (`Docs/Reports/Audits/2026-03-06/Modules`) | Status |
 |---|---|---|---|
-| Core | `Docs/Modules/Core.md` | `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v1.md` | Duplicated by design (live + snapshot) |
+| Core | `Docs/Modules/Core.md` | `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md` | Duplicated by design (live + snapshot) |
 | Infrastructure-Composition | - | `Docs/Reports/Audits/2026-03-06/Modules/Infrastructure-Composition.md` | Snapshot only |
 | Gates-Readiness-StateDependent | `Docs/Modules/Gates-Readiness-StateDependent.md` | `Docs/Reports/Audits/2026-03-06/Modules/Gates-Readiness-StateDependent.md` | Duplicated by design (live + snapshot) |
 | GameLoop | `Docs/Modules/GameLoop.md` | `Docs/Reports/Audits/2026-03-06/Modules/GameLoop.md` | Duplicated by design (live + snapshot) |
@@ -152,29 +155,29 @@ Date: 2026-03-06
 
 ## CS-1.1 Status
 - live doc: `Docs/Modules/ContentSwap.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v2.md`
 - status: Duplicated by design (live + snapshot)
 
 
 ## DQ-1.1 Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`
 - status: Duplicated by design (live + snapshot)
 
 
 ## DQ-1.2 Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v2.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`
 - status: Duplicated by design (live + snapshot)
 
 ## SF-1.2a Status
 - live doc: `Docs/Modules/SceneFlow.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v2.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v5.md`
 - status: Inventory only (no code changes)
 
 ## SF-1.2b Status
 - live doc: `Docs/Modules/SceneFlow.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v3.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v5.md`
 - status: Hardening minimo aplicado (behavior-preserving)
 
 ## GRS-1.2 Status
@@ -190,7 +193,7 @@ Date: 2026-03-06
 
 ## GL-1.2 Status
 - live doc: `Docs/Modules/GameLoop.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v2.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`
 - status: Cleanup m?nimo aplicado (behavior-preserving)
 - Release excludes DevQA by compile guards; DevBuild required for QA harness.
 
@@ -246,27 +249,27 @@ Date: 2026-03-06
 
 ## DQ-1.4 Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
 - status: Leak sweep executed; one embedded DevQA block extracted via partial (`TransitionStyleCatalogAsset`), remaining runtime suspects classified A/C.
 
 ## DQ-1.4.1 Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
 - status: `SceneRouteDefinitionAsset` leak extraido para parcial DevQA; runtime sem simbolos Editor.
 
 ## DQ-1.4.2 Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
 - status: `GameNavigationCatalogAsset` runtime leak de UnityEditor isolado em `Modules/Navigation/Dev/GameNavigationCatalogAsset.DevQA.cs`.
 
 ## DQ-1.4.3 Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
 - status: `SceneRouteResetPolicy` runtime leak isolado em `Modules/WorldLifecycle/Dev/SceneRouteResetPolicy.DevQA.cs`.
 
 ## DQ-1.4.4+ Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`
 - status: batch leak sweep aplicado em 6 runtimes com extracao para DevQA partials; global sweep fora de `Dev/Editor/Legacy` com 0 matches para tokens de Editor/DevQA.
 
 ## DQ-1.5 Status
@@ -276,7 +279,7 @@ Date: 2026-03-06
 
 ## DQ-1.6 Status
 - live doc: `Docs/Modules/DevQA.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v4.md`
 - status: Guard governance contract formalized; strict runtime/editor leak sweep remains clean; residual `NEWSCRIPTS_MODE` / `NEWSCRIPTS_BASELINE_ASSERTS` documented as deprecated.
 ## DQ-1.9 Status
 - live doc: `Docs/Modules/DevQA.md`
@@ -284,56 +287,56 @@ Date: 2026-03-06
 - status: RuntimeInitializeOnLoadMethod allowlist frozen to two runtime bootstrap files; PR review gate documented.
 ## CORE-1.1 Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: Inventory done (DOC-only); `CORE-1.2` in progress
 - notes: local leak sweep in `Core/**` found no Editor API leaks; top B/C candidates documented for code stage
 
 ## CORE-1.2a Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v2.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - `FilteredEventBus.Legacy.cs` isolated to `Core/Events/Legacy` (behavior-preserving)
 - notes: namespace/tipos intactos; zero callsites em `Infrastructure/**` e `Modules/**`; sem refs em assets
 
 ## CORE-1.2b Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v3.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - `DebugManagerConfig.cs` moved to `Dev/Core/Logging` (behavior-preserving)
 - notes: `DebugManagerConfig` moved to `Dev/Core/Logging`; `DebugLogSettings` was classified separately in v4
 
 ## CORE-1.2b DebugLogSettings Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v4.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - classified `B dev-only`; script and asset moved to `Dev/Core/Logging`
 - notes: no runtime loader, no scene/prefab refs, GUID scans clean outside the asset itself
 
 
 ## CORE-1.2c Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v5.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - `InjectableEventBus<T>` classified `A canonical`
 - notes: internal default backend of `EventBus<T>`; no asset refs and no Editor leak
 
 ## CORE-1.2d Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v6.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - `FilteredEventBus<TScope, TEvent>` classified `C reserve`
 - notes: no callsites in `Modules/**`/`Infrastructure/**`, no asset refs, retained as non-dead reserve surface
 
 ## CORE-1.2e Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v7.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - `Core/Fsm` stack classified `C reserve`
 - notes: no callsites in `Modules/**`/`Infrastructure/**`, no asset refs, may return to canonical during future migration
 
 ## CORE-1.2f Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v8.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - `Preconditions.cs` classified `C reserve`
 - notes: only internal Core usage found; no asset refs and no Editor leak
 
 ## CORE-1.2g Status
 - live doc: `Docs/Modules/Core.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v9.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`
 - status: DONE - `SceneServiceCleaner.cs` classified `C reserve`
 - notes: only internal Core usage found via `SceneServiceRegistry`; no asset refs and no Editor leak
 
@@ -353,21 +356,21 @@ Date: 2026-03-06
 
 ## RM-1.1 Status
 - live doc: `Docs/Modules/RuntimeMode-Logging.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md`
 - status: DONE - RuntimeMode + Logging governance audited from local workspace only (DOC-only)
 - notes: two runtime entrypoints, canonical runtime policy in `DebugUtility`/`RuntimeModeConfig`, and dev-only logging writer isolated in `Dev/Core/Logging`
 
 
 ## RM-1.2 Status
 - live doc: `Docs/Modules/RuntimeMode-Logging.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v2.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md`
 - status: DONE - runtime logging policy consolidated to single owner (`DebugUtility`) with idempotent apply
 - notes: two-phase apply preserved; `GlobalCompositionRoot.Entry` now delegates; no intentional baseline behavior change
 
 
 ## RM-1.3 Status
 - live doc: `Docs/Modules/RuntimeMode-Logging.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v3.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md`
 - status: DONE - idempotence hardening completed; DEV-only evidence trigger added
 - notes: runtime boot order unchanged; dedupe observability explicit; no Editor leak introduced outside `Dev/**`/`Editor/**`
 
@@ -390,13 +393,13 @@ Date: 2026-03-06
 
 ## IM-1.1 Status
 - live doc: `Docs/Modules/InputModes.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md`
 - status: DONE - canonical InputModes audit captured; IM-1.2 candidates documented
 - notes: DOC-only; no `.cs` changed; runtime-init hits in sweep remain only the shared allowlist
 
 ## IM-1.2a Status
 - live doc: `Docs/Modules/InputModes.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v2.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md`
 - status: DONE - InputModeBootstrap isolated to Legacy; canonical registration remains in GlobalCompositionRoot.InputModes
 - notes: contracts intact; no pipeline change; no new leak outside Legacy/Dev/Editor/QA
 
@@ -404,7 +407,7 @@ Date: 2026-03-06
 
 ## IM-1.2b Status
 - live doc: `Docs/Modules/InputModes.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v3.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md`
 - status: DONE - ActionMap defaults consolidated to InputModesDefaults; composition root is the canonical resolver
 - notes: no pipeline change; no public contract change; runtime/editor leak sweep remained clean
 
@@ -412,13 +415,13 @@ Date: 2026-03-06
 
 ## IM-1.2c Status
 - live doc: Docs/Modules/InputModes.md
-- snapshot: Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v4.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md
 - status: DONE - full inventory of direct IInputModeService writers/requestors captured; single-writer contract documented
 - notes: DOC-only; no .cs changed; next code step should introduce request rail before removing direct writers
 
 ## IM-1.2d Status
 - live doc: `Docs/Modules/InputModes.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v5.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md`
 - status: Single-writer InputModes applied via `InputModeCoordinator`; request rail migrated from direct writers (behavior-preserving target)
 
 ## IM-1.2e Status
@@ -435,7 +438,67 @@ Date: 2026-03-06
 
 ## GRS-1.3b Status
 - live docs: `Docs/Modules/Navigation.md`, `Docs/Modules/Gates-Readiness-StateDependent.md`
-- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v1.md`
+- snapshot: `Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v2.md`
 - status: DONE - `GameExitToMenuRequestedEvent` consolidated to `ExitToMenuCoordinator` as single owner (behavior-preserving)
 - notes: GameLoop bridge no longer consumes exit; legacy navigation bridge moved to `Modules/Navigation/Legacy/` and disabled; pipeline callsite preserved in place
+## GRS-1.3c Status
+- live doc: Docs/Modules/Navigation.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v2.md
+- status: ExitToMenu GC final aplicado; coordinator permanece owner unico, legacy bridge reduzido a compatibilidade de tipo e logs LEGACY removidos do runtime.
+
+## BATCH-CLEANUP-STD-1 Status
+- live doc: Docs/Modules/Navigation.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-2.md
+- status: DONE - dead legacy bridges removed after callsite + GUID proof; canonical reset/exit owners preserved.
+
+## BATCH-CLEANUP-STD-2 Status
+- live docs: Docs/Modules/InputModes.md, Docs/Modules/ContentSwap.md, Docs/Modules/GameLoop.md, Docs/Modules/Gameplay.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-2.md
+- status: DONE - orphan legacy/dev shims removed after callsite + GUID proof; canonical runtime rails preserved.
+
+## BATCH-CLEANUP-STD-3 Status
+- live doc: Docs/Modules/LevelFlow.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-3.md
+- status: DONE - LevelFlow legacy interfaces pruned after callsite + GUID proof; `LevelCatalogAsset` kept as the only legacy artifact still referenced outside Legacy.
+
+## BATCH-CLEANUP-STD-3B Status
+- live doc: Docs/Modules/LevelFlow.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-3B.md
+- status: DONE - BootstrapConfig dependency on legacy level catalog removed; LevelFlow legacy catalog stack deleted after code + asset proof.
+
+## BATCH-CLEANUP-STD-4 Status
+- live doc: Docs/Modules/LevelFlow.md
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-4.md
+- status: DONE - LevelCatalogAsset removal revalidated; BootstrapConfig placeholder + gates frozen from local workspace evidence.
+
+## BATCH-CLEANUP-STD-5 Status
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-5.md
+- status: DONE - empty `Modules/**/Legacy/**` trees pruned; no remaining legacy `.cs` files under module scope.
+
+## BATCH-CLEANUP-STD-6 Status
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-6.md
+- status: DONE - orphan Dev/Editor logging tooling removed after callsite + asset proof; runtime/editor governance remained intact.
+
+## DOC-RETENTION-1 Status
+- snapshot: Docs/Reports/Audits/2026-03-06/Modules/DOC-RETENTION-1.md
+- status: DONE - latest snapshots kept in Modules; previous versions moved to Archive with .meta preserved.
+
+## Archive Folders
+- BATCH-CLEANUP-STD: keep `Docs/Reports/Audits/2026-03-06/Modules/BATCH-CLEANUP-STD-2.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/BATCH-CLEANUP-STD/`
+- ContentSwap-Cleanup-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Cleanup-Audit-v2.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/ContentSwap-Cleanup-Audit/`
+- Core-Cleanup-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/Core-Cleanup-Audit-v10.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/Core-Cleanup-Audit/`
+- DevQA-Cleanup-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/DevQA-Cleanup-Audit/`
+- DevQA-Guard-Governance-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Guard-Governance-Audit-v4.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/DevQA-Guard-Governance-Audit/`
+- DevQA-LeakSweep-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/DevQA-LeakSweep-Audit-v2.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/DevQA-LeakSweep-Audit/`
+- GameLoop-Cleanup-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/GameLoop-Cleanup-Audit/`
+- GRS-ExitToMenu-Coordinator-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/GRS-ExitToMenu-Coordinator-Audit-v2.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/GRS-ExitToMenu-Coordinator-Audit/`
+- InputModes-Cleanup-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/InputModes-Cleanup-Audit-v6.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/InputModes-Cleanup-Audit/`
+- RuntimeMode-Logging-Cleanup-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/RuntimeMode-Logging-Cleanup-Audit-v4.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/RuntimeMode-Logging-Cleanup-Audit/`
+- SceneFlow-Cleanup-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Cleanup-Audit-v5.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/SceneFlow-Cleanup-Audit/`
+- SceneFlow-Signature-Dedupe-Audit: keep `Docs/Reports/Audits/2026-03-06/Modules/SceneFlow-Signature-Dedupe-Audit-v2.md`, archive `Docs/Reports/Audits/2026-03-06/Archive/SceneFlow-Signature-Dedupe-Audit/`
+
+
+
+
+
 

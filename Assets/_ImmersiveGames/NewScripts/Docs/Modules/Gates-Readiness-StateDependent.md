@@ -118,3 +118,11 @@
 - `PauseOverlayController` e `StateDependentService` deixaram de registrar listener direto de `ExitToMenu`; o trilho can?nico agora centraliza a orquestra??o e reduz overlap estrutural.
 - Nota: behavior-preserving; sem mudan?a de payload/contrato do evento e sem mudan?a de ordem do pipeline.
 
+
+## GRS-1.3c - ExitToMenu GC final
+
+- GameExitToMenuRequestedEvent agora tem observabilidade canonica apenas em Modules/Navigation/Runtime/ExitToMenuCoordinator.cs.
+- GameLoopCommandEventBridge e GamePauseGateBridge nao mantem mais logs LEGACY ou branches de observabilidade de ExitToMenu; pause/resume continuam intactos.
+- Modules/Navigation/Legacy/ExitToMenuNavigationBridge.cs permanece somente como compatibilidade de tipo, sem bus, sem comportamento e sem logs.
+- Invariante final: EventBus<GameExitToMenuRequestedEvent>.Register(...) aparece uma unica vez no workspace runtime, no coordinator.
+

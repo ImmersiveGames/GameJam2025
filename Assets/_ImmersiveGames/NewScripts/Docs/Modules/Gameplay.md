@@ -23,3 +23,9 @@ Fonte da verdade: workspace local.
 - Runtime: `Modules/Gameplay/Runtime/**` e bindings de infraestrutura usados por spawn/atores.
 - EditorOnly: `Modules/Gameplay/Legacy/Editor/**` (sem wiring canônico).
 - Não há bootstrap automático de Gameplay via `RuntimeInitializeOnLoadMethod` dentro de `Modules/Gameplay/**`.
+## BATCH-CLEANUP-STD-2
+- Removed in `BATCH-CLEANUP-STD-2`:
+  - `Modules/Gameplay/Legacy/Editor/RunRearm/RunRearmRequestDevDriver.cs`
+  - `Modules/Gameplay/Legacy/Editor/RunRearm/RunRearmKindDevEaterActor.cs`
+  - `Modules/Gameplay/Legacy/Editor/RunRearm/RunRearmDevStepLogger.cs`
+- Rationale: tooling legacy/editor sem callsite em `.cs` fora dos proprios arquivos e sem referencia por GUID em assets.

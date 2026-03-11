@@ -1,4 +1,4 @@
-# InputModes
+﻿# InputModes
 
 ## Status atual (Baseline 3.1)
 - Single-writer ativo: `Modules/InputModes/Runtime/InputModeCoordinator.cs`.
@@ -68,8 +68,12 @@ Anchors esperados no trilho canonico:
 - Regra de manutencao: nao duplicar defaults em services, bridges ou requestors.
 
 ## Legacy / Compat
-- `Modules/InputModes/Legacy/Bootstrap/InputModeBootstrap.cs` permanece como shim legado explicito/no-op com observabilidade `[OBS][LEGACY][InputModes]`.
+- `Modules/InputModes/Legacy/Bootstrap/InputModeBootstrap.cs` foi removido em `BATCH-CLEANUP-STD-2` por prova de tipo morto (callsite + GUID = 0).
 - O bootstrap automatico nao faz parte do trilho canonico e nao deve voltar sem nova evidencia.
 
 ## Freeze note (IM-1.2e)
 Este modulo esta em trilho canonico. Migracoes futuras devem adicionar requestors, nunca writers diretos de `IInputModeService`.
+## BATCH-CLEANUP-STD-2
+- Removed in `BATCH-CLEANUP-STD-2`: `Modules/InputModes/Legacy/Bootstrap/InputModeBootstrap.cs`.
+- Rationale: shim legacy/no-op sem callsite em `.cs` fora do proprio arquivo e sem referencia por GUID em assets.
+
