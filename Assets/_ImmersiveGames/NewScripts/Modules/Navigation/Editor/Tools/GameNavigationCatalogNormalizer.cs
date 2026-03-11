@@ -1,13 +1,14 @@
+﻿#if UNITY_EDITOR
 using System;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using UnityEditor;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
+namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.Tools
 {
     /// <summary>
-    /// Ferramenta de configuração manual (Editor-only) para normalizar os catálogos de navegação.
-    /// Não executa em runtime.
+    /// Ferramenta de configuracao manual (Editor-only) para normalizar os catalogos de navegacao.
+    /// Nao executa em runtime.
     /// </summary>
     public static class GameNavigationCatalogNormalizer
     {
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
         private const string StyleGameplay = "style.gameplay";
         private const string StyleGameplayNoFade = "style.gameplay.nofade";
 
-        [MenuItem("ImmersiveGames/NewScripts/Config/Normalize Navigation Catalogs", priority = 3000)]
+        [MenuItem("ImmersiveGames/NewScripts/QA/Navigation/Normalize Catalogs", priority = 1510)]
         public static void NormalizeNavigationCatalogs()
         {
             try
@@ -94,14 +95,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
                 FailFastEditor("[FATAL][Config] GameNavigationIntentCatalogAsset sem propriedade serializada 'core'.");
             }
 
-            // Direct-ref-first: usa routeRef já configurado nos intents canônicos obrigatórios.
             SceneRouteDefinitionAsset menuRouteRef = GetRequiredCoreRouteRefOrFail(core, IntentMenu);
             SceneRouteDefinitionAsset gameplayRouteRef = GetRequiredCoreRouteRefOrFail(core, IntentGameplay);
 
             EnsureCoreIntentEntry(core, IntentMenu, menuRouteRef, StyleFrontend, criticalRequired: true);
             EnsureCoreIntentEntry(core, IntentGameplay, gameplayRouteRef, StyleGameplay, criticalRequired: true);
-
-            // Extras opcionais: continuam mapeados por referência direta, reaproveitando refs canônicas já configuradas.
             EnsureCoreIntentEntry(core, IntentGameOverCanonical, menuRouteRef, StyleFrontend, criticalRequired: false);
             EnsureCoreIntentEntry(core, IntentDefeatAlias, menuRouteRef, StyleFrontend, criticalRequired: false);
             EnsureCoreIntentEntry(core, IntentVictory, menuRouteRef, StyleFrontend, criticalRequired: false);
@@ -207,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
 
             if (routeRef == null)
             {
-                FailFastEditor($"[FATAL][Config] Intent '{intentId}' sem routeRef para normalização direct-ref-first.");
+                FailFastEditor($"[FATAL][Config] Intent '{intentId}' sem routeRef para normalizacao direct-ref-first.");
             }
 
             serializedRouteRef.objectReferenceValue = routeRef;
@@ -224,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
             if (index < 0)
             {
                 FailFastEditor(
-                    $"[FATAL][Config] Intent core obrigatória '{intentId}' não encontrada no bloco core do GameNavigationIntentCatalogAsset. Configure routeRef direto antes de normalizar.");
+                    $"[FATAL][Config] Intent core obrigatoria '{intentId}' nao encontrada no bloco core do GameNavigationIntentCatalogAsset. Configure routeRef direto antes de normalizar.");
             }
 
             SerializedProperty entry = coreList.GetArrayElementAtIndex(index);
@@ -233,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
             if (routeAsset == null)
             {
                 FailFastEditor(
-                    $"[FATAL][Config] Intent core obrigatória '{intentId}' sem routeRef direto. Configure routeRef no GameNavigationIntentCatalogAsset antes de normalizar.");
+                    $"[FATAL][Config] Intent core obrigatoria '{intentId}' sem routeRef direto. Configure routeRef no GameNavigationIntentCatalogAsset antes de normalizar.");
             }
 
             return routeAsset;
@@ -289,3 +287,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Dev.Editor
         }
     }
 }
+#endif

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             "Assets/Resources/NewScriptsBootstrapConfig.asset"
         };
 
-        [MenuItem("ImmersiveGames/NewScripts/Config/Reserialize SceneFlow Assets (DataCleanup v1)", priority = 3020)]
+        [MenuItem("ImmersiveGames/NewScripts/QA/SceneFlow/Reserialize Assets (DataCleanup v1)", priority = 1420)]
         public static void ReserializeDataCleanupV1Assets()
         {
             HashSet<string> allPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -273,3 +273,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         }
     }
 }
+
+
+

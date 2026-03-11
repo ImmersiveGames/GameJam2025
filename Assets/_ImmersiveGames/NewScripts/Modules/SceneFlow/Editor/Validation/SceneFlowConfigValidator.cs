@@ -26,12 +26,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         private const string RuntimeModeConfigPath = "Assets/Resources/RuntimeModeConfig.asset";
         private const string BootstrapConfigPath = "Assets/Resources/NewScriptsBootstrapConfig.asset";
 
-        private const string ReportPath = "Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md";
+        private const string ReportPath = "Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport.md";
 
         private static readonly NavigationIntentId MenuIntentId = NavigationIntentId.FromName("to-menu");
         private static readonly NavigationIntentId GameplayIntentId = NavigationIntentId.FromName("to-gameplay");
 
-        [MenuItem("ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)", priority = 3010)]
+        [MenuItem("ImmersiveGames/NewScripts/Tools/SceneFlow/Validate Config", priority = 1410)]
         public static void ValidateDataCleanupV1()
         {
             ValidationContext context = new ValidationContext();
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
 
             if (asset == null)
             {
-                context.AddFatal($"Asset canônico não encontrado em path obrigatório: '{path}'.");
+                context.AddFatal($"Asset canÃ´nico nÃ£o encontrado em path obrigatÃ³rio: '{path}'.");
             }
 
             return asset;
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             if (foundEntry == null)
             {
                 record.Status = "FATAL";
-                context.AddFatal($"Intent core obrigatória ausente no GameNavigationIntentCatalogAsset: '{targetIntentId.Value}'.");
+                context.AddFatal($"Intent core obrigatÃ³ria ausente no GameNavigationIntentCatalogAsset: '{targetIntentId.Value}'.");
                 context.CoreMandatoryIntents.Add(record);
                 return;
             }
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             {
                 record.Status = "FATAL";
                 context.AddFatal(
-                    $"Intent core '{targetIntentId.Value}' inválida: routeRef obrigatório com RouteId válido.");
+                    $"Intent core '{targetIntentId.Value}' invÃ¡lida: routeRef obrigatÃ³rio com RouteId vÃ¡lido.");
             }
             else
             {
@@ -237,7 +237,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             if (!routeRefValid || !styleValid || !routeIdValid)
             {
                 context.AddFatal(
-                    $"Core slot '{slotLabel}' inválido: exige routeRef != null, routeRef.RouteId válido e styleId válido.");
+                    $"Core slot '{slotLabel}' invÃ¡lido: exige routeRef != null, routeRef.RouteId vÃ¡lido e styleId vÃ¡lido.");
                 record.Status = "FATAL";
             }
             else
@@ -275,7 +275,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             SerializedProperty routeDefinitions = serializedObject.FindProperty("routeDefinitions");
             if (routeDefinitions == null || !routeDefinitions.isArray)
             {
-                context.AddFatal("SceneRouteCatalogAsset sem coleção 'routeDefinitions'.");
+                context.AddFatal("SceneRouteCatalogAsset sem coleÃ§Ã£o 'routeDefinitions'.");
                 return;
             }
 
@@ -343,7 +343,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
 
             if (!routeId.IsValid)
             {
-                context.AddFatal($"Intent '{intentId}' sem routeId válido para checagem no SceneRouteCatalog.");
+                context.AddFatal($"Intent '{intentId}' sem routeId vÃ¡lido para checagem no SceneRouteCatalog.");
                 return;
             }
 
@@ -360,7 +360,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
 
             if (!exists)
             {
-                context.AddFatal($"SceneRouteCatalogAsset não possui rota para intent '{intentId}' (routeId='{routeId}').");
+                context.AddFatal($"SceneRouteCatalogAsset nÃ£o possui rota para intent '{intentId}' (routeId='{routeId}').");
             }
         }
 
@@ -393,14 +393,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             SerializedProperty slotProp = navSerialized.FindProperty(slotPropertyName);
             if (slotProp == null)
             {
-                context.AddFatal($"Slot core inexistente para validação de style: '{slotPropertyName}'.");
+                context.AddFatal($"Slot core inexistente para validaÃ§Ã£o de style: '{slotPropertyName}'.");
                 return;
             }
 
             TransitionStyleId styleId = TransitionStyleId.FromName(ReadTypedIdValue(slotProp.FindPropertyRelative("styleId")));
             if (!styleId.IsValid)
             {
-                context.AddFatal($"Slot core '{slotLabel}' sem styleId válido.");
+                context.AddFatal($"Slot core '{slotLabel}' sem styleId vÃ¡lido.");
                 return;
             }
 
@@ -423,24 +423,24 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
 
             if (!styleFound)
             {
-                context.AddFatal($"TransitionStyleCatalogAsset não possui styleId usado no slot '{slotLabel}': '{styleId}'.");
+                context.AddFatal($"TransitionStyleCatalogAsset nÃ£o possui styleId usado no slot '{slotLabel}': '{styleId}'.");
                 return;
             }
 
             if (style.Profile == null)
             {
-                context.AddFatal($"styleId '{styleId}' sem transitionProfile (profileRef obrigatório).");
+                context.AddFatal($"styleId '{styleId}' sem transitionProfile (profileRef obrigatÃ³rio).");
             }
 
             if (!style.ProfileId.IsValid)
             {
-                context.AddFatal($"styleId '{styleId}' sem profileId válido.");
+                context.AddFatal($"styleId '{styleId}' sem profileId vÃ¡lido.");
             }
 
             if (style.UseFade && !HasFadeSceneKeyConfigured(bootstrapConfig))
             {
                 context.AddWarn(
-                    $"Slot '{slotLabel}' usa styleId '{styleId}' com UseFade=true, mas bootstrapConfig.fadeSceneKey não está configurado.");
+                    $"Slot '{slotLabel}' usa styleId '{styleId}' com UseFade=true, mas bootstrapConfig.fadeSceneKey nÃ£o estÃ¡ configurado.");
             }
 
             if (profileCatalog != null && style.ProfileId.IsValid)
@@ -448,7 +448,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                 if (!profileCatalog.TryGetProfile(style.ProfileId, out SceneTransitionProfile profileFromCatalog) || profileFromCatalog == null)
                 {
                     context.AddFatal(
-                        $"styleId '{styleId}' possui profileId '{style.ProfileId}' não resolvido no SceneTransitionProfileCatalogAsset.");
+                        $"styleId '{styleId}' possui profileId '{style.ProfileId}' nÃ£o resolvido no SceneTransitionProfileCatalogAsset.");
                 }
             }
         }
@@ -467,7 +467,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             SerializedProperty stylesProp = styleSerialized.FindProperty("styles");
             if (stylesProp == null || !stylesProp.isArray)
             {
-                context.AddFatal("TransitionStyleCatalogAsset sem coleção 'styles' para validação global.");
+                context.AddFatal("TransitionStyleCatalogAsset sem coleÃ§Ã£o 'styles' para validaÃ§Ã£o global.");
                 return;
             }
 
@@ -497,7 +497,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
 
                 if (string.IsNullOrWhiteSpace(styleIdValue))
                 {
-                    context.AddFatal($"TransitionStyleCatalog.styles[{i}] com styleId inválido.");
+                    context.AddFatal($"TransitionStyleCatalog.styles[{i}] com styleId invÃ¡lido.");
                     hasFatal = true;
                 }
                 else
@@ -515,7 +515,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
 
                 if (string.IsNullOrWhiteSpace(profileIdValue))
                 {
-                    context.AddFatal($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' com profileId inválido.");
+                    context.AddFatal($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' com profileId invÃ¡lido.");
                     hasFatal = true;
                 }
 
@@ -530,12 +530,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                     bool catalogResolved = profileCatalog.TryGetProfile(SceneFlowProfileId.FromName(profileIdValue), out SceneTransitionProfile profileFromCatalog);
                     if (!catalogResolved || profileFromCatalog == null)
                     {
-                        context.AddFatal($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' com profileId '{profileIdValue}' não resolvido no SceneTransitionProfileCatalogAsset.");
+                        context.AddFatal($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' com profileId '{profileIdValue}' nÃ£o resolvido no SceneTransitionProfileCatalogAsset.");
                         hasFatal = true;
                     }
                     else if (profileRef != null && profileFromCatalog != profileRef)
                     {
-                        context.AddWarn($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' possui divergência entre profileId '{profileIdValue}' e profileRef '{profileRef.name}'.");
+                        context.AddWarn($"TransitionStyleCatalog.styles[{i}] styleId '{record.StyleId}' possui divergÃªncia entre profileId '{profileIdValue}' e profileRef '{profileRef.name}'.");
                         hasWarn = true;
                     }
                 }
@@ -571,13 +571,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         private static string BuildReport(ValidationContext context)
         {
             StringBuilder sb = new StringBuilder(2048);
-            sb.AppendLine("# SceneFlow Config Validation Report (DataCleanup v1)");
+            sb.AppendLine("# SceneFlow Config Validation Report");
             sb.AppendLine();
             sb.AppendLine($"- Timestamp: {DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture)}");
             sb.AppendLine($"- Unity version: {Application.unityVersion}");
             sb.AppendLine();
 
-            sb.AppendLine("## Assets canônicos");
+            sb.AppendLine("## Assets canÃ´nicos");
             sb.AppendLine();
             sb.AppendLine("| Path | Status |");
             sb.AppendLine("|---|---|");
@@ -762,5 +762,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         }
     }
 }
+
+
 
 

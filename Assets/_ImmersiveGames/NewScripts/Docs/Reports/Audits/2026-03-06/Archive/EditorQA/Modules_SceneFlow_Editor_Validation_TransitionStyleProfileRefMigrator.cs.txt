@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         private const string TransitionStyleCatalogPath = "Assets/Resources/Navigation/TransitionStyleCatalog.asset";
         private const string TransitionProfileCatalogPath = "Assets/Resources/SceneFlow/SceneTransitionProfileCatalog.asset";
 
-        [MenuItem("ImmersiveGames/NewScripts/Config/Migrate TransitionStyles ProfileRef (DataCleanup v1)", priority = 3030)]
+        [MenuItem("ImmersiveGames/NewScripts/QA/SceneFlow/Migrate TransitionStyle ProfileRefs (DataCleanup v1)", priority = 1430)]
         public static void Migrate()
         {
             TransitionStyleCatalogAsset styleCatalog = AssetDatabase.LoadAssetAtPath<TransitionStyleCatalogAsset>(TransitionStyleCatalogPath);
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                     continue;
                 }
 
-                // Mantém compatibilidade com assets legados sem mexer no runtime.
+                // MantÃ©m compatibilidade com assets legados sem mexer no runtime.
                 writableProfileRef.objectReferenceValue = profile;
                 filledCount++;
             }
@@ -155,3 +155,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         }
     }
 }
+
+
+

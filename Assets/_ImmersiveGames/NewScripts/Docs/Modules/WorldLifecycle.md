@@ -42,7 +42,7 @@ No estado atual, o SceneFlow publica `SceneTransitionScenesReadyEvent`, o `World
 
 ## Referências
 
-- Audit detalhado: `Docs/Reports/Audits/2026-03-06/WorldLifecycle-Cleanup-Audit-v1.md`
+- Audit detalhado: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`
 
 ## WL-1.2 (publishers V1/V2 consolidation, behavior-preserving)
 
@@ -57,3 +57,4 @@ No estado atual, o SceneFlow publica `SceneTransitionScenesReadyEvent`, o `World
   - `WorldResetCommands`: owner V2 commands/telemetria.
 
 Evidência detalhada: `Docs/Reports/Audits/2026-03-06/Modules/WorldLifecycle-Cleanup-Audit-v2.md`.
+

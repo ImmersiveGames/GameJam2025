@@ -42,11 +42,11 @@
 
 - `Bindings/Bootstrap/GameStartRequestEmitter.cs` (MonoBehaviour + RuntimeInitializeOnLoadMethod)
 - `Bindings/Inputs/GamePauseHotkeyController.cs` (MonoBehaviour, possivel binding de cena)
-- `IntroStage/Dev/Editor/IntroStageDevTools.cs` (editor/dev)
+- `IntroStage/Editor/IntroStageQaMenuItems.cs` (editor-only)
 
 ## Status GL-1.2 (Live, 2026-03-06)
 - Triagem A/B/C atualizada com evidência estática (runtime canônico vs compat/legacy vs dev/editor).
-- `IntroStageDevTools` ficou explicitamente isolado em `#if UNITY_EDITOR` (arquivo `Modules/GameLoop/IntroStage/Dev/Editor/IntroStageDevTools.cs`).
+- `IntroStageQaMenuItems` consolidou os antigos tools/menu items de IntroStage em `Modules/GameLoop/IntroStage/Editor/IntroStageQaMenuItems.cs` com menu canonico `ImmersiveGames/NewScripts/QA/GameLoop/IntroStage/...`.
 - `GameStartRequestEmitter` mantido como runtime canonico (sem mudanca funcional); `GamePauseHotkeyController` foi removido em `BATCH-CLEANUP-STD-2` apos prova de tipo morto.
 - Restart canônico preservado: `GameCommands -> GameResetRequestedEvent -> MacroRestartCoordinator`.
 - Snapshot desta etapa: `Docs/Reports/Audits/2026-03-06/Modules/GameLoop-Cleanup-Audit-v3.md`.
@@ -73,5 +73,6 @@
 ## BATCH-CLEANUP-STD-2
 - Removed in `BATCH-CLEANUP-STD-2`: `Modules/GameLoop/Legacy/Bindings/Inputs/GamePauseHotkeyController.cs`.
 - Rationale: binding legacy sem callsite em `.cs` fora do proprio arquivo e sem referencia por GUID em assets.
+
 
 

@@ -7,9 +7,6 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
 {
     public sealed class ContentSwapDevContextMenu : MonoBehaviour
@@ -42,25 +39,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
         {
             DumpContentSwapContext();
         }
-
-        // ----------------------------
-        // Editor convenience (MenuItem)
-        // ----------------------------
-#if UNITY_EDITOR
-        [MenuItem("Tools/NewScripts/QA/ContentSwap/Select QA_ContentSwap Object", priority = 10)]
-        private static void SelectQaObject()
-        {
-            var obj = GameObject.Find("QA_ContentSwap");
-            if (obj != null)
-            {
-                Selection.activeObject = obj;
-            }
-            else
-            {
-                DebugUtility.Log(typeof(ContentSwapDevContextMenu), "[QA][ContentSwap] QA_ContentSwap nÃ£o encontrado no Hierarchy (Play Mode).", ColorWarn);
-            }
-        }
-#endif
 
         // ----------------------------
         // Implementations
@@ -144,5 +122,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
 }
 
 #endif
+
 
 

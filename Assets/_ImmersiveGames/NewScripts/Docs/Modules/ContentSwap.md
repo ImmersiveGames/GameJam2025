@@ -21,7 +21,7 @@
 
 ## Manual confirmation required
 - `Modules/ContentSwap/Legacy/Dev/Runtime/ContentSwapDevBootstrapper.cs` foi removido em `BATCH-CLEANUP-STD-2` por prova de tipo morto (callsite + GUID = 0).
-- `Modules/ContentSwap/Dev/Bindings/ContentSwapDevContextMenu.cs`: `#if UNITY_EDITOR`; wiring real depende de contexto de editor/play mode.
+- `Modules/ContentSwap/Dev/Bindings/ContentSwapDevContextMenu.cs`: ContextMenus DevBuild permanecem no arquivo dev; o MenuItem editor-only foi movido para `Modules/ContentSwap/Editor/ContentSwapQaMenuItems.cs`.
 ## CS-1.2 (ownership/publish consolidation, behavior-preserving)
 
 ### Ownership final
@@ -46,4 +46,5 @@ EvidÃªncia detalhada: `Docs/Reports/Audits/2026-03-06/Modules/ContentSwap-Clea
 ## BATCH-CLEANUP-STD-2
 - Removed in `BATCH-CLEANUP-STD-2`: `Modules/ContentSwap/Legacy/Dev/Runtime/ContentSwapDevBootstrapper.cs`.
 - Rationale: bootstrap legacy de DevQA sem callsite em `.cs` fora do proprio arquivo e sem referencia por GUID em assets.
+
 

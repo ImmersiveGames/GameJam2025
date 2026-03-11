@@ -1,15 +1,91 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEditor;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdDrawers
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
 {
     /// <summary>
-    /// Drawer base para IDs tipados com dropdown + sinalização de inconsistência.
+    /// Contrato generico para providers de IDs tipados no editor.
+    /// </summary>
+    public interface ISceneFlowIdSourceProvider<TId>
+    {
+        SceneFlowIdSourceResult Collect();
+    }
+
+    /// <summary>
+    /// Resultado normalizado de coleta de IDs para drawers.
+    /// </summary>
+    public readonly struct SceneFlowIdSourceResult
+    {
+        public SceneFlowIdSourceResult(IReadOnlyList<string> values, IReadOnlyList<string> duplicateValues)
+        {
+            Values = values;
+            DuplicateValues = duplicateValues;
+        }
+
+        public IReadOnlyList<string> Values { get; }
+        public IReadOnlyList<string> DuplicateValues { get; }
+    }
+
+    internal static class SceneFlowIdSourceUtility
+    {
+        public static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : value.Trim().ToLowerInvariant();
+        }
+
+        public static SceneFlowIdSourceResult BuildResult(HashSet<string> values, HashSet<string> duplicates)
+        {
+            var sortedValues = new List<string>(values);
+            sortedValues.Sort(StringComparer.Ordinal);
+
+            var sortedDuplicates = new List<string>(duplicates);
+            sortedDuplicates.Sort(StringComparer.Ordinal);
+
+            return new SceneFlowIdSourceResult(sortedValues, sortedDuplicates);
+        }
+
+        public static bool AddValue(HashSet<string> values, string rawValue)
+        {
+            string normalized = Normalize(rawValue);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return false;
+            }
+
+            return values.Add(normalized);
+        }
+
+        public static bool AddAndTrackDuplicate(HashSet<string> values, HashSet<string> duplicates, string rawValue)
+        {
+            string normalized = Normalize(rawValue);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                return false;
+            }
+
+            if (!values.Add(normalized))
+            {
+                duplicates.Add(normalized);
+                return false;
+            }
+
+            return true;
+        }
+    }
+}
+
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdDrawers
+{
+    using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
+
+    /// <summary>
+    /// Drawer base para IDs tipados com dropdown + sinalizacao de inconsistencias.
     /// </summary>
     public abstract class SceneFlowTypedIdDrawerBase : PropertyDrawer
     {
@@ -163,7 +239,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdDrawers
         private static string BuildInvalidMessage(string currentNormalized)
         {
             string currentLabel = string.IsNullOrEmpty(currentNormalized) ? "<empty>" : currentNormalized;
-            return $"ID '{currentLabel}' não existe na fonte. Ajuste pelo dropdown.";
+            return $"ID '{currentLabel}' nao existe na fonte. Ajuste pelo dropdown.";
         }
 
         private static string BuildDuplicateMessage(IReadOnlyList<string> duplicateValues)

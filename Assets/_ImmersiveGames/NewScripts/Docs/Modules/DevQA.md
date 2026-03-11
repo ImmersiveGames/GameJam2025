@@ -172,3 +172,4 @@ public sealed partial class PauseOverlayController
 - Outside `Dev/Editor/Legacy/QA`, the only allowed files are `Core/Logging/DebugUtility.cs` and `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`.
 - Any expansion of that allowlist now requires a new audit plus explicit evidence and decision.
 
+
