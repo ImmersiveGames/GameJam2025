@@ -7,6 +7,13 @@
 - `EDITOR-QA-3`: DONE
 - `EDITOR-QA-4`: DONE
 - `EDITOR-QA-5`: DONE
+- `EDITOR-QA-6a`: DONE
+- `EDITOR-QA-6b`: DONE
+- `EDITOR-QA-6c`: DONE
+- `EDITOR-QA-7`: DONE
+- `EDITOR-QA-8`: DONE
+- `EDITOR-QA-9`: DONE
+- `QA-1`: DONE
 - Snapshot root: `Docs/Reports/Audits/2026-03-06/Modules/`
 - History root: `Docs/Reports/Audits/2026-03-06/Archive/`
 - Scope: docs-only retention cleanup under `Docs/**`
@@ -21,6 +28,13 @@
 - Editor/QA prune verification: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-3.md`
 - Editor/QA consolidation: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-4.md`
 - Editor/QA unblock A2 + prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-5.md`
+- Editor/QA empty-folder prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-6a.md`
+- Editor/QA consolidate + prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-6b.md`
+- Editor/QA final empty-folder prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-6c.md`
+- Editor/QA final redundant-tool prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-7.md`
+- Editor/QA CS0246 fix snapshot: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-8.md`
+- Editor/QA final sweep + evidence freeze: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-9.md`
+- QA prune + canonicalizacao snapshot: `Docs/Reports/Audits/2026-03-06/Modules/QA-1.md`
 
 ## Editor/QA
 - `EDITOR-QA-1`: inventory + prune + canonical menu audit completed inside the strict editable scope.
@@ -39,6 +53,13 @@
 - `EDITOR-QA-3` re-verified the canonical replacements, kept the same safe deletions, and re-ran uniqueness + gates with PASS/PASS/PASS.
 - `EDITOR-QA-4` completed the remaining naming consolidation in SceneFlow editor tooling and confirmed no new safe delete/move candidate exists in the current editor-only scope.
 - `EDITOR-QA-5` confirmed `A2` was already clear, then merged the SceneFlow editor ID-source support types into the drawer base and removed three standalone editor-only `.cs` files.
+- `EDITOR-QA-6a` removed empty legacy/editor subfolders and orphan folder metas, without changing any `.cs`.
+- `EDITOR-QA-6b` merged four editor-only provider files into their owning property drawers, deleted the standalone `.cs` files, and pruned the emptied `IdSources/` folders.
+- `EDITOR-QA-6c` removed the last three empty legacy folders plus their folder metas, with no `.cs` changes.
+- `EDITOR-QA-7` removed the orphaned `SceneFlowTypedIdDrawerBase` after migrating its shared editor helpers into the active drawer cluster.
+- `EDITOR-QA-8` restored the shared SceneFlow editor IdSource contracts inside the canonical TransitionStyle drawer file and aligned provider accessibility to resolve CS0246 cleanly.
+- `EDITOR-QA-9` froze final editor-only evidence, confirmed the shared SceneFlow drawer contracts stay unique, and kept the remaining editor partial bridges because A1 still fails for safe prune.
+- `QA-1` re-inventoried every canonical editor tool under `NewScripts/**`, confirmed no safe A1+A2+A3 prune remained, and kept the existing menu owners without introducing leaks.
 
 ## Families
 | Family | Latest | History |

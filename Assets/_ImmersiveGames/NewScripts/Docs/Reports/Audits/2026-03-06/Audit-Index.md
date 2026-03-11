@@ -12,6 +12,13 @@
 - `EDITOR-QA-3`: DONE
 - `EDITOR-QA-4`: DONE
 - `EDITOR-QA-5`: DONE
+- `EDITOR-QA-6a`: DONE
+- `EDITOR-QA-6b`: DONE
+- `EDITOR-QA-6c`: DONE
+- `EDITOR-QA-7`: DONE
+- `EDITOR-QA-8`: DONE
+- `EDITOR-QA-9`: DONE
+- `QA-1`: DONE
 - `latestDateDir`: `2026-03-06`
 - Accidental root duplicates normalized into `Modules/` or `Archive/`
 
@@ -23,6 +30,13 @@
 - Editor/QA prune verification: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-3.md`
 - Editor/QA consolidation: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-4.md`
 - Editor/QA unblock A2 + prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-5.md`
+- Editor/QA empty-folder prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-6a.md`
+- Editor/QA consolidate + prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-6b.md`
+- Editor/QA final empty-folder prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-6c.md`
+- Editor/QA final redundant-tool prune: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-7.md`
+- Editor/QA CS0246 fix snapshot: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-8.md`
+- Editor/QA final sweep + evidence freeze: `Docs/Reports/Audits/2026-03-06/Modules/EDITOR-QA-9.md`
+- QA prune + canonicalizacao snapshot: `Docs/Reports/Audits/2026-03-06/Modules/QA-1.md`
 - Archive root: `Docs/Reports/Audits/2026-03-06/Archive/`
 
 ## Latest per family

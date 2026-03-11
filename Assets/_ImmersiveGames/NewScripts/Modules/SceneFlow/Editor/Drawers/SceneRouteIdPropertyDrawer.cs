@@ -1,12 +1,122 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEditor;
 using UnityEngine;
 
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
+{
+    /// <summary>
+    /// Coleta SceneRouteId a partir de RouteDefinitionAsset e SceneRouteCatalogAsset.
+    /// </summary>
+    internal sealed class SceneRouteIdSourceProvider : ISceneFlowIdSourceProvider<SceneRouteId>
+    {
+        public SceneFlowIdSourceResult Collect()
+        {
+            var allValues = new HashSet<string>();
+            var duplicates = new HashSet<string>();
+
+            CollectFromRouteDefinitionAssets(allValues, duplicates);
+            CollectFromRouteCatalogAssets(allValues, duplicates);
+
+            return SceneFlowIdSourceUtility.BuildResult(allValues, duplicates);
+        }
+
+        private static void CollectFromRouteDefinitionAssets(HashSet<string> allValues, HashSet<string> duplicates)
+        {
+            var routeDefinitionIds = new HashSet<string>();
+
+            string[] guids = AssetDatabase.FindAssets("t:SceneRouteDefinitionAsset");
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var asset = AssetDatabase.LoadAssetAtPath<SceneRouteDefinitionAsset>(path);
+                if (asset == null)
+                {
+                    continue;
+                }
+
+                string routeId = asset.RouteId.Value;
+                if (!SceneFlowIdSourceUtility.AddAndTrackDuplicate(routeDefinitionIds, duplicates, routeId))
+                {
+                    continue;
+                }
+
+                SceneFlowIdSourceUtility.AddValue(allValues, routeId);
+            }
+        }
+
+        private static void CollectFromRouteCatalogAssets(HashSet<string> allValues, HashSet<string> duplicates)
+        {
+            string[] guids = AssetDatabase.FindAssets("t:SceneRouteCatalogAsset");
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var catalog = AssetDatabase.LoadAssetAtPath<SceneRouteCatalogAsset>(path);
+                if (catalog == null)
+                {
+                    continue;
+                }
+
+                var serializedObject = new SerializedObject(catalog);
+                ReadRouteDefinitionReferences(serializedObject, allValues);
+                ReadInlineRoutes(serializedObject, allValues, duplicates);
+            }
+        }
+
+        private static void ReadRouteDefinitionReferences(SerializedObject serializedObject, HashSet<string> allValues)
+        {
+            SerializedProperty definitions = serializedObject.FindProperty("routeDefinitions");
+            if (definitions == null || !definitions.isArray)
+            {
+                return;
+            }
+
+            for (int i = 0; i < definitions.arraySize; i++)
+            {
+                SerializedProperty element = definitions.GetArrayElementAtIndex(i);
+                if (element.objectReferenceValue is not SceneRouteDefinitionAsset routeAsset)
+                {
+                    continue;
+                }
+
+                SceneFlowIdSourceUtility.AddValue(allValues, routeAsset.RouteId.Value);
+            }
+        }
+
+        private static void ReadInlineRoutes(SerializedObject serializedObject, HashSet<string> allValues, HashSet<string> duplicates)
+        {
+            SerializedProperty routes = serializedObject.FindProperty("routes");
+            if (routes == null || !routes.isArray)
+            {
+                return;
+            }
+
+            var inlineRouteIds = new HashSet<string>();
+
+            for (int i = 0; i < routes.arraySize; i++)
+            {
+                SerializedProperty routeEntry = routes.GetArrayElementAtIndex(i);
+                SerializedProperty routeId = routeEntry.FindPropertyRelative("routeId");
+                SerializedProperty raw = routeId?.FindPropertyRelative("_value");
+                if (raw == null)
+                {
+                    continue;
+                }
+
+                string value = raw.stringValue;
+                SceneFlowIdSourceUtility.AddAndTrackDuplicate(inlineRouteIds, duplicates, value);
+                SceneFlowIdSourceUtility.AddValue(allValues, value);
+            }
+        }
+    }
+}
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 {
+    using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
+
     [CustomPropertyDrawer(typeof(SceneRouteId))]
     public sealed class SceneRouteIdPropertyDrawer : PropertyDrawer
     {
@@ -187,7 +297,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
                 }
                 catch (Exception exception)
                 {
-                    // Comentário: falha explícita no Editor, sem quebrar o Inspector.
                     _snapshot = new SourceSnapshot(
                         EmptyValues,
                         $"Failed to load SceneRouteId options. Check SceneRouteCatalog/Route assets. ({exception.GetType().Name})");
@@ -213,10 +322,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
                 _isDirty = true;
             }
         }
-
-        // Smoke test manual (Editor):
-        // 1) Selecione um MonoBehaviour/ScriptableObject com campo SceneRouteId serializado.
-        // 2) Confirme que o campo aparece como dropdown com opção (None) + IDs do catálogo.
-        // 3) Force um valor inválido no YAML e reabra o Inspector para validar "MISSING: <id>" + HelpBox warning.
     }
 }

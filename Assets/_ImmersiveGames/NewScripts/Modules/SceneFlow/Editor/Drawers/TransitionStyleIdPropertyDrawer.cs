@@ -1,12 +1,160 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEditor;
 using UnityEngine;
 
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
+{
+    /// <summary>
+    /// Coleta TransitionStyleId a partir de TransitionStyleCatalogAsset.styles.
+    /// </summary>
+    internal sealed class TransitionStyleIdSourceProvider : ISceneFlowIdSourceProvider<TransitionStyleId>
+    {
+        public SceneFlowIdSourceResult Collect()
+        {
+            var values = new HashSet<string>();
+            var duplicates = new HashSet<string>();
+
+            string[] guids = AssetDatabase.FindAssets("t:TransitionStyleCatalogAsset");
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var catalog = AssetDatabase.LoadAssetAtPath<TransitionStyleCatalogAsset>(path);
+                if (catalog == null)
+                {
+                    continue;
+                }
+
+                var serializedObject = new SerializedObject(catalog);
+                SerializedProperty styles = serializedObject.FindProperty("styles");
+                if (styles == null || !styles.isArray)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < styles.arraySize; j++)
+                {
+                    SerializedProperty styleEntry = styles.GetArrayElementAtIndex(j);
+                    SerializedProperty styleId = styleEntry.FindPropertyRelative("styleId");
+                    SerializedProperty raw = styleId?.FindPropertyRelative("_value");
+                    if (raw == null)
+                    {
+                        continue;
+                    }
+
+                    SceneFlowIdSourceUtility.AddAndTrackDuplicate(values, duplicates, raw.stringValue);
+                }
+            }
+
+            return SceneFlowIdSourceUtility.BuildResult(values, duplicates);
+        }
+    }
+}
+
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
+{
+    // -----------------------------------------------------------------------------
+    // Shared IdSource contracts (Editor-only)
+    // Comentario (PT-BR): estes tipos foram removidos durante o cleanup e ainda sao
+    // referenciados pelos drawers. Mantemos aqui como "single source of truth" para
+    // evitar duplicacao e restaurar compilacao.
+    // -----------------------------------------------------------------------------
+
+    internal interface ISceneFlowIdSourceProvider<TId>
+    {
+        SceneFlowIdSourceResult Collect();
+    }
+
+    internal readonly struct SceneFlowIdSourceResult
+    {
+        public IReadOnlyList<string> Values { get; }
+        public IReadOnlyList<string> DuplicateValues { get; }
+
+        public SceneFlowIdSourceResult(IReadOnlyList<string> values, IReadOnlyList<string> duplicateValues)
+        {
+            Values = values ?? Array.Empty<string>();
+            DuplicateValues = duplicateValues ?? Array.Empty<string>();
+        }
+    }
+
+    internal static class SceneFlowIdSourceUtility
+    {
+        // Comentario (PT-BR): normalizacao minima para IDs (trim).
+        public static string Normalize(string value)
+        {
+            return (value ?? string.Empty).Trim();
+        }
+
+        public static bool AddAndTrackDuplicate(HashSet<string> values, HashSet<string> duplicates, string value)
+        {
+            string key = Normalize(value);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+            if (!values.Add(key))
+            {
+                duplicates.Add(key);
+                return false;
+            }
+
+            return true;
+        }
+
+        public static void AddValue(ICollection<string> values, string value)
+        {
+            string key = Normalize(value);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            values.Add(key);
+        }
+
+        public static SceneFlowIdSourceResult BuildResult(IEnumerable<string> values, IEnumerable<string> duplicates)
+        {
+            var v = new List<string>();
+            if (values != null)
+            {
+                foreach (string item in values)
+                {
+                    string key = Normalize(item);
+                    if (!string.IsNullOrWhiteSpace(key))
+                    {
+                        v.Add(key);
+                    }
+                }
+            }
+
+            var d = new List<string>();
+            if (duplicates != null)
+            {
+                foreach (string item in duplicates)
+                {
+                    string key = Normalize(item);
+                    if (!string.IsNullOrWhiteSpace(key))
+                    {
+                        d.Add(key);
+                    }
+                }
+            }
+
+            v.Sort(StringComparer.Ordinal);
+            d.Sort(StringComparer.Ordinal);
+
+            return new SceneFlowIdSourceResult(v, d);
+        }
+    }
+}
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 {
+    using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
+
     [CustomPropertyDrawer(typeof(TransitionStyleId))]
     public sealed class TransitionStyleIdPropertyDrawer : PropertyDrawer
     {
@@ -227,7 +375,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
                 }
                 catch (Exception exception)
                 {
-                    // Comentário: falha explícita no Editor, sem quebrar o Inspector.
                     _snapshot = new SourceSnapshot(
                         EmptyValues,
                         EmptyValues,
@@ -254,10 +401,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
                 _isDirty = true;
             }
         }
-
-        // Smoke test manual (Editor):
-        // 1) Abra Assets/Resources/Navigation/TransitionStyleCatalog.asset no Inspector.
-        // 2) Verifique que campos TransitionStyleId aparecem como dropdown com opção (None).
-        // 3) Com valor inválido serializado, confirme "MISSING: <id>" + HelpBox de warning.
     }
 }
