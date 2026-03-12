@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     /// ImplementaÃ§Ã£o de produÃ§Ã£o: executa rotas via ISceneTransitionService.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameNavigationService : IGameNavigationService
+    public sealed class GameNavigationService : IGameNavigationService, IGameNavigationLegacyService
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameNavigationCatalog _catalog;
@@ -109,7 +109,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return NavigateAsync(GameNavigationIntentKind.Menu, reason);
         }
 
+        // Compat temporaria com chamadas legacy; nao faz parte da interface principal.
         [Obsolete("Use GoToMenuAsync(reason).")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public Task RequestMenuAsync(string reason = null)
         {
             WarnLegacyApiUsedOnce("RequestMenuAsync", "GoToMenuAsync(reason)");
@@ -117,12 +119,25 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return Task.CompletedTask;
         }
 
+        // Compat temporaria com chamadas legacy; nao faz parte da interface principal.
         [Obsolete("Legacy API blocked. Use RestartAsync(reason) ou ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct).") ]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public Task RequestGameplayAsync(string reason = null)
         {
             WarnLegacyApiUsedOnce("RequestGameplayAsync", "RestartAsync(reason) or ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct)");
             HardFailFastH1.Trigger(typeof(GameNavigationService), "[FATAL][H1][Navigation] Legacy API blocked: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayDefaultAsync.");
             return Task.CompletedTask;
+        }
+
+        public SceneRouteId ResolveGameplayRouteIdOrFail()
+        {
+            if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][Navigation] Missing gameplay intent entry while resolving canonical gameplay route. intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
+            }
+
+            return gameplayEntry.RouteId;
         }
 
         public async Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null)
@@ -194,7 +209,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return ExecuteCoreIntentAsync(intent, reason);
         }
 
+        // Compat temporaria com chamadas legacy/string-first; nao faz parte da interface principal.
         [Obsolete("Prefira NavigateAsync(GameNavigationIntentKind, reason) para core intents; mantenha string para extras/custom.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public Task NavigateAsync(string routeId, string reason = null)
         {
             WarnLegacyApiUsedOnce("NavigateAsync(string)", "NavigateAsync(GameNavigationIntentKind, reason)");
@@ -390,6 +407,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
     }
 }
+
+
+
+
 
 
 

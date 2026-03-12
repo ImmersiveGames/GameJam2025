@@ -33,15 +33,15 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 ? "LevelFlow/StartGameplayDefault"
                 : reason.Trim();
 
-            SceneRouteId gameplayRouteId = SceneRouteId.FromName(GameNavigationIntents.ToGameplay);
+            SceneRouteId gameplayRouteId = _navigationService.ResolveGameplayRouteIdOrFail();
             if (!gameplayRouteId.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(LevelFlowRuntimeService),
-                    "[FATAL][H1][LevelFlow] Invalid gameplay route id for StartGameplayDefaultAsync ('to-gameplay').");
+                    "[FATAL][H1][LevelFlow] Canonical gameplay route resolution returned an invalid routeId.");
             }
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayDefaultRequested routeId='{gameplayRouteId}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] StartGameplayDefaultRequested routeId='{gameplayRouteId}' source='navigation_core_slot' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             await _navigationService.StartGameplayRouteAsync(gameplayRouteId, SceneTransitionPayload.Empty, normalizedReason);
@@ -85,4 +85,3 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
-
