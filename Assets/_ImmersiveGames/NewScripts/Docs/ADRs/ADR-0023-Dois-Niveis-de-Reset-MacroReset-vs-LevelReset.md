@@ -11,8 +11,8 @@
   - `WorldLifecycle V2` ja nao promove `levelId/contentId` como shape principal de telemetria.
   - `Gameplay ActorGroupRearm` foi consolidado como soft reset local canonico por grupo de atores.
 - Evidencia:
-  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
-  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/lastlog.log`
 
 ## Status
 
@@ -41,5 +41,6 @@
 
 - O fechamento deste ADR vale para a separacao canonica entre MacroReset e LevelReset no eixo principal.
 - `Gameplay ActorGroupRearm` deixa de ser excecao arquitetural nessa borda: o subsistema agora usa contrato canonico por grupo (`ByActorKind`) e manteve `ActorIdSet` apenas como selecao tecnica explicita.
-- Permanece fora deste fechamento apenas o residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`, sem reabrir trilho paralelo de runtime.
+- Nao ha mais residuo estrutural de navigation fora do trilho canonico atual.
+
 

@@ -166,5 +166,6 @@ Quando editar o reset de gameplay, revisar tambem:
 ### Docs
 
 - `Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0014-GameplayReset-Targets-Grupos.md`
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audits/2026-03-11/RUNREARM-CANON-REFACTOR.md`
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+
 

@@ -1,10 +1,14 @@
-# Audits LATEST
+# Latest Audit
 
-Current canonical audit snapshot: `2026-03-11`.
+Documento operacional atual: `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`.
 
-- Summary: `Docs/Reports/Audits/2026-03-11/CANON-ONLY-AXIS-SYNC.md`
-- Focus: sincronizacao documental do estado pos-H1..H7 com o codigo real.
-- Decision: `canon-only no eixo principal`; `nao canon-only absoluto em todo NewScripts/** ainda`.
-- Remaining exceptions:
-  - pequeno residuo editor/serializado em `GameNavigationIntentCatalogAsset`
-- Historical audit snapshot: `Docs/Reports/Audits/2026-03-06/`
+## Fechamento vigente
+
+- A cadeia documental oficial foi reduzida ao estado atual do sistema.
+- Estados intermediarios e relatorios superseded deixaram de ser documentacao operacional.
+- O runtime validado confirma:
+  - `startup` no bootstrap
+  - `frontend/gameplay` em `RouteKind`
+  - Navigation/Transition em direct-ref + fail-fast
+
+Use este arquivo apenas como ponte para o fechamento atual.

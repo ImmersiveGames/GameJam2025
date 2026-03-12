@@ -1,4 +1,4 @@
-﻿# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
+# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
@@ -7,8 +7,8 @@
   - Restart local (`Level2 -> Level2`) faz reload local (unload+load do mesmo set).
   - QA confirma `transitionStartedCount='0'` no swap local.
 - Evidencia:
-  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
-  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/lastlog.log`
 - LEGACY / Compat (nao canonico):
   - Troca de level via trilho macro/fallback no caminho canonicamente local.
 
@@ -22,7 +22,7 @@
 
 - Swap local usa `levelRef` (`LevelDefinitionAsset`) no dominio da macro atual.
 - Fonte de levels no swap: `SceneRouteDefinitionAsset.LevelCollection`.
-- Sem fallback para `LevelCatalog` no trilho canônico.
+- Sem fallback para `LevelCatalog` no trilho can�nico.
 - A API publica principal nao promove mais overloads por `LevelId`.
 
 ## Evidencia (log)
@@ -38,5 +38,6 @@
 ## Observacao LEGADO
 
 - Qualquer referencia historica a `LevelId` neste contexto deve ser lida como legado removido do trilho canonico atual.
+
 
 

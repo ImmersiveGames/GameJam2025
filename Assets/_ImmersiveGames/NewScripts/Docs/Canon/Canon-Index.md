@@ -1,66 +1,39 @@
 # Canon Index
 
-## Fonte de verdade associada
-- Baseline/evidencia canonica vigente: `Docs/Reports/Evidence/LATEST.md`
-- Baseline congelada vigente: `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
-- Auditoria estatica vigente: `Docs/Reports/Audits/LATEST.md`
-- Trilho de planejamento vigente: `Docs/Plans/Plan-Continuous.md`
+Este indice descreve apenas owners e contratos canonicos vigentes.
 
-## O que e canonico hoje
-- Macro restart: `MacroRestartCoordinator` e owner unico de `GameResetRequestedEvent`.
-- `GameLoopCommandEventBridge` nao consome reset.
-- `RestartNavigationBridge` nao faz parte do runtime canonico atual.
-- LevelFlow por `LevelDefinitionAsset` (`levelRef`) e `LevelCollection` por macro gameplay.
-- `LevelDefinition` reduzido ao shape canonico `levelRef + macroRouteRef`.
-- `MacroLevelPrepareCompletionGate` executa `LevelPrepare`/`LevelClear` antes do FadeOut.
-- `LevelStageOrchestrator` dedupe por `LevelSignature`.
-- `GameplayStartSnapshot`, `LevelSelectedEvent` e `LevelSwapLocalAppliedEvent` promovem `LevelRef`, `MacroRouteId` e `LevelSignature` como shape principal.
-- `IGameNavigationService` expoe apenas a superficie canonica; nao ha trilho publico string-first em Navigation.
-- `WorldLifecycle V2` e apenas telemetria/observabilidade com `MacroRouteId`, `Reason`, `MacroSignature` e `LevelSignature`.
-- `Gameplay ActorGroupRearm` e o mecanismo canonico de soft reset local por grupo de atores, centrado em `ByActorKind`.
-- Tooling/editor/QA do eixo principal foi higienizado para o contrato canonico atual.
+## Ownership atual
 
-## Fechamento do eixo principal
+| Eixo | Owner canonico | Contrato atual |
+|---|---|---|
+| Startup transition | `NewScriptsBootstrapConfigAsset.startupTransitionStyleRef` | Bootstrap e o unico owner de `startup` |
+| Navigation | `GameNavigationCatalogAsset` | Cada entrada resolve por `routeRef + transitionStyleRef` |
+| Route semantics | `SceneRouteDefinitionAsset.RouteKind` | `frontend` e `gameplay` existem somente em `RouteKind` |
+| Transition style | `TransitionStyleAsset` | Resolve por `profileRef + useFade` |
+| Transition profile | `SceneTransitionProfile` | Asset leaf visual; nao decide semantica de fluxo |
+| SceneFlow runtime | `SceneTransitionService` | Executa timeline e publica fases |
+| Level start/restart | `LevelFlowRuntimeService` + `LevelStageOrchestrator` | Gameplay default, restart e IntroStage |
+| GameLoop state | `GameLoopService` | Estado da run, pause/resume, ready/playing |
+| World reset | `WorldResetService` + `WorldLifecycleSceneFlowResetDriver` | Macro reset orientado por rota/bootstrap |
+| Gameplay rearm | `ActorGroupRearmOrchestrator` | Rearm/reset canonico no escopo de gameplay |
+| InputMode sync | `SceneFlowInputModeBridge` | Ajuste por `RouteKind` |
 
-- Considerar **canon-only no eixo principal**:
-  - `LevelFlow`
-  - `LevelDefinition`
-  - `Navigation`
-  - `WorldLifecycle V2`
-  - `Gameplay ActorGroupRearm`
-  - tooling/editor/QA associado
-- Nao considerar **canon-only absoluto em todo `NewScripts/**` ainda**:
-  - permanece apenas residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`, sem reabrir trilho paralelo de runtime.
+## Regras de leitura
 
-## Como validar (manual curto)
-1. Boot -> Menu.
-2. Menu -> Gameplay.
-3. Executar `QA/LevelFlow/NextLevel`.
-4. Executar `QA/LevelFlow/RestartCurrentLevelLocal`.
-5. Finalizar run (Victory/Defeat) e acionar PostGame/Restart.
-6. Confirmar retorno para default Level1 e IntroStage -> Playing.
+- Docs nesta pasta representam um unico estado atual.
+- Historico de migracao nao e fonte de verdade operacional.
+- Quando houver conflito, o codigo atual e a evidencia runtime validada prevalecem.
 
-## Ancoras de log obrigatorias (grep)
-- `[OBS][Navigation] MacroRestartStart`
-- `[OBS][Navigation] MacroRestartCompleted`
-- `[OBS][Navigation] MacroRestartQueued` (quando houver solicitacao durante in-flight)
-- `[OBS][Navigation] MacroRestartDebounced` (quando houver duplo clique em janela curta)
-- `[OBS][LevelFlow] LevelDefaultSelected`
-- `[OBS][LevelFlow] LevelAdditiveApplySummary`
-- `[OBS][SceneFlow] MacroLoadingPhase='LevelPrepare'`
-- `[OBS][IntroStageController] IntroStageStartRequested source='SceneFlowCompleted'`
-- `[OBS][IntroStageController] IntroStageStarted`
-- `[OBS][IntroStageController] GameplaySimulationBlocked`
-- `[OBS][IntroStageController] GameplaySimulationUnblocked`
+## Cadeia oficial
 
-## Owners por responsabilidade
-| Responsabilidade | Arquivo owner |
-|---|---|
-| Macro restart canonico | `Modules/Navigation/Runtime/MacroRestartCoordinator.cs` |
-| Level prepare/clear por macro | `Modules/LevelFlow/Runtime/LevelMacroPrepareService.cs` |
-| Aplicacao additive/reload/clear local | `Modules/LevelFlow/Runtime/LevelAdditiveSceneRuntimeApplier.cs` |
-| Dedupe de intro por assinatura local | `Modules/LevelFlow/Runtime/LevelStageOrchestrator.cs` |
-| Gate obrigatorio antes do FadeOut | `Modules/SceneFlow/Transition/Runtime/MacroLevelPrepareCompletionGate.cs` |
-| Gameplay route principal (resolucao canonica) | `Modules/Navigation/GameNavigationService.cs` |
-| Soft reset local por grupo de atores | `Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs` |
-
+1. `Docs/README.md`
+2. `Docs/Modules/SceneFlow.md`
+3. `Docs/Modules/Navigation.md`
+4. `Docs/Modules/LevelFlow.md`
+5. `Docs/Modules/GameLoop.md`
+6. `Docs/Modules/Gameplay.md`
+7. `Docs/Modules/WorldLifecycle.md`
+8. `Docs/Modules/InputModes.md`
+9. `Docs/ADRs/README.md`
+10. `Docs/Reports/Audits/LATEST.md`
+11. `Docs/Reports/Evidence/LATEST.md`

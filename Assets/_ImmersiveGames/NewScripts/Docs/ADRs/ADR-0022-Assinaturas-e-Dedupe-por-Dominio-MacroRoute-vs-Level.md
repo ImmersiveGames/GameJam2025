@@ -7,8 +7,8 @@
   - `SelectionVersion` permanece apenas como metadado de observabilidade; nao e mais a identidade principal.
   - `LevelSignature` propagada em snapshot/eventos e consumida no IntroStage.
 - Evidencia:
-  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
-  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/lastlog.log`
 
 ## Status
 
@@ -36,4 +36,5 @@
 - O fechamento deste ADR vale para o eixo principal de `LevelFlow`.
 - Qualquer referencia historica a `levelId/contentId` deve ser lida como legado fora do contrato canonico atual.
 - A excecao remanescente de `Gameplay ActorGroupRearm` fica fora deste escopo.
+
 

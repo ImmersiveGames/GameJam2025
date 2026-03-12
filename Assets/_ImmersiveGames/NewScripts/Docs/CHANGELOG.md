@@ -321,3 +321,8 @@ All notable documentation changes to **NewScripts** are documented in this file.
 
 
 
+
+## 2026-03-12 - docs cleanup / current-state-only
+- reduziu a superficie documental para o estado operacional atual
+- removeu planos, overviews, audits e evidence superseded da leitura principal
+- promoveu uma unica cadeia oficial de docs centrada em bootstrap + RouteKind + direct-ref navigation/transition

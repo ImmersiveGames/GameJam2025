@@ -1,4 +1,4 @@
-﻿# ADR-0025 - Pipeline de Loading Macro inclui Etapa de Level antes do FadeOut
+# ADR-0025 - Pipeline de Loading Macro inclui Etapa de Level antes do FadeOut
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
@@ -7,8 +7,8 @@
   - Em gameplay: `LevelPrepare` obrigatorio antes do FadeOut.
   - Em macro sem levels: `LevelClear` idempotente.
 - Evidencia:
-  - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
-  - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/lastlog.log`
 - LEGACY / Compat (nao canonico):
   - Contrato antigo sem etapa de level no gate.
 
@@ -41,5 +41,6 @@
 ## Observacao LEGADO
 
 - `PrepareAsync(...)` e contrato anterior (LEGADO), substituido por `PrepareOrClearAsync(...)`.
+
 
 

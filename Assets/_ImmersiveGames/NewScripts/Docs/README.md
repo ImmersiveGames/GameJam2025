@@ -1,45 +1,39 @@
-# NewScripts - Docs
+# NewScripts Docs
 
-Este diretorio e o ponto de entrada para a documentacao do modulo **NewScripts**.
+Esta pasta documenta apenas o estado operacional atual de `Assets/_ImmersiveGames/NewScripts/**`.
 
-## Navegacao principal
+Estados intermediarios, trilhos de migracao e snapshots antigos nao sao mais documentacao operacional vigente. O historico que permanece existe apenas para rastreabilidade em:
+- `Docs/CHANGELOG.md`
+- `Docs/ADRs/**` vigentes
+- `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
 
-Use esta cadeia como trilha canonica de consulta:
+## Superficie canonica
 
-1. `README.md`
-2. `Canon/Canon-Index.md`
-3. `Plans/Plan-Continuous.md`
-4. `Reports/Audits/LATEST.md`
-5. `Reports/Evidence/LATEST.md`
-6. `ADRs/README.md`
-7. `CHANGELOG.md`
+Leia nesta ordem:
+1. `Docs/Canon/Canon-Index.md`
+2. `Docs/Modules/SceneFlow.md`
+3. `Docs/Modules/Navigation.md`
+4. `Docs/Modules/LevelFlow.md`
+5. `Docs/Modules/GameLoop.md`
+6. `Docs/Modules/Gameplay.md`
+7. `Docs/Modules/WorldLifecycle.md`
+8. `Docs/Modules/InputModes.md`
+9. `Docs/ADRs/README.md`
+10. `Docs/Reports/Audits/LATEST.md`
+11. `Docs/Reports/Evidence/LATEST.md`
+12. `Docs/Plans/Plan-Continuous.md`
+13. `Docs/CHANGELOG.md`
 
-## Acesso rapido
+## Estado canonico atual
 
-- `Canon/Canon-Index.md` - estado canonico consolidado: eixo principal canon-only e residuos remanescentes fora do fechamento absoluto.
-- `Plans/Plan-Continuous.md` - trilho continuo de planejamento e status de fechamento do eixo principal.
-- `Reports/Audits/LATEST.md` - auditoria estatica canonica mais recente do estado pos-H1..H7.
-- `Reports/Evidence/LATEST.md` - baseline/evidencia canonica vigente + leitura do estado atual.
-- `ADRs/README.md` - indice das decisoes arquiteturais aceitas e ativas.
-- `CHANGELOG.md` - registro de alteracoes documentais.
+- `startup` pertence ao bootstrap.
+- `frontend` e `gameplay` pertencem a `SceneRouteKind`.
+- Navigation/Transition operam em direct-ref + fail-fast.
+- `GameNavigationCatalogAsset` e o asset canonico de navigation.
+- `TransitionStyleAsset` e o asset canonico de style.
+- `SceneTransitionProfile` e asset leaf visual.
+- `ActorGroupRearm` e a nomenclatura canonica de rearm/reset de gameplay.
 
-## Onde fica cada coisa
+## Leitura historica
 
-- ADRs: `ADRs/README.md` e arquivos `ADRs/ADR-*.md`.
-- Reports, audits e evidence: `Reports/Audits/`, `Reports/Evidence/` e `Reports/Baseline/`.
-- Contratos e politicas de producao: `Standards/Standards.md`.
-- Material de apoio live, mas fora da trilha principal: `Overview/Overview.md`, `Guides.md`, `Modules/`, `Shared/` e `Plans/README.md`.
-- Historico e snapshots arquivados: pastas datadas em `Reports/Audits/`, `Reports/Evidence/`, `Reports/Baseline/` e `Reports/Audits/2026-03-06/Archive/`.
-
-## Estado atual (oficial)
-
-- O eixo principal de `NewScripts` esta canon-only em `LevelFlow`, `LevelDefinition`, `Navigation`, `WorldLifecycle V2` e `Gameplay ActorGroupRearm`.
-- O runtime principal de start gameplay nao depende mais principalmente de string hardcoded `to-gameplay`; a resolucao canonica usa catalogo/slot core de Navigation.
-- Ainda nao se considera `NewScripts/**` 100% canon-only em sentido absoluto por causa de residuos menores editor/serializado, hoje concentrados em `GameNavigationIntentCatalogAsset`.
-
-## Regra operacional
-
-- **CODEX e usado apenas para auditorias** (varredura/diagnostico). Veja `Standards/Standards.md#politica-de-uso-do-codex`.
-- Implementacoes e correcoes devem referenciar ADR(s) + politica Strict/Release + contrato de observabilidade + evidencia datada.
-- Em caso de duvida entre promover e preservar historico, prefira manter o arquivo acessivel fora da navegacao principal.
-
+Qualquer documento historico remanescente fora da cadeia acima deve ser tratado como referencia arquivistica, nao como contrato operacional.
