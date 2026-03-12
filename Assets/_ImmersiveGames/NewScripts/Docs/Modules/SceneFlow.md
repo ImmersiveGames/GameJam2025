@@ -13,6 +13,10 @@
 - Boot/startup transition:
   - owner unico: `NewScriptsBootstrapConfigAsset.startupTransitionStyleRef`.
   - nao existe mais fallback para `startupTransitionProfile` nem para catalogo nominal.
+- Semantica final de fluxo:
+  - `startup` pertence exclusivamente ao bootstrap.
+  - `frontend` e `gameplay` pertencem exclusivamente a `SceneRouteKind`.
+  - labels de `style`/`profile` permanecem apenas como observabilidade.
 - Navigation/Transition agora e direct-ref-first e fail-fast:
   - `GameNavigationCatalogAsset` resolve por `routeRef + transitionStyleRef`.
   - `TransitionStyleAsset` resolve por `profileRef + useFade`.
@@ -35,4 +39,5 @@
 | `LoadingHudService` | Ensure/Show/Hide tecnico de LoadingHudScene | Decisao de fase da HUD | `[LoadingHudEnsure]`, `[LoadingHudShow]`, `[LoadingHudHide]` |
 | `WorldLifecycleSceneFlowResetDriver` (integracao) | Handoff `ScenesReady -> WorldResetService` e fallback completion V1 | Eventos V2 de commands/telemetria | `[WorldLifecycle] Driver registrado: SceneFlow ScenesReady -> ResetWorld -> ResetCompleted` |
 | `SceneFlowInputModeBridge` (integracao) | Sincronizacao InputMode/GameLoop no `Started/Completed` orientada por `RouteKind` | Pipeline de transicao e gates | `[OBS][InputMode] Requested ...` |
+
 

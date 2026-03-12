@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         {
             string profile = evt.Context.TransitionProfileName;
             string signature = SceneTransitionSignature.Compute(evt.Context);
-            string dedupeKey = $"{profile}|{signature}";
+            string dedupeKey = signature;
             string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
             if (evt.Context.RouteKind == SceneRouteKind.Gameplay)
@@ -217,7 +217,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             _lastProcessedSignature = dedupeKey;
 
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                $"[InputMode] Profile nao reconhecido ('{profile}'); input mode nao alterado.",
+                $"[InputMode] RouteKind nao reconhecido ('{evt.Context.RouteKind}'); input mode nao alterado. profileLabel='{profile}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -245,5 +245,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         }
     }
 }
+
+
 
 

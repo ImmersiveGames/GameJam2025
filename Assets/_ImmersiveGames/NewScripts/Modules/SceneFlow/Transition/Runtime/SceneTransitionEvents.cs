@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             ContextSignature = !string.IsNullOrWhiteSpace(contextSignature)
                 ? contextSignature.Trim()
-                : ComputeSignature(scenesToLoad, scenesToUnload, targetActiveScene, routeId, StyleLabel, useFade, TransitionProfileName, transitionProfile);
+                : ComputeSignature(scenesToLoad, scenesToUnload, targetActiveScene, routeId, routeKind, useFade);
         }
 
         public SceneTransitionContext WithRouteResetDecision(bool requiresWorldReset, string decisionSource, string decisionReason)
@@ -87,20 +87,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             SceneRouteId routeId,
-            string styleLabel,
-            bool useFade,
-            string transitionProfileName,
-            SceneTransitionProfile transitionProfile)
+            SceneRouteKind routeKind,
+            bool useFade)
         {
             string load = JoinList(scenesToLoad);
             string unload = JoinList(scenesToUnload);
             string active = (targetActiveScene ?? string.Empty).Trim();
             string route = routeId.Value ?? string.Empty;
-            string style = (styleLabel ?? string.Empty).Trim();
-            string profile = (transitionProfileName ?? string.Empty).Trim();
-            string profileAsset = transitionProfile != null ? transitionProfile.name : string.Empty;
             string fade = useFade ? "1" : "0";
-            return $"r:{route}|s:{style}|p:{profile}|pa:{profileAsset}|a:{active}|f:{fade}|l:{load}|u:{unload}";
+            return $"r:{route}|rk:{routeKind}|a:{active}|f:{fade}|l:{load}|u:{unload}";
         }
 
         private static string JoinList(IReadOnlyList<string> list)
@@ -185,3 +180,4 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
     public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { Context = context; } }
     public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { Context = context; } }
 }
+

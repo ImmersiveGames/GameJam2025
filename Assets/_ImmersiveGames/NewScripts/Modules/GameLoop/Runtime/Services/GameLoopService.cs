@@ -343,7 +343,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         private static SignatureInfo BuildSignatureInfo()
         {
             string sceneName = SceneManager.GetActiveScene().name;
-            string profile = "gameplay";
+            string profile = "<none>";
             string signature = "<none>";
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var cache) && cache != null &&
@@ -427,6 +427,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         }
     }
 }
+
 
 
 

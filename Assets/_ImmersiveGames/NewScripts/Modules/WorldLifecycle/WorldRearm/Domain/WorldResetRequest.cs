@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain
 {
     /// <summary>
-    /// Request imutável para reset do WorldLifecycle.
+    /// Request imutavel para reset do WorldLifecycle.
+    /// Labels de profile, quando presentes, sao apenas observabilidade.
     /// </summary>
     public readonly struct WorldResetRequest
     {
@@ -12,8 +13,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain
             string profileName,
             string targetScene,
             WorldResetOrigin origin,
-            string sourceSignature = null,
-            bool isGameplayProfile = true)
+            string sourceSignature = null)
         {
             ContextSignature = contextSignature ?? string.Empty;
             Reason = reason ?? string.Empty;
@@ -21,7 +21,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain
             TargetScene = targetScene ?? string.Empty;
             Origin = origin;
             SourceSignature = sourceSignature ?? string.Empty;
-            IsGameplayProfile = isGameplayProfile;
             CreatedUtc = DateTime.UtcNow;
         }
 
@@ -37,15 +36,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain
 
         public WorldResetOrigin Origin { get; }
 
-        public bool IsGameplayProfile { get; }
-
         public DateTime CreatedUtc { get; }
 
         public bool HasSignature => !string.IsNullOrWhiteSpace(ContextSignature);
 
         public override string ToString()
         {
-            return $"WorldResetRequest(Signature='{ContextSignature}', Reason='{Reason}', Profile='{ProfileName}', Target='{TargetScene}', Origin={Origin})";
+            return $"WorldResetRequest(Signature='{ContextSignature}', Reason='{Reason}', ProfileLabel='{ProfileName}', Target='{TargetScene}', Origin={Origin})";
         }
     }
 }

@@ -72,6 +72,9 @@ Nao existe mais fallback para:
 - Ha uma unica forma valida de configurar navigation/transition.
 - A stack fica realmente direct-ref-first e fail-fast.
 - `styleId` e `profileId` deixam de ter papel estrutural; a observabilidade usa labels derivados de asset.
+- A semantica de fluxo fica consolidada em dois owners apenas:
+  - `startup` via bootstrap (`startupTransitionStyleRef`)
+  - `frontend/gameplay` via `SceneRouteKind`
 - Assets legados precisam existir ja preenchidos com refs diretas; nao ha mais trilho de compatibilidade silencioso.
 
 ## Validation / Evidence
@@ -81,4 +84,5 @@ Nao existe mais fallback para:
 - Audit da fase direct-ref-first: `Docs/Reports/Audits/2026-03-11/TRANSITIONSTYLE-DIRECTREF-REFACTOR.md`
 - Audit da purge fail-fast: `Docs/Reports/Audits/2026-03-11/TRANSITION-DIRECTREF-FAILFAST-PURGE.md`
 - MenuItem de validacao (Editor): `ImmersiveGames/NewScripts/Tools/SceneFlow/Validate Config`
+
 

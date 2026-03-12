@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
@@ -87,7 +88,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     signature: string.Empty,
                     sourceSignature: string.Empty,
                     routeId: context.RouteId.Value ?? string.Empty,
-                    profile: context.TransitionProfileName,
+                    routeKind: context.RouteKind,
+                profileLabel: context.TransitionProfileName,
                     target: ResolveTargetSceneName(context),
                     decisionSource: "contextSignature:empty",
                     reason: WorldResetReasons.SceneFlowScenesReady);
@@ -95,6 +97,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     signature,
                     WorldResetReasons.SceneFlowScenesReady,
                     context.RouteId.Value ?? string.Empty,
+                    context.RouteKind,
                     context.TransitionProfileName,
                     ResolveTargetSceneName(context),
                     "contextSignature:empty");
@@ -115,12 +118,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (!requiresWorldReset)
             {
                 string skippedReason = string.IsNullOrWhiteSpace(decisionReason)
-                    ? $"{WorldResetReasons.SkippedStartupOrFrontendPrefix}:profile={context.TransitionProfileName};route={routeId};scene={targetScene}"
+                    ? $"{WorldResetReasons.SkippedNonGameplayRoutePrefix}:routeKind={context.RouteKind};route={routeId};scene={targetScene}"
                     : decisionReason;
 
                 if (ShouldSkipDuplicate(signature, out string guardReason))
                 {
-                    LogDuplicateGuard(signature, context.TransitionProfileName, targetScene, guardReason);
+                    LogDuplicateGuard(signature, context.RouteKind, context.TransitionProfileName, targetScene, guardReason);
                     return;
                 }
 
@@ -130,16 +133,17 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     signature: signature,
                     sourceSignature: signature,
                     routeId: routeId,
-                    profile: context.TransitionProfileName,
+                    routeKind: context.RouteKind,
+                profileLabel: context.TransitionProfileName,
                     target: targetScene,
                     decisionSource: decisionSource,
                     reason: skippedReason);
 
                 DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[{ResetLogTags.Skipped}] [ResetSkip] [WorldLifecycle] ResetWorld SKIP. signature='{signature}', routeId='{routeId}', profile='{context.TransitionProfileName}', targetScene='{targetScene}', decisionSource='{decisionSource}', reason='{skippedReason}'.",
+                    $"[{ResetLogTags.Skipped}] [ResetSkip] [WorldLifecycle] ResetWorld SKIP. signature='{signature}', routeId='{routeId}', routeKind='{context.RouteKind}', profileLabel='{context.TransitionProfileName}', targetScene='{targetScene}', decisionSource='{decisionSource}', reason='{skippedReason}'.",
                 DebugUtility.Colors.Info);
 
-                PublishResetCompleted(signature, skippedReason, routeId, context.TransitionProfileName, targetScene, decisionSource);
+                PublishResetCompleted(signature, skippedReason, routeId, context.RouteKind, context.TransitionProfileName, targetScene, decisionSource);
                 MarkCompleted(signature);
                 return;
             }
@@ -149,7 +153,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 signature: signature,
                 sourceSignature: signature,
                 routeId: routeId,
-                profile: context.TransitionProfileName,
+                routeKind: context.RouteKind,
+                profileLabel: context.TransitionProfileName,
                 target: targetScene,
                 decisionSource: decisionSource,
                 reason: decisionReason);
@@ -175,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 if (shouldPublishCompletion)
                 {
                     // Fallback/SKIP: driver libera o gate quando nao ha WorldResetService publicando.
-                    PublishResetCompleted(signature, completionReason, routeId, context.TransitionProfileName, targetScene, decisionSource);
+                    PublishResetCompleted(signature, completionReason, routeId, context.RouteKind, context.TransitionProfileName, targetScene, decisionSource);
                 }
                 MarkCompleted(signature);
             }
@@ -200,8 +205,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     profileName: profileName,
                     targetScene: targetScene,
                     origin: WorldResetOrigin.SceneFlow,
-                    sourceSignature: signature,
-                    isGameplayProfile: true);
+                    sourceSignature: signature);
 
                 try
                 {
@@ -248,13 +252,14 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             return SceneManager.GetActiveScene().name ?? string.Empty;
         }
 
-        private static void PublishResetCompleted(string signature, string reason, string routeId, string profile, string target, string decisionSource)
+        private static void PublishResetCompleted(string signature, string reason, string routeId, SceneRouteKind routeKind, string profileLabel, string target, string decisionSource)
         {
             // Publica apenas em SKIP/fallback: o completion gate depende disso para nao degradar em timeout.
             LogObsResetCompleted(
                 signature: signature,
                 routeId: routeId,
-                profile: profile,
+                routeKind: routeKind,
+                profileLabel: profileLabel,
                 target: target,
                 decisionSource: decisionSource,
                 reason: reason);
@@ -270,28 +275,30 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string signature,
             string sourceSignature,
             string routeId,
-            string profile,
+            SceneRouteKind routeKind,
+            string profileLabel,
             string target,
             string decisionSource,
             string reason)
         {
-            // Observabilidade canÃ´nica (Contrato): ResetRequested com sourceSignature/reason/profile/target.
+            // Observabilidade canonica (Contrato): ResetRequested com sourceSignature/reason/routeKind e profileLabel descritivo.
             DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
-                $"[OBS][WorldLifecycle] ResetRequested signature='{signature ?? string.Empty}' sourceSignature='{sourceSignature ?? string.Empty}' routeId='{routeId ?? string.Empty}' profile='{profile ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+                $"[OBS][WorldLifecycle] ResetRequested signature='{signature ?? string.Empty}' sourceSignature='{sourceSignature ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void LogObsResetCompleted(
             string signature,
             string routeId,
-            string profile,
+            SceneRouteKind routeKind,
+            string profileLabel,
             string target,
             string decisionSource,
             string reason)
         {
-            // Observabilidade canÃ´nica (Contrato): ResetCompleted correlacionÃ¡vel ao gate (signature) e reason final.
+            // Observabilidade canonica (Contrato): ResetCompleted correlacionavel ao gate (signature) e reason final.
             DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
-                $"[OBS][WorldLifecycle] ResetCompleted signature='{signature ?? string.Empty}' routeId='{routeId ?? string.Empty}' profile='{profile ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+                $"[OBS][WorldLifecycle] ResetCompleted signature='{signature ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -375,13 +382,22 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 #endif
         }
 
-        private static void LogDuplicateGuard(string signature, string profile, string target, string guardReason)
+        private static void LogDuplicateGuard(string signature, SceneRouteKind routeKind, string profileLabel, string target, string guardReason)
         {
             DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [WorldLifecycle] ResetWorld guard: ScenesReady duplicado. signature='{signature}', profile='{profile}', targetScene='{target}', guard='{guardReason}'.");
+                $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [WorldLifecycle] ResetWorld guard: ScenesReady duplicado. signature='{signature}', routeKind='{routeKind}', profileLabel='{profileLabel}', targetScene='{target}', guard='{guardReason}'.");
         }
     }
 }
+
+
+
+
+
+
+
+
+
 
 
 

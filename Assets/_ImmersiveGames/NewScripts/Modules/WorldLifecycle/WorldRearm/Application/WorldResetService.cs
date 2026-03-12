@@ -36,8 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                 profileName: WorldResetReasons.ManualProfile,
                 targetScene: string.Empty,
                 origin: WorldResetOrigin.Manual,
-                sourceSignature: contextSignature ?? string.Empty,
-                isGameplayProfile: true);
+                sourceSignature: contextSignature ?? string.Empty);
 
             return await TriggerResetAsync(request);
         }
@@ -115,4 +114,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         }
     }
 }
+
+
 

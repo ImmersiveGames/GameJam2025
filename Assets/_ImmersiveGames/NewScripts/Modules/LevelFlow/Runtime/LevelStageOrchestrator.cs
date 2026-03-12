@@ -110,6 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             gameLoopService.RequestIntroStageStart();
             var context = new IntroStageContext(
                 contextSignature: levelSignature,
+                routeKind: evt.Context.RouteKind,
                 profileLabel: evt.Context.TransitionProfileName,
                 targetScene: activeSceneName,
                 reason: "SceneFlow/Completed");
@@ -154,6 +155,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             gameLoopService.RequestIntroStageStart();
             var context = new IntroStageContext(
                 contextSignature: levelSignature,
+                routeKind: SceneRouteKind.Gameplay,
                 profileLabel: "Gameplay",
                 targetScene: activeSceneName,
                 reason: normalizedReason);
@@ -214,3 +216,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+

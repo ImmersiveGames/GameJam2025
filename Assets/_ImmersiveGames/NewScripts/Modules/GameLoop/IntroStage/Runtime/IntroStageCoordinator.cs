@@ -219,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         {
             if (DependencyManager.Provider.TryGetGlobal<IIntroStagePolicyResolver>(out var resolver) && resolver != null)
             {
-                return resolver.Resolve(context.TargetScene, context.Reason);
+                return resolver.Resolve(context.RouteKind, context.Reason);
             }
 
             return IntroStagePolicy.Manual;
@@ -381,6 +381,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         }
     }
 }
+
 
 
 
