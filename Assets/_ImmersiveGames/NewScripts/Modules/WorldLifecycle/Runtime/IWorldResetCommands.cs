@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
@@ -10,8 +10,5 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
     {
         Task ResetMacroAsync(SceneRouteId macroRouteId, string reason, string macroSignature, CancellationToken ct);
         Task ResetLevelAsync(LevelDefinitionAsset levelRef, string reason, LevelContextSignature levelSignature, CancellationToken ct);
-
-        [System.Obsolete("Legacy LevelId path is disabled in canonical LevelFlow.")]
-        Task ResetLevelAsync(LevelId levelId, string reason, LevelContextSignature levelSignature, CancellationToken ct);
     }
 }

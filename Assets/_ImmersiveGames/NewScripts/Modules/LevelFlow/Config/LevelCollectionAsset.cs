@@ -1,6 +1,5 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
@@ -45,39 +44,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
             return false;
         }
 
-
-        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelDefinitionAsset references.")]
-        public bool Contains(LevelId legacyLevelId)
-        {
-            return TryGetLevel(legacyLevelId, out _);
-        }
-
-        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelDefinitionAsset references.")]
-        public bool TryGetLevel(LevelId legacyLevelId, out LevelDefinitionAsset level)
-        {
-            level = null;
-            if (!legacyLevelId.IsValid || levels == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < levels.Count; i++)
-            {
-                LevelDefinitionAsset candidate = levels[i];
-                if (candidate == null)
-                {
-                    continue;
-                }
-
-                if (LevelId.FromName(candidate.name) == legacyLevelId)
-                {
-                    level = candidate;
-                    return true;
-                }
-            }
-
-            return false;
-        }
         public bool TryValidateRuntime(out string error)
         {
             error = string.Empty;
@@ -167,5 +133,3 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
 #endif
     }
 }
-
-

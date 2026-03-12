@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
+﻿using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -39,27 +38,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public bool HasLevelRef => LevelRef != null;
         public bool IsValid => MacroRouteId.IsValid;
-
-        // Compat temporaria com trilhos legados; nao faz parte do contrato canonico.
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [System.Obsolete("Compat temporaria apenas. Use MacroRouteId.")]
-        public SceneRouteId RouteId => MacroRouteId;
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [System.Obsolete("Compat temporaria apenas. Canon usa LevelRef.")]
-        public LevelId LevelId => HasLevelRef ? LevelId.FromName(LevelRef.name) : LevelId.None;
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [System.Obsolete("Compat temporaria apenas. Canon nao usa contentId.")]
-        public string ContentId => string.Empty;
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [System.Obsolete("Compat temporaria apenas. Canon usa LevelRef.")]
-        public bool HasLevelId => HasLevelRef;
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        [System.Obsolete("Compat temporaria apenas. Canon nao usa contentId.")]
-        public bool HasContentId => false;
 
         public static GameplayStartSnapshot Empty => new(
             null,

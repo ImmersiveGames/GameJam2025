@@ -59,14 +59,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             await _levelSwapLocalService.SwapLocalAsync(levelRef, reason, ct);
         }
 
-        [Obsolete("Legacy LevelId swap path is disabled in canonical LevelFlow. Use SwapLevelLocalAsync(LevelDefinitionAsset, ...).")]
-        public Task SwapLevelLocalAsync(LevelId levelId, string reason = null, CancellationToken ct = default)
-        {
-            HardFailFastH1.Trigger(typeof(LevelFlowRuntimeService),
-                $"[FATAL][H1][LevelFlow] Legacy SwapLevelLocalAsync(LevelId) is disabled. levelId='{levelId}' reason='{reason}'.");
-            return Task.CompletedTask;
-        }
-
         public async Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();

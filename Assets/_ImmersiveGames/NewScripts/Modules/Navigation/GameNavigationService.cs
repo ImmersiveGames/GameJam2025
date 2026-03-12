@@ -12,11 +12,8 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
-    /// <summary>
-    /// ImplementaÃ§Ã£o de produÃ§Ã£o: executa rotas via ISceneTransitionService.
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameNavigationService : IGameNavigationService, IGameNavigationLegacyService
+    public sealed class GameNavigationService : IGameNavigationService
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameNavigationCatalog _catalog;
@@ -28,8 +25,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private SceneRouteId _lastGameplayRouteId;
         private string _lastNavigationIntentId = string.Empty;
         private int _navigationInProgress;
-
-        private static int _legacyApiWarningEmitted;
 
         public GameNavigationService(
             ISceneTransitionService sceneFlow,
@@ -50,8 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             if (_intentsCatalog == null)
             {
-                string message =
-                    "[FATAL][Config] GameNavigationService requires GameNavigationIntentCatalogAsset (navigationIntentCatalog).";
+                string message = "[FATAL][Config] GameNavigationService requires GameNavigationIntentCatalogAsset (navigationIntentCatalog).";
                 DebugUtility.LogError(typeof(GameNavigationService), message);
                 throw new InvalidOperationException(message);
             }
@@ -74,10 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "Restart" : reason.Trim();
 
             GameplayStartSnapshot snapshot = default;
-            if (_restartContextService == null ||
-                !_restartContextService.TryGetCurrent(out snapshot) ||
-                !snapshot.IsValid ||
-                !snapshot.MacroRouteId.IsValid)
+            if (_restartContextService == null || !_restartContextService.TryGetCurrent(out snapshot) || !snapshot.IsValid || !snapshot.MacroRouteId.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
                     $"[FATAL][H1][Navigation] RestartAsync requires a valid canonical gameplay snapshot. reason='{normalizedReason}'.");
@@ -107,26 +98,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}', styleId='{styleLabel}', profile='{profileLabel}'.",
                 DebugUtility.Colors.Info);
             return NavigateAsync(GameNavigationIntentKind.Menu, reason);
-        }
-
-        // Compat temporaria com chamadas legacy; nao faz parte da interface principal.
-        [Obsolete("Use GoToMenuAsync(reason).")]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public Task RequestMenuAsync(string reason = null)
-        {
-            WarnLegacyApiUsedOnce("RequestMenuAsync", "GoToMenuAsync(reason)");
-            HardFailFastH1.Trigger(typeof(GameNavigationService), "[FATAL][H1][Navigation] Legacy API blocked: RequestMenuAsync. Use GoToMenuAsync(reason).");
-            return Task.CompletedTask;
-        }
-
-        // Compat temporaria com chamadas legacy; nao faz parte da interface principal.
-        [Obsolete("Legacy API blocked. Use RestartAsync(reason) ou ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct).") ]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public Task RequestGameplayAsync(string reason = null)
-        {
-            WarnLegacyApiUsedOnce("RequestGameplayAsync", "RestartAsync(reason) or ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct)");
-            HardFailFastH1.Trigger(typeof(GameNavigationService), "[FATAL][H1][Navigation] Legacy API blocked: RequestGameplayAsync. Use RestartAsync(reason) or StartGameplayDefaultAsync.");
-            return Task.CompletedTask;
         }
 
         public SceneRouteId ResolveGameplayRouteIdOrFail()
@@ -187,9 +158,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             if (routeAsset.RouteKind == SceneRouteKind.Gameplay)
             {
-                if (routeAsset.LevelCollection == null ||
-                    routeAsset.LevelCollection.Levels == null ||
-                    routeAsset.LevelCollection.Levels.Count == 0)
+                if (routeAsset.LevelCollection == null || routeAsset.LevelCollection.Levels == null || routeAsset.LevelCollection.Levels.Count == 0)
                 {
                     HardFailFastH1.Trigger(typeof(GameNavigationService),
                         $"[FATAL][H1][Navigation] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
@@ -202,73 +171,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[Navigation] NavegaÃ§Ã£o jÃ¡ em progresso. Ignorando intent core='{intent}'.");
+                    $"[Navigation] Navegacao ja em progresso. Ignorando intent core='{intent}'.");
                 return Task.CompletedTask;
             }
 
             return ExecuteCoreIntentAsync(intent, reason);
-        }
-
-        // Compat temporaria com chamadas legacy/string-first; nao faz parte da interface principal.
-        [Obsolete("Prefira NavigateAsync(GameNavigationIntentKind, reason) para core intents; mantenha string para extras/custom.")]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public Task NavigateAsync(string routeId, string reason = null)
-        {
-            WarnLegacyApiUsedOnce("NavigateAsync(string)", "NavigateAsync(GameNavigationIntentKind, reason)");
-            HardFailFastH1.Trigger(typeof(GameNavigationService),
-                $"[FATAL][H1][Navigation] Legacy API blocked: NavigateAsync(string). routeId='{routeId ?? "<null>"}' reason='{reason ?? "<null>"}'.");
-            return Task.CompletedTask;
-        }
-
-        private static void WarnLegacyApiUsedOnce(string apiName, string recommendation)
-        {
-            if (Interlocked.CompareExchange(ref _legacyApiWarningEmitted, 1, 0) != 0)
-            {
-                return;
-            }
-
-            DebugUtility.LogWarning(typeof(GameNavigationService),
-                $"[WARN][LEGACY_API_USED] api='{apiName}' recommendation='{recommendation}'.");
-        }
-
-        private async Task ExecuteIntentAsync(string intentId, string reason = null)
-        {
-            if (string.IsNullOrWhiteSpace(intentId))
-            {
-                DebugUtility.LogError(typeof(GameNavigationService),
-                    "[Navigation] ExecuteIntentAsync chamado com id vazio. Abortando.");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
-            {
-                DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[Navigation] NavegaÃ§Ã£o jÃ¡ em progresso. Ignorando id='{intentId}'.");
-                return;
-            }
-
-            try
-            {
-                if (!_catalog.TryGet(intentId, out var entry) || !entry.IsValid)
-                {
-                    DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[Navigation] Intent/rota desconhecida ou sem request. id='{intentId}'. " +
-                        $"Entries disponÃ­veis: [{string.Join(", ", _catalog.RouteIds)}].");
-                    return;
-                }
-
-                await ExecuteEntryAsync(intentId, entry, reason);
-            }
-            catch (Exception ex)
-            {
-                // ComentÃ¡rio: navegaÃ§Ã£o Ã© infraestrutura de fluxo; nÃ£o deve derrubar o jogo.
-                DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] ExceÃ§Ã£o ao navegar. id='{intentId}', reason='{reason ?? "<null>"}', ex={ex}");
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _navigationInProgress, 0);
-            }
         }
 
         private async Task ExecuteCoreIntentAsync(GameNavigationIntentKind intent, string reason)
@@ -281,8 +188,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[FATAL][Config] Missing core intent entry. intent='{intent}', intentId='{intentId}'.");
-                    throw new InvalidOperationException(
-                        $"[FATAL][Config] Missing core intent entry '{intentId}'.");
+                    throw new InvalidOperationException($"[FATAL][Config] Missing core intent entry '{intentId}'.");
                 }
 
                 DebugUtility.LogVerbose(typeof(GameNavigationService),
@@ -293,9 +199,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
             catch (Exception ex)
             {
-                // ComentÃ¡rio: navegaÃ§Ã£o Ã© infraestrutura de fluxo; nÃ£o deve derrubar o jogo.
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] ExceÃ§Ã£o ao navegar (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
+                    $"[Navigation] Excecao ao navegar (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {
@@ -344,8 +249,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             if (!intentId.IsValid)
             {
-                string message =
-                    $"[FATAL][Config] GameNavigationIntentCatalogAsset invÃ¡lido para intent core. intent='{intent}', intentId='<empty>'.";
+                string message = $"[FATAL][Config] GameNavigationIntentCatalogAsset invalido para intent core. intent='{intent}', intentId='<empty>'.";
                 DebugUtility.LogError(typeof(GameNavigationService), message);
                 throw new InvalidOperationException(message);
             }
@@ -355,9 +259,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private async Task ExecuteEntryAsync(string intentId, GameNavigationEntry entry, string reason)
         {
-            // F3 Plan-v2:
-            // - SceneRouteDefinition Ã© a fonte Ãºnica de Scene Data.
-            // - Navigation nÃ£o injeta dados de cena no payload.
             var payload = entry.Payload ?? SceneTransitionPayload.Empty;
             var (profile, profileId, useFade) = ResolveStyle(entry);
 
@@ -377,17 +278,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             var signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', " +
-                $"styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', " +
-                $"signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
+                $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
         }
 
-
-        private (SceneTransitionProfile? profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(
-            GameNavigationEntry entry)
+        private (SceneTransitionProfile? profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(GameNavigationEntry entry)
         {
             if (_styleCatalog != null && _styleCatalog.TryGet(entry.StyleId, out var style))
             {
@@ -395,35 +292,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     DebugUtility.LogWarning(typeof(GameNavigationService),
                         $"[WARN][Degraded] TransitionStyle sem SceneTransitionProfile. styleId='{entry.StyleId}', routeId='{entry.RouteId}'. Fallback=no-fade (dur=0).");
-
                     return (null, style.ProfileId, false);
                 }
 
                 return (style.Profile, style.ProfileId, style.UseFade);
             }
 
-            throw new InvalidOperationException(
-                $"[FATAL][Config] TransitionStyleId sem resoluÃ§Ã£o no catÃ¡logo. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
+            throw new InvalidOperationException($"[FATAL][Config] TransitionStyleId sem resolucao no catalogo. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

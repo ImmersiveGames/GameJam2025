@@ -91,14 +91,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Success);
         }
 
-        [Obsolete("Legacy LevelId swap path is disabled in canonical LevelFlow.")]
-        public Task SwapLocalAsync(LevelId levelId, string reason = null, CancellationToken ct = default)
-        {
-            HardFailFastH1.Trigger(typeof(LevelSwapLocalService),
-                $"[FATAL][H1][LevelFlow] Legacy SwapLocalAsync(LevelId) is disabled. levelId='{levelId}' reason='{reason}'.");
-            return Task.CompletedTask;
-        }
-
         private SceneRouteDefinitionAsset ResolveRouteAssetOrFail(SceneRouteId macroRouteId, string reason)
         {
             string signature = ComputeSignature(macroRouteId, SceneRouteKind.Unspecified, reason);
@@ -193,4 +185,5 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+
 

@@ -1,4 +1,4 @@
-# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
+ï»¿# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
@@ -16,13 +16,14 @@
 
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-05
+- Ultima atualizacao: 2026-03-11
 
 ## Decisao canonica atual
 
 - Swap local usa `levelRef` (`LevelDefinitionAsset`) no dominio da macro atual.
 - Fonte de levels no swap: `SceneRouteDefinitionAsset.LevelCollection`.
-- Sem fallback para `LevelCatalog` no trilho canônico.
+- Sem fallback para `LevelCatalog` no trilho canÃ´nico.
+- A API publica principal nao promove mais overloads por `LevelId`.
 
 ## Evidencia (log)
 
@@ -36,5 +37,6 @@
 
 ## Observacao LEGADO
 
-- APIs por `LevelId` devem ser tratadas como LEGADO fora do trilho canônico.
+- Qualquer referencia historica a `LevelId` neste contexto deve ser lida como legado removido do trilho canonico atual.
+
 

@@ -218,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[QA][LevelFlow] NTo1 start scenario='{scenario}' route='to-gameplay' mode='route_only'.",
+                $"[QA][LevelFlow] NTo1 start scenario='{scenario}' route='core_gameplay_slot' mode='route_only'.",
                 ColorInfo);
 
             await levelFlow.StartGameplayDefaultAsync(reason);
@@ -371,6 +371,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 #endif
     }
 }
+
 
 
 

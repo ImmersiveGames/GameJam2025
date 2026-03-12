@@ -1,4 +1,4 @@
-# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
+﻿# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
@@ -16,13 +16,14 @@
 
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-05
+- Ultima atualizacao: 2026-03-11
 
 ## Decisao canonica atual
 
 - IntroStage e acionada pelo dominio de level e assinada por `levelSignature`.
 - PostLevel actions pertencem ao dominio de level (`Restart`, `NextLevel`, `ExitToMenu`).
 - Macros sem `LevelCollection` nao executam stages de level; fazem clear do level ativo.
+- Snapshot/eventos do trilho principal promovem `LevelRef`, `MacroRouteId` e `LevelSignature`.
 
 ## Evidencia (log)
 
@@ -37,5 +38,6 @@
 
 ## Observacao LEGADO
 
-- Referencias a `levelId/contentId` como identidade de stage sao LEGADO no can�nico atual.
+- Referencias a `levelId/contentId` como identidade de stage sao LEGADO no canônico atual.
+
 

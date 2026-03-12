@@ -1,48 +1,41 @@
-# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
+﻿# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
 
-## Status atual (2026-03-06)
+## Status atual (2026-03-11)
 - Status: **DONE**
 - Implementado no codigo:
   - `MacroRestartCoordinator` e owner unico de `GameResetRequestedEvent` com coalescing/debounce.
   - `GameLoopCommandEventBridge` sem reset listener.
-  - `RestartNavigationBridge` desativado (LEGACY).
-  - Macro restart usa `effectiveReason` com runId para evitar dedupe falso entre restarts.
-  - `LevelStageOrchestrator` dedupe por `LevelSignature` com regra de rewind no fallback.
+  - `RestartNavigationBridge` nao participa do runtime canonico atual.
+  - `ResetMacroAsync(...)` permanece no dominio macro.
+  - `ResetLevelAsync(...)` canonico recebe `LevelDefinitionAsset levelRef`.
+  - `WorldLifecycle V2` ja nao promove `levelId/contentId` como shape principal de telemetria.
 - Evidencia:
   - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
   - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
-- LEGACY / Compat (nao canonico):
-  - `RestartNavigationBridge` existe apenas como stub de legado desativado.
 
 ## Status
 
-- Estado: **Aceito (Parcial)**
+- Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-05
+- Ultima atualizacao: 2026-03-11
 
 ## Decisao canonica atual
 
 - `ResetMacroAsync(...)` permanece no dominio macro.
 - `ResetLevelAsync(...)` canonico recebe `LevelDefinitionAsset levelRef`.
-- `ResetLevelAsync(LevelId,...)` e LEGADO bloqueado por fail-fast.
 - `contentId='level-ref:...'` no reset e token de operacao, nao identidade de negocio.
+- `WorldLifecycle V1` continua sendo gate/correlacao do SceneFlow.
+- `WorldLifecycle V2` continua sendo telemetria/observabilidade.
 
 ## Evidencia (log)
 
 - `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
 - `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
 - `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
-- `lastlog:2181` `LevelAdditiveClearSummary ...`
-- `lastlog:2185` `LevelCleared ...`
-- `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
-- `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
+- `lastlog:1685` `[OBS][Navigation] MacroRestartStart runId='1' effectiveReason='PostGame/Restart#r1'`
+- `lastlog:2033` `[OBS][LevelFlow] LevelDefaultSelected ... levelRef='Level1' reason='PostGame/Restart#r1'`
 
-- `lastlog:2744` `RestartMacroToDefaultRequested reason='PostGame/Restart' clearedSelection=True`
-- `lastlog:2745` `LevelDefaultSelected source='catalog_index_0' ... levelRef='Level1'`
-- `lastlog:2746` `LevelAdditiveApplySummary ... loadedIndices=[7] unloadedIndices=[8] loadedCount=1 unloadedCount=1`
-- `lastlog:2747` `LevelPrepared source='catalog_index_0' ... levelRef='Level1'` (nao snapshot)
-## Gap parcial
+## Escopo e excecoes remanescentes
 
-- Eventos V2 ainda carregam campos `levelId/contentId` por compatibilidade de telemetria.
-
-
+- O fechamento deste ADR vale para a separacao canonica entre MacroReset e LevelReset no eixo principal.
+- O que permanece fora deste fechamento e o bloco de `Gameplay RunRearm`, que ainda possui fallback legado de actor-kind/string e nao altera esta separacao arquitetural.

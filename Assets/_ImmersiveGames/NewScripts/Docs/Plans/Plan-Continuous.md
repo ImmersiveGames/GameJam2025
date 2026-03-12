@@ -1,4 +1,4 @@
-## Baseline congelada (3.1) - NAO MEXER SEM NOVA EVIDENCIA
+﻿## Baseline congelada (3.1) - NAO MEXER SEM NOVA EVIDENCIA
 - Freeze: `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
 - Componentes canonicos:
   - `MacroRestartCoordinator`
@@ -12,59 +12,72 @@
   - decisoes canonicas por `levelId/contentId` string no runtime
 
 > Nota: referencias a levelId/contentId neste documento sao **(LEGADO) substituido por levelRef no canonico**.
-# Planos — Trilho contínuo (canônico)
+## Estado atual do fechamento arquitetural (2026-03-11)
 
-Este arquivo unifica os planos de execução em um **trilho contínuo**, organizado por **atividades (ActivityId)**.
-Ele é a **fonte canônica** de planejamento em `Docs/Plans/`.
+- O eixo principal foi consolidado como **canon-only** em:
+  - `LevelFlow`
+  - `LevelDefinition`
+  - `Navigation`
+  - `WorldLifecycle V2`
+  - tooling/editor/QA associado
+- O runtime principal de start gameplay resolve a rota canonica via catalogo/slot core de Navigation; `to-gameplay` nao e mais o mecanismo principal de resolucao em runtime.
+- Compat residual desse eixo foi removida do codigo ativo.
+- Excecoes honestas que permanecem fora/borda do fechamento principal:
+  - `Gameplay RunRearm` com fallback legado de actor-kind/string
+  - pequeno residuo editor/serializado em `GameNavigationIntentCatalogAsset`
+# Planos â€” Trilho contÃ­nuo (canÃ´nico)
 
-> Regra: **ADRs + Evidências + lastlog** continuam sendo a fonte de verdade. Planos só descrevem trabalho e checklists.
+Este arquivo unifica os planos de execuÃ§Ã£o em um **trilho contÃ­nuo**, organizado por **atividades (ActivityId)**.
+Ele Ã© a **fonte canÃ´nica** de planejamento em `Docs/Plans/`.
 
-## Fonte de verdade (não duplicar)
+> Regra: **ADRs + EvidÃªncias + lastlog** continuam sendo a fonte de verdade. Planos sÃ³ descrevem trabalho e checklists.
 
-- **Contrato / vocabulário canônico:** `Docs/Standards/Standards.md#observability-contract`
-- **Política Strict vs Release:** `Docs/Standards/Standards.md#politica-strict-vs-release`
-- **Evidência vigente:** `Docs/Reports/Evidence/LATEST.md`
+## Fonte de verdade (nÃ£o duplicar)
+
+- **Contrato / vocabulÃ¡rio canÃ´nico:** `Docs/Standards/Standards.md#observability-contract`
+- **PolÃ­tica Strict vs Release:** `Docs/Standards/Standards.md#politica-strict-vs-release`
+- **EvidÃªncia vigente:** `Docs/Reports/Evidence/LATEST.md`
 - **Log bruto vigente:** `Docs/Reports/lastlog.log`
-- **Decisões (ADRs):** `Docs/ADRs/README.md`
+- **DecisÃµes (ADRs):** `Docs/ADRs/README.md`
 
-## Definição de Done (DoD) por atividade
+## DefiniÃ§Ã£o de Done (DoD) por atividade
 
-Uma atividade só vira **DONE** quando:
+Uma atividade sÃ³ vira **DONE** quando:
 
-1) Checklist do plano está marcado como concluído (com notas de “o que mudou”).
-2) Existe artefato datado de validação:
-   - **Auditoria estática (CODEX read-only):** `Docs/Reports/Audits/<YYYY-MM-DD>/...`
-   - **Evidência de runtime:** `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + update de `Docs/Reports/Evidence/LATEST.md`
+1) Checklist do plano estÃ¡ marcado como concluÃ­do (com notas de â€œo que mudouâ€).
+2) Existe artefato datado de validaÃ§Ã£o:
+   - **Auditoria estÃ¡tica (CODEX read-only):** `Docs/Reports/Audits/<YYYY-MM-DD>/...`
+   - **EvidÃªncia de runtime:** `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + update de `Docs/Reports/Evidence/LATEST.md`
 
 ## Linha do tempo
 
 | Ordem | ActivityId | Status esperado | Escopo |
 |---:|---|---|---|
-| 1 | P-001 | DONE | Strings → referências diretas (v1) |
-| 2 | P-002 | DONE | Data cleanup pós v1 (remoção de resíduos/compat) |
-| 3 | P-003 | DONE | Navegação: Play → `to-gameplay` (correção mínima) |
-| 4 | P-004 | DONE | Validação (CODEX) — RouteResetPolicy / SceneFlow / Navigation |
+| 1 | P-001 | DONE | Strings â†’ referÃªncias diretas (v1) |
+| 2 | P-002 | DONE | Data cleanup pÃ³s v1 (remoÃ§Ã£o de resÃ­duos/compat) |
+| 3 | P-003 | DONE | NavegaÃ§Ã£o: Play â†’ `to-gameplay` (correÃ§Ã£o mÃ­nima) |
+| 4 | P-004 | DONE | ValidaÃ§Ã£o (CODEX) â€” RouteResetPolicy / SceneFlow / Navigation |
 
 ---
 
 <a id="p-001"></a>
-## Plano (P-001) — Execução (Incremental): **Strings → Referências Diretas** (SOs + Enums)
+## Plano (P-001) â€” ExecuÃ§Ã£o (Incremental): **Strings â†’ ReferÃªncias Diretas** (SOs + Enums)
 
 **Projeto:** Unity 6 / `NewScripts` (SceneFlow + Navigation + LevelFlow)
 **Data:** 2026-02-13
-**Status:** DONE (fechado com evidências e smoke de validação)
+**Status:** DONE (fechado com evidÃªncias e smoke de validaÃ§Ã£o)
 
 ### Status
 
 - ActivityId: **P-001**
 - Estado: **DONE**
-- Última atualização: **2026-02-18**
+- Ãšltima atualizaÃ§Ã£o: **2026-02-18**
 
-#### Fonte de verdade (referências)
+#### Fonte de verdade (referÃªncias)
 
-- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
-- Política Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
-- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+- Contrato canÃ´nico: `Docs/Standards/Standards.md#observability-contract`
+- PolÃ­tica Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
+- EvidÃªncia vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
 
 #### Auditorias relacionadas (status atual)
 
@@ -77,28 +90,28 @@ Uma atividade só vira **DONE** quando:
 
 | Fase | Status | Resumo objetivo |
 |---|---|---|
-| **F0** | **DONE** | Documento no repositório e âncora de observabilidade ativa no boot (`Plan=StringsToDirectRefs v1`). |
-| **F1** | **DONE** | Bootstrap root único implementado; política oficial em runtime é **strict fail-fast** quando bootstrap/root obrigatório está ausente. |
-| **F2** | **DONE** | `SceneKeyAsset` em uso no fluxo de rotas, com resolução para nomes de cena no boundary com API da Unity. |
-| **F3** | **DONE** | Estratégia **direct-ref-first** consolidada no fluxo principal, com compatibilidade residual tratada no DataCleanup v1. |
-| **F4** | **DONE** | Hardening concluído para o escopo v1; resíduos remanescentes migrados/encerrados no DataCleanup v1. |
-| **F5** | **DONE** | Fechamento final com validação/smoke e evidências canônicas registradas. |
+| **F0** | **DONE** | Documento no repositÃ³rio e Ã¢ncora de observabilidade ativa no boot (`Plan=StringsToDirectRefs v1`). |
+| **F1** | **DONE** | Bootstrap root Ãºnico implementado; polÃ­tica oficial em runtime Ã© **strict fail-fast** quando bootstrap/root obrigatÃ³rio estÃ¡ ausente. |
+| **F2** | **DONE** | `SceneKeyAsset` em uso no fluxo de rotas, com resoluÃ§Ã£o para nomes de cena no boundary com API da Unity. |
+| **F3** | **DONE** | EstratÃ©gia **direct-ref-first** consolidada no fluxo principal, com compatibilidade residual tratada no DataCleanup v1. |
+| **F4** | **DONE** | Hardening concluÃ­do para o escopo v1; resÃ­duos remanescentes migrados/encerrados no DataCleanup v1. |
+| **F5** | **DONE** | Fechamento final com validaÃ§Ã£o/smoke e evidÃªncias canÃ´nicas registradas. |
 
-### Checklist rastreável (alto nível)
+### Checklist rastreÃ¡vel (alto nÃ­vel)
 
-- [x] **F0** — Documento no repo + âncora de observabilidade
-- [x] **F1** — Bootstrap root único + strict fail-fast
-- [x] **F2** — `SceneKeyAsset` no boundary de Unity
-- [x] **F3** — Rota como fonte única de SceneData (remover duplicidades)
-- [x] **F4** — Hardening final + remoção controlada de compat/legado
-- [x] **F5** — Fechamento final com validação/smoke e evidências canônicas
+- [x] **F0** â€” Documento no repo + Ã¢ncora de observabilidade
+- [x] **F1** â€” Bootstrap root Ãºnico + strict fail-fast
+- [x] **F2** â€” `SceneKeyAsset` no boundary de Unity
+- [x] **F3** â€” Rota como fonte Ãºnica de SceneData (remover duplicidades)
+- [x] **F4** â€” Hardening final + remoÃ§Ã£o controlada de compat/legado
+- [x] **F5** â€” Fechamento final com validaÃ§Ã£o/smoke e evidÃªncias canÃ´nicas
 
 ---
 
-### Escopo do problema (estado histórico + estado atual)
-Historicamente, o “wiring” dependia de **strings** em dois pontos principais:
+### Escopo do problema (estado histÃ³rico + estado atual)
+Historicamente, o â€œwiringâ€ dependia de **strings** em dois pontos principais:
 
-1) **[Histórico] Resources.Load por path (múltiplos)**
+1) **[HistÃ³rico] Resources.Load por path (mÃºltiplos)**
 - `GlobalCompositionRoot.NavigationInputModes.cs` carregava 3 assets por Resources:
   - `Navigation/GameNavigationCatalog`
   - `Navigation/TransitionStyleCatalog`
@@ -111,111 +124,111 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 2) **Dados de cena por string (nomes de cenas)**
 - `SceneRouteCatalogAsset` mantinha campos string legacy (`scenesToLoad/scenesToUnload/targetActiveScene`).
 
-> Situação atual: o domínio já opera com ids tipados (`LevelId`, `SceneRouteId`, `TransitionStyleId`), `SceneKeyAsset` e hardening em fail-fast no pipeline principal.
+> SituaÃ§Ã£o atual: o domÃ­nio jÃ¡ opera com ids tipados (`LevelId`, `SceneRouteId`, `TransitionStyleId`), `SceneKeyAsset` e hardening em fail-fast no pipeline principal.
 
 ---
 
 ### Objetivos (fechado =)
-1. Substituir ligações por string por **referências diretas** entre ScriptableObjects onde for seguro.
-2. Manter um **SO raiz** de configuração para o bootstrap (single-load) que referencia:
+1. Substituir ligaÃ§Ãµes por string por **referÃªncias diretas** entre ScriptableObjects onde for seguro.
+2. Manter um **SO raiz** de configuraÃ§Ã£o para o bootstrap (single-load) que referencia:
    - `GameNavigationCatalogAsset`
    - `TransitionStyleCatalogAsset`
    - `LevelCatalogAsset`
    - `SceneRouteCatalogAsset`
    - `SceneTransitionProfileCatalogAsset`
-3. Operar com política explícita de **strict fail-fast** para dependências obrigatórias de configuração.
-4. Isolar strings inevitáveis (nome de cena) dentro de `SceneKeyAsset` para reduzir typo.
+3. Operar com polÃ­tica explÃ­cita de **strict fail-fast** para dependÃªncias obrigatÃ³rias de configuraÃ§Ã£o.
+4. Isolar strings inevitÃ¡veis (nome de cena) dentro de `SceneKeyAsset` para reduzir typo.
 
-**Não-objetivo:** Addressables (fora; apenas preparar terreno).
-**Restrições:** mudanças pequenas/verificáveis (baseline/logs), evitar churn em GameLoop/WorldLifecycle.
+**NÃ£o-objetivo:** Addressables (fora; apenas preparar terreno).
+**RestriÃ§Ãµes:** mudanÃ§as pequenas/verificÃ¡veis (baseline/logs), evitar churn em GameLoop/WorldLifecycle.
 
 ---
 
 ### O que ainda precisa ser string (por enquanto)
-| Item | Por quê | Mitigação |
+| Item | Por quÃª | MitigaÃ§Ã£o |
 |---|---|---|
 | Nome da cena | Unity runtime carrega por nome/path (sem Addressables) | encapsular em `SceneKeyAsset` |
-| `reason` / anchors | contrato de evidência/baseline | manter string (não renomear) |
-| `routeId` (intents) | UI/Bindings já usam strings canônicas (`to-menu`, `to-gameplay`) | manter como constantes (`GameNavigationIntents`) enquanto durar compatibilidade |
+| `reason` / anchors | contrato de evidÃªncia/baseline | manter string (nÃ£o renomear) |
+| `intentId` canonico em catalogos | o catalogo de intents ainda usa ids canonicos como `to-menu` e `to-gameplay` | manter em catalogo/validator, sem reabrir trilho string-first no runtime principal |
 
 ---
 
 ### Fases (uma por vez)
 
-#### Fase 0 — Documentação + “âncora” de observabilidade (zero risco)
-**Objetivo:** manter plano no repo e log âncora de versão para rastrear execução.
+#### Fase 0 â€” DocumentaÃ§Ã£o + â€œÃ¢ncoraâ€ de observabilidade (zero risco)
+**Objetivo:** manter plano no repo e log Ã¢ncora de versÃ£o para rastrear execuÃ§Ã£o.
 
 **Aceite**
 - Compila.
-- Nenhuma mudança funcional; apenas doc + log de evidência.
+- Nenhuma mudanÃ§a funcional; apenas doc + log de evidÃªncia.
 
 ---
 
-#### Fase 1 — SO raiz “single-load” com política strict fail-fast
-**Objetivo:** usar `NewScriptsBootstrapConfigAsset` como root único de config em runtime.
+#### Fase 1 â€” SO raiz â€œsingle-loadâ€ com polÃ­tica strict fail-fast
+**Objetivo:** usar `NewScriptsBootstrapConfigAsset` como root Ãºnico de config em runtime.
 
-**Política oficial (atualizada)**
-- Para dependências obrigatórias do bootstrap/root, a política é **strict fail-fast**.
-- Se bootstrap/root obrigatório faltar, o sistema **não** entra em fallback silencioso para múltiplos `Resources.Load` de produção.
+**PolÃ­tica oficial (atualizada)**
+- Para dependÃªncias obrigatÃ³rias do bootstrap/root, a polÃ­tica Ã© **strict fail-fast**.
+- Se bootstrap/root obrigatÃ³rio faltar, o sistema **nÃ£o** entra em fallback silencioso para mÃºltiplos `Resources.Load` de produÃ§Ã£o.
 
 **Logs `[OBS]` esperados**
 - `[OBS][Config] BootstrapConfigResolvedVia=... asset=...`
 - `[OBS][Config] CatalogResolvedVia=Bootstrap field=<x>`
 
 **Aceite**
-- Com bootstrap válido: catálogos resolvidos por referência direta.
-- Sem bootstrap obrigatório: erro explícito (fail-fast), com diagnóstico por log.
+- Com bootstrap vÃ¡lido: catÃ¡logos resolvidos por referÃªncia direta.
+- Sem bootstrap obrigatÃ³rio: erro explÃ­cito (fail-fast), com diagnÃ³stico por log.
 
 ---
 
-#### Fase 2 — `SceneKeyAsset`: encapsular nome de cena (sem Addressables)
+#### Fase 2 â€” `SceneKeyAsset`: encapsular nome de cena (sem Addressables)
 **Objetivo:** evitar string solta para cena em rotas, mantendo boundary string apenas no carregamento Unity.
 
 **Aceite**
 - Rotas principais migradas para `SceneKeyAsset`.
-- Resolução de `SceneRouteDefinition` baseada em referências, sem regressão de fluxo.
+- ResoluÃ§Ã£o de `SceneRouteDefinition` baseada em referÃªncias, sem regressÃ£o de fluxo.
 
 ---
 
-#### Fase 3 — “Direct-ref-first” entre assets (com compatibilidade temporária por IDs)
-**Objetivo:** consolidar modelo **direct-ref-first** no wiring de conteúdo.
+#### Fase 3 â€” â€œDirect-ref-firstâ€ entre assets (com compatibilidade temporÃ¡ria por IDs)
+**Objetivo:** consolidar modelo **direct-ref-first** no wiring de conteÃºdo.
 
 **Diretriz**
-- Referências diretas (`routeRef`/SO) devem ser priorizadas em novos conteúdos e fluxos críticos.
-- IDs tipados (`SceneRouteId`, `LevelId`) permanecem como **compatibilidade temporária**, com plano de retirada progressiva.
+- ReferÃªncias diretas (`routeRef`/SO) devem ser priorizadas em novos conteÃºdos e fluxos crÃ­ticos.
+- IDs tipados (`SceneRouteId`, `LevelId`) permanecem como **compatibilidade temporÃ¡ria**, com plano de retirada progressiva.
 
-**Critério de saída (DONE)**
-1. `routeRef` obrigatório para rotas críticas (ex.: Menu e Gameplay) nos assets relevantes.
-2. Validação de Editor impedindo configuração incompleta para essas rotas críticas.
-3. Logs `[OBS]` confirmando resolução via direct-ref no caminho principal.
-4. Ausência de fallback degradado em runtime para rotas críticas.
+**CritÃ©rio de saÃ­da (DONE)**
+1. `routeRef` obrigatÃ³rio para rotas crÃ­ticas (ex.: Menu e Gameplay) nos assets relevantes.
+2. ValidaÃ§Ã£o de Editor impedindo configuraÃ§Ã£o incompleta para essas rotas crÃ­ticas.
+3. Logs `[OBS]` confirmando resoluÃ§Ã£o via direct-ref no caminho principal.
+4. AusÃªncia de fallback degradado em runtime para rotas crÃ­ticas.
 
 ---
 
-#### Fase 4 — Hardening (remoção de legado remanescente)
-**Objetivo:** fechar resíduos de legado após estabilização de evidências.
+#### Fase 4 â€” Hardening (remoÃ§Ã£o de legado remanescente)
+**Objetivo:** fechar resÃ­duos de legado apÃ³s estabilizaÃ§Ã£o de evidÃªncias.
 
 **Itens restantes (exatos)**
 1. Remover fallback `Resources` do tooling dev em `SceneFlowDevContextMenu`.
 2. Remover/encapsular helpers legados de `Resources` em `GlobalCompositionRoot.NavigationInputModes`.
-3. Planejar remoção das APIs `[Obsolete]` após janela de migração.
+3. Planejar remoÃ§Ã£o das APIs `[Obsolete]` apÃ³s janela de migraÃ§Ã£o.
 
-**Critério para remoção de `[Obsolete]`**
-- Todos os consumidores migrados para trilhos oficiais (`ILevelFlowRuntimeService` / APIs canônicas).
+**CritÃ©rio para remoÃ§Ã£o de `[Obsolete]`**
+- Todos os consumidores migrados para trilhos oficiais (`ILevelFlowRuntimeService` / APIs canÃ´nicas).
 - Janela de compatibilidade encerrada e registrada em changelog.
-- Smoke/baseline sem chamadas aos métodos obsoletos.
+- Smoke/baseline sem chamadas aos mÃ©todos obsoletos.
 
 ---
 
-### Evidências (P-001)
+### EvidÃªncias (P-001)
 
-- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
+- LATEST (canÃ´nico): `Docs/Reports/Evidence/LATEST.md`
 - Auditoria final: `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
 - Smoke datado: `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator DataCleanup v1 (smoke complementar): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Log runtime/smoke: `Docs/Reports/lastlog.log`
 
-### Evidências canônicas
+### EvidÃªncias canÃ´nicas
 
 #### Logs `[OBS]`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`
@@ -223,7 +236,7 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs`
 
-#### Arquivos-chave de configuração e catálogo
+#### Arquivos-chave de configuraÃ§Ã£o e catÃ¡logo
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Config/NewScriptsBootstrapConfigAsset.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Bindings/SceneRouteCatalogAsset.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Bindings/TransitionStyleCatalogAsset.cs`
@@ -237,58 +250,58 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ---
 
-### Operação com Codex
-- **1 prompt por fase** (não misturar).
+### OperaÃ§Ã£o com Codex
+- **1 prompt por fase** (nÃ£o misturar).
 - Solicitar sempre:
   - logs `[OBS]`
-  - validação explícita de fail-fast em configurações obrigatórias
+  - validaÃ§Ã£o explÃ­cita de fail-fast em configuraÃ§Ãµes obrigatÃ³rias
   - evitar tocar em GameLoop/WorldLifecycle fora do escopo da fase
 
 ---
 
-### Checklist rápido de validação
+### Checklist rÃ¡pido de validaÃ§Ã£o
 - [x] Compila
-- [x] Boot → Menu OK
-- [x] Menu → Gameplay OK
+- [x] Boot â†’ Menu OK
+- [x] Menu â†’ Gameplay OK
 - [x] Restart OK
 - [x] Logs `[OBS]` aparecem conforme fase
 
 
 <a id="p-002"></a>
-## Plano (P-002) — Data Cleanup pós StringsToDirectRefs v1
+## Plano (P-002) â€” Data Cleanup pÃ³s StringsToDirectRefs v1
 
 ### Status
 
 - ActivityId: **P-002**
 - Estado: **DONE**
-- Última atualização: **2026-02-17**
+- Ãšltima atualizaÃ§Ã£o: **2026-02-17**
 
-#### Fonte de verdade (referências)
+#### Fonte de verdade (referÃªncias)
 
-- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
-- Política Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
-- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+- Contrato canÃ´nico: `Docs/Standards/Standards.md#observability-contract`
+- PolÃ­tica Strict/Release: `Docs/Standards/Standards.md#politica-strict-vs-release`
+- EvidÃªncia vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
 
 #### Artefatos esperados
 
 - Auditorias (CODEX read-only) em: `Docs/Reports/Audits/<YYYY-MM-DD>/...`
-- Snapshot de configuração (quando aplicável): `Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`
+- Snapshot de configuraÃ§Ã£o (quando aplicÃ¡vel): `Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`
 
-> Objetivo: reduzir “texto digitado” no Inspector, eliminar resíduos legados/compat, e consolidar o wiring por **referências diretas** sem mexer no comportamento runtime crítico.
+> Objetivo: reduzir â€œtexto digitadoâ€ no Inspector, eliminar resÃ­duos legados/compat, e consolidar o wiring por **referÃªncias diretas** sem mexer no comportamento runtime crÃ­tico.
 
-### Checklist rastreável (alto nível)
+### Checklist rastreÃ¡vel (alto nÃ­vel)
 
-- [x] Etapa 0 — Guardrails + inventário
-- [x] Etapa 1 — PropertyDrawers + Source Providers
-- [x] Etapa 2 — Tipar Intent ID no Navigation
-- [x] Etapa 3 — Descontinuar routes inline no SceneRouteCatalog
-- [x] Etapa 4 — Formalizar ProfileCatalog como validation-only
-- [x] Etapa 5 — Validator + relatório
-- [x] Etapa 6 — Remoção final de legado
+- [x] Etapa 0 â€” Guardrails + inventÃ¡rio
+- [x] Etapa 1 â€” PropertyDrawers + Source Providers
+- [x] Etapa 2 â€” Tipar Intent ID no Navigation
+- [x] Etapa 3 â€” Descontinuar routes inline no SceneRouteCatalog
+- [x] Etapa 4 â€” Formalizar ProfileCatalog como validation-only
+- [x] Etapa 5 â€” Validator + relatÃ³rio
+- [x] Etapa 6 â€” RemoÃ§Ã£o final de legado
 
-### Evidências (P-002)
+### EvidÃªncias (P-002)
 
-- LATEST (canônico): `Docs/Reports/Evidence/LATEST.md`
+- LATEST (canÃ´nico): `Docs/Reports/Evidence/LATEST.md`
 - Smoke datado: `Docs/Reports/Audits/2026-02-17/Smoke-DataCleanup-v1.md`
 - Validator PASS: `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Smoke runtime: `Docs/Reports/lastlog.log`
@@ -299,47 +312,47 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ### Contexto (estado atual)
 
-- O runtime principal de SceneFlow/Navigation já opera “direct-ref-first” (rotas e profiles por referência de asset).
-- Persistem riscos operacionais (typo/atrito) e resíduos legados/compatibilidade em assets/catálogos, principalmente:
+- O runtime principal de SceneFlow/Navigation jÃ¡ opera â€œdirect-ref-firstâ€ (rotas e profiles por referÃªncia de asset).
+- Persistem riscos operacionais (typo/atrito) e resÃ­duos legados/compatibilidade em assets/catÃ¡logos, principalmente:
   - `GameNavigationCatalogAsset.RouteEntry.routeId` (string crua de intent).
-  - Edição manual de IDs tipados (sem drawers dedicados).
+  - EdiÃ§Ã£o manual de IDs tipados (sem drawers dedicados).
   - `SceneRouteCatalogAsset.routes` como fallback inline legado.
 
-### Evidências de fechamento (2026-02-17)
+### EvidÃªncias de fechamento (2026-02-17)
 
 - P-001 (snapshot/final): `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
 - P-002 (validator smoke): `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md` com PASS registrado.
 
-### Princípios
+### PrincÃ­pios
 
-1. **Mudanças pequenas e verificáveis** (uma etapa por vez).
-2. **Editor-first** para reduzir risco: primeiro tooling/validação/migração; depois remoção de legado.
-3. **Fail-fast** para configurações obrigatórias (exceto política específica do Fade/ADR-0018).
+1. **MudanÃ§as pequenas e verificÃ¡veis** (uma etapa por vez).
+2. **Editor-first** para reduzir risco: primeiro tooling/validaÃ§Ã£o/migraÃ§Ã£o; depois remoÃ§Ã£o de legado.
+3. **Fail-fast** para configuraÃ§Ãµes obrigatÃ³rias (exceto polÃ­tica especÃ­fica do Fade/ADR-0018).
 4. Toda etapa deve produzir:
    - checklist de aceite
-   - evidência (logs `[OBS]`, report do validator, smoke test)
+   - evidÃªncia (logs `[OBS]`, report do validator, smoke test)
 
 ---
 
-### Etapa 0 — Guardrails + inventário (zero risco)
+### Etapa 0 â€” Guardrails + inventÃ¡rio (zero risco)
 
 **Objetivo**
-- Congelar o “contrato” atual (baseline/logs) antes de qualquer limpeza.
+- Congelar o â€œcontratoâ€ atual (baseline/logs) antes de qualquer limpeza.
 
 **Trabalhos**
-- Adicionar/atualizar um documento de evidência com:
-  - lista de rotas, intents, estilos e profiles atualmente usados em produção
-  - snapshot dos assets relevantes (nomes + GUID, se aplicável)
-- Registrar âncora de observabilidade do plano “DataCleanup v1” (log `[OBS][Config]`).
+- Adicionar/atualizar um documento de evidÃªncia com:
+  - lista de rotas, intents, estilos e profiles atualmente usados em produÃ§Ã£o
+  - snapshot dos assets relevantes (nomes + GUID, se aplicÃ¡vel)
+- Registrar Ã¢ncora de observabilidade do plano â€œDataCleanup v1â€ (log `[OBS][Config]`).
 
 **Aceite**
 - Compila.
-- Nenhuma mudança funcional.
-- Log âncora presente no boot.
+- Nenhuma mudanÃ§a funcional.
+- Log Ã¢ncora presente no boot.
 
 ---
 
-### Etapa 1 — PropertyDrawers + Source Providers para IDs tipados (prioridade alta)
+### Etapa 1 â€” PropertyDrawers + Source Providers para IDs tipados (prioridade alta)
 
 **Objetivo**
 - Remover o atrito de editar `_value` manualmente no Inspector.
@@ -348,113 +361,113 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 - Criar PropertyDrawers (dropdown) para:
   - `SceneRouteId` (fonte: `SceneRouteCatalogAsset.routeDefinitions` / assets existentes)
   - `TransitionStyleId` (fonte: `TransitionStyleCatalogAsset.styles`)
-  - `SceneFlowProfileId` (fonte: conjunto canônico + catálogo)
-- Criar “Source Providers” (Editor-only) responsáveis por fornecer listas e validar duplicidades.
+  - `SceneFlowProfileId` (fonte: conjunto canÃ´nico + catÃ¡logo)
+- Criar â€œSource Providersâ€ (Editor-only) responsÃ¡veis por fornecer listas e validar duplicidades.
 
 **Aceite**
-- Em assets de rota/estilo/perfil, o Inspector exibe dropdown (sem digitação).
-- Seleção inválida é impossível (ou destacada com erro).
+- Em assets de rota/estilo/perfil, o Inspector exibe dropdown (sem digitaÃ§Ã£o).
+- SeleÃ§Ã£o invÃ¡lida Ã© impossÃ­vel (ou destacada com erro).
 - Sem impacto em runtime (Editor-only).
 
 ---
 
-### Etapa 2 — Tipar Intent ID no Navigation (prioridade alta)
+### Etapa 2 â€” Tipar Intent ID no Navigation (prioridade alta)
 
 **Objetivo**
-- Eliminar o ponto mais frágil: `RouteEntry.routeId` como string crua (intent).
+- Eliminar o ponto mais frÃ¡gil: `RouteEntry.routeId` como string crua (intent).
 
 **Trabalhos**
-- Introduzir `GameNavigationIntentId` (struct serializável com normalização).
+- Introduzir `GameNavigationIntentId` (struct serializÃ¡vel com normalizaÃ§Ã£o).
 - Trocar `GameNavigationCatalogAsset.RouteEntry.routeId : string` por `intentId : GameNavigationIntentId`.
-- Fornecer constantes canônicas (ex.: `to-menu`, `to-gameplay`, etc.).
-- Migração de assets:
-  - manter compat temporária via `[FormerlySerializedAs]` ou campo legado escondido + upgrade no `OnValidate()`.
-  - validator bloqueia intents vazios/não resolvidos.
+- Fornecer constantes canÃ´nicas (ex.: `to-menu`, `to-gameplay`, etc.).
+- MigraÃ§Ã£o de assets:
+  - manter compat temporÃ¡ria via `[FormerlySerializedAs]` ou campo legado escondido + upgrade no `OnValidate()`.
+  - validator bloqueia intents vazios/nÃ£o resolvidos.
 
 **Aceite**
-- Nenhum campo de intent exige digitação manual.
-- Catálogo navega com intents tipados e resolve rotas/estilos sem warnings.
-- Logs `[OBS][Navigation]` continuam estáveis.
+- Nenhum campo de intent exige digitaÃ§Ã£o manual.
+- CatÃ¡logo navega com intents tipados e resolve rotas/estilos sem warnings.
+- Logs `[OBS][Navigation]` continuam estÃ¡veis.
 
 ---
 
-### Etapa 3 — Descontinuar `SceneRouteCatalogAsset.routes` inline (prioridade média)
+### Etapa 3 â€” Descontinuar `SceneRouteCatalogAsset.routes` inline (prioridade mÃ©dia)
 
 **Objetivo**
-- Remover o fallback inline (categoria C) e reduzir campos inúteis em assets.
+- Remover o fallback inline (categoria C) e reduzir campos inÃºteis em assets.
 
 **Trabalhos**
 - Criar ferramenta Editor:
-  - “Migrate Inline Routes → SceneRouteDefinitionAsset”
+  - â€œMigrate Inline Routes â†’ SceneRouteDefinitionAssetâ€
   - para cada entry em `routes`, gerar um `SceneRouteDefinitionAsset` equivalente e adicionar em `routeDefinitions`.
-- Marcar `routes` como `[Obsolete]` e esconder no Inspector (mantendo leitura temporária apenas para migração).
-- Após migração completa:
-  - runtime ignora `routes` (ou falha em Strict, conforme política definida)
+- Marcar `routes` como `[Obsolete]` e esconder no Inspector (mantendo leitura temporÃ¡ria apenas para migraÃ§Ã£o).
+- ApÃ³s migraÃ§Ã£o completa:
+  - runtime ignora `routes` (ou falha em Strict, conforme polÃ­tica definida)
   - remover definitivamente o campo em etapa final.
 
 **Aceite**
 - `SceneRouteCatalogAsset` funciona apenas com `routeDefinitions`.
-- Nenhuma rota crítica depende de inline.
-- Relatório de validator confirma “0 inline routes ativas”.
+- Nenhuma rota crÃ­tica depende de inline.
+- RelatÃ³rio de validator confirma â€œ0 inline routes ativasâ€.
 
 ---
 
-### Etapa 4 — Formalizar `SceneTransitionProfileCatalogAsset` como compat/validation-only (prioridade média)
+### Etapa 4 â€” Formalizar `SceneTransitionProfileCatalogAsset` como compat/validation-only (prioridade mÃ©dia)
 
 **Objetivo**
-- Clarificar o papel do catálogo: cobertura/consistência/boot, sem virar “resolver por id” no runtime.
+- Clarificar o papel do catÃ¡logo: cobertura/consistÃªncia/boot, sem virar â€œresolver por idâ€ no runtime.
 
 **Trabalhos**
-- Atualizar docs técnicas e comentários no código indicando:
-  - runtime usa `SceneTransitionProfile` por referência direta
-  - catálogo é para cobertura/validação/compat
-- Consolidar checks de cobertura obrigatória:
-  - todo `profileId` referenciado em `TransitionStyleCatalogAsset` deve ter profile atribuído
-  - qualquer inconsistência gera report/erro conforme modo (Strict vs Release)
+- Atualizar docs tÃ©cnicas e comentÃ¡rios no cÃ³digo indicando:
+  - runtime usa `SceneTransitionProfile` por referÃªncia direta
+  - catÃ¡logo Ã© para cobertura/validaÃ§Ã£o/compat
+- Consolidar checks de cobertura obrigatÃ³ria:
+  - todo `profileId` referenciado em `TransitionStyleCatalogAsset` deve ter profile atribuÃ­do
+  - qualquer inconsistÃªncia gera report/erro conforme modo (Strict vs Release)
 
 **Aceite**
-- Documentação explícita e consistente.
-- Validator/relatório acusa profiles faltantes antes do Play/Build.
-- Nenhuma reintrodução de lookup por string/path.
+- DocumentaÃ§Ã£o explÃ­cita e consistente.
+- Validator/relatÃ³rio acusa profiles faltantes antes do Play/Build.
+- Nenhuma reintroduÃ§Ã£o de lookup por string/path.
 
 ---
 
-### Etapa 5 — Validator + Relatório (menu/tooling) (prioridade média)
+### Etapa 5 â€” Validator + RelatÃ³rio (menu/tooling) (prioridade mÃ©dia)
 
 **Objetivo**
-- Um “botão” único para rodar auditoria antes de build/PR.
+- Um â€œbotÃ£oâ€ Ãºnico para rodar auditoria antes de build/PR.
 
 **Trabalhos**
-- Menu: `Tools/NewScripts/Validate SceneFlow Config…`
+- Menu: `Tools/NewScripts/Validate SceneFlow Configâ€¦`
 - Gera report (Markdown) com:
-  - intents órfãos
-  - estilos sem profile (incluindo caso ADR-0018 “no-fade”)
+  - intents Ã³rfÃ£os
+  - estilos sem profile (incluindo caso ADR-0018 â€œno-fadeâ€)
   - rotas com cenas fora do BuildSettings
   - duplicidades de IDs
   - inline routes remanescentes (se ainda existir etapa 3 em andamento)
-- Integração opcional: bloquear PlayMode em Strict quando houver erro.
+- IntegraÃ§Ã£o opcional: bloquear PlayMode em Strict quando houver erro.
 
 **Aceite**
-- Um clique gera report determinístico.
-- Erros críticos bloqueiam PlayMode em Strict.
-- Warnings de degradação ficam explícitos (sem “surpresa” em runtime).
+- Um clique gera report determinÃ­stico.
+- Erros crÃ­ticos bloqueiam PlayMode em Strict.
+- Warnings de degradaÃ§Ã£o ficam explÃ­citos (sem â€œsurpresaâ€ em runtime).
 
 ---
 
-### Etapa 6 — Remoção final de campos legado/inativos (categoria C)
+### Etapa 6 â€” RemoÃ§Ã£o final de campos legado/inativos (categoria C)
 
 **Objetivo**
-- Limpar definitivamente o que foi migrado e não é mais lido.
+- Limpar definitivamente o que foi migrado e nÃ£o Ã© mais lido.
 
 **Trabalhos**
-- Remover campos C já migrados (ex.: `SceneRouteCatalogAsset.routes`).
-- Remover código de migração temporária (mantendo apenas tooling de validação).
+- Remover campos C jÃ¡ migrados (ex.: `SceneRouteCatalogAsset.routes`).
+- Remover cÃ³digo de migraÃ§Ã£o temporÃ¡ria (mantendo apenas tooling de validaÃ§Ã£o).
 - Rodar um pass final em assets (re-serialize) para eliminar lixo.
 
 **Aceite**
 - Compila.
-- Smoke test do fluxo Boot → Menu → Gameplay (e retorno) passa.
-- Nenhum warning de “campo legado ainda em uso”.
+- Smoke test do fluxo Boot â†’ Menu â†’ Gameplay (e retorno) passa.
+- Nenhum warning de â€œcampo legado ainda em usoâ€.
 
 ---
 
@@ -470,60 +483,60 @@ Historicamente, o “wiring” dependia de **strings** em dois pontos principais
 
 ---
 
-### Critérios globais de “DONE”
+### CritÃ©rios globais de â€œDONEâ€
 
-- Nenhum campo crítico de SceneFlow/Navigation depende de texto digitado no Inspector.
-- `SceneRouteCatalogAsset.routes` não existe mais em runtime (apenas histórico em commits).
-- Existe tooling único de validação + report.
-- Logs `[OBS]` mantêm âncoras estáveis para Baseline/Evidências.
+- Nenhum campo crÃ­tico de SceneFlow/Navigation depende de texto digitado no Inspector.
+- `SceneRouteCatalogAsset.routes` nÃ£o existe mais em runtime (apenas histÃ³rico em commits).
+- Existe tooling Ãºnico de validaÃ§Ã£o + report.
+- Logs `[OBS]` mantÃªm Ã¢ncoras estÃ¡veis para Baseline/EvidÃªncias.
 
 
 <a id="p-003"></a>
-## Plano (P-003) — Navigation: Play Button → `to-gameplay`
+## Plano (P-003) â€” Navigation: Play Button â†’ `to-gameplay`
 
 ### Status
 
 - ActivityId: **P-003**
 - Estado: **DONE**
-- Última atualização: **2026-02-17**
+- Ãšltima atualizaÃ§Ã£o: **2026-02-17**
 
-#### Fonte de verdade (referências)
+#### Fonte de verdade (referÃªncias)
 
-- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
-- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+- Contrato canÃ´nico: `Docs/Standards/Standards.md#observability-contract`
+- EvidÃªncia vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
 
-#### Evidência / auditoria relacionada
+#### EvidÃªncia / auditoria relacionada
 
-- `Docs/CHANGELOG.md (entrada histórica de navegação / P-003)` (investigação do sintoma "Entries: []" e riscos de catálogo/Resources)
+- `Docs/CHANGELOG.md (entrada histÃ³rica de navegaÃ§Ã£o / P-003)` (investigaÃ§Ã£o do sintoma "Entries: []" e riscos de catÃ¡logo/Resources)
 
 ### Objetivo
-Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e evidência de runtime (DI + resolver).
+Corrigir erro no Play (`routeId='to-gameplay'`) com mudanÃ§a mÃ­nima, robusta e evidÃªncia de runtime (DI + resolver).
 
-### Checklist rastreável
+### Checklist rastreÃ¡vel
 
-- [x] Mapear fluxo Play (`MenuPlayButtonBinder`) até `GameNavigationService.ExecuteIntentAsync`.
-- [x] Confirmar condições do log `[Navigation] Rota desconhecida ou sem request`.
+- [x] Mapear fluxo Play (`MenuPlayButtonBinder`) atÃ© `GameNavigationService.ExecuteIntentAsync`.
+- [x] Confirmar condiÃ§Ãµes do log `[Navigation] Rota desconhecida ou sem request`.
 - [x] Validar assets em `Resources` usados no DI (`GameNavigationCatalog`, `SceneRouteCatalog`, `TransitionStyleCatalog`).
-- [x] Aplicar correção mínima para compatibilidade de serialização do catálogo de navegação.
+- [x] Aplicar correÃ§Ã£o mÃ­nima para compatibilidade de serializaÃ§Ã£o do catÃ¡logo de navegaÃ§Ã£o.
 - [x] Adicionar log `[OBS]` de wiring/runtime (`catalogType`, `resolverType`, `TryResolve('to-gameplay')`).
-- [x] Validar por inspeção estática + checklist de logs esperados.
+- [x] Validar por inspeÃ§Ã£o estÃ¡tica + checklist de logs esperados.
 
 #### Artefatos esperados
 
 - Auditoria (CODEX read-only): `Docs/Reports/Audits/<YYYY-MM-DD>/Audit-PlayButton-ToGameplay.md`
-- Evidência (runtime): snapshot em `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + atualização de `Docs/Reports/Evidence/LATEST.md`
+- EvidÃªncia (runtime): snapshot em `Docs/Reports/Evidence/<YYYY-MM-DD>/...` + atualizaÃ§Ã£o de `Docs/Reports/Evidence/LATEST.md`
 
-### Critério de sucesso
+### CritÃ©rio de sucesso
 - `MenuPlayButtonBinder` chama `StartGameplayLegacy(...)`.
-- `GameNavigationCatalogAsset.TryGet("to-gameplay", ...)` retorna entry válido.
+- `GameNavigationCatalogAsset.TryGet("to-gameplay", ...)` retorna entry vÃ¡lido.
 - `GameNavigationService` deixa de logar erro de rota desconhecida para `to-gameplay`.
 - Boot registra observabilidade `[OBS][Navigation] ... tryResolve('to-gameplay')=True`.
 
-### Evidências (P-003)
+### EvidÃªncias (P-003)
 
 - Log de smoke: `Docs/Reports/lastlog.log`
-- Auditoria histórica de mismatch (origem do bloqueio): `Docs/CHANGELOG.md (entrada histórica de navegação / P-003)`
-- Evidência do estado corrigido (trecho do smoke):
+- Auditoria histÃ³rica de mismatch (origem do bloqueio): `Docs/CHANGELOG.md (entrada histÃ³rica de navegaÃ§Ã£o / P-003)`
+- EvidÃªncia do estado corrigido (trecho do smoke):
 
 ```log
 [MenuPlayButtonBinder] [OBS][LevelFlow] MenuPlay -> StartGameplayAsync levelId='level.1' reason='Menu/PlayButton'.
@@ -534,19 +547,19 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 
 
 <a id="p-004"></a>
-## Plano (P-004) — Validação (Codex): SceneFlow / Navigation / RouteResetPolicy
+## Plano (P-004) â€” ValidaÃ§Ã£o (Codex): SceneFlow / Navigation / RouteResetPolicy
 
 ### Status
 
 - ActivityId: **P-004**
 - Estado: **DONE**
-- Última atualização: **2026-02-18**
+- Ãšltima atualizaÃ§Ã£o: **2026-02-18**
 
-#### Fonte de verdade (referências)
+#### Fonte de verdade (referÃªncias)
 
-- ADRs: `Docs/ADRs/` (principalmente decisões de SceneFlow/Navigation/LevelFlow)
-- Contrato canônico: `Docs/Standards/Standards.md#observability-contract`
-- Evidência vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
+- ADRs: `Docs/ADRs/` (principalmente decisÃµes de SceneFlow/Navigation/LevelFlow)
+- Contrato canÃ´nico: `Docs/Standards/Standards.md#observability-contract`
+- EvidÃªncia vigente: `Docs/Reports/Evidence/LATEST.md` (log bruto: `Docs/Reports/lastlog.log`)
 
 #### Artefato datado (auditoria)
 
@@ -557,40 +570,40 @@ Corrigir erro no Play (`routeId='to-gameplay'`) com mudança mínima, robusta e 
 Projeto Unity 6 (multiplayer local), escopo em `Assets/_ImmersiveGames/NewScripts/`.
 
 Objetivo desta rodada:
-1. Validar migração dos call-sites para o contrato explícito de `IGameNavigationService`.
-2. Confirmar wiring de `SceneTransitionService` sem regressão de `ISceneRouteResolver`.
+1. Validar migraÃ§Ã£o dos call-sites para o contrato explÃ­cito de `IGameNavigationService`.
+2. Confirmar wiring de `SceneTransitionService` sem regressÃ£o de `ISceneRouteResolver`.
 3. Confirmar que `SceneRouteResetPolicy` decide por rota (`routePolicy`) no fluxo real.
-4. Fechar o plano com evidências de smoke + auditoria + validator PASS.
+4. Fechar o plano com evidÃªncias de smoke + auditoria + validator PASS.
 
-### Checklist rastreável
+### Checklist rastreÃ¡vel
 
 - [x] Confirmar contrato de `IGameNavigationService` e wrappers legados `[Obsolete]`.
 - [x] Auditar call-sites de APIs legadas (`RequestMenuAsync`, `RequestGameplayAsync`, `NavigateAsync`).
 - [x] Verificar binders/bridges/dev menus principais.
-- [x] Validar evidência de decisão `routePolicy:Frontend` no smoke.
-- [x] Validar evidência de decisão `routePolicy:Gameplay` no smoke.
-- [x] Confirmar ausência de `policy:missing` no smoke.
-- [x] Confirmar validator de configuração SceneFlow com `VERDICT: PASS`.
+- [x] Validar evidÃªncia de decisÃ£o `routePolicy:Frontend` no smoke.
+- [x] Validar evidÃªncia de decisÃ£o `routePolicy:Gameplay` no smoke.
+- [x] Confirmar ausÃªncia de `policy:missing` no smoke.
+- [x] Confirmar validator de configuraÃ§Ã£o SceneFlow com `VERDICT: PASS`.
 
-### Critérios de aceitação (fechamento)
+### CritÃ©rios de aceitaÃ§Ã£o (fechamento)
 
-1. Há evidência de reset policy por rota frontend e gameplay no smoke.
-2. Não há ocorrência de `policy:missing` no smoke usado para fechamento.
-3. O audit datado de P-004 existe e está referenciado no plano.
-4. O report de validação de configuração SceneFlow existe e está em PASS.
+1. HÃ¡ evidÃªncia de reset policy por rota frontend e gameplay no smoke.
+2. NÃ£o hÃ¡ ocorrÃªncia de `policy:missing` no smoke usado para fechamento.
+3. O audit datado de P-004 existe e estÃ¡ referenciado no plano.
+4. O report de validaÃ§Ã£o de configuraÃ§Ã£o SceneFlow existe e estÃ¡ em PASS.
 
-### Evidências (P-004)
+### EvidÃªncias (P-004)
 
 - Smoke usado no fechamento:
   - `Docs/Reports/lastlog.log`
-- Report de validação (PASS):
+- Report de validaÃ§Ã£o (PASS):
   - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - Audit datado de fechamento:
   - `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 - Plano dedicado (fechamento P-004):
   - `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 
-#### Comandos de prova (executáveis no CLI)
+#### Comandos de prova (executÃ¡veis no CLI)
 
 - `rg -n "ResetPolicy routeId='to-menu'|decisionSource='routePolicy:Frontend'" Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log`
 - `rg -n "ResetPolicy routeId='level.1'|decisionSource='routePolicy:Gameplay'" Assets/_ImmersiveGames/NewScripts/Docs/Reports/lastlog.log`
@@ -599,34 +612,35 @@ Objetivo desta rodada:
 
 ### Follow-ups (post)
 
-- Higienizar auditorias históricas de 2026-02-17 para remover observações superadas sobre inexistência de artefato P-004.
-- Manter monitoramento de regressão de `policy:missing` em futuros smokes (não bloqueia o fechamento atual de P-004).
+- Higienizar auditorias histÃ³ricas de 2026-02-17 para remover observaÃ§Ãµes superadas sobre inexistÃªncia de artefato P-004.
+- Manter monitoramento de regressÃ£o de `policy:missing` em futuros smokes (nÃ£o bloqueia o fechamento atual de P-004).
 
 
 ---
 
-## Apêndice A — Histórico
+## ApÃªndice A â€” HistÃ³rico
 
-## Archive — Plano 2.2 (histórico / placeholder)
+## Archive â€” Plano 2.2 (histÃ³rico / placeholder)
 
 Este arquivo existe para **evitar links quebrados** e manter rastreabilidade.
 
-O “Plano 2.2” original foi referenciado como movido no `Docs/CHANGELOG.md`, mas o conteúdo não está mais presente neste snapshot.
+O â€œPlano 2.2â€ original foi referenciado como movido no `Docs/CHANGELOG.md`, mas o conteÃºdo nÃ£o estÃ¡ mais presente neste snapshot.
 
 ### Fonte de verdade (para o estado atual)
 
 - **Fechamento do Baseline 2.0:** `Docs/ADRs/ADR-0015-Baseline-2.0-Fechamento.md`
-- **Evidência vigente:** `Docs/Reports/Evidence/LATEST.md`
-- **Snapshots Baseline 2.2 (histórico):**
+- **EvidÃªncia vigente:** `Docs/Reports/Evidence/LATEST.md`
+- **Snapshots Baseline 2.2 (histÃ³rico):**
   - `Docs/Reports/Evidence/2026-01-29/Baseline-2.2-Evidence-2026-01-29.md`
   - `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
   - `Docs/Reports/Evidence/2026-02-03/Baseline-2.2-Evidence-2026-02-03.md`
 
-### Se você precisar do conteúdo original
+### Se vocÃª precisar do conteÃºdo original
 
-Recupere pelo histórico do repositório (git) usando o caminho citado no changelog:
+Recupere pelo histÃ³rico do repositÃ³rio (git) usando o caminho citado no changelog:
 
 - `Archive/Plans/Plano-2.2.md`
+
 
 
 

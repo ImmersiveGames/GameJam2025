@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string normalizedReason = NormalizeReason(reason, "WorldReset/Macro");
             string normalizedMacroSignature = NormalizeSignature(macroSignature);
 
-            PublishRequested(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, LevelId.None, string.Empty);
+            PublishRequested(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty);
 
             try
             {
@@ -45,11 +45,11 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     _ => string.Empty
                 };
 
-                PublishCompleted(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, success, notes, LevelId.None, string.Empty);
+                PublishCompleted(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, success, notes);
             }
             catch (Exception ex)
             {
-                PublishCompleted(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, false, ex.GetType().Name, LevelId.None, string.Empty);
+                PublishCompleted(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, false, ex.GetType().Name);
                 throw;
             }
         }
@@ -82,29 +82,21 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 FailFastConfig($"ResetLevelAsync levelRef mismatch. expected='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}', got='{levelRef.name}', reason='{normalizedReason}'.");
             }
 
-            string legacyContentId = $"level-ref:{levelRef.name}";
+            string canonicalContentToken = $"level-ref:{levelRef.name}";
             SceneRouteId macroRouteId = snapshot.MacroRouteId;
 
-            PublishRequested(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, LevelId.None, legacyContentId);
+            PublishRequested(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature);
 
             try
             {
-                await contentSwap.RequestContentSwapInPlaceAsync(legacyContentId, normalizedReason);
-                PublishCompleted(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, true, string.Empty, LevelId.None, legacyContentId);
+                await contentSwap.RequestContentSwapInPlaceAsync(canonicalContentToken, normalizedReason);
+                PublishCompleted(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, true, string.Empty);
             }
             catch (Exception ex)
             {
-                PublishCompleted(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, false, ex.GetType().Name, LevelId.None, legacyContentId);
+                PublishCompleted(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, false, ex.GetType().Name);
                 throw;
             }
-        }
-
-        [Obsolete("Legacy LevelId path is disabled in canonical LevelFlow.")]
-        public Task ResetLevelAsync(LevelId levelId, string reason, LevelContextSignature levelSignature, CancellationToken ct)
-        {
-            HardFailFastH1.Trigger(typeof(WorldResetCommands),
-                $"[FATAL][H1][LevelFlow] Legacy ResetLevelAsync(LevelId) is disabled. levelId='{levelId}' reason='{reason}' levelSignature='{levelSignature}'.");
-            return Task.CompletedTask;
         }
 
         private static IWorldResetService ResolveMacroResetServiceOrFail()
@@ -145,23 +137,18 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             SceneRouteId macroRouteId,
             string reason,
             string macroSignature,
-            LevelContextSignature levelSignature,
-            LevelId legacyLevelId,
-            string legacyContentId)
+            LevelContextSignature levelSignature)
         {
             DebugUtility.Log<WorldResetCommands>(
-                $"[OBS][WorldLifecycle] ResetRequestedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}' legacyLevelId='{legacyLevelId}' legacyContentId='{legacyContentId}'.",
+                $"[OBS][WorldLifecycle] ResetRequestedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<WorldLifecycleResetRequestedV2Event>.Raise(
-                WorldLifecycleResetRequestedV2Event.CreateWithLegacyCompat(
-                    kind,
-                    macroRouteId,
-                    reason,
-                    macroSignature,
-                    levelSignature,
-                    legacyLevelId,
-                    legacyContentId));
+            EventBus<WorldLifecycleResetRequestedV2Event>.Raise(new WorldLifecycleResetRequestedV2Event(
+                kind,
+                macroRouteId,
+                reason,
+                macroSignature,
+                levelSignature));
         }
 
         private static void PublishCompleted(
@@ -171,25 +158,20 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string macroSignature,
             LevelContextSignature levelSignature,
             bool success,
-            string notes,
-            LevelId legacyLevelId,
-            string legacyContentId)
+            string notes)
         {
             DebugUtility.Log<WorldResetCommands>(
-                $"[OBS][WorldLifecycle] ResetCompletedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}' success={success} notes='{notes}' legacyLevelId='{legacyLevelId}' legacyContentId='{legacyContentId}'.",
+                $"[OBS][WorldLifecycle] ResetCompletedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}' success={success} notes='{notes}'.",
                 success ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
-            EventBus<WorldLifecycleResetCompletedV2Event>.Raise(
-                WorldLifecycleResetCompletedV2Event.CreateWithLegacyCompat(
-                    kind,
-                    macroRouteId,
-                    reason,
-                    macroSignature,
-                    levelSignature,
-                    success,
-                    notes,
-                    legacyLevelId,
-                    legacyContentId));
+            EventBus<WorldLifecycleResetCompletedV2Event>.Raise(new WorldLifecycleResetCompletedV2Event(
+                kind,
+                macroRouteId,
+                reason,
+                macroSignature,
+                levelSignature,
+                success,
+                notes));
         }
 
         private static string NormalizeReason(string reason, string fallback)

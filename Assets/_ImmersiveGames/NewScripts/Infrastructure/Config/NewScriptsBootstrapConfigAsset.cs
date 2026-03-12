@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
@@ -17,15 +16,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
         [SerializeField] private GameNavigationIntentCatalogAsset navigationIntentCatalog;
         [SerializeField] private TransitionStyleCatalogAsset transitionStyleCatalog;
-        // LEGACY placeholder - catalogo legado removido; nao e usado no runtime canonico;
-        // mantido apenas para evitar churn de serializacao em assets antigos.
-        [SerializeField, HideInInspector] private UnityEngine.Object levelCatalog;
-        [SerializeField, HideInInspector] private LevelId startGameplayLevelId;
         [SerializeField] private SceneRouteCatalogAsset sceneRouteCatalog;
         [SerializeField] private SceneTransitionProfileCatalogAsset transitionProfileCatalog;
         [SerializeField] private SceneKeyAsset fadeSceneKey;
-
-        private static bool _legacyFieldsWarned;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
         public GameNavigationIntentCatalogAsset NavigationIntentCatalog => navigationIntentCatalog;
@@ -37,14 +30,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (!_legacyFieldsWarned && (levelCatalog != null || startGameplayLevelId.IsValid))
-            {
-                _legacyFieldsWarned = true;
-                DebugUtility.Log(typeof(NewScriptsBootstrapConfigAsset),
-                    $"[OBS][LEGACY] Bootstrap legacy fields are ignored in canonical flow. asset='{name}' hasLevelCatalog='{(levelCatalog != null)}' hasStartGameplayLevelId='{startGameplayLevelId.IsValid}'.",
-                    DebugUtility.Colors.Info);
-            }
-
             if (navigationIntentCatalog == null)
             {
                 string message =
@@ -71,5 +56,3 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 #endif
     }
 }
-
-
