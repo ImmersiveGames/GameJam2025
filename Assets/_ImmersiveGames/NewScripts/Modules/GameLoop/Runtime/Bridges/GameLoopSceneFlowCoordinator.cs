@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             }
 
             DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
-                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', UseFade={_startPlan.UseFade}, Style='{_startPlan.StyleLabel}', Profile='{_startPlan.TransitionProfileName}'.");
+                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', UseFade={_startPlan.UseFade}, Style='{_startPlan.StyleLabel}'.");
         }
 
         public void Dispose()
@@ -322,12 +322,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             _syncIssued = true;
             gameLoop.Initialize();
 
-            string profileLabel = string.IsNullOrWhiteSpace(_startPlan?.TransitionProfileName)
-                ? "<none>"
-                : _startPlan.TransitionProfileName;
-
             DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                $"[GameLoopSceneFlow] Sync concluido. profile='{profileLabel}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
+                $"[GameLoopSceneFlow] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestReady();
@@ -335,3 +331,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         }
     }
 }
+

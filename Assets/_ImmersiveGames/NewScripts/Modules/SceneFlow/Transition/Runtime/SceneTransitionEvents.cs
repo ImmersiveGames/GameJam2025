@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -16,10 +16,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public SceneRouteId RouteId { get; }
         public SceneRouteKind RouteKind { get; }
         public TransitionStyleAsset TransitionStyle { get; }
-        public string StyleLabel { get; }
+        public string StyleLabel => TransitionStyle != null ? TransitionStyle.StyleLabel : string.Empty;
         public string Reason { get; }
         public SceneTransitionProfile TransitionProfile { get; }
-        public string TransitionProfileName { get; }
+        public string TransitionProfileName => TransitionProfile != null ? TransitionProfile.name?.Trim() ?? string.Empty : string.Empty;
         public bool RequiresWorldReset { get; }
         public string ResetDecisionSource { get; }
         public string ResetDecisionReason { get; }
@@ -33,10 +33,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             SceneRouteId routeId,
             SceneRouteKind routeKind,
             TransitionStyleAsset transitionStyle,
-            string styleLabel,
             string reason,
             SceneTransitionProfile transitionProfile,
-            string transitionProfileName,
             bool requiresWorldReset = false,
             string resetDecisionSource = null,
             string resetDecisionReason = null,
@@ -49,12 +47,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             RouteId = routeId;
             RouteKind = routeKind;
             TransitionStyle = transitionStyle;
-            StyleLabel = string.IsNullOrWhiteSpace(styleLabel) ? string.Empty : styleLabel.Trim();
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             TransitionProfile = transitionProfile;
-            TransitionProfileName = string.IsNullOrWhiteSpace(transitionProfileName)
-                ? (transitionProfile != null ? transitionProfile.name : string.Empty)
-                : transitionProfileName.Trim();
             RequiresWorldReset = requiresWorldReset;
             ResetDecisionSource = string.IsNullOrWhiteSpace(resetDecisionSource) ? string.Empty : resetDecisionSource.Trim();
             ResetDecisionReason = string.IsNullOrWhiteSpace(resetDecisionReason) ? string.Empty : resetDecisionReason.Trim();
@@ -73,10 +67,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 RouteId,
                 RouteKind,
                 TransitionStyle,
-                StyleLabel,
                 Reason,
                 TransitionProfile,
-                TransitionProfileName,
                 requiresWorldReset,
                 decisionSource,
                 decisionReason,
@@ -125,7 +117,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             return $"Route='{RouteId}', RouteKind='{RouteKind}', Style='{StyleLabel}', Reason='{Reason}', " +
                    $"Load=[{string.Join(", ", ScenesToLoad)}], Unload=[{string.Join(", ", ScenesToUnload)}], " +
                    $"Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}', " +
-                   $"ProfileAsset='{(TransitionProfile != null ? TransitionProfile.name : "<null>")}', " +
                    $"RequiresWorldReset={RequiresWorldReset}, DecisionSource='{ResetDecisionSource}', DecisionReason='{ResetDecisionReason}'";
         }
 
@@ -137,10 +128,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                RouteId.Equals(other.RouteId) &&
                RouteKind == other.RouteKind &&
                Equals(TransitionStyle, other.TransitionStyle) &&
-               StyleLabel == other.StyleLabel &&
                Reason == other.Reason &&
-               Equals(TransitionProfile, other.TransitionProfile) &&
-               TransitionProfileName == other.TransitionProfileName;
+               Equals(TransitionProfile, other.TransitionProfile);
 
         public override bool Equals(object obj) => obj is SceneTransitionContext other && Equals(other);
 
@@ -155,10 +144,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 hashCode = (hashCode * 397) ^ RouteId.GetHashCode();
                 hashCode = (hashCode * 397) ^ RouteKind.GetHashCode();
                 hashCode = (hashCode * 397) ^ (TransitionStyle != null ? TransitionStyle.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (StyleLabel != null ? StyleLabel.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Reason != null ? Reason.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (TransitionProfile != null ? TransitionProfile.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (TransitionProfileName != null ? TransitionProfileName.GetHashCode() : 0);
                 return hashCode;
             }
         }
@@ -180,4 +167,3 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
     public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { Context = context; } }
     public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { Context = context; } }
 }
-

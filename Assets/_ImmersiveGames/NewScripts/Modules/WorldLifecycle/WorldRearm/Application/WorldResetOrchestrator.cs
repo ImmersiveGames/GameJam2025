@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             {
                 result = WorldResetResult.Failed;
                 DebugUtility.LogError<WorldResetOrchestrator>(
-                    $"[{ResetLogTags.Failed}] [WorldResetOrchestrator] Erro durante execuÃ§Ã£o do reset. request={request}, ex='{ex}'.");
+                    $"[{ResetLogTags.Failed}] [WorldResetOrchestrator] Erro durante execução do reset. request={request}, ex='{ex}'.");
             }
             finally
             {
@@ -127,8 +127,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                     ResetFeatureIds.WorldReset,
                     decision.Reason,
                     decision.Detail,
-                    request.ContextSignature,
-                    request.ProfileName);
+                    request.ContextSignature);
             }
             else
             {
@@ -201,6 +200,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         }
     }
 }
+
 
 
 

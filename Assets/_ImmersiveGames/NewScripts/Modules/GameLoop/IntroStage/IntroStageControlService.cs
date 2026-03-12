@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +8,7 @@ using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 {
     /// <summary>
-    /// ServiÃ§o global que controla o tÃ©rmino da IntroStageController via comando explÃ­cito.
+    /// Serviço global que controla o término da IntroStageController via comando explícito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageControlService : IIntroStageControlService
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 if (_isActive)
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        "[IntroStageController] BeginIntroStage chamado enquanto outra IntroStageController ainda estÃ¡ ativa. Reiniciando gate de conclusÃ£o.");
+                        "[IntroStageController] BeginIntroStage chamado enquanto outra IntroStageController ainda está ativa. Reiniciando gate de conclusão.");
                 }
 
                 _isActive = true;
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                     wasActive = _isActive;
                     alreadyCompleted = source.Task.IsCompleted;
 
-                    // SÃ³ captura contexto quando de fato estava ativo.
+                    // Só captura contexto quando de fato estava ativo.
                     if (_isActive)
                     {
                         context = _activeContext;
@@ -102,10 +102,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 string actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
                 string gameLoopState = NormalizeValue(ResolveGameLoopStateName());
 
-                // Contexto de log extraÃ­do defensivamente (com fallback e log de erro se falhar).
+                // Contexto de log extraído defensivamente (com fallback e log de erro se falhar).
                 var logContext = BuildSafeLogContext(context);
                 string signature = logContext.Signature;
-                string profile = logContext.Profile;
+                string routeKind = logContext.RouteKind;
                 string targetScene = logContext.TargetScene;
 
                 if (!wasActive)
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                         $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' " +
                         $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' " +
                         $"ignoreReason='{ignoreReason}' state='{gameLoopState}' isActive=false " +
-                        $"signature='{signature}' profile='{profile}' target='{targetScene}'.",
+                        $"signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -124,14 +124,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                     $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' " +
                     $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' " +
                     $"state='{gameLoopState}' isActive=true signature='{signature}' " +
-                    $"profile='{profile}' target='{targetScene}'.",
+                    $"routeKind='{routeKind}' target='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
                         $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' " +
-                        $"profile='{profile}' target='{targetScene}'.");
+                        $"routeKind='{routeKind}' target='{targetScene}'.");
                 }
 
                 source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
@@ -183,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             {
                 return new IntroStageLogContext(
                     NormalizeValue(context.ContextSignature),
-                    NormalizeValue(context.ProfileLabel),
+                    NormalizeValue(context.RouteKind.ToString()),
                     NormalizeValue(context.TargetScene));
             }
             catch (Exception ex)
@@ -199,16 +199,18 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             public static readonly IntroStageLogContext Fallback = new("<error>", "<error>", "<error>");
 
             public string Signature { get; }
-            public string Profile { get; }
+            public string RouteKind { get; }
             public string TargetScene { get; }
 
-            public IntroStageLogContext(string signature, string profile, string targetScene)
+            public IntroStageLogContext(string signature, string routeKind, string targetScene)
             {
                 Signature = signature;
-                Profile = profile;
+                RouteKind = routeKind;
                 TargetScene = targetScene;
             }
         }
     }
 }
+
+
 

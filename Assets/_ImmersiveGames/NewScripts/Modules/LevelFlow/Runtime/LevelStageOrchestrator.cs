@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -111,7 +111,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             var context = new IntroStageContext(
                 contextSignature: levelSignature,
                 routeKind: evt.Context.RouteKind,
-                profileLabel: evt.Context.TransitionProfileName,
                 targetScene: activeSceneName,
                 reason: "SceneFlow/Completed");
 
@@ -156,7 +155,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             var context = new IntroStageContext(
                 contextSignature: levelSignature,
                 routeKind: SceneRouteKind.Gameplay,
-                profileLabel: "Gameplay",
                 targetScene: activeSceneName,
                 reason: normalizedReason);
 
@@ -216,4 +214,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+
+
 

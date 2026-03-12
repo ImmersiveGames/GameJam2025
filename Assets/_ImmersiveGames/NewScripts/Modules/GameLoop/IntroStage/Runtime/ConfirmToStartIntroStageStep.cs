@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -38,10 +38,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         public async Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
         {
             string activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
-            string? profile = context.ProfileLabel;
+            string routeKind = context.RouteKind.ToString();
             string signature = NormalizeSignature(context.ContextSignature);
 
-            ApplyUiInputMode(signature, activeScene, profile);
+            ApplyUiInputMode(signature, activeScene, routeKind);
 
             var controlService = ResolveIntroStageControlService();
             if (controlService == null)
@@ -76,10 +76,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             }
         }
 
-        private static void ApplyUiInputMode(string signature, string sceneName, string? profile)
+        private static void ApplyUiInputMode(string signature, string sceneName, string routeKind)
         {
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
-                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}' (delegated).",
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' routeKind='{routeKind}' (delegated).",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
@@ -162,4 +162,5 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
     }
 }
+
 

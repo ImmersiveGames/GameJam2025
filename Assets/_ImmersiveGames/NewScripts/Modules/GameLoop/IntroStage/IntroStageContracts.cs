@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -7,26 +7,23 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 {
     /// <summary>
     /// Contexto minimo para execucao da IntroStageController antes da revelacao da cena.
-    /// RouteKind e a semantica canonica; labels sao apenas observabilidade.
+    /// RouteKind e a semantica canonica; labels de profile nao sao mais carregadas no payload.
     /// </summary>
     public readonly struct IntroStageContext
     {
         public string ContextSignature { get; }
         public SceneRouteKind RouteKind { get; }
-        public string ProfileLabel { get; }
         public string TargetScene { get; }
         public string Reason { get; }
 
         public IntroStageContext(
             string? contextSignature,
             SceneRouteKind routeKind,
-            string? profileLabel,
             string? targetScene,
             string? reason)
         {
             ContextSignature = contextSignature ?? string.Empty;
             RouteKind = routeKind;
-            ProfileLabel = profileLabel ?? string.Empty;
             TargetScene = targetScene ?? string.Empty;
             Reason = reason ?? string.Empty;
         }
@@ -84,3 +81,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             => Task.CompletedTask;
     }
 }
+

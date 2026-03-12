@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -8,9 +8,9 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Entry-point de produÃ§Ã£o para solicitar ResetWorld fora de QA.
+    /// Entry-point de produção para solicitar ResetWorld fora de QA.
     ///
-    /// ImplementaÃ§Ã£o Unity-native:
+    /// Implementação Unity-native:
     /// - Encaminha para o IWorldResetService canonico no DI.
     /// - Best-effort e defensiva: nunca lan?a para o caller.
     /// </summary>
@@ -34,17 +34,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     ? normalizedSource
                     : $"{WorldResetReasons.ProductionTriggerPrefix}{normalizedSource}";
 
-                // Observabilidade canÃ´nica (Contrato): ResetRequested com sourceSignature/reason/profile/target.
-                // Como este caminho nÃ£o passa pelo SceneFlow, usamos uma assinatura manual correlacionÃ¡vel.
+                // Observabilidade canônica (Contrato): ResetRequested com sourceSignature/reason/profile/target.
+                // Como este caminho não passa pelo SceneFlow, usamos uma assinatura manual correlacionável.
                 string signature = $"directReset:scene={activeScene};src={normalizedSource}";
                 DebugUtility.LogVerbose(typeof(WorldResetRequestService),
-                    $"[OBS][WorldLifecycle] ResetRequested signature='{signature}' sourceSignature='{signature}' profile='{WorldResetReasons.ManualProfile}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
+                    $"[OBS][WorldLifecycle] ResetRequested signature='{signature}' sourceSignature='{signature}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
                     DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
                     contextSignature: signature,
                     reason: reason,
-                    profileName: WorldResetReasons.ManualProfile,
                     targetScene: activeScene,
                     origin: WorldResetOrigin.Manual,
                     sourceSignature: signature);
@@ -60,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     return;
                 }
 
-                // Observabilidade: se estiver em transiÃ§Ã£o, isso pode ser um sinal de uso indevido.
+                // Observabilidade: se estiver em transição, isso pode ser um sinal de uso indevido.
                 if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
                 {
                     DebugUtility.LogWarning<WorldResetRequestService>(
@@ -79,6 +78,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
     }
 }
+
 
 
 

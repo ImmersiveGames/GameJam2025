@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 {
     /// <summary>
     /// Bridge global para sincronizar InputMode/GameLoop com base nos eventos do SceneFlow.
-    /// Tambem sincroniza o GameLoop com a intencao do profile:
+    /// Tambem sincroniza o GameLoop com a semantica canonica da rota:
     /// - Gameplay: solicita InputMode de gameplay.
     /// - Startup/Frontend: solicita InputMode de menu e garante GameLoop inativo.
     /// </summary>
@@ -80,9 +80,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         }
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
-        {
-            string profile = evt.Context.TransitionProfileName;
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+        {            string signature = SceneTransitionSignature.Compute(evt.Context);
             string dedupeKey = signature;
             string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
@@ -97,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     reason: "SceneFlow/Completed:Gameplay",
                     signature: signature,
                     scene: activeScene,
-                    profile: profile);
+                    routeKind: evt.Context.RouteKind);
 
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
@@ -113,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' routeKind='{evt.Context.RouteKind}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -166,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' routeKind='{evt.Context.RouteKind}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -181,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     reason: "SceneFlow/Completed:Frontend",
                     signature: signature,
                     scene: activeScene,
-                    profile: profile);
+                    routeKind: evt.Context.RouteKind);
 
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
@@ -209,7 +207,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                 && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' profile='{profile}'.",
+                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' routeKind='{evt.Context.RouteKind}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -217,7 +215,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             _lastProcessedSignature = dedupeKey;
 
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                $"[InputMode] RouteKind nao reconhecido ('{evt.Context.RouteKind}'); input mode nao alterado. profileLabel='{profile}'.",
+                $"[InputMode] RouteKind nao reconhecido ('{evt.Context.RouteKind}'); input mode nao alterado. targetScene='{evt.Context.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -227,10 +225,10 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             string reason,
             string signature,
             string scene,
-            string profile)
+            SceneRouteKind routeKind)
         {
             DebugUtility.LogVerbose(typeof(SceneFlowInputModeBridge),
-                $"[OBS][InputMode] Requested mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' profile='{profile ?? string.Empty}' reason='{reason ?? string.Empty}' (delegated).",
+                $"[OBS][InputMode] Requested mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' routeKind='{routeKind}' reason='{reason ?? string.Empty}' (delegated).",
                 DebugUtility.Colors.Info);
         }
 
@@ -245,6 +243,10 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         }
     }
 }
+
+
+
+
 
 
 

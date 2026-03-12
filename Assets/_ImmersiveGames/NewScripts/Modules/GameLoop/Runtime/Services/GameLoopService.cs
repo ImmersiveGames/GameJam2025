@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         public void RequestStart()
         {
             // ADR-0013: Start pode ser solicitado por diferentes sistemas, mas
-            // NUNCA deve efetivar antes do IntroStageController completar (quando aplicÃ¡vel).
+            // NUNCA deve efetivar antes do IntroStageController completar (quando aplicável).
             if (_signals.IntroStageRequested && !_signals.IntroStageCompleted)
             {
                 DebugUtility.LogVerbose<GameLoopService>(
@@ -222,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
 
             DebugUtility.Log<GameLoopService>(
                 $"[OBS][PostGame] PostGameEntered signature='{info.Signature}' outcome='{outcome}' reason='{reason}' " +
-                $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
+                $"scene='{info.SceneName}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
             NotifyPostPlayOwnerEntered(info);
@@ -235,7 +235,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
 
             DebugUtility.Log<GameLoopService>(
                 $"[OBS][PostGame] PostGameExited signature='{info.Signature}' reason='{reason}' nextState='{nextState}' " +
-                $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
+                $"scene='{info.SceneName}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
             NotifyPostPlayOwnerExited(info, nextState, reason);
@@ -243,17 +243,17 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
 
         private string ResolvePostPlayExitReason(GameLoopStateId nextState)
         {
-            // Esta decisÃ£o precisa ser determinÃ­stica e legÃ­vel no log.
-            // Como os sinais sÃ£o limpos no fim do Tick, aqui ainda conseguimos
-            // observar a intenÃ§Ã£o que causou a saÃ­da do PostPlay.
+            // Esta decisão precisa ser determinística e legível no log.
+            // Como os sinais são limpos no fim do Tick, aqui ainda conseguimos
+            // observar a intenção que causou a saída do PostPlay.
 
-            // Prioridade: Reset/ReinÃ­cio explÃ­cito.
+            // Prioridade: Reset/Reinício explícito.
             if (_signals.ResetRequested)
             {
                 return "Restart";
             }
 
-            // Ready Ã© usado como estado-alvo â€œnÃ£o ativoâ€ durante navegaÃ§Ãµes.
+            // Ready é usado como estado-alvo “não ativo” durante navegações.
             // Em PostPlay, ReadyRequested vem normalmente de ExitToMenu.
             if (_signals.ReadyRequested)
             {
@@ -285,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             owner.OnPostGameEntered(new PostGameOwnershipContext(
                 info.Signature,
                 info.SceneName,
-                info.Profile,
+                string.Empty,
                 info.Frame));
         }
 
@@ -300,7 +300,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             owner.OnPostGameExited(new PostGameOwnershipExitContext(
                 info.Signature,
                 info.SceneName,
-                info.Profile,
+                string.Empty,
                 info.Frame,
                 reason,
                 nextState.ToString()));
@@ -310,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         {
             var info = BuildSignatureInfo();
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' signature='{info.Signature}' scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
+                $"[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' signature='{info.Signature}' scene='{info.SceneName}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
@@ -343,22 +343,19 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         private static SignatureInfo BuildSignatureInfo()
         {
             string sceneName = SceneManager.GetActiveScene().name;
-            string profile = "<none>";
             string signature = "<none>";
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var cache) && cache != null &&
-                cache.TryGetLast(out string cachedSignature, out string cachedProfile, out string cachedScene))
+                cache.TryGetLast(out string cachedSignature, out string cachedScene))
             {
                 signature = string.IsNullOrWhiteSpace(cachedSignature) ? "<none>" : cachedSignature.Trim();
                 if (!string.IsNullOrWhiteSpace(cachedScene))
                 {
                     sceneName = cachedScene;
                 }
-
-                if (!string.IsNullOrWhiteSpace(cachedProfile)) { profile = cachedProfile.Trim(); }
             }
 
-            return new SignatureInfo(signature, sceneName, profile, Time.frameCount);
+            return new SignatureInfo(signature, sceneName, Time.frameCount);
         }
 
         private static string GetLogStateName(GameLoopStateId stateId)
@@ -370,18 +367,15 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         {
             public string Signature { get; }
             public string SceneName { get; }
-            public string Profile { get; }
             public int Frame { get; }
 
-            public SignatureInfo(string signature, string sceneName, string profile, int frame)
+            public SignatureInfo(string signature, string sceneName, int frame)
             {
                 Signature = string.IsNullOrWhiteSpace(signature) ? "<none>" : signature.Trim();
                 SceneName = string.IsNullOrWhiteSpace(sceneName) ? "<none>" : sceneName.Trim();
-                Profile = string.IsNullOrWhiteSpace(profile) ? "<none>" : profile.Trim();
                 Frame = frame;
             }
         }
-
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
 
@@ -427,6 +421,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         }
     }
 }
+
+
+
+
 
 
 

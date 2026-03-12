@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -283,8 +283,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 request.Payload,
                 request.TransitionProfile,
                 request.UseFade,
-                request.StyleLabel,
-                request.TransitionProfileName,
                 request.ContextSignature,
                 request.RequestedBy,
                 request.Reason);
@@ -580,3 +578,4 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 }
+

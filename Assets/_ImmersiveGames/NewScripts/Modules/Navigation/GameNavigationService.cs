@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -218,8 +218,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 entry.Payload ?? SceneTransitionPayload.Empty,
                 definition.Profile,
                 useFade: definition.UseFade,
-                styleLabel: definition.StyleLabel,
-                transitionProfileName: definition.ProfileLabel,
                 requestedBy: reason,
                 reason: reason);
 
@@ -242,3 +240,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
     }
 }
+

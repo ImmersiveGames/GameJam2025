@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
@@ -57,8 +57,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 payload: SceneTransitionPayload.Empty,
                 transitionProfile: startup.Profile,
                 useFade: startup.UseFade,
-                styleLabel: startup.StyleLabel,
-                transitionProfileName: startup.ProfileLabel,
                 requestedBy: "Boot/StartPlan",
                 reason: "Boot/StartPlan");
 
@@ -119,3 +117,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
+

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -16,11 +16,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public bool UseFade { get; }
         public SceneRouteId RouteId { get; }
         public TransitionStyleAsset? TransitionStyle { get; }
-        public string StyleLabel { get; }
+        public string StyleLabel => TransitionStyle != null ? TransitionStyle.StyleLabel : string.Empty;
         public SceneTransitionPayload Payload { get; }
         public string Reason { get; }
         public SceneTransitionProfile? TransitionProfile { get; }
-        public string TransitionProfileName { get; }
+        public string TransitionProfileName => TransitionProfile != null ? NormalizeLabel(TransitionProfile.name) : string.Empty;
         public string ContextSignature { get; }
         public string RequestedBy { get; }
 
@@ -35,7 +35,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             string targetActiveScene,
             SceneTransitionProfile? transitionProfile,
             bool useFade = true,
-            string? transitionProfileName = null,
             string? contextSignature = null,
             string? requestedBy = null,
             string? reason = null)
@@ -48,8 +47,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 SceneTransitionPayload.Empty,
                 transitionProfile,
                 useFade,
-                styleLabel: null,
-                transitionProfileName: transitionProfileName,
                 contextSignature,
                 requestedBy,
                 reason)
@@ -62,8 +59,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             SceneTransitionPayload payload,
             SceneTransitionProfile? transitionProfile,
             bool useFade = true,
-            string? styleLabel = null,
-            string? transitionProfileName = null,
             string? contextSignature = null,
             string? requestedBy = null,
             string? reason = null)
@@ -76,8 +71,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 payload,
                 transitionProfile,
                 useFade,
-                styleLabel,
-                transitionProfileName,
                 contextSignature,
                 requestedBy,
                 reason)
@@ -93,8 +86,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             SceneTransitionPayload payload,
             SceneTransitionProfile? transitionProfile,
             bool useFade,
-            string? styleLabel,
-            string? transitionProfileName,
             string? contextSignature,
             string? requestedBy,
             string? reason)
@@ -104,24 +95,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             TargetActiveScene = targetActiveScene ?? string.Empty;
             RouteId = routeId;
             TransitionStyle = transitionStyle;
-            StyleLabel = NormalizeLabel(styleLabel, transitionStyle != null ? transitionStyle.StyleLabel : string.Empty);
             Payload = payload ?? SceneTransitionPayload.Empty;
             TransitionProfile = transitionProfile;
             UseFade = useFade && transitionProfile != null;
-            TransitionProfileName = NormalizeLabel(transitionProfileName, transitionProfile != null ? transitionProfile.name : string.Empty);
             ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
-            RequestedBy = string.IsNullOrWhiteSpace(requestedBy) ? string.Empty : requestedBy.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            RequestedBy = NormalizeLabel(requestedBy);
+            Reason = NormalizeLabel(reason);
         }
 
-        private static string NormalizeLabel(string? explicitLabel, string fallback)
+        private static string NormalizeLabel(string? value)
         {
-            if (!string.IsNullOrWhiteSpace(explicitLabel))
-            {
-                return explicitLabel.Trim();
-            }
-
-            return string.IsNullOrWhiteSpace(fallback) ? string.Empty : fallback.Trim();
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

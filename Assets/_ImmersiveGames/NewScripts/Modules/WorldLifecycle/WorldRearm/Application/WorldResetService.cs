@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -33,7 +33,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             var request = new WorldResetRequest(
                 contextSignature: contextSignature ?? string.Empty,
                 reason: reason ?? string.Empty,
-                profileName: WorldResetReasons.ManualProfile,
                 targetScene: string.Empty,
                 origin: WorldResetOrigin.Manual,
                 sourceSignature: contextSignature ?? string.Empty);
@@ -114,6 +113,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         }
     }
 }
+
 
 
 

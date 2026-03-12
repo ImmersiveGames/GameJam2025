@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -42,7 +42,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
             var context = new IntroStageContext(
                 contextSignature: qaSignature,
                 routeKind: SceneRouteKind.Gameplay,
-                profileLabel: "QAGameplay",
                 targetScene: activeScene,
                 reason: qaReason);
 
@@ -156,3 +155,5 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
         }
     }
 }
+
+

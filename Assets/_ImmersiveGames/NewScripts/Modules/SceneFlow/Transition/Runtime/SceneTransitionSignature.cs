@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -36,10 +36,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 routeId: request.RouteId,
                 routeKind: routeKind,
                 transitionStyle: request.TransitionStyle,
-                styleLabel: request.StyleLabel,
                 reason: request.Reason,
                 transitionProfile: request.TransitionProfile,
-                transitionProfileName: request.TransitionProfileName,
                 contextSignature: request.ContextSignature);
         }
 

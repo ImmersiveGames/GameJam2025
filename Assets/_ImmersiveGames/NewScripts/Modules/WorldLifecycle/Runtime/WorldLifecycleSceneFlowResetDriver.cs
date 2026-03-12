@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -13,15 +13,15 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Driver canÃ´nico (produÃ§Ã£o) para integrar SceneFlow â†’ WorldLifecycle.
+    /// Driver canônico (produção) para integrar SceneFlow → WorldLifecycle.
     ///
     /// Responsabilidades:
-    /// - Ao receber SceneTransitionScenesReadyEvent, resolve polÃ­tica por rota/contexto e dispara ResetWorld quando aplicÃ¡vel.
+    /// - Ao receber SceneTransitionScenesReadyEvent, resolve política por rota/contexto e dispara ResetWorld quando aplicável.
     /// - Publica WorldLifecycleResetCompletedEvent(signature) apenas em SKIP/fallback para liberar o completion gate do SceneFlow.
     ///
-    /// ObservaÃ§Ãµes:
-    /// - NÃ£o depende de "coordinator" obsoleto.
-    /// - Ã‰ best-effort: nunca deve travar o fluxo (sempre publica ResetCompleted).
+    /// Observações:
+    /// - Não depende de "coordinator" obsoleto.
+    /// - É best-effort: nunca deve travar o fluxo (sempre publica ResetCompleted).
     /// </summary>
         /// <summary>
     /// OWNER: handoff SceneFlow -> WorldResetService para macro reset por transicao.
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         private bool _disposed;
         private static int _degradedFallbackCount;
 
-        // Reasons canÃ´nicos (Contrato de Observability) em WorldResetReasons.
+        // Reasons canônicos (Contrato de Observability) em WorldResetReasons.
 
         // Janela curta para dedupe de assinatura (evita reset duplicado no mesmo frame).
         private const int DuplicateSignatureWindowMs = 750;
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            // Event handler nÃ£o pode ser async; delega para Task com tratamento interno.
+            // Event handler não pode ser async; delega para Task com tratamento interno.
             _ = HandleScenesReadyAsync(evt);
         }
 
@@ -166,7 +166,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 var result = await ExecuteResetWhenRequiredAsync(
                     signature,
                     targetScene,
-                    context.TransitionProfileName,
                     decisionReason);
 
                 shouldPublishCompletion = result.shouldPublishCompletion;
@@ -189,7 +188,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         private static async Task<(bool shouldPublishCompletion, string failureReason)> ExecuteResetWhenRequiredAsync(
             string signature,
             string targetScene,
-            string profileName,
             string decisionReason)
         {
             // Primeiro: se um WorldResetService estiver registrado no DI, use-o (ponto canonico).
@@ -202,7 +200,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 var request = new WorldResetRequest(
                     contextSignature: signature,
                     reason: string.IsNullOrWhiteSpace(decisionReason) ? WorldResetReasons.SceneFlowScenesReady : decisionReason,
-                    profileName: profileName,
                     targetScene: targetScene,
                     origin: WorldResetOrigin.SceneFlow,
                     sourceSignature: signature);
@@ -217,7 +214,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     if (!IsDevelopmentEscapeHatch())
                     {
                         HardFailFastH1.Trigger(typeof(WorldLifecycleSceneFlowResetDriver),
-                            $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService.TriggerResetAsync failed. signature='{signature}', targetScene='{targetScene}', profile='{profileName}', ex='{ex.GetType().Name}'.",
+                            $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService.TriggerResetAsync failed. signature='{signature}', targetScene='{targetScene}', ex='{ex.GetType().Name}'.",
                             ex);
                     }
 
@@ -231,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (!IsDevelopmentEscapeHatch())
             {
                 HardFailFastH1.Trigger(typeof(WorldLifecycleSceneFlowResetDriver),
-                    $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService missing in DI. signature='{signature}', targetScene='{targetScene}', profile='{profileName}'.");
+                    $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService missing in DI. signature='{signature}', targetScene='{targetScene}'.");
             }
 
             int degradedMissingServiceCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
@@ -389,6 +386,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+
 
 
 

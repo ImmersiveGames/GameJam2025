@@ -1,5 +1,6 @@
-﻿using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 {
     public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.IDisposable
@@ -8,7 +9,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
 
         private string _lastSignature = string.Empty;
-        private string _lastProfileLabel = string.Empty;
         private string _lastTargetScene = string.Empty;
         private bool _disposed;
 
@@ -21,10 +21,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
             EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
         }
 
-        public bool TryGetLast(out string signature, out string profileLabel, out string targetScene)
+        public bool TryGetLast(out string signature, out string targetScene)
         {
             signature = _lastSignature;
-            profileLabel = _lastProfileLabel;
             targetScene = _lastTargetScene;
             return !string.IsNullOrWhiteSpace(signature);
         }
@@ -42,7 +41,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
         private void UpdateFromContext(SceneTransitionContext context)
         {
             _lastSignature = SceneTransitionSignature.Compute(context);
-            _lastProfileLabel = context.TransitionProfileName ?? string.Empty;
             _lastTargetScene = context.TargetActiveScene ?? string.Empty;
         }
 
