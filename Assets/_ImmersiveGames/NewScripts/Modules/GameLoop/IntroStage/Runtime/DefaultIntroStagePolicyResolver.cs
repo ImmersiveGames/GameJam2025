@@ -1,12 +1,12 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 {
     /// <summary>
-    /// Resolver padrão de política da IntroStageController (preparado para produção).
+    /// Resolver padrao de politica da IntroStageController (preparado para producao).
+    /// Decide apenas por sinais canonicos de cena alvo.
     /// </summary>
     public sealed class DefaultIntroStagePolicyResolver : IIntroStagePolicyResolver
     {
@@ -18,13 +18,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             _sceneClassifier = sceneClassifier ?? new DefaultGameplaySceneClassifier();
         }
 
-        public IntroStagePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason)
+        public IntroStagePolicy Resolve(string targetScene, string reason)
         {
-            if (!profile.IsGameplay)
-            {
-                return IntroStagePolicy.Disabled;
-            }
-
             if (!IsGameplayTargetScene(targetScene))
             {
                 return IntroStagePolicy.Disabled;
@@ -41,8 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             }
 
             var activeScene = SceneManager.GetActiveScene();
-            if (activeScene.IsValid()
-                && string.Equals(activeScene.name, targetScene, StringComparison.Ordinal))
+            if (activeScene.IsValid() && string.Equals(activeScene.name, targetScene, StringComparison.Ordinal))
             {
                 return _sceneClassifier.IsGameplayScene();
             }
@@ -51,7 +45,3 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         }
     }
 }
-
-
-
-

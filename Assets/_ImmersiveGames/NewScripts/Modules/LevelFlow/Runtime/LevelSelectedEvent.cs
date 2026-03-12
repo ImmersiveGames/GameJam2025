@@ -18,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
-            StyleId = TransitionStyleId.None;
         }
 
         public SceneRouteId MacroRouteId { get; }
@@ -26,6 +25,5 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public int SelectionVersion { get; }
         public string Reason { get; }
         public string LevelSignature { get; }
-        public TransitionStyleId StyleId { get; }
     }
 }

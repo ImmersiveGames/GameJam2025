@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 return;
             }
 
-            if (!signatureCache.TryGetLast(out var macroSignature, out var profileId, out var targetScene) ||
+            if (!signatureCache.TryGetLast(out var macroSignature, out var profileLabel, out var targetScene) ||
                 string.IsNullOrWhiteSpace(macroSignature))
             {
                 // Falha explÃ­cita para evitar reset sem assinatura vÃ¡lida.
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][QA][WorldLifecycle] ResetMacro comando routeId='{snapshot.MacroRouteId}' reason='{ReasonQaResetMacroGameplay}' signature='{macroSignature}' profile='{profileId}' targetScene='{targetScene}'.",
+                $"[OBS][QA][WorldLifecycle] ResetMacro comando routeId='{snapshot.MacroRouteId}' reason='{ReasonQaResetMacroGameplay}' signature='{macroSignature}' profile='{profileLabel}' targetScene='{targetScene}'.",
                 ColorInfo);
 
             await commands.ResetMacroAsync(snapshot.MacroRouteId, ReasonQaResetMacroGameplay, macroSignature, CancellationToken.None);
@@ -371,6 +371,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 #endif
     }
 }
+
 
 
 

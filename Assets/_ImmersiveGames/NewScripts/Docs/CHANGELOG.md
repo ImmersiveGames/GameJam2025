@@ -4,6 +4,7 @@
 - **Rename de nomenclatura canonica:** Gameplay RunRearm passa a se chamar Gameplay ActorGroupRearm em codigo e docs, sem mudanca de contrato ou comportamento.
 - **Coerencia de rename:** tipos, arquivos, namespaces, composition root, participants e contratos associados foram renomeados de forma consistente para ActorGroupRearm.
 - **Docs sincronizados com o rename:** ADR-0013, ADR-0014, ADR-0023, ADRs/README, Canon/Canon-Index, Plans/Plan-Continuous, Overview, Modules/Gameplay e relatorios correntes passaram a usar ActorGroupRearm como nomenclatura principal.
+- **Docs-only:** higiene final remove residuos nominais correntes de `RunRearm` em docs ativos, preservando apenas referencias historicas rastreaveis.
 
 - **Runtime + docs:** `Gameplay ActorGroupRearm` foi refatorado para contrato canonico por grupo de atores, com `ByActorKind` como caminho principal e `ActorIdSet` mantido como selecao tecnica explicita.
 - **Superficie especial removida:** `PlayersOnly`, `EaterOnly`, `AllActorsInScene` e o fallback legado de eater/actor-kind/string saem do codigo ativo em `NewScripts`.
@@ -11,11 +12,6 @@
 - **Docs sincronizados:** ADR-0013, ADR-0014, ADR-0023, `ADRs/README`, `Canon/Canon-Index`, `Plans/Plan-Continuous` e auditoria datada passam a refletir o novo estado de `ActorGroupRearm`.
 
 
-## 2026-03-11
-
-- **Rename de nomenclatura canonica:** Gameplay RunRearm passa a se chamar Gameplay ActorGroupRearm em codigo e docs, sem mudanca de contrato ou comportamento.
-- **Coerencia de rename:** tipos, arquivos, namespaces, composition root, participants e contratos associados foram renomeados de forma consistente para ActorGroupRearm.
-- **Docs sincronizados com o rename:** ADR-0013, ADR-0014, ADR-0023, ADRs/README, Canon/Canon-Index, Plans/Plan-Continuous, Overview, Modules/Gameplay e relatorios correntes passaram a usar ActorGroupRearm como nomenclatura principal.
 
 - **Docs-only:** cadeia canonica sincronizada com o estado pos-H1..H7.
 - **Canon-only no eixo principal:** `LevelFlow`, `LevelDefinition`, `Navigation`, `WorldLifecycle V2` e tooling/editor/QA associado passam a ser descritos oficialmente como canon-only.
@@ -321,6 +317,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: docs: convert navigation references to Markdown links + cleanup placeholders.
 - Updated: `ADRs/ADR-0009-FadeSceneFlow.md` (Opção A) — Fade via cena aditiva (`FadeScene`) integrada ao SceneFlow.
 - Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` (Opção A) — HUD de loading via cena aditiva (`LoadingHudScene`) integrada ao SceneFlow.
+
 
 
 

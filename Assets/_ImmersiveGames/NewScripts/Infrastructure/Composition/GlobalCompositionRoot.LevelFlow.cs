@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -15,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
             {
-                throw new InvalidOperationException("IGameNavigationService obrigatório ausente no DI global. Garanta RegisterGameNavigationService no pipeline antes de RegisterLevelsServices.");
+                throw new InvalidOperationException("IGameNavigationService obrigatorio ausente no DI global. Garanta RegisterGameNavigationService no pipeline antes de RegisterLevelsServices.");
             }
 
             var bootstrapConfig = GetRequiredBootstrapConfig(out _);
@@ -24,25 +23,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
                     "[FATAL][Config] Missing required SceneRouteCatalogAsset in NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
-                throw new InvalidOperationException(
-                    "Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
+                throw new InvalidOperationException("Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
             }
+
             var catalogAsset = bootstrapConfig.NavigationCatalog;
             if (catalogAsset == null)
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
                     "[FATAL][Config] Missing required GameNavigationCatalogAsset in NewScriptsBootstrapConfigAsset.navigationCatalog.");
-                throw new InvalidOperationException(
-                    "Missing required NewScriptsBootstrapConfigAsset.navigationCatalog (GameNavigationCatalogAsset).");
-            }
-
-            var styleCatalogAsset = bootstrapConfig.TransitionStyleCatalog;
-            if (styleCatalogAsset == null)
-            {
-                DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    "[FATAL][Config] Missing required TransitionStyleCatalogAsset in NewScriptsBootstrapConfigAsset.transitionStyleCatalog.");
-                throw new InvalidOperationException(
-                    "Missing required NewScriptsBootstrapConfigAsset.transitionStyleCatalog (TransitionStyleCatalogAsset).");
+                throw new InvalidOperationException("Missing required NewScriptsBootstrapConfigAsset.navigationCatalog (GameNavigationCatalogAsset).");
             }
 
             var restartContextService = ResolveOrRegisterRestartContextService();
@@ -52,8 +41,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
                     "[FATAL][Config] Missing required IWorldResetCommands in global DI before LevelFlow services registration.");
-                throw new InvalidOperationException(
-                    "Missing required IWorldResetCommands in global DI.");
+                throw new InvalidOperationException("Missing required IWorldResetCommands in global DI.");
             }
 
             ISimulationGateService simulationGateService = null;
@@ -85,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canônico StartGameplayDefaultAsync(reason,...)).",
+                    "[OBS][LevelFlow] LevelFlowRuntimeService registrado (trilho canonico StartGameplayDefaultAsync(reason,...)).",
                     DebugUtility.Colors.Info);
             }
 
@@ -93,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             {
                 if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
                 {
-                    throw new InvalidOperationException("ILevelFlowRuntimeService obrigatório ausente para registrar IPostLevelActionsService.");
+                    throw new InvalidOperationException("ILevelFlowRuntimeService obrigatorio ausente para registrar IPostLevelActionsService.");
                 }
 
                 postLevelActions = new PostLevelActionsService(

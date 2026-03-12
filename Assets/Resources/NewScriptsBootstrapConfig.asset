@@ -13,11 +13,6 @@ MonoBehaviour:
   m_Name: NewScriptsBootstrapConfig
   m_EditorClassIdentifier: 
   navigationCatalog: {fileID: 11400000, guid: 199efb62d31d34e4f8862069f922a7a3, type: 2}
-  navigationIntentCatalog: {fileID: 11400000, guid: 6866bc8b955cf1a40a194ebc0b98eb1f, type: 2}
-  transitionStyleCatalog: {fileID: 11400000, guid: de91983d669cc0641940bf2c0ae602ab, type: 2}
-  levelCatalog: {fileID: 11400000, guid: be509bdd7186b7742847d1c1022eac54, type: 2}
-  startGameplayLevelId:
-    _value: level.1
   sceneRouteCatalog: {fileID: 11400000, guid: 8f3d4c84c7f482241a6978dbc890c1cf, type: 2}
-  transitionProfileCatalog: {fileID: 11400000, guid: 7da079f7b1949914d81899fd4cec6813, type: 2}
+  startupTransitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1001, type: 2}
   fadeSceneKey: {fileID: 11400000, guid: 7983f5c5a711411887b7d73dd12c6702, type: 2}

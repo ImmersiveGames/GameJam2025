@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +8,7 @@ using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 {
     /// <summary>
-    /// Serviço global que controla o término da IntroStageController via comando explícito.
+    /// ServiÃ§o global que controla o tÃ©rmino da IntroStageController via comando explÃ­cito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageControlService : IIntroStageControlService
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 if (_isActive)
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        "[IntroStageController] BeginIntroStage chamado enquanto outra IntroStageController ainda está ativa. Reiniciando gate de conclusão.");
+                        "[IntroStageController] BeginIntroStage chamado enquanto outra IntroStageController ainda estÃ¡ ativa. Reiniciando gate de conclusÃ£o.");
                 }
 
                 _isActive = true;
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                     wasActive = _isActive;
                     alreadyCompleted = source.Task.IsCompleted;
 
-                    // Só captura contexto quando de fato estava ativo.
+                    // SÃ³ captura contexto quando de fato estava ativo.
                     if (_isActive)
                     {
                         context = _activeContext;
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 string actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
                 string gameLoopState = NormalizeValue(ResolveGameLoopStateName());
 
-                // Contexto de log extraído defensivamente (com fallback e log de erro se falhar).
+                // Contexto de log extraÃ­do defensivamente (com fallback e log de erro se falhar).
                 var logContext = BuildSafeLogContext(context);
                 string signature = logContext.Signature;
                 string profile = logContext.Profile;
@@ -183,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             {
                 return new IntroStageLogContext(
                     NormalizeValue(context.ContextSignature),
-                    NormalizeValue(context.ProfileId.Value),
+                    NormalizeValue(context.ProfileLabel),
                     NormalizeValue(context.TargetScene));
             }
             catch (Exception ex)
@@ -211,3 +211,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
         }
     }
 }
+

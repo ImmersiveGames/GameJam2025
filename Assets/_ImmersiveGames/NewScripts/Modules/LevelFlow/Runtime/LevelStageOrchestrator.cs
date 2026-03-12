@@ -4,8 +4,8 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine.SceneManagement;
 
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            if (evt.Context.TransitionProfileId != SceneFlowProfileId.Gameplay)
+            if (evt.Context.RouteKind != SceneRouteKind.Gameplay)
             {
                 return;
             }
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             gameLoopService.RequestIntroStageStart();
             var context = new IntroStageContext(
                 contextSignature: levelSignature,
-                profileId: SceneFlowProfileId.Gameplay,
+                profileLabel: evt.Context.TransitionProfileName,
                 targetScene: activeSceneName,
                 reason: "SceneFlow/Completed");
 
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             gameLoopService.RequestIntroStageStart();
             var context = new IntroStageContext(
                 contextSignature: levelSignature,
-                profileId: SceneFlowProfileId.Gameplay,
+                profileLabel: "Gameplay",
                 targetScene: activeSceneName,
                 reason: normalizedReason);
 
@@ -214,4 +214,3 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
-

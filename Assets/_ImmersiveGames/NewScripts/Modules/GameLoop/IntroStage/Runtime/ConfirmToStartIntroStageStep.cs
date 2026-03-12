@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         public async Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
         {
             string activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
-            string? profile = context.ProfileId.Value;
+            string? profile = context.ProfileLabel;
             string signature = NormalizeSignature(context.ContextSignature);
 
             ApplyUiInputMode(signature, activeScene, profile);
@@ -162,3 +162,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
     }
 }
+

@@ -1,4 +1,4 @@
-﻿# CANON-ONLY AXIS SYNC (2026-03-11)
+# CANON-ONLY AXIS SYNC (2026-03-11)
 
 ## Escopo auditado
 
@@ -35,10 +35,11 @@
 
 ## Excecoes que permanecem
 
-- `Gameplay RunRearm` com fallback legado de actor-kind/string
+- `Gameplay ActorGroupRearm` (renomeado de `RunRearm` na rodada posterior de 2026-03-11) ainda aparecia com fallback legado de actor-kind/string neste snapshot
 - pequeno residuo editor/serializado em `GameNavigationIntentCatalogAsset`
 
 ## Decisao explicita
 
 - **canon-only no eixo principal**
 - **nao canon-only absoluto em todo `NewScripts/**` ainda**
+

@@ -1,105 +1,84 @@
-# ADR-0019 — Navigation Intent Catalog (IntentCatalog + GameNavigationCatalog)
+﻿# ADR-0019 - Navigation Catalog as the Single Canonical Navigation Asset
 
 ## Status
 
 - Estado: **Implementado**
-- Data (decisão): **2026-02-16**
-- Última atualização: **2026-02-18**
+- Data (decisao): **2026-02-16**
+- Ultima atualizacao: **2026-03-12**
 - Escopo: `Assets/_ImmersiveGames/NewScripts/Modules/Navigation` + SceneFlow wiring via `SceneRouteDefinitionAsset`
 
-## Evidências canônicas (atualizado em 2026-02-18)
+## Evidencias canonicas (atualizado em 2026-03-12)
 
 - `Docs/Reports/Evidence/LATEST.md`
 - `Docs/Reports/lastlog.log`
-- `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
-- `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
+- `Docs/Reports/Audits/2026-03-11/NAVIGATION-INTENTCATALOG-SIMPLIFY.md`
+- `Docs/Reports/Audits/2026-03-11/NAVIGATION-INTENTCATALOG-REMOVE.md`
+- `Docs/Reports/Audits/2026-03-11/TRANSITIONSTYLE-DIRECTREF-REFACTOR.md`
+- `Docs/Reports/Audits/2026-03-11/TRANSITION-DIRECTREF-FAILFAST-PURGE.md`
 
 ## Context
 
-A navegação (Menu/GamePlay/PostGame/etc.) vinha sendo configurada com **IDs string** espalhados e com descoberta por varredura (`FindAssets`) em tooling. Isso cria risco alto de erro por digitação, refactors quebrando silenciosamente e “mágica” em tooling.
+A arquitetura de navegacao ja havia sido consolidada em torno de um unico asset canonico de navigation, mas ainda existiam trilhos residuais em que `styleId` e `profileId` apareciam em requests, logs, signatures e validacoes como se ainda fossem parte do contrato estrutural.
 
-Em paralelo, o plano **Strings → DirectRefs** (P-001) exige:
+A consolidacao final exige:
 
-- **Direct-ref-first** em produção quando `routeRef` existe.
-- **Fail-fast** para o mínimo canônico (core mandatory).
-- Tooling Editor **sem** varredura global quando existe um path canônico.
+- `GameNavigationCatalogAsset` configurado apenas com `routeRef + transitionStyleRef`
+- `TransitionStyleAsset` como owner direto de `profileRef + useFade`
+- `NewScriptsBootstrapConfigAsset.startupTransitionStyleRef` como unica fonte valida de startup transition
+- fail-fast quando uma referencia obrigatoria estiver ausente
+- nenhuma resolucao estrutural por `styleId`, `profileId` ou catalogos nominais paralelos
 
 ## Decision
 
-### 1) Dois assets canônicos (fonte de verdade por path fixo)
+### 1) `GameNavigationCatalogAsset` continua como unico asset canonico de navigation
 
-**A)** `GameNavigationIntentCatalogAsset` (intent catalog)
+- **Path canonico:** `Assets/Resources/Navigation/GameNavigationCatalog.asset`
+- Responsavel por:
+  - Expor slots core explicitos (menu/gameplay + opcionais)
+  - Ser owner unico de `routeRef + transitionStyleRef`
+  - Manter extras/custom em `routes`
 
-- **Path canônico:** `Assets/Resources/GameNavigationIntentCatalog.asset`
-- Responsável por:
-    - Definir o conjunto de **intent IDs canônicos** (core + extras)
-    - Fornecer **routeRef** (SceneRouteDefinitionAsset) e **styleId** (TransitionStyleId) por intent
-    - Sinalizar criticidade (somente para o core obrigatório)
+### 2) `TransitionStyleAsset` vira o unico owner estrutural de style
 
-**B)** `GameNavigationCatalogAsset` (navigation catalog)
+- Cada `TransitionStyleAsset` carrega:
+  - `profileRef` como referencia estrutural obrigatoria
+  - `useFade` como politica estrutural obrigatoria
+- O runtime resolve styles apenas por referencia direta ao asset.
+- Qualquer nome exposto (`style`, `profile`) passa a ser apenas metadata descritiva derivada do asset (`asset.name`).
 
-- **Path canônico:** `Assets/Resources/Navigation/GameNavigationCatalog.asset`
-- Responsável por:
-    - Expor **slots core explícitos** (menu/gameplay + opcionais)
-    - Manter **extras/custom** em lista extensível (sem colidir com core)
+### 3) Bootstrap usa apenas `startupTransitionStyleRef`
 
-### 2) Core mandatory intents (fail-fast)
+`NewScriptsBootstrapConfigAsset` passa a exigir apenas:
 
-Somente estes são **obrigatórios** (produção + editor):
+- `navigationCatalog`
+- `sceneRouteCatalog`
+- `startupTransitionStyleRef`
+- `fadeSceneKey`
 
-- `to-menu`
-- `to-gameplay`
+Nao existe mais fallback para:
 
-Qualquer ausência/inconsistência nesses dois deve resultar em **[FATAL][Config]**.
+- `startupTransitionProfile`
+- `style.startup` em catalogo legado
 
-### 3) Extras permanecem opcionais (observáveis, não críticos)
+### 4) `styleId` e `profileId` deixam de participar do runtime estrutural
 
-Os extras/aliases abaixo permanecem **não-mandatórios**:
-
-- `gameover`, `victory`, `defeat`, `restart`, `exit-to-menu`
-
-Regra: podem existir no `IntentCatalog`, mas o runtime **não** falha se não estiverem completos. O sistema registra **[OBS]/[WARN]** quando aplicável.
-
-### 4) IDs tipados no YAML: `NavigationIntentId` como “string-strongly-typed”
-
-Para reduzir erro de digitação e preparar migração incremental:
-
-- O ID de intent extra/custom agora é `NavigationIntentId` (serializa em `intentId._value`).
-- `routeId` (string) permanece **legado**, oculto e somente para backward compatibility.
-
-**Migração:** `RouteEntry.MigrateLegacy()` normaliza `routeId` e preenche/espelha `intentId` quando necessário.
-
-### 5) Tooling Editor: sem varredura global, com path canônico
-
-`GameNavigationCatalogNormalizer` (Editor-only):
-
-- Removeu fallback por `FindAssets("t:GameNavigationCatalogAsset")`.
-- Opera **apenas** no path canônico e cria os assets ausentes no local correto.
-
-### 6) UX de Inspector: dropdown para `NavigationIntentId`
-
-Editor-only:
-
-- `NavigationIntentIdPropertyDrawer` desenha dropdown baseado na fonte canônica
-  (`GameNavigationIntentCatalog.asset`), com:
-    - `(None)` → string vazia
-    - `MISSING: <valor>` quando o YAML contém valor inexistente
-    - HelpBox de warning para inconsistências
-
-## Non-goals
-
-- Trocar Scenes para Addressables nesta etapa.
-- Eliminar imediatamente todos os IDs string: permanecem **constantes canônicas** centralizadas onde inevitáveis (tooling/contrato).
+- Nao entram mais na resolucao de navigation
+- Nao entram mais na resolucao de transition
+- Nao entram mais na classificacao de comportamento em InputMode/Readiness/IntroStage
+- Quando aparecem, aparecem apenas como labels descritivos de asset para observabilidade
 
 ## Consequences
 
-- Config fica mais explícita e auditável (paths canônicos, refs diretas).
-- O runtime fica mais resistente a erros de digitação (IDs tipados + drawers).
-- Há um custo de migração gradual (assets antigos carregam `routeId` legado até serem re-salvos).
+- Ha uma unica forma valida de configurar navigation/transition.
+- A stack fica realmente direct-ref-first e fail-fast.
+- `styleId` e `profileId` deixam de ter papel estrutural; a observabilidade usa labels derivados de asset.
+- Assets legados precisam existir ja preenchidos com refs diretas; nao ha mais trilho de compatibilidade silencioso.
 
 ## Validation / Evidence
 
-- Audit de fechamento P-004 (PASS): `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
-- Auditoria final Strings → DirectRefs: `Docs/Reports/Audits/2026-02-17/Audit-Plan-ADR-Closure.md`
-- Snapshot canônico pré-DataCleanup: `Docs/Reports/SceneFlow-Config-Snapshot-DataCleanup-v1.md`
-- MenuItem de validação (Editor): `ImmersiveGames/NewScripts/Config/Validate SceneFlow Config (DataCleanup v1)`
+- Audit da fase de simplificacao: `Docs/Reports/Audits/2026-03-11/NAVIGATION-INTENTCATALOG-SIMPLIFY.md`
+- Audit da fase de remocao: `Docs/Reports/Audits/2026-03-11/NAVIGATION-INTENTCATALOG-REMOVE.md`
+- Audit da fase direct-ref-first: `Docs/Reports/Audits/2026-03-11/TRANSITIONSTYLE-DIRECTREF-REFACTOR.md`
+- Audit da purge fail-fast: `Docs/Reports/Audits/2026-03-11/TRANSITION-DIRECTREF-FAILFAST-PURGE.md`
+- MenuItem de validacao (Editor): `ImmersiveGames/NewScripts/Tools/SceneFlow/Validate Config`
+

@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Config
@@ -14,43 +13,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
     public sealed class NewScriptsBootstrapConfigAsset : ScriptableObject
     {
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
-        [SerializeField] private GameNavigationIntentCatalogAsset navigationIntentCatalog;
-        [SerializeField] private TransitionStyleCatalogAsset transitionStyleCatalog;
         [SerializeField] private SceneRouteCatalogAsset sceneRouteCatalog;
-        [SerializeField] private SceneTransitionProfileCatalogAsset transitionProfileCatalog;
+        [SerializeField] private TransitionStyleAsset startupTransitionStyleRef;
         [SerializeField] private SceneKeyAsset fadeSceneKey;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
-        public GameNavigationIntentCatalogAsset NavigationIntentCatalog => navigationIntentCatalog;
-        public TransitionStyleCatalogAsset TransitionStyleCatalog => transitionStyleCatalog;
         public SceneRouteCatalogAsset SceneRouteCatalog => sceneRouteCatalog;
-        public SceneTransitionProfileCatalogAsset TransitionProfileCatalog => transitionProfileCatalog;
+        public TransitionStyleAsset StartupTransitionStyleRef => startupTransitionStyleRef;
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (navigationIntentCatalog == null)
+            if (navigationCatalog != null)
+            {
+                navigationCatalog.ValidateCriticalIntentsInEditor();
+            }
+
+            if (startupTransitionStyleRef == null || startupTransitionStyleRef.Profile == null)
             {
                 string message =
-                    $"[FATAL][Config] NewScriptsBootstrapConfigAsset invalido: navigationIntentCatalog obrigatorio e nao configurado. asset='{name}'.";
+                    $"[FATAL][Config] NewScriptsBootstrapConfigAsset invalido: configure startupTransitionStyleRef com profileRef valido. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(NewScriptsBootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);
-            }
-
-            if (navigationCatalog != null)
-            {
-                if (navigationCatalog.IntentCatalogAssetRef != navigationIntentCatalog)
-                {
-                    string message =
-                        $"[FATAL][Config] NewScriptsBootstrapConfigAsset inconsistente: navigationCatalog.assetRef deve apontar para navigationIntentCatalog. asset='{name}'.";
-
-                    DebugUtility.LogError(typeof(NewScriptsBootstrapConfigAsset), message);
-                    throw new InvalidOperationException(message);
-                }
-
-                navigationCatalog.ValidateCriticalIntentsInEditor(navigationIntentCatalog);
             }
         }
 #endif

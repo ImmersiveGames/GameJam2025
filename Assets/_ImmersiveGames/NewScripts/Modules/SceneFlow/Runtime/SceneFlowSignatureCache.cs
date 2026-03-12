@@ -2,25 +2,13 @@
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 {
-
-    /// <summary>
-    /// Observa SceneTransitionStarted/Completed e guarda a Ãºltima assinatura disponÃ­vel.
-    /// </summary>
-        /// <summary>
-    /// OWNER: cache da ultima assinatura/profile/cena para consumidores de leitura.
-    /// NAO E OWNER: dedupe de fluxo de transicao ou controle de gates.
-    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; nao publica eventos.
-    /// Fases tocadas: TransitionStarted e TransitionCompleted.
-    /// </summary>
-public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.IDisposable
+    public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.IDisposable
     {
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
 
-        // Boundary: read-model da ultima assinatura observada (Started/Completed).
-        // Nao decide aceite/rejeicao de request; dedupe canonico fica no SceneTransitionService.
         private string _lastSignature = string.Empty;
-        private SceneFlowProfileId _lastProfileId;
+        private string _lastProfileLabel = string.Empty;
         private string _lastTargetScene = string.Empty;
         private bool _disposed;
 
@@ -33,10 +21,10 @@ public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.I
             EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
         }
 
-        public bool TryGetLast(out string signature, out SceneFlowProfileId profileId, out string targetScene)
+        public bool TryGetLast(out string signature, out string profileLabel, out string targetScene)
         {
             signature = _lastSignature;
-            profileId = _lastProfileId;
+            profileLabel = _lastProfileLabel;
             targetScene = _lastTargetScene;
             return !string.IsNullOrWhiteSpace(signature);
         }
@@ -54,7 +42,7 @@ public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.I
         private void UpdateFromContext(SceneTransitionContext context)
         {
             _lastSignature = SceneTransitionSignature.Compute(context);
-            _lastProfileId = context.TransitionProfileId;
+            _lastProfileLabel = context.TransitionProfileName ?? string.Empty;
             _lastTargetScene = context.TargetActiveScene ?? string.Empty;
         }
 
@@ -72,6 +60,3 @@ public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.I
         }
     }
 }
-
-
-

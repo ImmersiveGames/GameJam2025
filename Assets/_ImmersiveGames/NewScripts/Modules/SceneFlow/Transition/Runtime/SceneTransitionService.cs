@@ -13,17 +13,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
-
-    /// <summary>
-    /// ImplementaÃ§Ã£o nativa do pipeline de Scene Flow emitindo eventos do NewScripts.
-    /// </summary>
-        /// <summary>
-    /// OWNER: pipeline canonico de transicao e timeline de fases do SceneFlow.
-    /// NAO E OWNER: reset de mundo/level (delegado para gates e modulos externos).
-    /// PUBLISH/CONSUME: publica Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed; consome request via API.
-    /// Fases tocadas: TransitionStarted, FadeIn, LoadedScenesSnapshot(before_apply_route), RouteExecutionPlan, ApplyRoute, LoadedScenesSnapshot(after_apply_route), ScenesReady, BeforeFadeOut, FadeOut, TransitionCompleted.
-    /// </summary>
-[DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed partial class SceneTransitionService : ISceneTransitionService
     {
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
@@ -36,11 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private readonly SemaphoreSlim _transitionGate = new(1, 1);
         private int _transitionInProgress;
-
         private long _transitionIdSeq;
-
-        // Boundary: este servico e o owner canonico do dedupe de request (same-frame + in-flight).
-        // Consumers externos podem ser apenas idempotentes de efeito colateral.
         private string _lastCompletedSignature = string.Empty;
         private string _inFlightSignature = string.Empty;
         private string _lastRequestedSignature = string.Empty;
@@ -84,25 +70,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             if (!_navigationPolicy.CanTransition(hydratedRequest, out var denialReason))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] TransiÃ§Ã£o bloqueada por policy. " +
-                    $"signature='{signature}', routeId='{context.RouteId}', styleId='{context.StyleId}', " +
-                    $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', " +
-                    $"policyReason='{Sanitize(denialReason)}'.");
+                    $"[SceneFlow] Transicao bloqueada por policy. signature='{signature}', routeId='{context.RouteId}', style='{context.StyleLabel}', reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', policyReason='{Sanitize(denialReason)}'.");
                 return;
             }
 
             if (routeDefinition.HasValue && !_routeGuard.CanTransitionRoute(hydratedRequest, routeDefinition.Value, out denialReason))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] TransiÃ§Ã£o bloqueada por route guard. " +
-                    $"signature='{signature}', routeId='{context.RouteId}', kind='{routeDefinition.Value.RouteKind}', " +
-                    $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', " +
-                    $"guardReason='{Sanitize(denialReason)}'.");
+                    $"[SceneFlow] Transicao bloqueada por route guard. signature='{signature}', routeId='{context.RouteId}', kind='{routeDefinition.Value.RouteKind}', reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}', guardReason='{Sanitize(denialReason)}'.");
                 return;
             }
 
-            // Dedupe por assinatura: evita "double start" no mesmo contexto em janela curta.
-            // Isto nÃ£o substitui correÃ§Ã£o do caller, mas impede o pior: reentrÃ¢ncia/interleaving.
             if (ShouldDedupeSameFrame(signature))
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
@@ -118,21 +96,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return;
             }
 
-            // Pre-checagem concorrente (rÃ¡pida).
             if (Interlocked.CompareExchange(ref _transitionInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Uma transiÃ§Ã£o jÃ¡ estÃ¡ em andamento (_transitionInProgress ativo). Ignorando solicitaÃ§Ã£o concorrente. " +
-                    $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
+                    $"[SceneFlow] Uma transicao ja esta em andamento (_transitionInProgress ativo). Ignorando solicitacao concorrente. signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
                 return;
             }
 
-            // Garante exclusÃ£o mÃºtua (nÃ£o bloqueante).
             if (!_transitionGate.Wait(0))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Uma transiÃ§Ã£o jÃ¡ estÃ¡ em andamento. Ignorando solicitaÃ§Ã£o concorrente. " +
-                    $"signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
+                    $"[SceneFlow] Uma transicao ja esta em andamento. Ignorando solicitacao concorrente. signature='{signature}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}'.");
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 return;
             }
@@ -151,15 +125,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 _inFlightSignature = signature ?? string.Empty;
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' " +
-                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}', " +
-                    $"reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}' {context}",
+                    $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' routeId='{context.RouteId}', style='{context.StyleLabel}', profile='{context.TransitionProfileName}', reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}' {context}",
                     DebugUtility.Colors.Info);
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
-
-                // FadeIn Ã© a primeira etapa visual. O HUD de Loading pode ser "ensured" em paralelo,
-                // mas deve aparecer apenas apÃ³s o FadeIn estar concluÃ­do (OpÃ§Ã£o A+).
                 await RunFadeInIfNeeded(context, transitionId, signature);
 
                 if (context.UseFade)
@@ -168,35 +137,25 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 }
 
                 await RunSceneOperationsAsync(context);
-
-                // 1) Momento em que "cenas estÃ£o prontas" (load/unload/active done).
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' " +
-                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' routeId='{context.RouteId}', style='{context.StyleLabel}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Info);
 
-                // 2) Aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
                 await AwaitCompletionGateAsync(context);
-
                 EventBus<SceneTransitionBeforeFadeOutEvent>.Raise(new SceneTransitionBeforeFadeOutEvent(context));
-
                 await RunFadeOutIfNeeded(context, transitionId, signature);
-
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
-
                 MarkCompleted(signature);
 
                 DebugUtility.Log<SceneTransitionService>(
-                    $"[SceneFlow] TransitionCompleted id={transitionId} signature='{signature}' " +
-                    $"routeId='{context.RouteId}', styleId='{context.StyleId}', profile='{context.TransitionProfileName}'.",
+                    $"[SceneFlow] TransitionCompleted id={transitionId} signature='{signature}' routeId='{context.RouteId}', style='{context.StyleLabel}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<SceneTransitionService>(
-                    $"[SceneFlow] Erro durante transiÃ§Ã£o: {ex}");
+                DebugUtility.LogError<SceneTransitionService>($"[SceneFlow] Erro durante transicao: {ex}");
                 throw;
             }
             finally
@@ -207,25 +166,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
         }
 
-
-
-
-
         private static void EnsureTransitionProfileOrFailFast(SceneTransitionRequest request)
         {
-            if (request.TransitionProfile != null)
+            if (request.TransitionProfile != null || !request.UseFade)
             {
                 return;
             }
 
-            if (!request.UseFade)
-            {
-                return;
-            }
-
-            string message =
-                $"[FATAL][Config] SceneTransitionProfile ausente na request com UseFade=true. routeId='{request.RouteId}', styleId='{request.StyleId}', requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
-
+            string message = $"[FATAL][Config] SceneTransitionProfile ausente na request com UseFade=true. routeId='{request.RouteId}', style='{request.StyleLabel}', requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
             DebugUtility.LogError<SceneTransitionService>(message);
             DevStopPlayModeInEditor();
             if (!Application.isEditor)
@@ -237,9 +185,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private static void FailFastTransitionRequest(SceneTransitionRequest request, string detail)
         {
-            string message =
-                $"[FATAL][Config] {detail} requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
-
+            string message = $"[FATAL][Config] {detail} requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.";
             DebugUtility.LogError<SceneTransitionService>(message);
             DevStopPlayModeInEditor();
             if (!Application.isEditor)
@@ -258,21 +204,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private SceneTransitionContext BuildContextWithResetDecision(SceneTransitionRequest request, SceneRouteDefinition? routeDefinition)
         {
-            SceneTransitionContext context = SceneTransitionSignature.BuildContext(request);
+            SceneRouteKind routeKind = routeDefinition?.RouteKind ?? SceneRouteKind.Unspecified;
+            SceneTransitionContext context = SceneTransitionSignature.BuildContext(request, routeKind);
 
             if (!TryResolveRouteResetPolicy(out var policy) || policy == null)
             {
-                return context.WithRouteResetDecision(
-                    requiresWorldReset: false,
-                    decisionSource: "policy:missing",
-                    decisionReason: "RouteResetPolicyMissing");
+                return context.WithRouteResetDecision(false, "policy:missing", "RouteResetPolicyMissing");
             }
 
             RouteResetDecision resetDecision = policy.Resolve(context.RouteId, routeDefinition, context);
-            return context.WithRouteResetDecision(
-                requiresWorldReset: resetDecision.ShouldReset,
-                decisionSource: resetDecision.DecisionSource,
-                decisionReason: resetDecision.Reason);
+            return context.WithRouteResetDecision(resetDecision.ShouldReset, resetDecision.DecisionSource, resetDecision.Reason);
         }
 
         private bool TryResolveRouteResetPolicy(out IRouteResetPolicy? policy)
@@ -283,9 +224,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return true;
             }
 
-            if (DependencyManager.HasInstance &&
-                DependencyManager.Provider.TryGetGlobal<IRouteResetPolicy>(out var resolved) &&
-                resolved != null)
+            if (DependencyManager.HasInstance && DependencyManager.Provider.TryGetGlobal<IRouteResetPolicy>(out var resolved) && resolved != null)
             {
                 policy = resolved;
                 return true;
@@ -295,9 +234,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             return false;
         }
 
-        private SceneTransitionRequest BuildRequestFromRouteDefinition(
-            SceneTransitionRequest request,
-            out SceneRouteDefinition? routeDefinition)
+        private SceneTransitionRequest BuildRequestFromRouteDefinition(SceneTransitionRequest request, out SceneRouteDefinition? routeDefinition)
         {
             routeDefinition = null;
 
@@ -306,24 +243,22 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 if (request.HasInlineSceneData)
                 {
                     DebugUtility.LogWarning<SceneTransitionService>(
-                        $"[OBS][Deprecated] Inline scene data foi detectado sem RouteId. " +
-                        $"Fluxo legado desativado; request serÃ¡ abortada. " +
-                        $"requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.");
+                        $"[OBS][Deprecated] Inline scene data foi detectado sem RouteId. Fluxo legado desativado; request sera abortada. requestedBy='{Sanitize(request.RequestedBy)}', reason='{Sanitize(request.Reason)}'.");
                 }
 
-                FailFastTransitionRequest(request, "RouteId ausente/invÃ¡lido.");
+                FailFastTransitionRequest(request, "RouteId ausente/invalido.");
                 return request;
             }
 
             if (_routeResolver == null)
             {
-                FailFastTransitionRequest(request, $"ISceneRouteResolver indisponÃ­vel para routeId='{request.RouteId}'.");
+                FailFastTransitionRequest(request, $"ISceneRouteResolver indisponivel para routeId='{request.RouteId}'.");
                 return request;
             }
 
             if (!_routeResolver.TryResolve(request.RouteId, out var resolvedRoute))
             {
-                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' nÃ£o encontrado no catÃ¡logo de rotas.");
+                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' nao encontrado no catalogo de rotas.");
                 return request;
             }
 
@@ -344,11 +279,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 resolvedRoute.ScenesToUnload,
                 resolvedRoute.TargetActiveScene,
                 request.RouteId,
-                request.StyleId,
+                request.TransitionStyle,
                 request.Payload,
                 request.TransitionProfile,
                 request.UseFade,
-                request.TransitionProfileId,
+                request.StyleLabel,
+                request.TransitionProfileName,
                 request.ContextSignature,
                 request.RequestedBy,
                 request.Reason);
@@ -362,12 +298,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
 
             int currentFrame = Time.frameCount;
-            bool shouldDedupe = string.Equals(signature, _lastRequestedSignature, StringComparison.Ordinal) &&
-                currentFrame == _lastRequestedFrame;
-
+            bool shouldDedupe = string.Equals(signature, _lastRequestedSignature, StringComparison.Ordinal) && currentFrame == _lastRequestedFrame;
             _lastRequestedSignature = signature ?? string.Empty;
             _lastRequestedFrame = currentFrame;
-
             return shouldDedupe;
         }
 
@@ -395,192 +328,115 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             try
             {
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Aguardando completion gate antes do FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
-
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Aguardando completion gate antes do FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
                 await _completionGate.AwaitBeforeFadeOutAsync(context);
-
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Completion gate concluÃ­do. Prosseguindo para FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Completion gate concluido. Prosseguindo para FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
             }
             catch (Exception ex)
             {
                 if (IsFatalH1Exception(ex))
                 {
-                    DebugUtility.LogError<SceneTransitionService>(
-                        $"[SceneFlow] Completion gate abortado por fail-fast H1. Interrompendo transicao. ex={ex.GetType().Name}: {ex.Message}");
+                    DebugUtility.LogError<SceneTransitionService>($"[SceneFlow] Completion gate abortado por fail-fast H1. Interrompendo transicao. ex={ex.GetType().Name}: {ex.Message}");
                     throw;
                 }
 
-                // Gate e best effort: nao deve travar a transicao.
-                DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] Completion gate falhou/abortou. Prosseguindo com FadeOut. ex={ex.GetType().Name}: {ex.Message}");
-
+                DebugUtility.LogWarning<SceneTransitionService>($"[SceneFlow] Completion gate falhou/abortou. Prosseguindo com FadeOut. ex={ex.GetType().Name}: {ex.Message}");
                 string fallbackReason = ResolveCompletionGateFallbackReason(ex);
-                DebugUtility.Log<SceneTransitionService>(
-                    $"[OBS][SceneFlow] CompletionGateFallback applied='true' reason='{fallbackReason}' signature='{SceneTransitionSignature.Compute(context)}'.",
-                    DebugUtility.Colors.Info);
+                DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] CompletionGateFallback applied='true' reason='{fallbackReason}' signature='{SceneTransitionSignature.Compute(context)}'.", DebugUtility.Colors.Info);
             }
         }
 
         private static string ResolveCompletionGateFallbackReason(Exception ex)
         {
-            if (ex is TimeoutException)
-            {
-                return "timeout";
-            }
-
-            if (ex is OperationCanceledException)
-            {
-                return "abort";
-            }
-
+            if (ex is TimeoutException) return "timeout";
+            if (ex is OperationCanceledException) return "abort";
             return "exception";
         }
 
         private static bool IsFatalH1Exception(Exception ex)
         {
-            if (ex == null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(ex.Message) &&
-                ex.Message.IndexOf("[FATAL][H1]", StringComparison.Ordinal) >= 0)
-            {
-                return true;
-            }
-
+            if (ex == null) return false;
+            if (!string.IsNullOrWhiteSpace(ex.Message) && ex.Message.IndexOf("[FATAL][H1]", StringComparison.Ordinal) >= 0) return true;
             return ex.InnerException != null && IsFatalH1Exception(ex.InnerException);
         }
+
         private async Task RunFadeInIfNeeded(SceneTransitionContext context, long transitionId, string signature)
         {
-            if (!context.UseFade || context.TransitionProfile == null)
-            {
-                return;
-            }
-
+            if (!context.UseFade || context.TransitionProfile == null) return;
             _fadeAdapter.ConfigureFromProfile(context.TransitionProfile, context.TransitionProfileName);
-
             var fadeInTask = _fadeAdapter.FadeInAsync(signature);
             LogObsFade("FadeInStarted", transitionId, signature, context.TransitionProfileName);
             await fadeInTask;
-
             LogObsFade("FadeInCompleted", transitionId, signature, context.TransitionProfileName);
         }
 
         private async Task RunFadeOutIfNeeded(SceneTransitionContext context, long transitionId, string signature)
         {
-            if (!context.UseFade)
-            {
-                return;
-            }
-
+            if (!context.UseFade) return;
             LogObsFade("FadeOutStarted", transitionId, signature, context.TransitionProfileName);
-
             await _fadeAdapter.FadeOutAsync(signature);
-
             LogObsFade("FadeOutCompleted", transitionId, signature, context.TransitionProfileName);
         }
 
         private static void LogObsFade(string phase, long transitionId, string signature, string profile)
         {
-            // ComentÃ¡rio: Ã¢ncora canÃ´nica (auditÃ¡vel) para ADR-0009 / Item A (Strict/Release).
-            DebugUtility.Log<SceneTransitionService>(
-                $"[OBS][Fade] {phase} id={transitionId} signature='{signature}' profile='{profile}'.");
+            DebugUtility.Log<SceneTransitionService>($"[OBS][Fade] {phase} id={transitionId} signature='{signature}' profile='{profile}'.");
         }
 
         private static void LogLoadedScenesSnapshot(string stage)
         {
-            DebugUtility.Log<SceneTransitionService>(
-                $"[OBS][SceneFlow] LoadedScenesSnapshot stage='{stage}' sceneCount={SceneManager.sceneCount} scenes=[{DescribeLoadedScenes()}].",
-                DebugUtility.Colors.Info);
+            DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] LoadedScenesSnapshot stage='{stage}' sceneCount={SceneManager.sceneCount} scenes=[{DescribeLoadedScenes()}].", DebugUtility.Colors.Info);
         }
 
         private static string DescribeLoadedScenes()
         {
-            if (SceneManager.sceneCount <= 0)
-            {
-                return "<none>";
-            }
-
+            if (SceneManager.sceneCount <= 0) return "<none>";
             var scenes = new List<string>(SceneManager.sceneCount);
             Scene activeScene = SceneManager.GetActiveScene();
-
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene scene = SceneManager.GetSceneAt(i);
-                scenes.Add(
-                    $"name='{scene.name}', isLoaded={scene.isLoaded}, buildIndex={scene.buildIndex}, isActive={scene == activeScene}");
+                scenes.Add($"name='{scene.name}', isLoaded={scene.isLoaded}, buildIndex={scene.buildIndex}, isActive={scene == activeScene}");
             }
-
             return string.Join(" | ", scenes);
         }
 
-        private static void LogRouteExecutionPlan(
-            SceneTransitionContext context,
-            IReadOnlyList<string> loadScenes,
-            IReadOnlyList<string> unloadScenes,
-            IReadOnlyList<string> reloadScenes)
+        private static void LogRouteExecutionPlan(SceneTransitionContext context, IReadOnlyList<string> loadScenes, IReadOnlyList<string> unloadScenes, IReadOnlyList<string> reloadScenes)
         {
-            DebugUtility.Log<SceneTransitionService>(
-                $"[OBS][SceneFlow] RouteExecutionPlan routeId='{context.RouteId}' activeScene='{context.TargetActiveScene}' " +
-                $"toLoad=[{FormatSceneList(loadScenes)}] toUnload=[{FormatSceneList(unloadScenes)}] reload=[{FormatSceneList(reloadScenes)}].",
-                DebugUtility.Colors.Info);
+            DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] RouteExecutionPlan routeId='{context.RouteId}' activeScene='{context.TargetActiveScene}' toLoad=[{FormatSceneList(loadScenes)}] toUnload=[{FormatSceneList(unloadScenes)}] reload=[{FormatSceneList(reloadScenes)}].", DebugUtility.Colors.Info);
         }
 
         private static string FormatSceneList(IReadOnlyList<string>? scenes)
         {
-            if (scenes == null || scenes.Count == 0)
-            {
-                return "<none>";
-            }
-
+            if (scenes == null || scenes.Count == 0) return "<none>";
             return string.Join(", ", scenes);
         }
 
         private async Task RunSceneOperationsAsync(SceneTransitionContext context)
         {
             LogLoadedScenesSnapshot("before_apply_route");
-
             IReadOnlyList<string> reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
             IReadOnlyList<string> loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
             IReadOnlyList<string> unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
-
             LogRouteExecutionPlan(context, loadScenes, unloadScenes, reloadScenes);
-
             await LoadScenesAsync(loadScenes);
-
-            if (reloadScenes.Count > 0)
-            {
-                await HandleReloadScenesAsync(context, reloadScenes);
-            }
-
+            if (reloadScenes.Count > 0) await HandleReloadScenesAsync(context, reloadScenes);
             await SetActiveSceneAsync(context.TargetActiveScene);
             await UnloadScenesAsync(unloadScenes, context.TargetActiveScene);
-
             LogLoadedScenesSnapshot("after_apply_route");
         }
 
         private async Task LoadScenesAsync(IReadOnlyList<string>? scenesToLoad, bool forceLoad = false)
         {
-            if (scenesToLoad == null || scenesToLoad.Count == 0)
-            {
-                return;
-            }
-
+            if (scenesToLoad == null || scenesToLoad.Count == 0) return;
             foreach (string sceneName in scenesToLoad)
             {
                 if (!forceLoad && _loaderAdapter.IsSceneLoaded(sceneName))
                 {
-                    DebugUtility.LogVerbose<SceneTransitionService>(
-                        $"[SceneFlow] Cena '{sceneName}' jÃ¡ estÃ¡ carregada. Pulando load.");
+                    DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Cena '{sceneName}' ja esta carregada. Pulando load.");
                     continue;
                 }
-
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Carregando cena '{sceneName}' (Additive)...");
-
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Carregando cena '{sceneName}' (Additive)...");
                 await _loaderAdapter.LoadSceneAsync(sceneName);
             }
         }
@@ -596,53 +452,35 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             bool success = await _loaderAdapter.TrySetActiveSceneAsync(targetActiveScene);
             if (!success)
             {
-                DebugUtility.LogWarning<SceneTransitionService>(
-                    $"[SceneFlow] NÃ£o foi possÃ­vel definir a cena ativa para '{targetActiveScene}'. Cena atual='{_loaderAdapter.GetActiveSceneName()}'.");
+                DebugUtility.LogWarning<SceneTransitionService>($"[SceneFlow] Nao foi possivel definir a cena ativa para '{targetActiveScene}'. Cena atual='{_loaderAdapter.GetActiveSceneName()}'.");
             }
             else
             {
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Cena ativa definida para '{targetActiveScene}'.");
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Cena ativa definida para '{targetActiveScene}'.");
             }
         }
 
         private async Task UnloadScenesAsync(IReadOnlyList<string>? scenesToUnload, string targetActiveScene)
         {
-            if (scenesToUnload == null || scenesToUnload.Count == 0)
-            {
-                return;
-            }
-
+            if (scenesToUnload == null || scenesToUnload.Count == 0) return;
             foreach (string sceneName in scenesToUnload)
             {
                 Scene scene = SceneManager.GetSceneByName(sceneName);
                 bool exists = scene.IsValid();
                 bool isLoaded = exists && scene.isLoaded;
                 bool isActiveScene = exists && scene == SceneManager.GetActiveScene();
-
-                DebugUtility.Log<SceneTransitionService>(
-                    $"[OBS][SceneFlow] UnloadCandidate scene='{sceneName}' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene} targetActiveScene='{targetActiveScene}'.",
-                    DebugUtility.Colors.Info);
-
+                DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] UnloadCandidate scene='{sceneName}' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene} targetActiveScene='{targetActiveScene}'.", DebugUtility.Colors.Info);
                 if (string.Equals(sceneName, targetActiveScene, StringComparison.Ordinal))
                 {
-                    DebugUtility.Log<SceneTransitionService>(
-                        $"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='target_active_scene' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.",
-                        DebugUtility.Colors.Info);
+                    DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='target_active_scene' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.", DebugUtility.Colors.Info);
                     continue;
                 }
-
                 if (!_loaderAdapter.IsSceneLoaded(sceneName))
                 {
-                    DebugUtility.Log<SceneTransitionService>(
-                        $"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='already_unloaded' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.",
-                        DebugUtility.Colors.Info);
+                    DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='already_unloaded' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.", DebugUtility.Colors.Info);
                     continue;
                 }
-
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Descarregando cena '{sceneName}'...");
-
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Descarregando cena '{sceneName}'...");
                 await _loaderAdapter.UnloadSceneAsync(sceneName);
             }
         }
@@ -650,19 +488,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         private async Task HandleReloadScenesAsync(SceneTransitionContext context, IReadOnlyList<string> reloadScenes)
         {
             string tempActive = ResolveTempActiveScene(reloadScenes);
-            if (!string.IsNullOrWhiteSpace(tempActive) &&
-                !string.Equals(tempActive, _loaderAdapter.GetActiveSceneName(), StringComparison.Ordinal))
+            if (!string.IsNullOrWhiteSpace(tempActive) && !string.Equals(tempActive, _loaderAdapter.GetActiveSceneName(), StringComparison.Ordinal))
             {
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Reload: definindo cena ativa temporÃ¡ria '{tempActive}'.");
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: definindo cena ativa temporaria '{tempActive}'.");
                 await SetActiveSceneAsync(tempActive);
             }
-
             await UnloadScenesForReloadAsync(reloadScenes);
             await LoadScenesAsync(reloadScenes, forceLoad: true);
-
-            DebugUtility.LogVerbose<SceneTransitionService>(
-                $"[SceneFlow] Reload concluÃ­do. TargetActiveScene='{context.TargetActiveScene}'.");
+            DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload concluido. TargetActiveScene='{context.TargetActiveScene}'.");
         }
 
         private async Task UnloadScenesForReloadAsync(IReadOnlyList<string> reloadScenes)
@@ -671,88 +504,42 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             {
                 if (!_loaderAdapter.IsSceneLoaded(sceneName))
                 {
-                    DebugUtility.LogVerbose<SceneTransitionService>(
-                        $"[SceneFlow] Reload: cena '{sceneName}' jÃ¡ estÃ¡ descarregada. Pulando unload.");
+                    DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: cena '{sceneName}' ja esta descarregada. Pulando unload.");
                     continue;
                 }
-
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Reload: descarregando cena '{sceneName}'...");
-
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: descarregando cena '{sceneName}'...");
                 await _loaderAdapter.UnloadSceneAsync(sceneName);
             }
         }
 
-        private static IReadOnlyList<string> GetReloadScenes(
-            IReadOnlyList<string>? scenesToLoad,
-            IReadOnlyList<string>? scenesToUnload)
+        private static IReadOnlyList<string> GetReloadScenes(IReadOnlyList<string>? scenesToLoad, IReadOnlyList<string>? scenesToUnload)
         {
-            if (scenesToLoad == null || scenesToUnload == null)
-            {
-                return Array.Empty<string>();
-            }
-
+            if (scenesToLoad == null || scenesToUnload == null) return Array.Empty<string>();
             var unloadSet = new HashSet<string>(scenesToUnload, StringComparer.Ordinal);
             var reload = new List<string>();
-
             foreach (string sceneName in scenesToLoad)
             {
-                if (string.IsNullOrWhiteSpace(sceneName))
-                {
-                    continue;
-                }
-
+                if (string.IsNullOrWhiteSpace(sceneName)) continue;
                 string trimmed = sceneName.Trim();
-                if (trimmed.Length == 0)
-                {
-                    continue;
-                }
-
-                if (unloadSet.Contains(trimmed))
-                {
-                    reload.Add(trimmed);
-                }
+                if (trimmed.Length == 0) continue;
+                if (unloadSet.Contains(trimmed)) reload.Add(trimmed);
             }
-
             return reload;
         }
 
-        private static IReadOnlyList<string> FilterScenesExcluding(
-            IReadOnlyList<string>? scenes,
-            IReadOnlyList<string>? excludedScenes)
+        private static IReadOnlyList<string> FilterScenesExcluding(IReadOnlyList<string>? scenes, IReadOnlyList<string>? excludedScenes)
         {
-            if (scenes == null || scenes.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-
-            if (excludedScenes == null || excludedScenes.Count == 0)
-            {
-                return scenes;
-            }
-
+            if (scenes == null || scenes.Count == 0) return Array.Empty<string>();
+            if (excludedScenes == null || excludedScenes.Count == 0) return scenes;
             var excludeSet = new HashSet<string>(excludedScenes, StringComparer.Ordinal);
             var filtered = new List<string>();
-
             foreach (string sceneName in scenes)
             {
-                if (string.IsNullOrWhiteSpace(sceneName))
-                {
-                    continue;
-                }
-
+                if (string.IsNullOrWhiteSpace(sceneName)) continue;
                 string trimmed = sceneName.Trim();
-                if (trimmed.Length == 0)
-                {
-                    continue;
-                }
-
-                if (!excludeSet.Contains(trimmed))
-                {
-                    filtered.Add(trimmed);
-                }
+                if (trimmed.Length == 0) continue;
+                if (!excludeSet.Contains(trimmed)) filtered.Add(trimmed);
             }
-
             return filtered;
         }
 
@@ -760,44 +547,25 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             var reloadSet = new HashSet<string>(reloadScenes, StringComparer.Ordinal);
             const string UiGlobalSceneName = "UIGlobalScene";
-
-            if (_loaderAdapter.IsSceneLoaded(UiGlobalSceneName) && !reloadSet.Contains(UiGlobalSceneName))
-            {
-                return UiGlobalSceneName;
-            }
-
+            if (_loaderAdapter.IsSceneLoaded(UiGlobalSceneName) && !reloadSet.Contains(UiGlobalSceneName)) return UiGlobalSceneName;
             string currentActive = _loaderAdapter.GetActiveSceneName();
-            if (!string.IsNullOrWhiteSpace(currentActive) && !reloadSet.Contains(currentActive))
-            {
-                return currentActive;
-            }
-
+            if (!string.IsNullOrWhiteSpace(currentActive) && !reloadSet.Contains(currentActive)) return currentActive;
             int sceneCount = SceneManager.sceneCount;
             for (int i = 0; i < sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
-                if (!scene.IsValid() || !scene.isLoaded)
-                {
-                    continue;
-                }
-
+                if (!scene.IsValid() || !scene.isLoaded) continue;
                 string name = scene.name;
-                if (!string.IsNullOrWhiteSpace(name) && !reloadSet.Contains(name))
-                {
-                    return name;
-                }
+                if (!string.IsNullOrWhiteSpace(name) && !reloadSet.Contains(name)) return name;
             }
-
             return string.Empty;
         }
+
         private sealed class NoFadeAdapter : ISceneFlowFadeAdapter
         {
             public bool IsAvailable => false;
-
             public void ConfigureFromProfile(_ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings.SceneTransitionProfile profile, string profileLabel) { }
-
             public Task FadeInAsync(string? contextSignature = null) => Task.CompletedTask;
-
             public Task FadeOutAsync(string? contextSignature = null) => Task.CompletedTask;
         }
 
@@ -805,27 +573,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             public Task AwaitBeforeFadeOutAsync(SceneTransitionContext context) => Task.CompletedTask;
         }
+
         static partial void DevStopPlayModeInEditor();
 
         private static string Sanitize(string s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -10,12 +10,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             SceneRouteId macroRouteId,
             string reason,
             int selectionVersion,
-            string levelSignature,
-            TransitionStyleId styleId = default)
+            string levelSignature)
         {
             LevelRef = levelRef;
             MacroRouteId = macroRouteId;
-            StyleId = styleId;
             Reason = Sanitize(reason);
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
 
@@ -31,7 +29,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public LevelDefinitionAsset LevelRef { get; }
         public SceneRouteId MacroRouteId { get; }
-        public TransitionStyleId StyleId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
         public string LevelSignature { get; }
@@ -44,12 +41,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             SceneRouteId.None,
             string.Empty,
             0,
-            string.Empty,
-            TransitionStyleId.None);
+            string.Empty);
 
         public override string ToString()
         {
-            return $"levelRef='{(HasLevelRef ? LevelRef.name : "<none>")}', routeId='{MacroRouteId}', styleId='{StyleId}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', levelSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
+            return $"levelRef='{(HasLevelRef ? LevelRef.name : "<none>")}', routeId='{MacroRouteId}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', levelSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
         }
 
         private static string Sanitize(string value)

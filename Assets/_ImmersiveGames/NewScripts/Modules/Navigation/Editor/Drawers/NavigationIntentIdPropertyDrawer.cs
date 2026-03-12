@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using UnityEditor;
@@ -7,45 +7,60 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.IdSources
 {
     /// <summary>
-    /// Coleta NavigationIntentId do catalogo canonico de intents.
+    /// Coleta NavigationIntentId a partir da fonte canonica em codigo + extras do GameNavigationCatalogAsset.
     /// </summary>
     public sealed class NavigationIntentIdSourceProvider
     {
-        private const string CanonicalCatalogPath = "Assets/Resources/GameNavigationIntentCatalog.asset";
+        private const string CanonicalCatalogPath = "Assets/Resources/Navigation/GameNavigationCatalog.asset";
 
         public NavigationIntentIdSourceResult Collect()
         {
             var values = new HashSet<string>(StringComparer.Ordinal);
             var duplicates = new HashSet<string>(StringComparer.Ordinal);
 
-            var catalog = AssetDatabase.LoadAssetAtPath<GameNavigationIntentCatalogAsset>(CanonicalCatalogPath);
+            AddFromCode(values, duplicates);
+            CollectExtrasFromNavigationCatalog(values, duplicates);
+
+            return BuildResult(values, duplicates);
+        }
+
+        private static void AddFromCode(HashSet<string> values, HashSet<string> duplicates)
+        {
+            for (int i = 0; i < GameNavigationIntents.AllCanonicalAndAliases.Count; i++)
+            {
+                string normalized = NavigationIntentId.Normalize(GameNavigationIntents.AllCanonicalAndAliases[i].Value);
+                if (string.IsNullOrEmpty(normalized))
+                {
+                    continue;
+                }
+
+                if (!values.Add(normalized))
+                {
+                    duplicates.Add(normalized);
+                }
+            }
+        }
+
+        private static void CollectExtrasFromNavigationCatalog(
+            HashSet<string> values,
+            HashSet<string> duplicates)
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<GameNavigationCatalogAsset>(CanonicalCatalogPath);
             if (catalog == null)
             {
                 throw new InvalidOperationException($"Canonical catalog not found at '{CanonicalCatalogPath}'.");
             }
 
             var serializedObject = new SerializedObject(catalog);
-            CollectIntentIdsFromBlock(serializedObject, "core", values, duplicates);
-            CollectIntentIdsFromBlock(serializedObject, "custom", values, duplicates);
-
-            return BuildResult(values, duplicates);
-        }
-
-        private static void CollectIntentIdsFromBlock(
-            SerializedObject serializedObject,
-            string blockPropertyName,
-            HashSet<string> values,
-            HashSet<string> duplicates)
-        {
-            SerializedProperty block = serializedObject.FindProperty(blockPropertyName);
-            if (block == null || !block.isArray)
+            SerializedProperty routes = serializedObject.FindProperty("routes");
+            if (routes == null || !routes.isArray)
             {
                 return;
             }
 
-            for (int i = 0; i < block.arraySize; i++)
+            for (int i = 0; i < routes.arraySize; i++)
             {
-                SerializedProperty entry = block.GetArrayElementAtIndex(i);
+                SerializedProperty entry = routes.GetArrayElementAtIndex(i);
                 SerializedProperty intentId = entry.FindPropertyRelative("intentId");
                 SerializedProperty raw = intentId?.FindPropertyRelative("_value");
                 if (raw == null)
@@ -312,7 +327,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.Drawers
                     _snapshot = new SourceSnapshot(
                         EmptyValues,
                         EmptyValues,
-                        $"Failed to load NavigationIntentId options. Check Assets/Resources/GameNavigationIntentCatalog.asset. ({exception.GetType().Name})");
+                        $"Failed to load NavigationIntentId options. Check GameNavigationCatalog.asset. ({exception.GetType().Name})");
                 }
 
                 _isDirty = false;

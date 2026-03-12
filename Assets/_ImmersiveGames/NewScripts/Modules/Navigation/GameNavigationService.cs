@@ -4,9 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
@@ -17,8 +16,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameNavigationCatalog _catalog;
-        private readonly ITransitionStyleCatalog _styleCatalog;
-        private readonly GameNavigationIntentCatalogAsset _intentsCatalog;
         private readonly IRestartContextService _restartContextService;
         private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
 
@@ -30,25 +27,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             ISceneTransitionService sceneFlow,
             IGameNavigationCatalog catalog,
             ISceneRouteResolver sceneRouteResolver,
-            ITransitionStyleCatalog styleCatalog,
-            GameNavigationIntentCatalogAsset intentsCatalog,
             IRestartContextService restartContextService = null,
             SceneRouteCatalogAsset sceneRouteCatalog = null)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _ = sceneRouteResolver ?? throw new ArgumentNullException(nameof(sceneRouteResolver));
-            _styleCatalog = styleCatalog ?? throw new ArgumentNullException(nameof(styleCatalog));
-            _intentsCatalog = intentsCatalog;
             _restartContextService = restartContextService;
             _sceneRouteCatalog = sceneRouteCatalog;
-
-            if (_intentsCatalog == null)
-            {
-                string message = "[FATAL][Config] GameNavigationService requires GameNavigationIntentCatalogAsset (navigationIntentCatalog).";
-                DebugUtility.LogError(typeof(GameNavigationService), message);
-                throw new InvalidOperationException(message);
-            }
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
                 $"[Navigation] GameNavigationService inicializado. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
@@ -66,7 +52,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public async Task RestartAsync(string reason = null)
         {
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "Restart" : reason.Trim();
-
             GameplayStartSnapshot snapshot = default;
             if (_restartContextService == null || !_restartContextService.TryGetCurrent(out snapshot) || !snapshot.IsValid || !snapshot.MacroRouteId.IsValid)
             {
@@ -75,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}' styleId='{snapshot.StyleId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
                 DebugUtility.Colors.Info);
 
             await StartGameplayRouteAsync(snapshot.MacroRouteId, SceneTransitionPayload.Empty, normalizedReason);
@@ -87,15 +72,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             string profileLabel = "<unknown>";
             if (TryResolveCoreEntry(GameNavigationIntentKind.Menu, out var menuEntry) && menuEntry.IsValid)
             {
-                styleLabel = menuEntry.StyleId.ToString();
-                if (_styleCatalog != null && _styleCatalog.TryGet(menuEntry.StyleId, out var style))
-                {
-                    profileLabel = style.ProfileId.ToString();
-                }
+                styleLabel = string.IsNullOrWhiteSpace(menuEntry.StyleLabel) ? "<unknown>" : menuEntry.StyleLabel;
+                TransitionStyleDefinition definition = ResolveStyle(menuEntry);
+                profileLabel = string.IsNullOrWhiteSpace(definition.ProfileLabel) ? "<unknown>" : definition.ProfileLabel;
             }
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}', styleId='{styleLabel}', profile='{profileLabel}'.",
+                $"[OBS][Navigation] ExitToMenuRequested reason='{reason ?? "<null>"}', style='{styleLabel}', profile='{profileLabel}'.",
                 DebugUtility.Colors.Info);
             return NavigateAsync(GameNavigationIntentKind.Menu, reason);
         }
@@ -132,11 +115,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 "[OBS][Navigation] StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.",
                 DebugUtility.Colors.Info);
 
-            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleId, payload ?? SceneTransitionPayload.Empty);
-            var (profile, profileId, _) = ResolveStyle(routeEntry);
+            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty);
+            TransitionStyleDefinition definition = ResolveStyle(routeEntry);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', styleId='{routeEntry.StyleId}', profile='{profileId}', profileAsset='{(profile != null ? profile.name : "<null>")}'.",
+                $"[OBS][Navigation] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', style='{routeEntry.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{(definition.Profile != null ? definition.Profile.name : "<null>")}'.",
                 DebugUtility.Colors.Info);
 
             await ExecuteEntryAsync(GetCoreIntentId(GameNavigationIntentKind.Gameplay), routeEntry, normalizedReason);
@@ -156,13 +139,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                     $"[FATAL][H1][Navigation] RouteAsset missing from SceneRouteCatalogAsset. routeId='{routeId}' reason='{reason}'.");
             }
 
-            if (routeAsset.RouteKind == SceneRouteKind.Gameplay)
+            if (routeAsset.RouteKind == SceneRouteKind.Gameplay && (routeAsset.LevelCollection == null || routeAsset.LevelCollection.Levels == null || routeAsset.LevelCollection.Levels.Count == 0))
             {
-                if (routeAsset.LevelCollection == null || routeAsset.LevelCollection.Levels == null || routeAsset.LevelCollection.Levels.Count == 0)
-                {
-                    HardFailFastH1.Trigger(typeof(GameNavigationService),
-                        $"[FATAL][H1][Navigation] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
-                }
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][Navigation] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
             }
         }
 
@@ -181,19 +161,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private async Task ExecuteCoreIntentAsync(GameNavigationIntentKind intent, string reason)
         {
             string intentId = GetCoreIntentId(intent);
-
             try
             {
                 if (!TryResolveCoreEntry(intent, out GameNavigationEntry entry) || !entry.IsValid)
                 {
-                    DebugUtility.LogError(typeof(GameNavigationService),
-                        $"[FATAL][Config] Missing core intent entry. intent='{intent}', intentId='{intentId}'.");
                     throw new InvalidOperationException($"[FATAL][Config] Missing core intent entry '{intentId}'.");
                 }
-
-                DebugUtility.LogVerbose(typeof(GameNavigationService),
-                    $"[OBS][Navigation] RuntimeResolveChain intent -> entry -> routeRef. intentKind='{intent}', intentId='{intentId}', routeId='{entry.RouteId}'.",
-                    DebugUtility.Colors.Info);
 
                 await ExecuteEntryAsync(intentId, entry, reason);
             }
@@ -220,36 +193,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return _catalog.TryGet(intentId, out entry) && entry.IsValid;
         }
 
-        private string GetCoreIntentId(GameNavigationIntentKind intent)
+        private static string GetCoreIntentId(GameNavigationIntentKind intent)
         {
-            NavigationIntentId intentId;
-            switch (intent)
-            {
-                case GameNavigationIntentKind.Menu:
-                    intentId = _intentsCatalog.Menu;
-                    break;
-                case GameNavigationIntentKind.Gameplay:
-                    intentId = _intentsCatalog.Gameplay;
-                    break;
-                case GameNavigationIntentKind.GameOver:
-                    intentId = _intentsCatalog.GameOver;
-                    break;
-                case GameNavigationIntentKind.Victory:
-                    intentId = _intentsCatalog.Victory;
-                    break;
-                case GameNavigationIntentKind.Restart:
-                    intentId = _intentsCatalog.Restart;
-                    break;
-                case GameNavigationIntentKind.ExitToMenu:
-                    intentId = _intentsCatalog.ExitToMenu;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(intent), intent, null);
-            }
-
+            NavigationIntentId intentId = GameNavigationIntents.GetCoreId(intent);
             if (!intentId.IsValid)
             {
-                string message = $"[FATAL][Config] GameNavigationIntentCatalogAsset invalido para intent core. intent='{intent}', intentId='<empty>'.";
+                string message = $"[FATAL][Config] GameNavigationIntents invalido para intent core. intent='{intent}', intentId='<empty>'.";
                 DebugUtility.LogError(typeof(GameNavigationService), message);
                 throw new InvalidOperationException(message);
             }
@@ -259,46 +208,37 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         private async Task ExecuteEntryAsync(string intentId, GameNavigationEntry entry, string reason)
         {
-            var payload = entry.Payload ?? SceneTransitionPayload.Empty;
-            var (profile, profileId, useFade) = ResolveStyle(entry);
-
+            TransitionStyleDefinition definition = ResolveStyle(entry);
             _lastNavigationIntentId = intentId ?? string.Empty;
             _lastGameplayRouteId = entry.RouteId;
 
             var request = new SceneTransitionRequest(
                 entry.RouteId,
-                entry.StyleId,
-                payload,
-                profile,
-                transitionProfileId: profileId,
-                useFade: useFade,
+                entry.StyleRef,
+                entry.Payload ?? SceneTransitionPayload.Empty,
+                definition.Profile,
+                useFade: definition.UseFade,
+                styleLabel: definition.StyleLabel,
+                transitionProfileName: definition.ProfileLabel,
                 requestedBy: reason,
                 reason: reason);
 
             var signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
-
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', styleId='{entry.StyleId}', reason='{reason ?? "<null>"}', signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
+                $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
         }
 
-        private (SceneTransitionProfile? profile, SceneFlowProfileId profileId, bool useFade) ResolveStyle(GameNavigationEntry entry)
+        private static TransitionStyleDefinition ResolveStyle(GameNavigationEntry entry)
         {
-            if (_styleCatalog != null && _styleCatalog.TryGet(entry.StyleId, out var style))
+            if (entry.StyleRef == null)
             {
-                if (style.Profile == null)
-                {
-                    DebugUtility.LogWarning(typeof(GameNavigationService),
-                        $"[WARN][Degraded] TransitionStyle sem SceneTransitionProfile. styleId='{entry.StyleId}', routeId='{entry.RouteId}'. Fallback=no-fade (dur=0).");
-                    return (null, style.ProfileId, false);
-                }
-
-                return (style.Profile, style.ProfileId, style.UseFade);
+                throw new InvalidOperationException($"[FATAL][Config] Navegacao sem TransitionStyleAsset direto. routeId='{entry.RouteId}'.");
             }
 
-            throw new InvalidOperationException($"[FATAL][Config] TransitionStyleId sem resolucao no catalogo. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
+            return entry.StyleRef.ToDefinitionOrFail(nameof(GameNavigationService), $"routeId='{entry.RouteId}'");
         }
     }
 }

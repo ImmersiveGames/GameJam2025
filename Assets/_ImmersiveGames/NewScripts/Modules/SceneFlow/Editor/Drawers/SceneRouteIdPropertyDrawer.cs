@@ -8,7 +8,8 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
 {
     /// <summary>
-    /// Coleta SceneRouteId a partir de RouteDefinitionAsset e SceneRouteCatalogAsset.
+    /// Coleta SceneRouteId a partir das fontes canonicas atuais:
+    /// SceneRouteDefinitionAsset + referencias diretas do SceneRouteCatalogAsset.routeDefinitions.
     /// </summary>
     internal sealed class SceneRouteIdSourceProvider : ISceneFlowIdSourceProvider<SceneRouteId>
     {
@@ -25,25 +26,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
 
         private static void CollectFromRouteDefinitionAssets(HashSet<string> allValues, HashSet<string> duplicates)
         {
-            var routeDefinitionIds = new HashSet<string>();
-
             string[] guids = AssetDatabase.FindAssets("t:SceneRouteDefinitionAsset");
             for (int i = 0; i < guids.Length; i++)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                var asset = AssetDatabase.LoadAssetAtPath<SceneRouteDefinitionAsset>(path);
+                SceneRouteDefinitionAsset asset = AssetDatabase.LoadAssetAtPath<SceneRouteDefinitionAsset>(path);
                 if (asset == null)
                 {
                     continue;
                 }
 
-                string routeId = asset.RouteId.Value;
-                if (!SceneFlowIdSourceUtility.AddAndTrackDuplicate(routeDefinitionIds, duplicates, routeId))
-                {
-                    continue;
-                }
-
-                SceneFlowIdSourceUtility.AddValue(allValues, routeId);
+                SceneFlowIdSourceUtility.AddAndTrackDuplicate(allValues, duplicates, asset.RouteId.Value);
             }
         }
 
@@ -53,61 +46,29 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
             for (int i = 0; i < guids.Length; i++)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                var catalog = AssetDatabase.LoadAssetAtPath<SceneRouteCatalogAsset>(path);
+                SceneRouteCatalogAsset catalog = AssetDatabase.LoadAssetAtPath<SceneRouteCatalogAsset>(path);
                 if (catalog == null)
                 {
                     continue;
                 }
 
-                var serializedObject = new SerializedObject(catalog);
-                ReadRouteDefinitionReferences(serializedObject, allValues);
-                ReadInlineRoutes(serializedObject, allValues, duplicates);
-            }
-        }
-
-        private static void ReadRouteDefinitionReferences(SerializedObject serializedObject, HashSet<string> allValues)
-        {
-            SerializedProperty definitions = serializedObject.FindProperty("routeDefinitions");
-            if (definitions == null || !definitions.isArray)
-            {
-                return;
-            }
-
-            for (int i = 0; i < definitions.arraySize; i++)
-            {
-                SerializedProperty element = definitions.GetArrayElementAtIndex(i);
-                if (element.objectReferenceValue is not SceneRouteDefinitionAsset routeAsset)
+                SerializedObject serializedObject = new SerializedObject(catalog);
+                SerializedProperty definitions = serializedObject.FindProperty("routeDefinitions");
+                if (definitions == null || !definitions.isArray)
                 {
                     continue;
                 }
 
-                SceneFlowIdSourceUtility.AddValue(allValues, routeAsset.RouteId.Value);
-            }
-        }
-
-        private static void ReadInlineRoutes(SerializedObject serializedObject, HashSet<string> allValues, HashSet<string> duplicates)
-        {
-            SerializedProperty routes = serializedObject.FindProperty("routes");
-            if (routes == null || !routes.isArray)
-            {
-                return;
-            }
-
-            var inlineRouteIds = new HashSet<string>();
-
-            for (int i = 0; i < routes.arraySize; i++)
-            {
-                SerializedProperty routeEntry = routes.GetArrayElementAtIndex(i);
-                SerializedProperty routeId = routeEntry.FindPropertyRelative("routeId");
-                SerializedProperty raw = routeId?.FindPropertyRelative("_value");
-                if (raw == null)
+                for (int j = 0; j < definitions.arraySize; j++)
                 {
-                    continue;
-                }
+                    SerializedProperty element = definitions.GetArrayElementAtIndex(j);
+                    if (element.objectReferenceValue is not SceneRouteDefinitionAsset routeAsset)
+                    {
+                        continue;
+                    }
 
-                string value = raw.stringValue;
-                SceneFlowIdSourceUtility.AddAndTrackDuplicate(inlineRouteIds, duplicates, value);
-                SceneFlowIdSourceUtility.AddValue(allValues, value);
+                    SceneFlowIdSourceUtility.AddAndTrackDuplicate(allValues, duplicates, routeAsset.RouteId.Value);
+                }
             }
         }
     }
@@ -142,10 +103,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
             bool hasSourceError = !string.IsNullOrEmpty(snapshot.ErrorMessage);
             bool hasMissingValue = !string.IsNullOrEmpty(currentNormalized) && !Contains(snapshot.Values, currentNormalized);
 
-            string missingWarningMessage = hasMissingValue
-                ? $"SceneRouteId inexistente: '{currentNormalized}'."
-                : string.Empty;
-
             if (hasSourceError)
             {
                 y += EditorGUIUtility.standardVerticalSpacing;
@@ -157,6 +114,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 
             if (hasMissingValue)
             {
+                string missingWarningMessage = $"SceneRouteId inexistente: '{currentNormalized}'.";
                 y += EditorGUIUtility.standardVerticalSpacing;
                 float warningHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(missingWarningMessage), position.width);
                 Rect warningRect = new(position.x, y, position.width, warningHeight);
@@ -190,8 +148,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 
             if (!string.IsNullOrEmpty(snapshot.ErrorMessage))
             {
-                string errorMessage = snapshot.ErrorMessage;
-                float errorHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(errorMessage), EditorGUIUtility.currentViewWidth);
+                float errorHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(snapshot.ErrorMessage), EditorGUIUtility.currentViewWidth);
                 height += EditorGUIUtility.standardVerticalSpacing + errorHeight;
             }
 
@@ -279,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 
             private static bool _isInitialized;
             private static bool _isDirty = true;
-            private static SourceSnapshot _snapshot = new(EmptyValues, "");
+            private static SourceSnapshot _snapshot = new(EmptyValues, string.Empty);
 
             public static SourceSnapshot GetOrRefresh()
             {

@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Composition;
+﻿using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         public void RequestStart()
         {
             // ADR-0013: Start pode ser solicitado por diferentes sistemas, mas
-            // NUNCA deve efetivar antes do IntroStageController completar (quando aplicável).
+            // NUNCA deve efetivar antes do IntroStageController completar (quando aplicÃ¡vel).
             if (_signals.IntroStageRequested && !_signals.IntroStageCompleted)
             {
                 DebugUtility.LogVerbose<GameLoopService>(
@@ -243,17 +243,17 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
 
         private string ResolvePostPlayExitReason(GameLoopStateId nextState)
         {
-            // Esta decisão precisa ser determinística e legível no log.
-            // Como os sinais são limpos no fim do Tick, aqui ainda conseguimos
-            // observar a intenção que causou a saída do PostPlay.
+            // Esta decisÃ£o precisa ser determinÃ­stica e legÃ­vel no log.
+            // Como os sinais sÃ£o limpos no fim do Tick, aqui ainda conseguimos
+            // observar a intenÃ§Ã£o que causou a saÃ­da do PostPlay.
 
-            // Prioridade: Reset/Reinício explícito.
+            // Prioridade: Reset/ReinÃ­cio explÃ­cito.
             if (_signals.ResetRequested)
             {
                 return "Restart";
             }
 
-            // Ready é usado como estado-alvo “não ativo” durante navegações.
+            // Ready Ã© usado como estado-alvo â€œnÃ£o ativoâ€ durante navegaÃ§Ãµes.
             // Em PostPlay, ReadyRequested vem normalmente de ExitToMenu.
             if (_signals.ReadyRequested)
             {
@@ -347,7 +347,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             string signature = "<none>";
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var cache) && cache != null &&
-                cache.TryGetLast(out string cachedSignature, out var cachedProfile, out string cachedScene))
+                cache.TryGetLast(out string cachedSignature, out string cachedProfile, out string cachedScene))
             {
                 signature = string.IsNullOrWhiteSpace(cachedSignature) ? "<none>" : cachedSignature.Trim();
                 if (!string.IsNullOrWhiteSpace(cachedScene))
@@ -355,10 +355,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
                     sceneName = cachedScene;
                 }
 
-                if (cachedProfile.IsValid)
-                {
-                    profile = cachedProfile.Value;
-                }
+                if (!string.IsNullOrWhiteSpace(cachedProfile)) { profile = cachedProfile.Trim(); }
             }
 
             return new SignatureInfo(signature, sceneName, profile, Time.frameCount);
@@ -430,6 +427,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         }
     }
 }
+
 
 
 

@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             string requestStartReason = "IntroStageController/Completed";
 
             DebugUtility.Log<IntroStageCoordinator>(
-                $"[OBS][IntroStageController] IntroStageStarted signature='{signature}' profile='{context.ProfileId.Value}' target='{targetScene}' reason='{reason}'.",
+                $"[OBS][IntroStageController] IntroStageStarted signature='{signature}' profile='{context.ProfileLabel}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             if (gameLoop == null)
@@ -63,8 +63,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                         "[IntroStageController] IIntroStageControlService indisponÃ­vel. IntroStageController serÃ¡ concluÃ­da imediatamente.");
 
                     gameLoop?.RequestIntroStageStart();
-                    simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
-                    LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Completed);
+                    simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileLabel, targetScene, reason);
+                    LogCompletion(signature, targetScene, context.ProfileLabel, IntroStageRunResult.Completed);
 
                     requestStartAfterComplete = true;
                     requestStartReason = "IntroStageController/Auto";
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 
                 controlService.BeginIntroStage(context);
                 gameLoop?.RequestIntroStageStart();
-                simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene, reason);
+                simulationGateAcquired = AcquireSimulationGate(simulationGate, signature, context.ProfileLabel, targetScene, reason);
 
                 DebugUtility.Log<IntroStageCoordinator>(
                     "[IntroStageController] IntroStageController ativa: simulaÃ§Ã£o gameplay bloqueada; aguardando confirmaÃ§Ã£o (UI).",
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 if (completedTask != completionTask)
                 {
                     DebugUtility.LogWarning<IntroStageCoordinator>(
-                        $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' profile='{context.ProfileId.Value}' " +
+                        $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' profile='{context.ProfileLabel}' " +
                         $"target='{targetScene}' timeoutMs={IntroStageCompletionTimeoutMs}.");
                     controlService.SkipIntroStage("timeout");
                 }
@@ -111,12 +111,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 {
                     string skipReason = NormalizeValue(completion.Reason);
                     LogSkipped(skipReason, context, SceneManager.GetActiveScene().name);
-                    LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Skipped);
+                    LogCompletion(signature, targetScene, context.ProfileLabel, IntroStageRunResult.Skipped);
                     requestStartReason = $"IntroStageController/Skipped/{skipReason}";
                 }
                 else
                 {
-                    LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Completed);
+                    LogCompletion(signature, targetScene, context.ProfileLabel, IntroStageRunResult.Completed);
                     requestStartReason = "IntroStageController/UIConfirm";
                 }
 
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 DebugUtility.LogWarning<IntroStageCoordinator>(
                     $"[IntroStageController] Falha ao executar IntroStageController. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
-                LogCompletion(signature, targetScene, context.ProfileId.Value, IntroStageRunResult.Failed);
+                LogCompletion(signature, targetScene, context.ProfileLabel, IntroStageRunResult.Failed);
 
                 requestStartAfterComplete = true;
                 requestStartReason = "IntroStageController/ErrorFallback";
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 
                 if (simulationGateAcquired)
                 {
-                    ReleaseSimulationGate(simulationGate, signature, context.ProfileId.Value, targetScene);
+                    ReleaseSimulationGate(simulationGate, signature, context.ProfileLabel, targetScene);
                 }
 
                 // RequestStart somente depois do Completed + gate liberado.
@@ -195,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 string normalizeSignature = NormalizeSignature(context.ContextSignature);
                 string normalizedTargetScene = NormalizeValue(context.TargetScene);
 
-                LogCompletionWithReason(normalizeSignature, normalizedTargetScene, context.ProfileId.Value, "policy_autocomplete");
+                LogCompletionWithReason(normalizeSignature, normalizedTargetScene, context.ProfileLabel, "policy_autocomplete");
                 RequestStartIfNeeded(gameLoop, "policy_autocomplete");
                 return true;
             }
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             if (Interlocked.CompareExchange(ref _inProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<IntroStageCoordinator>(
-                    $"[OBS][IntroStageController] IntroStageSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileId.Value}'.");
+                    $"[OBS][IntroStageController] IntroStageSkipped reason='in_progress' signature='{NormalizeSignature(context.ContextSignature)}' profile='{context.ProfileLabel}'.");
                 return false;
             }
 
@@ -219,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         {
             if (DependencyManager.Provider.TryGetGlobal<IIntroStagePolicyResolver>(out var resolver) && resolver != null)
             {
-                return resolver.Resolve(context.ProfileId, context.TargetScene, context.Reason);
+                return resolver.Resolve(context.TargetScene, context.Reason);
             }
 
             return IntroStagePolicy.Manual;
@@ -349,7 +349,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         {
             DebugUtility.Log<IntroStageCoordinator>(
                 $"[OBS][IntroStageController] IntroStageSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' " +
-                $"profile='{context.ProfileId.Value}' target='{NormalizeValue(context.TargetScene)}' scene='{NormalizeValue(sceneName)}'.",
+                $"profile='{context.ProfileLabel}' target='{NormalizeValue(context.TargetScene)}' scene='{NormalizeValue(sceneName)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -381,6 +381,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         }
     }
 }
+
 
 
 

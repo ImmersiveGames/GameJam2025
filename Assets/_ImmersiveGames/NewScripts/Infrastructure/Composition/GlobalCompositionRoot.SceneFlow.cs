@@ -23,8 +23,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
             RegisterSceneFlowFadeModule();
-
-            RegisterSceneFlowTransitionProfiles();
             RegisterSceneFlowRoutesRequired();
             RegisterSceneFlowNative();
             RegisterSceneFlowSignatureCache();
@@ -353,6 +351,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
+
 
 
 

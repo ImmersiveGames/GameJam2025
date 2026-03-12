@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
@@ -12,12 +13,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
+        private readonly struct StartupTransitionResolution
+        {
+            public StartupTransitionResolution(TransitionStyleAsset styleRef, SceneTransitionProfile profile, bool useFade)
+            {
+                StyleRef = styleRef;
+                Profile = profile;
+                UseFade = useFade;
+            }
+
+            public TransitionStyleAsset StyleRef { get; }
+            public SceneTransitionProfile Profile { get; }
+            public bool UseFade { get; }
+            public string StyleLabel => StyleRef != null ? StyleRef.StyleLabel : string.Empty;
+            public string ProfileLabel => Profile != null ? Profile.name : string.Empty;
+        }
+
         private static void RegisterGameLoopSceneFlowCoordinatorIfAvailable()
         {
             if (_sceneFlowCoordinator != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoopSceneFlow] Coordinator já está registrado (static reference).",
+                    "[GameLoopSceneFlow] Coordinator ja esta registrado (static reference).",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -25,29 +42,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoopSceneFlow] ISceneTransitionService indisponível. Coordinator não será registrado.",
+                    "[GameLoopSceneFlow] ISceneTransitionService indisponivel. Coordinator nao sera registrado.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             var bootstrap = GetRequiredBootstrapConfig(out _);
             SceneRouteId bootStartRouteId = ResolveBootStartRouteIdOrFailFast(bootstrap);
-            SceneTransitionProfile profile = ResolveRequiredStartupProfile(bootstrap);
+            StartupTransitionResolution startup = ResolveRequiredStartupTransition(bootstrap);
 
             var startPlan = new SceneTransitionRequest(
                 routeId: bootStartRouteId,
-                styleId: TransitionStyleId.None,
+                transitionStyle: startup.StyleRef,
                 payload: SceneTransitionPayload.Empty,
-                transitionProfile: profile,
-                transitionProfileId: StartProfileId,
-                useFade: true,
+                transitionProfile: startup.Profile,
+                useFade: startup.UseFade,
+                styleLabel: startup.StyleLabel,
+                transitionProfileName: startup.ProfileLabel,
                 requestedBy: "Boot/StartPlan",
                 reason: "Boot/StartPlan");
 
             _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(sceneFlow, startPlan);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, routeId='{bootStartRouteId}', profile='{StartProfileId}', profileAsset='{profile.name}').",
+                $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, routeId='{bootStartRouteId}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
                 DebugUtility.Colors.Info);
         }
 
@@ -63,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             SceneRouteId bootStartRouteId = menuEntry.RouteId;
             if (!bootStartRouteId.IsValid)
             {
-                FailFast("[FATAL][Config] Boot/StartPlan routeId inválido/vazio.");
+                FailFast("[FATAL][Config] Boot/StartPlan routeId invalido/vazio.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var routeResolver) || routeResolver == null)
@@ -73,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (!routeResolver.TryResolve(bootStartRouteId, out _))
             {
-                FailFast($"[FATAL][Config] Boot/StartPlan routeId não encontrado no catálogo de rotas. routeId='{bootStartRouteId}'.");
+                FailFast($"[FATAL][Config] Boot/StartPlan routeId nao encontrado no catalogo de rotas. routeId='{bootStartRouteId}'.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
@@ -83,20 +101,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return bootStartRouteId;
         }
 
-        private static SceneTransitionProfile ResolveRequiredStartupProfile(Infrastructure.Config.NewScriptsBootstrapConfigAsset bootstrap)
+        private static StartupTransitionResolution ResolveRequiredStartupTransition(Infrastructure.Config.NewScriptsBootstrapConfigAsset bootstrap)
         {
-            var transitionCatalog = bootstrap.TransitionProfileCatalog;
-            if (transitionCatalog == null)
+            TransitionStyleAsset styleRef = bootstrap.StartupTransitionStyleRef;
+            if (styleRef == null)
             {
-                FailFast("[FATAL][Config] Missing required NewScriptsBootstrapConfigAsset.transitionProfileCatalog for startup transition plan.");
+                FailFast("[FATAL][Config] Startup transition ausente. Configure startupTransitionStyleRef obrigatorio no bootstrap.");
             }
 
-            if (!transitionCatalog.TryGetProfile(StartProfileId, out var profile) || profile == null)
-            {
-                FailFast($"[FATAL][Config] Startup profile missing in transitionProfileCatalog. profileId='{StartProfileId}'.");
-            }
+            TransitionStyleDefinition definition = styleRef.ToDefinitionOrFail(nameof(GlobalCompositionRoot), "Boot/StartPlan");
 
-            return profile;
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][SceneFlow] Startup transition resolved via bootstrap direct style reference. styleAsset='{styleRef.name}', style='{definition.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{definition.Profile.name}'.",
+                DebugUtility.Colors.Info);
+
+            return new StartupTransitionResolution(styleRef, definition.Profile, definition.UseFade);
         }
     }
 }

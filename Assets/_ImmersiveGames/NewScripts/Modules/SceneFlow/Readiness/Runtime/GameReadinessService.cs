@@ -3,6 +3,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gates;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 {
@@ -125,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             ReleaseGateHandle();
 
             // SemÃ¢ntica correta: GameplayReady sÃ³ deve subir em transiÃ§Ã£o de gameplay.
-            bool isGameplayTransition = evt.Context.TransitionProfileId.IsGameplay;
+            bool isGameplayTransition = evt.Context.RouteKind == SceneRouteKind.Gameplay;
             _gameplayReady = isGameplayTransition;
 
             string readinessPhase = isGameplayTransition
@@ -224,6 +225,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
         }
     }
 }
+
+
 
 
 

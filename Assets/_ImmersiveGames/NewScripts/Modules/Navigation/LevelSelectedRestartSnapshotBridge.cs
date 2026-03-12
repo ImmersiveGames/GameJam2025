@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
@@ -51,11 +50,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 evt.MacroRouteId,
                 evt.Reason,
                 evt.SelectionVersion,
-                evt.LevelSignature,
-                TransitionStyleId.None);
+                evt.LevelSignature);
 
             restartContext.UpdateGameplayStartSnapshot(snapshot);
         }
     }
 }
-

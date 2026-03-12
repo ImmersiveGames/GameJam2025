@@ -1,4 +1,4 @@
-﻿# DevQA (Baseline 3.1)
+# DevQA (Baseline 3.1)
 
 ## O que existe
 - Pipeline canonico de instalacao DevQA:
@@ -50,7 +50,7 @@
 ## Status DQ-1.3 (2026-03-06)
 - `WorldLifecycleHookLoggerA` agora esta isolado por `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - Callsite de registro em `SceneScopeCompositionRoot.RegisterSceneLifecycleHooks` tambem esta sob `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
-- `Modules/Gameplay/Editor/RunRearm/**` normalizado para `#if UNITY_EDITOR`.
+- tooling historico de gameplay reset por grupos foi normalizado para `#if UNITY_EDITOR` e permanece fora do trilho canonico ativo.
 - `PauseOverlayController` permanece com ContextMenu QA protegido por `#if UNITY_EDITOR || DEVELOPMENT_BUILD`.
 - `PostGameOverlayController` teve helper/guard QA (`_qaGuardBusy`, `BeginQaRiskCommand`, `EndQaRiskCommand`) isolados no mesmo guard DevQA.
 - Evidencia estatica e rationale em `Docs/Reports/Audits/2026-03-06/Modules/DevQA-Cleanup-Audit-v3.md`.
@@ -171,5 +171,6 @@ public sealed partial class PauseOverlayController
 - `RuntimeInitializeOnLoadMethod` allowlist is frozen for runtime-governance review.
 - Outside `Dev/Editor/Legacy/QA`, the only allowed files are `Core/Logging/DebugUtility.cs` and `Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`.
 - Any expansion of that allowlist now requires a new audit plus explicit evidence and decision.
+
 
 

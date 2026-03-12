@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine.SceneManagement;
@@ -85,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             string dedupeKey = $"{profile}|{signature}";
             string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
-            if (evt.Context.TransitionProfileId == SceneFlowProfileId.Gameplay)
+            if (evt.Context.RouteKind == SceneRouteKind.Gameplay)
             {
                 EventBus<InputModeRequestEvent>.Raise(
                     new InputModeRequestEvent(InputModeRequestKind.Gameplay, "SceneFlow/Completed:Gameplay", "SceneFlow", signature));
@@ -159,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                 return;
             }
 
-            if (evt.Context.TransitionProfileId.IsStartupOrFrontend)
+            if (evt.Context.RouteKind == SceneRouteKind.Frontend)
             {
                 if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
@@ -244,3 +245,5 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         }
     }
 }
+
+
