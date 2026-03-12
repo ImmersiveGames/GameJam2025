@@ -1,40 +1,38 @@
-# NewScripts — Docs
+# NewScripts - Docs
 
-Este diretório é o **ponto de entrada** para documentação do módulo **NewScripts**.
+Este diretorio e o ponto de entrada para a documentacao do modulo **NewScripts**.
 
-## Como navegar (ordem sugerida)
+## Navegacao principal
 
-1) **Visão geral**
-- `Overview/Overview.md`
+Use esta cadeia como trilha canonica de consulta:
 
-2) **Contratos e políticas de produção (fonte canônica)**
-- `Standards/Standards.md#observability-contract` — formato de logs, anchors e campos canônicos (`reason`, `signature`, `profile`, `target`).
-- `Standards/Standards.md#politica-strict-vs-release` — política **Strict vs Release** e definição de **DEGRADED_MODE**.
-- `Reports/Evidence/README.md` — como produzir e arquivar evidências datadas (baseline, auditorias, etc).
-- `Standards/Standards.md#reason-map-legado` — redirect legado para o contrato (não manter lista paralela).
+1. `README.md`
+2. `Canon/Canon-Index.md`
+3. `Plans/Plan-Continuous.md`
+4. `Reports/Audits/LATEST.md`
+5. `Reports/Evidence/LATEST.md`
+6. `ADRs/README.md`
+7. `CHANGELOG.md`
 
-3) **Decisões de arquitetura (ADRs)**
-- `ADRs/README.md` (índice + guia)
-- `ADRs/ADR-TEMPLATE.md` (template — implementação)
-- `ADRs/ADR-TEMPLATE-COMPLETENESS.md` (template — completude/governança)
+## Acesso rapido
 
-4) **Relatórios (evidência e auditorias)**
-- `Reports/Evidence/` — evidências canônicas, incluindo `LATEST.md`.
-- `Reports/lastlog.log` — log bruto mais recente (evidência rápida).
-- `Reports/Audits/` — auditorias estáticas (ex.: sync ADR↔código, invariants, etc).
+- `Canon/Canon-Index.md` - estado canonico consolidado e baseline congelada vigente.
+- `Plans/Plan-Continuous.md` - trilho continuo de planejamento sem duplicar contrato.
+- `Reports/Audits/LATEST.md` - auditoria estatica canonica mais recente.
+- `Reports/Evidence/LATEST.md` - baseline/evidencia canonica vigente.
+- `ADRs/README.md` - indice das decisoes arquiteturais aceitas e ativas.
+- `CHANGELOG.md` - registro de alteracoes documentais.
 
-5) **Guias operacionais**
-- `Guides.md` — HowTo + Checklists consolidados.
+## Onde fica cada coisa
 
-6) **Planos e WIP**
-- `Plans/` — planos de execução atuais (work-in-progress).
-- `Plans/Plan-Continuous.md` — trilho canônico + status das atividades.
+- ADRs: `ADRs/README.md` e arquivos `ADRs/ADR-*.md`.
+- Reports, audits e evidence: `Reports/Audits/`, `Reports/Evidence/` e `Reports/Baseline/`.
+- Contratos e politicas de producao: `Standards/Standards.md`.
+- Material de apoio live, mas fora da trilha principal: `Overview/Overview.md`, `Guides.md`, `Modules/`, `Shared/` e `Plans/README.md`.
+- Historico e snapshots arquivados: pastas datadas em `Reports/Audits/`, `Reports/Evidence/`, `Reports/Baseline/` e `Reports/Audits/2026-03-06/Archive/`.
 
 ## Regra operacional
 
-- **CODEX é usado apenas para auditorias** (varredura/diagnóstico). Veja: `Standards/Standards.md#politica-de-uso-do-codex`.
-- Implementações e correções **devem** referenciar: ADR(s) + política Strict/Release + contrato de observabilidade + evidência datada.
-
-## Atalhos
-
-- **Checklist de completude ideal (ADRs 0009–0019):** `Standards/Standards.md#checklist-adrs`
+- **CODEX e usado apenas para auditorias** (varredura/diagnostico). Veja `Standards/Standards.md#politica-de-uso-do-codex`.
+- Implementacoes e correcoes devem referenciar ADR(s) + politica Strict/Release + contrato de observabilidade + evidencia datada.
+- Em caso de duvida entre promover e preservar historico, prefira manter o arquivo acessivel fora da navegacao principal.

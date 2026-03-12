@@ -1,5 +1,14 @@
 # Changelog — Docs
 
+## 2026-03-11
+
+- **Docs-only:** correcao cosmetica em `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`, removendo o ruido de formatacao `` `n `` na secao de evidencia completa sem alterar o conteudo semantico do freeze.
+- **Higiene de navegacao:** `Docs/README.md` passa a destacar explicitamente a trilha principal `README -> Canon -> Plan -> Audits/LATEST -> Evidence/LATEST -> ADRs -> CHANGELOG`.
+- **Despromocao de redundancias:** `Overview/Overview.md`, `Guides.md`, `Plans/README.md`, arvores auxiliares e snapshots datados permanecem preservados, mas fora da navegacao principal.
+
+- **Docs-only:** sincronizados README, Canon/Canon-Index, Reports/Evidence/LATEST, ADRs/README e auditoria datada para refletir o baseline/evidência canônica congelada em Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md.
+- **Cadeia canônica clarificada:** Canon/Canon-Index.md -> Plans/Plan-Continuous.md -> Reports/Audits/LATEST.md -> Reports/Evidence/LATEST.md.
+- **Drift removido:** Reports/Evidence/LATEST.md deixa de apontar para Baseline 2.2 / 2026-02-03 e passa a promover o freeze 3.1 de 2026-03-06.
 ## 2026-02-15
 
 - **F3 concluído (rota como fonte única de SceneData) — commit X**.
@@ -292,3 +301,4 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: docs: convert navigation references to Markdown links + cleanup placeholders.
 - Updated: `ADRs/ADR-0009-FadeSceneFlow.md` (Opção A) — Fade via cena aditiva (`FadeScene`) integrada ao SceneFlow.
 - Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` (Opção A) — HUD de loading via cena aditiva (`LoadingHudScene`) integrada ao SceneFlow.
+

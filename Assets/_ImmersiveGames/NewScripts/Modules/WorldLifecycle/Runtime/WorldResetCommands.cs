@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
 
             string canonicalContentToken = $"level-ref:{levelRef.name}";
-            SceneRouteId macroRouteId = snapshot.RouteId;
+            SceneRouteId macroRouteId = snapshot.MacroRouteId;
 
             PublishRequested(ResetKind.Level, macroRouteId, LevelId.None, canonicalContentToken, normalizedReason, string.Empty, levelSignature);
 
@@ -205,6 +205,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         }
     }
 }
+
 
 
 

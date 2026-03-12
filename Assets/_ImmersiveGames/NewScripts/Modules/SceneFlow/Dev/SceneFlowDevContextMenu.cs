@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                "[QA][WorldLifecycle] Forçando ResetWorld via serviço global.",
+                "[QA][WorldLifecycle] ForÃ§ando ResetWorld via serviÃ§o global.",
                 ColorInfo);
 
             _ = resetService.RequestResetAsync(ReasonForceReset);
@@ -120,10 +120,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 restartContext == null ||
                 !restartContext.TryGetCurrent(out var snapshot) ||
                 !snapshot.IsValid ||
-                !snapshot.RouteId.IsValid)
+                !snapshot.MacroRouteId.IsValid)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[QA][WorldLifecycle] Snapshot de restart inválido para Reset Macro (Gameplay).",
+                    "[QA][WorldLifecycle] Snapshot de restart invÃ¡lido para Reset Macro (Gameplay).",
                     ColorErr);
                 return;
             }
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 signatureCache == null)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[ERROR][QA][WorldLifecycle] ResetMacro abortado: ISceneFlowSignatureCache indisponível no DI global.",
+                    "[ERROR][QA][WorldLifecycle] ResetMacro abortado: ISceneFlowSignatureCache indisponÃ­vel no DI global.",
                     ColorErr);
                 return;
             }
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             if (!signatureCache.TryGetLast(out var macroSignature, out var profileId, out var targetScene) ||
                 string.IsNullOrWhiteSpace(macroSignature))
             {
-                // Falha explícita para evitar reset sem assinatura válida.
+                // Falha explÃ­cita para evitar reset sem assinatura vÃ¡lida.
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
                     "[ERROR][QA][WorldLifecycle] ResetMacro abortado: ContextSignature vazia/nula no SceneFlowSignatureCache.",
                     ColorErr);
@@ -149,10 +149,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                $"[OBS][QA][WorldLifecycle] ResetMacro comando routeId='{snapshot.RouteId}' reason='{ReasonQaResetMacroGameplay}' signature='{macroSignature}' profile='{profileId}' targetScene='{targetScene}'.",
+                $"[OBS][QA][WorldLifecycle] ResetMacro comando routeId='{snapshot.MacroRouteId}' reason='{ReasonQaResetMacroGameplay}' signature='{macroSignature}' profile='{profileId}' targetScene='{targetScene}'.",
                 ColorInfo);
 
-            await commands.ResetMacroAsync(snapshot.RouteId, ReasonQaResetMacroGameplay, macroSignature, CancellationToken.None);
+            await commands.ResetMacroAsync(snapshot.MacroRouteId, ReasonQaResetMacroGameplay, macroSignature, CancellationToken.None);
         }
 
         private static async Task ResetLevelCurrentAsync()
@@ -171,12 +171,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
                 !snapshot.HasLevelRef)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[QA][WorldLifecycle] Snapshot de restart inválido para Reset Level (Current).",
+                    "[QA][WorldLifecycle] Snapshot de restart invÃ¡lido para Reset Level (Current).",
                     ColorErr);
                 return;
             }
 
-            var levelSignature = new LevelContextSignature($"level:{snapshot.LevelRef.name}|route:{snapshot.RouteId}|reason:{ReasonQaResetLevelCurrent}");
+            var levelSignature = new LevelContextSignature($"level:{snapshot.LevelRef.name}|route:{snapshot.MacroRouteId}|reason:{ReasonQaResetLevelCurrent}");
 
             DebugUtility.Log(typeof(SceneFlowDevContextMenu),
                 $"[QA][WorldLifecycle] ResetLevel comando levelRef='{snapshot.LevelRef.name}' reason='{ReasonQaResetLevelCurrent}'.",
@@ -229,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             if (DependencyManager.Provider == null)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[QA][SceneFlow] DependencyManager.Provider é null (infra global não inicializada?).",
+                    "[QA][SceneFlow] DependencyManager.Provider Ã© null (infra global nÃ£o inicializada?).",
                     ColorErr);
                 return null;
             }
@@ -237,7 +237,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    $"[QA][SceneFlow] Serviço global ausente: {label}.",
+                    $"[QA][SceneFlow] ServiÃ§o global ausente: {label}.",
                     ColorErr);
                 return null;
             }
@@ -299,7 +299,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             if (unspecifiedCount > 0)
             {
                 DebugUtility.Log(typeof(SceneFlowDevContextMenu),
-                    "[OBS][SceneFlow] Existem rotas com routeKind=Unspecified; revisar policy metadata no catálogo.",
+                    "[OBS][SceneFlow] Existem rotas com routeKind=Unspecified; revisar policy metadata no catÃ¡logo.",
                     ColorErr);
             }
         }
@@ -334,7 +334,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
             }
 
             const string errorMessage =
-                "[OBS][Config] Dump Route Catalog (RouteKind): SceneRouteCatalogAsset indisponível (DI-only). " +
+                "[OBS][Config] Dump Route Catalog (RouteKind): SceneRouteCatalogAsset indisponÃ­vel (DI-only). " +
                 "Configure NewScriptsBootstrapConfigAsset.SceneRouteCatalog e garanta o registro de SceneRouteCatalogAsset, " +
                 "NewScriptsBootstrapConfigAsset ou ISceneRouteCatalog no GlobalCompositionRoot.";
 
@@ -371,6 +371,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Dev
 #endif
     }
 }
+
 
 
 

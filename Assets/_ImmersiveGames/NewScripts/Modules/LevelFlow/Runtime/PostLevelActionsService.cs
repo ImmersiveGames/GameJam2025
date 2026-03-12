@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
                 !snapshot.HasLevelRef ||
-                !_sceneRouteCatalog.TryGetAsset(snapshot.RouteId, out var routeAsset) ||
+                !_sceneRouteCatalog.TryGetAsset(snapshot.MacroRouteId, out var routeAsset) ||
                 routeAsset == null ||
                 routeAsset.LevelCollection == null)
             {
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!collection.TryValidateRuntime(out string collectionError))
             {
                 HardFailFastH1.Trigger(typeof(PostLevelActionsService),
-                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel invalid LevelCollection. routeId='{snapshot.RouteId}' detail='{collectionError}'.");
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel invalid LevelCollection. routeId='{snapshot.MacroRouteId}' detail='{collectionError}'.");
             }
 
             int currentIndex = -1;
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (currentIndex < 0)
             {
                 HardFailFastH1.Trigger(typeof(PostLevelActionsService),
-                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel current levelRef not found in route collection. routeId='{snapshot.RouteId}' levelRef='{snapshot.LevelRef.name}'.");
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel current levelRef not found in route collection. routeId='{snapshot.MacroRouteId}' levelRef='{snapshot.LevelRef.name}'.");
             }
 
             int nextIndex = (currentIndex + 1) % collection.Levels.Count;
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (nextLevelRef == null)
             {
                 HardFailFastH1.Trigger(typeof(PostLevelActionsService),
-                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel resolved null at index='{nextIndex}'. routeId='{snapshot.RouteId}'.");
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel resolved null at index='{nextIndex}'. routeId='{snapshot.MacroRouteId}'.");
             }
 
             await _levelSwapLocalService.SwapLocalAsync(nextLevelRef, normalizedReason, ct);
@@ -147,3 +147,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+

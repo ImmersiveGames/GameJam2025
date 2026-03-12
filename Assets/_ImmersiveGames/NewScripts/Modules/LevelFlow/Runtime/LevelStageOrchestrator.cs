@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 if (string.Equals(levelSig, _lastProcessedLevelSignature, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<LevelStageOrchestrator>(
-                        $"[LevelFlow] IntroStage via SceneFlowCompleted skipped reason='dedupe_level_signature' levelSignature='{levelSig}' routeId='{snapshot.RouteId}'.",
+                        $"[LevelFlow] IntroStage via SceneFlowCompleted skipped reason='dedupe_level_signature' levelSignature='{levelSig}' routeId='{snapshot.MacroRouteId}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     _lastProcessedLevelSignature = string.Empty;
 
                     DebugUtility.Log<LevelStageOrchestrator>(
-                        $"[OBS][LevelFlow] LevelStageDedupeReset reason='selection_version_rewind' prev='{previousVersion}' next='{nextVersion}' routeId='{snapshot.RouteId}'.",
+                        $"[OBS][LevelFlow] LevelStageDedupeReset reason='selection_version_rewind' prev='{previousVersion}' next='{nextVersion}' routeId='{snapshot.MacroRouteId}'.",
                         DebugUtility.Colors.Info);
                 }
 
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             string activeSceneName = SceneManager.GetActiveScene().name;
             string levelSignature = string.IsNullOrWhiteSpace(levelSig)
-                ? $"level:{snapshot.LevelRef.name}|route:{snapshot.RouteId}|reason:SceneFlow/Completed"
+                ? $"level:{snapshot.LevelRef.name}|route:{snapshot.MacroRouteId}|reason:SceneFlow/Completed"
                 : levelSig;
 
             DebugUtility.Log<LevelStageOrchestrator>(
@@ -214,3 +214,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+

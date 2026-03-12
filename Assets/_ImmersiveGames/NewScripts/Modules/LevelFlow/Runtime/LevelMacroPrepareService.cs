@@ -72,15 +72,15 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                                    lastSnapshot.HasLevelRef;
 
             bool snapshotBelongsToMacro = hasCurrentSnapshot &&
-                                          currentSnapshot.RouteId.IsValid &&
-                                          currentSnapshot.RouteId == macroRouteId &&
+                                          currentSnapshot.MacroRouteId.IsValid &&
+                                          currentSnapshot.MacroRouteId == macroRouteId &&
                                           currentSnapshot.LevelRef != null &&
                                           levelCollection.Contains(currentSnapshot.LevelRef);
 
             if (hasCurrentSnapshot && !snapshotBelongsToMacro)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(currentSnapshot.LevelRef != null ? currentSnapshot.LevelRef.name : "<none>")}' snapshotRouteId='{currentSnapshot.RouteId}' reason='not_in_collection_or_macro'.",
+                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(currentSnapshot.LevelRef != null ? currentSnapshot.LevelRef.name : "<none>")}' snapshotRouteId='{currentSnapshot.MacroRouteId}' reason='not_in_collection_or_macro'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -268,6 +268,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+
 
 
 

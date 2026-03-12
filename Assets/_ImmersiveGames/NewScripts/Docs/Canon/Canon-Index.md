@@ -1,5 +1,12 @@
 # Canon Index
 
+## Fonte de verdade associada
+- Baseline/evidencia canonica vigente: `Docs/Reports/Evidence/LATEST.md`
+- Baseline congelada vigente: `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
+- Auditoria estatica vigente: `Docs/Reports/Audits/LATEST.md`
+- Trilho de planejamento vigente: `Docs/Plans/Plan-Continuous.md`
+
+
 ## O que e canonico hoje
 - Macro restart: `MacroRestartCoordinator` e owner unico de `GameResetRequestedEvent`.
 - `GameLoopCommandEventBridge` nao consome reset.

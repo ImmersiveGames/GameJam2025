@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -44,13 +44,13 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot currentSnapshot) ||
                 !currentSnapshot.IsValid ||
-                !currentSnapshot.RouteId.IsValid ||
+                !currentSnapshot.MacroRouteId.IsValid ||
                 !currentSnapshot.HasLevelRef)
             {
                 FailFast(SceneRouteId.None, SceneRouteKind.Unspecified, ComputeSignature(SceneRouteId.None, SceneRouteKind.Unspecified, normalizedReason), normalizedReason, "Missing runtime gameplay snapshot.");
             }
 
-            SceneRouteId macroRouteId = currentSnapshot.RouteId;
+            SceneRouteId macroRouteId = currentSnapshot.MacroRouteId;
             SceneRouteDefinitionAsset routeAsset = ResolveRouteAssetOrFail(macroRouteId, normalizedReason);
             SceneRouteKind routeKind = routeAsset.RouteKind;
             string swapSignature = ComputeSignature(macroRouteId, routeKind, normalizedReason);
@@ -193,3 +193,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
+

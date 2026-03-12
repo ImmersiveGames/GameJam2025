@@ -45,7 +45,7 @@ Este freeze consolida o baseline canonico de SceneFlow/Navigation/LevelFlow com 
 - Policy macro/reset: `SceneRoute` + `RoutePolicy` + `MacroLevelPrepareCompletionGate`
 - Macro restart: `MacroRestartCoordinator` como owner unico de `GameResetRequestedEvent` (serializacao/coalescing/debounce)
 
-## Evidencia completa`n- Observacao: `doisResets-na-sequencia.txt` foi congelado a partir do log local completo disponivel nesta sessao.`n
+## Evidencia completa
+- Observacao: `doisResets-na-sequencia.txt` foi congelado a partir do log local completo disponivel nesta sessao.
 - `Docs/Reports/Baseline/2026-03-06/lastlog.log` (arquivo completo)
 - `Docs/Reports/Baseline/2026-03-06/doisResets-na-sequencia.txt` (arquivo completo local para trilha de restart)
-

@@ -1,3 +1,4 @@
+﻿using System.ComponentModel;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
@@ -7,14 +8,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     {
         public GameplayStartSnapshot(
             LevelDefinitionAsset levelRef,
-            SceneRouteId routeId,
+            SceneRouteId macroRouteId,
             string reason,
             int selectionVersion,
             string levelSignature,
             TransitionStyleId styleId = default)
         {
             LevelRef = levelRef;
-            RouteId = routeId;
+            MacroRouteId = macroRouteId;
             StyleId = styleId;
             Reason = Sanitize(reason);
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
@@ -23,32 +24,41 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (string.IsNullOrWhiteSpace(normalizedLevelSignature))
             {
                 string levelName = levelRef != null ? levelRef.name : "<null>";
-                normalizedLevelSignature = $"level:{levelName}|route:{RouteId}|reason:{Reason}";
+                normalizedLevelSignature = $"level:{levelName}|route:{MacroRouteId}|reason:{Reason}";
             }
 
             LevelSignature = normalizedLevelSignature;
         }
 
         public LevelDefinitionAsset LevelRef { get; }
-        public SceneRouteId RouteId { get; }
+        public SceneRouteId MacroRouteId { get; }
         public TransitionStyleId StyleId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
         public string LevelSignature { get; }
 
         public bool HasLevelRef => LevelRef != null;
-        public bool IsValid => RouteId.IsValid;
+        public bool IsValid => MacroRouteId.IsValid;
 
-        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelRef.")]
+        // Compat temporaria com trilhos legados; nao faz parte do contrato canonico.
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Use MacroRouteId.")]
+        public SceneRouteId RouteId => MacroRouteId;
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canon usa LevelRef.")]
         public LevelId LevelId => HasLevelRef ? LevelId.FromName(LevelRef.name) : LevelId.None;
 
-        [System.Obsolete("Legacy compatibility only. Canonical flow does not use contentId.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canon nao usa contentId.")]
         public string ContentId => string.Empty;
 
-        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelRef.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canon usa LevelRef.")]
         public bool HasLevelId => HasLevelRef;
 
-        [System.Obsolete("Legacy compatibility only. Canonical flow does not use contentId.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canon nao usa contentId.")]
         public bool HasContentId => false;
 
         public static GameplayStartSnapshot Empty => new(
@@ -61,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public override string ToString()
         {
-            return $"levelRef='{(HasLevelRef ? LevelRef.name : "<none>")}', routeId='{RouteId}', styleId='{StyleId}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', levelSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
+            return $"levelRef='{(HasLevelRef ? LevelRef.name : "<none>")}', routeId='{MacroRouteId}', styleId='{StyleId}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', levelSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
         }
 
         private static string Sanitize(string value)

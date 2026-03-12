@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
@@ -46,16 +47,24 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             await _navigationService.StartGameplayRouteAsync(gameplayRouteId, SceneTransitionPayload.Empty, normalizedReason);
         }
 
-        public async Task SwapLevelLocalAsync(LevelId levelId, string reason = null, CancellationToken ct = default)
+        public async Task SwapLevelLocalAsync(LevelDefinitionAsset levelRef, string reason = null, CancellationToken ct = default)
         {
             if (_levelSwapLocalService == null)
             {
                 DebugUtility.LogWarning<LevelFlowRuntimeService>(
-                    $"[OBS][LevelFlow] SwapLocalRejected levelId='{levelId}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
+                    $"[OBS][LevelFlow] SwapLocalRejected levelRef='{(levelRef != null ? levelRef.name : "<none>")}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
                 return;
             }
 
-            await _levelSwapLocalService.SwapLocalAsync(levelId, reason, ct);
+            await _levelSwapLocalService.SwapLocalAsync(levelRef, reason, ct);
+        }
+
+        [Obsolete("Legacy LevelId swap path is disabled in canonical LevelFlow. Use SwapLevelLocalAsync(LevelDefinitionAsset, ...).")]
+        public Task SwapLevelLocalAsync(LevelId levelId, string reason = null, CancellationToken ct = default)
+        {
+            HardFailFastH1.Trigger(typeof(LevelFlowRuntimeService),
+                $"[FATAL][H1][LevelFlow] Legacy SwapLevelLocalAsync(LevelId) is disabled. levelId='{levelId}' reason='{reason}'.");
+            return Task.CompletedTask;
         }
 
         public async Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)
@@ -65,10 +74,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (_restartContextService != null &&
                 _restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) &&
                 snapshot.IsValid &&
-                snapshot.RouteId.IsValid)
+                snapshot.MacroRouteId.IsValid)
             {
                 string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartLastGameplay" : reason.Trim();
-                await _navigationService.StartGameplayRouteAsync(snapshot.RouteId, SceneTransitionPayload.Empty, normalizedReason);
+                await _navigationService.StartGameplayRouteAsync(snapshot.MacroRouteId, SceneTransitionPayload.Empty, normalizedReason);
                 return;
             }
 
@@ -76,6 +85,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
-
-
 

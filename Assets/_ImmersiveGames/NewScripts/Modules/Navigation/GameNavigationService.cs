@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
+﻿using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +13,7 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Implementação de produção: executa rotas via ISceneTransitionService.
+    /// ImplementaÃ§Ã£o de produÃ§Ã£o: executa rotas via ISceneTransitionService.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameNavigationService : IGameNavigationService
@@ -77,17 +77,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (_restartContextService == null ||
                 !_restartContextService.TryGetCurrent(out snapshot) ||
                 !snapshot.IsValid ||
-                !snapshot.RouteId.IsValid)
+                !snapshot.MacroRouteId.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
                     $"[FATAL][H1][Navigation] RestartAsync requires a valid canonical gameplay snapshot. reason='{normalizedReason}'.");
             }
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.RouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}' styleId='{snapshot.StyleId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                $"[OBS][Navigation] RestartUsingSnapshot routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}' styleId='{snapshot.StyleId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
                 DebugUtility.Colors.Info);
 
-            await StartGameplayRouteAsync(snapshot.RouteId, SceneTransitionPayload.Empty, normalizedReason);
+            await StartGameplayRouteAsync(snapshot.MacroRouteId, SceneTransitionPayload.Empty, normalizedReason);
         }
 
         public Task ExitToMenuAsync(string reason = null)
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[Navigation] Navegação já em progresso. Ignorando intent core='{intent}'.");
+                    $"[Navigation] NavegaÃ§Ã£o jÃ¡ em progresso. Ignorando intent core='{intent}'.");
                 return Task.CompletedTask;
             }
 
@@ -226,7 +226,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[Navigation] Navegação já em progresso. Ignorando id='{intentId}'.");
+                    $"[Navigation] NavegaÃ§Ã£o jÃ¡ em progresso. Ignorando id='{intentId}'.");
                 return;
             }
 
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 {
                     DebugUtility.LogError(typeof(GameNavigationService),
                         $"[Navigation] Intent/rota desconhecida ou sem request. id='{intentId}'. " +
-                        $"Entries disponíveis: [{string.Join(", ", _catalog.RouteIds)}].");
+                        $"Entries disponÃ­veis: [{string.Join(", ", _catalog.RouteIds)}].");
                     return;
                 }
 
@@ -244,9 +244,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
             catch (Exception ex)
             {
-                // Comentário: navegação é infraestrutura de fluxo; não deve derrubar o jogo.
+                // ComentÃ¡rio: navegaÃ§Ã£o Ã© infraestrutura de fluxo; nÃ£o deve derrubar o jogo.
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] Exceção ao navegar. id='{intentId}', reason='{reason ?? "<null>"}', ex={ex}");
+                    $"[Navigation] ExceÃ§Ã£o ao navegar. id='{intentId}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {
@@ -276,9 +276,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
             catch (Exception ex)
             {
-                // Comentário: navegação é infraestrutura de fluxo; não deve derrubar o jogo.
+                // ComentÃ¡rio: navegaÃ§Ã£o Ã© infraestrutura de fluxo; nÃ£o deve derrubar o jogo.
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] Exceção ao navegar (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
+                    $"[Navigation] ExceÃ§Ã£o ao navegar (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {
@@ -328,7 +328,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (!intentId.IsValid)
             {
                 string message =
-                    $"[FATAL][Config] GameNavigationIntentCatalogAsset inválido para intent core. intent='{intent}', intentId='<empty>'.";
+                    $"[FATAL][Config] GameNavigationIntentCatalogAsset invÃ¡lido para intent core. intent='{intent}', intentId='<empty>'.";
                 DebugUtility.LogError(typeof(GameNavigationService), message);
                 throw new InvalidOperationException(message);
             }
@@ -339,8 +339,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private async Task ExecuteEntryAsync(string intentId, GameNavigationEntry entry, string reason)
         {
             // F3 Plan-v2:
-            // - SceneRouteDefinition é a fonte única de Scene Data.
-            // - Navigation não injeta dados de cena no payload.
+            // - SceneRouteDefinition Ã© a fonte Ãºnica de Scene Data.
+            // - Navigation nÃ£o injeta dados de cena no payload.
             var payload = entry.Payload ?? SceneTransitionPayload.Empty;
             var (profile, profileId, useFade) = ResolveStyle(entry);
 
@@ -386,10 +386,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             throw new InvalidOperationException(
-                $"[FATAL][Config] TransitionStyleId sem resolução no catálogo. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
+                $"[FATAL][Config] TransitionStyleId sem resoluÃ§Ã£o no catÃ¡logo. styleId='{entry.StyleId}', routeId='{entry.RouteId}'.");
         }
     }
 }
+
 
 
 

@@ -1,22 +1,19 @@
-# Evidência canônica (LATEST)
+# Evidencia canonica (LATEST)
 
-Esta página aponta para o conjunto de evidências **mais recente** aceito como referência para auditoria.
+Esta pagina aponta para o conjunto de evidencias mais recente aceito como referencia para auditoria.
 
 ## Snapshot atual
 
-- **Data:** 2026-02-03
-- **Baseline:** 2.2
-- **Arquivo de evidência:** [`Baseline-2.2-Evidence-2026-02-03.md`](2026-02-03/Baseline-2.2-Evidence-2026-02-03.md)
-- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log) *(atualizado em 2026-02-25)**
-- **Evidências adicionais:** [ADR-0017-LevelCatalog-Evidence-2026-02-03.md](2026-02-03/ADR-0017-LevelCatalog-Evidence-2026-02-03.md)
-- **SceneFlow Config Snapshot (DataCleanup v1):** [../SceneFlow-Config-Snapshot-DataCleanup-v1.md](../SceneFlow-Config-Snapshot-DataCleanup-v1.md)
-- **DataCleanup v1 validation PASS (2026-02-17):** [../SceneFlow-Config-ValidationReport-DataCleanup-v1.md](../SceneFlow-Config-ValidationReport-DataCleanup-v1.md)
-- **Smoke audit (2026-02-17):** [../Audits/2026-02-17/Smoke-DataCleanup-v1.md](../Audits/2026-02-17/Smoke-DataCleanup-v1.md)
-- **Log bruto usado no smoke:** [../lastlog.log](../lastlog.log)
+- **Data:** 2026-03-06
+- **Baseline:** 3.1 Freeze
+- **Arquivo de evidencia:** [../Baseline/2026-03-06/Baseline-3.1-Freeze.md](../Baseline/2026-03-06/Baseline-3.1-Freeze.md)
+- **Log bruto congelado do baseline:** [../Baseline/2026-03-06/lastlog.log](../Baseline/2026-03-06/lastlog.log)
+- **Evidencia local adicional:** [../Baseline/2026-03-06/doisResets-na-sequencia.txt](../Baseline/2026-03-06/doisResets-na-sequencia.txt)
+- **Auditoria estatica vigente:** [../Audits/LATEST.md](../Audits/LATEST.md)
+- **Log bruto corrente do repositorio:** [../lastlog.log](../lastlog.log)
 
 ## Regras
 
-- Quando um snapshot é promovido para “LATEST”, ele vira **fonte de verdade** até nova promoção.
-- Alterações de comportamento devem atualizar o snapshot e/ou justificar divergências via ADR + evidência.
-
-
+- Quando um snapshot e promovido para LATEST, ele vira fonte de verdade ate nova promocao.
+- O baseline 3.1 congelado em 2026-03-06 substitui os ponteiros anteriores para Baseline 2.2 / 2026-02-03 como evidencia canonica vigente.
+- Alteracoes de comportamento devem atualizar o snapshot e/ou justificar divergencias via ADR + evidencia.

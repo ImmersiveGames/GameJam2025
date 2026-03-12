@@ -1,3 +1,4 @@
+﻿using System.ComponentModel;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -21,7 +22,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             StyleId = TransitionStyleId.None;
         }
 
-        [System.Obsolete("Legacy ctor. Canonical flow uses LevelDefinitionAsset reference.")]
+        // Compat temporaria com trilhos legados; nao faz parte do contrato canonico.
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canonical flow uses LevelDefinitionAsset reference.")]
         public LevelSelectedEvent(
             LevelId levelId,
             SceneRouteId routeId,
@@ -46,13 +49,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public string LevelSignature { get; }
         public TransitionStyleId StyleId { get; }
 
-        [System.Obsolete("Legacy compatibility only. Canonical flow uses LevelRef.")]
+        // Compat temporaria com trilhos legados; nao faz parte do contrato canonico.
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canon usa LevelRef.")]
         public LevelId LevelId => LevelRef != null ? LevelId.FromName(LevelRef.name) : LevelId.None;
 
-        [System.Obsolete("Legacy compatibility only. Canonical flow uses MacroRouteId.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canon usa MacroRouteId.")]
         public SceneRouteId RouteId => MacroRouteId;
 
-        [System.Obsolete("Legacy compatibility only. Canonical flow does not use contentId.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [System.Obsolete("Compat temporaria apenas. Canon nao usa contentId.")]
         public string ContentId => string.Empty;
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -58,3 +58,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
     }
 }
+
