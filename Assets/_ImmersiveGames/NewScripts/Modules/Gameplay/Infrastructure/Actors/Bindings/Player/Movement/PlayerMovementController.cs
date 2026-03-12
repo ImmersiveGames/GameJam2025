@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Player.Movement
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PlayerMovementController : MonoBehaviour, IRunRearmable, IRunRearmTargetFilter, IRunRearmOrder
+    public sealed class PlayerMovementController : MonoBehaviour, IActorGroupRearmable, IActorGroupRearmTargetFilter, IActorGroupRearmOrder
     {
         [Header("Movement")]
         [SerializeField]
@@ -72,11 +72,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
 
         public int ResetOrder => -50;
 
-        public bool ShouldParticipate(RunRearmTarget target)
+        public bool ShouldParticipate(ActorGroupRearmTarget target)
         {
-            return target == RunRearmTarget.AllActorsInScene ||
-                   target == RunRearmTarget.PlayersOnly ||
-                   target == RunRearmTarget.ActorIdSet;
+            return target == ActorGroupRearmTarget.ByActorKind ||
+                   target == ActorGroupRearmTarget.ActorIdSet;
         }
 
         #endregion
@@ -482,9 +481,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
 
         #endregion
 
-        #region Resets (IRunRearmable)
+        #region Resets (IActorGroupRearmable)
 
-        public Task ResetCleanupAsync(RunRearmContext ctx)
+        public Task ResetCleanupAsync(ActorGroupRearmContext ctx)
         {
             HaltHorizontalVelocity();
             inputReader?.ClearInput();
@@ -492,7 +491,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
             return Task.CompletedTask;
         }
 
-        public Task ResetRestoreAsync(RunRearmContext ctx)
+        public Task ResetRestoreAsync(ActorGroupRearmContext ctx)
         {
             if (_hasInitialPose)
             {
@@ -512,7 +511,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
             return Task.CompletedTask;
         }
 
-        public Task ResetRebindAsync(RunRearmContext ctx)
+        public Task ResetRebindAsync(ActorGroupRearmContext ctx)
         {
             ResolveServices();
             ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
@@ -546,6 +545,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
         #endregion
     }
 }
+
+
 
 
 

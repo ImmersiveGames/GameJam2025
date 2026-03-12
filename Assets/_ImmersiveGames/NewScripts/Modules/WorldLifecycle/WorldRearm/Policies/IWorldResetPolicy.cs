@@ -11,8 +11,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies
 
         bool AllowSceneScan { get; }
 
-        bool AllowLegacyActorKindFallback { get; }
-
         void ReportDegraded(string feature, string reason, string detail = null, string signature = null, string profile = null);
     }
 }

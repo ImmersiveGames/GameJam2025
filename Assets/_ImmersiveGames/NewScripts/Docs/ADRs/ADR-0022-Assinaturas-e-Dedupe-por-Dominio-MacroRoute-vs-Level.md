@@ -1,4 +1,4 @@
-﻿# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
+# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
 
 ## Status atual (2026-03-11)
 - Status: **DONE**
@@ -35,4 +35,5 @@
 
 - O fechamento deste ADR vale para o eixo principal de `LevelFlow`.
 - Qualquer referencia historica a `levelId/contentId` deve ser lida como legado fora do contrato canonico atual.
-- A excecao remanescente de `Gameplay RunRearm` fica fora deste escopo.
+- A excecao remanescente de `Gameplay ActorGroupRearm` fica fora deste escopo.
+

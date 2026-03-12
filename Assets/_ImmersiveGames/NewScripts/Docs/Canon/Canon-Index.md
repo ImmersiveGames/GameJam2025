@@ -1,4 +1,4 @@
-﻿# Canon Index
+# Canon Index
 
 ## Fonte de verdade associada
 - Baseline/evidencia canonica vigente: `Docs/Reports/Evidence/LATEST.md`
@@ -17,6 +17,7 @@
 - `GameplayStartSnapshot`, `LevelSelectedEvent` e `LevelSwapLocalAppliedEvent` promovem `LevelRef`, `MacroRouteId` e `LevelSignature` como shape principal.
 - `IGameNavigationService` expoe apenas a superficie canonica; nao ha trilho publico string-first em Navigation.
 - `WorldLifecycle V2` e apenas telemetria/observabilidade com `MacroRouteId`, `Reason`, `MacroSignature` e `LevelSignature`.
+- `Gameplay ActorGroupRearm` e o mecanismo canonico de soft reset local por grupo de atores, centrado em `ByActorKind`.
 - Tooling/editor/QA do eixo principal foi higienizado para o contrato canonico atual.
 
 ## Fechamento do eixo principal
@@ -26,10 +27,10 @@
   - `LevelDefinition`
   - `Navigation`
   - `WorldLifecycle V2`
+  - `Gameplay ActorGroupRearm`
   - tooling/editor/QA associado
 - Nao considerar **canon-only absoluto em todo `NewScripts/**` ainda**:
-  - permanece excecao localizada em `Gameplay RunRearm` com fallback legado de actor-kind/string;
-  - permanece residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`, sem reabrir trilho paralelo de runtime.
+  - permanece apenas residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`, sem reabrir trilho paralelo de runtime.
 
 ## Como validar (manual curto)
 1. Boot -> Menu.
@@ -61,3 +62,5 @@
 | Dedupe de intro por assinatura local | `Modules/LevelFlow/Runtime/LevelStageOrchestrator.cs` |
 | Gate obrigatorio antes do FadeOut | `Modules/SceneFlow/Transition/Runtime/MacroLevelPrepareCompletionGate.cs` |
 | Gameplay route principal (resolucao canonica) | `Modules/Navigation/GameNavigationService.cs` |
+| Soft reset local por grupo de atores | `Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs` |
+

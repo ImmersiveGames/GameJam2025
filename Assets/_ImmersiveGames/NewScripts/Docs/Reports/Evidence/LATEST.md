@@ -1,4 +1,4 @@
-﻿# Evidencia canonica (LATEST)
+# Evidencia canonica (LATEST)
 
 Esta pagina aponta para o conjunto de evidencias mais recente aceito como referencia para auditoria.
 
@@ -15,11 +15,12 @@ Esta pagina aponta para o conjunto de evidencias mais recente aceito como refere
 ## Leitura canonica do estado atual
 
 - O baseline 3.1 segue vigente como evidencia de comportamento do trilho principal.
-- A leitura arquitetural vigente apos H1..H7 e: **canon-only no eixo principal** (`LevelFlow`, `LevelDefinition`, `Navigation`, `WorldLifecycle V2` e tooling/editor/QA associado).
-- O baseline/evidencia vigente nao deve ser interpretado como fechamento absoluto de todo `NewScripts/**`: permanece excecao localizada em `Gameplay RunRearm` e residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`.
+- A leitura arquitetural vigente apos H1..H7 e: **canon-only no eixo principal** (`LevelFlow`, `LevelDefinition`, `Navigation`, `WorldLifecycle V2`, `Gameplay ActorGroupRearm` e tooling/editor/QA associado).
+- O baseline/evidencia vigente nao deve ser interpretado como fechamento absoluto de todo `NewScripts/**`: permanece apenas residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`.
 
 ## Regras
 
 - Quando um snapshot e promovido para LATEST, ele vira fonte de verdade ate nova promocao.
 - O baseline 3.1 congelado em 2026-03-06 substitui os ponteiros anteriores para Baseline 2.2 / 2026-02-03 como evidencia canonica vigente.
 - Alteracoes de comportamento devem atualizar o snapshot e/ou justificar divergencias via ADR + evidencia.
+

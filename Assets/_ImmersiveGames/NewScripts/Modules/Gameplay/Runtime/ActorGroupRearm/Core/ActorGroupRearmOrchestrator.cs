@@ -10,18 +10,17 @@ using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
+namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core
 {
     /// <summary>
-    /// Orquestra GameplayReset (Cleanup/Restore/Rebind) por alvo (Players/Eater/ActorIdSet/All).
-    /// Implementa√ß√£o de gameplay (n√£o infra).
+    /// Orquestra GameplayReset (Cleanup/Restore/Rebind) por grupo canÙnico de atores.
     /// </summary>
-    public sealed class RunRearmOrchestrator : IRunRearmOrchestrator
+    public sealed class ActorGroupRearmOrchestrator : IActorGroupRearmOrchestrator
     {
         private readonly string _sceneName;
         private readonly List<IActor> _actorBuffer = new(32);
         private readonly List<ResetTarget> _targets = new(32);
-        private readonly List<IRunRearmable> _resettableBuffer = new(64);
+        private readonly List<IActorGroupRearmable> _resettableBuffer = new(64);
         private readonly List<ResetEntry> _orderedResets = new(64);
 
         private readonly SemaphoreSlim _mutex = new(1, 1);
@@ -29,28 +28,27 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
         private bool _dependenciesResolved;
         private IActorRegistry _actorRegistry;
-        private IRunRearmTargetClassifier _classifier;
+        private IActorGroupRearmTargetClassifier _classifier;
 
         private IWorldResetPolicy _worldResetPolicy;
-        private IActorDiscoveryStrategy _registryDiscovery;
-        private IActorDiscoveryStrategy _sceneScanDiscovery;
+        private IActorGroupRearmDiscoveryStrategy _registryDiscovery;
+        private IActorGroupRearmDiscoveryStrategy _sceneScanDiscovery;
 
         private bool _lastDiscoveryUsedSceneScan;
         private bool _lastDiscoveryScanDisabled;
-        private bool _lastDiscoveryFallbackUsed;
 
         public bool IsResetInProgress { get; private set; }
 
-        public RunRearmOrchestrator(string sceneName)
+        public ActorGroupRearmOrchestrator(string sceneName)
         {
             _sceneName = sceneName ?? string.Empty;
         }
 
-        public async Task<bool> RequestResetAsync(RunRearmRequest request)
+        public async Task<bool> RequestResetAsync(ActorGroupRearmRequest request)
         {
             if (!await _mutex.WaitAsync(0))
             {
-                DebugUtility.LogWarning(typeof(RunRearmOrchestrator),
+                DebugUtility.LogWarning(typeof(ActorGroupRearmOrchestrator),
                     $"Gameplay reset ignored (in progress). request={request}");
                 return false;
             }
@@ -59,42 +57,26 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
             try
             {
                 EnsureDependencies();
+                ValidateRequest(request);
 
                 int serial = Interlocked.Increment(ref _requestSerial);
                 string reason = string.IsNullOrWhiteSpace(request.Reason) ? "GameplayReset/Request" : request.Reason;
 
-                var normalized = new RunRearmRequest(request.Target, reason, request.ActorIds, request.ActorKind);
+                var normalized = new ActorGroupRearmRequest(request.Target, reason, request.ActorIds, request.ActorKind);
 
-                DebugUtility.Log(typeof(RunRearmOrchestrator),
+                DebugUtility.Log(typeof(ActorGroupRearmOrchestrator),
                     $"[GameplayReset] Start: {normalized} (scene='{GetEffectiveSceneName()}', serial={serial})");
 
                 BuildTargets(normalized);
 
                 if (_lastDiscoveryUsedSceneScan && _targets.Count > 0)
                 {
-                    DebugUtility.LogWarning(typeof(RunRearmOrchestrator),
+                    DebugUtility.LogWarning(typeof(ActorGroupRearmOrchestrator),
                         $"[{ResetLogTags.Recovered}][RECOVERED] Scene scan discovery used (policy opt-in). request={normalized}");
 
                     _worldResetPolicy?.ReportDegraded(
                         ResetFeatureIds.GameplayReset,
                         "SceneScanDiscoveryUsed",
-                        normalized.ToString());
-                }
-
-                if (_lastDiscoveryFallbackUsed && _targets.Count > 0)
-                {
-                    if (_worldResetPolicy != null && !_worldResetPolicy.AllowLegacyActorKindFallback)
-                    {
-                        DebugUtility.LogWarning(typeof(RunRearmOrchestrator),
-                            $"[{ResetLogTags.ValidationFailed}][STRICT_VIOLATION] Legacy actor-kind fallback usado, mas policy bloqueia. request={normalized}");
-                    }
-
-                    DebugUtility.LogWarning(typeof(RunRearmOrchestrator),
-                        $"[{ResetLogTags.Recovered}][RECOVERED] String-based fallback used for EaterOnly. request={normalized}");
-
-                    _worldResetPolicy?.ReportDegraded(
-                        ResetFeatureIds.GameplayReset,
-                        "EaterFallbackUsed",
                         normalized.ToString());
                 }
 
@@ -107,12 +89,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
                     if (_worldResetPolicy != null && _worldResetPolicy.IsStrict)
                     {
-                        DebugUtility.LogWarning(typeof(RunRearmOrchestrator),
+                        DebugUtility.LogWarning(typeof(ActorGroupRearmOrchestrator),
                             $"[{ResetLogTags.ValidationFailed}][STRICT_VIOLATION] {msg}");
                         throw new InvalidOperationException(msg);
                     }
 
-                    DebugUtility.LogWarning(typeof(RunRearmOrchestrator),
+                    DebugUtility.LogWarning(typeof(ActorGroupRearmOrchestrator),
                         $"[{ResetLogTags.DegradedMode}][DEGRADED_MODE] {msg}");
                     _worldResetPolicy?.ReportDegraded(
                         ResetFeatureIds.GameplayReset,
@@ -126,14 +108,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
                     await ResetOneTargetAsync(target, normalized, serial);
                 }
 
-                DebugUtility.Log(typeof(RunRearmOrchestrator),
+                DebugUtility.Log(typeof(ActorGroupRearmOrchestrator),
                     $"[GameplayReset] Completed: {normalized} (targets={_targets.Count}, serial={serial})");
 
                 return true;
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(RunRearmOrchestrator),
+                DebugUtility.LogError(typeof(ActorGroupRearmOrchestrator),
                     $"[GameplayReset] Failed. request={request}, ex={ex}");
                 throw;
             }
@@ -141,6 +123,29 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
             {
                 IsResetInProgress = false;
                 _mutex.Release();
+            }
+        }
+
+        private static void ValidateRequest(ActorGroupRearmRequest request)
+        {
+            switch (request.Target)
+            {
+                case ActorGroupRearmTarget.ByActorKind:
+                    if (request.ActorKind == ActorKind.Unknown)
+                    {
+                        throw new ArgumentException("ActorGroupRearmTarget.ByActorKind requer ActorKind v·lido.", nameof(request));
+                    }
+                    break;
+
+                case ActorGroupRearmTarget.ActorIdSet:
+                    if (request.ActorIds == null || request.ActorIds.Count == 0)
+                    {
+                        throw new ArgumentException("ActorGroupRearmTarget.ActorIdSet requer ao menos um ActorId.", nameof(request));
+                    }
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(request), request.Target, "ActorGroupRearmTarget n„o suportado.");
             }
         }
 
@@ -158,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
             if (!provider.TryGetForScene(scene, out _classifier) || _classifier == null)
             {
-                _classifier = new DefaultRunRearmTargetClassifier();
+                _classifier = new DefaultActorGroupRearmTargetClassifier();
             }
 
             provider.TryGetGlobal<IWorldResetPolicy>(out _worldResetPolicy);
@@ -169,8 +174,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
                 _worldResetPolicy = new ProductionWorldResetPolicy(runtimeModeProvider, degradedModeReporter);
             }
 
-            _registryDiscovery = new RegistryActorDiscoveryStrategy(_actorRegistry, _classifier);
-            _sceneScanDiscovery = new SceneScanActorDiscoveryStrategy(scene);
+            _registryDiscovery = new RegistryActorGroupRearmDiscoveryStrategy(_actorRegistry, _classifier);
+            _sceneScanDiscovery = new SceneScanActorGroupRearmDiscoveryStrategy(scene);
 
             _dependenciesResolved = true;
         }
@@ -185,14 +190,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
             return SceneManager.GetActiveScene().name;
         }
 
-        private void BuildTargets(RunRearmRequest request)
+        private void BuildTargets(ActorGroupRearmRequest request)
         {
             _targets.Clear();
             _lastDiscoveryUsedSceneScan = false;
             _lastDiscoveryScanDisabled = false;
-            _lastDiscoveryFallbackUsed = false;
 
-            // 1) Tenta via ActorRegistry + classifier (r?pido, determin?stico)
             if (_registryDiscovery != null)
             {
                 _actorBuffer.Clear();
@@ -208,18 +211,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
                     SortTargets();
                     return;
                 }
-
-                // Importante: se registry existe, mas est? vazio (ou classifier n?o achou),
-                // fazemos fallback por scan somente quando a policy permitir.
             }
 
-            // 2) Fallback (sem registry ou sem dados): scan da cena por IActor (opt-in por policy).
             if (_worldResetPolicy != null && _worldResetPolicy.AllowSceneScan && _sceneScanDiscovery != null)
             {
                 _actorBuffer.Clear();
-                _sceneScanDiscovery.CollectTargets(request, _actorBuffer, out bool fallbackUsed);
+                _sceneScanDiscovery.CollectTargets(request, _actorBuffer, out _);
                 _lastDiscoveryUsedSceneScan = true;
-                _lastDiscoveryFallbackUsed = fallbackUsed;
 
                 if (_actorBuffer.Count > 0)
                 {
@@ -236,9 +234,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
             SortTargets();
         }
-
-
-
 
         private void TryAddTargetFromActor(IActor actor)
         {
@@ -279,24 +274,24 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
             _targets.Sort((left, right) => string.CompareOrdinal(left.ActorId, right.ActorId));
         }
 
-        private async Task ResetOneTargetAsync(ResetTarget target, RunRearmRequest request, int serial)
+        private async Task ResetOneTargetAsync(ResetTarget target, ActorGroupRearmRequest request, int serial)
         {
             string actorId = string.IsNullOrWhiteSpace(target.ActorId) ? "<unknown>" : target.ActorId;
 
             IReadOnlyList<ResetEntry> components = ResolveResettableComponents(target, request);
             if (components.Count == 0)
             {
-                DebugUtility.LogVerbose(typeof(RunRearmOrchestrator),
+                DebugUtility.LogVerbose(typeof(ActorGroupRearmOrchestrator),
                     $"[GameplayReset] No resettable components for actorId={actorId}.");
                 return;
             }
 
-            await RunStepAsync(components, RunRearmStep.Cleanup, request, serial);
-            await RunStepAsync(components, RunRearmStep.Restore, request, serial);
-            await RunStepAsync(components, RunRearmStep.Rebind, request, serial);
+            await RunStepAsync(components, ActorGroupRearmStep.Cleanup, request, serial);
+            await RunStepAsync(components, ActorGroupRearmStep.Restore, request, serial);
+            await RunStepAsync(components, ActorGroupRearmStep.Rebind, request, serial);
         }
 
-        private IReadOnlyList<ResetEntry> ResolveResettableComponents(ResetTarget target, RunRearmRequest request)
+        private IReadOnlyList<ResetEntry> ResolveResettableComponents(ResetTarget target, ActorGroupRearmRequest request)
         {
             _orderedResets.Clear();
             _resettableBuffer.Clear();
@@ -320,9 +315,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
                     continue;
                 }
 
-                if (mb is IRunRearmable resettable)
+                if (mb is IActorGroupRearmable resettable)
                 {
-                    if (resettable is IRunRearmTargetFilter filter &&
+                    if (resettable is IActorGroupRearmTargetFilter filter &&
                         !filter.ShouldParticipate(request.Target))
                     {
                         continue;
@@ -332,9 +327,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
                     continue;
                 }
 
-                if (mb is IRunRearmableSync sync)
+                if (mb is IActorGroupRearmableSync sync)
                 {
-                    if (sync is IRunRearmTargetFilter filter &&
+                    if (sync is IActorGroupRearmTargetFilter filter &&
                         !filter.ShouldParticipate(request.Target))
                     {
                         continue;
@@ -351,7 +346,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
             foreach (var component in _resettableBuffer)
             {
-                int order = component is IRunRearmOrder resetOrder ? resetOrder.ResetOrder : 0;
+                int order = component is IActorGroupRearmOrder resetOrder ? resetOrder.ResetOrder : 0;
                 _orderedResets.Add(new ResetEntry(component, order));
             }
 
@@ -360,9 +355,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
             return _orderedResets;
         }
 
-        private async Task RunStepAsync(IReadOnlyList<ResetEntry> components, RunRearmStep step, RunRearmRequest request, int serial)
+        private async Task RunStepAsync(IReadOnlyList<ResetEntry> components, ActorGroupRearmStep step, ActorGroupRearmRequest request, int serial)
         {
-            var ctx = new RunRearmContext(
+            var ctx = new ActorGroupRearmContext(
                 GetEffectiveSceneName(),
                 request,
                 serial,
@@ -375,7 +370,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
             }
         }
 
-        private static Task InvokeStepAsync(IRunRearmable component, RunRearmStep step, RunRearmContext ctx)
+        private static Task InvokeStepAsync(IActorGroupRearmable component, ActorGroupRearmStep step, ActorGroupRearmContext ctx)
         {
             if (component == null)
             {
@@ -384,9 +379,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
             return step switch
             {
-                RunRearmStep.Cleanup => component.ResetCleanupAsync(ctx),
-                RunRearmStep.Restore => component.ResetRestoreAsync(ctx),
-                RunRearmStep.Rebind => component.ResetRebindAsync(ctx),
+                ActorGroupRearmStep.Cleanup => component.ResetCleanupAsync(ctx),
+                ActorGroupRearmStep.Restore => component.ResetRestoreAsync(ctx),
+                ActorGroupRearmStep.Rebind => component.ResetRebindAsync(ctx),
                 _ => Task.CompletedTask
             };
         }
@@ -429,38 +424,38 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
         private readonly struct ResetEntry
         {
-            public ResetEntry(IRunRearmable component, int order)
+            public ResetEntry(IActorGroupRearmable component, int order)
             {
                 Component = component;
                 Order = order;
             }
 
-            public IRunRearmable Component { get; }
+            public IActorGroupRearmable Component { get; }
             public int Order { get; }
         }
 
-        private sealed class SyncAdapter : IRunRearmable
+        private sealed class SyncAdapter : IActorGroupRearmable
         {
-            private readonly IRunRearmableSync _sync;
+            private readonly IActorGroupRearmableSync _sync;
 
-            public SyncAdapter(IRunRearmableSync sync)
+            public SyncAdapter(IActorGroupRearmableSync sync)
             {
                 _sync = sync;
             }
 
-            public Task ResetCleanupAsync(RunRearmContext ctx)
+            public Task ResetCleanupAsync(ActorGroupRearmContext ctx)
             {
                 _sync.ResetCleanup(ctx);
                 return Task.CompletedTask;
             }
 
-            public Task ResetRestoreAsync(RunRearmContext ctx)
+            public Task ResetRestoreAsync(ActorGroupRearmContext ctx)
             {
                 _sync.ResetRestore(ctx);
                 return Task.CompletedTask;
             }
 
-            public Task ResetRebindAsync(RunRearmContext ctx)
+            public Task ResetRebindAsync(ActorGroupRearmContext ctx)
             {
                 _sync.ResetRebind(ctx);
                 return Task.CompletedTask;
@@ -468,5 +463,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
         }
     }
 }
-
 

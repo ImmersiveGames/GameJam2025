@@ -1,4 +1,4 @@
-﻿# ADRs (Architecture Decision Records)
+# ADRs (Architecture Decision Records)
 
 Este diretorio contem decisoes arquiteturais do **NewScripts**.
 
@@ -23,8 +23,8 @@ Cada ADR possui 3 eixos:
 | [`ADR-0010-LoadingHud-SceneFlow.md`](ADR-0010-LoadingHud-SceneFlow.md) | ADR-0010 - Loading HUD + SceneFlow (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0011-WorldDefinition-MultiActor-GameplayScene.md`](ADR-0011-WorldDefinition-MultiActor-GameplayScene.md) | ADR-0011 - WorldDefinition multi-actor para GameplayScene (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`](ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md) | ADR-0012 - Fluxo Pos-Gameplay (GameOver, Vitoria, Restart, ExitToMenu) | Aceita | Implementada | Fechada | 2026-02-04 |
-| [`ADR-0013-Ciclo-de-Vida-Jogo.md`](ADR-0013-Ciclo-de-Vida-Jogo.md) | ADR-0013 - Ciclo de Vida do Jogo (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
-| [`ADR-0014-GameplayReset-Targets-Grupos.md`](ADR-0014-GameplayReset-Targets-Grupos.md) | ADR-0014 - GameplayReset: Targets por Grupos | Aceita | Implementada | Ativa | 2026-02-04 |
+| [`ADR-0013-Ciclo-de-Vida-Jogo.md`](ADR-0013-Ciclo-de-Vida-Jogo.md) | ADR-0013 - Ciclo de Vida do Jogo (NewScripts) | Aceita | Implementada | Ativa | 2026-03-11 |
+| [`ADR-0014-GameplayReset-Targets-Grupos.md`](ADR-0014-GameplayReset-Targets-Grupos.md) | ADR-0014 - GameplayReset: grupos canonicos de atores | Aceita | Implementada | Ativa | 2026-03-11 |
 | [`ADR-0015-Baseline-2.0-Fechamento.md`](ADR-0015-Baseline-2.0-Fechamento.md) | ADR-0015 - Baseline 2.0: Fechamento | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0016-ContentSwap-WorldLifecycle.md`](ADR-0016-ContentSwap-WorldLifecycle.md) | ADR-0016 - ContentSwap InPlace-only (NewScripts) | Aceita | Implementada | Ativa | 2026-02-04 |
 | [`ADR-0017-LevelManager-Config-Catalog.md`](ADR-0017-LevelManager-Config-Catalog.md) | ADR-0017 - LevelManager: Config + Catalog (Single Source of Truth) | Aceita | Implementada | Ativa | 2026-02-04 |
@@ -42,8 +42,8 @@ Cada ADR possui 3 eixos:
 ## Nota de fechamento atual (ADR-0021..0027)
 
 - O eixo principal de `NewScripts` esta efetivamente **canon-only** em `LevelFlow`, `LevelDefinition`, `Navigation`, `WorldLifecycle V2` e tooling/editor/QA associado.
-- A excecao remanescente relevante fica fora/borda desse fechamento principal: `Gameplay RunRearm` com fallback legado de actor-kind/string.
-- Permanece tambem um residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`, sem reabrir trilho paralelo de runtime.
+- `Gameplay ActorGroupRearm` deixou de ser excecao `MIXED`: o runtime agora opera por contrato canonico de grupo (`ByActorKind`) e selecao tecnica explicita por `ActorIdSet`.
+- Permanece apenas um residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`, sem reabrir trilho paralelo de runtime.
 
 ## Templates
 
@@ -51,3 +51,4 @@ Cada ADR possui 3 eixos:
 - **Completude / Governanca:** [`ADR-TEMPLATE-COMPLETENESS.md`](ADR-TEMPLATE-COMPLETENESS.md)
 
 > Regra: ADRs de implementacao seguem o template de implementacao; ADRs de fechamento/baseline seguem o template de completude (ex.: ADR-0015).
+

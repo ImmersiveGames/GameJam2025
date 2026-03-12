@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Interop
+namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop
 {
-    public interface IRunRearmWorldParticipant
+    public interface IActorGroupRearmWorldParticipant
     {
         WorldResetScope Scope { get; }
 
@@ -11,4 +11,5 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Interop
         Task ResetAsync(WorldResetContext context);
     }
 }
+
 

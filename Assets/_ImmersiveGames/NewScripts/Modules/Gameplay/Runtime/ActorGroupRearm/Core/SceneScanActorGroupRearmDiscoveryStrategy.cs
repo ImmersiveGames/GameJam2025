@@ -6,20 +6,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
+namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core
 {
-    public sealed class SceneScanActorDiscoveryStrategy : IActorDiscoveryStrategy
+    public sealed class SceneScanActorGroupRearmDiscoveryStrategy : IActorGroupRearmDiscoveryStrategy
     {
         private readonly string _sceneName;
 
-        public SceneScanActorDiscoveryStrategy(string sceneName)
+        public SceneScanActorGroupRearmDiscoveryStrategy(string sceneName)
         {
             _sceneName = sceneName ?? string.Empty;
         }
 
         public string Name => "SceneScanDiscovery";
 
-        public int CollectTargets(RunRearmRequest request, List<IActor> results, out bool fallbackUsed)
+        public int CollectTargets(ActorGroupRearmRequest request, List<IActor> results, out bool fallbackUsed)
         {
             results.Clear();
             fallbackUsed = false;
@@ -33,18 +33,15 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
             string sceneName = ResolveSceneName();
 
             HashSet<string> ids = null;
-            if (request is { Target: RunRearmTarget.ActorIdSet, ActorIds: { Count: > 0 } })
+            if (request is { Target: ActorGroupRearmTarget.ActorIdSet, ActorIds: { Count: > 0 } })
             {
                 ids = new HashSet<string>(
                     request.ActorIds.Where(id => !string.IsNullOrWhiteSpace(id)),
                     StringComparer.Ordinal);
             }
 
-            bool isKindTarget = request.Target == RunRearmTarget.ByActorKind
-                || request.Target == RunRearmTarget.PlayersOnly;
-            ActorKind requestedKind = request.Target == RunRearmTarget.PlayersOnly
-                ? ActorKind.Player
-                : request.ActorKind;
+            bool isKindTarget = request.Target == ActorGroupRearmTarget.ByActorKind;
+            ActorKind requestedKind = request.ActorKind;
 
             for (int i = 0; i < behaviours.Length; i++)
             {
@@ -59,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
                     continue;
                 }
 
-                if (request.Target == RunRearmTarget.ActorIdSet)
+                if (request.Target == ActorGroupRearmTarget.ActorIdSet)
                 {
                     if (ids == null || !ids.Contains(actor.ActorId ?? string.Empty))
                     {
@@ -73,17 +70,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
                         continue;
                     }
                 }
-                else if (request.Target == RunRearmTarget.EaterOnly)
+                else
                 {
-                    if (!ActorKindMatching.MatchesEaterKindFirstWithFallback(actor, out bool usedFallback))
-                    {
-                        continue;
-                    }
-
-                    if (usedFallback)
-                    {
-                        fallbackUsed = true;
-                    }
+                    continue;
                 }
 
                 results.Add(actor);
@@ -103,3 +92,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
         }
     }
 }
+

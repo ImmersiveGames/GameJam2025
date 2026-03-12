@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Interop;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
@@ -16,15 +16,15 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Orquestra o ciclo de reset do mundo de forma determinÃ­stica.
-    /// ResponsÃ¡vel por garantir a ordem: Acquire Gate â†’ (Hooks) â†’ Despawn â†’ (Hooks) â†’ Spawn â†’ (Hooks) â†’ Release Gate.
+    /// Orquestra o ciclo de reset do mundo de forma determinística.
+    /// Responsável por garantir a ordem: Acquire Gate → (Hooks) → Despawn → (Hooks) → Spawn → (Hooks) → Release Gate.
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
         // OWNER boundary: reset local/scoped por cena (controller rail).
         // Nao e owner de publish V1/V2 no trilho macro SceneFlow.
         // Guardrail de QA: manter a ordem das fases como exatamente descrita aqui.
-        // NÃ£o reorganizar o fluxo do reset ou mover responsabilidades entre classes.
+        // Não reorganizar o fluxo do reset ou mover responsabilidades entre classes.
         private readonly ISimulationGateService _gateService;
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
         private readonly IActorRegistry _actorRegistry;
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         private readonly string _sceneName;
         private readonly WorldLifecycleHookRegistry _hookRegistry;
         private readonly Dictionary<Transform, ActorHookCacheEntry> _actorHookCache = new();
-        // Sentinel compartilhado para "nenhum hook encontrado" â€” nunca deve ser mutado.
+        // Sentinel compartilhado para "nenhum hook encontrado" — nunca deve ser mutado.
         private static readonly List<(string Label, IActorLifecycleHook Hook)> EmptyActorHookList = new();
 
         private const long SlowHookWarningMs = 50;
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (scopes.Any(t => t == WorldResetScope.World))
             {
                 DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                    "WorldResetScope.World nÃ£o Ã© suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
+                    "WorldResetScope.World não é suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
                 return;
             }
 
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 if (service == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        $"{stepName} service Ã© nulo e serÃ¡ ignorado.");
+                        $"{stepName} service é nulo e será ignorado.");
                     continue;
                 }
 
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     if (hookEntry.Hook == null)
                     {
                         DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                            $"{hookName} hook '{hookEntry.Label}' Ã© nulo e serÃ¡ ignorado.");
+                            $"{hookName} hook '{hookEntry.Label}' é nulo e será ignorado.");
                         continue;
                     }
 
@@ -222,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 if (actor == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        $"{hookName} actor Ã© nulo e serÃ¡ ignorado.");
+                        $"{hookName} actor é nulo e será ignorado.");
                     continue;
                 }
 
@@ -318,7 +318,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (_actorRegistry == null)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                    "ActorRegistry ausente ao criar snapshot de atores. Nenhum hook de ator serÃ¡ executado.");
+                    "ActorRegistry ausente ao criar snapshot de atores. Nenhum hook de ator será executado.");
                 return actors;
             }
 
@@ -587,7 +587,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         /// <summary>
         /// Limpa o cache de hooks por ator ao final de cada ciclo de reset.
-        /// MantÃ©m a semÃ¢ntica de cache por ciclo, mesmo em caso de falhas.
+        /// Mantém a semântica de cache por ciclo, mesmo em caso de falhas.
         /// </summary>
         private void ClearActorHookCacheForCycle()
         {
@@ -615,7 +615,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
 
             DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                $"Nenhum spawn service disponÃ­vel para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirÃ¡ apenas com hooks.");
+                $"Nenhum spawn service disponível para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirá apenas com hooks.");
         }
 
         private IDisposable TryAcquireGate(string gateToken, out bool gateAcquired)
@@ -625,7 +625,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (_gateService == null || string.IsNullOrWhiteSpace(gateToken))
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                    "ISimulationGateService ausente: reset seguirÃ¡ sem gate.");
+                    "ISimulationGateService ausente: reset seguirá sem gate.");
                 return null;
             }
 
@@ -658,8 +658,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private async Task RunResetPipelineAsync(WorldResetContext? context)
         {
-            // Ordem fixa do reset: hooks prÃ©-despawn â†’ hooks de atores â†’ despawn â†’
-            // hooks pÃ³s-despawn/prÃ©-spawn â†’ (scoped participants) â†’ hooks prÃ©-spawn â†’ spawn â†’ hooks de atores â†’ hooks finais.
+            // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
+            // hooks pós-despawn/pré-spawn → (scoped participants) → hooks pré-spawn → spawn → hooks de atores → hooks finais.
             await RunHookStepAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
             await RunActorHooksBeforeDespawnAsync();
 
@@ -746,7 +746,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
 
             var context = _currentResetContext.Value;
-            if (candidate is IRunRearmWorldParticipant scopedParticipant)
+            if (candidate is IActorGroupRearmWorldParticipant scopedParticipant)
             {
                 return context.ContainsScope(scopedParticipant.Scope);
             }
@@ -769,7 +769,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private static int GetParticipantScope(object participant)
         {
-            return participant is IRunRearmWorldParticipant scoped ? (int)scoped.Scope : int.MaxValue;
+            return participant is IActorGroupRearmWorldParticipant scoped ? (int)scoped.Scope : int.MaxValue;
         }
 
         private int CompareHooksWithScope<THook>(
@@ -788,9 +788,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private async Task RunScopedParticipantsResetAsync(WorldResetContext context)
         {
-            // Soft reset executa apenas participantes que declaram escopo via IRunRearmWorldParticipant.
-            // Caso seja necessÃ¡rio um hook global no futuro, isso deve acontecer por meio de um escopo/interface explÃ­citos.
-            List<IRunRearmWorldParticipant> participants = CollectScopedParticipants();
+            // Soft reset executa apenas participantes que declaram escopo via IActorGroupRearmWorldParticipant.
+            // Caso seja necessário um hook global no futuro, isso deve acontecer por meio de um escopo/interface explícitos.
+            List<IActorGroupRearmWorldParticipant> participants = CollectScopedParticipants();
             if (participants.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
@@ -798,13 +798,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 return;
             }
 
-            var filtered = new List<IRunRearmWorldParticipant>();
+            var filtered = new List<IActorGroupRearmWorldParticipant>();
             foreach (var participant in participants)
             {
                 if (participant == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        "Scoped reset participant Ã© nulo e serÃ¡ ignorado.");
+                        "Scoped reset participant é nulo e será ignorado.");
                     continue;
                 }
 
@@ -863,16 +863,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
         }
 
-        private List<IRunRearmWorldParticipant> CollectScopedParticipants()
+        private List<IActorGroupRearmWorldParticipant> CollectScopedParticipants()
         {
-            var participants = new List<IRunRearmWorldParticipant>();
-            var uniques = new HashSet<IRunRearmWorldParticipant>(ResetScopeParticipantReferenceComparer.Instance);
+            var participants = new List<IActorGroupRearmWorldParticipant>();
+            var uniques = new HashSet<IActorGroupRearmWorldParticipant>(ResetScopeParticipantReferenceComparer.Instance);
 
             if (_spawnServices != null)
             {
                 foreach (var service in _spawnServices)
                 {
-                    if (service is IRunRearmWorldParticipant participant)
+                    if (service is IActorGroupRearmWorldParticipant participant)
                     {
                         if (uniques.Add(participant))
                         {
@@ -884,7 +884,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
             if (_provider != null && !string.IsNullOrWhiteSpace(_sceneName))
             {
-                var sceneParticipants = new List<IRunRearmWorldParticipant>();
+                var sceneParticipants = new List<IActorGroupRearmWorldParticipant>();
                 _provider.GetAllForScene(_sceneName, sceneParticipants);
 
                 participants.AddRange(sceneParticipants.Where(participant => participant != null).Where(participant => uniques.Add(participant)));
@@ -893,7 +893,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             IReadOnlyList<IWorldLifecycleHook> sceneHooks = ResolveSceneHooks();
             for (int i = 0; i < sceneHooks.Count; i++)
             {
-                if (sceneHooks[i] is IRunRearmWorldParticipant participant)
+                if (sceneHooks[i] is IActorGroupRearmWorldParticipant participant)
                 {
                     if (uniques.Add(participant))
                     {
@@ -905,7 +905,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             IReadOnlyList<IWorldLifecycleHook> registryHooks = ResolveRegistryHooks();
             foreach (var t in registryHooks)
             {
-                if (t is IRunRearmWorldParticipant participant)
+                if (t is IActorGroupRearmWorldParticipant participant)
                 {
                     if (uniques.Add(participant))
                     {
@@ -917,7 +917,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             return participants;
         }
 
-        private int CompareResetScopeParticipants(IRunRearmWorldParticipant left, IRunRearmWorldParticipant right)
+        private int CompareResetScopeParticipants(IActorGroupRearmWorldParticipant left, IActorGroupRearmWorldParticipant right)
         {
             if (ReferenceEquals(left, right))
             {
@@ -952,7 +952,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             return string.Compare(leftType, rightType, StringComparison.Ordinal);
         }
 
-        private void LogScopedParticipantOrder(List<IRunRearmWorldParticipant> participants)
+        private void LogScopedParticipantOrder(List<IActorGroupRearmWorldParticipant> participants)
         {
             string[] orderedLabels = participants
                 .Select(participant =>
@@ -966,22 +966,23 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 $"Scoped reset execution order: {string.Join(", ", orderedLabels)}");
         }
 
-        private sealed class ResetScopeParticipantReferenceComparer : IEqualityComparer<IRunRearmWorldParticipant>
+        private sealed class ResetScopeParticipantReferenceComparer : IEqualityComparer<IActorGroupRearmWorldParticipant>
         {
             public static readonly ResetScopeParticipantReferenceComparer Instance = new();
 
-            public bool Equals(IRunRearmWorldParticipant x, IRunRearmWorldParticipant y)
+            public bool Equals(IActorGroupRearmWorldParticipant x, IActorGroupRearmWorldParticipant y)
             {
                 return ReferenceEquals(x, y);
             }
 
-            public int GetHashCode(IRunRearmWorldParticipant obj)
+            public int GetHashCode(IActorGroupRearmWorldParticipant obj)
             {
                 return RuntimeHelpers.GetHashCode(obj);
             }
         }
     }
 }
+
 
 
 

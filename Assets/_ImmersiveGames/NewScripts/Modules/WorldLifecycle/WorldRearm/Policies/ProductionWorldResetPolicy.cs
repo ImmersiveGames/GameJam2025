@@ -2,7 +2,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies
 {
     /// <summary>
-    /// Policy padr√£o de produ√ß√£o.
+    /// Policy padr„o de produÁ„o.
     /// - Strict = UNITY_EDITOR/DEVELOPMENT_BUILD
     /// - SceneScan: opt-in apenas em Strict (QA/Dev)
     /// </summary>
@@ -24,8 +24,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies
         public bool IsStrict => _runtimeModeProvider != null && _runtimeModeProvider.IsStrict;
 
         public bool AllowSceneScan => IsStrict;
-
-        public bool AllowLegacyActorKindFallback => true;
 
         public void ReportDegraded(string feature, string reason, string detail = null, string signature = null, string profile = null)
         {

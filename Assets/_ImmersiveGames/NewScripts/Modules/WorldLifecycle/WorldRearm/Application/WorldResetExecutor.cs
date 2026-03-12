@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         {
             await ExecuteResetOnControllersAsync(controllers, request.Reason);
             await EnsureEssentialSpawnsAsync(request.TargetScene, policy);
-            await RunRearmHooksAsync();
+            await ActorGroupRearmHooksAsync();
         }
 
         private static async Task ExecuteResetOnControllersAsync(
@@ -170,11 +170,11 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             }
         }
 
-        private static Task RunRearmHooksAsync()
+        private static Task ActorGroupRearmHooksAsync()
         {
             // Placeholder for post-reset hooks (e.g., rearming systems, telemetry warmups)
             DebugUtility.LogVerbose<WorldResetExecutor>(
-                $"[WorldResetExecutor] RunRearmHooks (placeholder).",
+                $"[WorldResetExecutor] ActorGroupRearmHooks (placeholder).",
                 DebugUtility.Colors.Info);
             return Task.CompletedTask;
         }
@@ -199,3 +199,4 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         }
     }
 }
+

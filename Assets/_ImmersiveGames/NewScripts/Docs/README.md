@@ -1,4 +1,4 @@
-﻿# NewScripts - Docs
+# NewScripts - Docs
 
 Este diretorio e o ponto de entrada para a documentacao do modulo **NewScripts**.
 
@@ -16,7 +16,7 @@ Use esta cadeia como trilha canonica de consulta:
 
 ## Acesso rapido
 
-- `Canon/Canon-Index.md` - estado canonico consolidado: eixo principal canon-only e excecoes remanescentes.
+- `Canon/Canon-Index.md` - estado canonico consolidado: eixo principal canon-only e residuos remanescentes fora do fechamento absoluto.
 - `Plans/Plan-Continuous.md` - trilho continuo de planejamento e status de fechamento do eixo principal.
 - `Reports/Audits/LATEST.md` - auditoria estatica canonica mais recente do estado pos-H1..H7.
 - `Reports/Evidence/LATEST.md` - baseline/evidencia canonica vigente + leitura do estado atual.
@@ -33,12 +33,13 @@ Use esta cadeia como trilha canonica de consulta:
 
 ## Estado atual (oficial)
 
-- O eixo principal de `NewScripts` esta canon-only em `LevelFlow`, `LevelDefinition`, `Navigation`, `WorldLifecycle V2` e tooling/editor/QA associado.
+- O eixo principal de `NewScripts` esta canon-only em `LevelFlow`, `LevelDefinition`, `Navigation`, `WorldLifecycle V2` e `Gameplay ActorGroupRearm`.
 - O runtime principal de start gameplay nao depende mais principalmente de string hardcoded `to-gameplay`; a resolucao canonica usa catalogo/slot core de Navigation.
-- Ainda nao se considera `NewScripts/**` 100% canon-only em sentido absoluto: permanece uma excecao localizada em `Gameplay RunRearm` (fallback legado de actor-kind/string) e um residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`.
+- Ainda nao se considera `NewScripts/**` 100% canon-only em sentido absoluto por causa de residuos menores editor/serializado, hoje concentrados em `GameNavigationIntentCatalogAsset`.
 
 ## Regra operacional
 
 - **CODEX e usado apenas para auditorias** (varredura/diagnostico). Veja `Standards/Standards.md#politica-de-uso-do-codex`.
 - Implementacoes e correcoes devem referenciar ADR(s) + politica Strict/Release + contrato de observabilidade + evidencia datada.
 - Em caso de duvida entre promover e preservar historico, prefira manter o arquivo acessivel fora da navegacao principal.
+

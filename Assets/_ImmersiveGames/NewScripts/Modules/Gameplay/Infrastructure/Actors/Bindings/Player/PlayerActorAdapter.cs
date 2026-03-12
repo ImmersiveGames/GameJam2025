@@ -4,16 +4,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
 {
     /// <summary>
     /// Adaptador para expor atores legados do Player como IActor do pipeline de WorldLifecycle.
-    /// MantÃ©m o ActorId sincronizado com o ator legado quando disponÃ­vel.
+    /// Mantém o ActorId sincronizado com o ator legado quando disponível.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PlayerActorAdapter : MonoBehaviour, IActor
+    public sealed class PlayerActorAdapter : MonoBehaviour, IActor, IActorKindProvider
     {
         [SerializeField]
         private string actorId = string.Empty;
 
         [SerializeField]
-        [Tooltip("Opcional: exibir um nome amigÃ¡vel para diagnÃ³sticos do pipeline de baseline.")]
+        [Tooltip("Opcional: exibir um nome amigável para diagnósticos do pipeline de baseline.")]
         private string displayName;
 
         public string ActorId => actorId;
@@ -25,6 +25,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bind
         public Transform Transform => transform;
 
         public bool IsActive => isActiveAndEnabled;
+
+        public ActorKind Kind => ActorKind.Player;
 
         private void Awake()
         {

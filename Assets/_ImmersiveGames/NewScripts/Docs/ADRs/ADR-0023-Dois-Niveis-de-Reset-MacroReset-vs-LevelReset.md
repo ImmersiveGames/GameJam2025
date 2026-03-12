@@ -1,4 +1,4 @@
-﻿# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
+# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
 
 ## Status atual (2026-03-11)
 - Status: **DONE**
@@ -9,6 +9,7 @@
   - `ResetMacroAsync(...)` permanece no dominio macro.
   - `ResetLevelAsync(...)` canonico recebe `LevelDefinitionAsset levelRef`.
   - `WorldLifecycle V2` ja nao promove `levelId/contentId` como shape principal de telemetria.
+  - `Gameplay ActorGroupRearm` foi consolidado como soft reset local canonico por grupo de atores.
 - Evidencia:
   - `Docs/Reports/Baseline/2026-03-06/Baseline-3.1-Freeze.md`
   - `Docs/Reports/Baseline/2026-03-06/lastlog.log`
@@ -26,6 +27,7 @@
 - `contentId='level-ref:...'` no reset e token de operacao, nao identidade de negocio.
 - `WorldLifecycle V1` continua sendo gate/correlacao do SceneFlow.
 - `WorldLifecycle V2` continua sendo telemetria/observabilidade.
+- O reset local/gameplay passa por `ActorGroupRearm` canonico por grupo de atores, centrado em `ByActorKind`.
 
 ## Evidencia (log)
 
@@ -38,4 +40,6 @@
 ## Escopo e excecoes remanescentes
 
 - O fechamento deste ADR vale para a separacao canonica entre MacroReset e LevelReset no eixo principal.
-- O que permanece fora deste fechamento e o bloco de `Gameplay RunRearm`, que ainda possui fallback legado de actor-kind/string e nao altera esta separacao arquitetural.
+- `Gameplay ActorGroupRearm` deixa de ser excecao arquitetural nessa borda: o subsistema agora usa contrato canonico por grupo (`ByActorKind`) e manteve `ActorIdSet` apenas como selecao tecnica explicita.
+- Permanece fora deste fechamento apenas o residuo menor editor/serializado em `GameNavigationIntentCatalogAsset`, sem reabrir trilho paralelo de runtime.
+

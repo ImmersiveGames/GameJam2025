@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
+namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core
 {
-    public sealed class RegistryActorDiscoveryStrategy : IActorDiscoveryStrategy
+    public sealed class RegistryActorGroupRearmDiscoveryStrategy : IActorGroupRearmDiscoveryStrategy
     {
         private readonly IActorRegistry _actorRegistry;
-        private readonly IRunRearmTargetClassifier _classifier;
+        private readonly IActorGroupRearmTargetClassifier _classifier;
 
-        public RegistryActorDiscoveryStrategy(IActorRegistry actorRegistry, IRunRearmTargetClassifier classifier)
+        public RegistryActorGroupRearmDiscoveryStrategy(IActorRegistry actorRegistry, IActorGroupRearmTargetClassifier classifier)
         {
             _actorRegistry = actorRegistry;
             _classifier = classifier;
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
 
         public string Name => "RegistryDiscovery";
 
-        public int CollectTargets(RunRearmRequest request, List<IActor> results, out bool fallbackUsed)
+        public int CollectTargets(ActorGroupRearmRequest request, List<IActor> results, out bool fallbackUsed)
         {
             fallbackUsed = false;
             results.Clear();
@@ -30,3 +30,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Core
         }
     }
 }
+

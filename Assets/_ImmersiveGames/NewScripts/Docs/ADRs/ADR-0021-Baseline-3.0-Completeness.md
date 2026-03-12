@@ -1,4 +1,4 @@
-﻿# ADR-0021 - Baseline 3.0 (Completeness)
+# ADR-0021 - Baseline 3.0 (Completeness)
 
 ## Status
 
@@ -80,7 +80,7 @@ Baseline 3.0 e considerado fechado quando:
   - tooling/editor/QA associado
 - Este ADR **nao** declara `NewScripts/**` inteiro como 100% canon-only.
 - Excecoes remanescentes fora/borda do eixo fechado:
-  - `Gameplay RunRearm` com fallback legado de actor-kind/string
+  - `Gameplay ActorGroupRearm` com fallback legado de actor-kind/string
   - pequeno residuo editor/serializado em `GameNavigationIntentCatalogAsset`
 
 ## Changelog
@@ -89,3 +89,4 @@ Baseline 3.0 e considerado fechado quando:
 - 2026-03-05: baseline marcado como fechado; alinhado as auditorias de 2026-03-04 e 2026-03-05.
 - 2026-03-01: atualizacao de status e checklist baseada no estado daquele momento.
 - 2026-02-25: checklist inicial alinhado as ADRs 0022-0027.
+
