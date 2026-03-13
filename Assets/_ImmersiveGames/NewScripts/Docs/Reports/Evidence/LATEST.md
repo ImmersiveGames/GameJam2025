@@ -1,18 +1,23 @@
-﻿# Latest Evidence
+# Latest Evidence
 
-Fonte operacional vigente de evidencia runtime: `Docs/Reports/lastlog.log`.
+Evidencia canonica vigente: `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`.
 
 ## Leitura vigente
 
-- O log mais recente sustenta o estado atual ja consolidado.
+- O freeze do Baseline V3 e a referencia operacional atual de evidence.
+- A evidencia runtime vigente desta promocao continua em `Docs/Reports/lastlog.log`.
 - A leitura operacional parte de:
+  - `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
   - `Docs/Reports/lastlog.log`
   - `Docs/Reports/Audits/LATEST.md`
   - docs modulares e guias oficiais atuais
-- A leitura vigente inclui o loading de producao ja validado em runtime:
-  - `LoadingHudScene` como HUD canonica do macro flow
-  - progresso hibrido por carga real de cena + marcos ponderados
-  - HUD com barra, porcentagem, etapa e spinner
-- Snapshots antigos de evidence permanecem apenas como historico rastreavel, fora da superficie operacional principal.
+- O baseline atual registrado nessa evidencia confirma:
+  - `PASS` oficial do Baseline V3
+  - `Menu -> Gameplay` no trilho canonico
+  - loading de producao integrado no macro flow
+  - `Victory/Defeat` mockados de forma explicita e controlada
+  - `PostGame` desacoplado de `IntroStage`
+  - `Restart` fora do post
 
-Estados anteriores nao devem mais ser usados para interpretar o contrato atual.
+Estados anteriores permanecem apenas como historico rastreavel e nao devem substituir esta leitura vigente.
+

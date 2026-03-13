@@ -1,4 +1,4 @@
-﻿# NewScripts Docs
+# NewScripts Docs
 
 Esta pasta documenta o estado operacional atual de `Assets/_ImmersiveGames/NewScripts/**`.
 
@@ -18,8 +18,9 @@ Leia nesta ordem:
 11. `Docs/ADRs/README.md`
 12. `Docs/Reports/Audits/LATEST.md`
 13. `Docs/Reports/Evidence/LATEST.md`
-14. `Docs/Plans/Plan-Continuous.md`
-15. `Docs/CHANGELOG.md`
+14. `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
+15. `Docs/Plans/Plan-Continuous.md`
+16. `Docs/CHANGELOG.md`
 
 ## Guias de uso
 
@@ -38,6 +39,9 @@ Regra:
 
 ## Estado atual resumido
 
+- Baseline V3 vigente fechado em `PASS`.
+- A referencia canonica atual de evidence e `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`.
+- A evidencia runtime vigente desta promocao permanece em `Docs/Reports/lastlog.log`.
 - `startup` pertence ao bootstrap.
 - `frontend` e `gameplay` pertencem a `SceneRouteKind`.
 - Navigation e transition operam por direct-ref + fail-fast.
@@ -51,6 +55,7 @@ Regra:
 - `Restart` nao passa por post hook.
 - O level atual pode expor apenas um hook opcional para complementar o `PostGame` global.
 - `ActorGroupRearm` e a nomenclatura canonica de rearm local de gameplay.
+- `Victory/Defeat` fazem parte do baseline atual por mock explicito e controlado.
 
 ## Historico que permanece
 
@@ -60,5 +65,8 @@ Historico remanescente existe apenas para rastreabilidade em:
 - `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
 - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
 - `Docs/Reports/Audits/2026-03-12/LOADING-DOCS-CLOSEOUT.md`
+- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-BLOCKERS-FIX.md`
+- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-OUTCOME-MOCK-FIX.md`
 
 Qualquer outro documento fora da cadeia oficial deve ser lido como historico arquivado, nao como guia operacional atual.
+
