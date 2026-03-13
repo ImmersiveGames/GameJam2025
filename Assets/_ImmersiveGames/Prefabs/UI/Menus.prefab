@@ -1077,7 +1077,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 8093393141081860065}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Navigation.Bindings.FrontendShowPanelButtonBinder,
           Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -1431,7 +1431,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 797198587007046991}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.MenuQuitButtonBinder,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Navigation.Bindings.MenuQuitButtonBinder,
           Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -1708,7 +1708,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1575986670071168415}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Navigation.Bindings.FrontendShowPanelButtonBinder,
           Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -3248,7 +3248,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 62956792034080922}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.MenuPlayButtonBinder,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Navigation.Bindings.MenuPlayButtonBinder,
           Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -3709,7 +3709,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 3055721895106191023}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Navigation.Bindings.FrontendShowPanelButtonBinder,
           Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -4630,7 +4630,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 6720254293292264586}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Navigation.Bindings.FrontendShowPanelButtonBinder,
           Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
