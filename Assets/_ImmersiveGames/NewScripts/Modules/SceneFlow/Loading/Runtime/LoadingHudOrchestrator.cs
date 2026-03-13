@@ -23,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
     {
 
         private ILoadingHudService _hudService;
+        private ILoadingPresentationService _presentationService;
 
         private string _activeSignature;
         private string _pendingSignature;
@@ -145,6 +146,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             }
 
             ClearPending();
+
+            if (TryResolvePresentationService())
+            {
+                _presentationService.SetProgress(signature, new LoadingProgressSnapshot(1f, "Ready", evt.context.Reason));
+            }
 
             TryHide(signature, SceneFlowLoadingPhases.Completed, "completed");
 
@@ -332,6 +338,22 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             }
 
             _hudService = service;
+            return true;
+        }
+
+        private bool TryResolvePresentationService()
+        {
+            if (_presentationService != null)
+            {
+                return true;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILoadingPresentationService>(out var service) || service == null)
+            {
+                return false;
+            }
+
+            _presentationService = service;
             return true;
         }
 

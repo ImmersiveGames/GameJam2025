@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
     /// </summary>
 public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
     {
-        public async Task LoadSceneAsync(string sceneName)
+        public async Task LoadSceneAsync(string sceneName, System.Action<float> onProgress = null)
         {
             var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             if (op == null)
@@ -25,13 +25,18 @@ public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
                 return;
             }
 
+            onProgress?.Invoke(0f);
             while (!op.isDone)
             {
+                float normalized = op.progress >= 0.9f ? 1f : UnityEngine.Mathf.Clamp01(op.progress / 0.9f);
+                onProgress?.Invoke(normalized);
                 await Task.Yield();
             }
+
+            onProgress?.Invoke(1f);
         }
 
-        public async Task UnloadSceneAsync(string sceneName)
+        public async Task UnloadSceneAsync(string sceneName, System.Action<float> onProgress = null)
         {
             var scene = SceneManager.GetSceneByName(sceneName);
             bool exists = scene.IsValid();
@@ -50,10 +55,14 @@ public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
                 return;
             }
 
+            onProgress?.Invoke(0f);
             while (!op.isDone)
             {
+                onProgress?.Invoke(UnityEngine.Mathf.Clamp01(op.progress));
                 await Task.Yield();
             }
+
+            onProgress?.Invoke(1f);
 
             var sceneAfter = SceneManager.GetSceneByName(sceneName);
             bool existsAfter = sceneAfter.IsValid();

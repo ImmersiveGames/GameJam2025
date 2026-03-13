@@ -327,10 +327,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeMode);
             DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
 
-            RegisterIfMissing<ILoadingHudService>(() => new LoadingHudService(runtimeMode, degradedReporter));
+            if (!DependencyManager.Provider.TryGetGlobal<ILoadingPresentationService>(out var presentationService) || presentationService == null)
+            {
+                var concreteService = new LoadingHudService(runtimeMode, degradedReporter);
+                DependencyManager.Provider.RegisterGlobal<ILoadingPresentationService>(concreteService);
+                DependencyManager.Provider.RegisterGlobal<ILoadingHudService>(concreteService);
+            }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Loading] ILoadingHudService registrado no DI global.",
+                "[Loading] ILoadingPresentationService e ILoadingHudService registrados no DI global.",
                 DebugUtility.Colors.Info);
 
             if (DependencyManager.Provider.TryGetGlobal<LoadingHudOrchestrator>(out var existing) && existing != null)
@@ -338,18 +343,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[Loading] LoadingHudOrchestrator jÃ¡ registrado no DI global.",
                     DebugUtility.Colors.Info);
-                return;
+            }
+            else
+            {
+                RegisterIfMissing(() => new LoadingHudOrchestrator());
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[Loading] LoadingHudOrchestrator registrado no DI global.",
+                    DebugUtility.Colors.Info);
             }
 
-            RegisterIfMissing(() => new LoadingHudOrchestrator());
+            if (!DependencyManager.Provider.TryGetGlobal<LoadingProgressOrchestrator>(out var existingProgress) || existingProgress == null)
+            {
+                RegisterIfMissing(() => new LoadingProgressOrchestrator());
 
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Loading] LoadingHudOrchestrator registrado no DI global.",
-                DebugUtility.Colors.Info);
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[Loading] LoadingProgressOrchestrator registrado no DI global.",
+                    DebugUtility.Colors.Info);
+            }
         }
     }
 }
-
-
 
 

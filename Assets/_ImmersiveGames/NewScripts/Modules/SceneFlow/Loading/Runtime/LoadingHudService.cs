@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -7,49 +7,36 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 {
-    /// <summary>
-    /// Servico global para garantir o carregamento da cena de HUD de loading (Additive).
-    ///
-    /// Contrato (ADR-0010):
-    /// - Strict (Editor/Dev): scene_not_in_build deve ser evidente (log de erro + Break).
-    /// - Strict: controller_missing/controller_not_found degradam com erro (sem exception).
-    /// - Release: falha degrada com aviso (DEGRADED_MODE) e o jogo continua sem HUD.
-    ///
-    /// Observacao:
-    /// - A cena precisa existir em Build Settings e conter 1x LoadingHudController.
-    /// </summary>
-        /// <summary>
-    /// OWNER: ciclo tecnico de ensure/show/hide da LoadingHudScene e controller.
-    /// NAO E OWNER: ordem das fases da transicao (definida pelo orchestrator/SceneTransitionService).
-    /// PUBLISH/CONSUME: sem EventBus; consumido por LoadingHudOrchestrator.
-    /// Fases tocadas: suporte tecnico para Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed.
-    /// </summary>
-[DebugLevel(DebugLevel.Verbose)]
-    public sealed class LoadingHudService : ILoadingHudService
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class LoadingHudService : ILoadingHudService, ILoadingPresentationService
     {
         private const string FeatureName = "loadinghud";
         private const string LoadingHudSceneName = "LoadingHudScene";
-
+        private const string LoadingHudRootComponentName = nameof(LoadingHudController);
         private const int DefaultResolveFrames = 60;
 
         private readonly IRuntimeModeProvider _runtime;
         private readonly IDegradedModeReporter _degraded;
-
         private readonly SemaphoreSlim _ensureGate = new(1, 1);
 
         private LoadingHudController _controller;
         private bool _disabled;
         private string _lastEnsureLogSignature = string.Empty;
         private int _lastEnsureLogFrame = -1;
+        private LoadingProgressSnapshot _lastProgressSnapshot = new(0f, "Loading...");
 
         public LoadingHudService(IRuntimeModeProvider runtimeModeProvider, IDegradedModeReporter degradedModeReporter)
         {
             _runtime = runtimeModeProvider;
             _degraded = degradedModeReporter;
+        }
+
+        public Task EnsureReadyAsync(string signature)
+        {
+            return EnsureLoadedAsync(signature);
         }
 
         public Task EnsureLoadedAsync(string signature)
@@ -77,26 +64,26 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                     DebugUtility.Colors.Info);
             }
 
-            // Validacao sincrona (Strict): cena precisa existir no Build Settings.
-            if (_runtime != null && _runtime.IsStrict)
+            if (!Application.CanStreamedLevelBeLoaded(LoadingHudSceneName))
             {
-                if (!Application.CanStreamedLevelBeLoaded(LoadingHudSceneName))
-                {
-                    _disabled = true;
-                    FailStrict(
-                        reason: "scene_not_in_build",
-                        detail: $"Scene '{LoadingHudSceneName}' nao esta no Build Settings.",
-                        signature: signature);
+                _disabled = true;
+                FailStrict(
+                    reason: "scene_not_in_build",
+                    detail: $"Scene '{LoadingHudSceneName}' is not in Build Settings.",
+                    signature: signature);
 
-                    // Importante: FailStrict lanca, e aqui estamos antes do primeiro await (fail-fast).
-                    return Task.CompletedTask;
-                }
+                return Task.CompletedTask;
             }
 
             return EnsureLoadedInternalAsync(signature);
         }
 
         public void Show(string signature, string phase)
+        {
+            Show(signature, phase, null);
+        }
+
+        public void Show(string signature, string phase, string message = null)
         {
             if (_disabled)
             {
@@ -107,24 +94,24 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             {
                 FailOrDegrade(
                     reason: "controller_missing",
-                    detail: "Show ignorado: controller indisponivel.",
+                    detail: "Show ignored because the loading root is unavailable.",
                     signature: signature,
                     phase: phase,
                     allowStrictThrow: false);
-
                 return;
             }
 
             try
             {
-                _controller.Show(phase);
+                _controller.Show(phase, message);
+                _controller.ApplyProgress(_lastProgressSnapshot);
             }
             catch (Exception ex)
             {
                 _controller = null;
                 FailOrDegrade(
                     reason: "controller_exception",
-                    detail: $"Show falhou: {ex.Message}",
+                    detail: $"Show failed: {ex.Message}",
                     signature: signature,
                     phase: phase,
                     allowStrictThrow: false);
@@ -132,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             }
 
             DebugUtility.LogVerbose<LoadingHudService>(
-                $"[LoadingHudShow] signature='{signature}' phase='{phase}'.",
+                $"[LoadingHudShow] signature='{signature}' phase='{phase}' message='{(string.IsNullOrWhiteSpace(message) ? "<default>" : message)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -145,14 +132,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
             if (!TryEnsureController(signature))
             {
-                // Hide e safety: em Release, so logamos uma vez.
                 FailOrDegrade(
                     reason: "controller_missing",
-                    detail: "Hide ignorado: controller indisponivel.",
+                    detail: "Hide ignored because the loading root is unavailable.",
                     signature: signature,
                     phase: phase,
                     allowStrictThrow: false);
-
                 return;
             }
 
@@ -165,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                 _controller = null;
                 FailOrDegrade(
                     reason: "controller_exception",
-                    detail: $"Hide falhou: {ex.Message}",
+                    detail: $"Hide failed: {ex.Message}",
                     signature: signature,
                     phase: phase,
                     allowStrictThrow: false);
@@ -175,6 +160,69 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             DebugUtility.LogVerbose<LoadingHudService>(
                 $"[LoadingHudHide] signature='{signature}' phase='{phase}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        public void SetMessage(string signature, string message, string phase = null)
+        {
+            if (_disabled)
+            {
+                return;
+            }
+
+            if (!TryEnsureController(signature))
+            {
+                FailOrDegrade(
+                    reason: "controller_missing",
+                    detail: "SetMessage ignored because the loading root is unavailable.",
+                    signature: signature,
+                    phase: phase,
+                    allowStrictThrow: false);
+                return;
+            }
+
+            try
+            {
+                _controller.SetMessage(phase, message);
+            }
+            catch (Exception ex)
+            {
+                _controller = null;
+                FailOrDegrade(
+                    reason: "controller_exception",
+                    detail: $"SetMessage failed: {ex.Message}",
+                    signature: signature,
+                    phase: phase,
+                    allowStrictThrow: false);
+            }
+        }
+
+        public void SetProgress(string signature, LoadingProgressSnapshot snapshot)
+        {
+            _lastProgressSnapshot = snapshot;
+
+            if (_disabled)
+            {
+                return;
+            }
+
+            if (!TryEnsureController(signature))
+            {
+                return;
+            }
+
+            try
+            {
+                _controller.ApplyProgress(snapshot);
+            }
+            catch (Exception ex)
+            {
+                _controller = null;
+                FailOrDegrade(
+                    reason: "controller_exception",
+                    detail: $"SetProgress failed: {ex.Message}",
+                    signature: signature,
+                    allowStrictThrow: false);
+            }
         }
 
         private async Task EnsureLoadedInternalAsync(string signature)
@@ -197,32 +245,27 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                     return;
                 }
 
-                try
+                if (!await EnsureSceneLoadedIfNeededAsync(signature))
                 {
-                    if (!await EnsureSceneLoadedIfNeededAsync(signature))
-                    {
-                        return;
-                    }
-
-                    if (!await TryResolveControllerWithRetriesAsync())
-                    {
-                        FailOrDegrade(
-                            reason: "controller_not_found",
-                            detail: $"Nenhum {nameof(LoadingHudController)} encontrado na cena '{LoadingHudSceneName}'.",
-                            signature: signature,
-                            allowStrictThrow: false);
-
-                        return;
-                    }
+                    return;
                 }
-                catch (Exception ex)
+
+                if (!await TryResolveControllerWithRetriesAsync(signature))
                 {
                     FailOrDegrade(
-                        reason: "exception",
-                        detail: $"Falha ao garantir LoadingHudScene/controller. ({ex.Message})",
+                        reason: "root_not_found",
+                        detail: $"No root with {LoadingHudRootComponentName} was found in scene '{LoadingHudSceneName}'.",
                         signature: signature,
                         allowStrictThrow: false);
                 }
+            }
+            catch (Exception ex)
+            {
+                FailOrDegrade(
+                    reason: "exception",
+                    detail: $"Failed to ensure LoadingHudScene/root. ({ex.Message})",
+                    signature: signature,
+                    allowStrictThrow: false);
             }
             finally
             {
@@ -243,10 +286,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             {
                 FailOrDegrade(
                     reason: "load_op_null",
-                    detail: $"LoadSceneAsync retornou null para '{LoadingHudSceneName}'. Verifique Build Settings.",
+                    detail: $"LoadSceneAsync returned null for '{LoadingHudSceneName}'.",
                     signature: signature,
                     allowStrictThrow: false);
-
                 return false;
             }
 
@@ -258,13 +300,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             return true;
         }
 
-        private async Task<bool> TryResolveControllerWithRetriesAsync()
+        private async Task<bool> TryResolveControllerWithRetriesAsync(string signature)
         {
-            // Resolve controller com algumas tentativas (um frame pode nao ser suficiente).
             for (int i = 0; i < DefaultResolveFrames; i++)
             {
-                TryResolveController();
-                if (IsControllerValid(_controller))
+                if (TryResolveController(signature))
                 {
                     return true;
                 }
@@ -277,25 +317,73 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private bool TryEnsureController(string signature)
         {
-            _ = signature;
             if (IsControllerValid(_controller))
             {
                 return true;
             }
 
-            TryResolveController();
-
-            return IsControllerValid(_controller);
+            return TryResolveController(signature);
         }
 
-        private void TryResolveController()
+        private bool TryResolveController(string signature)
         {
-            _controller = Object.FindAnyObjectByType<LoadingHudController>();
+            var scene = SceneManager.GetSceneByName(LoadingHudSceneName);
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                return false;
+            }
+
+            var roots = scene.GetRootGameObjects();
+            LoadingHudController resolved = null;
+
+            for (int i = 0; i < roots.Length; i++)
+            {
+                var root = roots[i];
+                if (root == null)
+                {
+                    continue;
+                }
+
+                var candidate = root.GetComponent<LoadingHudController>();
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                if (resolved != null && resolved != candidate)
+                {
+                    FailOrDegrade(
+                        reason: "multiple_loading_roots",
+                        detail: $"Scene '{LoadingHudSceneName}' contains more than one loading root with {LoadingHudRootComponentName}.",
+                        signature: signature,
+                        allowStrictThrow: false);
+                    return false;
+                }
+
+                try
+                {
+                    candidate.EnsureConfiguredOrFail();
+                    candidate.ApplyProgress(_lastProgressSnapshot);
+                }
+                catch (Exception ex)
+                {
+                    FailOrDegrade(
+                        reason: "root_invalid",
+                        detail: ex.Message,
+                        signature: signature,
+                        allowStrictThrow: false);
+                    return false;
+                }
+
+                resolved = candidate;
+            }
+
+            _controller = resolved;
+            return IsControllerValid(_controller);
         }
 
         private static bool IsControllerValid(LoadingHudController controller)
         {
-            // Comentario: usa o operador de Unity para tratar objetos destruidos como null.
             return controller != null;
         }
 
@@ -307,7 +395,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             bool allowDisable = true,
             bool allowStrictThrow = false)
         {
-            // Strict: erro visivel, mas sem quebrar o fluxo de transicao.
             if (_runtime != null && _runtime.IsStrict)
             {
                 if (allowStrictThrow)
@@ -320,7 +407,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                     $"[LoadingHUD][STRICT] reason='{reason}' signature='{signature}' phase='{phase}'. {detail}");
             }
 
-            // Release: reporta degraded uma vez e opcionalmente desabilita o HUD.
             if (allowDisable)
             {
                 _disabled = true;
@@ -342,7 +428,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             DebugUtility.LogError<LoadingHudService>(
                 $"[LoadingHUD][STRICT] reason='{reason}' signature='{signature}' phase='{phase}'. {detail}");
 
-            // Comentario: em Editor/Dev, queremos um sinal gritante.
             Debug.Break();
 
             throw new InvalidOperationException(
@@ -350,12 +435,3 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         }
     }
 }
-
-
-
-
-
-
-
-
-

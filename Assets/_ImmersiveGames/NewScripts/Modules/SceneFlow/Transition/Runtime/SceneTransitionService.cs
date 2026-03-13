@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
@@ -412,19 +413,31 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         private async Task RunSceneOperationsAsync(SceneTransitionContext context)
         {
+            string signature = SceneTransitionSignature.Compute(context);
             LogLoadedScenesSnapshot("before_apply_route");
             IReadOnlyList<string> reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
             IReadOnlyList<string> loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
             IReadOnlyList<string> unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
             LogRouteExecutionPlan(context, loadScenes, unloadScenes, reloadScenes);
-            await LoadScenesAsync(loadScenes);
-            if (reloadScenes.Count > 0) await HandleReloadScenesAsync(context, reloadScenes);
+            int totalOperations = loadScenes.Count + unloadScenes.Count + (reloadScenes.Count * 2) + (string.IsNullOrWhiteSpace(context.TargetActiveScene) ? 0 : 1);
+            var counter = new OperationCounter();
+
+            ReportRouteLoadingProgress(signature, 0f, "Preparing route scenes", context.Reason);
+
+            await LoadScenesAsync(loadScenes, signature, context.Reason, counter, totalOperations);
+            if (reloadScenes.Count > 0) await HandleReloadScenesAsync(context, reloadScenes, signature, counter, totalOperations);
             await SetActiveSceneAsync(context.TargetActiveScene);
-            await UnloadScenesAsync(unloadScenes, context.TargetActiveScene);
+            if (!string.IsNullOrWhiteSpace(context.TargetActiveScene))
+            {
+                counter.CompletedOperations++;
+                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Activating scene: {context.TargetActiveScene}", context.Reason);
+            }
+            await UnloadScenesAsync(unloadScenes, context.TargetActiveScene, signature, context.Reason, counter, totalOperations);
+            ReportRouteLoadingProgress(signature, 1f, "Route scenes ready", context.Reason);
             LogLoadedScenesSnapshot("after_apply_route");
         }
 
-        private async Task LoadScenesAsync(IReadOnlyList<string>? scenesToLoad, bool forceLoad = false)
+        private async Task LoadScenesAsync(IReadOnlyList<string>? scenesToLoad, string signature, string reason, OperationCounter counter, int totalOperations, bool forceLoad = false)
         {
             if (scenesToLoad == null || scenesToLoad.Count == 0) return;
             foreach (string sceneName in scenesToLoad)
@@ -432,10 +445,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 if (!forceLoad && _loaderAdapter.IsSceneLoaded(sceneName))
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Cena '{sceneName}' ja esta carregada. Pulando load.");
+                    counter.CompletedOperations++;
+                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Scene already loaded: {sceneName}", reason);
                     continue;
                 }
                 DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Carregando cena '{sceneName}' (Additive)...");
-                await _loaderAdapter.LoadSceneAsync(sceneName);
+                await _loaderAdapter.LoadSceneAsync(
+                    sceneName,
+                    progress => ReportRouteLoadingProgress(
+                        signature,
+                        ComputeOperationProgress(counter.CompletedOperations, totalOperations, progress),
+                        $"Loading scene: {sceneName}",
+                        reason));
+                counter.CompletedOperations++;
+                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Loaded scene: {sceneName}", reason);
             }
         }
 
@@ -458,7 +481,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
         }
 
-        private async Task UnloadScenesAsync(IReadOnlyList<string>? scenesToUnload, string targetActiveScene)
+        private async Task UnloadScenesAsync(IReadOnlyList<string>? scenesToUnload, string targetActiveScene, string signature, string reason, OperationCounter counter, int totalOperations)
         {
             if (scenesToUnload == null || scenesToUnload.Count == 0) return;
             foreach (string sceneName in scenesToUnload)
@@ -471,19 +494,31 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 if (string.Equals(sceneName, targetActiveScene, StringComparison.Ordinal))
                 {
                     DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='target_active_scene' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.", DebugUtility.Colors.Info);
+                    counter.CompletedOperations++;
+                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Keeping active scene: {sceneName}", reason);
                     continue;
                 }
                 if (!_loaderAdapter.IsSceneLoaded(sceneName))
                 {
                     DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='already_unloaded' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.", DebugUtility.Colors.Info);
+                    counter.CompletedOperations++;
+                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Scene already unloaded: {sceneName}", reason);
                     continue;
                 }
                 DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Descarregando cena '{sceneName}'...");
-                await _loaderAdapter.UnloadSceneAsync(sceneName);
+                await _loaderAdapter.UnloadSceneAsync(
+                    sceneName,
+                    progress => ReportRouteLoadingProgress(
+                        signature,
+                        ComputeOperationProgress(counter.CompletedOperations, totalOperations, progress),
+                        $"Unloading scene: {sceneName}",
+                        reason));
+                counter.CompletedOperations++;
+                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Unloaded scene: {sceneName}", reason);
             }
         }
 
-        private async Task HandleReloadScenesAsync(SceneTransitionContext context, IReadOnlyList<string> reloadScenes)
+        private async Task HandleReloadScenesAsync(SceneTransitionContext context, IReadOnlyList<string> reloadScenes, string signature, OperationCounter counter, int totalOperations)
         {
             string tempActive = ResolveTempActiveScene(reloadScenes);
             if (!string.IsNullOrWhiteSpace(tempActive) && !string.Equals(tempActive, _loaderAdapter.GetActiveSceneName(), StringComparison.Ordinal))
@@ -491,23 +526,60 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: definindo cena ativa temporaria '{tempActive}'.");
                 await SetActiveSceneAsync(tempActive);
             }
-            await UnloadScenesForReloadAsync(reloadScenes);
-            await LoadScenesAsync(reloadScenes, forceLoad: true);
+            await UnloadScenesForReloadAsync(reloadScenes, signature, context.Reason, counter, totalOperations);
+            await LoadScenesAsync(reloadScenes, signature, context.Reason, counter, totalOperations, forceLoad: true);
             DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload concluido. TargetActiveScene='{context.TargetActiveScene}'.");
         }
 
-        private async Task UnloadScenesForReloadAsync(IReadOnlyList<string> reloadScenes)
+        private async Task UnloadScenesForReloadAsync(IReadOnlyList<string> reloadScenes, string signature, string reason, OperationCounter counter, int totalOperations)
         {
             foreach (string sceneName in reloadScenes)
             {
                 if (!_loaderAdapter.IsSceneLoaded(sceneName))
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: cena '{sceneName}' ja esta descarregada. Pulando unload.");
+                    counter.CompletedOperations++;
+                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Scene already reloaded clean: {sceneName}", reason);
                     continue;
                 }
                 DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: descarregando cena '{sceneName}'...");
-                await _loaderAdapter.UnloadSceneAsync(sceneName);
+                await _loaderAdapter.UnloadSceneAsync(
+                    sceneName,
+                    progress => ReportRouteLoadingProgress(
+                        signature,
+                        ComputeOperationProgress(counter.CompletedOperations, totalOperations, progress),
+                        $"Reloading scene: {sceneName}",
+                        reason));
+                counter.CompletedOperations++;
+                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Reload unload completed: {sceneName}", reason);
             }
+        }
+
+        private static float ComputeOperationProgress(int completedOperations, int totalOperations, float currentOperationProgress = 0f)
+        {
+            if (totalOperations <= 0)
+            {
+                return 1f;
+            }
+
+            float normalized = (completedOperations + Mathf.Clamp01(currentOperationProgress)) / totalOperations;
+            return Mathf.Clamp01(normalized);
+        }
+
+        private static void ReportRouteLoadingProgress(string signature, float normalizedProgress, string stepLabel, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return;
+            }
+
+            EventBus<SceneFlowRouteLoadingProgressEvent>.Raise(
+                new SceneFlowRouteLoadingProgressEvent(signature, normalizedProgress, stepLabel, reason));
+        }
+
+        private sealed class OperationCounter
+        {
+            public int CompletedOperations;
         }
 
         private static IReadOnlyList<string> GetReloadScenes(IReadOnlyList<string>? scenesToLoad, IReadOnlyList<string>? scenesToUnload)
@@ -578,4 +650,3 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
     }
 }
-

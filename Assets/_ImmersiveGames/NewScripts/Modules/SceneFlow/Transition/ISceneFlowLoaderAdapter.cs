@@ -7,8 +7,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
     /// </summary>
     public interface ISceneFlowLoaderAdapter
     {
-        Task LoadSceneAsync(string sceneName);
-        Task UnloadSceneAsync(string sceneName);
+        Task LoadSceneAsync(string sceneName, System.Action<float> onProgress = null);
+        Task UnloadSceneAsync(string sceneName, System.Action<float> onProgress = null);
         bool IsSceneLoaded(string sceneName);
         Task<bool> TrySetActiveSceneAsync(string sceneName);
         string GetActiveSceneName();

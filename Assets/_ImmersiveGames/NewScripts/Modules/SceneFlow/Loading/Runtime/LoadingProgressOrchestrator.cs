@@ -1,0 +1,234 @@
+using System;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using UnityEngine;
+
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
+{
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class LoadingProgressOrchestrator
+    {
+        private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
+        private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
+        private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _beforeFadeOutBinding;
+        private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
+        private readonly EventBinding<SceneFlowRouteLoadingProgressEvent> _routeProgressBinding;
+        private readonly EventBinding<WorldLifecycleResetStartedEvent> _resetStartedBinding;
+        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _resetCompletedBinding;
+        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
+
+        private ILoadingPresentationService _presentationService;
+        private ActiveLoadingProgress _active;
+
+        public LoadingProgressOrchestrator()
+        {
+            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
+            _scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
+            _beforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnBeforeFadeOut);
+            _completedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnCompleted);
+            _routeProgressBinding = new EventBinding<SceneFlowRouteLoadingProgressEvent>(OnRouteProgress);
+            _resetStartedBinding = new EventBinding<WorldLifecycleResetStartedEvent>(OnResetStarted);
+            _resetCompletedBinding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnResetCompleted);
+            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
+
+            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+            EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
+            EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_beforeFadeOutBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
+            EventBus<SceneFlowRouteLoadingProgressEvent>.Register(_routeProgressBinding);
+            EventBus<WorldLifecycleResetStartedEvent>.Register(_resetStartedBinding);
+            EventBus<WorldLifecycleResetCompletedEvent>.Register(_resetCompletedBinding);
+            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
+        }
+
+        private void OnTransitionStarted(SceneTransitionStartedEvent evt)
+        {
+            string signature = SceneTransitionSignature.Compute(evt.context);
+            _active = new ActiveLoadingProgress(signature, evt.context.RouteKind, evt.context.RequiresWorldReset, evt.context.Reason);
+            PublishCurrent();
+        }
+
+        private void OnRouteProgress(SceneFlowRouteLoadingProgressEvent evt)
+        {
+            if (!HasActiveSignature(evt.ContextSignature))
+            {
+                return;
+            }
+
+            _active.RouteProgress = Mathf.Max(_active.RouteProgress, Mathf.Clamp01(evt.NormalizedProgress));
+            if (!string.IsNullOrWhiteSpace(evt.StepLabel))
+            {
+                _active.StepLabel = evt.StepLabel;
+            }
+
+            PublishCurrent();
+        }
+
+        private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
+        {
+            string signature = SceneTransitionSignature.Compute(evt.context);
+            if (!HasActiveSignature(signature))
+            {
+                return;
+            }
+
+            _active.RouteProgress = 1f;
+            _active.StepLabel = _active.RouteKind == SceneRouteKind.Gameplay ? "Preparing gameplay" : "Finalizing route";
+            PublishCurrent();
+        }
+
+        private void OnLevelSelected(LevelSelectedEvent evt)
+        {
+            if (_active == null || _active.RouteKind != SceneRouteKind.Gameplay)
+            {
+                return;
+            }
+
+            _active.PrepareProgress = 1f;
+            string levelName = evt.LevelRef != null ? evt.LevelRef.name : "current level";
+            _active.StepLabel = $"Preparing level: {levelName}";
+            PublishCurrent();
+        }
+
+        private void OnResetStarted(WorldLifecycleResetStartedEvent evt)
+        {
+            if (!HasActiveSignature(evt.ContextSignature))
+            {
+                return;
+            }
+
+            _active.ResetProgress = Mathf.Max(_active.ResetProgress, 0.35f);
+            _active.StepLabel = "Resetting world";
+            PublishCurrent();
+        }
+
+        private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
+        {
+            if (!HasActiveSignature(evt.ContextSignature))
+            {
+                return;
+            }
+
+            _active.ResetProgress = 1f;
+            _active.StepLabel = _active.RouteKind == SceneRouteKind.Gameplay ? "Finalizing gameplay" : "Finalizing route";
+            PublishCurrent();
+        }
+
+        private void OnBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
+        {
+            string signature = SceneTransitionSignature.Compute(evt.context);
+            if (!HasActiveSignature(signature))
+            {
+                return;
+            }
+
+            _active.RouteProgress = 1f;
+            _active.FinalizingProgress = 1f;
+            _active.StepLabel = "Finalizing";
+            PublishCurrent();
+        }
+
+        private void OnCompleted(SceneTransitionCompletedEvent evt)
+        {
+            string signature = SceneTransitionSignature.Compute(evt.context);
+            if (!HasActiveSignature(signature))
+            {
+                return;
+            }
+
+            _active.Completed = true;
+            _active.StepLabel = "Ready";
+            PublishCurrent();
+            _active = null;
+        }
+
+        private void PublishCurrent()
+        {
+            if (_active == null || !TryResolvePresentationService())
+            {
+                return;
+            }
+
+            _presentationService.SetProgress(_active.Signature, _active.ToSnapshot());
+        }
+
+        private bool TryResolvePresentationService()
+        {
+            if (_presentationService != null)
+            {
+                return true;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILoadingPresentationService>(out var service) || service == null)
+            {
+                DebugUtility.LogWarning<LoadingProgressOrchestrator>(
+                    "[Loading] ILoadingPresentationService unavailable for progress orchestration.");
+                return false;
+            }
+
+            _presentationService = service;
+            return true;
+        }
+
+        private bool HasActiveSignature(string signature)
+        {
+            return _active != null &&
+                   !string.IsNullOrWhiteSpace(signature) &&
+                   string.Equals(_active.Signature, signature, StringComparison.Ordinal);
+        }
+
+        private sealed class ActiveLoadingProgress
+        {
+            public ActiveLoadingProgress(string signature, SceneRouteKind routeKind, bool requiresWorldReset, string reason)
+            {
+                Signature = signature ?? string.Empty;
+                RouteKind = routeKind;
+                RequiresWorldReset = requiresWorldReset;
+                Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+                StepLabel = routeKind == SceneRouteKind.Gameplay ? "Loading gameplay route" : "Loading route";
+            }
+
+            public string Signature { get; }
+            public SceneRouteKind RouteKind { get; }
+            public bool RequiresWorldReset { get; }
+            public string Reason { get; }
+
+            public float RouteProgress { get; set; }
+            public float PrepareProgress { get; set; }
+            public float ResetProgress { get; set; }
+            public float FinalizingProgress { get; set; }
+            public bool Completed { get; set; }
+            public string StepLabel { get; set; }
+
+            public LoadingProgressSnapshot ToSnapshot()
+            {
+                if (Completed)
+                {
+                    return new LoadingProgressSnapshot(1f, StepLabel, Reason);
+                }
+
+                float routeWeight = RouteKind == SceneRouteKind.Gameplay ? 0.55f : 0.80f;
+                float prepareWeight = RouteKind == SceneRouteKind.Gameplay ? 0.15f : 0f;
+                float resetWeight = RequiresWorldReset ? 0.20f : 0f;
+                float finalizingWeight = RouteKind == SceneRouteKind.Gameplay ? 0.05f : 0.15f;
+                float activeWeightTotal = routeWeight + prepareWeight + resetWeight + finalizingWeight;
+                float weighted =
+                    (routeWeight * Mathf.Clamp01(RouteProgress)) +
+                    (prepareWeight * Mathf.Clamp01(PrepareProgress)) +
+                    (resetWeight * Mathf.Clamp01(ResetProgress)) +
+                    (finalizingWeight * Mathf.Clamp01(FinalizingProgress));
+
+                float normalized = activeWeightTotal <= 0f
+                    ? 0f
+                    : Mathf.Clamp01((weighted / activeWeightTotal) * 0.95f);
+
+                return new LoadingProgressSnapshot(normalized, StepLabel, Reason);
+            }
+        }
+    }
+}
