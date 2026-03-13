@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
@@ -394,12 +394,34 @@ await postLevelActions.ExitToMenuAsync("PostGame/ExitToMenu", cancellationToken)
         <div class="callout use" style="margin-top:16px;"><div class="mini-title">O que esperar</div><div><code>LevelSelectedEvent</code> abre o trilho, o reset local do level alvo acontece e <code>LevelSwapLocalAppliedEvent</code> fecha a troca local.</div></div>
       </section>
 
+      <section class="panel" id="loading">
+        <h2>Loading de producao</h2>
+        <div class="grid-2">
+          <div class="callout use"><div class="mini-title">Use isto</div><div><code>LoadingHudScene</code> como HUD canonica do macro flow, controlada por <code>ILoadingPresentationService</code> e exibida por <code>LoadingHudService</code>.</div></div>
+          <div class="callout bad"><div class="mini-title">Nao use para isso</div><div>Nao trate o loading como dono da navegacao, do reset de mundo, do prepare de level ou da timeline de transicao. O pipeline continua em <code>SceneFlow + WorldLifecycle + LevelFlow</code>.</div></div>
+        </div>
+        <div class="cards" style="margin-top:16px;">
+          <article class="card"><strong>Onde entra</strong><span><code>startup</code>, <code>menu -> gameplay</code>, <code>gameplay -> menu</code> e <code>restart macro</code>.</span></article>
+          <article class="card"><strong>O que mostra</strong><span>barra de progresso, porcentagem numerica, etapa atual e spinner.</span></article>
+          <article class="card"><strong>Como calcula</strong><span>progresso hibrido: carga real de cena quando existe e marcos ponderados no restante.</span></article>
+          <article class="card"><strong>Fail-fast</strong><span>binding incompleto, cena ausente ou root invalido falham explicitamente.</span></article>
+        </div>
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="callout"><div class="mini-title">Passo a passo</div><ol class="step-list"><li><code>SceneTransitionService</code> continua owner da transicao macro.</li><li><code>LoadingHudOrchestrator</code> observa o inicio e pede a HUD.</li><li><code>ILoadingPresentationService</code> garante a cena pronta e mostra a HUD.</li><li><code>LoadingProgressOrchestrator</code> envia <code>LoadingProgressSnapshot</code>.</li><li>A HUD atualiza barra, porcentagem, etapa e spinner.</li><li>No fim real do fluxo, a HUD fecha em <code>100%</code> e some.</li></ol></div>
+          <div class="callout"><div class="mini-title">Binding obrigatorio</div><ul class="step-list"><li><code>Canvas</code></li><li><code>CanvasGroup</code></li><li><code>loadingText</code></li><li><code>progressPercentText</code></li><li><code>progressFillImage</code></li><li><code>spinnerVisual</code></li><li><code>spinnerTransform</code></li></ul></div>
+        </div>
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="callout use"><div class="mini-title">Owner do fluxo</div><div><code>SceneTransitionService</code>, <code>WorldLifecycle</code> e <code>LevelFlow</code> continuam decidindo route transition, reset, prepare e gates.</div></div>
+          <div class="callout use"><div class="mini-title">Owner da apresentacao</div><div><code>ILoadingPresentationService</code>, <code>LoadingHudService</code> e <code>LoadingHudScene</code> apenas apresentam o estado atual do carregamento.</div></div>
+        </div>
+        <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Esperar porcentagem puramente temporal ou usar o loading para esconder problema de pipeline. O contrato atual usa progresso hibrido e mantem a HUD como apresentacao apenas.</div></div>
+      </section>
       <section class="panel" id="erros">
         <h2>Erros comuns por assunto</h2>
         <div class="cards">
           <article class="card"><strong>Navigation</strong><span>Nao mexa em asset para simular runtime. Configure no editor e chame service publico com <code>reason</code> clara.</span></article>
           <article class="card"><strong>Styles</strong><span>Nao trate nome de style como semantica. O owner estrutural continua sendo <code>TransitionStyleAsset</code>.</span></article>
-          <article class="card"><strong>Level</strong><span>Nao deixe <code>additiveScenes</code> vazio e nao esqueça de colocar o level na <code>LevelCollection</code>.</span></article>
+          <article class="card"><strong>Level</strong><span>Nao deixe <code>additiveScenes</code> vazio e nao esqueÃ§a de colocar o level na <code>LevelCollection</code>.</span></article>
           <article class="card"><strong>Intro</strong><span>Nao espere intro global. Hoje ela e level-owned e opcional.</span></article>
           <article class="card"><strong>Post hook</strong><span>Nao transforme o hook opcional em dono do pos-run. O owner continua global.</span></article>
           <article class="card"><strong>Rearm</strong><span>Nao comece por <code>ActorIdSet</code> se <code>ByActorKind</code> resolve o caso.</span></article>

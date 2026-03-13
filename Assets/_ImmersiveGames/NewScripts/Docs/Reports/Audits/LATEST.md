@@ -1,6 +1,6 @@
-# Latest Audit
+﻿# Latest Audit
 
-Documento operacional vigente: `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`.
+Documento operacional vigente: `Docs/Reports/Audits/2026-03-12/LOADING-DOCS-CLOSEOUT.md`.
 
 ## Fechamento vigente
 
@@ -10,6 +10,8 @@ Documento operacional vigente: `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEO
   - `startup` no bootstrap
   - `frontend/gameplay` em `RouteKind`
   - navigation/transition em direct-ref + fail-fast
+  - `LoadingHudScene` como HUD canonica de loading do macro flow
+  - `ILoadingPresentationService` e `LoadingHudService` como apresentacao apenas
   - `IntroStage` level-owned e opcional
   - `PostGame` global com `Victory`, `Defeat` e `Exit`
   - `Restart` fora do post hook

@@ -8,6 +8,7 @@ Ele cobre:
 - servicos publicos que voce realmente chama
 - assets canonicos que voce realmente configura
 - receitas do zero para rota, style, level e rearm
+- loading de producao do macro flow
 - contratos atuais de intro, post game, level e rearm
 - erros comuns de configuracao e de chamada
 
@@ -28,6 +29,7 @@ Ele nao promove como API principal:
 | Trocar para um level especifico | `ILevelFlowRuntimeService.SwapLevelLocalAsync(levelRef, reason, ct)` | `Task` | `await levelFlow.SwapLevelLocalAsync(levelRef, "UI/SelectLevel", cancellationToken);` |
 | Rearm local de atores | `IActorGroupRearmOrchestrator.RequestResetAsync(request)` | `Task<bool>` | `await actorGroupRearm.RequestResetAsync(request);` |
 | Fechar ou pular intro atual | `IIntroStageControlService.CompleteIntroStage(reason)` | `void` | `introStageControl.CompleteIntroStage("Intro/ContinueButton");` |
+| Atualizar a HUD de loading | `ILoadingPresentationService.SetProgress(signature, snapshot)` | `void` | `loadingPresentation.SetProgress(signature, snapshot);` |
 
 ## Como pensar o fluxo atual
 
@@ -36,6 +38,8 @@ Ele nao promove como API principal:
 - Navigation resolve `routeRef + transitionStyleRef`.
 - `TransitionStyleAsset` resolve `profileRef + useFade`.
 - `SceneTransitionProfile` e asset leaf visual.
+- `LoadingHudScene` e a HUD canonica de loading do macro flow.
+- `ILoadingPresentationService` cuida apenas da apresentacao de loading.
 - `IntroStage` e level-owned e opcional.
 - `PostGame` e global.
 - O level atual pode apenas complementar o `PostGame` global com um hook opcional.
@@ -166,6 +170,34 @@ using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime;
 introStageControl.CompleteIntroStage("Intro/ContinueButton");
 ```
 
+### `ILoadingPresentationService`
+
+Use quando um owner de pipeline precisa apenas apresentar loading no macro flow atual.
+
+```csharp
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
+
+public interface ILoadingPresentationService
+{
+    Task EnsureReadyAsync(string signature);
+    void Show(string signature, string phase, string message = null);
+    void Hide(string signature, string phase);
+    void SetMessage(string signature, string message, string phase = null);
+    void SetProgress(string signature, LoadingProgressSnapshot snapshot);
+}
+```
+
+Use quando:
+- um owner de fluxo precisa garantir que a `LoadingHudScene` esteja carregada
+- o pipeline precisa mostrar ou esconder a HUD sem delegar ownership
+- voce quer empurrar `LoadingProgressSnapshot` para barra, porcentagem, etapa e spinner
+
+Nao use para:
+- decidir se a transicao macro deve acontecer
+- substituir `SceneTransitionService`, `WorldLifecycle` ou `LevelFlow`
+- inventar progresso por tempo
+
 ## Assets canonicos atuais
 
 Paths canonicos confirmados em `Assets/Resources/**`:
@@ -183,6 +215,10 @@ Outros assets canonicos usados por esses arquivos:
 - `SceneRouteDefinitionAsset`
 - `LevelDefinitionAsset`
 - `SceneTransitionProfile`
+
+Asset visual canonico do loading:
+- `Assets/_ImmersiveGames/Scenes/LoadingHudScene.unity`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Assets/LoadingSpinner.png`
 
 ## Contratos publicos de configuracao
 
@@ -264,6 +300,82 @@ O que esperar:
 - `additiveScenes` e obrigatorio e nao pode ficar vazio
 - a intro e apenas opcional
 - o post hook e apenas complementar ao `PostGame` global
+
+## Loading de producao no macro flow
+
+### O que e a `LoadingHudScene`
+
+`LoadingHudScene` e a HUD canonica de loading do macro flow atual. Ela entra como cena aditiva de apresentacao para cobrir:
+- `startup`
+- `menu -> gameplay`
+- `gameplay -> menu`
+- `restart macro`
+
+Ela mostra:
+- barra de progresso
+- porcentagem numerica
+- etapa atual
+- spinner visual
+
+### O que ela faz
+
+- apresenta visualmente o estado do loading
+- recebe progresso hibrido pelo `ILoadingPresentationService`
+- fica pronta sob demanda e depois permanece carregada para `Show/Hide`
+
+### O que ela NAO faz
+
+- nao decide a navegacao
+- nao executa reset de mundo
+- nao prepara level
+- nao substitui fade, gates ou transition
+- nao usa progresso fake baseado so em tempo
+
+### Como o progresso funciona hoje
+
+O progresso e hibrido:
+- parte real: operacoes assincronas de load e unload de cena no `SceneTransitionService` via `SceneFlowRouteLoadingProgressEvent`
+- parte por marcos: `LoadingProgressOrchestrator` fecha o restante por etapas ponderadas de reset, prepare e finalizacao
+
+Pesos observados hoje:
+- gameplay:
+  - operacoes de rota: `0.55`
+  - prepare de level: `0.15`
+  - reset de mundo: `0.20`
+  - finalizacao: `0.05`
+  - fechamento real em `1.00`
+- frontend e startup:
+  - operacoes de rota: `0.80`
+  - finalizacao: `0.15`
+  - fechamento real em `1.00`
+
+### Binding obrigatorio da HUD
+
+O `LoadingHudController` atual exige:
+- `Canvas`
+- `CanvasGroup`
+- `TMP_Text loadingText`
+- `TMP_Text progressPercentText`
+- `Image progressFillImage`
+- `GameObject spinnerVisual`
+- `RectTransform spinnerTransform`
+
+O que esperar:
+- se qualquer referencia obrigatoria faltar, o binding falha cedo
+- se a `LoadingHudScene` nao estiver no build ou o root nao existir, o servico falha explicitamente
+
+### Passo a passo
+
+1. `SceneTransitionService` continua owner da timeline macro.
+2. `LoadingHudOrchestrator` observa o inicio da transicao.
+3. O `ILoadingPresentationService` garante a `LoadingHudScene` pronta e mostra a HUD.
+4. `LoadingProgressOrchestrator` empurra snapshots de progresso.
+5. A HUD atualiza barra, porcentagem, etapa e spinner.
+6. Ao final real da transicao, a HUD vai para `100%`, mostra `Ready` e some.
+
+### Erro comum
+
+Tratar o loading como dono do fluxo ou esperar progresso puramente temporal. Hoje a HUD so apresenta; a decisao continua em `SceneFlow + WorldLifecycle + LevelFlow`.
 
 ## Receita: criar uma rota nova do zero
 
@@ -566,6 +678,7 @@ public async Task OnPlayPressedAsync(ILevelFlowRuntimeService levelFlow, Cancell
 
 ### O que esperar
 - SceneFlow entra na rota de gameplay
+- o loading de producao entra como HUD de apresentacao do macro flow
 - level default e preparado
 - intro opcional roda se o level atual expuser intro
 - gameplay entra em `Playing`
@@ -605,6 +718,7 @@ public async Task OnRestartPressedAsync(IPostLevelActionsService postLevelAction
 
 ### O que esperar
 - o fluxo publica `GameResetRequestedEvent`
+- o loading de producao cobre o restart macro quando esse trilho entra em macro transition
 - `Restart` nao passa pelo post hook do level
 - a run reinicia pelo trilho de reset/restart
 
@@ -644,6 +758,7 @@ public async Task OnExitPressedAsync(IPostLevelActionsService postLevelActions, 
 
 ### O que esperar
 - o fluxo publica `GameExitToMenuRequestedEvent`
+- o loading de producao cobre a saida macro para menu
 - o `PostGame` global formaliza `Exit` quando aplicavel
 - se o level atual expuser hook opcional, ele apenas complementa a saida global
 
@@ -719,6 +834,15 @@ O que fazer:
 - trate `TransitionStyleAsset` como owner estrutural
 - use nomes apenas para leitura humana e logs
 
+### Loading
+Erro comum:
+- esperar que a HUD de loading substitua o pipeline ou que a porcentagem venha so de tempo
+
+O que fazer:
+- trate `LoadingHudScene` como apresentacao do macro flow
+- deixe `SceneTransitionService`, `WorldLifecycle` e `LevelFlow` decidirem o pipeline
+- use o progresso hibrido atual
+
 ### Level
 Erro comum:
 - criar `LevelDefinitionAsset` sem `additiveScenes` ou esquecer de colocá-lo na `LevelCollectionAsset`
@@ -757,6 +881,7 @@ O que fazer:
 - `GameNavigationCatalogAsset` com slots core validos
 - rota `Gameplay` com `levelCollection`
 - `TransitionStyleAsset` com `profileRef`
+- `LoadingHudScene` presente no build e binding da HUD completo
 - `LevelCollectionAsset` com levels ordenados e sem duplicatas
 - `LevelDefinitionAsset` com `additiveScenes` validas
 - flags corretas de `hasIntroStage` e `hasPostGameReactionHook`
@@ -771,6 +896,7 @@ Se voce quer usar os modulos principais em producao hoje:
 - use `ILevelFlowRuntimeService` para abrir gameplay e trocar level local
 - use `IGameNavigationService` para menu e navegacao macro
 - use `IGameCommands` e `IPostLevelActionsService` para comandos de run e acoes do contexto atual
+- trate `LoadingHudScene` como HUD canonica do macro flow, sempre em apresentacao apenas
 - use `IActorGroupRearmOrchestrator` para rearm local de atores
 - use os hooks operacionais para integrar UI e systems
 - mantenha `IntroStage` level-owned e `PostGame` global

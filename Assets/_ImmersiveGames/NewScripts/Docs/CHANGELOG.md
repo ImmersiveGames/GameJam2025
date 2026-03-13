@@ -1,5 +1,9 @@
-# Changelog - Docs
+﻿# Changelog - Docs
 
+## 2026-03-12 - loading docs closeout
+- promoveu o loading de producao para a documentacao oficial atual, sem criar superficie paralela
+- documentou `LoadingHudScene` como HUD canonica do macro flow e `ILoadingPresentationService` como owner da apresentacao
+- alinhou guia principal, modulo de `SceneFlow`, canon, `LATEST` e HTML com barra, porcentagem, etapa, spinner e progresso hibrido
 ## 2026-03-12 - production guides full practical deepening
 - aprofundou os guias canonicos de producao com receitas do zero para routes, styles, startup, levels, intro, post hook, ActorGroupRearm e chamadas reais de runtime
 - ampliou a referencia de hooks com publisher atual, momento do fluxo, uso real, mini exemplos, quando usar e quando nao usar para os hooks operacionais principais
@@ -121,3 +125,4 @@ All notable documentation changes to NewScripts are documented in this file.
 ## 2026-01-03
 - adicionou `Reports/Baseline-Audit-2026-01-03.md`
 - atualizou `README.md`, `WORLD_LIFECYCLE.md`, ADR-0014 e docs de QA para alinhamento do reset por `ActorKind`
+

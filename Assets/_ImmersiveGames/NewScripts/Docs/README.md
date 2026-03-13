@@ -1,4 +1,4 @@
-# NewScripts Docs
+﻿# NewScripts Docs
 
 Esta pasta documenta o estado operacional atual de `Assets/_ImmersiveGames/NewScripts/**`.
 
@@ -34,6 +34,7 @@ Camada visual completa em HTML:
 Regra:
 - o Markdown continua sendo a fonte canonica
 - o HTML replica o conteudo operacional principal em formato visual, sem trocar a fonte de verdade
+- o loading de producao aparece nessa mesma cadeia principal: guia canonico + modulo de `SceneFlow` + camada visual HTML
 
 ## Estado atual resumido
 
@@ -43,6 +44,8 @@ Regra:
 - `GameNavigationCatalogAsset` e o asset canonico de navigation.
 - `TransitionStyleAsset` e o asset canonico de style.
 - `SceneTransitionProfile` e asset leaf visual.
+- `LoadingHudScene` e a HUD canonica de loading do macro flow.
+- `ILoadingPresentationService` e `LoadingHudService` cuidam apenas da apresentacao de loading.
 - `IntroStage` e level-owned e opcional.
 - `PostGame` e global, com resultados formais `Victory`, `Defeat` e `Exit`.
 - `Restart` nao passa por post hook.
@@ -56,5 +59,6 @@ Historico remanescente existe apenas para rastreabilidade em:
 - `Docs/ADRs/**` vigentes
 - `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
 - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+- `Docs/Reports/Audits/2026-03-12/LOADING-DOCS-CLOSEOUT.md`
 
 Qualquer outro documento fora da cadeia oficial deve ser lido como historico arquivado, nao como guia operacional atual.

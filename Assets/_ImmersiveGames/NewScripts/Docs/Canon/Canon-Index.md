@@ -1,4 +1,4 @@
-# Canon Index
+﻿# Canon Index
 
 Este indice resume owners e contratos canonicos vigentes.
 
@@ -12,6 +12,7 @@ Este indice resume owners e contratos canonicos vigentes.
 | Transition style | `TransitionStyleAsset` | style estrutural por `profileRef + useFade` |
 | Transition profile | `SceneTransitionProfile` | asset leaf visual |
 | SceneFlow runtime | `SceneTransitionService` | timeline de transicao, fases e gates |
+| Loading macro | `LoadingHudScene` + `ILoadingPresentationService` + `LoadingHudService` | HUD canonica do macro flow; apresentacao de barra, porcentagem, etapa e spinner |
 | Level prepare/swap | `LevelMacroPrepareService` + `LevelSwapLocalService` | prepare macro e troca local de level |
 | IntroStage | `LevelStageOrchestrator` + `ILevelStagePresentationService` | intro opcional por level, orquestrada globalmente |
 | PostGame | `GameLoopService` + `PostGameOwnershipService` + `PostGameResultService` | post global com `Victory`, `Defeat` e `Exit` |
@@ -26,6 +27,7 @@ Este indice resume owners e contratos canonicos vigentes.
 - A docs oficial conta uma unica historia operacional atual.
 - Guias e modulos devem concordar com os ADRs vigentes e com o runtime validado em `Docs/Reports/lastlog.log`.
 - Historico nao substitui contrato atual.
+- `LoadingHudScene` faz parte do estado atual oficial: apresentacao canonica do macro flow, sem ownership do pipeline.
 
 ## Cadeia oficial
 
