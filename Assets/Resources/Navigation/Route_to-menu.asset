@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Route_to-menu
   m_EditorClassIdentifier: 
   routeId:
-    _value: to-menu
+    value: to-menu
   scenesToLoadKeys:
   - {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
   - {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
@@ -23,3 +23,4 @@ MonoBehaviour:
   targetActiveSceneKey: {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
   routeKind: 1
   requiresWorldReset: 0
+  levelCollection: {fileID: 0}

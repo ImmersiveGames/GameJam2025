@@ -1,4 +1,9 @@
-﻿# Changelog - Docs
+# Changelog - Docs
+
+## 2026-03-13 - baseline v3 official freeze
+- promoveu oficialmente o Baseline V3 para `PASS` com freeze canonico em `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
+- alinhou `README`, `Canon`, `LATEST`, `Plan-Continuous` e `CHANGELOG` para apontarem para o mesmo estado atual
+- registrou que `Menu -> Gameplay` segue canonico, `Victory/Defeat` permanecem mockados de forma explicita e controlada, `PostGame` segue desacoplado de `IntroStage` e `Restart` continua fora do post
 
 ## 2026-03-12 - loading docs closeout
 - promoveu o loading de producao para a documentacao oficial atual, sem criar superficie paralela

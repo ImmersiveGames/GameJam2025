@@ -1,19 +1,28 @@
-﻿# Latest Audit
+# Latest Audit
 
-Documento operacional vigente: `Docs/Reports/Audits/2026-03-12/LOADING-DOCS-CLOSEOUT.md`.
+Fechamento operacional vigente do Baseline V3:
+- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-BLOCKERS-FIX.md`
+- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-OUTCOME-MOCK-FIX.md`
+- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-CLOSEOUT.md`
+- `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
 
-## Fechamento vigente
+## Estado vigente
 
-- A superficie documental principal reflete apenas o estado operacional atual.
-- Guias, canon, modulos, ADRs vigentes e `LATEST` contam a mesma historia.
-- O runtime validado confirma:
-  - `startup` no bootstrap
-  - `frontend/gameplay` em `RouteKind`
-  - navigation/transition em direct-ref + fail-fast
-  - `LoadingHudScene` como HUD canonica de loading do macro flow
-  - `ILoadingPresentationService` e `LoadingHudService` como apresentacao apenas
-  - `IntroStage` level-owned e opcional
-  - `PostGame` global com `Victory`, `Defeat` e `Exit`
-  - `Restart` fora do post hook
+- O Baseline V3 atual esta fechado em `PASS`.
+- A superficie documental principal aponta para o estado atual consolidado, sem reabrir historico como contrato vigente.
+- O smoke/runtime validado para esta promocao cobre:
+  - `startup`
+  - `menu`
+  - `play`
+  - `gameplay`
+  - `intro`
+  - `playing`
+  - `pause/resume`
+  - `victory`
+  - `postgame`
+  - `restart`
+  - `defeat`
+  - `exit to menu`
 
-Use este arquivo como ponte para o fechamento final atual.
+Use este arquivo como ponte curta para os relatorios finais da rodada.
+
