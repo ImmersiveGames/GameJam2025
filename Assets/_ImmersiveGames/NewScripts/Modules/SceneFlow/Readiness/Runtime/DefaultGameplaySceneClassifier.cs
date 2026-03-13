@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             return string.Equals(activeScene.name, FallbackGameplaySceneName, StringComparison.Ordinal);
         }
 
-        private static bool HasMarkerInScene(UnityEngine.SceneManagement.Scene scene)
+        private static bool HasMarkerInScene(Scene scene)
         {
             GameObject[] roots = scene.GetRootGameObjects();
             if (roots == null || roots.Length == 0)

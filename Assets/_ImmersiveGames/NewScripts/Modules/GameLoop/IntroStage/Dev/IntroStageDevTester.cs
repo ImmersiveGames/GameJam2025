@@ -1,9 +1,9 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
     /// <summary>
     /// QA helper para:
     /// - Disparar IntroStageController manualmente (sem depender do SceneFlow).
-    /// - Forçar Complete/Skip da IntroStageController (o gatilho canônico que destrava o gameplay).
+    /// - Forcar Complete/Skip da IntroStageController (o gatilho canonico que destrava o gameplay).
     /// - (Opcional) Auto-Complete com delay usando Coroutine (main thread), evitando Task/threads.
     /// </summary>
     [DisallowMultipleComponent]
@@ -33,14 +33,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
             if (coordinator == null)
             {
                 DebugUtility.LogWarning<IntroStageDevTester>(
-                    "[QA][IntroStageController] IIntroStageCoordinator não encontrado no DI global.");
+                    "[QA][IntroStageController] IIntroStageCoordinator nao encontrado no DI global.");
                 return;
             }
 
             string? activeScene = SceneManager.GetActiveScene().name;
             var context = new IntroStageContext(
                 contextSignature: qaSignature,
-                profileId: SceneFlowProfileId.Gameplay,
+                routeKind: SceneRouteKind.Gameplay,
                 targetScene: activeScene,
                 reason: qaReason);
 
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
             if (control == null)
             {
                 DebugUtility.LogWarning<IntroStageDevTester>(
-                    "[QA][IntroStageController] IIntroStageControlService não encontrado no DI global; Complete ignorado.");
+                    "[QA][IntroStageController] IIntroStageControlService nao encontrado no DI global; Complete ignorado.");
                 return;
             }
 
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
             if (control == null)
             {
                 DebugUtility.LogWarning<IntroStageDevTester>(
-                    "[QA][IntroStageController] IIntroStageControlService não encontrado no DI global; Skip ignorado.");
+                    "[QA][IntroStageController] IIntroStageControlService nao encontrado no DI global; Skip ignorado.");
                 return;
             }
 
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Dev
             if (control == null)
             {
                 DebugUtility.LogWarning<IntroStageDevTester>(
-                    "[QA][IntroStageController] IIntroStageControlService indisponível; Auto-Complete abortado.");
+                    "[QA][IntroStageController] IIntroStageControlService indisponivel; Auto-Complete abortado.");
                 _autoCompleteRoutine = null;
                 yield break;
             }

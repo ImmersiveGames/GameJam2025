@@ -1,52 +1,50 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+﻿using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Evento canônico V2 para observabilidade explícita de reset (macro x level).
-    /// Mantém compatibilidade com o evento legado usado pelo gate do SceneFlow.
+    /// Evento V2 de telemetria/observabilidade de reset.
+    /// V1 continua sendo o plano de gate/correlacao do SceneFlow.
     /// </summary>
     public readonly struct WorldLifecycleResetRequestedV2Event : IEvent
     {
         public WorldLifecycleResetRequestedV2Event(
             ResetKind kind,
             SceneRouteId macroRouteId,
-            LevelId levelId,
-            string contentId,
             string reason,
             string macroSignature,
             LevelContextSignature levelSignature)
         {
             Kind = kind;
             MacroRouteId = macroRouteId;
-            LevelId = levelId;
-            ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
-            MacroSignature = string.IsNullOrWhiteSpace(macroSignature) ? string.Empty : macroSignature.Trim();
+            Reason = Normalize(reason);
+            MacroSignature = Normalize(macroSignature);
             LevelSignature = levelSignature;
         }
 
         public ResetKind Kind { get; }
         public SceneRouteId MacroRouteId { get; }
-        public LevelId LevelId { get; }
-        public string ContentId { get; }
         public string Reason { get; }
         public string MacroSignature { get; }
         public LevelContextSignature LevelSignature { get; }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
     }
 
     /// <summary>
-    /// Evento canônico V2 de conclusão de reset (macro x level).
+    /// Evento V2 de conclusao de reset para telemetria/observabilidade.
+    /// V1 continua sendo o plano de gate/correlacao do SceneFlow.
     /// </summary>
     public readonly struct WorldLifecycleResetCompletedV2Event : IEvent
     {
         public WorldLifecycleResetCompletedV2Event(
             ResetKind kind,
             SceneRouteId macroRouteId,
-            LevelId levelId,
-            string contentId,
             string reason,
             string macroSignature,
             LevelContextSignature levelSignature,
@@ -55,23 +53,24 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
         {
             Kind = kind;
             MacroRouteId = macroRouteId;
-            LevelId = levelId;
-            ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
-            MacroSignature = string.IsNullOrWhiteSpace(macroSignature) ? string.Empty : macroSignature.Trim();
+            Reason = Normalize(reason);
+            MacroSignature = Normalize(macroSignature);
             LevelSignature = levelSignature;
             Success = success;
-            Notes = string.IsNullOrWhiteSpace(notes) ? string.Empty : notes.Trim();
+            Notes = Normalize(notes);
         }
 
         public ResetKind Kind { get; }
         public SceneRouteId MacroRouteId { get; }
-        public LevelId LevelId { get; }
-        public string ContentId { get; }
         public string Reason { get; }
         public string MacroSignature { get; }
         public LevelContextSignature LevelSignature { get; }
         public bool Success { get; }
         public string Notes { get; }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
     }
 }

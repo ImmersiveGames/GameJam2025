@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         private readonly Dictionary<Type, StateNode> _nodes = new();
         private readonly HashSet<OldTransition> _anyTransitions = new();
 
-        public OldIState CurrentState => _currentNode?.State;
+        public IOldIState CurrentState => _currentNode?.State;
 
         public void Update() {
             var transition = GetTransition();
@@ -24,13 +24,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             _currentNode?.State?.FixedUpdate();
         }
 
-        public void SetState(OldIState state) {
+        public void SetState(IOldIState state) {
             var node = GetNodeOrThrow(state.GetType());
             _currentNode = node;
             _currentNode.State?.OnEnter();
         }
 
-        private void ChangeState(OldIState state) {
+        private void ChangeState(IOldIState state) {
             if (_currentNode != null && state == _currentNode.State)
                 return;
 
@@ -44,15 +44,15 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             nextState?.OnEnter();
         }
 
-        public void AddTransition<T>(OldIState from, OldIState to, T condition) {
+        public void AddTransition<T>(IOldIState from, IOldIState to, T condition) {
             GetOrAddNode(from).AddTransition(GetOrAddNode(to).State, condition);
         }
 
-        public void AddAnyTransition<T>(OldIState to, T condition) {
+        public void AddAnyTransition<T>(IOldIState to, T condition) {
             _anyTransitions.Add(new OldTransition<T>(GetOrAddNode(to).State, condition));
         }
 
-        public void RegisterState(OldIState state) {
+        public void RegisterState(IOldIState state) {
             Preconditions.CheckNotNull(state, "Estado não pode ser nulo.");
             GetOrAddNode(state);
         }
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             return null;
         }
 
-        private StateNode GetOrAddNode(OldIState state) {
+        private StateNode GetOrAddNode(IOldIState state) {
             var node = _nodes.GetValueOrDefault(state.GetType());
             if (node == null) {
                 node = new StateNode(state);
@@ -91,15 +91,15 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         }
 
         private class StateNode {
-            public OldIState State { get; }
+            public IOldIState State { get; }
             public HashSet<OldTransition> Transitions { get; }
 
-            public StateNode(OldIState state) {
+            public StateNode(IOldIState state) {
                 State = state;
                 Transitions = new HashSet<OldTransition>();
             }
 
-            public void AddTransition<T>(OldIState to, T predicate) {
+            public void AddTransition<T>(IOldIState to, T predicate) {
                 Transitions.Add(new OldTransition<T>(to, predicate));
             }
         }

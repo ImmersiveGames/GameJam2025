@@ -38,17 +38,15 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 // Como este caminho não passa pelo SceneFlow, usamos uma assinatura manual correlacionável.
                 string signature = $"directReset:scene={activeScene};src={normalizedSource}";
                 DebugUtility.LogVerbose(typeof(WorldResetRequestService),
-                    $"[OBS][WorldLifecycle] ResetRequested signature='{signature}' sourceSignature='{signature}' profile='{WorldResetReasons.ManualProfile}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
+                    $"[OBS][WorldLifecycle] ResetRequested signature='{signature}' sourceSignature='{signature}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
                     DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
                     contextSignature: signature,
                     reason: reason,
-                    profileName: WorldResetReasons.ManualProfile,
                     targetScene: activeScene,
                     origin: WorldResetOrigin.Manual,
-                    sourceSignature: signature,
-                    isGameplayProfile: true);
+                    sourceSignature: signature);
 
                 if (DependencyManager.HasInstance &&
                     DependencyManager.Provider.TryGetGlobal<IWorldResetService>(out var resetService) &&
@@ -80,5 +78,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
     }
 }
+
+
+
 
 

@@ -1,40 +1,72 @@
-# NewScripts — Docs
+# NewScripts Docs
 
-Este diretório é o **ponto de entrada** para documentação do módulo **NewScripts**.
+Esta pasta documenta o estado operacional atual de `Assets/_ImmersiveGames/NewScripts/**`.
 
-## Como navegar (ordem sugerida)
+## Superficie oficial vigente
 
-1) **Visão geral**
-- `Overview/Overview.md`
+Leia nesta ordem:
+1. `Docs/Canon/Canon-Index.md`
+2. `Docs/Guides/Production-How-To-Use-Core-Modules.md`
+3. `Docs/Guides/Event-Hooks-Reference.md`
+4. `Docs/Modules/SceneFlow.md`
+5. `Docs/Modules/Navigation.md`
+6. `Docs/Modules/LevelFlow.md`
+7. `Docs/Modules/GameLoop.md`
+8. `Docs/Modules/Gameplay.md`
+9. `Docs/Modules/WorldLifecycle.md`
+10. `Docs/Modules/InputModes.md`
+11. `Docs/ADRs/README.md`
+12. `Docs/Reports/Audits/LATEST.md`
+13. `Docs/Reports/Evidence/LATEST.md`
+14. `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
+15. `Docs/Plans/Plan-Continuous.md`
+16. `Docs/CHANGELOG.md`
 
-2) **Contratos e políticas de produção (fonte canônica)**
-- `Standards/Standards.md#observability-contract` — formato de logs, anchors e campos canônicos (`reason`, `signature`, `profile`, `target`).
-- `Standards/Standards.md#politica-strict-vs-release` — política **Strict vs Release** e definição de **DEGRADED_MODE**.
-- `Reports/Evidence/README.md` — como produzir e arquivar evidências datadas (baseline, auditorias, etc).
-- `Standards/Standards.md#reason-map-legado` — redirect legado para o contrato (não manter lista paralela).
+## Guias de uso
 
-3) **Decisões de arquitetura (ADRs)**
-- `ADRs/README.md` (índice + guia)
-- `ADRs/ADR-TEMPLATE.md` (template — implementação)
-- `ADRs/ADR-TEMPLATE-COMPLETENESS.md` (template — completude/governança)
+Fonte canonica em Markdown:
+- `Docs/Guides/Production-How-To-Use-Core-Modules.md`
+- `Docs/Guides/Event-Hooks-Reference.md`
 
-4) **Relatórios (evidência e auditorias)**
-- `Reports/Evidence/` — evidências canônicas, incluindo `LATEST.md`.
-- `Reports/lastlog.log` — log bruto mais recente (evidência rápida).
-- `Reports/Audits/` — auditorias estáticas (ex.: sync ADR↔código, invariants, etc).
+Camada visual completa em HTML:
+- `Docs/Guides/Manual-Operacional.html`
+- `Docs/Guides/Hooks-Reference.html`
 
-5) **Guias operacionais**
-- `Guides.md` — HowTo + Checklists consolidados.
+Regra:
+- o Markdown continua sendo a fonte canonica
+- o HTML replica o conteudo operacional principal em formato visual, sem trocar a fonte de verdade
+- o loading de producao aparece nessa mesma cadeia principal: guia canonico + modulo de `SceneFlow` + camada visual HTML
 
-6) **Planos e WIP**
-- `Plans/` — planos de execução atuais (work-in-progress).
-- `Plans/Archive-Plano-2.2.md` — plano histórico (referência).
+## Estado atual resumido
 
-## Regra operacional
+- Baseline V3 vigente fechado em `PASS`.
+- A referencia canonica atual de evidence e `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`.
+- A evidencia runtime vigente desta promocao permanece em `Docs/Reports/lastlog.log`.
+- `startup` pertence ao bootstrap.
+- `frontend` e `gameplay` pertencem a `SceneRouteKind`.
+- Navigation e transition operam por direct-ref + fail-fast.
+- `GameNavigationCatalogAsset` e o asset canonico de navigation.
+- `TransitionStyleAsset` e o asset canonico de style.
+- `SceneTransitionProfile` e asset leaf visual.
+- `LoadingHudScene` e a HUD canonica de loading do macro flow.
+- `ILoadingPresentationService` e `LoadingHudService` cuidam apenas da apresentacao de loading.
+- `IntroStage` e level-owned e opcional.
+- `PostGame` e global, com resultados formais `Victory`, `Defeat` e `Exit`.
+- `Restart` nao passa por post hook.
+- O level atual pode expor apenas um hook opcional para complementar o `PostGame` global.
+- `ActorGroupRearm` e a nomenclatura canonica de rearm local de gameplay.
+- `Victory/Defeat` fazem parte do baseline atual por mock explicito e controlado.
 
-- **CODEX é usado apenas para auditorias** (varredura/diagnóstico). Veja: `Standards/Standards.md#politica-de-uso-do-codex`.
-- Implementações e correções **devem** referenciar: ADR(s) + política Strict/Release + contrato de observabilidade + evidência datada.
+## Historico que permanece
 
-## Atalhos
+Historico remanescente existe apenas para rastreabilidade em:
+- `Docs/CHANGELOG.md`
+- `Docs/ADRs/**` vigentes
+- `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
+- `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+- `Docs/Reports/Audits/2026-03-12/LOADING-DOCS-CLOSEOUT.md`
+- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-BLOCKERS-FIX.md`
+- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-OUTCOME-MOCK-FIX.md`
 
-- **Checklist de completude ideal (ADRs 0009–0019):** `Standards/Standards.md#checklist-adrs`
+Qualquer outro documento fora da cadeia oficial deve ser lido como historico arquivado, nao como guia operacional atual.
+

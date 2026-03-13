@@ -1,20 +1,20 @@
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Tags;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {
     /// <summary>
-    /// Responsável por controlar a marcação visual e lógica de um planeta.
+    /// Responsï¿½vel por controlar a marcaï¿½ï¿½o visual e lï¿½gica de um planeta.
     ///
     /// Regras:
     /// - Ativa/desativa a FlagMarkPlanet associada.
     /// - Emite PlanetMarkedEvent / PlanetUnmarkedEvent.
-    /// - Íntegra com PlanetMarkingManager para garantir que exista
-    ///   no máximo um planeta marcado ao mesmo tempo.
+    /// - ï¿½ntegra com PlanetMarkingManager para garantir que exista
+    ///   no mï¿½ximo um planeta marcado ao mesmo tempo.
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/Planet Systems/Mark Planet")]
@@ -29,14 +29,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
         public IActor PlanetActor => _planetActor?.PlanetActor;
 
         /// <summary>
-        /// Indica se este planeta está atualmente marcado.
-        /// A marcação é controlada pelos métodos Mark/Unmark/ToggleMark.
+        /// Indica se este planeta estï¿½ atualmente marcado.
+        /// A marcaï¿½ï¿½o ï¿½ controlada pelos mï¿½todos Mark/Unmark/ToggleMark.
         /// </summary>
         public bool IsMarked { get; private set; }
 
         /// <summary>
-        /// Referência à flag visual (ex.: ícone, bandeira) exibida
-        /// quando o planeta está marcado.
+        /// Referï¿½ncia ï¿½ flag visual (ex.: ï¿½cone, bandeira) exibida
+        /// quando o planeta estï¿½ marcado.
         /// </summary>
         private FlagMarkPlanet FlagMark { get; set; }
 
@@ -47,13 +47,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
             if (_planetActor == null)
             {
                 DebugUtility.LogError<MarkPlanet>(
-                    $"Componente IPlanetActor não encontrado em {gameObject.name}",
+                    $"Componente IPlanetActor nï¿½o encontrado em {gameObject.name}",
                     this);
                 return;
             }
 
             IsMarked = false;
-            // A flag não é buscada no Awake; será localizada sob demanda.
+            // A flag nï¿½o ï¿½ buscada no Awake; serï¿½ localizada sob demanda.
         }
 
         /// <summary>
@@ -100,14 +100,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
             if (IsMarked)
             {
                 DebugUtility.LogVerbose<MarkPlanet>(
-                    $"Planeta {gameObject.name} já está marcado");
+                    $"Planeta {gameObject.name} jï¿½ estï¿½ marcado");
                 return;
             }
 
             if (!EnsureFlagMark())
             {
                 DebugUtility.LogError<MarkPlanet>(
-                    $"Não é possível marcar - FlagMark não encontrada em {gameObject.name}",
+                    $"Nï¿½o ï¿½ possï¿½vel marcar - FlagMark nï¿½o encontrada em {gameObject.name}",
                     this);
                 return;
             }
@@ -129,14 +129,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
             if (!IsMarked)
             {
                 DebugUtility.LogVerbose<MarkPlanet>(
-                    $"Planeta {gameObject.name} já não está marcado");
+                    $"Planeta {gameObject.name} jï¿½ nï¿½o estï¿½ marcado");
                 return;
             }
 
             if (!EnsureFlagMark())
             {
                 DebugUtility.LogError<MarkPlanet>(
-                    $"Não é possível desmarcar - FlagMark não encontrada em {gameObject.name}",
+                    $"Nï¿½o ï¿½ possï¿½vel desmarcar - FlagMark nï¿½o encontrada em {gameObject.name}",
                     this);
                 return;
             }
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
         }
 
         /// <summary>
-        /// Alterna o estado de marcação deste planeta.
+        /// Alterna o estado de marcaï¿½ï¿½o deste planeta.
         /// </summary>
         public void ToggleMark()
         {
@@ -169,8 +169,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
         }
 
         /// <summary>
-        /// Força uma nova busca pela FlagMarkPlanet.
-        /// Útil se a flag for adicionada dinamicamente em runtime.
+        /// Forï¿½a uma nova busca pela FlagMarkPlanet.
+        /// ï¿½til se a flag for adicionada dinamicamente em runtime.
         /// </summary>
         public void RefreshFlagMark()
         {

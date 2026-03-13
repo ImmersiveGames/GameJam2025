@@ -1,82 +1,44 @@
-# ADR-0023 — Dois Níveis de Reset: MacroReset vs LevelReset
+# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
+
+## Status atual (2026-03-11)
+- Status: **DONE**
+- Implementado no codigo:
+  - `MacroRestartCoordinator` e owner unico de `GameResetRequestedEvent` com coalescing/debounce.
+  - `GameLoopCommandEventBridge` sem reset listener.
+  - `RestartNavigationBridge` nao participa do runtime canonico atual.
+  - `ResetMacroAsync(...)` permanece no dominio macro.
+  - `ResetLevelAsync(...)` canonico recebe `LevelDefinitionAsset levelRef`.
+  - `WorldLifecycle V2` ja nao promove `levelId/contentId` como shape principal de telemetria.
+  - `Gameplay ActorGroupRearm` foi consolidado como soft reset local canonico por grupo de atores.
+- Evidencia:
+  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+  - `Docs/Reports/lastlog.log`
 
 ## Status
 
-- Estado: Proposto
-- Data (decisão): 2026-02-19
-- Última atualização: 2026-02-19
-- Tipo: Implementação
-- Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
+- Estado: **Aceito (Implementado)**
+- Data (decisao): 2026-02-19
+- Ultima atualizacao: 2026-03-12
 
+## Decisao canonica atual
 
-## Contexto
+- `ResetMacroAsync(...)` permanece no dominio macro.
+- `ResetLevelAsync(...)` canonico recebe `LevelDefinitionAsset levelRef`.
+- `contentId='level-ref:...'` no reset e token de operacao, nao identidade de negocio.
+- `WorldLifecycle V1` continua sendo gate/correlacao do SceneFlow.
+- `WorldLifecycle V2` continua sendo telemetria/observabilidade.
+- O reset local/gameplay passa por `ActorGroupRearm` canonico por grupo de atores, centrado em `ByActorKind`.
 
-O fluxo atual faz reset “macro” (WorldLifecycle/WorldResetService) acoplado ao SceneFlow quando entra em Gameplay.  
-Com Levels reais (não-alias), surge a necessidade de dois resets com semânticas diferentes:
+## Evidencia (log)
 
-- **MacroReset**: reinicia o “espaço macro” (ex.: Gameplay) e retorna ao estado inicial do macro (inclui voltar ao level inicial).
-- **LevelReset**: reinicia o *mesmo* level atual (ex.: Level 3) ao seu estado inicial, sem trocar de macro e sem alterar seleção macro.
+- `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
+- `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
+- `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
+- `lastlog:1685` `[OBS][Navigation] MacroRestartStart runId='1' effectiveReason='PostGame/Restart#r1'`
+- `lastlog:2033` `[OBS][LevelFlow] LevelDefaultSelected ... levelRef='Level1' reason='PostGame/Restart#r1'`
 
-Sem distinção explícita, o sistema tende a:
-- resetar “demais” (voltando para Level 1 quando o usuário queria reset local);
-- ou resetar “de menos” (preservando estado que deveria ter sido refeito no macro).
+## Escopo e excecoes remanescentes
 
-## Decisão
-
-Introduzir dois comandos/contratos explícitos:
-
-1) `ResetMacroAsync(macroRouteId, reason, contextSignature)`
-- Trigger típico: transição macro para Gameplay (SceneFlow).
-- Efeito:
-  - reexecuta pipeline de reset macro (WorldResetService/WorldLifecycle);
-  - seleciona **Level inicial** do catálogo do macro (se existir) e prepara conteúdo;
-  - finaliza gates macro (SceneFlow completion) somente após “macro ready”.
-
-2) `ResetLevelAsync(levelId, reason, levelSignature)`
-- Trigger típico: retry/restart no mesmo level (ex.: morreu e “retry”).
-- Efeito:
-  - mantém MacroRoute constante;
-  - mantém o mesmo levelId selecionado;
-  - descarrega conteúdo do level e recarrega conteúdo inicial do mesmo level;
-  - reexecuta spawns obrigatórios do level (player, inimigos etc.) conforme regras.
-
-### Regras
-
-- **MacroReset implica LevelReset do level inicial** (por definição de “voltar ao começo do macro”).
-- **LevelReset nunca altera** macroRouteId selecionado.
-- `reason` deve identificar domínio:
-  - `reason='SceneFlow/ScenesReady'` (macro) vs `reason='LevelFlow/Retry'` (level).
-
-## Implicações
-
-### Positivas
-- Semântica clara e testável (Baseline 3.0).
-- PostGame/Restart pode escolher explicitamente o tipo de reset.
-- Evita hacks com “trocar route para resetar level”.
-
-### Negativas / custos
-- Exige pontos de integração: Navigation ↔ LevelFlow ↔ WorldLifecycle.
-- Ajuste de QA/Dev menus: ações separadas (Reset Macro / Reset Level).
-
-## Alternativas consideradas
-
-1) **Reset único com flags (`resetScope=Macro|Level`)**  
-Aceitável, mas tende a virar “boolean soup” em APIs e logs; preferimos contratos explícitos.
-
-2) **Reset sempre macro e “simular” reset local com content swap**  
-Rejeitado: perde semântica e acopla demais o Level ao ContentSwap.
-
-## Critérios de aceite (DoD)
-
-- API/fluxo distinguem “MacroReset” e “LevelReset” (telemetria + reason).
-- Evidência (Baseline 3.0):
-  - MacroReset em entrada de Gameplay retorna para level inicial.
-  - LevelReset mantém level atual e reexecuta spawns do mesmo level.
-- Não há regressão nos cenários de Baseline 2.0 (Menu↔Gameplay) — apenas logs adicionais [OBS].
-
-## Referências
-
-- ADR-0014 — GameplayReset targets/grupos
-- ADR-0016 — ContentSwap ↔ WorldLifecycle
-- ADR-0020 — separação MacroRoute vs Level
-- ADR-0021 — Baseline 3.0 (Completeness)
+- O fechamento deste ADR vale para a separacao canonica entre MacroReset e LevelReset no eixo principal.
+- `Gameplay ActorGroupRearm` deixa de ser excecao arquitetural nessa borda: o subsistema agora usa contrato canonico por grupo (`ByActorKind`) e manteve `ActorIdSet` apenas como selecao tecnica explicita.
+- Nao ha mais residuo estrutural de navigation fora do trilho canonico atual.

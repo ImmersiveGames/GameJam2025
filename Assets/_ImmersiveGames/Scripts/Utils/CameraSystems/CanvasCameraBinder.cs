@@ -1,15 +1,15 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 {
     /// <summary>
-    /// Vincula automaticamente a câmera de gameplay (vinda do IOldCameraResolver)
-    /// ao Canvas em modo WorldSpace. Suporta troca de câmera em runtime.
+    /// Vincula automaticamente a cï¿½mera de gameplay (vinda do IOldCameraResolver)
+    /// ao Canvas em modo WorldSpace. Suporta troca de cï¿½mera em runtime.
     /// </summary>
     [RequireComponent(typeof(Canvas))]
     public class CanvasCameraBinder : MonoBehaviour, IResetInterfaces, IResetScopeFilter, IResetOrder
@@ -24,12 +24,12 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 
         #region Reset Ordering / Filtering
 
-        // UI binder pode rebindar depois do player/câmera.
+        // UI binder pode rebindar depois do player/cï¿½mera.
         public int ResetOrder => 50;
 
         public bool ShouldParticipate(ResetScope scope)
         {
-            // Em geral faz sentido em reset amplo; mas permitir PlayersOnly também é seguro.
+            // Em geral faz sentido em reset amplo; mas permitir PlayersOnly tambï¿½m ï¿½ seguro.
             return scope == ResetScope.AllActorsInScene || scope == ResetScope.PlayersOnly;
         }
 
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
             if (!DependencyManager.Provider.TryGetGlobal(out _resolver))
             {
                 DebugUtility.LogError<CanvasCameraBinder>(
-                    $"[{name}] OldCameraResolverService não encontrado. CanvasCameraBinder desativado.",
+                    $"[{name}] OldCameraResolverService nï¿½o encontrado. CanvasCameraBinder desativado.",
                     this);
                 enabled = false;
                 return;
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
             if (cam == null)
             {
                 DebugUtility.LogWarning<CanvasCameraBinder>(
-                    $"[{name}] Nenhuma câmera registrada no OldCameraResolverService.",
+                    $"[{name}] Nenhuma cï¿½mera registrada no OldCameraResolverService.",
                     this);
                 return;
             }

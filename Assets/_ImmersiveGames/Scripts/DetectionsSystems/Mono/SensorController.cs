@@ -1,6 +1,6 @@
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
             if (collection == null)
             {
-                DebugUtility.LogError<SensorController>($"SensorCollection não atribuído em {gameObject.name}");
+                DebugUtility.LogError<SensorController>($"SensorCollection nï¿½o atribuï¿½do em {gameObject.name}");
                 enabled = false;
                 return;
             }

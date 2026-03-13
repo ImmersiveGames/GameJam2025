@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
@@ -11,15 +11,12 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
     /// Controla action maps (Player/UI) alternando entre gameplay, pause overlay e frontend menu.
     ///
     /// Regras de arquitetura:
-    /// - Não existe PlayerInput "global".
-    /// - Em gameplay, podem existir múltiplos PlayerInput (multiplayer).
-    /// - Menu/UI deve funcionar via EventSystem + InputSystemUIInputModule (sem PlayerInput obrigatório).
+    /// - Nao existe PlayerInput "global".
+    /// - Em gameplay, podem existir multiplos PlayerInput (multiplayer).
+    /// - Menu/UI deve funcionar via EventSystem + InputSystemUIInputModule (sem PlayerInput obrigatorio).
     /// </summary>
     public sealed class InputModeService : IInputModeService
     {
-        private const string DefaultPlayerMapName = "Player";
-        private const string DefaultMenuMapName = "UI";
-
         private readonly string _playerMapName;
         private readonly string _menuMapName;
 
@@ -27,8 +24,8 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
 
         public InputModeService(string playerMapName, string menuMapName)
         {
-            _playerMapName = string.IsNullOrWhiteSpace(playerMapName) ? DefaultPlayerMapName : playerMapName;
-            _menuMapName = string.IsNullOrWhiteSpace(menuMapName) ? DefaultMenuMapName : menuMapName;
+            _playerMapName = InputModesDefaults.NormalizeOrDefault(playerMapName, InputModesDefaults.PlayerActionMapName);
+            _menuMapName = InputModesDefaults.NormalizeOrDefault(menuMapName, InputModesDefaults.MenuActionMapName);
         }
 
         public void SetFrontendMenu(string reason) => ApplyMode(InputMode.FrontendMenu, reason);
@@ -43,8 +40,6 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
             _currentMode = mode;
             PlayerInput[] preResolvedInputs = null;
 
-            // Idempotência explícita para evitar ruído no Frontend em SceneFlow/Completed:
-            // se o modo já está ativo, não reaplica nem tenta resolver PlayerInput.
             if (isRepeat && IsFrontendCompletedReason(resolvedReason))
             {
                 DebugUtility.LogVerbose<InputModeService>(
@@ -78,16 +73,13 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
                     DebugUtility.Colors.Info);
             }
 
-            // Menu/Pause = UI map. Gameplay = Player map.
             string targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
-
-            // Multiplayer-safe: aplica em todos os PlayerInput ativos.
             PlayerInput[] inputs = preResolvedInputs ?? FindActivePlayerInputs();
             if (inputs.Length == 0)
             {
                 DebugUtility.LogVerbose<InputModeService>(
                     $"[InputMode] Nenhum PlayerInput ativo encontrado ao aplicar modo '{mode}'. " +
-                    "Isto é esperado em Menu/Frontend. Em Gameplay, verifique se o Player foi spawnado.",
+                    "Isto e esperado em Menu/Frontend. Em Gameplay, verifique se o Player foi spawnado.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -112,10 +104,9 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
 
                 if (!HasActionMap(actions, targetMapName))
                 {
-                    // Action map ausente nesse asset (config).
                     DebugUtility.LogWarning<InputModeService>(
                         $"[InputMode] ActionMap '{targetMapName}' nao encontrada no PlayerInput '{pi.gameObject.name}'.");
-                    anyHandled = true; // já diagnosticou algo útil
+                    anyHandled = true;
                     continue;
                 }
 
@@ -126,9 +117,8 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
 
             if (anyMissingActions)
             {
-                // Esse warning é exatamente o que o seu log mostrou.
                 DebugUtility.LogWarning<InputModeService>(
-                    "[InputMode] PlayerInput encontrado sem 'actions' atribuídas; não é possível alternar action map. " +
+                    "[InputMode] PlayerInput encontrado sem 'actions' atribuidas; nao e possivel alternar action map. " +
                     "Corrija o prefab do Player (PlayerInput -> Actions = seu InputActionAsset).");
                 anyHandled = true;
             }
@@ -141,24 +131,19 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes
                 return;
             }
 
-            // Só cai aqui se inputs[] não estava vazio, mas nada pôde ser processado (caso extremo).
             DebugUtility.LogWarning<InputModeService>(
-                "[InputMode] Nenhum PlayerInput pôde ser processado para alternar action maps (todos nulos/desabilitados/sem actions).");
+                "[InputMode] Nenhum PlayerInput pode ser processado para alternar action maps (todos nulos/desabilitados/sem actions).");
         }
 
         private static PlayerInput[] FindActivePlayerInputs()
         {
-            // Inclui inativos; filtramos por activeInHierarchy.
-            // FindObjectsOfType(true) funciona em versões mais antigas do Unity.
             PlayerInput[] all = Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
             if (all == null || all.Length == 0)
             {
                 return Array.Empty<PlayerInput>();
             }
 
-            // Filtra para ativos.
             int count = all.Count(pi => pi != null && pi.enabled && pi.gameObject.activeInHierarchy);
-
             if (count == 0)
             {
                 return Array.Empty<PlayerInput>();

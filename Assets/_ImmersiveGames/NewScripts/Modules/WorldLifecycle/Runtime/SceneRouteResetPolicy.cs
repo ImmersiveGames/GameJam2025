@@ -2,11 +2,10 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
-    public sealed class SceneRouteResetPolicy : IRouteResetPolicy
+    public sealed partial class SceneRouteResetPolicy : IRouteResetPolicy
     {
         private readonly ISceneRouteResolver _routeResolver;
 
@@ -60,11 +59,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             DebugUtility.LogError(typeof(SceneRouteResetPolicy), message);
 
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
+            StopPlayModeInEditor();
 #else
             Application.Quit();
 #endif
             throw new InvalidOperationException(message);
         }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        static partial void StopPlayModeInEditor();
+#endif
+
     }
 }
+

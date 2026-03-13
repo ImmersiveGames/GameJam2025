@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 #nullable enable
 
 using System;
@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
-using UnityEditor;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
 {
@@ -40,25 +39,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
         {
             DumpContentSwapContext();
         }
-
-        // ----------------------------
-        // Editor convenience (MenuItem)
-        // ----------------------------
-#if UNITY_EDITOR
-        [MenuItem("Tools/NewScripts/QA/ContentSwap/Select QA_ContentSwap Object", priority = 10)]
-        private static void SelectQaObject()
-        {
-            var obj = GameObject.Find("QA_ContentSwap");
-            if (obj != null)
-            {
-                Selection.activeObject = obj;
-            }
-            else
-            {
-                DebugUtility.Log(typeof(ContentSwapDevContextMenu), "[QA][ContentSwap] QA_ContentSwap não encontrado no Hierarchy (Play Mode).", ColorWarn);
-            }
-        }
-#endif
 
         // ----------------------------
         // Implementations
@@ -122,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
             if (DependencyManager.Provider == null)
             {
                 DebugUtility.Log(typeof(ContentSwapDevContextMenu),
-                    "[QA][ContentSwap] DependencyManager.Provider é null (infra global não inicializada?).",
+                    "[QA][ContentSwap] DependencyManager.Provider Ã© null (infra global nÃ£o inicializada?).",
                     ColorErr);
                 return null;
             }
@@ -130,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
             if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
             {
                 DebugUtility.Log(typeof(ContentSwapDevContextMenu),
-                    $"[QA][ContentSwap] Serviço global ausente: {typeof(T).Name}.",
+                    $"[QA][ContentSwap] ServiÃ§o global ausente: {typeof(T).Name}.",
                     ColorErr);
                 return null;
             }
@@ -142,3 +122,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ContentSwap.Dev.Bindings
 }
 
 #endif
+
+
+

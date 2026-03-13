@@ -1,14 +1,14 @@
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
-    /// <summary>
-    /// Implementação simples para P0: mantém apenas o último snapshot canônico.
-    /// </summary>
     public sealed class RestartContextService : IRestartContextService
     {
         private readonly object _sync = new();
         private GameplayStartSnapshot _current = GameplayStartSnapshot.Empty;
+        private GameplayStartSnapshot _lastGameplayStartSnapshot = GameplayStartSnapshot.Empty;
+        private int _selectionVersionCounter;
 
         public GameplayStartSnapshot Current
         {
@@ -30,21 +30,54 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             lock (_sync)
             {
-                int persistedVersion = snapshot.SelectionVersion > 0
-                    ? snapshot.SelectionVersion
-                    : _current.SelectionVersion + 1;
+                if (!snapshot.HasLevelRef || !snapshot.MacroRouteId.IsValid)
+                {
+                    string invalidReason = !snapshot.HasLevelRef && !snapshot.MacroRouteId.IsValid
+                        ? "missing-levelRef-and-invalid-routeId"
+                        : (!snapshot.HasLevelRef ? "missing-levelRef" : "invalid-routeId");
+
+                    DebugUtility.Log<RestartContextService>(
+                        $"[WARN][LevelFlow] Ignored invalid GameplayStartSnapshot. levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' routeId='{snapshot.MacroRouteId}' reason='{invalidReason}'.",
+                        DebugUtility.Colors.Warning);
+
+                    return _current;
+                }
+
+                int incoming = snapshot.SelectionVersion;
+                int next;
+
+                if (incoming <= 0)
+                {
+                    next = _selectionVersionCounter + 1;
+                }
+                else if (incoming < _selectionVersionCounter)
+                {
+                    next = _selectionVersionCounter + 1;
+                }
+                else
+                {
+                    if (incoming == _selectionVersionCounter)
+                    {
+                        DebugUtility.Log<RestartContextService>(
+                            $"[OBS][LevelFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}'",
+                            DebugUtility.Colors.Info);
+                    }
+
+                    next = incoming;
+                }
 
                 _current = new GameplayStartSnapshot(
-                    snapshot.LevelId,
-                    snapshot.RouteId,
-                    snapshot.StyleId,
-                    snapshot.ContentId,
+                    snapshot.LevelRef,
+                    snapshot.MacroRouteId,
                     snapshot.Reason,
-                    persistedVersion,
-                    snapshot.ContextSignature);
+                    next,
+                    snapshot.LevelSignature);
+
+                _lastGameplayStartSnapshot = _current;
+                _selectionVersionCounter = Math.Max(_selectionVersionCounter, next);
 
                 DebugUtility.Log<RestartContextService>(
-                    $"[OBS][Navigation] GameplayStartSnapshotUpdated levelId='{(_current.HasLevelId ? _current.LevelId.ToString() : "<none>")}' routeId='{_current.RouteId}' styleId='{_current.StyleId}' contentId='{(_current.HasContentId ? _current.ContentId : "<none>")}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
+                    $"[OBS][Navigation] GameplayStartSnapshotUpdated levelRef='{(_current.HasLevelRef ? _current.LevelRef.name : "<none>")}' routeId='{_current.MacroRouteId}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
                     DebugUtility.Colors.Info);
 
                 return _current;
@@ -53,11 +86,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public bool TryGetCurrent(out GameplayStartSnapshot snapshot)
         {
-            return TryGetLastGameplayStartSnapshot(out snapshot);
-        }
-
-        public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
-        {
             lock (_sync)
             {
                 snapshot = _current;
@@ -65,41 +93,31 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
         }
 
-
-        public bool TryUpdateCurrentContentId(string contentId, string reason = null)
+        public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
         {
-            string normalizedContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
-
             lock (_sync)
             {
-                if (!_current.IsValid)
-                {
-                    return false;
-                }
-
-                _current = new GameplayStartSnapshot(
-                    _current.LevelId,
-                    _current.RouteId,
-                    _current.StyleId,
-                    normalizedContentId,
-                    _current.Reason,
-                    _current.SelectionVersion,
-                    _current.ContextSignature);
+                snapshot = _lastGameplayStartSnapshot;
+                return _lastGameplayStartSnapshot.IsValid;
             }
-
-            return true;
         }
 
         public void Clear(string reason = null)
         {
+            int lastSelectionVersion;
+
             lock (_sync)
             {
                 _current = GameplayStartSnapshot.Empty;
+                lastSelectionVersion = _lastGameplayStartSnapshot.SelectionVersion;
             }
 
             DebugUtility.Log<RestartContextService>(
-                $"[OBS][Navigation] RestartContextCleared reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
+                $"[OBS][Navigation] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
                 DebugUtility.Colors.Info);
         }
     }
 }
+
+
+

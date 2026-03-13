@@ -4,22 +4,13 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 {
-    /// <summary>
-    /// Sincroniza a conclusão do SceneFlow (SceneTransitionCompleted) com o WorldLifecycle reset (WorldLifecycleResetCompleted)
-    /// e coloca o GameLoop no estado correto para o perfil de transição.
-    ///
-    /// Regra Strict/Release (ADR-0013): o SceneFlow NÃO deve forçar RequestStart() em gameplay;
-    /// o start efetivo é responsabilidade do pipeline de início de nível (ex.: LevelStartPipeline/IntroStageCoordinator)
-    /// que só libera o início após IntroStageController completar.
-    /// </summary>
-    public sealed class GameLoopSceneFlowCoordinator : IDisposable
+    public sealed partial class GameLoopSceneFlowCoordinator : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly SceneTransitionRequest _startPlan;
@@ -32,7 +23,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         private string _expectedContextSignature;
 
         private readonly EventBinding<GameStartRequestedEvent> _startRequestedBinding;
-
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
         private readonly EventBinding<WorldLifecycleResetCompletedEvent> _worldResetCompletedBinding;
@@ -45,13 +35,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             _startPlan = startPlan;
 
             _startRequestedBinding = new EventBinding<GameStartRequestedEvent>(_ => OnStartRequestedCommon());
-
             _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
             _worldResetCompletedBinding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnWorldResetCompleted);
 
             EventBus<GameStartRequestedEvent>.Register(_startRequestedBinding);
-
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
             EventBus<WorldLifecycleResetCompletedEvent>.Register(_worldResetCompletedBinding);
@@ -59,17 +47,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             if (_startPlan == null)
             {
                 DebugUtility.LogWarning(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] Coordinator registrado com startPlan NULL. Start será ignorado até corrigir o GlobalCompositionRoot.");
+                    "[GameLoopSceneFlow] Coordinator registrado com startPlan NULL. Start sera ignorado ate corrigir o GlobalCompositionRoot.");
                 return;
             }
 
             DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
-                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: " +
-                $"Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], " +
-                $"Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], " +
-                $"Active='{_startPlan.TargetActiveScene}', " +
-                $"UseFade={_startPlan.UseFade}, " +
-                $"Profile='{_startPlan.TransitionProfileName}'.");
+                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', UseFade={_startPlan.UseFade}, Style='{_startPlan.StyleLabel}'.");
         }
 
         public void Dispose()
@@ -80,7 +63,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             }
 
             _disposed = true;
-
             EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
             EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
@@ -92,14 +74,15 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             if (_startPlan == null)
             {
                 DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] Start REQUEST recebido, mas startPlan é NULL. Abortando.");
+                    "[GameLoopSceneFlow] Start REQUEST recebido, mas startPlan e NULL. Abortando.");
                 return;
             }
 
             if (_startInProgress)
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] Start REQUEST ignorado (já em progresso).");
+                    "[GameLoopSceneFlow] Start REQUEST ignorado (ja em progresso).",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
@@ -107,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             ResetStartState();
 
             DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
-                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...");
+                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transicao de cenas...");
 
             _ = StartTransitionAsync();
         }
@@ -162,9 +145,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             string message = $"[FATAL][Fade] {detail}";
             DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator), message);
 
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#endif
+            DevStopPlayModeInEditor();
             if (!Application.isEditor)
             {
                 Application.Quit();
@@ -172,6 +153,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
             throw new InvalidOperationException(message);
         }
+
+        static partial void DevStopPlayModeInEditor();
 
         private static bool ShouldDegradeFadeInRuntime()
         {
@@ -184,38 +167,38 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            if (!ShouldHandleTransition(evt.Context))
+            if (!ShouldHandleTransition(evt.context))
             {
                 return;
             }
 
-
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                $"[GameLoopSceneFlow] TransitionStarted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.");
+                $"[GameLoopSceneFlow] TransitionStarted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
         }
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            if (!ShouldHandleTransition(evt.Context))
+            if (!ShouldHandleTransition(evt.context))
             {
                 return;
             }
 
-
-            string ctxSig = SceneTransitionSignature.Compute(evt.Context);
+            string ctxSig = SceneTransitionSignature.Compute(evt.context);
             if (!string.IsNullOrEmpty(_expectedContextSignature) &&
                 !string.Equals(ctxSig, _expectedContextSignature, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                    $"[GameLoopSceneFlow] TransitionCompleted ignorado (signature mismatch). " +
-                    $"expected='{_expectedContextSignature}', got='{ctxSig}'.");
+                    $"[GameLoopSceneFlow] TransitionCompleted ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{ctxSig}'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
             _transitionCompleted = true;
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                $"[GameLoopSceneFlow] TransitionCompleted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.");
+                $"[GameLoopSceneFlow] TransitionCompleted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
 
             TryIssueGameLoopSync();
         }
@@ -236,39 +219,48 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
                 else if (!string.Equals(evt.ContextSignature, _expectedContextSignature, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                        $"[GameLoopSceneFlow] WorldLifecycleResetCompleted ignorado (signature mismatch). " +
-                        $"expected='{_expectedContextSignature}', got='{evt.ContextSignature}', reason='{evt.Reason ?? "<null>"}'.");
+                        $"[GameLoopSceneFlow] WorldLifecycleResetCompleted ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', reason='{evt.Reason ?? "<null>"}'.",
+                        DebugUtility.Colors.Info);
                     return;
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(_expectedContextSignature))
             {
-                if (!string.IsNullOrEmpty(_expectedContextSignature))
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                        $"[GameLoopSceneFlow] WorldLifecycleResetCompleted ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). " +
-                        $"reason='{evt.Reason ?? "<null>"}'.");
-                    return;
-                }
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                    $"[GameLoopSceneFlow] WorldLifecycleResetCompleted ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). reason='{evt.Reason ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+                return;
             }
 
             _worldResetCompleted = true;
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                $"[GameLoopSceneFlow] WorldLifecycle reset concluído (ou skip). reason='{evt.Reason ?? "<null>"}'.");
+                $"[GameLoopSceneFlow] WorldLifecycle reset concluido (ou skip). reason='{evt.Reason ?? "<null>"}'.",
+                DebugUtility.Colors.Info);
 
             TryIssueGameLoopSync();
         }
 
-        private bool IsMatchingProfile(SceneFlowProfileId transitionProfileId)
+        private bool IsMatchingStartPlan(SceneTransitionContext context)
         {
-            var expected = _startPlan?.TransitionProfileId ?? default;
-            if (!expected.IsValid)
+            if (_startPlan == null)
             {
-                return true;
+                return false;
             }
 
-            return transitionProfileId.Equals(expected);
+            if (_startPlan.RouteId.IsValid && context.RouteId.IsValid && context.RouteId != _startPlan.RouteId)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_startPlan.TargetActiveScene) &&
+                !string.IsNullOrWhiteSpace(context.TargetActiveScene) &&
+                !string.Equals(context.TargetActiveScene, _startPlan.TargetActiveScene, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private void EnsureExpectedSignatureFromContext(SceneTransitionContext context)
@@ -296,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
                 return false;
             }
 
-            if (!IsMatchingProfile(context.TransitionProfileId))
+            if (!IsMatchingStartPlan(context))
             {
                 return false;
             }
@@ -304,7 +296,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             EnsureExpectedSignatureFromContext(context);
             return true;
         }
-
 
         private void TryIssueGameLoopSync()
         {
@@ -321,35 +312,22 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
             {
                 DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] IGameLoopService indisponível no DI global; não foi possível sincronizar GameLoop.");
+                    "[GameLoopSceneFlow] IGameLoopService indisponivel no DI global; nao foi possivel sincronizar GameLoop.");
 
                 _startInProgress = false;
                 return;
             }
 
             _syncIssued = true;
-
-            // Importante: este coordinator é usado para o startPlan de produção.
-            // Regra Strict/Release:
-            // - Em frontend/startup: apenas manter o GameLoop em Ready.
-            // - Em gameplay: também manter em Ready (NÃO RequestStart aqui). O início efetivo acontece após IntroStageController completar.
-            //   (ex.: LevelStartPipeline/IntroStageCoordinator chama RequestStart no momento correto)
-            var profileId = _startPlan?.TransitionProfileId ?? default;
-
             gameLoop.Initialize();
 
-            string profileLabel = profileId.IsValid ? profileId.Value : "<none>";
-
             DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                $"[GameLoopSceneFlow] Sync concluído. profileId='{profileLabel}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
+                $"[GameLoopSceneFlow] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestReady();
-
             _startInProgress = false;
         }
     }
 }
-
-
 

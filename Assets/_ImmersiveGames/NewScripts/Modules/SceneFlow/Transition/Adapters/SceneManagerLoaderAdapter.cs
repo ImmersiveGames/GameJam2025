@@ -7,9 +7,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
     /// <summary>
     /// Implementação padrão de loader usando SceneManager (fallback).
     /// </summary>
-    public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
+        /// <summary>
+    /// OWNER: operacoes de load/unload/set-active de cena no adapter.
+    /// NAO E OWNER: ordem de fases da transicao (definida em SceneTransitionService).
+    /// PUBLISH/CONSUME: nao publica eventos; consumido por SceneTransitionService.
+    /// Fases tocadas: ApplyRoute (loads/unloads/active).
+    /// </summary>
+public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
     {
-        public async Task LoadSceneAsync(string sceneName)
+        public async Task LoadSceneAsync(string sceneName, System.Action<float> onProgress = null)
         {
             var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             if (op == null)
@@ -19,13 +25,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 return;
             }
 
+            onProgress?.Invoke(0f);
             while (!op.isDone)
             {
+                float normalized = op.progress >= 0.9f ? 1f : UnityEngine.Mathf.Clamp01(op.progress / 0.9f);
+                onProgress?.Invoke(normalized);
                 await Task.Yield();
             }
+
+            onProgress?.Invoke(1f);
         }
 
-        public async Task UnloadSceneAsync(string sceneName)
+        public async Task UnloadSceneAsync(string sceneName, System.Action<float> onProgress = null)
         {
             var scene = SceneManager.GetSceneByName(sceneName);
             bool exists = scene.IsValid();
@@ -44,10 +55,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
                 return;
             }
 
+            onProgress?.Invoke(0f);
             while (!op.isDone)
             {
+                onProgress?.Invoke(UnityEngine.Mathf.Clamp01(op.progress));
                 await Task.Yield();
             }
+
+            onProgress?.Invoke(1f);
 
             var sceneAfter = SceneManager.GetSceneByName(sceneName);
             bool existsAfter = sceneAfter.IsValid();
@@ -102,3 +117,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
         }
     }
 }
+
+

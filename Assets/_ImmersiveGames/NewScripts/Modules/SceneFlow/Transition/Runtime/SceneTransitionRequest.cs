@@ -1,8 +1,8 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
@@ -14,12 +14,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public string TargetActiveScene { get; }
         public bool UseFade { get; }
         public SceneRouteId RouteId { get; }
-        public TransitionStyleId StyleId { get; }
+        public TransitionStyleAsset? TransitionStyle { get; }
+        public string StyleLabel => TransitionStyle != null ? TransitionStyle.StyleLabel : string.Empty;
         public SceneTransitionPayload Payload { get; }
         public string Reason { get; }
-        public SceneFlowProfileId TransitionProfileId { get; }
         public SceneTransitionProfile? TransitionProfile { get; }
-        public string TransitionProfileName => TransitionProfileId.Value;
+        public string TransitionProfileName => TransitionProfile != null ? NormalizeLabel(TransitionProfile.name) : string.Empty;
         public string ContextSignature { get; }
         public string RequestedBy { get; }
 
@@ -34,7 +34,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             string targetActiveScene,
             SceneTransitionProfile? transitionProfile,
             bool useFade = true,
-            SceneFlowProfileId transitionProfileId = default,
             string? contextSignature = null,
             string? requestedBy = null,
             string? reason = null)
@@ -43,11 +42,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 scenesToUnload,
                 targetActiveScene,
                 SceneRouteId.None,
-                TransitionStyleId.None,
+                null,
                 SceneTransitionPayload.Empty,
                 transitionProfile,
                 useFade,
-                transitionProfileId,
                 contextSignature,
                 requestedBy,
                 reason)
@@ -56,10 +54,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
         public SceneTransitionRequest(
             SceneRouteId routeId,
-            TransitionStyleId styleId,
+            TransitionStyleAsset? transitionStyle,
             SceneTransitionPayload payload,
             SceneTransitionProfile? transitionProfile,
-            SceneFlowProfileId transitionProfileId = default,
             bool useFade = true,
             string? contextSignature = null,
             string? requestedBy = null,
@@ -69,11 +66,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 Array.Empty<string>(),
                 string.Empty,
                 routeId,
-                styleId,
+                transitionStyle,
                 payload,
                 transitionProfile,
                 useFade,
-                transitionProfileId,
                 contextSignature,
                 requestedBy,
                 reason)
@@ -85,11 +81,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             SceneRouteId routeId,
-            TransitionStyleId styleId,
+            TransitionStyleAsset? transitionStyle,
             SceneTransitionPayload payload,
             SceneTransitionProfile? transitionProfile,
             bool useFade,
-            SceneFlowProfileId transitionProfileId,
             string? contextSignature,
             string? requestedBy,
             string? reason)
@@ -98,14 +93,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             ScenesToUnload = scenesToUnload ?? Array.Empty<string>();
             TargetActiveScene = targetActiveScene ?? string.Empty;
             RouteId = routeId;
-            StyleId = styleId;
+            TransitionStyle = transitionStyle;
             Payload = payload ?? SceneTransitionPayload.Empty;
             TransitionProfile = transitionProfile;
             UseFade = useFade && transitionProfile != null;
-            TransitionProfileId = transitionProfileId;
             ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
-            RequestedBy = string.IsNullOrWhiteSpace(requestedBy) ? string.Empty : requestedBy.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            RequestedBy = NormalizeLabel(requestedBy);
+            Reason = NormalizeLabel(reason);
+        }
+
+        private static string NormalizeLabel(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

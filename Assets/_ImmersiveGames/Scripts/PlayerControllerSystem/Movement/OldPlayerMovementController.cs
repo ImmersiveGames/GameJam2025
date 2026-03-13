@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private IActor _actor;
         private IOldCameraResolver _cameraResolver;
 
-        // NEW: domínio para obter spawn pose
+        // NEW: domï¿½nio para obter spawn pose
         private IPlayerDomain _playerDomain;
         private string _sceneName;
 
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         #region Reset Order / Scope
 
-        // Movement cedo para zerar física e input antes de outros rebinds
+        // Movement cedo para zerar fï¿½sica e input antes de outros rebinds
         public int ResetOrder => -50;
 
         public bool ShouldParticipate(ResetScope scope)
@@ -74,10 +74,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
             if (!DependencyManager.Provider.TryGetGlobal(out _cameraResolver))
             {
-                DebugUtility.LogError<OldPlayerMovementController>("OldCameraResolverService não encontrado.");
+                DebugUtility.LogError<OldPlayerMovementController>("OldCameraResolverService nï¿½o encontrado.");
             }
 
-            // Tenta resolver o PlayerDomain (por cena) cedo. Se não existir ainda, o Reset_Rebind tenta novamente.
+            // Tenta resolver o PlayerDomain (por cena) cedo. Se nï¿½o existir ainda, o Reset_Rebind tenta novamente.
             DependencyManager.Provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
         }
 
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         public Task Reset_CleanupAsync(ResetContext ctx)
         {
-            // Zera entradas e “para” física para evitar drift pós-reset.
+            // Zera entradas e ï¿½paraï¿½ fï¿½sica para evitar drift pï¿½s-reset.
             _moveInput = Vector2.zero;
             _lookInput = Vector2.zero;
 
@@ -254,22 +254,22 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         public Task Reset_RestoreAsync(ResetContext ctx)
         {
-            // Resolve PlayerDomain se ainda não estiver disponível
+            // Resolve PlayerDomain se ainda nï¿½o estiver disponï¿½vel
             if (_playerDomain == null)
                 DependencyManager.Provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
 
-            // Volta o player para o ponto de partida (spawn pose registrado no domínio)
+            // Volta o player para o ponto de partida (spawn pose registrado no domï¿½nio)
             if (_actor != null && _playerDomain != null && !string.IsNullOrWhiteSpace(_actor.ActorId))
             {
                 if (_playerDomain.TryGetSpawnPose(_actor.ActorId, out var pose))
                 {
-                    // Segurança: zera física antes de teleport
+                    // Seguranï¿½a: zera fï¿½sica antes de teleport
                     if (_rb != null)
                     {
                         _rb.linearVelocity = Vector3.zero;
                         _rb.angularVelocity = Vector3.zero;
 
-                        // Preferir “teleport” direto para reset (evita interpolação residual)
+                        // Preferir ï¿½teleportï¿½ direto para reset (evita interpolaï¿½ï¿½o residual)
                         _rb.position = pose.position;
                         _rb.rotation = pose.rotation;
                     }
@@ -281,11 +281,11 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
                 else
                 {
                     DebugUtility.LogWarning<OldPlayerMovementController>(
-                        $"[Reset] SpawnPose não encontrado no PlayerDomain para ActorId='{_actor.ActorId}'.", this);
+                        $"[Reset] SpawnPose nï¿½o encontrado no PlayerDomain para ActorId='{_actor.ActorId}'.", this);
                 }
             }
 
-            // Reabilita input e resolve câmera atual.
+            // Reabilita input e resolve cï¿½mera atual.
             BindInput();
             ResolveAndSetCamera();
 
@@ -294,7 +294,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         public Task Reset_RebindAsync(ResetContext ctx)
         {
-            // Rebind de eventos e câmera (por segurança caso DI/câmera mude durante reset).
+            // Rebind de eventos e cï¿½mera (por seguranï¿½a caso DI/cï¿½mera mude durante reset).
             if (_cameraResolver == null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _cameraResolver);

@@ -1,16 +1,28 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition.Modules;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
 using _ImmersiveGames.NewScripts.Modules.Gates;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
+        private enum CompositionInstallStage
+        {
+            RuntimePolicy,
+            Gates,
+            GameLoop,
+            SceneFlow,
+            WorldLifecycle,
+            Navigation,
+            Levels,
+            ContentSwap,
+            DevQa
+        }
+
         private static CompositionInstallStage _compositionInstallStage;
 
         // --------------------------------------------------------------------
@@ -28,15 +40,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.Gates;
             InstallCompositionModules();
 
-            // Resolve ISimulationGateService UMA vez para os consumidores (reduz repetição de TryGetGlobal).
-            DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
+            var gateService = ResolveSimulationGateServiceOrNull();
 
             RegisterPauseBridge(gateService);
 
             _compositionInstallStage = CompositionInstallStage.GameLoop;
             InstallCompositionModules();
 
-            // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             _compositionInstallStage = CompositionInstallStage.SceneFlow;
             InstallCompositionModules();
 
@@ -52,15 +62,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.ContentSwap;
             InstallCompositionModules();
 
-            _compositionInstallStage = CompositionInstallStage.DevQA;
+            _compositionInstallStage = CompositionInstallStage.DevQa;
             InstallCompositionModules();
 
-            RegisterExitToMenuNavigationBridge();
-            RegisterRestartNavigationBridge();
+            RegisterExitToMenuCoordinator();
+            RegisterMacroRestartCoordinator();
             RegisterLevelSelectedRestartSnapshotBridge();
-            RegisterRestartSnapshotContentSwapBridge();
 
             RegisterInputModeSceneFlowBridge();
+            RegisterLevelStageOrchestrator();
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
 
@@ -74,34 +84,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void InstallCompositionModules()
         {
-            var modules = new IGlobalCompositionModule[]
+            switch (_compositionInstallStage)
             {
-                new RuntimePolicyCompositionModule(),
-                new GatesCompositionModule(),
-                new GameLoopCompositionModule(),
-                new SceneFlowCompositionModule(),
-                new WorldLifecycleCompositionModule(),
-                new NavigationCompositionModule(),
-                new LevelsCompositionModule(),
-                new ContentSwapCompositionModule(),
-                new DevQaCompositionModule()
-            };
-
-            var context = new GlobalCompositionContext(
-                _compositionInstallStage,
-                installRuntimePolicy: RegisterRuntimePolicyServices,
-                installSceneFlow: InstallSceneFlowServices,
-                installLevels: RegisterLevelsServices,
-                installGates: InstallGatesServices,
-                installGameLoop: InstallGameLoopServices,
-                installWorldLifecycle: InstallWorldLifecycleServices,
-                installNavigation: InstallNavigationServices,
-                installContentSwap: InstallContentSwapServices,
-                installDevQa: InstallDevQaServices);
-
-            for (int i = 0; i < modules.Length; i++)
-            {
-                modules[i].Install(context);
+                case CompositionInstallStage.RuntimePolicy:
+                    RegisterRuntimePolicyServices();
+                    break;
+                case CompositionInstallStage.Gates:
+                    InstallGatesServices();
+                    break;
+                case CompositionInstallStage.GameLoop:
+                    InstallGameLoopServices();
+                    break;
+                case CompositionInstallStage.SceneFlow:
+                    InstallSceneFlowServices();
+                    break;
+                case CompositionInstallStage.WorldLifecycle:
+                    InstallWorldLifecycleServices();
+                    break;
+                case CompositionInstallStage.Navigation:
+                    InstallNavigationServices();
+                    break;
+                case CompositionInstallStage.Levels:
+                    RegisterLevelsServices();
+                    break;
+                case CompositionInstallStage.ContentSwap:
+                    InstallContentSwapServices();
+                    break;
+                case CompositionInstallStage.DevQa:
+                    InstallDevQaServices();
+                    break;
             }
         }
 
@@ -122,24 +133,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             RegisterGameRunEndRequestService();
             RegisterGameCommands();
+            GameStartRequestEmitter.EnsureInstalled();
 
-            // Resolve IGameLoopService UMA vez para serviços dependentes.
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
 
             RegisterGameRunStatusService(gameLoopService);
             RegisterGameRunOutcomeService(gameLoopService);
             RegisterGameRunOutcomeEventInputBridge();
+            RegisterPostGameResultService();
             RegisterPostPlayOwnershipService();
-        }
-
-        private static void InstallWorldLifecycleServices()
-        {
-            RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
-            RegisterIfMissing(() => new WorldResetService());
-            RegisterIfMissing<IWorldResetCommands>(() => new WorldResetCommands());
-
-            DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
-            RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
         }
 
         private static void InstallNavigationServices()
@@ -149,10 +151,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void InstallContentSwapServices()
         {
-            // ADR-0016: ContentSwapContext precisa existir no DI global.
             RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
-
-            // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
         }
 
@@ -162,25 +161,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterIntroStageQaInstaller();
             RegisterContentSwapQaInstaller();
             RegisterSceneFlowQaInstaller();
+            RegisterWorldLifecycleQaInstaller();
             RegisterIntroStageRuntimeDebugGui();
 #endif
         }
-
-        private static void InstallSceneFlowServices()
-        {
-            // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
-            RegisterSceneFlowFadeModule();
-
-            RegisterSceneFlowTransitionProfiles();
-            RegisterSceneFlowRoutesRequired();
-            RegisterSceneFlowNative();
-            RegisterSceneFlowSignatureCache();
-            RegisterSceneFlowRouteResetPolicy();
-
-            // ADR-0010: mantém o Loading no final da instalação do SceneFlow
-            // para preservar o ponto de registro equivalente do pipeline.
-            RegisterSceneFlowLoadingIfAvailable();
-        }
-
     }
 }

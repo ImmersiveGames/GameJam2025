@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             if (!DependencyManager.Provider.TryGetGlobal<IOldSimulationGateService>(out _gate) || _gate == null)
             {
                 DebugUtility.LogWarning<GameplayExecutionCoordinator>(
-                    "IOldSimulationGateService não encontrado no DI global. Coordinator ficará inativo.",
+                    "IOldSimulationGateService nï¿½o encontrado no DI global. Coordinator ficarï¿½ inativo.",
                     this);
                 return;
             }
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 AutoDiscoverAndRegisterParticipants();
             }
 
-            // Reaplica estado após registrar participantes para garantir consistência imediata.
+            // Reaplica estado apï¿½s registrar participantes para garantir consistï¿½ncia imediata.
             ApplyGateState(_gate.IsOpen, forceReapplyToParticipants: true);
         }
 

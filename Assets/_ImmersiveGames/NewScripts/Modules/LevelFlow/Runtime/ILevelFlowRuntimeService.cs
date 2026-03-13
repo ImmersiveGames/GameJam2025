@@ -1,13 +1,13 @@
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
-    /// <summary>
-    /// Serviço público/canônico para iniciar gameplay a partir de um LevelId lógico.
-    /// </summary>
     public interface ILevelFlowRuntimeService
     {
-        Task StartGameplayAsync(string levelId, string reason = null, CancellationToken ct = default);
+        Task StartGameplayDefaultAsync(string reason = null, CancellationToken ct = default);
+        Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default);
+        Task SwapLevelLocalAsync(LevelDefinitionAsset levelRef, string reason = null, CancellationToken ct = default);
     }
 }

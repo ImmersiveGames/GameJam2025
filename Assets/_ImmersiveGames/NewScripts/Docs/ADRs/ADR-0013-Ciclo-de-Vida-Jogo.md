@@ -4,7 +4,7 @@
 
 - Estado: Implementado
 - Data (decisão): 2025-12-24
-- Última atualização: 2026-02-04
+- Ultima atualizacao: 2026-03-11
 - Tipo: Implementação
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
 
@@ -16,6 +16,7 @@
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionEvents.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Application/WorldResetService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleResetCompletionGate.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
@@ -173,3 +174,4 @@ Os pontos de integração canônicos são: `WorldLifecycleSceneFlowResetDriver` 
 - **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
 
 - **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+

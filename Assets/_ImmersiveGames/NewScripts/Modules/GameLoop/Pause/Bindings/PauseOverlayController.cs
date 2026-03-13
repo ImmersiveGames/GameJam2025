@@ -17,6 +17,9 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 {
     /// <summary>
@@ -35,18 +38,16 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
     ///   Só muda a UI e o InputMode.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PauseOverlayController : MonoBehaviour
+    public sealed partial class PauseOverlayController : MonoBehaviour
     {
         private const string ExitToMenuReason = "PauseOverlay/ExitToMenu";
-        private const string QaPauseReason = "QA/PauseOverlay/Show";
-        private const string QaResumeReason = "QA/PauseOverlay/Hide";
         [Header("Overlay")]
         [SerializeField] private GameObject overlayRoot;
         [SerializeField] private string showReason = "PauseOverlay/Show";
         [SerializeField] private string hideReason = "PauseOverlay/Hide";
+        [SerializeField] private bool enableEscapeHotkey = true;
 
-        [Inject] private IInputModeService _inputModeService;
-
+        
         private bool _dependenciesInjected;
 
         // Run lifecycle gating (mesma regra do Hotkey)
@@ -59,7 +60,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 
         private EventBinding<GamePauseCommandEvent> _onPauseCommand;
         private EventBinding<GameResumeRequestedEvent> _onResumeRequested;
-        private EventBinding<GameExitToMenuRequestedEvent> _onExitToMenu;
+        private int _lastPauseFrame = -1;
+        private string _lastPauseKey = string.Empty;
+        private int _lastResumeFrame = -1;
+        private string _lastResumeKey = string.Empty;
+        private int _lastEscapeToggleFrame = -1;
 
         private void Awake()
         {
@@ -70,14 +75,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             EventBus<GameRunStartedEvent>.Register(_onRunStarted);
             EventBus<GameRunEndedEvent>.Register(_onRunEnded);
 
-            // Pause/Resume/Exit -> UI reaction
+            // Pause/Resume -> UI reaction
             _onPauseCommand = new EventBinding<GamePauseCommandEvent>(OnPauseCommand);
-            _onResumeRequested = new EventBinding<GameResumeRequestedEvent>(_ => OnResumeRequested());
-            _onExitToMenu = new EventBinding<GameExitToMenuRequestedEvent>(_ => OnExitToMenu());
+            _onResumeRequested = new EventBinding<GameResumeRequestedEvent>(OnResumeRequested);
 
             EventBus<GamePauseCommandEvent>.Register(_onPauseCommand);
             EventBus<GameResumeRequestedEvent>.Register(_onResumeRequested);
-            EventBus<GameExitToMenuRequestedEvent>.Register(_onExitToMenu);
         }
 
         private void Start()
@@ -107,7 +110,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 
             EventBus<GamePauseCommandEvent>.Unregister(_onPauseCommand);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResumeRequested);
-            EventBus<GameExitToMenuRequestedEvent>.Unregister(_onExitToMenu);
         }
 
         private void OnDisable()
@@ -197,7 +199,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         {
             EnsureDependenciesInjected();
 
-            // Fecha o overlay (idempotente). Não publica resume aqui; quem coordena é o fluxo de saída.
             TrySetOverlayActive(false);
 
             EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
@@ -205,15 +206,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
                 $"[PauseOverlay] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado. reason='{ExitToMenuReason}'.",
                 DebugUtility.Colors.Info);
 
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetFrontendMenu("PauseOverlay/ReturnToMenuFrontend");
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "PauseOverlay/ReturnToMenuFrontend", "PauseOverlay"));
         }
 
         public void Toggle()
@@ -231,30 +225,38 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             }
         }
 
-        // =========================
-        // QA / Context Menu (Editor + DevBuild)
-        // =========================
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        [ContextMenu("QA/Pause/Enter (TC: PauseOverlay)")]
-        private void QaPause()
+        private void Update()
         {
-            DebugUtility.Log(typeof(PauseOverlayController),
-                $"[QA][PauseOverlay] Pause solicitado. reason='{QaPauseReason}'.",
-                DebugUtility.Colors.Info);
-            Show();
-        }
+            if (!enableEscapeHotkey)
+            {
+                return;
+            }
 
-        [ContextMenu("QA/Pause/Resume (TC: PauseOverlay Resume)")]
-        private void QaResume()
-        {
-            DebugUtility.Log(typeof(PauseOverlayController),
-                $"[QA][PauseOverlay] Resume solicitado. reason='{QaResumeReason}'.",
-                DebugUtility.Colors.Info);
-            Hide();
-        }
-#endif
+            if (!_runActive || _runEnded)
+            {
+                return;
+            }
 
-        // =========================
+            if (!WasEscapePressedThisFrame())
+            {
+                return;
+            }
+
+            int frame = Time.frameCount;
+            if (_lastEscapeToggleFrame == frame)
+            {
+                return;
+            }
+
+            bool willResume = overlayRoot != null && overlayRoot.activeSelf;
+
+            _lastEscapeToggleFrame = frame;
+            Toggle();
+
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[OBS][PauseOverlay] EscapeHotkeyToggle action='{(willResume ? "resume" : "pause")}' runActive='{_runActive}' runEnded='{_runEnded}'",
+                DebugUtility.Colors.Info);
+        }
         // Event reactions (NO publish)
         // =========================
 
@@ -275,26 +277,47 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             HideLocal("GameRunEnded", applyGameplayInputMode: false);
         }
 
-        private void OnExitToMenu()
+        private void OnResumeRequested(GameResumeRequestedEvent evt)
         {
-            ResetFlagsForMenu();
-            HideLocal("ExitToMenu");
-        }
+            string key = BuildResumeKey(evt);
+            int frame = Time.frameCount;
+            if (_lastResumeFrame == frame && string.Equals(_lastResumeKey, key, System.StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                    $"[OBS][GRS] GameResumeRequestedEvent dedupe_same_frame consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
 
-        private void OnResumeRequested()
-        {
-            // Resume sempre oculta overlay.
+            _lastResumeFrame = frame;
+            _lastResumeKey = key;
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
             HideLocal("ResumeRequested");
         }
 
         private void OnPauseCommand(GamePauseCommandEvent e)
         {
-            // Pausa só deve abrir overlay durante run ativa e antes do final da run.
-            // (No fim da run, GameRunStateService publica pause para congelar simulação;
-            // isso NÃO deve abrir PauseOverlay.)
+            string key = BuildPauseKey(e);
+            int frame = Time.frameCount;
+            if (_lastPauseFrame == frame && string.Equals(_lastPauseKey, key, System.StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                    $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastPauseFrame = frame;
+            _lastPauseKey = key;
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[OBS][GRS] GamePauseCommandEvent consumed consumer='PauseOverlayController' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
             if (!_runActive || _runEnded)
             {
-                // Mesmo se vier pause, garante overlay oculto.
                 HideLocal("PauseCommandIgnored_NotActiveOrEnded");
                 return;
             }
@@ -305,15 +328,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
             }
             else
             {
-                // Suporte opcional caso alguma origem publique GamePauseCommandEvent(false).
                 HideLocal("PauseCommandFalse");
             }
-        }
-
-        private void ResetFlagsForMenu()
-        {
-            _runActive = false;
-            _runEnded = false;
         }
 
         // Local UI-only helpers (no EventBus)
@@ -337,7 +353,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         {
             EnsureDependenciesInjected();
 
-            // Idempotente: se já estiver oculto, não faz barulho.
             if (overlayRoot != null && !overlayRoot.activeSelf)
             {
                 return;
@@ -357,32 +372,40 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
 
         private void ApplyPauseInputMode()
         {
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetPauseOverlay(showReason);
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.PauseOverlay, showReason, "PauseOverlay"));
         }
 
         private void ApplyGameplayInputMode()
         {
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetGameplay(hideReason);
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.Gameplay, hideReason, "PauseOverlay"));
         }
 
-        // =========================
+        private static string BuildPauseKey(GamePauseCommandEvent evt)
+        {
+            bool isPaused = evt is { IsPaused: true };
+            return $"pause|isPaused={isPaused}|reason=<null>";
+        }
+
+        private static string BuildResumeKey(GameResumeRequestedEvent evt)
+        {
+            return "resume|reason=<null>";
+        }
+
+        private static bool WasEscapePressedThisFrame()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.Escape);
+#endif
+        }
+
         // DI + UI toggling
+        // =========================
+
         // =========================
 
         private void EnsureDependenciesInjected()
@@ -432,4 +455,16 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause.Bindings
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 

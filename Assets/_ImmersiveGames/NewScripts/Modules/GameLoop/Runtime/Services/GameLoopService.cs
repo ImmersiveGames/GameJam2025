@@ -16,15 +16,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         private GameLoopStateMachine _stateMachine;
         private bool _initialized;
 
-        // Etapa 3: evita publicar GameRunStartedEvent em Resume (Paused -> Playing).
         private bool _runStartedEmittedThisRun;
         private GameLoopStateId _lastStateId = GameLoopStateId.Boot;
 
         public string CurrentStateIdName { get; private set; } = string.Empty;
         public void RequestStart()
         {
-            // ADR-0013: Start pode ser solicitado por diferentes sistemas, mas
-            // NUNCA deve efetivar antes do IntroStageController completar (quando aplicável).
             if (_signals.IntroStageRequested && !_signals.IntroStageCompleted)
             {
                 DebugUtility.LogVerbose<GameLoopService>(
@@ -99,7 +96,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             _lastStateId = stateId;
         }
 
-
         public void OnStateExited(GameLoopStateId stateId) =>
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {GetLogStateName(stateId)}");
 
@@ -134,19 +130,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
 
             if (stateId == GameLoopStateId.Boot && previousState != GameLoopStateId.Boot)
             {
-            DebugUtility.Log<GameLoopService>(
-                "[GameLoop] Restart->Boot confirmado (rein\u00edcio determin\u00edstico).",
-                DebugUtility.Colors.Info);
+                DebugUtility.Log<GameLoopService>(
+                    "[GameLoop] Restart->Boot confirmado (reinicio deterministico).",
+                    DebugUtility.Colors.Info);
             }
         }
 
         private void UpdateRunStartedFlag(GameLoopStateId stateId)
         {
-            // Etapa 3: delimita o inicio de run.
-            // Regras:
-            // - Em Boot/Ready/PostPlay, consideramos que ainda nao iniciou uma run ativa.
-            // - Ao entrar em Playing pela primeira vez nesta run, publicamos GameRunStartedEvent.
-            // - Em Resume (Paused -> Playing), NAO publicamos de novo.
             if (stateId == GameLoopStateId.Boot ||
                 stateId == GameLoopStateId.Ready ||
                 stateId == GameLoopStateId.IntroStage ||
@@ -190,21 +181,17 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
                 return;
             }
 
-            // Garantia: StartPending nunca deve ficar 'colado' apos entrar em Playing.
             _signals.ClearStartPending();
             _signals.ClearIntroStageFlags();
 
             ApplyGameplayInputMode();
 
-            // Correcao: se ja emitimos nesta run (ex.: Paused -> Playing), apenas nao publica novamente.
-            // Importante: NAO gerar log extra de "resume/duplicate" para evitar ruido no baseline/smoke.
             if (!_runStartedEmittedThisRun)
             {
                 _runStartedEmittedThisRun = true;
                 EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
             }
         }
-
 
         private void HandlePostPlayEntered()
         {
@@ -216,45 +203,35 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             }
 
             var info = BuildSignatureInfo();
-            var status = ResolveGameRunStatus();
-            string outcome = status?.HasResult == true ? status.Outcome.ToString() : "Unknown";
-            string reason = status?.HasResult == true ? status.Reason ?? "<null>" : "<none>";
+            var resultSnapshot = ResolvePostGameSnapshot();
 
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][PostGame] PostGameEntered signature='{info.Signature}' outcome='{outcome}' reason='{reason}' " +
-                $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
+                $"[OBS][PostGame] PostGameEntered signature='{info.Signature}' result='{resultSnapshot.Result}' reason='{resultSnapshot.Reason}' scene='{info.SceneName}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
-            NotifyPostPlayOwnerEntered(info);
+            NotifyPostPlayOwnerEntered(info, resultSnapshot);
         }
 
         private void HandlePostPlayExited(GameLoopStateId nextState)
         {
             var info = BuildSignatureInfo();
             string reason = ResolvePostPlayExitReason(nextState);
+            var resultSnapshot = ResolvePostGameSnapshot();
 
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][PostGame] PostGameExited signature='{info.Signature}' reason='{reason}' nextState='{nextState}' " +
-                $"scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
+                $"[OBS][PostGame] PostGameExited signature='{info.Signature}' reason='{reason}' nextState='{nextState}' scene='{info.SceneName}' frame={info.Frame} result='{resultSnapshot.Result}'.",
                 DebugUtility.Colors.Info);
 
-            NotifyPostPlayOwnerExited(info, nextState, reason);
+            NotifyPostPlayOwnerExited(info, nextState, reason, resultSnapshot);
         }
 
         private string ResolvePostPlayExitReason(GameLoopStateId nextState)
         {
-            // Esta decisão precisa ser determinística e legível no log.
-            // Como os sinais são limpos no fim do Tick, aqui ainda conseguimos
-            // observar a intenção que causou a saída do PostPlay.
-
-            // Prioridade: Reset/Reinício explícito.
             if (_signals.ResetRequested)
             {
                 return "Restart";
             }
 
-            // Ready é usado como estado-alvo “não ativo” durante navegações.
-            // Em PostPlay, ReadyRequested vem normalmente de ExitToMenu.
             if (_signals.ReadyRequested)
             {
                 return "ExitToMenu";
@@ -274,7 +251,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             };
         }
 
-        private void NotifyPostPlayOwnerEntered(SignatureInfo info)
+        private void NotifyPostPlayOwnerEntered(SignatureInfo info, PostGameSnapshot resultSnapshot)
         {
             var owner = ResolvePostPlayOwnershipService();
             if (owner == null || !owner.IsOwnerEnabled)
@@ -285,11 +262,13 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             owner.OnPostGameEntered(new PostGameOwnershipContext(
                 info.Signature,
                 info.SceneName,
-                info.Profile,
-                info.Frame));
+                string.Empty,
+                info.Frame,
+                resultSnapshot.Result,
+                resultSnapshot.Reason));
         }
 
-        private void NotifyPostPlayOwnerExited(SignatureInfo info, GameLoopStateId nextState, string reason)
+        private void NotifyPostPlayOwnerExited(SignatureInfo info, GameLoopStateId nextState, string reason, PostGameSnapshot resultSnapshot)
         {
             var owner = ResolvePostPlayOwnershipService();
             if (owner == null || !owner.IsOwnerEnabled)
@@ -300,34 +279,22 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             owner.OnPostGameExited(new PostGameOwnershipExitContext(
                 info.Signature,
                 info.SceneName,
-                info.Profile,
+                string.Empty,
                 info.Frame,
                 reason,
-                nextState.ToString()));
+                nextState.ToString(),
+                resultSnapshot.Result));
         }
 
         private void ApplyGameplayInputMode()
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
-            {
-                return;
-            }
-
             var info = BuildSignatureInfo();
             DebugUtility.Log<GameLoopService>(
-                $"[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' " +
-                $"signature='{info.Signature}' scene='{info.SceneName}' profile='{info.Profile}' frame={info.Frame}.",
+                $"[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' signature='{info.Signature}' scene='{info.SceneName}' frame={info.Frame}.",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetGameplay("GameLoop/Playing");
-        }
-
-        private static IInputModeService ResolveInputModeService()
-        {
-            return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service)
-                ? service
-                : null;
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.Gameplay, "GameLoop/Playing", "GameLoop", info.Signature));
         }
 
         private static IPostGameOwnershipService ResolvePostPlayOwnershipService()
@@ -337,11 +304,42 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
                 : null;
         }
 
+        private static IPostGameResultService ResolvePostGameResultService()
+        {
+            return DependencyManager.Provider.TryGetGlobal<IPostGameResultService>(out var service)
+                ? service
+                : null;
+        }
+
         private static IGameRunStateService ResolveGameRunStatus()
         {
             return DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var status)
                 ? status
                 : null;
+        }
+
+        private static PostGameSnapshot ResolvePostGameSnapshot()
+        {
+            var postGameResult = ResolvePostGameResultService();
+            if (postGameResult != null && postGameResult.HasResult)
+            {
+                return new PostGameSnapshot(postGameResult.Result, NormalizeValue(postGameResult.Reason));
+            }
+
+            var status = ResolveGameRunStatus();
+            if (status?.HasResult == true)
+            {
+                PostGameResult fallbackResult = status.Outcome switch
+                {
+                    GameRunOutcome.Victory => PostGameResult.Victory,
+                    GameRunOutcome.Defeat => PostGameResult.Defeat,
+                    _ => PostGameResult.None,
+                };
+
+                return new PostGameSnapshot(fallbackResult, NormalizeValue(status.Reason));
+            }
+
+            return new PostGameSnapshot(PostGameResult.None, "<none>");
         }
 
         private static bool IsGameplayScene()
@@ -357,25 +355,19 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         private static SignatureInfo BuildSignatureInfo()
         {
             string sceneName = SceneManager.GetActiveScene().name;
-            string profile = "gameplay";
             string signature = "<none>";
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowSignatureCache>(out var cache) && cache != null &&
-                cache.TryGetLast(out string cachedSignature, out var cachedProfile, out string cachedScene))
+                cache.TryGetLast(out string cachedSignature, out string cachedScene))
             {
                 signature = string.IsNullOrWhiteSpace(cachedSignature) ? "<none>" : cachedSignature.Trim();
                 if (!string.IsNullOrWhiteSpace(cachedScene))
                 {
                     sceneName = cachedScene;
                 }
-
-                if (cachedProfile.IsValid)
-                {
-                    profile = cachedProfile.Value;
-                }
             }
 
-            return new SignatureInfo(signature, sceneName, profile, Time.frameCount);
+            return new SignatureInfo(signature, sceneName, Time.frameCount);
         }
 
         private static string GetLogStateName(GameLoopStateId stateId)
@@ -383,25 +375,39 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
             return stateId == GameLoopStateId.PostPlay ? "PostGame" : stateId.ToString();
         }
 
+        private static string NormalizeValue(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+        }
+
         private readonly struct SignatureInfo
         {
             public string Signature { get; }
             public string SceneName { get; }
-            public string Profile { get; }
             public int Frame { get; }
 
-            public SignatureInfo(string signature, string sceneName, string profile, int frame)
+            public SignatureInfo(string signature, string sceneName, int frame)
             {
                 Signature = string.IsNullOrWhiteSpace(signature) ? "<none>" : signature.Trim();
                 SceneName = string.IsNullOrWhiteSpace(sceneName) ? "<none>" : sceneName.Trim();
-                Profile = string.IsNullOrWhiteSpace(profile) ? "<none>" : profile.Trim();
                 Frame = frame;
             }
         }
 
+        private readonly struct PostGameSnapshot
+        {
+            public PostGameSnapshot(PostGameResult result, string reason)
+            {
+                Result = result;
+                Reason = string.IsNullOrWhiteSpace(reason) ? "<none>" : reason.Trim();
+            }
+
+            public PostGameResult Result { get; }
+            public string Reason { get; }
+        }
+
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
-
             public bool StartRequested { get; private set; }
             public bool PauseRequested { get; private set; }
             public bool ResumeRequested { get; private set; }
@@ -444,4 +450,3 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services
         }
     }
 }
-

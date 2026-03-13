@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -62,14 +62,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
 
-            // Serviço puro; manter instância é ok.
+            // Serviï¿½o puro; manter instï¿½ncia ï¿½ ok.
             _interactService = new PlanetInteractService();
 
             DependencyManager.Provider.InjectDependencies(this);
 
             if (_playerInput == null)
             {
-                DebugUtility.LogError<PlayerInteractController>($"PlayerInput não encontrado em '{name}'.", this);
+                DebugUtility.LogError<PlayerInteractController>($"PlayerInput nï¿½o encontrado em '{name}'.", this);
                 enabled = false;
                 return;
             }
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             ResolveAction();
 
             DebugUtility.LogVerbose<PlayerInteractController>(
-                $"PlayerInteractController inicializado em '{name}' com ação '{actionName}'.",
+                $"PlayerInteractController inicializado em '{name}' com aï¿½ï¿½o '{actionName}'.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
         }
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             UnbindAction();
 
             DebugUtility.LogVerbose<PlayerInteractController>(
-                $"PlayerInteractController destruído em '{name}'.",
+                $"PlayerInteractController destruï¿½do em '{name}'.",
                 context: this);
         }
 
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
             if (_interactAction == null)
             {
                 DebugUtility.LogError<PlayerInteractController>(
-                    $"Ação '{actionName}' não encontrada no InputActionMap de '{name}'.", this);
+                    $"Aï¿½ï¿½o '{actionName}' nï¿½o encontrada no InputActionMap de '{name}'.", this);
             }
         }
 
@@ -174,7 +174,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 
         public Task Reset_CleanupAsync(ResetContext ctx)
         {
-            // Evita acumular subscription em cenários de rebind/reset.
+            // Evita acumular subscription em cenï¿½rios de rebind/reset.
             UnbindAction();
             return Task.CompletedTask;
         }
@@ -189,7 +189,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 
         public Task Reset_RebindAsync(ResetContext ctx)
         {
-            // Segurança: re-injeta dependências se necessário e garante bind.
+            // Seguranï¿½a: re-injeta dependï¿½ncias se necessï¿½rio e garante bind.
             if (_stateService == null)
                 DependencyManager.Provider.InjectDependencies(this);
 

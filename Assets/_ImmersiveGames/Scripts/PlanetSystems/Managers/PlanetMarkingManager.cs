@@ -1,25 +1,25 @@
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.NewScripts.Core.Events;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
 {
     /// <summary>
-    /// Responsável por gerenciar a marcação de planetas no jogo.
+    /// Responsï¿½vel por gerenciar a marcaï¿½ï¿½o de planetas no jogo.
     ///
     /// Regras principais:
-    /// - Sempre no máximo um planeta marcado ao mesmo tempo.
-    /// - Interagir com um planeta já marcado desmarca (ficando nenhum).
+    /// - Sempre no mï¿½ximo um planeta marcado ao mesmo tempo.
+    /// - Interagir com um planeta jï¿½ marcado desmarca (ficando nenhum).
     /// - Interagir com um planeta diferente desmarca o anterior e marca o novo.
     ///
-    /// A coordenação é feita via eventos:
+    /// A coordenaï¿½ï¿½o ï¿½ feita via eventos:
     /// - PlanetMarkedEvent
     /// - PlanetUnmarkedEvent
     /// - PlanetMarkingChangedEvent
     ///
-    /// A marcação/desmarcação visual é responsabilidade do componente
+    /// A marcaï¿½ï¿½o/desmarcaï¿½ï¿½o visual ï¿½ responsabilidade do componente
     /// MarkPlanet em cada planeta.
     /// </summary>
     public sealed class PlanetMarkingManager
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
         {
             var previousMarked = _currentlyMarkedPlanet;
 
-            // Garante unicidade: se já havia um planeta marcado diferente, desmarca.
+            // Garante unicidade: se jï¿½ havia um planeta marcado diferente, desmarca.
             if (_currentlyMarkedPlanet != null && _currentlyMarkedPlanet != markedEvent.MarkPlanet)
             {
                 _currentlyMarkedPlanet.Unmark();
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
 
             _currentlyMarkedPlanet = markedEvent.MarkPlanet;
 
-            // Notifica outros sistemas sobre a troca de marcação.
+            // Notifica outros sistemas sobre a troca de marcaï¿½ï¿½o.
             EventBus<PlanetMarkingChangedEvent>.Raise(
                 new PlanetMarkingChangedEvent(
                     markedEvent.PlanetActor,
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
         }
 
         /// <summary>
-        /// Limpa qualquer marcação ativa, se existir.
+        /// Limpa qualquer marcaï¿½ï¿½o ativa, se existir.
         /// </summary>
         public void ClearAllMarks()
         {
@@ -109,8 +109,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
         }
 
         /// <summary>
-        /// Descadastra os bindings de evento e limpa referência interna.
-        /// Deve ser usado apenas em cenários de teardown/controlados.
+        /// Descadastra os bindings de evento e limpa referï¿½ncia interna.
+        /// Deve ser usado apenas em cenï¿½rios de teardown/controlados.
         /// </summary>
         public void Dispose()
         {

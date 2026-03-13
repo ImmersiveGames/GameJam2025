@@ -1,31 +1,34 @@
 #nullable enable
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 {
     /// <summary>
-    /// Contexto mínimo para execução da IntroStageController antes da revelação da cena.
+    /// Contexto minimo para execucao da IntroStageController antes da revelacao da cena.
+    /// RouteKind e a semantica canonica; labels de profile nao sao mais carregadas no payload.
     /// </summary>
     public readonly struct IntroStageContext
     {
         public string ContextSignature { get; }
-        public SceneFlowProfileId ProfileId { get; }
+        public SceneRouteKind RouteKind { get; }
         public string TargetScene { get; }
         public string Reason { get; }
 
-        public IntroStageContext(string? contextSignature, SceneFlowProfileId profileId, string? targetScene, string? reason)
+        public IntroStageContext(
+            string? contextSignature,
+            SceneRouteKind routeKind,
+            string? targetScene,
+            string? reason)
         {
             ContextSignature = contextSignature ?? string.Empty;
-            ProfileId = profileId;
+            RouteKind = routeKind;
             TargetScene = targetScene ?? string.Empty;
             Reason = reason ?? string.Empty;
         }
     }
 
-    /// <summary>
-    /// Política de execução da IntroStageController.
-    /// </summary>
     public enum IntroStagePolicy
     {
         Disabled,
@@ -33,34 +36,22 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
         AutoComplete
     }
 
-    /// <summary>
-    /// Resolve a política de execução da IntroStageController para um contexto.
-    /// </summary>
     public interface IIntroStagePolicyResolver
     {
-        IntroStagePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason);
+        IntroStagePolicy Resolve(SceneRouteKind routeKind, string reason);
     }
 
-    /// <summary>
-    /// Passo de IntroStageController (opcional). Deve concluir sem bloquear o fluxo.
-    /// </summary>
     public interface IIntroStageStep
     {
         bool HasContent { get; }
         Task RunAsync(IntroStageContext context, CancellationToken cancellationToken);
     }
 
-    /// <summary>
-    /// Coordenador que executa a IntroStageController usando o IIntroStageStep disponível.
-    /// </summary>
     public interface IIntroStageCoordinator
     {
         Task RunIntroStageAsync(IntroStageContext context);
     }
 
-    /// <summary>
-    /// Serviço global para controlar a conclusão da IntroStageController via comando explícito.
-    /// </summary>
     public interface IIntroStageControlService
     {
         bool IsIntroStageActive { get; }
@@ -70,9 +61,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
         void SkipIntroStage(string reason);
     }
 
-    /// <summary>
-    /// Resultado da IntroStageController (com razão e indicação de skip).
-    /// </summary>
     public readonly struct IntroStageCompletionResult
     {
         public string Reason { get; }
@@ -85,9 +73,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
         }
     }
 
-    /// <summary>
-    /// Implementação default (no-op) para ausência de conteúdo.
-    /// </summary>
     public sealed class NoOpIntroStageStep : IIntroStageStep
     {
         public bool HasContent => false;
@@ -96,3 +81,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             => Task.CompletedTask;
     }
 }
+

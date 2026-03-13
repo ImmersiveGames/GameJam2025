@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Fsm;
 namespace _ImmersiveGames.Scripts.StateMachineSystems {
-    public interface OldITransition {
-        OldIState To { get; }
+    public interface IOldITransition {
+        IOldIState To { get; }
         IPredicate Condition { get; }
     }
 }

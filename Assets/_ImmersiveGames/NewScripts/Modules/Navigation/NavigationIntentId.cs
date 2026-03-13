@@ -14,14 +14,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     [Serializable]
     public struct NavigationIntentId : IEquatable<NavigationIntentId>
     {
-        [SerializeField] private string _value;
+        [SerializeField] private string value;
 
-        public string Value => _value ?? string.Empty;
+        public string Value => value ?? string.Empty;
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
         public NavigationIntentId(string value)
         {
-            _value = Normalize(value);
+            this.value = Normalize(value);
         }
 
         public static NavigationIntentId FromName(string name) => new(name);

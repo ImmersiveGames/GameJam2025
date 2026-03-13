@@ -1,27 +1,25 @@
 using System;
+
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain
 {
     /// <summary>
-    /// Request imutável para reset do WorldLifecycle.
+    /// Request imutavel para reset do WorldLifecycle.
+    /// Carrega apenas dados necessarios para correlacao e observabilidade de alto valor.
     /// </summary>
     public readonly struct WorldResetRequest
     {
         public WorldResetRequest(
             string contextSignature,
             string reason,
-            string profileName,
             string targetScene,
             WorldResetOrigin origin,
-            string sourceSignature = null,
-            bool isGameplayProfile = true)
+            string sourceSignature = null)
         {
             ContextSignature = contextSignature ?? string.Empty;
             Reason = reason ?? string.Empty;
-            ProfileName = profileName ?? string.Empty;
             TargetScene = targetScene ?? string.Empty;
             Origin = origin;
             SourceSignature = sourceSignature ?? string.Empty;
-            IsGameplayProfile = isGameplayProfile;
             CreatedUtc = DateTime.UtcNow;
         }
 
@@ -31,13 +29,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain
 
         public string Reason { get; }
 
-        public string ProfileName { get; }
-
         public string TargetScene { get; }
 
         public WorldResetOrigin Origin { get; }
-
-        public bool IsGameplayProfile { get; }
 
         public DateTime CreatedUtc { get; }
 
@@ -45,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain
 
         public override string ToString()
         {
-            return $"WorldResetRequest(Signature='{ContextSignature}', Reason='{Reason}', Profile='{ProfileName}', Target='{TargetScene}', Origin={Origin})";
+            return $"WorldResetRequest(Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin})";
         }
     }
 }

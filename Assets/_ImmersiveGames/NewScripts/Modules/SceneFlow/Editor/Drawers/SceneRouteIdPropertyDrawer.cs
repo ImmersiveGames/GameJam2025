@@ -1,12 +1,83 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEditor;
 using UnityEngine;
 
+namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
+{
+    /// <summary>
+    /// Coleta SceneRouteId a partir das fontes canonicas atuais:
+    /// SceneRouteDefinitionAsset + referencias diretas do SceneRouteCatalogAsset.routeDefinitions.
+    /// </summary>
+    internal sealed class SceneRouteIdSourceProvider : ISceneFlowIdSourceProvider<SceneRouteId>
+    {
+        public SceneFlowIdSourceResult Collect()
+        {
+            var allValues = new HashSet<string>();
+            var duplicates = new HashSet<string>();
+
+            CollectFromRouteDefinitionAssets(allValues, duplicates);
+            CollectFromRouteCatalogAssets(allValues, duplicates);
+
+            return SceneFlowIdSourceUtility.BuildResult(allValues, duplicates);
+        }
+
+        private static void CollectFromRouteDefinitionAssets(HashSet<string> allValues, HashSet<string> duplicates)
+        {
+            string[] guids = AssetDatabase.FindAssets("t:SceneRouteDefinitionAsset");
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                SceneRouteDefinitionAsset asset = AssetDatabase.LoadAssetAtPath<SceneRouteDefinitionAsset>(path);
+                if (asset == null)
+                {
+                    continue;
+                }
+
+                SceneFlowIdSourceUtility.AddAndTrackDuplicate(allValues, duplicates, asset.RouteId.Value);
+            }
+        }
+
+        private static void CollectFromRouteCatalogAssets(HashSet<string> allValues, HashSet<string> duplicates)
+        {
+            string[] guids = AssetDatabase.FindAssets("t:SceneRouteCatalogAsset");
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                SceneRouteCatalogAsset catalog = AssetDatabase.LoadAssetAtPath<SceneRouteCatalogAsset>(path);
+                if (catalog == null)
+                {
+                    continue;
+                }
+
+                SerializedObject serializedObject = new SerializedObject(catalog);
+                SerializedProperty definitions = serializedObject.FindProperty("routeDefinitions");
+                if (definitions == null || !definitions.isArray)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < definitions.arraySize; j++)
+                {
+                    SerializedProperty element = definitions.GetArrayElementAtIndex(j);
+                    if (element.objectReferenceValue is not SceneRouteDefinitionAsset routeAsset)
+                    {
+                        continue;
+                    }
+
+                    SceneFlowIdSourceUtility.AddAndTrackDuplicate(allValues, duplicates, routeAsset.RouteId.Value);
+                }
+            }
+        }
+    }
+}
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 {
+    using _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources;
+
     [CustomPropertyDrawer(typeof(SceneRouteId))]
     public sealed class SceneRouteIdPropertyDrawer : PropertyDrawer
     {
@@ -32,10 +103,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
             bool hasSourceError = !string.IsNullOrEmpty(snapshot.ErrorMessage);
             bool hasMissingValue = !string.IsNullOrEmpty(currentNormalized) && !Contains(snapshot.Values, currentNormalized);
 
-            string missingWarningMessage = hasMissingValue
-                ? $"SceneRouteId inexistente: '{currentNormalized}'."
-                : string.Empty;
-
             if (hasSourceError)
             {
                 y += EditorGUIUtility.standardVerticalSpacing;
@@ -47,6 +114,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 
             if (hasMissingValue)
             {
+                string missingWarningMessage = $"SceneRouteId inexistente: '{currentNormalized}'.";
                 y += EditorGUIUtility.standardVerticalSpacing;
                 float warningHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(missingWarningMessage), position.width);
                 Rect warningRect = new(position.x, y, position.width, warningHeight);
@@ -80,8 +148,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 
             if (!string.IsNullOrEmpty(snapshot.ErrorMessage))
             {
-                string errorMessage = snapshot.ErrorMessage;
-                float errorHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(errorMessage), EditorGUIUtility.currentViewWidth);
+                float errorHeight = EditorStyles.helpBox.CalcHeight(new GUIContent(snapshot.ErrorMessage), EditorGUIUtility.currentViewWidth);
                 height += EditorGUIUtility.standardVerticalSpacing + errorHeight;
             }
 
@@ -169,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
 
             private static bool _isInitialized;
             private static bool _isDirty = true;
-            private static SourceSnapshot _snapshot = new(EmptyValues, "");
+            private static SourceSnapshot _snapshot = new(EmptyValues, string.Empty);
 
             public static SourceSnapshot GetOrRefresh()
             {
@@ -187,7 +254,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
                 }
                 catch (Exception exception)
                 {
-                    // Comentário: falha explícita no Editor, sem quebrar o Inspector.
                     _snapshot = new SourceSnapshot(
                         EmptyValues,
                         $"Failed to load SceneRouteId options. Check SceneRouteCatalog/Route assets. ({exception.GetType().Name})");
@@ -213,10 +279,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
                 _isDirty = true;
             }
         }
-
-        // Smoke test manual (Editor):
-        // 1) Selecione um MonoBehaviour/ScriptableObject com campo SceneRouteId serializado.
-        // 2) Confirme que o campo aparece como dropdown com opção (None) + IDs do catálogo.
-        // 3) Force um valor inválido no YAML e reabra o Inspector para validar "MISSING: <id>" + HelpBox warning.
     }
 }

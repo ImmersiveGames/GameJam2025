@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-#if UNITY_EDITOR
-using UnityEditor;
-using System.IO;
-#endif
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 {
@@ -16,7 +12,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         fileName = "SceneRouteDefinitionAsset",
         menuName = "ImmersiveGames/NewScripts/Modules/SceneFlow/Navigation/Definitions/SceneRouteDefinitionAsset",
         order = 30)]
-    public sealed class SceneRouteDefinitionAsset : ScriptableObject
+    /// <summary>
+    /// OWNER: definicao de uma rota (cenas/policy) e validacoes de consistencia.
+    /// NAO E OWNER: aplicacao de load/unload/fade no runtime.
+    /// PUBLISH/CONSUME: sem EventBus; convertido para SceneRouteDefinition pelo catalogo.
+    /// Fases tocadas: RouteExecutionPlan (dados de rota resolvidos antes do ApplyRoute).
+    /// </summary>
+    public sealed partial class SceneRouteDefinitionAsset : ScriptableObject
     {
         [Header("Identity")]
         [SerializeField] private SceneRouteId routeId;
@@ -29,8 +31,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [Header("Route Policy")]
         [SerializeField] private SceneRouteKind routeKind = SceneRouteKind.Unspecified;
         [SerializeField] private bool requiresWorldReset;
+        [SerializeField] private LevelCollectionAsset levelCollection;
 
         public SceneRouteId RouteId => routeId;
+        public SceneRouteKind RouteKind => routeKind;
+        public LevelCollectionAsset LevelCollection => levelCollection;
 
         public SceneRouteDefinition ToDefinition()
         {
@@ -47,23 +52,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset);
         }
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnValidate()
         {
             ValidateRoutePolicyEditorOnly();
-        }
-
-        private void ValidateRoutePolicyEditorOnly()
-        {
-            string validationError = GetRoutePolicyValidationError();
-            if (string.IsNullOrWhiteSpace(validationError))
-            {
-                return;
-            }
-
-            string assetPath = AssetDatabase.GetAssetPath(this);
-            DebugUtility.LogError(typeof(SceneRouteDefinitionAsset),
-                $"[FATAL][Config] {validationError} asset='{assetPath}', routeId='{routeId}', routeKind='{routeKind}', requiresWorldReset={requiresWorldReset}.");
         }
 #endif
 
@@ -80,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             if (routeKind == SceneRouteKind.Unspecified)
             {
-                return $"routeId='{routeId}' com RouteKind='{SceneRouteKind.Unspecified}' é inválido para policy de reset.";
+                return $"routeId='{routeId}' com RouteKind='{SceneRouteKind.Unspecified}' e invalido para policy de reset.";
             }
 
             if (routeKind == SceneRouteKind.Gameplay && !requiresWorldReset)
@@ -91,6 +83,24 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             if (routeKind == SceneRouteKind.Frontend && requiresWorldReset)
             {
                 return $"routeId='{routeId}' Frontend/Menu exige requiresWorldReset=false.";
+            }
+
+            if (routeKind == SceneRouteKind.Gameplay)
+            {
+                if (levelCollection == null)
+                {
+                    return $"routeId='{routeId}' Gameplay exige levelCollection configurado.";
+                }
+
+                if (!levelCollection.TryValidateRuntime(out string collectionError))
+                {
+                    return $"routeId='{routeId}' Gameplay com levelCollection invalida. detail='{collectionError}'.";
+                }
+            }
+
+            if (routeKind == SceneRouteKind.Frontend && levelCollection != null)
+            {
+                return $"routeId='{routeId}' Frontend/Menu exige levelCollection=null.";
             }
 
             return string.Empty;
@@ -120,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
                 if (string.IsNullOrWhiteSpace(key.SceneName))
                 {
-                    FailFast($"field='{fieldName}' possui SceneKeyAsset inválido em index={i} (SceneName vazio). asset='{key.name}'.");
+                    FailFast($"field='{fieldName}' possui SceneKeyAsset invalido em index={i} (SceneName vazio). asset='{key.name}'.");
                 }
 
                 string sceneName = key.SceneName.Trim();
@@ -181,20 +191,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 return loadedScene.buildIndex;
             }
 
-#if UNITY_EDITOR
-            EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes;
-            for (int i = 0; i < scenes.Length; i++)
-            {
-                string path = scenes[i].path;
-                string name = Path.GetFileNameWithoutExtension(path);
-                if (string.Equals(name, sceneName, StringComparison.Ordinal))
-                {
-                    return i;
-                }
-            }
-#endif
-
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return ResolveBuildIndexEditorOnly(sceneName);
+#else
             return -1;
+#endif
         }
 
         private static string ResolveSingleKey(SceneKeyAsset key, string fieldName)
@@ -206,7 +207,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
             if (string.IsNullOrWhiteSpace(key.SceneName))
             {
-                FailFast($"field='{fieldName}' possui SceneKeyAsset inválido (SceneName vazio). asset='{key.name}'.");
+                FailFast($"field='{fieldName}' possui SceneKeyAsset invalido (SceneName vazio). asset='{key.name}'.");
             }
 
             return key.SceneName.Trim();
@@ -214,8 +215,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
         private static void FailFast(string message)
         {
-            DebugUtility.LogError(typeof(SceneRouteDefinitionAsset), $"[FATAL][Config] {message}");
-            throw new InvalidOperationException(message);
+            HardFailFastH1.Trigger(typeof(SceneRouteDefinitionAsset), $"[Config] {message}");
         }
     }
 }

@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
@@ -7,71 +8,69 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     /// <summary>
-    /// Definição de um nível e sua rota.
-    ///
-    /// F3/Fase 3 (Route como fonte única de Scene Data):
-    /// - Este asset referencia a rota por AssetRef obrigatório (<see cref="routeRef"/>).
-    /// - <see cref="routeId"/> é campo legado apenas para migração assistida no Editor.
+    /// Definicao canonica para vincular um level a uma macro rota.
     /// </summary>
     [Serializable]
     public sealed class LevelDefinition
     {
-        [Tooltip("Id canônico do nível.")]
-        public LevelId levelId;
+        [Tooltip("Referencia canonica do level (levelRef).")]
+        public LevelDefinitionAsset levelRef;
 
-        [Obsolete("Campo legado apenas para migração. Use routeRef.")]
-        [HideInInspector]
-        [Tooltip("SceneRouteId legado do nível (somente migração).")]
-        public SceneRouteId routeId;
+        [Tooltip("Referencia direta obrigatoria para a macro rota canonica do level.")]
+        public SceneRouteDefinitionAsset macroRouteRef;
 
-        [Tooltip("Referência direta obrigatória para a rota canônica.")]
-        public SceneRouteDefinitionAsset routeRef;
+        public LevelDefinitionAsset LevelRef => levelRef;
+        public SceneRouteDefinitionAsset MacroRouteRef => macroRouteRef;
+        public bool HasLevelRef => levelRef != null;
+        public bool IsValid => levelRef != null && TryResolveMacroRouteId(out _);
 
-        [Tooltip("ContentId associado ao nível (observability/compat).")]
-        public string contentId = LevelFlowContentDefaults.DefaultContentId;
-
-        public bool IsValid => levelId.IsValid && ResolveRouteId().IsValid;
-
-        public SceneRouteId ResolveRouteId()
+        public SceneRouteId ResolveMacroRouteId()
         {
-            if (!levelId.IsValid)
+            if (!TryResolveMacroRouteId(out SceneRouteId macroRouteId))
             {
-                FailFast("LevelDefinition inválido: levelId vazio/inválido.");
+                string levelLabel = levelRef != null ? levelRef.name : "<null-levelRef>";
+                FailFast($"LevelDefinition exige macroRouteRef valido. levelRef='{levelLabel}'.");
             }
 
-            if (routeRef == null)
-            {
-                FailFast($"LevelDefinition exige routeRef obrigatório. levelId='{levelId}'.");
-            }
-
-            SceneRouteId routeRefId = routeRef.RouteId;
-            if (!routeRefId.IsValid)
-            {
-                FailFast($"routeRef inválido. levelId='{levelId}', asset='{routeRef.name}', routeRef.routeId vazio/inválido.");
-            }
-
-            if (routeId.IsValid && routeId != routeRefId)
-            {
-                FailFast(
-                    $"LevelDefinition com routeId legado divergente de routeRef. levelId='{levelId}', routeId='{routeId}', routeRef.routeId='{routeRefId}'.");
-            }
-
-            return routeRefId;
+            return macroRouteId;
         }
 
-        public string ResolveContentId()
-            => LevelFlowContentDefaults.Normalize(contentId);
+        public string ResolveLevelSignature()
+        {
+            if (levelRef == null)
+            {
+                FailFast("LevelDefinition invalido: levelRef obrigatorio e nao configurado.");
+            }
 
-        /// <summary>
-        /// Retorna o payload adicional do nível.
-        ///
-        /// F3 Plan-v2: Scene Data não é parte do LevelDefinition.
-        /// </summary>
+            string levelSignature = levelRef.name?.Trim();
+            if (string.IsNullOrWhiteSpace(levelSignature))
+            {
+                FailFast("levelRef invalido para assinatura canonica.");
+            }
+
+            return levelSignature;
+        }
+
         public SceneTransitionPayload ToPayload()
             => SceneTransitionPayload.Empty;
 
         public override string ToString()
-            => $"levelId='{levelId}', routeId='{ResolveRouteId()}'";
+        {
+            string levelLabel = levelRef != null ? levelRef.name : "<none>";
+            return $"levelRef='{levelLabel}', macroRouteId='{ResolveMacroRouteId()}'";
+        }
+
+        private bool TryResolveMacroRouteId(out SceneRouteId resolvedMacroRouteId)
+        {
+            resolvedMacroRouteId = SceneRouteId.None;
+            if (macroRouteRef == null)
+            {
+                return false;
+            }
+
+            resolvedMacroRouteId = macroRouteRef.RouteId;
+            return resolvedMacroRouteId.IsValid;
+        }
 
         private static void FailFast(string detail)
         {

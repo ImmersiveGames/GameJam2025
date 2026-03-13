@@ -1,25 +1,27 @@
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
+﻿using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
 {
     /// <summary>
-    /// Define as propriedades de um estilo de transição.
+    /// Define as propriedades efetivas de um estilo de transicao.
+    /// Dados textuais sao apenas observabilidade.
     /// </summary>
     public readonly struct TransitionStyleDefinition
     {
         public SceneTransitionProfile Profile { get; }
-        public SceneFlowProfileId ProfileId { get; }
         public bool UseFade { get; }
+        public string StyleLabel { get; }
+        public string ProfileLabel { get; }
 
-        public TransitionStyleDefinition(SceneTransitionProfile profile, SceneFlowProfileId profileId, bool useFade)
+        public TransitionStyleDefinition(SceneTransitionProfile profile, bool useFade, string styleLabel, string profileLabel)
         {
             Profile = profile;
-            ProfileId = profileId;
             UseFade = useFade;
+            StyleLabel = string.IsNullOrWhiteSpace(styleLabel) ? string.Empty : styleLabel.Trim();
+            ProfileLabel = string.IsNullOrWhiteSpace(profileLabel) ? string.Empty : profileLabel.Trim();
         }
 
         public override string ToString()
-            => $"profile='{ProfileId}', useFade={UseFade}";
+            => $"style='{StyleLabel}', profile='{ProfileLabel}', useFade={UseFade}";
     }
 }

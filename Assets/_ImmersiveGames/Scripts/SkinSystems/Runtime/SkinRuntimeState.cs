@@ -1,6 +1,6 @@
 ﻿using System;
-using UnityEngine;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {

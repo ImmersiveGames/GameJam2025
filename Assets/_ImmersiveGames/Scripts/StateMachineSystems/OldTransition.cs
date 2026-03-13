@@ -3,17 +3,17 @@ using _ImmersiveGames.NewScripts.Core.Fsm;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public abstract class OldTransition {
-        public OldIState To { get; protected set; }
+        public IOldIState To { get; protected set; }
         public abstract bool Evaluate();
     }
 
-    public class OldTransition<T> : OldTransition, OldITransition
+    public class OldTransition<T> : OldTransition, IOldITransition
     {
         public T Condition { get; }
 
-        IPredicate OldITransition.Condition => Condition as IPredicate;
+        IPredicate IOldITransition.Condition => Condition as IPredicate;
 
-        public OldTransition(OldIState to, T condition)
+        public OldTransition(IOldIState to, T condition)
         {
             To = to;
             Condition = condition;

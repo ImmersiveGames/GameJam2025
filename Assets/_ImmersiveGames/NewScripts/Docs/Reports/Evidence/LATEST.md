@@ -1,22 +1,23 @@
-# Evidência canônica (LATEST)
+# Latest Evidence
 
-Esta página aponta para o conjunto de evidências **mais recente** aceito como referência para auditoria.
+Evidencia canonica vigente: `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`.
 
-## Snapshot atual
+## Leitura vigente
 
-- **Data:** 2026-02-03
-- **Baseline:** 2.2
-- **Arquivo de evidência:** [`Baseline-2.2-Evidence-2026-02-03.md`](2026-02-03/Baseline-2.2-Evidence-2026-02-03.md)
-- **Log bruto (mais recente):** [`lastlog.log`](../lastlog.log) *(atualizado em 2026-02-17)*
-- **Evidências adicionais:** [ADR-0017-LevelCatalog-Evidence-2026-02-03.md](2026-02-03/ADR-0017-LevelCatalog-Evidence-2026-02-03.md)
-- **SceneFlow Config Snapshot (DataCleanup v1):** [../SceneFlow-Config-Snapshot-DataCleanup-v1.md](../SceneFlow-Config-Snapshot-DataCleanup-v1.md)
-- **DataCleanup v1 validation PASS (2026-02-17):** [../SceneFlow-Config-ValidationReport-DataCleanup-v1.md](../SceneFlow-Config-ValidationReport-DataCleanup-v1.md)
-- **Smoke audit (2026-02-17):** [../Audits/2026-02-17/Smoke-DataCleanup-v1.md](../Audits/2026-02-17/Smoke-DataCleanup-v1.md)
-- **Log bruto usado no smoke:** [../lastlog.log](../lastlog.log)
+- O freeze do Baseline V3 e a referencia operacional atual de evidence.
+- A evidencia runtime vigente desta promocao continua em `Docs/Reports/lastlog.log`.
+- A leitura operacional parte de:
+  - `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
+  - `Docs/Reports/lastlog.log`
+  - `Docs/Reports/Audits/LATEST.md`
+  - docs modulares e guias oficiais atuais
+- O baseline atual registrado nessa evidencia confirma:
+  - `PASS` oficial do Baseline V3
+  - `Menu -> Gameplay` no trilho canonico
+  - loading de producao integrado no macro flow
+  - `Victory/Defeat` mockados de forma explicita e controlada
+  - `PostGame` desacoplado de `IntroStage`
+  - `Restart` fora do post
 
-## Regras
-
-- Quando um snapshot é promovido para “LATEST”, ele vira **fonte de verdade** até nova promoção.
-- Alterações de comportamento devem atualizar o snapshot e/ou justificar divergências via ADR + evidência.
-
+Estados anteriores permanecem apenas como historico rastreavel e nao devem substituir esta leitura vigente.
 

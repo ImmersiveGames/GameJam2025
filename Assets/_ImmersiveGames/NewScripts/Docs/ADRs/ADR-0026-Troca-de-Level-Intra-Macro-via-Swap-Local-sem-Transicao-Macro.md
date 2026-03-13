@@ -1,74 +1,39 @@
-# ADR-0026 — Troca de Level Intra-Macro via Swap Local sem Transição Macro
+# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
+
+## Status atual (2026-03-06)
+- Status: **DONE**
+- Implementado no codigo:
+  - `LevelSwapLocalService` aplica unload/load local sem transicao macro.
+  - Restart local (`Level2 -> Level2`) faz reload local (unload+load do mesmo set).
+  - QA confirma `transitionStartedCount='0'` no swap local.
+- Evidencia:
+  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+  - `Docs/Reports/lastlog.log`
+- LEGACY / Historico:
+  - Troca de level via trilho macro no caminho que hoje e local.
 
 ## Status
 
-- Estado: Proposto
-- Data (decisão): 2026-02-19
-- Última atualização: 2026-02-19
-- Tipo: Implementação
-- Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
+- Estado: **Aceito (Implementado)**
+- Data (decisao): 2026-02-19
+- Ultima atualizacao: 2026-03-12
 
+## Decisao canonica atual
 
-## Contexto
+- Swap local usa `levelRef` (`LevelDefinitionAsset`) no dominio da macro atual.
+- Fonte de levels no swap: `SceneRouteDefinitionAsset.LevelCollection`.
+- Sem fallback para `LevelCatalog` no trilho canonico.
+- A API publica principal nao promove mais overloads por `LevelId`.
 
-A troca entre MacroRoutes sempre tem transição (Fade + LoadingHud + gates).  
-Já a troca de levels dentro do mesmo macro **não precisa**, por padrão, de cortina.
+## Evidencia (log)
 
-Hoje existe ContentSwap “in-place” com telemetria e hooks (ADR-0016), o que sugere reaproveitamento do mecanismo para “LevelSwap”.
+- `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
+- `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
+- `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
+- `lastlog:2181` `LevelAdditiveClearSummary ...`
+- `lastlog:2185` `LevelCleared ...`
+- `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
 
-Também há a necessidade de permitir que *alguns* levels optem por:
-- “cortina ao entrar” (intro cinematic)
-- “cortina ao sair”
-- intro/post-level (stages)
+## Observacao historica
 
-Mas isso deve ser **decisão do Level**, não da MacroRoute.
-
-## Decisão
-
-Definir `LevelSwap` como uma operação **local** (mesmo macro) com contrato:
-
-- `LoadLevelAsync(levelId, mode=SwapLocal, options)`
-  - `mode=SwapLocal` por padrão (sem fade macro)
-  - troca conteúdo do level atual por conteúdo do próximo
-  - garante unload do conteúdo anterior (sempre)
-  - pode (opcionalmente) usar “curtain” do próprio level:
-    - `level.allowCurtainIn/out`
-    - `level.hasIntroStage`
-
-### Regras
-
-- LevelSwap:
-  - **não** chama `SceneTransitionService.TransitionAsync` (sem transição macro).
-  - **não** altera macroRouteId.
-  - pode adquirir gates locais (simulação/inputs) durante swap.
-
-- ContentSwap:
-  - permanece como mecanismo genérico de troca de conteúdo;
-  - LevelSwap pode ser uma camada/caso de uso sobre ContentSwap.
-
-## Implicações
-
-- Reduz custo/tempo de troca de level.
-- Mantém MacroRoute como trilho macro “fixo” durante gameplay.
-- IntroStage migra para o Level (executa quando o level sinaliza).
-
-## Alternativas consideradas
-
-1) **Implementar LevelSwap como nova Route (micro-route)**  
-Rejeitado: obriga unload/load de cenas macro e reintroduz confusão Route=Level.
-
-2) **Sempre usar Fade macro para level**  
-Rejeitado: UX pior, e impede swap rápido (ex.: fases curtas).
-
-## Critérios de aceite (DoD)
-
-- Existe evidência (log) de LevelSwap A→B sem `TransitionStarted` macro.
-- A troca descarrega sempre o conteúdo anterior (sem leaks).
-- Se `allowCurtainIn/out` estiver habilitado, o level pode produzir fade local sem afetar macro.
-- Baseline 3.0: cenários N→1 (A/B/Sequence) demonstram swap local.
-
-## Referências
-
-- ADR-0016 — ContentSwap ↔ WorldLifecycle
-- ADR-0020 — MacroRoutes vs Levels
-- ADR-0021 — Baseline 3.0
+- Qualquer referencia a `LevelId` neste contexto deve ser lida como historico fora do trilho canonico atual.

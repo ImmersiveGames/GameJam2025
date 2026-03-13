@@ -1,10 +1,10 @@
 using System.Collections;
-using UnityEngine;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.Scripts.AudioSystem.System;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {

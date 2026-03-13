@@ -1,16 +1,16 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public abstract class OldGameStateBase : OldIState
+    public abstract class OldGameStateBase : IOldIState
     {
         protected readonly GameManager gameManager;
         private readonly HashSet<OldActionType> _allowedActions;
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         }
 
         /// <summary>
-        /// Acesso tardio ao gate global. Não falha caso o serviço ainda não exista.
+        /// Acesso tardio ao gate global. Nï¿½o falha caso o serviï¿½o ainda nï¿½o exista.
         /// </summary>
         protected IOldSimulationGateService Gate
         {
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
             var gate = Gate;
             if (gate == null) return;
 
-            // Idempotente: evita spam de "Release ignorado (token não estava ativo)"
+            // Idempotente: evita spam de "Release ignorado (token nï¿½o estava ativo)"
             if (!gate.IsTokenActive(token)) return;
 
             gate.Release(token);
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         }
 
         /// <summary>
-        /// Perfil comum para telas que exibem UI e pausam o jogo, mas precisam aceitar navegação.
+        /// Perfil comum para telas que exibem UI e pausam o jogo, mas precisam aceitar navegaï¿½ï¿½o.
         /// </summary>
         protected void AllowMenuNavigationWithExitShortcuts()
         {
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
             Debug.Log("Gate IsOpen=" + Gate?.IsOpen);
             AcquireGate(OldSimulationGateTokens.GameOver);
 
-            // IMPORTANTE: estado terminal NÃO deve congelar timeScale; overlay/animações precisam continuar.
+            // IMPORTANTE: estado terminal Nï¿½O deve congelar timeScale; overlay/animaï¿½ï¿½es precisam continuar.
             Time.timeScale = 1f;
 
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             ReleaseGate(OldSimulationGateTokens.GameOver);
 
-            // Normaliza por segurança.
+            // Normaliza por seguranï¿½a.
             Time.timeScale = 1f;
 
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
@@ -226,7 +226,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
             Debug.Log("Gate IsOpen=" + Gate?.IsOpen);
             AcquireGate(OldSimulationGateTokens.Victory);
 
-            // IMPORTANTE: estado terminal NÃO deve congelar timeScale; overlay/animações precisam continuar.
+            // IMPORTANTE: estado terminal Nï¿½O deve congelar timeScale; overlay/animaï¿½ï¿½es precisam continuar.
             Time.timeScale = 1f;
 
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
@@ -237,7 +237,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             ReleaseGate(OldSimulationGateTokens.Victory);
 
-            // Normaliza por segurança.
+            // Normaliza por seguranï¿½a.
             Time.timeScale = 1f;
 
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));

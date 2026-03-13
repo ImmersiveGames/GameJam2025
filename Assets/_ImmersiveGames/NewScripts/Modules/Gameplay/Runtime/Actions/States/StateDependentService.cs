@@ -44,7 +44,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         private EventBinding<GameRunEndedEvent> _gameRunEndedBinding;
         private EventBinding<GamePauseCommandEvent> _gamePauseBinding;
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
-        private EventBinding<GameExitToMenuRequestedEvent> _gameExitToMenuBinding;
         private EventBinding<GameResetRequestedEvent> _gameResetBinding;
         private EventBinding<ReadinessChangedEvent> _readinessBinding;
 
@@ -67,6 +66,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         private const float NonGameplayBlockedLogCooldownSeconds = 1f;
         private float _lastNonGameplayBlockedLogTimestamp = float.NegativeInfinity;
         private string _lastNonGameplayBlockedLogKey = string.Empty;
+        private int _lastResetFrame = -1;
+        private string _lastResetReason = string.Empty;
+        private int _lastPauseFrame = -1;
+        private string _lastPauseKey = string.Empty;
+        private int _lastResumeFrame = -1;
+        private string _lastResumeKey = string.Empty;
 
         public StateDependentService(ISimulationGateService gateService = null)
         {
@@ -142,7 +147,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             EventBus<GameRunEndedEvent>.Unregister(_gameRunEndedBinding);
             EventBus<GamePauseCommandEvent>.Unregister(_gamePauseBinding);
             EventBus<GameResumeRequestedEvent>.Unregister(_gameResumeBinding);
-            EventBus<GameExitToMenuRequestedEvent>.Unregister(_gameExitToMenuBinding);
             EventBus<GameResetRequestedEvent>.Unregister(_gameResetBinding);
             EventBus<ReadinessChangedEvent>.Unregister(_readinessBinding);
 
@@ -191,26 +195,25 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
                     SyncMoveDecisionLogIfChanged();
                 });
 
-                _gamePauseBinding = new EventBinding<GamePauseCommandEvent>(evt =>
-                {
-                    OnGamePause(evt);
-                    SyncMoveDecisionLogIfChanged();
-                });
+                _gamePauseBinding = new EventBinding<GamePauseCommandEvent>(OnGamePauseEvent);
 
-                _gameResumeBinding = new EventBinding<GameResumeRequestedEvent>(_ =>
-                {
-                    SetState(ServiceState.Playing);
-                    SyncMoveDecisionLogIfChanged();
-                });
+                _gameResumeBinding = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
 
-                _gameExitToMenuBinding = new EventBinding<GameExitToMenuRequestedEvent>(_ =>
+                _gameResetBinding = new EventBinding<GameResetRequestedEvent>(evt =>
                 {
-                    SetState(ServiceState.Ready);
-                    SyncMoveDecisionLogIfChanged();
-                });
+                    string reason = evt?.Reason ?? string.Empty;
+                    int frame = Time.frameCount;
+                    if (_lastResetFrame == frame && string.Equals(_lastResetReason, reason, StringComparison.Ordinal))
+                    {
+                        DebugUtility.LogVerbose<StateDependentService>(
+                            $"[OBS][GRS] StateDependent reset dedupe event='GameResetRequestedEvent' reason='{reason}' frame={frame} reasonCode='duplicate_same_frame'.",
+                            DebugUtility.Colors.Info);
+                        return;
+                    }
 
-                _gameResetBinding = new EventBinding<GameResetRequestedEvent>(_ =>
-                {
+                    _lastResetFrame = frame;
+                    _lastResetReason = reason;
+
                     SetState(ServiceState.Ready);
                     SyncMoveDecisionLogIfChanged();
                 });
@@ -226,7 +229,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
                 EventBus<GameRunEndedEvent>.Register(_gameRunEndedBinding);
                 EventBus<GamePauseCommandEvent>.Register(_gamePauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_gameResumeBinding);
-                EventBus<GameExitToMenuRequestedEvent>.Register(_gameExitToMenuBinding);
                 EventBus<GameResetRequestedEvent>.Register(_gameResetBinding);
                 EventBus<ReadinessChangedEvent>.Register(_readinessBinding);
 
@@ -238,6 +240,50 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
             }
         }
 
+        private void OnGamePauseEvent(GamePauseCommandEvent evt)
+        {
+            string key = BuildPauseKey(evt);
+            int frame = Time.frameCount;
+            if (_lastPauseFrame == frame && string.Equals(_lastPauseKey, key, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<StateDependentService>(
+                    $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='StateDependentService' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastPauseFrame = frame;
+            _lastPauseKey = key;
+            DebugUtility.LogVerbose<StateDependentService>(
+                $"[OBS][GRS] GamePauseCommandEvent consumed consumer='StateDependentService' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
+            OnGamePause(evt);
+            SyncMoveDecisionLogIfChanged();
+        }
+
+        private void OnGameResumeRequested(GameResumeRequestedEvent evt)
+        {
+            string key = BuildResumeKey(evt);
+            int frame = Time.frameCount;
+            if (_lastResumeFrame == frame && string.Equals(_lastResumeKey, key, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<StateDependentService>(
+                    $"[OBS][GRS] GameResumeRequestedEvent dedupe_same_frame consumer='StateDependentService' key='{key}' frame='{frame}'",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _lastResumeFrame = frame;
+            _lastResumeKey = key;
+            DebugUtility.LogVerbose<StateDependentService>(
+                $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='StateDependentService' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+
+            SetState(ServiceState.Playing);
+            SyncMoveDecisionLogIfChanged();
+        }
+
         private void OnGamePause(GamePauseCommandEvent evt)
         {
             SetState(evt is { IsPaused: true } ? ServiceState.Paused : ServiceState.Playing);
@@ -247,6 +293,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         {
             _hasReadinessSnapshot = true;
             _gameplayReady = evt.Snapshot.GameplayReady;
+        }
+
+        private static string BuildPauseKey(GamePauseCommandEvent evt)
+        {
+            bool isPaused = evt is { IsPaused: true };
+            return $"pause|isPaused={isPaused}|reason=<null>";
+        }
+
+        private static string BuildResumeKey(GameResumeRequestedEvent evt)
+        {
+            return "resume|reason=<null>";
         }
 
         private void SetState(ServiceState next)
@@ -438,4 +495,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States
         }
     }
 }
+
+
+
+
+
+
 

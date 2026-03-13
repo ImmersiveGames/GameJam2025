@@ -1,5 +1,5 @@
-using UnityEngine;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
@@ -87,16 +87,16 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (string.IsNullOrEmpty(objectName))
             {
-                DebugUtility.LogWarning<PoolData>($"ObjectName não configurado em {name}.", this);
+                DebugUtility.LogWarning<PoolData>($"ObjectName nï¿½o configurado em {name}.", this);
             }
             if (initialPoolSize < 0)
             {
-                DebugUtility.LogWarning<PoolData>($"InitialPoolSize não pode ser negativo em {name}. Definindo como 0.", this);
+                DebugUtility.LogWarning<PoolData>($"InitialPoolSize nï¿½o pode ser negativo em {name}. Definindo como 0.", this);
                 initialPoolSize = 0;
             }
             if (objectConfigs == null || objectConfigs.Length == 0)
             {
-                DebugUtility.LogWarning<PoolData>($"ObjectConfigs não configurado em {name}. Pelo menos uma configuração é necessária.", this);
+                DebugUtility.LogWarning<PoolData>($"ObjectConfigs nï¿½o configurado em {name}. Pelo menos uma configuraï¿½ï¿½o ï¿½ necessï¿½ria.", this);
             }
         }
 #endif

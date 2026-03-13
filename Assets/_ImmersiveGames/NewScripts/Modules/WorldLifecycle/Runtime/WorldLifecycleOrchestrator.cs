@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.RunRearm.Interop;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
@@ -21,6 +21,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
+        // OWNER boundary: reset local/scoped por cena (controller rail).
+        // Nao e owner de publish V1/V2 no trilho macro SceneFlow.
         // Guardrail de QA: manter a ordem das fases como exatamente descrita aqui.
         // Não reorganizar o fluxo do reset ou mover responsabilidades entre classes.
         private readonly ISimulationGateService _gateService;
@@ -744,7 +746,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
 
             var context = _currentResetContext.Value;
-            if (candidate is IRunRearmWorldParticipant scopedParticipant)
+            if (candidate is IActorGroupRearmWorldParticipant scopedParticipant)
             {
                 return context.ContainsScope(scopedParticipant.Scope);
             }
@@ -767,7 +769,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private static int GetParticipantScope(object participant)
         {
-            return participant is IRunRearmWorldParticipant scoped ? (int)scoped.Scope : int.MaxValue;
+            return participant is IActorGroupRearmWorldParticipant scoped ? (int)scoped.Scope : int.MaxValue;
         }
 
         private int CompareHooksWithScope<THook>(
@@ -786,9 +788,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private async Task RunScopedParticipantsResetAsync(WorldResetContext context)
         {
-            // Soft reset executa apenas participantes que declaram escopo via IRunRearmWorldParticipant.
+            // Soft reset executa apenas participantes que declaram escopo via IActorGroupRearmWorldParticipant.
             // Caso seja necessário um hook global no futuro, isso deve acontecer por meio de um escopo/interface explícitos.
-            List<IRunRearmWorldParticipant> participants = CollectScopedParticipants();
+            List<IActorGroupRearmWorldParticipant> participants = CollectScopedParticipants();
             if (participants.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
@@ -796,7 +798,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 return;
             }
 
-            var filtered = new List<IRunRearmWorldParticipant>();
+            var filtered = new List<IActorGroupRearmWorldParticipant>();
             foreach (var participant in participants)
             {
                 if (participant == null)
@@ -861,16 +863,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
         }
 
-        private List<IRunRearmWorldParticipant> CollectScopedParticipants()
+        private List<IActorGroupRearmWorldParticipant> CollectScopedParticipants()
         {
-            var participants = new List<IRunRearmWorldParticipant>();
-            var uniques = new HashSet<IRunRearmWorldParticipant>(ResetScopeParticipantReferenceComparer.Instance);
+            var participants = new List<IActorGroupRearmWorldParticipant>();
+            var uniques = new HashSet<IActorGroupRearmWorldParticipant>(ResetScopeParticipantReferenceComparer.Instance);
 
             if (_spawnServices != null)
             {
                 foreach (var service in _spawnServices)
                 {
-                    if (service is IRunRearmWorldParticipant participant)
+                    if (service is IActorGroupRearmWorldParticipant participant)
                     {
                         if (uniques.Add(participant))
                         {
@@ -882,7 +884,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
             if (_provider != null && !string.IsNullOrWhiteSpace(_sceneName))
             {
-                var sceneParticipants = new List<IRunRearmWorldParticipant>();
+                var sceneParticipants = new List<IActorGroupRearmWorldParticipant>();
                 _provider.GetAllForScene(_sceneName, sceneParticipants);
 
                 participants.AddRange(sceneParticipants.Where(participant => participant != null).Where(participant => uniques.Add(participant)));
@@ -891,7 +893,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             IReadOnlyList<IWorldLifecycleHook> sceneHooks = ResolveSceneHooks();
             for (int i = 0; i < sceneHooks.Count; i++)
             {
-                if (sceneHooks[i] is IRunRearmWorldParticipant participant)
+                if (sceneHooks[i] is IActorGroupRearmWorldParticipant participant)
                 {
                     if (uniques.Add(participant))
                     {
@@ -903,7 +905,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             IReadOnlyList<IWorldLifecycleHook> registryHooks = ResolveRegistryHooks();
             foreach (var t in registryHooks)
             {
-                if (t is IRunRearmWorldParticipant participant)
+                if (t is IActorGroupRearmWorldParticipant participant)
                 {
                     if (uniques.Add(participant))
                     {
@@ -915,7 +917,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             return participants;
         }
 
-        private int CompareResetScopeParticipants(IRunRearmWorldParticipant left, IRunRearmWorldParticipant right)
+        private int CompareResetScopeParticipants(IActorGroupRearmWorldParticipant left, IActorGroupRearmWorldParticipant right)
         {
             if (ReferenceEquals(left, right))
             {
@@ -950,7 +952,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             return string.Compare(leftType, rightType, StringComparison.Ordinal);
         }
 
-        private void LogScopedParticipantOrder(List<IRunRearmWorldParticipant> participants)
+        private void LogScopedParticipantOrder(List<IActorGroupRearmWorldParticipant> participants)
         {
             string[] orderedLabels = participants
                 .Select(participant =>
@@ -964,21 +966,24 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 $"Scoped reset execution order: {string.Join(", ", orderedLabels)}");
         }
 
-        private sealed class ResetScopeParticipantReferenceComparer : IEqualityComparer<IRunRearmWorldParticipant>
+        private sealed class ResetScopeParticipantReferenceComparer : IEqualityComparer<IActorGroupRearmWorldParticipant>
         {
             public static readonly ResetScopeParticipantReferenceComparer Instance = new();
 
-            public bool Equals(IRunRearmWorldParticipant x, IRunRearmWorldParticipant y)
+            public bool Equals(IActorGroupRearmWorldParticipant x, IActorGroupRearmWorldParticipant y)
             {
                 return ReferenceEquals(x, y);
             }
 
-            public int GetHashCode(IRunRearmWorldParticipant obj)
+            public int GetHashCode(IActorGroupRearmWorldParticipant obj)
             {
                 return RuntimeHelpers.GetHashCode(obj);
             }
         }
     }
 }
+
+
+
 
 

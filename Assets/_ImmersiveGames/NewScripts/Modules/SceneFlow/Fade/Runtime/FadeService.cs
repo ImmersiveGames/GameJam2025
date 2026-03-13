@@ -190,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             }
         }
 
-        private static FadeController FindControllerInScene(UnityEngine.SceneManagement.Scene scene)
+        private static FadeController FindControllerInScene(Scene scene)
         {
             // Comentário: evita FindAnyObjectByType (custo + risco de pegar controller errado fora da FadeScene).
             try

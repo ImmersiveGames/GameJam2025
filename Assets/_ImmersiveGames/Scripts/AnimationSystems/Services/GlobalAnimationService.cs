@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -15,6 +15,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
     [DisallowMultipleComponent]
     public sealed class WorldLifecycleController : MonoBehaviour
     {
+        // OWNER boundary: bootstrap/queue de reset local da cena via WorldLifecycleOrchestrator.
+        // Nao publica eventos V1/V2 de gate/telemetria do trilho macro.
         [Header("Lifecycle")]
         [Tooltip("Quando true, o controller executa ResetWorldAsync automaticamente no Start(). " +
                  "Para testes automatizados, um runner deve desligar isto antes do Start().")]
@@ -35,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
         private bool _dependenciesInjected;
         private bool _destroyed;
 
-        // Fila simples: garante execução sequencial de resets (World/Players/etc).
+        // Fila simples: garante execuÃ§Ã£o sequencial de resets (World/Players/etc).
         private readonly object _queueLock = new();
         private readonly Queue<ResetRequest> _resetQueue = new();
         private bool _processingQueue;
@@ -63,13 +65,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 if (verboseLogs)
                 {
                     DebugUtility.Log(typeof(WorldLifecycleController),
-                        $"AutoInitializeOnStart desabilitado — aguardando acionamento externo (scene='{_sceneName}').");
+                        $"AutoInitializeOnStart desabilitado â€” aguardando acionamento externo (scene='{_sceneName}').");
                 }
                 return;
             }
 
             // Se a cena foi carregada via SceneFlow, o reset "production" deve ocorrer no driver (ScenesReady).
-            // Evita reset duplo (Start + ScenesReady) quando o GameReadinessService mantém o token ativo durante a transição.
+            // Evita reset duplo (Start + ScenesReady) quando o GameReadinessService mantÃ©m o token ativo durante a transiÃ§Ã£o.
             if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
             {
                 if (verboseLogs)
@@ -87,12 +89,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
         {
             if (_destroyed)
             {
-                // Idempotência: Unity pode chamar OnDestroy mais de uma vez em cenários de domínio/assemblies.
+                // IdempotÃªncia: Unity pode chamar OnDestroy mais de uma vez em cenÃ¡rios de domÃ­nio/assemblies.
                 return;
             }
             _destroyed = true;
 
-            // Evita que awaits fiquem pendurados em unload/destruição do controller.
+            // Evita que awaits fiquem pendurados em unload/destruiÃ§Ã£o do controller.
             lock (_queueLock)
             {
                 while (_resetQueue.Count > 0)
@@ -103,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 _processingQueue = false;
             }
 
-            // Limpa hooks registrados para evitar vazamento de referências na cena.
+            // Limpa hooks registrados para evitar vazamento de referÃªncias na cena.
             if (_hookRegistry != null)
             {
                 try
@@ -111,18 +113,18 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                     if (verboseLogs)
                     {
                         DebugUtility.Log(typeof(WorldLifecycleController),
-                            $"Limpando WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
+                            $"Limpando WorldLifecycleHookRegistry na destruiÃ§Ã£o do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
                     }
                     _hookRegistry.Clear();
                 }
                 catch (Exception ex)
                 {
                     DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                        $"Falha ao limpar WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
+                        $"Falha ao limpar WorldLifecycleHookRegistry na destruiÃ§Ã£o do controller. scene='{_sceneName}'. {ex}");
                 }
             }
 
-            // Limpa serviços de spawn para evitar retenção de instâncias.
+            // Limpa serviÃ§os de spawn para evitar retenÃ§Ã£o de instÃ¢ncias.
             if (_spawnRegistry != null)
             {
                 try
@@ -130,21 +132,21 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                     if (verboseLogs)
                     {
                         DebugUtility.Log(typeof(WorldLifecycleController),
-                            $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
+                            $"Limpando IWorldSpawnServiceRegistry na destruiÃ§Ã£o do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
                     }
                     _spawnRegistry.Clear();
                 }
                 catch (Exception ex)
                 {
                     DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                        $"Falha ao limpar IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
+                        $"Falha ao limpar IWorldSpawnServiceRegistry na destruiÃ§Ã£o do controller. scene='{_sceneName}'. {ex}");
                 }
             }
         }
 
         /// <summary>
-        /// API pública. Enfileira um reset completo (hard reset).
-        /// Se já houver um reset em andamento, este reset aguardará sua vez.
+        /// API pÃºblica. Enfileira um reset completo (hard reset).
+        /// Se jÃ¡ houver um reset em andamento, este reset aguardarÃ¡ sua vez.
         /// </summary>
         public Task ResetWorldAsync(string reason)
         {
@@ -155,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 
         /// <summary>
         /// Soft reset focado apenas no escopo de jogadores (Players).
-        /// Se já houver um reset em andamento, este reset aguardará sua vez.
+        /// Se jÃ¡ houver um reset em andamento, este reset aguardarÃ¡ sua vez.
         /// </summary>
         public Task ResetPlayersAsync(string reason = "PlayersSoftReset")
         {
@@ -197,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             if (position > ResetQueueBacklogWarningThreshold)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"Reset queue backlog detectado (count={position}). Possível tempestade de resets. lastLabel='{label}', scene='{_sceneName}'.");
+                    $"Reset queue backlog detectado (count={position}). PossÃ­vel tempestade de resets. lastLabel='{label}', scene='{_sceneName}'.");
             }
 
             bool queuedBehindActiveReset = !willStartProcessing;
@@ -208,12 +210,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             if (position > 1)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
+                    $"Reset enfileirado (posiÃ§Ã£o={position}). motivo='Reset jÃ¡ em andamento'. label='{label}', scene='{_sceneName}'.");
             }
             else if (verboseLogs)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleController),
-                    $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
+                    $"Reset enfileirado (posiÃ§Ã£o={position}). motivo='Reset jÃ¡ em andamento'. label='{label}', scene='{_sceneName}'.");
             }
 
             return request.Task;
@@ -248,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 }
                 catch (Exception ex)
                 {
-                    // Guardrail: Reset não deve quebrar o fluxo do caller (best-effort).
+                    // Guardrail: Reset nÃ£o deve quebrar o fluxo do caller (best-effort).
                     DebugUtility.LogError(typeof(WorldLifecycleController),
                         $"Exception while processing reset queue item (label='{request.Label}', scene='{_sceneName}'): {ex}",
                         this);
@@ -265,7 +267,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             await RunResetInternalAsync(
                 reason: reason,
                 startLog: $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.",
-                endLog: $"Reset concluído. reason='{reason}', scene='{_sceneName}'.",
+                endLog: $"Reset concluÃ­do. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): ",
                 execute: o => o.ResetWorldAsync());
         }
@@ -275,7 +277,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             await RunResetInternalAsync(
                 reason: reason,
                 startLog: $"Soft reset (Players) iniciado. reason='{reason}', scene='{_sceneName}'.",
-                endLog: $"Soft reset (Players) concluído. reason='{reason}', scene='{_sceneName}'.",
+                endLog: $"Soft reset (Players) concluÃ­do. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): ",
                 execute: o => o.ResetScopesAsync(new List<WorldResetScope> { WorldResetScope.Players }, reason));
         }
@@ -331,25 +333,25 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             if (_hookRegistry == null)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"WorldLifecycleHookRegistry não encontrado para a cena '{_sceneName}'. Hooks via registry ficarão desativados.");
+                    $"WorldLifecycleHookRegistry nÃ£o encontrado para a cena '{_sceneName}'. Hooks via registry ficarÃ£o desativados.");
             }
 
             if (_gateService == null)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"ISimulationGateService não injetado para a cena '{_sceneName}'. Reset seguirá sem gate.");
+                    $"ISimulationGateService nÃ£o injetado para a cena '{_sceneName}'. Reset seguirÃ¡ sem gate.");
             }
 
             if (_spawnRegistry == null)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"IWorldSpawnServiceRegistry não encontrado para a cena '{_sceneName}'.");
+                    $"IWorldSpawnServiceRegistry nÃ£o encontrado para a cena '{_sceneName}'.");
             }
 
             if (_actorRegistry == null)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"IActorRegistry não encontrado para a cena '{_sceneName}'.");
+                    $"IActorRegistry nÃ£o encontrado para a cena '{_sceneName}'.");
             }
         }
 
@@ -360,7 +362,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             if (_spawnRegistry == null)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"Nenhum IWorldSpawnServiceRegistry encontrado para a cena '{_sceneName}'. Lista ficará vazia.",
+                    $"Nenhum IWorldSpawnServiceRegistry encontrado para a cena '{_sceneName}'. Lista ficarÃ¡ vazia.",
                     this);
                 return;
             }
@@ -374,7 +376,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 else
                 {
                     DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                        $"Serviço de spawn nulo detectado na cena '{_sceneName}'. Ignorado.");
+                        $"ServiÃ§o de spawn nulo detectado na cena '{_sceneName}'. Ignorado.");
                 }
             }
 
@@ -408,7 +410,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             if (_spawnRegistry == null)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"Sem IWorldSpawnServiceRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
+                    $"Sem IWorldSpawnServiceRegistry para a cena '{_sceneName}'. Ciclo de vida nÃ£o pode continuar.");
                 valid = false;
             }
 
@@ -417,7 +419,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 return valid;
             }
             DebugUtility.LogError(typeof(WorldLifecycleController),
-                $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
+                $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida nÃ£o pode continuar.");
 
             return false;
         }
@@ -449,5 +451,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
         }
     }
 }
+
+
 
 

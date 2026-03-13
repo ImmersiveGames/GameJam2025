@@ -4,16 +4,18 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 {
     /// <summary>
-    /// Passo mínimo de IntroStageController com confirmação via input.
-    /// O timeout é opcional e só deve ser habilitado para QA/dev.
+    /// Passo minimo de IntroStageController com confirmacao via input.
+    /// O timeout e opcional e so deve ser habilitado para QA/dev.
     /// </summary>
     public sealed class ConfirmToStartIntroStageStep : IIntroStageStep
     {
@@ -36,16 +38,16 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         public async Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
         {
             string activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
-            string? profile = context.ProfileId.Value;
-
+            string routeKind = context.RouteKind.ToString();
             string signature = NormalizeSignature(context.ContextSignature);
-            ApplyUiInputMode(signature, activeScene, profile);
+
+            ApplyUiInputMode(signature, activeScene, routeKind);
 
             var controlService = ResolveIntroStageControlService();
             if (controlService == null)
             {
                 DebugUtility.LogWarning<ConfirmToStartIntroStageStep>(
-                    "[IntroStageController] IIntroStageControlService indisponível. ConfirmToStart não poderá concluir a IntroStageController.");
+                    "[IntroStageController] IIntroStageControlService indisponivel. ConfirmToStart nao podera concluir a IntroStageController.");
                 return;
             }
 
@@ -74,21 +76,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             }
         }
 
-        private static void ApplyUiInputMode(string signature, string sceneName, string profile)
+        private static void ApplyUiInputMode(string signature, string sceneName, string routeKind)
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
-            {
-                DebugUtility.LogWarning<ConfirmToStartIntroStageStep>(
-                    "[IntroStageController] IInputModeService indisponível. InputMode não será alternado.");
-                return;
-            }
-
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
-                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' profile='{profile}' (delegated).",
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' routeKind='{routeKind}' (delegated).",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetFrontendMenu("IntroStageController/ConfirmToStart");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "IntroStageController/ConfirmToStart", "IntroStage", signature));
         }
 
         private async Task TriggerTimeoutAsync(IIntroStageControlService controlService, CancellationToken cancellationToken)
@@ -153,13 +148,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             actions.Add(action);
         }
 
-        private static IInputModeService? ResolveInputModeService()
-        {
-            return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service)
-                ? service
-                : null;
-        }
-
         private static IIntroStageControlService? ResolveIntroStageControlService()
         {
             return DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service)
@@ -174,4 +162,5 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
     }
 }
+
 

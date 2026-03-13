@@ -1,11 +1,115 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.Navigation.Editor.IdSources;
+using _ImmersiveGames.NewScripts.Modules.Navigation;
 using UnityEditor;
 using UnityEngine;
 
+namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.IdSources
+{
+    /// <summary>
+    /// Coleta NavigationIntentId a partir da fonte canonica em codigo + extras do GameNavigationCatalogAsset.
+    /// </summary>
+    public sealed class NavigationIntentIdSourceProvider
+    {
+        private const string CanonicalCatalogPath = "Assets/Resources/Navigation/GameNavigationCatalog.asset";
+
+        public NavigationIntentIdSourceResult Collect()
+        {
+            var values = new HashSet<string>(StringComparer.Ordinal);
+            var duplicates = new HashSet<string>(StringComparer.Ordinal);
+
+            AddFromCode(values, duplicates);
+            CollectExtrasFromNavigationCatalog(values, duplicates);
+
+            return BuildResult(values, duplicates);
+        }
+
+        private static void AddFromCode(HashSet<string> values, HashSet<string> duplicates)
+        {
+            for (int i = 0; i < GameNavigationIntents.AllCanonicalAndAliases.Count; i++)
+            {
+                string normalized = NavigationIntentId.Normalize(GameNavigationIntents.AllCanonicalAndAliases[i].Value);
+                if (string.IsNullOrEmpty(normalized))
+                {
+                    continue;
+                }
+
+                if (!values.Add(normalized))
+                {
+                    duplicates.Add(normalized);
+                }
+            }
+        }
+
+        private static void CollectExtrasFromNavigationCatalog(
+            HashSet<string> values,
+            HashSet<string> duplicates)
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<GameNavigationCatalogAsset>(CanonicalCatalogPath);
+            if (catalog == null)
+            {
+                throw new InvalidOperationException($"Canonical catalog not found at '{CanonicalCatalogPath}'.");
+            }
+
+            var serializedObject = new SerializedObject(catalog);
+            SerializedProperty routes = serializedObject.FindProperty("routes");
+            if (routes == null || !routes.isArray)
+            {
+                return;
+            }
+
+            for (int i = 0; i < routes.arraySize; i++)
+            {
+                SerializedProperty entry = routes.GetArrayElementAtIndex(i);
+                SerializedProperty intentId = entry.FindPropertyRelative("intentId");
+                SerializedProperty raw = intentId?.FindPropertyRelative("_value");
+                if (raw == null)
+                {
+                    continue;
+                }
+
+                string normalized = NavigationIntentId.Normalize(raw.stringValue);
+                if (string.IsNullOrEmpty(normalized))
+                {
+                    continue;
+                }
+
+                if (!values.Add(normalized))
+                {
+                    duplicates.Add(normalized);
+                }
+            }
+        }
+
+        private static NavigationIntentIdSourceResult BuildResult(HashSet<string> values, HashSet<string> duplicates)
+        {
+            var sortedValues = new List<string>(values);
+            sortedValues.Sort(StringComparer.Ordinal);
+
+            var sortedDuplicates = new List<string>(duplicates);
+            sortedDuplicates.Sort(StringComparer.Ordinal);
+
+            return new NavigationIntentIdSourceResult(sortedValues, sortedDuplicates);
+        }
+    }
+
+    public readonly struct NavigationIntentIdSourceResult
+    {
+        public NavigationIntentIdSourceResult(IReadOnlyList<string> values, IReadOnlyList<string> duplicateValues)
+        {
+            Values = values;
+            DuplicateValues = duplicateValues;
+        }
+
+        public IReadOnlyList<string> Values { get; }
+        public IReadOnlyList<string> DuplicateValues { get; }
+    }
+}
+
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.Drawers
 {
+    using _ImmersiveGames.NewScripts.Modules.Navigation.Editor.IdSources;
+
     [CustomPropertyDrawer(typeof(NavigationIntentId))]
     public sealed class NavigationIntentIdPropertyDrawer : PropertyDrawer
     {
@@ -220,11 +324,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.Drawers
                 }
                 catch (Exception exception)
                 {
-                    // Comentário: falha explícita no Editor, sem quebrar o Inspector.
                     _snapshot = new SourceSnapshot(
                         EmptyValues,
                         EmptyValues,
-                        $"Failed to load NavigationIntentId options. Check Assets/Resources/GameNavigationIntentCatalog.asset. ({exception.GetType().Name})");
+                        $"Failed to load NavigationIntentId options. Check GameNavigationCatalog.asset. ({exception.GetType().Name})");
                 }
 
                 _isDirty = false;
@@ -247,10 +350,5 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.Drawers
                 _isDirty = true;
             }
         }
-
-        // Smoke test manual (Editor):
-        // 1) Abra um asset/componente com campo NavigationIntentId no Inspector.
-        // 2) Verifique dropdown com (None) + IDs do GameNavigationIntentCatalog.
-        // 3) Com valor inválido serializado, confirme "MISSING: <id>" + HelpBox warning.
     }
 }

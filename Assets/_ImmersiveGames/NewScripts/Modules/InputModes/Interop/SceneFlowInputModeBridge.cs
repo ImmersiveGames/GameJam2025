@@ -1,28 +1,36 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 {
     /// <summary>
-    /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
-    /// Também sincroniza o GameLoop com a intenção do profile:
-    /// - Gameplay: aplica InputMode e dispara a IntroStageController (o início real ocorre após conclusão explícita da IntroStageController).
-    /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
+    /// Bridge global para sincronizar InputMode/GameLoop com base nos eventos do SceneFlow.
+    /// Tambem sincroniza o GameLoop com a semantica canonica da rota:
+    /// - Gameplay: solicita InputMode de gameplay.
+    /// - Startup/Frontend: solicita InputMode de menu e garante GameLoop inativo.
+    /// </summary>
+    /// <summary>
+    /// OWNER: sincronizacao InputMode/GameLoop orientada por eventos de transicao.
+    /// NAO E OWNER: execucao da transicao de cena e seus gates.
+    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; publica apenas request events.
+    /// Fases tocadas: TransitionStarted e TransitionCompleted.
     /// </summary>
     public sealed class SceneFlowInputModeBridge : IDisposable
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
-        // Dedupe por instância para evitar supressão entre instâncias após restarts.
-        private string _lastProcessedSignature;
+
+        // Dedupe por instancia para evitar supressao entre instancias apos restarts.
+        private string _lastProcessedSignature = string.Empty;
+        private string _lastStartedSignature = string.Empty;
+        private int _lastStartedFrame = -1;
 
         public SceneFlowInputModeBridge()
         {
@@ -48,7 +56,21 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
+            int frame = UnityEngine.Time.frameCount;
+
+            if (SceneFlowSameFrameDedupe.ShouldDedupe(
+                    ref _lastStartedFrame,
+                    ref _lastStartedSignature,
+                    frame,
+                    signature))
+            {
+                DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
+                    $"[OBS][GRS] InputModeBridge dedupe event='SceneTransitionStarted' signature='{signature}' frame={frame} reason='duplicate_same_frame'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             _lastProcessedSignature = string.Empty;
 
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
@@ -57,34 +79,22 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
         }
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
-        {
-            var inputModeService = ResolveInputModeService();
-            if (inputModeService == null)
-            {
-                DebugUtility.LogWarning<SceneFlowInputModeBridge>(
-                    "[InputMode] IInputModeService indisponivel; transicao ignorada.");
-                ReportInputModesDegraded("missing_service",
-                    "SceneFlowInputModeBridge could not resolve IInputModeService.");
-                return;
-            }
-
-            string profile = evt.Context.TransitionProfileName;
-            string signature = SceneTransitionSignature.Compute(evt.Context);
-            string dedupeKey = $"{profile}|{signature}";
+        {            string signature = SceneTransitionSignature.Compute(evt.context);
+            string dedupeKey = signature;
             string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
-            // ===== Gameplay =====
-            if (evt.Context.TransitionProfileId == SceneFlowProfileId.Gameplay)
+            if (evt.context.RouteKind == SceneRouteKind.Gameplay)
             {
-                inputModeService.SetGameplay("SceneFlow/Completed:Gameplay");
+                EventBus<InputModeRequestEvent>.Raise(
+                    new InputModeRequestEvent(InputModeRequestKind.Gameplay, "SceneFlow/Completed:Gameplay", "SceneFlow", signature));
 
                 LogObsInputModeApplied(
                     mode: "Gameplay",
-                    map: "Player",
+                    map: InputModesDefaults.PlayerActionMapName,
                     reason: "SceneFlow/Completed:Gameplay",
                     signature: signature,
                     scene: activeScene,
-                    profile: profile);
+                    routeKind: evt.context.RouteKind);
 
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
@@ -100,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' routeKind='{evt.context.RouteKind}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -118,7 +128,6 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     "[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop.",
                     DebugUtility.Colors.Info);
 
-                // Se veio de um PauseOverlay por qualquer motivo, prefira Resume.
                 if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
@@ -129,12 +138,10 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                     return;
                 }
 
-                // Se já está Playing, não faz nada (evita ruído).
                 if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        "[SceneFlowInputModeBridge] [GameLoop] RequestStart ignored (already active). " +
-                        "source=SceneFlow/Completed:Gameplay state=Playing.",
+                        "[SceneFlowInputModeBridge] [GameLoop] RequestStart ignored (already active). source=SceneFlow/Completed:Gameplay state=Playing.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -142,66 +149,37 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                 if (isBootState)
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        "[SceneFlowInputModeBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar IntroStageController (Restart/Boot cycle).",
+                        "[SceneFlowInputModeBridge] [GameLoop] Estado=Boot -> RequestReady() para habilitar fluxo de gameplay.",
                         DebugUtility.Colors.Info);
                     gameLoopService.RequestReady();
                 }
 
-                if (!IsGameplayScene())
-                {
-                    DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [IntroStageController] Cena ativa não é gameplay. IntroStageController ignorada. scene='{SceneManager.GetActiveScene().name}'.",
-                        DebugUtility.Colors.Info);
-                }
-                else
-                {
-                    var coordinator = ResolveIntroStageCoordinator();
-                    if (coordinator == null)
-                    {
-                        DebugUtility.LogWarning<SceneFlowInputModeBridge>(
-                            "[SceneFlowInputModeBridge] [IntroStageController] IIntroStageCoordinator indisponível; IntroStageController não será executada.");
-                    }
-                    else
-                    {
-                        gameLoopService.RequestIntroStageStart();
-                        var introStageContext = new IntroStageContext(
-                            contextSignature: signature,
-                            profileId: evt.Context.TransitionProfileId,
-                            targetScene: evt.Context.TargetActiveScene,
-                            reason: "SceneFlow/Completed");
-
-                        _ = coordinator.RunIntroStageAsync(introStageContext);
-                    }
-                }
                 return;
             }
 
-            // ===== Frontend/Startup =====
-            if (evt.Context.TransitionProfileId.IsStartupOrFrontend)
+            if (evt.context.RouteKind == SceneRouteKind.Frontend)
             {
                 if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
                     && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' routeKind='{evt.context.RouteKind}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 _lastProcessedSignature = dedupeKey;
-                inputModeService.SetFrontendMenu("SceneFlow/Completed:Frontend");
+                EventBus<InputModeRequestEvent>.Raise(
+                    new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "SceneFlow/Completed:Frontend", "SceneFlow", signature));
 
                 LogObsInputModeApplied(
                     mode: "FrontendMenu",
-                    map: "UI",
+                    map: InputModesDefaults.MenuActionMapName,
                     reason: "SceneFlow/Completed:Frontend",
                     signature: signature,
                     scene: activeScene,
-                    profile: profile);
+                    routeKind: evt.context.RouteKind);
 
-                // Correção-alvo:
-                // Menu/Frontend não deve “rodar run”. Se algo iniciou o GameLoop antes,
-                // encerramos a run aqui para evitar ficar em Playing no menu.
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
                 {
@@ -209,15 +187,13 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                 }
 
                 string state = gameLoopService.CurrentStateIdName;
-
                 if (string.Equals(state, nameof(GameLoopStateId.Playing), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.Paused), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal)
                     || string.Equals(state, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                        $"[SceneFlowInputModeBridge] [GameLoop] Frontend completed com estado ativo ('{state}'). " +
-                        "Solicitando RequestReady() para garantir menu inativo.",
+                        $"[SceneFlowInputModeBridge] [GameLoop] Frontend completed com estado ativo ('{state}'). Solicitando RequestReady() para garantir menu inativo.",
                         DebugUtility.Colors.Info);
 
                     gameLoopService.RequestReady();
@@ -230,7 +206,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
                 && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura já processada). signature='{signature}' profile='{profile}'.",
+                    $"[SceneFlowInputModeBridge] [GameLoop] SceneFlow/Completed ignorado (assinatura ja processada). signature='{signature}' routeKind='{evt.context.RouteKind}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -238,7 +214,7 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             _lastProcessedSignature = dedupeKey;
 
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
-                $"[InputMode] Profile nao reconhecido ('{profile}'); input mode nao alterado.",
+                $"[InputMode] RouteKind nao reconhecido ('{evt.context.RouteKind}'); input mode nao alterado. targetScene='{evt.context.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -248,37 +224,11 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
             string reason,
             string signature,
             string scene,
-            string profile)
+            SceneRouteKind routeKind)
         {
-            // Observabilidade canônica (Contrato): Request mode/map/reason/signature/scene/profile.
             DebugUtility.LogVerbose(typeof(SceneFlowInputModeBridge),
-                $"[OBS][InputMode] Requested mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' profile='{profile ?? string.Empty}' reason='{reason ?? string.Empty}' (delegated).",
+                $"[OBS][InputMode] Requested mode='{mode}' map='{map}' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' routeKind='{routeKind}' reason='{reason ?? string.Empty}' (delegated).",
                 DebugUtility.Colors.Info);
-        }
-
-        private static IInputModeService ResolveInputModeService()
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                return null;
-            }
-
-            return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service) ? service : null;
-        }
-
-        private static void ReportInputModesDegraded(string reason, string detail)
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var reporter) || reporter == null)
-            {
-                return;
-            }
-
-            reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
         }
 
         private static IGameLoopService ResolveGameLoopService()
@@ -290,26 +240,13 @@ namespace _ImmersiveGames.NewScripts.Modules.InputModes.Interop
 
             return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var service) ? service : null;
         }
-
-        private static IIntroStageCoordinator ResolveIntroStageCoordinator()
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                return null;
-            }
-
-            return DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var service) ? service : null;
-        }
-
-        private static bool IsGameplayScene()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
-            {
-                return classifier.IsGameplayScene();
-            }
-
-            return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", StringComparison.Ordinal);
-        }
     }
 }
+
+
+
+
+
+
+
 

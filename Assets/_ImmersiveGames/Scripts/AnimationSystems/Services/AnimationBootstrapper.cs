@@ -1,5 +1,5 @@
-using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services

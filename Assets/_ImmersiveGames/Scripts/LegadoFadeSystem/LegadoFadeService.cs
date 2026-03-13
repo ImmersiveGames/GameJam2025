@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.LegadoFadeSystem

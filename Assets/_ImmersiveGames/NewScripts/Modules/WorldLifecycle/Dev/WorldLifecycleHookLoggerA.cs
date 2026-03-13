@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
@@ -47,4 +48,5 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Dev
         }
     }
 }
+#endif
 

@@ -1,6 +1,6 @@
-using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (_actor == null)
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
-                    $"Nenhum IActor encontrado em '{name}'. ActorAutoRegistrar será ignorado.",
+                    $"Nenhum IActor encontrado em '{name}'. ActorAutoRegistrar ser? ignorado.",
                     this);
             }
         }
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (_registry == null)
                 return;
 
-            // Se o ActorId ainda não está pronto, adia para Start.
+            // Se o ActorId ainda n?o est? pronto, adia para Start.
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
             {
                 _pendingRegister = true;
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
                     $"ActorId ainda vazio em Start para '{_actor.ActorName}'. " +
-                    $"Verifique se o ActorMaster está gerando ActorId no Awake e se o OldUniqueIdFactory está disponível.",
+                    $"Verifique se o ActorMaster est? gerando ActorId no Awake e se o OldUniqueIdFactory est? dispon?vel.",
                     this);
                 return;
             }
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (!DependencyManager.Provider.TryGetForScene<IOldActorRegistry>(sceneName, out _registry) || _registry == null)
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
-                    $"IOldActorRegistry não encontrado para a cena '{sceneName}'. " +
+                    $"IOldActorRegistry n?o encontrado para a cena '{sceneName}'. " +
                     $"Garanta que existe um GameplayDomainBootstrapper nessa cena.",
                     this);
                 _registry = null;

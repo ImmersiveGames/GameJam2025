@@ -1,18 +1,17 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.PostGame;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 {
@@ -23,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PostGameOverlayController : MonoBehaviour
+    public sealed partial class PostGameOverlayController : MonoBehaviour
     {
         private const string RestartReason = "PostGame/Restart";
         private const string ExitToMenuReason = "PostGame/ExitToMenu";
@@ -40,9 +39,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         [SerializeField] private Button restartButton;
         [SerializeField] private Button exitToMenuButton;
 
-        [Inject] private IInputModeService _inputModeService;
-        [Inject] private ISimulationGateService _gateService;
+                [Inject] private ISimulationGateService _gateService;
         [Inject] private IPostGameOwnershipService _postGameOwnership;
+        [Inject] private IPostLevelActionsService _postLevelActionsService;
 
         private bool _dependenciesInjected;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
@@ -52,9 +51,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private bool _loggedMissingGate;
         private bool _isVisible;
         private bool _actionRequested;
-
-        // Guard rail para impedir reentrada em comandos QA de risco.
-        private bool _qaGuardBusy;
 
         private void Awake()
         {
@@ -122,13 +118,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             // Ao solicitar restart, o overlay deixa de fazer sentido imediatamente.
             HideImmediate();
 
-            // Caminho único: publicar intenção e deixar a bridge global navegar/resetar.
-            // NÃO publicamos GameResumeRequestedEvent aqui: o PostGame usa gate próprio (state.postgame),
-            // e publicar resume gerava "release ignorado" no GamePauseGateBridge quando não havia ownership.
-            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(RestartReason));
-
-            DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Restart solicitado via overlay. reason='{RestartReason}'.");
+            _ = ExecutePostLevelActionAsync(
+                actionName: "RestartLevel",
+                reason: RestartReason,
+                action: ct => _postLevelActionsService.RestartLevelAsync(RestartReason, ct));
         }
 
         /// <summary>
@@ -148,10 +141,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             // Ao sair para o menu, o overlay não é mais relevante — ocultamos imediatamente.
             HideImmediate();
 
-            // Caminho único: publicar intenção e deixar a bridge global navegar.
-            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
-            DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] ExitToMenu solicitado via overlay. reason='{ExitToMenuReason}'.");
+            _ = ExecutePostLevelActionAsync(
+                actionName: "ExitToMenu",
+                reason: ExitToMenuReason,
+                action: ct => _postLevelActionsService.ExitToMenuAsync(ExitToMenuReason, ct));
+        }
+
+        private async Task ExecutePostLevelActionAsync(string actionName, string reason, Func<CancellationToken, Task> action)
+        {
+            if (_postLevelActionsService == null)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    $"[PostGame] {actionName} cancelado: IPostLevelActionsService indisponível. reason='{reason}'.");
+                _actionRequested = false;
+                return;
+            }
+
+            try
+            {
+                await action(CancellationToken.None);
+                DebugUtility.Log<PostGameOverlayController>(
+                    $"[PostGame] {actionName} solicitado via overlay. reason='{reason}'.");
+            }
+            catch (Exception ex)
+            {
+                _actionRequested = false;
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    $"[PostGame] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
+            }
         }
 
         private void RegisterBindings()
@@ -339,31 +356,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private void ApplyPostGameInputMode(string reason)
         {
             EnsureDependenciesInjected();
-
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetFrontendMenu(reason);
-                return;
-            }
-
-            DebugUtility.LogWarning<PostGameOverlayController>(
-                "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, reason, "PostGameOverlay"));
         }
 
         private void ApplyGameplayInputMode(string reason)
         {
             EnsureDependenciesInjected();
-
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetGameplay(reason);
-                return;
-            }
-
-            DebugUtility.LogWarning<PostGameOverlayController>(
-                "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.Gameplay, reason, "PostGameOverlay"));
         }
-
         private bool ShouldOverlayManageOwnership()
         {
             return _postGameOwnership == null || !_postGameOwnership.IsOwnerEnabled;
@@ -467,170 +469,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] exitToMenuButton não configurado no Inspector.");
             }
         }
-
-
-
-        private bool BeginQaRiskCommand(string commandName, string reason)
-        {
-            if (!Application.isPlaying)
-            {
-                DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[WARN][{reason}] Comando '{commandName}' requer Play Mode.");
-                return false;
-            }
-
-#if UNITY_EDITOR
-            if (!EditorUtility.DisplayDialog(
-                    "QA Command",
-                    $"{commandName}: comando forçado com risco de double-trigger/reentrada.\n\nReason: {reason}\n\nDeseja continuar?",
-                    "Continuar",
-                    "Cancelar"))
-            {
-                DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[WARN][{reason}] Comando cancelado pelo usuário.");
-                return false;
-            }
-#else
-            DebugUtility.LogWarning<PostGameOverlayController>(
-                $"[WARN][{reason}] Build sem diálogo de confirmação; executando comando.");
-#endif
-
-            if (_qaGuardBusy)
-            {
-                DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[WARN][{reason}] Comando ignorado por reentrância (_qaGuardBusy=true).");
-                return false;
-            }
-
-            _qaGuardBusy = true;
-            DebugUtility.Log<PostGameOverlayController>(
-                $"[QA][PostGame] Executando comando '{commandName}'. reason='{reason}'.");
-            return true;
-        }
-
-        private void EndQaRiskCommand(string reason)
-        {
-            _qaGuardBusy = false;
-            DebugUtility.LogVerbose<PostGameOverlayController>(
-                $"[QA][PostGame] Guard liberado. reason='{reason}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        // --------------------------------------------------------------------
-        // QA / Context Menu (Editor + DevBuild)
-        // --------------------------------------------------------------------
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        [ContextMenu("QA/Gameplay/PostGame/Force Restart x2 (same frame)")]
-        private void QaForceRestartDoubleSameFrame()
-        {
-            const string reason = "QA/Gameplay/PostGame/Force Restart x2 (same frame)";
-            if (!BeginQaRiskCommand("Force Restart x2 (same frame)", reason))
-            {
-                return;
-            }
-
-            try
-            {
-                // Intencional: simula duplo clique/duplo input sem depender de timing humano.
-                OnClickRestart();
-                OnClickRestart();
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[WARN][{reason}] Falha no comando: {ex}");
-            }
-            finally
-            {
-                EndQaRiskCommand(reason);
-            }
-        }
-
-        [ContextMenu("QA/Gameplay/PostGame/Force ExitToMenu x2 (same frame)")]
-        private void QaForceExitToMenuDoubleSameFrame()
-        {
-            const string reason = "QA/Gameplay/PostGame/Force ExitToMenu x2 (same frame)";
-            if (!BeginQaRiskCommand("Force ExitToMenu x2 (same frame)", reason))
-            {
-                return;
-            }
-
-            try
-            {
-                OnClickExitToMenu();
-                OnClickExitToMenu();
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[WARN][{reason}] Falha no comando: {ex}");
-            }
-            finally
-            {
-                EndQaRiskCommand(reason);
-            }
-        }
-
-        [ContextMenu("QA/Gameplay/PostGame/Force Restart x2 (delay 0.05s)")]
-        private void QaForceRestartDoubleWithDelay()
-        {
-            const string reason = "QA/Gameplay/PostGame/Force Restart x2 (delay 0.05s)";
-            if (!BeginQaRiskCommand("Force Restart x2 (delay 0.05s)", reason))
-            {
-                return;
-            }
-
-            try
-            {
-                StartCoroutine(QaCoroutineDoubleWithGuard(() => OnClickRestart(), 0.05f, reason));
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[WARN][{reason}] Falha no comando: {ex}");
-                EndQaRiskCommand(reason);
-            }
-        }
-
-        [ContextMenu("QA/Gameplay/PostGame/Force ExitToMenu x2 (delay 0.05s)")]
-        private void QaForceExitToMenuDoubleWithDelay()
-        {
-            const string reason = "QA/Gameplay/PostGame/Force ExitToMenu x2 (delay 0.05s)";
-            if (!BeginQaRiskCommand("Force ExitToMenu x2 (delay 0.05s)", reason))
-            {
-                return;
-            }
-
-            try
-            {
-                StartCoroutine(QaCoroutineDoubleWithGuard(() => OnClickExitToMenu(), 0.05f, reason));
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[WARN][{reason}] Falha no comando: {ex}");
-                EndQaRiskCommand(reason);
-            }
-        }
-
-        private System.Collections.IEnumerator QaCoroutineDoubleWithGuard(Action action, float delaySeconds, string reason)
-        {
-            try
-            {
-                // 1a chamada imediata
-                action?.Invoke();
-
-                // 2a chamada após um pequeno delay (simula double click humano)
-                yield return new WaitForSeconds(delaySeconds);
-
-                action?.Invoke();
-            }
-            finally
-            {
-                EndQaRiskCommand(reason);
-            }
-        }
-#endif
     }
 }
+
+
+
 

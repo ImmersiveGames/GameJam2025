@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
@@ -14,11 +14,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public string TargetActiveScene { get; }
         public bool UseFade { get; }
         public SceneRouteId RouteId { get; }
-        public TransitionStyleId StyleId { get; }
+        public SceneRouteKind RouteKind { get; }
+        public TransitionStyleAsset TransitionStyle { get; }
+        public string StyleLabel => TransitionStyle != null ? TransitionStyle.StyleLabel : string.Empty;
         public string Reason { get; }
-        public SceneFlowProfileId TransitionProfileId { get; }
         public SceneTransitionProfile TransitionProfile { get; }
-        public string TransitionProfileName => TransitionProfileId.Value;
+        public string TransitionProfileName => TransitionProfile != null ? TransitionProfile.name?.Trim() ?? string.Empty : string.Empty;
         public bool RequiresWorldReset { get; }
         public string ResetDecisionSource { get; }
         public string ResetDecisionReason { get; }
@@ -30,9 +31,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             string targetActiveScene,
             bool useFade,
             SceneRouteId routeId,
-            TransitionStyleId styleId,
+            SceneRouteKind routeKind,
+            TransitionStyleAsset transitionStyle,
             string reason,
-            SceneFlowProfileId transitionProfileId,
             SceneTransitionProfile transitionProfile,
             bool requiresWorldReset = false,
             string resetDecisionSource = null,
@@ -44,9 +45,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             TargetActiveScene = targetActiveScene;
             UseFade = useFade;
             RouteId = routeId;
-            StyleId = styleId;
+            RouteKind = routeKind;
+            TransitionStyle = transitionStyle;
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
-            TransitionProfileId = transitionProfileId;
             TransitionProfile = transitionProfile;
             RequiresWorldReset = requiresWorldReset;
             ResetDecisionSource = string.IsNullOrWhiteSpace(resetDecisionSource) ? string.Empty : resetDecisionSource.Trim();
@@ -54,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             ContextSignature = !string.IsNullOrWhiteSpace(contextSignature)
                 ? contextSignature.Trim()
-                : ComputeSignature(scenesToLoad, scenesToUnload, targetActiveScene, routeId, styleId, useFade, transitionProfileId, transitionProfile);
+                : ComputeSignature(scenesToLoad, scenesToUnload, targetActiveScene, routeId, routeKind, useFade);
         }
 
         public SceneTransitionContext WithRouteResetDecision(bool requiresWorldReset, string decisionSource, string decisionReason)
@@ -64,9 +65,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 TargetActiveScene,
                 UseFade,
                 RouteId,
-                StyleId,
+                RouteKind,
+                TransitionStyle,
                 Reason,
-                TransitionProfileId,
                 TransitionProfile,
                 requiresWorldReset,
                 decisionSource,
@@ -78,20 +79,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             IReadOnlyList<string> scenesToUnload,
             string targetActiveScene,
             SceneRouteId routeId,
-            TransitionStyleId styleId,
-            bool useFade,
-            SceneFlowProfileId transitionProfileId,
-            SceneTransitionProfile transitionProfile)
+            SceneRouteKind routeKind,
+            bool useFade)
         {
             string load = JoinList(scenesToLoad);
             string unload = JoinList(scenesToUnload);
             string active = (targetActiveScene ?? string.Empty).Trim();
             string route = routeId.Value ?? string.Empty;
-            string style = styleId.Value ?? string.Empty;
-            string profile = transitionProfileId.Value ?? string.Empty;
-            string profileAsset = transitionProfile != null ? transitionProfile.name : string.Empty;
             string fade = useFade ? "1" : "0";
-            return $"r:{route}|s:{style}|p:{profile}|pa:{profileAsset}|a:{active}|f:{fade}|l:{load}|u:{unload}";
+            return $"r:{route}|rk:{routeKind}|a:{active}|f:{fade}|l:{load}|u:{unload}";
         }
 
         private static string JoinList(IReadOnlyList<string> list)
@@ -116,13 +112,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             return result;
         }
 
-
         public override string ToString()
         {
-            return $"Route='{RouteId}', Style='{StyleId}', Reason='{Reason}', " +
+            return $"Route='{RouteId}', RouteKind='{RouteKind}', Style='{StyleLabel}', Reason='{Reason}', " +
                    $"Load=[{string.Join(", ", ScenesToLoad)}], Unload=[{string.Join(", ", ScenesToUnload)}], " +
                    $"Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}', " +
-                   $"ProfileAsset='{(TransitionProfile != null ? TransitionProfile.name : "<null>")}', " +
                    $"RequiresWorldReset={RequiresWorldReset}, DecisionSource='{ResetDecisionSource}', DecisionReason='{ResetDecisionReason}'";
         }
 
@@ -132,9 +126,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                TargetActiveScene == other.TargetActiveScene &&
                UseFade == other.UseFade &&
                RouteId.Equals(other.RouteId) &&
-               StyleId.Equals(other.StyleId) &&
+               RouteKind == other.RouteKind &&
+               Equals(TransitionStyle, other.TransitionStyle) &&
                Reason == other.Reason &&
-               TransitionProfileId.Equals(other.TransitionProfileId) &&
                Equals(TransitionProfile, other.TransitionProfile);
 
         public override bool Equals(object obj) => obj is SceneTransitionContext other && Equals(other);
@@ -148,9 +142,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 hashCode = (hashCode * 397) ^ (TargetActiveScene != null ? TargetActiveScene.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ UseFade.GetHashCode();
                 hashCode = (hashCode * 397) ^ RouteId.GetHashCode();
-                hashCode = (hashCode * 397) ^ StyleId.GetHashCode();
+                hashCode = (hashCode * 397) ^ RouteKind.GetHashCode();
+                hashCode = (hashCode * 397) ^ (TransitionStyle != null ? TransitionStyle.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Reason != null ? Reason.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ TransitionProfileId.GetHashCode();
                 hashCode = (hashCode * 397) ^ (TransitionProfile != null ? TransitionProfile.GetHashCode() : 0);
                 return hashCode;
             }
@@ -167,9 +161,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         }
     }
 
-    public readonly struct SceneTransitionStartedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionStartedEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionFadeInCompletedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionFadeInCompletedEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionScenesReadyEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionScenesReadyEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { Context = context; } }
+    public readonly struct SceneTransitionStartedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionStartedEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionFadeInCompletedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionFadeInCompletedEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionScenesReadyEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionScenesReadyEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { this.context = context; } }
 }

@@ -1,5 +1,5 @@
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
 {
@@ -14,35 +14,35 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
     }
     public class GameStartEvent : IEvent
     {
-        // Não precisa de dados adicionais, mas pode incluir se necessário
+        // Nï¿½o precisa de dados adicionais, mas pode incluir se necessï¿½rio
     }
 
     public class OldGameStartRequestedEvent : IEvent
     {
-        // Solicitado por UI/controles para iniciar uma sessão
+        // Solicitado por UI/controles para iniciar uma sessï¿½o
     }
 
     public class GamePauseRequestedEvent : IEvent
     {
-        // Solicitado por UI/controles para pausar a sessão
+        // Solicitado por UI/controles para pausar a sessï¿½o
     }
 
     public class OldGameResumeRequestedEvent : IEvent
     {
-        // Solicitado por UI/controles para retomar após pausa
+        // Solicitado por UI/controles para retomar apï¿½s pausa
     }
 
     public class OldGameResetRequestedEvent : IEvent
     {
-        // Solicitado por UI/controles para reiniciar a sessão
+        // Solicitado por UI/controles para reiniciar a sessï¿½o
     }
 
-    // Evento disparado para sinalizar o início de um pipeline de reset
+    // Evento disparado para sinalizar o inï¿½cio de um pipeline de reset
     public class GameResetStartedEvent : IEvent
     {
     }
 
-    // Evento disparado após conclusão do reset e recarga de cena
+    // Evento disparado apï¿½s conclusï¿½o do reset e recarga de cena
     public class GameResetCompletedEvent : IEvent
     {
     }
@@ -50,16 +50,16 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
     // Evento disparado quando o jogo termina com derrota
     public class GameOverEvent : IEvent
     {
-        // Pode incluir dados como motivo do game over, se necessário
+        // Pode incluir dados como motivo do game over, se necessï¿½rio
     }
 
-    // Evento disparado quando o jogo termina com vitória
+    // Evento disparado quando o jogo termina com vitï¿½ria
     public class GameVictoryEvent : IEvent
     {
-        // Pode incluir dados como pontuação, se necessário
+        // Pode incluir dados como pontuaï¿½ï¿½o, se necessï¿½rio
     }
 
-    // Evento disparado quando o jogo é pausado ou despausado
+    // Evento disparado quando o jogo ï¿½ pausado ou despausado
     public class GamePauseEvent : IEvent
     {
         public bool IsPaused { get; }

@@ -1,9 +1,9 @@
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityUtils;
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         [SerializeField] private GameConfig gameConfig;
 
         [Header("Debug")]
-        [SerializeField] private DebugManager debugManager;
+        [SerializeField] private DebugManager _debugManager;
 
         public GameConfig GameConfig => gameConfig;
 
@@ -228,19 +228,19 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private DebugManager ResolveDebugManager()
         {
-            if (debugManager != null)
-                return debugManager;
+            if (_debugManager != null)
+                return _debugManager;
 
             if (TryGetComponent(out DebugManager localManager))
             {
-                debugManager = localManager;
-                return debugManager;
+                _debugManager = localManager;
+                return _debugManager;
             }
 
             if (DependencyManager.Provider.TryGetGlobal(out DebugManager globalManager))
             {
-                debugManager = globalManager;
-                return debugManager;
+                _debugManager = globalManager;
+                return _debugManager;
             }
 
             return null;

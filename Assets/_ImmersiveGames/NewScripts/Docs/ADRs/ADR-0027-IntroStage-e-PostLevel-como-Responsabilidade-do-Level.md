@@ -1,66 +1,41 @@
-# ADR-0027 — IntroStage e PostLevel como Responsabilidade do Level
+# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
 
 ## Status
 
-- Estado: Proposto
-- Data (decisão): 2026-02-19
-- Última atualização: 2026-02-19
-- Tipo: Implementação
-- Escopo: NewScripts/Modules (SceneFlow, Navigation, LevelFlow, WorldLifecycle)
+- Estado: **Aceito (Implementado)**
+- Data (decisao): 2026-02-19
+- Ultima atualizacao: 2026-03-12
 
+## Leitura atual deste ADR
 
-## Contexto
+O nome do arquivo foi preservado por rastreabilidade historica, mas o contrato vigente ja foi refinado:
 
-No desenho antigo, parte do “intro” (ex.: IntroStage/UIConfirm) estava acoplada ao fluxo macro.  
-Com Levels, o intro faz sentido como parte do **conteúdo/experiência do level**, não da rota macro.
+- `IntroStage` permanece level-owned e opcional.
+- `PostGame` nao e um stage arbitrario de level.
+- O pos-run continua global e centralizado.
+- O level atual pode apenas complementar o pos-run por hook opcional.
+- `Restart` nao passa por post hook.
 
-Além disso, alguns levels podem querer:
-- IntroStage (antes do gameplay liberar inputs)
-- PostLevel (antes de avançar para o próximo level, ou para retornar ao macro hub)
+## Decisao canonica atual
 
-## Decisão
+- `IntroStage` e decidido pelo level atual (`LevelDefinitionAsset`) e orquestrado por `LevelStageOrchestrator`.
+- Se o level atual nao expuser intro, o fluxo segue direto para gameplay sem erro.
+- `PostGame` e global, com exatamente tres resultados formais:
+  - `Victory`
+  - `Defeat`
+  - `Exit`
+- O hook opcional do level para pos-run reage a esses resultados sem substituir o fluxo global.
+- `Restart` segue pelo trilho de reset/restart e fica fora do hook de post.
 
-Mover a ownership de stages para o domínio de LevelFlow:
+## Evidencia
 
-- `ILevelStageOrchestrator` (ou equivalente) executa stages do level:
-  - `IntroStage` (opcional)
-  - `PostLevelStage` (opcional)
+- `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
+- `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+- `Docs/Reports/lastlog.log`
 
-### Integração com gates
+## Consequencias
 
-- Durante stages, `SimulationGate`/InputMode podem ficar bloqueados:
-  - IntroStage segura `sim.gameplay` até completar
-  - PostLevel segura progressão/troca de level até completar
-
-### Ordem
-
-- Macro enter gameplay:
-  - macro pipeline conclui e abre cortina
-  - **então** LevelStageOrchestrator roda IntroStage se existir
-- LevelSwap:
-  - se `allowCurtainIn/out`: pode fechar cortina local, trocar conteúdo, abrir
-  - roda IntroStage do novo level se existir
-
-## Implicações
-
-- MacroRoute fica “limpa”: define só espaço macro, transição macro e política de reset.
-- Levels definem experiência específica (intro/post, gating local).
-- Melhor alinhamento com seu objetivo: “intro/post é do level”.
-
-## Alternativas consideradas
-
-1) **Manter IntroStage no macro e parametrizar por level**  
-Rejeitado: macro continuaria dependente de lógica específica de gameplay.
-
-## Critérios de aceite (DoD)
-
-- Logs [OBS] de IntroStage referenciam levelId/contentId (domínio Level), não route macro.
-- IntroStage não executa em macros sem levels (ex.: Menu).
-- Baseline 3.0 inclui evidência:
-  - “Macro abriu cortina” → “IntroStage (level)” → “Gameplay unblocked”.
-
-## Referências
-
-- ADR-0015 — Baseline 2.0 fechamento (histórico)
-- ADR-0020 — MacroRoutes vs Levels
-- ADR-0021 — Baseline 3.0
+- O dominio de level continua owner apenas da intro opcional e do hook opcional de reacao visual.
+- O owner do pos-run permanece global no eixo `GameLoop` + `PostGame`.
+- Nao existe `PostStage` generico por level no contrato atual.
+- A superficie documental principal deixa de promover `PostLevel` como stage de level.

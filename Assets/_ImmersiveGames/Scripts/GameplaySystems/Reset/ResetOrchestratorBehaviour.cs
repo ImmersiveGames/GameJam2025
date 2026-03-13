@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -19,12 +19,12 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
     public sealed class ResetOrchestratorBehaviour : MonoBehaviour, IResetOrchestrator
     {
         [Header("Event Wiring")]
-        [Tooltip("Se ligado, o Orchestrator também escuta OldGameResetRequestedEvent. " +
+        [Tooltip("Se ligado, o Orchestrator tambï¿½m escuta OldGameResetRequestedEvent. " +
                  "Desligue para evitar conflito com fluxos macro de reset (GameManager/MenuContext).")]
         [SerializeField] private bool listenToGameResetRequestedEvent = false;
 
         [Header("Scene-level Participants")]
-        [Tooltip("Se ligado, executa reset também em participantes da cena (ex.: GameTimer), mesmo que não sejam filhos de um IActor-alvo.")]
+        [Tooltip("Se ligado, executa reset tambï¿½m em participantes da cena (ex.: GameTimer), mesmo que nï¿½o sejam filhos de um IActor-alvo.")]
         [SerializeField] private bool includeSceneLevelParticipants = true;
 
         [Header("Diagnostics")]
@@ -110,14 +110,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             if (_gate == null)
             {
                 DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                    "IOldSimulationGateService não encontrado (global). Reset ficará desprotegido (sem gate).",
+                    "IOldSimulationGateService nï¿½o encontrado (global). Reset ficarï¿½ desprotegido (sem gate).",
                     this);
             }
 
             if (_actorRegistry == null)
             {
                 DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                    $"IOldActorRegistry não encontrado para a cena '{_sceneName}'. Reset não terá alvos.",
+                    $"IOldActorRegistry nï¿½o encontrado para a cena '{_sceneName}'. Reset nï¿½o terï¿½ alvos.",
                     this);
             }
         }
@@ -129,13 +129,13 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
         public Task<bool> RequestResetAsync(ResetRequest request)
         {
-            // Política simples: se já existe reset rodando, ignora.
+            // Polï¿½tica simples: se jï¿½ existe reset rodando, ignora.
             if (_inProgress)
             {
                 if (logVerbose)
                 {
                     DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                        $"Reset ignorado: já existe reset em andamento. Request={request}",
+                        $"Reset ignorado: jï¿½ existe reset em andamento. Request={request}",
                         this);
                 }
 
@@ -179,7 +179,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 if (_targets.Count == 0)
                 {
                     DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                        $"[Reset] Nenhum alvo encontrado para escopo {request.Scope} na cena '{_sceneName}'.",
+                        $"[Reset] Nenhum alvo encontrado para escopo {request.scope} na cena '{_sceneName}'.",
                         this);
                 }
 
@@ -190,7 +190,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 if (_errors.Count > 0)
                 {
                     DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                        $"[Reset] Concluído com {_errors.Count} erro(s). Veja logs acima.",
+                        $"[Reset] Concluï¿½do com {_errors.Count} erro(s). Veja logs acima.",
                         this);
                 }
 
@@ -209,7 +209,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 _errors.Add(ex);
 
                 DebugUtility.LogError<ResetOrchestratorBehaviour>(
-                    $"[Reset] FAIL => Serial={serial} | Exceção: {ex}",
+                    $"[Reset] FAIL => Serial={serial} | Exceï¿½ï¿½o: {ex}",
                     this);
 
                 return false;
@@ -237,7 +237,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         {
             _targets.Clear();
 
-            switch (request.Scope)
+            switch (request.scope)
             {
                 case ResetScope.AllActorsInScene:
                     if (_actorRegistry?.Actors != null)
@@ -265,11 +265,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                     break;
 
                 case ResetScope.ActorIdSet:
-                    if (request.ActorIds != null && request.ActorIds.Count > 0 && _actorRegistry != null)
+                    if (request.actorIds != null && request.actorIds.Count > 0 && _actorRegistry != null)
                     {
-                        for (int i = 0; i < request.ActorIds.Count; i++)
+                        for (int i = 0; i < request.actorIds.Count; i++)
                         {
-                            var id = request.ActorIds[i];
+                            var id = request.actorIds[i];
                             if (string.IsNullOrWhiteSpace(id)) continue;
 
                             if (_actorRegistry.TryGetActor(id, out var actor) && actor != null)
@@ -291,7 +291,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             // 1) Scene-level participants (ex.: GameTimer), uma vez por etapa.
             if (includeSceneLevelParticipants)
             {
-                CollectSceneLevelParticipants(ctx.Request.Scope);
+                CollectSceneLevelParticipants(ctx.request.scope);
                 SortListByOrder(_sceneParticipants);
 
                 for (int p = 0; p < _sceneParticipants.Count; p++)
@@ -328,7 +328,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 var root = actor.Transform != null ? actor.Transform.gameObject : null;
                 if (root == null) continue;
 
-                CollectParticipants(root, ctx.Request.Scope);
+                CollectParticipants(root, ctx.request.scope);
                 SortParticipantsByOrder();
 
                 for (int p = 0; p < _participants.Count; p++)
@@ -374,7 +374,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 var root = _sceneRoots[r];
                 if (root == null) continue;
 
-                // Se esse root é um ator, ele será resetado no loop de targets (evita duplicar).
+                // Se esse root ï¿½ um ator, ele serï¿½ resetado no loop de targets (evita duplicar).
                 if (root.GetComponent<IActor>() != null)
                     continue;
 

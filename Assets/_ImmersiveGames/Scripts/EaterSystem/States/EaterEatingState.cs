@@ -1,9 +1,9 @@
-using DG.Tweening;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.Scripts.AudioSystem.System;
+using DG.Tweening;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States

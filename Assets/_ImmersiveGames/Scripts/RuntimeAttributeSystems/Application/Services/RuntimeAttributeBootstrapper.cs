@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         // controla tentativas por componente para evitar loops infinitos
         private readonly Dictionary<string, int> _attemptCounts = new();
 
-        // limites configuráveis
+        // limites configurï¿½veis
         private const int MaxAttemptsPerComponent = 6;
         private const float BaseRetryDelay = 0.05f;
 
@@ -29,8 +29,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
 
         /// <summary>
-        /// Registra componente que precisa de injeção. Tenta injetar imediatamente e,
-        /// se não for possível, agenda retries com backoff curto.
+        /// Registra componente que precisa de injeï¿½ï¿½o. Tenta injetar imediatamente e,
+        /// se nï¿½o for possï¿½vel, agenda retries com backoff curto.
         /// </summary>
         public void RegisterForInjection(IInjectableComponent component)
         {
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             _pendingComponents[objectId] = component;
             _attemptCounts[objectId] = 0;
 
-            // tenta injetar imediatamente (síncrono) - se falhar, inicia coroutine de retry
+            // tenta injetar imediatamente (sï¿½ncrono) - se falhar, inicia coroutine de retry
             TryInjectComponent(component);
         }
 
@@ -63,12 +63,12 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 _attemptCounts.Remove(objectId);
 
                 DebugUtility.LogVerbose<RuntimeAttributeBootstrapper>(
-                    $"? Dependências injetadas para {component.GetType().Name} ({objectId})",
+                    $"? Dependï¿½ncias injetadas para {component.GetType().Name} ({objectId})",
                     DebugUtility.Colors.Success);
             }
             catch (Exception)
             {
-                // inicia rotina de retry se ainda não excedeu tentativas
+                // inicia rotina de retry se ainda nï¿½o excedeu tentativas
                 if (_attemptCounts.TryGetValue(objectId, out int attempts) && attempts < MaxAttemptsPerComponent)
                 {
                     _attemptCounts[objectId] = attempts + 1;
@@ -104,7 +104,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 _attemptCounts.Remove(objectId);
 
                 DebugUtility.LogVerbose<RuntimeAttributeBootstrapper>(
-                    $"? (Retry) Dependências injetadas para {component.GetType().Name} ({objectId}) on attempt {attemptIndex}",
+                    $"? (Retry) Dependï¿½ncias injetadas para {component.GetType().Name} ({objectId}) on attempt {attemptIndex}",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)
@@ -125,8 +125,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
 
         /// <summary>
-        /// Método utilitário para forçar tentativa de injeção em todos os pendentes.
-        /// Útil durante debugging ou quando você sabe que uma dependência global acabou de ficar disponível.
+        /// Mï¿½todo utilitï¿½rio para forï¿½ar tentativa de injeï¿½ï¿½o em todos os pendentes.
+        /// ï¿½til durante debugging ou quando vocï¿½ sabe que uma dependï¿½ncia global acabou de ficar disponï¿½vel.
         /// </summary>
         public void TryInjectAllPending()
         {

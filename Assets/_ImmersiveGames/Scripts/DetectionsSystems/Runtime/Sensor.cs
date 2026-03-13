@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
@@ -14,12 +14,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
     {
         private readonly Collider[] _results = new Collider[5];
         private readonly List<IDetectable> _detected = new();
-        private readonly List<IDetectable> _currentDetections = new(); // Lista temporária reutilizada para armazenar detecções no frame atual
+        private readonly List<IDetectable> _currentDetections = new(); // Lista temporï¿½ria reutilizada para armazenar detecï¿½ï¿½es no frame atual
         private readonly List<IDetectable> _cleanupBuffer = new(); // Buffer reaproveitado para evitar GC por frame
         private readonly Transform _origin;
         private readonly IDetector _detector;
         
-        // Cache por objeto por frame - mais específico
+        // Cache por objeto por frame - mais especï¿½fico
         private readonly Dictionary<IDetectable, int> _enterEventFrameCache = new();
         private readonly Dictionary<IDetectable, int> _exitEventFrameCache = new();
         
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             _detector = detector;
             Config = config;
 
-            string mode = config.DetectionMode == SensorDetectionMode.Spherical ? "Esférico" : "Cônico";
+            string mode = config.DetectionMode == SensorDetectionMode.Spherical ? "Esfï¿½rico" : "Cï¿½nico";
             DebugUtility.Log<Sensor>($"Criado em {origin.name}: Tipo={config.DetectionType?.TypeName}, Modo={mode}, Raio={config.Radius}");
         }
 
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 return;
             }
 
-            // Força uma atualização rápida assim que o sensor volta a ficar ativo.
+            // Forï¿½a uma atualizaï¿½ï¿½o rï¿½pida assim que o sensor volta a ficar ativo.
             _timer = Config.MaxFrequency;
         }
 
@@ -197,7 +197,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private Vector3 GetDetectablePosition(IDetectable detectable, MonoBehaviour detectableMono)
         {
-            // Utiliza o Transform do ator quando disponível para manter consistência com o sistema de atores.
+            // Utiliza o Transform do ator quando disponï¿½vel para manter consistï¿½ncia com o sistema de atores.
             return detectable.Owner?.Transform != null
                 ? detectable.Owner.Transform.position
                 : detectableMono.transform.position;
@@ -210,7 +210,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             HandleNewDetections(current, currentFrame);
             HandleLostDetections(current, currentFrame);
 
-            // Limpar caches antigos (mais de 1 frame atrás) para evitar memory leak
+            // Limpar caches antigos (mais de 1 frame atrï¿½s) para evitar memory leak
             CleanupFrameCaches(currentFrame);
         }
 
@@ -221,7 +221,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 _detected.Add(detectable);
                 _enterEventFrameCache[detectable] = currentFrame;
 
-                DebugUtility.LogVerbose<Sensor>($" ? NOVA DETECÇÃO: {GetName(detectable)} por {GetName(_detector)} [Frame {currentFrame}]");
+                DebugUtility.LogVerbose<Sensor>($" ? NOVA DETECï¿½ï¿½O: {GetName(detectable)} por {GetName(_detector)} [Frame {currentFrame}]");
 
                 // APENAS EventBus
                 EventBus<DetectionEnterEvent>.Raise(new DetectionEnterEvent(detectable, _detector, DetectionType));
@@ -239,7 +239,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 _detected.RemoveAt(i);
                 _exitEventFrameCache[detectable] = currentFrame;
 
-                DebugUtility.LogVerbose<Sensor>($" ? PERDA DE DETECÇÃO: {GetName(detectable)} por {GetName(_detector)} [Frame {currentFrame}]");
+                DebugUtility.LogVerbose<Sensor>($" ? PERDA DE DETECï¿½ï¿½O: {GetName(detectable)} por {GetName(_detector)} [Frame {currentFrame}]");
 
                 // APENAS EventBus
                 EventBus<DetectionExitEvent>.Raise(new DetectionExitEvent(detectable, _detector, DetectionType));

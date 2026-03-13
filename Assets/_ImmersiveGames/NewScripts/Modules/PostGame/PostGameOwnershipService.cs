@@ -1,24 +1,30 @@
 using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
-
     public readonly struct PostGameOwnershipContext
     {
         public string Signature { get; }
         public string SceneName { get; }
         public string Profile { get; }
         public int Frame { get; }
+        public PostGameResult Result { get; }
+        public string Reason { get; }
 
-        public PostGameOwnershipContext(string signature, string sceneName, string profile, int frame)
+        public PostGameOwnershipContext(string signature, string sceneName, string profile, int frame, PostGameResult result, string reason)
         {
             Signature = signature;
             SceneName = sceneName;
             Profile = profile;
             Frame = frame;
+            Result = result;
+            Reason = reason;
         }
     }
 
@@ -30,14 +36,9 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         public int Frame { get; }
         public string Reason { get; }
         public string NextState { get; }
+        public PostGameResult Result { get; }
 
-        public PostGameOwnershipExitContext(
-            string signature,
-            string sceneName,
-            string profile,
-            int frame,
-            string reason,
-            string nextState)
+        public PostGameOwnershipExitContext(string signature, string sceneName, string profile, int frame, string reason, string nextState, PostGameResult result)
         {
             Signature = signature;
             SceneName = sceneName;
@@ -45,12 +46,10 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             Frame = frame;
             Reason = reason;
             NextState = nextState;
+            Result = result;
         }
     }
 
-    /// <summary>
-    /// Implementação padrão que aplica InputMode UI e gate de simulação no PostGame.
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostGameOwnershipService : IPostGameOwnershipService
     {
@@ -72,6 +71,11 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             _isActive = true;
             ApplyPostGameInputMode(context);
             AcquireGate();
+
+            if (context.Result == PostGameResult.Victory || context.Result == PostGameResult.Defeat)
+            {
+                _ = RunLevelHookSafelyAsync(context.Signature, context.SceneName, context.Result, context.Reason, context.Frame);
+            }
         }
 
         public void OnPostGameExited(PostGameOwnershipExitContext context)
@@ -84,52 +88,68 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             _isActive = false;
             ReleaseGate(context.Reason);
             ApplyExitInputMode(context);
+
+            if (context.Result == PostGameResult.Exit)
+            {
+                _ = RunLevelHookSafelyAsync(context.Signature, context.SceneName, context.Result, context.Reason, context.Frame);
+            }
         }
 
         private static void ApplyPostGameInputMode(PostGameOwnershipContext context)
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
-            {
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
-                return;
-            }
-
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' " +
-                $"signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
                 DebugUtility.Colors.Info);
 
-            inputMode.SetFrontendMenu("PostGame/Entered");
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "PostGame/Entered", "PostGame", context.Signature));
         }
 
         private void ApplyExitInputMode(PostGameOwnershipExitContext context)
         {
-            var inputMode = ResolveInputModeService();
-            if (inputMode == null)
-            {
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
-                return;
-            }
-
             bool applyGameplay = context.NextState == "Playing";
             string modeName = applyGameplay ? "Gameplay" : "FrontendMenu";
             string mapName = applyGameplay ? "Player" : "UI";
+            string reason = $"PostGame/{context.Reason}";
 
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='PostGame/{context.Reason}' " +
-                $"signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
+                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='{reason}' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
                 DebugUtility.Colors.Info);
 
-            if (applyGameplay)
+            EventBus<InputModeRequestEvent>.Raise(
+                new InputModeRequestEvent(applyGameplay ? InputModeRequestKind.Gameplay : InputModeRequestKind.FrontendMenu, reason, "PostGame", context.Signature));
+        }
+
+        private async Task RunLevelHookSafelyAsync(string signature, string sceneName, PostGameResult result, string reason, int frame)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelPostGameHookService>(out var hookService) || hookService == null)
             {
-                inputMode.SetGameplay($"PostGame/{context.Reason}");
+                return;
             }
-            else
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var stagePresentationService) ||
+                stagePresentationService == null ||
+                !stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
+                !contract.IsValid)
             {
-                inputMode.SetFrontendMenu($"PostGame/{context.Reason}");
+                return;
+            }
+
+            try
+            {
+                await hookService.RunReactionAsync(new LevelPostGameHookContext(
+                    contract.LevelRef,
+                    contract.LevelSignature,
+                    signature,
+                    sceneName,
+                    result,
+                    reason,
+                    frame));
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning<PostGameOwnershipService>(
+                    $"[OBS][PostGame] LevelPostGameHookFailed levelRef='{contract.LevelRef.name}' result='{result}' ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 
@@ -149,15 +169,12 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
                 }
 
                 _loggedMissingGate = true;
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    "[PostGame] ISimulationGateService indisponível. Gate não será adquirido.");
+                DebugUtility.LogWarning<PostGameOwnershipService>("[PostGame] ISimulationGateService indisponivel. Gate nao sera adquirido.");
                 return;
             }
 
             _gateHandle = gateService.Acquire(PostGameGateToken);
-            DebugUtility.Log<PostGameOwnershipService>(
-                $"[PostGame] Gate adquirido token='{PostGameGateToken}'.",
-                DebugUtility.Colors.Info);
+            DebugUtility.Log<PostGameOwnershipService>($"[PostGame] Gate adquirido token='{PostGameGateToken}'.", DebugUtility.Colors.Info);
         }
 
         private void ReleaseGate(string reason)
@@ -173,22 +190,11 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<PostGameOwnershipService>(
-                    $"[PostGame] Falha ao liberar gate ({reason}): {ex}");
+                DebugUtility.LogWarning<PostGameOwnershipService>($"[PostGame] Falha ao liberar gate ({reason}): {ex}");
             }
 
             _gateHandle = null;
-
-            DebugUtility.Log<PostGameOwnershipService>(
-                $"[PostGame] Gate liberado token='{PostGameGateToken}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static IInputModeService ResolveInputModeService()
-        {
-            return DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service)
-                ? service
-                : null;
+            DebugUtility.Log<PostGameOwnershipService>($"[PostGame] Gate liberado token='{PostGameGateToken}'.", DebugUtility.Colors.Info);
         }
 
         private static ISimulationGateService ResolveGateService()

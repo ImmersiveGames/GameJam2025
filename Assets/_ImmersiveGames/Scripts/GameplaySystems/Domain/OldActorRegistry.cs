@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.ActorSystems;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
                 return false;
             }
 
-            // ActorId precisa ser não-vazio e estável (binder depende disso).
+            // ActorId precisa ser nï¿½o-vazio e estï¿½vel (binder depende disso).
             if (string.IsNullOrWhiteSpace(actor.ActorId))
             {
                 DebugUtility.LogWarning<OldActorRegistry>(

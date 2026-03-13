@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
     /// <summary>
-    /// Centraliza a assinatura de correlação usada entre SceneFlow e WorldLifecycle.
+    /// Centraliza a assinatura de correlacao usada entre SceneFlow e WorldLifecycle.
     ///
     /// Importante:
-    /// - A assinatura canônica é <see cref="SceneTransitionContext.ContextSignature"/>.
+    /// - A assinatura canonica e <see cref="SceneTransitionContext.ContextSignature"/>.
     /// - <see cref="SceneTransitionContext.ToString"/> deve ser tratado como string de debug/log.
     /// </summary>
     public static class SceneTransitionSignature
@@ -17,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             return context.ContextSignature ?? string.Empty;
         }
 
-        public static SceneTransitionContext BuildContext(SceneTransitionRequest request)
+        public static SceneTransitionContext BuildContext(SceneTransitionRequest request, SceneRouteKind routeKind = SceneRouteKind.Unspecified)
         {
             if (request == null)
             {
@@ -32,9 +34,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 targetActiveScene: request.TargetActiveScene,
                 useFade: request.UseFade,
                 routeId: request.RouteId,
-                styleId: request.StyleId,
+                routeKind: routeKind,
+                transitionStyle: request.TransitionStyle,
                 reason: request.Reason,
-                transitionProfileId: request.TransitionProfileId,
                 transitionProfile: request.TransitionProfile,
                 contextSignature: request.ContextSignature);
         }

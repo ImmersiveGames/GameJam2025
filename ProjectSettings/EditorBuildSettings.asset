@@ -29,6 +29,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_ImmersiveGames/Scenes/SceneTest.unity
     guid: 2039167f662f2e34a99f630eadbe66c0
+  - enabled: 1
+    path: Assets/_ImmersiveGames/Scenes/SceneTest2.unity
+    guid: 8909e7e8399536a44976a552663e97d1
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 108886296fc74d142975b35c76c1d56f, type: 2}
   m_UseUCBPForAssetBundles: 0

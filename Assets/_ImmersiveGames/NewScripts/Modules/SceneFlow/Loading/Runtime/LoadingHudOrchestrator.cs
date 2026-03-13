@@ -12,11 +12,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
     /// - Em transicoes com Fade: a HUD e "ensured" no Started, mas so fica visivel após FadeIn concluir.
     /// - Em transicoes sem Fade: mantem o comportamento antigo (Show já no Started).
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+        /// <summary>
+    /// OWNER: orquestracao de visibilidade da HUD ao longo dos eventos do SceneFlow.
+    /// NAO E OWNER: carregamento tecnico da cena HUD (delegado ao LoadingHudService).
+    /// PUBLISH/CONSUME: consome Started/FadeInCompleted/ScenesReady/BeforeFadeOut/Completed; nao publica eventos.
+    /// Fases tocadas: TransitionStarted, FadeIn completed, ScenesReady, BeforeFadeOut, TransitionCompleted.
+    /// </summary>
+[DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudOrchestrator
     {
 
         private ILoadingHudService _hudService;
+        private ILoadingPresentationService _presentationService;
 
         private string _activeSignature;
         private string _pendingSignature;
@@ -47,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             ResetWarnings();
 
@@ -60,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _activeSignature = signature;
             _pendingSignature = signature;
             _pendingStep = SceneFlowLoadingPhases.Started;
-            _pendingUseFade = evt.Context.UseFade;
+            _pendingUseFade = evt.context.UseFade;
 
             DebugUtility.LogVerbose<LoadingHudOrchestrator>(
                 $"[LoadingStart] signature='{signature}' useFade={_pendingUseFade}.",
@@ -80,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionFadeInCompleted(SceneTransitionFadeInCompletedEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (!EnsureActiveSignature(signature))
             {
@@ -96,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (IsSignatureMismatch(signature))
             {
@@ -107,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _activeSignature = signature;
             _pendingSignature = signature;
             _pendingStep = SceneFlowLoadingPhases.ScenesReady;
-            _pendingUseFade = evt.Context.UseFade;
+            _pendingUseFade = evt.context.UseFade;
 
 
             // Para fade/no-fade: Show e idempotente por assinatura quando a HUD ja estiver visivel.
@@ -116,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (!EnsureActiveSignature(signature))
             {
@@ -131,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (!EnsureActiveSignature(signature, allowEmptyActive: true))
             {
@@ -139,6 +146,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             }
 
             ClearPending();
+
+            if (TryResolvePresentationService())
+            {
+                _presentationService.SetProgress(signature, new LoadingProgressSnapshot(1f, "Ready", evt.context.Reason));
+            }
 
             TryHide(signature, SceneFlowLoadingPhases.Completed, "completed");
 
@@ -329,6 +341,22 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             return true;
         }
 
+        private bool TryResolvePresentationService()
+        {
+            if (_presentationService != null)
+            {
+                return true;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILoadingPresentationService>(out var service) || service == null)
+            {
+                return false;
+            }
+
+            _presentationService = service;
+            return true;
+        }
+
         private string ResolvePendingStep(string signature, string fallback)
         {
             if (string.IsNullOrWhiteSpace(signature))
@@ -345,3 +373,5 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         }
     }
 }
+
+

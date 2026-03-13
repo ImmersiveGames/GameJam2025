@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
@@ -16,6 +15,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
     /// <summary>
     /// Servico canonico do reset do WorldLifecycle.
     /// Fonte de verdade para policy/guards/validation/orchestration.
+    /// Ownership (Baseline 3.1):
+    /// - OWNER do macro reset (world reset) no runtime.
+    /// - API canonica chamada por SceneFlow driver e comandos de macro reset.
+    /// - Encapsula construcao/execucao do WorldResetOrchestrator sem expor detalhes.
     /// </summary>
     public sealed class WorldResetService : IWorldResetService
     {
@@ -30,17 +33,17 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             var request = new WorldResetRequest(
                 contextSignature: contextSignature ?? string.Empty,
                 reason: reason ?? string.Empty,
-                profileName: WorldResetReasons.ManualProfile,
                 targetScene: string.Empty,
                 origin: WorldResetOrigin.Manual,
-                sourceSignature: contextSignature ?? string.Empty,
-                isGameplayProfile: true);
+                sourceSignature: contextSignature ?? string.Empty);
 
             return await TriggerResetAsync(request);
         }
 
         public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
+            // WL-1.1: este metodo e o ponto de entrada canonico para world reset.
+            // Nao alterar fluxo/callsites nesta etapa.
             EnsureDependencies();
 
             string ctx = string.IsNullOrWhiteSpace(request.ContextSignature) ? string.Empty : request.ContextSignature;
@@ -66,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                     $"[WorldResetService] Falha durante TriggerResetAsync signature='{ctx}' reason='{rsn}' ex={ex}");
 
                 // Best-effort: ainda publica completed para evitar deadlock no SceneFlow gate.
-                EventBus<WorldLifecycleResetCompletedEvent>.Raise(new WorldLifecycleResetCompletedEvent(ctx, rsn));
+                WorldResetOrchestrator.PublishResetCompletedV1(ctx, rsn);
                 return WorldResetResult.Failed;
             }
             finally
@@ -110,3 +113,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         }
     }
 }
+
+
+
+

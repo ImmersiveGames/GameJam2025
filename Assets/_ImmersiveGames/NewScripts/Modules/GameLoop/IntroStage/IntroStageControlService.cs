@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 // Contexto de log extraído defensivamente (com fallback e log de erro se falhar).
                 var logContext = BuildSafeLogContext(context);
                 string signature = logContext.Signature;
-                string profile = logContext.Profile;
+                string routeKind = logContext.RouteKind;
                 string targetScene = logContext.TargetScene;
 
                 if (!wasActive)
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                         $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' " +
                         $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' " +
                         $"ignoreReason='{ignoreReason}' state='{gameLoopState}' isActive=false " +
-                        $"signature='{signature}' profile='{profile}' target='{targetScene}'.",
+                        $"signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -124,14 +124,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                     $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' " +
                     $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' " +
                     $"state='{gameLoopState}' isActive=true signature='{signature}' " +
-                    $"profile='{profile}' target='{targetScene}'.",
+                    $"routeKind='{routeKind}' target='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
                         $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' " +
-                        $"profile='{profile}' target='{targetScene}'.");
+                        $"routeKind='{routeKind}' target='{targetScene}'.");
                 }
 
                 source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
@@ -183,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             {
                 return new IntroStageLogContext(
                     NormalizeValue(context.ContextSignature),
-                    NormalizeValue(context.ProfileId.Value),
+                    NormalizeValue(context.RouteKind.ToString()),
                     NormalizeValue(context.TargetScene));
             }
             catch (Exception ex)
@@ -199,15 +199,18 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             public static readonly IntroStageLogContext Fallback = new("<error>", "<error>", "<error>");
 
             public string Signature { get; }
-            public string Profile { get; }
+            public string RouteKind { get; }
             public string TargetScene { get; }
 
-            public IntroStageLogContext(string signature, string profile, string targetScene)
+            public IntroStageLogContext(string signature, string routeKind, string targetScene)
             {
                 Signature = signature;
-                Profile = profile;
+                RouteKind = routeKind;
                 TargetScene = targetScene;
             }
         }
     }
 }
+
+
+

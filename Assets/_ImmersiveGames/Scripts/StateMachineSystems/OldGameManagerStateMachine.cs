@@ -1,9 +1,9 @@
-using _ImmersiveGames.Scripts.GameManagerSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Validation;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using UnityEngine;
 using UnityUtils;
 
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         private int _lastGameOverFrame = -1;
         private int _lastVictoryFrame = -1;
 
-        public OldIState CurrentState => _stateMachine?.CurrentState;
+        public IOldIState CurrentState => _stateMachine?.CurrentState;
 
         protected override void Awake()
         {

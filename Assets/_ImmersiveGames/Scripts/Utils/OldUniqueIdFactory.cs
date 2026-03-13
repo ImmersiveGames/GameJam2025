@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using _ImmersiveGames.Scripts.ActorSystems;
 
 namespace _ImmersiveGames.Scripts.Utils
 {

@@ -1,37 +1,29 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+﻿using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
-    /// <summary>
-    /// Evento canônico de seleção de level para correlação entre navegação, conteúdo e gameplay.
-    /// </summary>
     public readonly struct LevelSelectedEvent : IEvent
     {
         public LevelSelectedEvent(
-            LevelId levelId,
-            SceneRouteId routeId,
-            TransitionStyleId styleId,
-            string contentId,
-            string reason,
+            SceneRouteId macroRouteId,
+            LevelDefinitionAsset levelRef,
             int selectionVersion,
-            LevelContextSignature levelSignature)
+            string reason,
+            string levelSignature)
         {
-            LevelId = levelId;
-            RouteId = routeId;
-            StyleId = styleId;
-            ContentId = string.IsNullOrWhiteSpace(contentId) ? string.Empty : contentId.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            MacroRouteId = macroRouteId;
+            LevelRef = levelRef;
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
-            LevelSignature = levelSignature;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
         }
 
-        public LevelId LevelId { get; }
-        public SceneRouteId RouteId { get; }
-        public TransitionStyleId StyleId { get; }
-        public string ContentId { get; }
-        public string Reason { get; }
+        public SceneRouteId MacroRouteId { get; }
+        public LevelDefinitionAsset LevelRef { get; }
         public int SelectionVersion { get; }
-        public LevelContextSignature LevelSignature { get; }
+        public string Reason { get; }
+        public string LevelSignature { get; }
     }
 }

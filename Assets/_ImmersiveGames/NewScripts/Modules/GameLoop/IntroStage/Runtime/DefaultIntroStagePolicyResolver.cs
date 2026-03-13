@@ -1,57 +1,33 @@
 #nullable enable
-using System;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using UnityEngine.SceneManagement;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 {
     /// <summary>
-    /// Resolver padrão de política da IntroStageController (preparado para produção).
+    /// Resolver padrao de politica da IntroStageController.
+    /// A Intro continua globalmente orquestrada, mas o level atual pode expor se ela existe ou nao.
     /// </summary>
     public sealed class DefaultIntroStagePolicyResolver : IIntroStagePolicyResolver
     {
-        private const string FallbackGameplaySceneName = "GameplayScene";
-        private readonly IGameplaySceneClassifier _sceneClassifier;
-
-        public DefaultIntroStagePolicyResolver(IGameplaySceneClassifier? sceneClassifier)
+        public IntroStagePolicy Resolve(SceneRouteKind routeKind, string reason)
         {
-            _sceneClassifier = sceneClassifier ?? new DefaultGameplaySceneClassifier();
-        }
-
-        public IntroStagePolicy Resolve(SceneFlowProfileId profile, string targetScene, string reason)
-        {
-            if (!profile.IsGameplay)
+            if (routeKind != SceneRouteKind.Gameplay)
             {
                 return IntroStagePolicy.Disabled;
             }
 
-            if (!IsGameplayTargetScene(targetScene))
+            if (DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var stagePresentationService) &&
+                stagePresentationService != null &&
+                stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract))
             {
-                return IntroStagePolicy.Disabled;
+                return contract.HasIntroStage
+                    ? IntroStagePolicy.Manual
+                    : IntroStagePolicy.Disabled;
             }
 
             return IntroStagePolicy.Manual;
         }
-
-        private bool IsGameplayTargetScene(string targetScene)
-        {
-            if (string.IsNullOrWhiteSpace(targetScene))
-            {
-                return false;
-            }
-
-            var activeScene = SceneManager.GetActiveScene();
-            if (activeScene.IsValid()
-                && string.Equals(activeScene.name, targetScene, StringComparison.Ordinal))
-            {
-                return _sceneClassifier.IsGameplayScene();
-            }
-
-            return string.Equals(targetScene, FallbackGameplaySceneName, StringComparison.Ordinal);
-        }
     }
 }
-
-
-
-

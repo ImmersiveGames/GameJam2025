@@ -1,15 +1,15 @@
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ProjectilesSystems;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
-    /// Versão especializada do BulletPoolable para minions de defesa.
+    /// Versï¿½o especializada do BulletPoolable para minions de defesa.
     ///
     /// Reaproveita:
     /// - Rigidbody / velocidade
-    /// - DamageDealer / colisão / retorno ao pool
+    /// - DamageDealer / colisï¿½o / retorno ao pool
     /// - LifetimeManager
     /// </summary>
     public sealed class DefenseMinionPoolable : BulletPoolable
@@ -17,8 +17,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         protected override void OnActivated(Vector3 pos, Vector3? direction, IActor spawner)
         {
             // Para minions, normalmente vamos controlar o movimento via
-            // Entry/Chase (DOTween ou lógica própria), então:
-            // - chamamos base.OnActivated(pos, null, spawner) para NÃO dar velocidade de bullet.
+            // Entry/Chase (DOTween ou lï¿½gica prï¿½pria), entï¿½o:
+            // - chamamos base.OnActivated(pos, null, spawner) para Nï¿½O dar velocidade de bullet.
             base.OnActivated(pos, null, spawner);
 
             DebugUtility.LogVerbose<DefenseMinionPoolable>(
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         {
             base.OnDeactivated();
 
-            // Garantir que nenhum estado de perseguição ou referência residual permaneça após a desativação
+            // Garantir que nenhum estado de perseguiï¿½ï¿½o ou referï¿½ncia residual permaneï¿½a apï¿½s a desativaï¿½ï¿½o
             if (TryGetComponent<DefenseMinionController>(out var controller))
             {
                 controller.CleanupOnDeactivated();

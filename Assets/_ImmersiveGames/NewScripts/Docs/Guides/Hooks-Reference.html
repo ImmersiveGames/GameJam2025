@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hooks Reference</title>
+  <style>
+    :root {
+      --bg:#edf4ef;
+      --panel:#fbfefc;
+      --panel-strong:#f4fbf7;
+      --line:#cbdad1;
+      --text:#16211a;
+      --muted:#5d6c64;
+      --accent:#1b6b54;
+      --accent-soft:#def5ea;
+      --warn:#966500;
+      --warn-soft:#fff3cc;
+      --bad:#b42318;
+      --bad-soft:#ffe2dc;
+      --code:#18231d;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      font-family:"Segoe UI",Tahoma,sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,#e8f1eb 0%,#eff6f1 40%,#edf4ef 100%);
+      line-height:1.6;
+    }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code { background:#e3f0e8; padding:2px 6px; border-radius:6px; color:inherit; }
+    pre {
+      margin:0;
+      background:var(--code);
+      color:#f4fbf7;
+      border-radius:18px;
+      padding:16px;
+      overflow:auto;
+      border:1px solid #304138;
+    }
+    pre code,
+    pre code *,
+    pre samp,
+    pre kbd {
+      background:transparent !important;
+      color:#f4fbf7 !important;
+      -webkit-text-fill-color:#f4fbf7 !important;
+      padding:0 !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+      border:0 !important;
+      text-shadow:none !important;
+      font-family:Consolas, "Courier New", monospace !important;
+      font-size:.95rem;
+      line-height:1.7;
+      white-space:pre-wrap;
+      word-break:normal;
+    }
+    .app {
+      max-width:1440px;
+      margin:0 auto;
+      padding:24px;
+      display:grid;
+      grid-template-columns:300px minmax(0,1fr);
+      gap:24px;
+    }
+    .sidebar {
+      position:sticky;
+      top:20px;
+      align-self:start;
+      background:rgba(251,254,252,.92);
+      backdrop-filter:blur(10px);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:22px;
+      box-shadow:0 14px 36px rgba(17,31,24,.08);
+    }
+    .sidebar h1 { margin:0 0 10px; font-size:1.4rem; }
+    .sidebar p { margin:0 0 18px; color:var(--muted); }
+    .nav-group { margin-top:16px; }
+    .nav-group h2 { font-size:.88rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 8px; }
+    .nav-group a { display:block; padding:7px 10px; border-radius:10px; color:var(--text); }
+    .nav-group a:hover { background:#ebf5ef; text-decoration:none; }
+    .content { display:grid; gap:22px; }
+    .hero, .panel {
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:28px;
+      box-shadow:0 16px 38px rgba(17,31,24,.07);
+    }
+    .hero { background:radial-gradient(circle at top right,#f0fbf5 0%,#fbfefc 45%,#f5fbf7 100%); }
+    .eyebrow {
+      display:inline-block;
+      padding:7px 12px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent);
+      font-size:.82rem;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+    .cards {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+      gap:14px;
+      margin-top:18px;
+    }
+    .card {
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+      background:#f7fcf9;
+    }
+    .card strong { display:block; margin-bottom:6px; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:18px; }
+    table { width:100%; border-collapse:collapse; min-width:760px; }
+    th, td { padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { background:#ebf5ef; }
+    tr:last-child td { border-bottom:0; }
+    .callout {
+      border-radius:18px;
+      padding:16px 18px;
+      border:1px solid var(--line);
+      background:var(--panel-strong);
+      margin-top:16px;
+    }
+    .warn { background:var(--warn-soft); color:var(--warn); border-color:#efd48a; }
+    .bad { background:var(--bad-soft); color:var(--bad); border-color:#f4b0a8; }
+    .mini-title { font-size:.86rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 8px; }
+    .section-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    .section-links a { background:#e7f2eb; padding:8px 12px; border-radius:999px; }
+    @media (max-width: 1080px) {
+      .app { grid-template-columns:1fr; }
+      .sidebar { position:static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>Hooks Reference</h1>
+      <p>Camada visual completa da referencia de hooks reais do runtime atual. O Markdown continua sendo a fonte canonica.</p>
+      <div class="nav-group">
+        <h2>Mapa</h2>
+        <a href="#mapa">Mapa rapido</a>
+        <a href="#assinatura">Como assinar</a>
+      </div>
+      <div class="nav-group">
+        <h2>Hooks operacionais</h2>
+        <a href="#scene-transition-completed">SceneTransitionCompletedEvent</a>
+        <a href="#world-reset-completed">WorldLifecycleResetCompletedEvent</a>
+        <a href="#game-run-started">GameRunStartedEvent</a>
+        <a href="#game-run-ended">GameRunEndedEvent</a>
+        <a href="#level-selected">LevelSelectedEvent</a>
+        <a href="#level-swap-applied">LevelSwapLocalAppliedEvent</a>
+        <a href="#run-end-requested">GameRunEndRequestedEvent</a>
+        <a href="#reset-requested">GameResetRequestedEvent</a>
+        <a href="#exit-requested">GameExitToMenuRequestedEvent</a>
+      </div>
+      <div class="nav-group">
+        <h2>Fechamento</h2>
+        <a href="#hooks-tecnicos">Hooks tecnicos</a>
+        <a href="#nao-existe">O que nao existe</a>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero" id="mapa">
+        <span class="eyebrow">Hooks operacionais primeiro</span>
+        <h2>Quais eventos usar na integracao real</h2>
+        <p>Use hooks operacionais para UI, gameplay e systems. Use hooks tecnicos so quando o caso realmente depender de um ponto interno do pipeline. <code>Victory</code> e <code>Defeat</code> entram por <code>GameRunEndedEvent</code>. <code>Exit</code> continua formal no <code>PostGame</code> global, mas sem evento operacional promoted dedicado. <code>Restart</code> nao passa por post hook.</p>
+        <div class="cards">
+          <article class="card"><strong>UI de rota</strong><span><code>SceneTransitionCompletedEvent</code></span></article>
+          <article class="card"><strong>Mundo pronto</strong><span><code>WorldLifecycleResetCompletedEvent</code></span></article>
+          <article class="card"><strong>Run ativa</strong><span><code>GameRunStartedEvent</code></span></article>
+          <article class="card"><strong>Fim de run</strong><span><code>GameRunEndedEvent</code></span></article>
+          <article class="card"><strong>Level atual</strong><span><code>LevelSelectedEvent</code></span></article>
+          <article class="card"><strong>Swap local pronto</strong><span><code>LevelSwapLocalAppliedEvent</code></span></article>
+        </div>
+        <div class="section-links">
+          <a href="#scene-transition-completed">Ler hooks operacionais</a>
+          <a href="#hooks-tecnicos">Ver hooks tecnicos</a>
+        </div>
+      </section>
+
+      <section class="panel" id="assinatura">
+        <h2>Como assinar um hook</h2>
+        <pre><code>using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+
+private EventBinding&lt;GameRunEndedEvent&gt; _binding;
+
+private void OnEnable()
+{
+    _binding = new EventBinding&lt;GameRunEndedEvent&gt;(OnRunEnded);
+    EventBus&lt;GameRunEndedEvent&gt;.Register(_binding);
+}
+
+private void OnDisable()
+{
+    EventBus&lt;GameRunEndedEvent&gt;.Unregister(_binding);
+}
+
+private void OnRunEnded(GameRunEndedEvent evt)
+{
+    // usar evt.Outcome e evt.Reason
+}</code></pre>
+      </section>
+
+      <section class="panel">
+        <h2>Mapa rapido</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Hook</th><th>Publisher atual</th><th>Melhor uso</th><th>Evite usar para</th></tr></thead>
+            <tbody>
+              <tr><td><code>SceneTransitionCompletedEvent</code></td><td><code>SceneTransitionService</code></td><td>rota ja aplicada</td><td>inicio tecnico da transicao</td></tr>
+              <tr><td><code>WorldLifecycleResetCompletedEvent</code></td><td><code>WorldResetOrchestrator</code></td><td>mundo pronto</td><td>estado final de rota</td></tr>
+              <tr><td><code>GameRunStartedEvent</code></td><td><code>GameLoopService</code></td><td>entrada em <code>Playing</code></td><td>request de start</td></tr>
+              <tr><td><code>GameRunEndedEvent</code></td><td><code>GameRunOutcomeService</code></td><td><code>Victory</code> e <code>Defeat</code></td><td>request de fim de run</td></tr>
+              <tr><td><code>LevelSelectedEvent</code></td><td><code>LevelMacroPrepareService</code> / <code>LevelSwapLocalService</code></td><td>level atual selecionado</td><td>fim do swap local</td></tr>
+              <tr><td><code>LevelSwapLocalAppliedEvent</code></td><td><code>LevelSwapLocalService</code></td><td>swap local concluido</td><td>selecao inicial de level</td></tr>
+              <tr><td><code>GameRunEndRequestedEvent</code></td><td><code>GameRunEndRequestService</code></td><td>intencao de <code>Victory</code>/<code>Defeat</code></td><td>resultado final</td></tr>
+              <tr><td><code>GameResetRequestedEvent</code></td><td><code>GameCommands</code></td><td>intencao de restart</td><td>post hook</td></tr>
+              <tr><td><code>GameExitToMenuRequestedEvent</code></td><td><code>GameCommands</code></td><td>intencao de exit</td><td>rota de menu aplicada</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="scene-transition-completed">
+        <h2><code>SceneTransitionCompletedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>SceneTransitionService</code></p>
+        <p><strong>Quando dispara:</strong> no fim da transicao macro, com a rota ja aplicada.</p>
+        <p><strong>Para que serve no mundo real:</strong> liberar UI da rota nova, atualizar systems por <code>RouteKind</code> e reagir quando menu ou gameplay ja estao realmente ativos.</p>
+        <pre><code>private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
+{
+    if (evt.context.RouteKind != SceneRouteKind.Gameplay)
+    {
+        return;
+    }
+
+    string reason = evt.context.Reason;
+    string signature = evt.context.ContextSignature;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando o seu system precisa do estado final da troca de rota.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando voce precisa do inicio tecnico do pipeline ou do fim do reset do mundo.</div></div>
+      </section>
+
+      <section class="panel" id="world-reset-completed">
+        <h2><code>WorldLifecycleResetCompletedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>WorldResetOrchestrator</code></p>
+        <p><strong>Quando dispara:</strong> quando o reset deterministico do mundo concluiu.</p>
+        <p><strong>Para que serve no mundo real:</strong> soltar systems que dependem de mundo pronto, spawn estabilizado e reset completo.</p>
+        <pre><code>private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
+{
+    string reason = evt.Reason;
+    string signature = evt.ContextSignature;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando o seu system realmente depende do reset completo terminado.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando basta saber que a rota terminou; nesse caso prefira <code>SceneTransitionCompletedEvent</code>.</div></div>
+      </section>
+
+      <section class="panel" id="game-run-started">
+        <h2><code>GameRunStartedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>GameLoopService</code></p>
+        <p><strong>Quando dispara:</strong> quando o GameLoop entra em <code>Playing</code>.</p>
+        <p><strong>Para que serve no mundo real:</strong> ligar HUD de gameplay, sistemas de score e comportamentos que so existem durante run ativa.</p>
+        <pre><code>private void OnRunStarted(GameRunStartedEvent evt)
+{
+    GameLoopStateId stateId = evt.StateId;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando voce quer o inicio real da run.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando voce quer observar apenas um request ou uma troca de rota.</div></div>
+      </section>
+
+      <section class="panel" id="game-run-ended">
+        <h2><code>GameRunEndedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>GameRunOutcomeService</code></p>
+        <p><strong>Quando dispara:</strong> quando o fim de run terminal foi aceito durante <code>Playing</code>.</p>
+        <p><strong>Para que serve no mundo real:</strong> abrir UI de <code>Victory</code> ou <code>Defeat</code>, registrar telemetria e desligar systems da run atual.</p>
+        <pre><code>private void OnRunEnded(GameRunEndedEvent evt)
+{
+    if (evt.Outcome == GameRunOutcome.Victory)
+    {
+        // mostrar tela de vitoria
+    }
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando voce quer reagir ao resultado final da run.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando voce quer observar so o pedido de fim de run; nesse caso use <code>GameRunEndRequestedEvent</code>.</div></div>
+        <div class="callout bad"><div class="mini-title">Importante</div><div><code>Exit</code> nao entra por esse evento. Ele continua formal dentro do <code>PostGame</code> global.</div></div>
+      </section>
+
+      <section class="panel" id="level-selected">
+        <h2><code>LevelSelectedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>LevelMacroPrepareService</code> e <code>LevelSwapLocalService</code></p>
+        <p><strong>Quando dispara:</strong> quando um <code>LevelDefinitionAsset</code> e selecionado para o fluxo atual.</p>
+        <p><strong>Para que serve no mundo real:</strong> atualizar HUD com o level atual, preparar cameras e registrar a assinatura do level.</p>
+        <pre><code>private void OnLevelSelected(LevelSelectedEvent evt)
+{
+    string levelName = evt.LevelRef != null ? evt.LevelRef.name : "&lt;none&gt;";
+    string signature = evt.LevelSignature;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando o seu system depende do level que entrou no fluxo.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando voce precisa especificamente do fim do swap local.</div></div>
+      </section>
+
+      <section class="panel" id="level-swap-applied">
+        <h2><code>LevelSwapLocalAppliedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>LevelSwapLocalService</code></p>
+        <p><strong>Quando dispara:</strong> no fim de um swap local valido.</p>
+        <p><strong>Para que serve no mundo real:</strong> atualizar HUD, binds e cameras depois da troca local.</p>
+        <pre><code>private void OnLevelSwapApplied(LevelSwapLocalAppliedEvent evt)
+{
+    string reason = evt.Reason;
+    int selectionVersion = evt.SelectionVersion;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando voce precisa do swap local concluido, nao apenas da selecao.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando o objetivo e saber qual level foi escolhido durante o prepare.</div></div>
+      </section>
+
+      <section class="panel" id="run-end-requested">
+        <h2><code>GameRunEndRequestedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>GameRunEndRequestService</code></p>
+        <p><strong>Quando dispara:</strong> quando alguem pede <code>Victory</code> ou <code>Defeat</code>.</p>
+        <p><strong>Para que serve no mundo real:</strong> auditoria, telemetria e bridges que observam a intencao antes do resultado final.</p>
+        <pre><code>private void OnRunEndRequested(GameRunEndRequestedEvent evt)
+{
+    GameRunOutcome outcome = evt.Outcome;
+    string reason = evt.Reason;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando a integracao precisa do request e nao do resultado consolidado.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando voce quer abrir UI final de vitoria ou derrota. Para isso use <code>GameRunEndedEvent</code>.</div></div>
+      </section>
+
+      <section class="panel" id="reset-requested">
+        <h2><code>GameResetRequestedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>GameCommands</code></p>
+        <p><strong>Quando dispara:</strong> quando alguem pede restart macro.</p>
+        <p><strong>Para que serve no mundo real:</strong> observar intencao de restart e fechar overlays locais antes do reset.</p>
+        <pre><code>private void OnResetRequested(GameResetRequestedEvent evt)
+{
+    string reason = evt.Reason;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando o seu system precisa ouvir a intencao de restart.</div></div>
+        <div class="callout bad"><div class="mini-title">Quando nao usar</div><div>Nao use esse hook para modelar pos-run. <code>Restart</code> nao passa por post hook.</div></div>
+      </section>
+
+      <section class="panel" id="exit-requested">
+        <h2><code>GameExitToMenuRequestedEvent</code></h2>
+        <p><strong>Quem publica:</strong> <code>GameCommands</code></p>
+        <p><strong>Quando dispara:</strong> quando alguem pede sair para menu.</p>
+        <p><strong>Para que serve no mundo real:</strong> fechar overlays locais e registrar saida voluntaria antes da navegacao.</p>
+        <pre><code>private void OnExitToMenuRequested(GameExitToMenuRequestedEvent evt)
+{
+    string reason = evt.Reason;
+}</code></pre>
+        <div class="callout"><div class="mini-title">Quando usar</div><div>Quando voce quer ouvir a intencao de sair para menu.</div></div>
+        <div class="callout warn"><div class="mini-title">Quando nao usar</div><div>Quando voce precisa saber que a rota de menu ja entrou. Nesse caso prefira <code>SceneTransitionCompletedEvent</code>.</div></div>
+      </section>
+
+      <section class="panel" id="hooks-tecnicos">
+        <h2>Hooks tecnicos do pipeline</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Hook</th><th>Quando considerar</th></tr></thead>
+            <tbody>
+              <tr><td><code>SceneTransitionStartedEvent</code></td><td>inicio tecnico da transicao</td></tr>
+              <tr><td><code>SceneTransitionFadeInCompletedEvent</code></td><td>casos realmente ligados ao fade</td></tr>
+              <tr><td><code>SceneTransitionScenesReadyEvent</code></td><td>integracao antes do gate terminar</td></tr>
+              <tr><td><code>SceneTransitionBeforeFadeOutEvent</code></td><td>caso tecnico especifico</td></tr>
+              <tr><td><code>WorldLifecycleResetStartedEvent</code></td><td>inicio do reset completo</td></tr>
+              <tr><td><code>InputModeRequestEvent</code></td><td>infraestrutura de input</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn"><div class="mini-title">Use com cuidado</div><div>Esses hooks nao substituem os hooks operacionais nem o fluxo global de <code>PostGame</code>.</div></div>
+      </section>
+
+      <section class="panel" id="nao-existe">
+        <h2>O que nao existe como hook operacional principal</h2>
+        <div class="cards">
+          <article class="card"><strong>Nao existe</strong><span>hook publico promoted para o post hook opcional de level.</span></article>
+          <article class="card"><strong>Nao existe</strong><span>post stage generico por level.</span></article>
+          <article class="card"><strong>Continua valendo</strong><span><code>Restart</code> nao passa por post hook.</span></article>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

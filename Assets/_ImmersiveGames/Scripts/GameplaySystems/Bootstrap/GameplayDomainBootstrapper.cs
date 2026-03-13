@@ -1,6 +1,6 @@
-using _ImmersiveGames.Scripts.GameplaySystems.Domain;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Bootstrap
@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Bootstrap
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameplayDomainBootstrapper : MonoBehaviour
     {
-        [Tooltip("Quando verdadeiro, permite sobrescrever serviços de cena já registrados (útil em testes).")]
+        [Tooltip("Quando verdadeiro, permite sobrescrever serviï¿½os de cena jï¿½ registrados (ï¿½til em testes).")]
         [SerializeField] private bool allowOverride;
 
         private void Awake()
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Bootstrap
             DependencyManager.Provider.RegisterForScene<IEaterDomain>(sceneName, eaterDomain, allowOverride);
 
             DebugUtility.Log<GameplayDomainBootstrapper>(
-                $"GameplayDomainBootstrapper registrou serviços de domínio para a cena '{sceneName}'.",
+                $"GameplayDomainBootstrapper registrou serviï¿½os de domï¿½nio para a cena '{sceneName}'.",
                 DebugUtility.Colors.Success);
         }
     }
