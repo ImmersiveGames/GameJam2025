@@ -9,9 +9,9 @@ namespace Starfield_Skybox.Demo.Script
         public float mouseSensitivityX = 5.0f;
         public float mouseSensitivityY = 5.0f;
 
-        float _rotY;
+        private float _rotY;
 
-        void Start()
+        private void Start()
         {
             if (GetComponent<Rigidbody>())
             {
@@ -19,7 +19,7 @@ namespace Starfield_Skybox.Demo.Script
             }
         }
 
-        void Update()
+        private void Update()
         {
             // rotation
             if (Input.GetMouseButton(1))

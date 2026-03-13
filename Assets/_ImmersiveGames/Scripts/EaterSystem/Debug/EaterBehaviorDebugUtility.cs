@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             DebugUtility.LogVerbose(_builder.ToString(), instance: this);
         }
 
-        private void OnStateChanged(OldIState previous, OldIState current)
+        private void OnStateChanged(IOldIState previous, IOldIState current)
         {
             DebugUtility.LogVerbose($"🔄 Estado alterado: {previous} → {current}", instance: this);
         }

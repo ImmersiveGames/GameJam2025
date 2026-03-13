@@ -1,12 +1,12 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.Scripts.TimerSystem;
 using UnityEngine;
 
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.QA
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class MenuContextController : MonoBehaviour
     {
-        [Header("Referência (Opcional)")]
+        [Header("Referï¿½ncia (Opcional)")]
         [SerializeField] private GameManager gameManager;
 
         [Header("Force State Defaults")]
@@ -27,14 +27,14 @@ namespace _ImmersiveGames.Scripts.QA
         [SerializeField] private string qaPauseGateToken = "qa.pause";
 
         [Header("Reset IN-PLACE (Orchestrator)")]
-        [Tooltip("Nome da cena onde o ResetOrchestratorBehaviour está registrado no DI (scene-scoped).")]
+        [Tooltip("Nome da cena onde o ResetOrchestratorBehaviour estï¿½ registrado no DI (scene-scoped).")]
         [SerializeField] private string gameplaySceneNameForOrchestrator = "GameplayScene";
 
         [Tooltip("Loga detalhes extras quando roda Reset IN-PLACE.")]
         [SerializeField] private bool logResetInPlaceVerbose = true;
 
         [Header("Full Reset (IN-PLACE) Behavior")]
-        [Tooltip("Se true, quando ResetInPlace(AllActorsInScene) concluir com sucesso, também reseta o GameTimer para a duração configurada.")]
+        [Tooltip("Se true, quando ResetInPlace(AllActorsInScene) concluir com sucesso, tambï¿½m reseta o GameTimer para a duraï¿½ï¿½o configurada.")]
         [SerializeField] private bool resetTimerOnInPlaceAllActors = true;
 
         private IOldSimulationGateService _gateService;
@@ -48,8 +48,8 @@ namespace _ImmersiveGames.Scripts.QA
                 if (gameManager == null)
                 {
                     DebugUtility.LogWarning<MenuContextController>(
-                        "[MenuContext] GameManager não encontrado no Awake. " +
-                        "Se os comandos forem usados antes do GameManager existir, serão ignorados.");
+                        "[MenuContext] GameManager nï¿½o encontrado no Awake. " +
+                        "Se os comandos forem usados antes do GameManager existir, serï¿½o ignorados.");
                 }
             }
 
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.QA
             LogDiagnostics("[MenuContext] RequestPause (before)");
 
             DebugUtility.LogVerbose<MenuContextController>(
-                "[MenuContext] RequestPause (GamePauseRequestedEvent) => FSM deve entrar em Paused e ajustar timeScale conforme política do estado.");
+                "[MenuContext] RequestPause (GamePauseRequestedEvent) => FSM deve entrar em Paused e ajustar timeScale conforme polï¿½tica do estado.");
 
             EventBus<GamePauseRequestedEvent>.Raise(new GamePauseRequestedEvent());
 
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.Scripts.QA
             LogDiagnostics("[MenuContext] RequestResume (before)");
 
             DebugUtility.LogVerbose<MenuContextController>(
-                "[MenuContext] RequestResume (OldGameResumeRequestedEvent) => FSM deve sair de Paused e restaurar timeScale conforme política do estado.");
+                "[MenuContext] RequestResume (OldGameResumeRequestedEvent) => FSM deve sair de Paused e restaurar timeScale conforme polï¿½tica do estado.");
 
             EventBus<OldGameResumeRequestedEvent>.Raise(new OldGameResumeRequestedEvent());
 
@@ -212,8 +212,8 @@ namespace _ImmersiveGames.Scripts.QA
 
         /// <summary>
         /// Reset MACRO: dispara OldGameResetRequestedEvent.
-        /// Isso é esperado acionar MenuContext/GameManager/SceneTransition (fade/loading) dependendo do seu fluxo.
-        /// Use isso para testar transição e fluxo "full reset".
+        /// Isso ï¿½ esperado acionar MenuContext/GameManager/SceneTransition (fade/loading) dependendo do seu fluxo.
+        /// Use isso para testar transiï¿½ï¿½o e fluxo "full reset".
         /// Para validar o sistema novo (ResetOrchestratorBehaviour), use Reset IN-PLACE.
         /// </summary>
         public void SoftReset()
@@ -232,7 +232,7 @@ namespace _ImmersiveGames.Scripts.QA
 
         /// <summary>
         /// Reset IN-PLACE: chama o IResetOrchestrator diretamente (scene-scoped).
-        /// NÃO dispara OldGameResetRequestedEvent e portanto NÃO deve entrar em OldMenuState/Fade/SceneTransition.
+        /// Nï¿½O dispara OldGameResetRequestedEvent e portanto Nï¿½O deve entrar em OldMenuState/Fade/SceneTransition.
         /// </summary>
         public async Task<bool> ResetInPlaceAsync(ResetScope scope, string reason = "Manual")
         {
@@ -249,7 +249,7 @@ namespace _ImmersiveGames.Scripts.QA
             if (provider == null)
             {
                 DebugUtility.LogError<MenuContextController>(
-                    "[MenuContext] DependencyManager.Provider null. Não é possível resolver IResetOrchestrator.");
+                    "[MenuContext] DependencyManager.Provider null. Nï¿½o ï¿½ possï¿½vel resolver IResetOrchestrator.");
                 return false;
             }
 
@@ -257,8 +257,8 @@ namespace _ImmersiveGames.Scripts.QA
                 orchestrator == null)
             {
                 DebugUtility.LogError<MenuContextController>(
-                    $"[MenuContext] IResetOrchestrator não encontrado para a cena '{gameplaySceneNameForOrchestrator}'. " +
-                    "Confirme que ResetOrchestratorBehaviour está na GameplayScene e registrou no Awake.");
+                    $"[MenuContext] IResetOrchestrator nï¿½o encontrado para a cena '{gameplaySceneNameForOrchestrator}'. " +
+                    "Confirme que ResetOrchestratorBehaviour estï¿½ na GameplayScene e registrou no Awake.");
                 return false;
             }
 
@@ -276,7 +276,7 @@ namespace _ImmersiveGames.Scripts.QA
                     $"[MenuContext] Reset IN-PLACE ???????? | ok={ok} | Scope={scope}");
             }
 
-            // Requisito: timer só reinicia quando reinicia a fase inteira (AllActorsInScene).
+            // Requisito: timer sï¿½ reinicia quando reinicia a fase inteira (AllActorsInScene).
             if (ok && resetTimerOnInPlaceAllActors && scope == ResetScope.AllActorsInScene)
             {
                 var timer = GameTimer.Instance;
@@ -284,12 +284,12 @@ namespace _ImmersiveGames.Scripts.QA
                 {
                     timer.ResetToConfiguredDuration("MenuContext ResetInPlace: Full reset (AllActorsInScene)");
                     DebugUtility.LogVerbose<MenuContextController>(
-                        "[MenuContext] Full Reset IN-PLACE: GameTimer resetado para duração configurada.");
+                        "[MenuContext] Full Reset IN-PLACE: GameTimer resetado para duraï¿½ï¿½o configurada.");
                 }
                 else
                 {
                     DebugUtility.LogWarning<MenuContextController>(
-                        "[MenuContext] Full Reset IN-PLACE: GameTimer.Instance null; não foi possível resetar timer.");
+                        "[MenuContext] Full Reset IN-PLACE: GameTimer.Instance null; nï¿½o foi possï¿½vel resetar timer.");
                 }
             }
 
@@ -349,14 +349,14 @@ namespace _ImmersiveGames.Scripts.QA
             if (!TryResolveGateService())
             {
                 DebugUtility.LogWarning<MenuContextController>(
-                    "[MenuContext][QA Gate] IOldSimulationGateService não encontrado no DI.");
+                    "[MenuContext][QA Gate] IOldSimulationGateService nï¿½o encontrado no DI.");
                 return;
             }
 
             if (_qaGateTokenHeld)
             {
                 DebugUtility.LogVerbose<MenuContextController>(
-                    $"[MenuContext][QA Gate] Token '{qaPauseGateToken}' já está ativo.");
+                    $"[MenuContext][QA Gate] Token '{qaPauseGateToken}' jï¿½ estï¿½ ativo.");
                 return;
             }
 
@@ -376,14 +376,14 @@ namespace _ImmersiveGames.Scripts.QA
             if (!TryResolveGateService())
             {
                 DebugUtility.LogWarning<MenuContextController>(
-                    "[MenuContext][QA Gate] IOldSimulationGateService não encontrado no DI.");
+                    "[MenuContext][QA Gate] IOldSimulationGateService nï¿½o encontrado no DI.");
                 return;
             }
 
             if (!_qaGateTokenHeld)
             {
                 DebugUtility.LogVerbose<MenuContextController>(
-                    $"[MenuContext][QA Gate] Token '{qaPauseGateToken}' não está ativo.");
+                    $"[MenuContext][QA Gate] Token '{qaPauseGateToken}' nï¿½o estï¿½ ativo.");
                 return;
             }
 

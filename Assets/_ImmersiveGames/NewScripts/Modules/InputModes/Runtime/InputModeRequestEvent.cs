@@ -1,5 +1,4 @@
-﻿using System;
-namespace _ImmersiveGames.NewScripts.Modules.InputModes
+﻿namespace _ImmersiveGames.NewScripts.Modules.InputModes
 {
     public enum InputModeRequestKind
     {

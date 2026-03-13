@@ -7,14 +7,14 @@
   - `SelectionVersion` permanece apenas como metadado de observabilidade; nao e mais a identidade principal.
   - `LevelSignature` propagada em snapshot/eventos e consumida no IntroStage.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
   - `Docs/Reports/lastlog.log`
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-11
+- Ultima atualizacao: 2026-03-12
 
 ## Decisao canonica atual
 
@@ -29,12 +29,10 @@
 - `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
 - `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
-- `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
+- `lastlog:1783` `RestartMacroRequested reason='PostGame/Restart' dispatched='GameResetRequestedEvent'.`
 
 ## Observacao de escopo
 
 - O fechamento deste ADR vale para o eixo principal de `LevelFlow`.
 - Qualquer referencia historica a `levelId/contentId` deve ser lida como legado fora do contrato canonico atual.
 - A excecao remanescente de `Gameplay ActorGroupRearm` fica fora deste escopo.
-
-

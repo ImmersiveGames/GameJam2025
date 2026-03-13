@@ -3,17 +3,26 @@
 ## Estado atual
 
 - `GameLoopService` e owner do estado da run.
-- `GameLoopSceneFlowCoordinator` sincroniza start plan e readiness com o SceneFlow.
-- `IntroStage` e `PostLevel` pertencem ao nivel, conforme o contrato vigente.
+- `GameLoopSceneFlowCoordinator` sincroniza start plan e readiness com SceneFlow.
+- `IntroStage` e opcional por level.
+- `PostGame` e global.
 
 ## Ownership
 
-- `GameLoopService`: estados da run, ready/playing/pause/resume.
-- `GameLoopSceneFlowCoordinator`: sincronizacao entre SceneFlow e GameLoop.
-- `IntroStageCoordinator` + `LevelStageOrchestrator`: controle do intro stage no contexto do level.
+- `GameLoopService`: estados da run, ready, intro, playing, pause e post game.
+- `IntroStageCoordinator` + `LevelStageOrchestrator`: intro do level atual.
+- `PostGameOwnershipService`: input mode e gate do post global.
+- `PostGameResultService`: resultado formal do post global.
 
-## Semantica de fluxo
+## Contrato de post atual
 
-- `startup` vem do bootstrap.
-- `frontend` e `gameplay` entram no GameLoop via `RouteKind` do contexto de transicao.
-- O GameLoop nao deve inferir semantica por style/profile labels.
+- Resultados formais: `Victory`, `Defeat` e `Exit`.
+- `Victory` e `Defeat` entram pelo fim de run.
+- `Exit` e formalizado na saida para menu a partir de `PostPlay`.
+- `Restart` segue direto por reset macro e nao entra no post hook do level.
+
+## Leitura cruzada
+
+- `Docs/Modules/LevelFlow.md`
+- `Docs/Modules/Navigation.md`
+- `Docs/Guides/Event-Hooks-Reference.md`

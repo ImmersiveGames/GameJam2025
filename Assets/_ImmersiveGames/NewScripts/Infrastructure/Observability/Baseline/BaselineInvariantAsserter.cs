@@ -261,14 +261,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
 
         private void OnStarted(SceneTransitionStartedEvent evt)
         {
-            string sig = SceneTransitionSignature.Compute(evt.Context);
+            string sig = SceneTransitionSignature.Compute(evt.context);
             var state = GetOrCreate(sig);
 
             if (state.started && !state.completed)
             {
                 Fail(sig, "I2",
                     "Nova transição Started observada, mas a transição anterior não completou (estado inconsistente).",
-                    evt.Context.ToString());
+                    evt.context.ToString());
                 state.Reset();
             }
 
@@ -279,22 +279,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             {
                 Fail(sig, "I1",
                     $"Token de transição '{SceneTransitionToken}' não está ativo após Started.",
-                    evt.Context.ToString());
+                    evt.context.ToString());
             }
 
             DebugUtility.LogVerbose<BaselineInvariantAsserter>(
-                $"[Baseline] Started signature='{sig}' profile='{evt.Context.TransitionProfileName}' activeTarget='{evt.Context.TargetActiveScene}'.",
+                $"[Baseline] Started signature='{sig}' profile='{evt.context.TransitionProfileName}' activeTarget='{evt.context.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
         }
 
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            string sig = SceneTransitionSignature.Compute(evt.Context);
+            string sig = SceneTransitionSignature.Compute(evt.context);
             var state = GetOrCreate(sig);
 
             if (!state.started)
             {
-                Fail(sig, "I2", "ScenesReady observado antes de Started (ordem inválida).", evt.Context.ToString());
+                Fail(sig, "I2", "ScenesReady observado antes de Started (ordem inválida).", evt.context.ToString());
             }
 
             state.scenesReady = true;
@@ -348,12 +348,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
 
         private void OnBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
-            string sig = SceneTransitionSignature.Compute(evt.Context);
+            string sig = SceneTransitionSignature.Compute(evt.context);
             var state = GetOrCreate(sig);
 
             if (!state.scenesReady)
             {
-                Fail(sig, "I2", "BeforeFadeOut observado antes de ScenesReady (ordem inválida).", evt.Context.ToString());
+                Fail(sig, "I2", "BeforeFadeOut observado antes de ScenesReady (ordem inválida).", evt.context.ToString());
             }
 
             state.beforeFadeOut = true;
@@ -361,7 +361,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
 
             if (!state.resetCompleted)
             {
-                Fail(sig, "I3", "BeforeFadeOut observado antes do ResetCompleted (gate/regra quebrada).", evt.Context.ToString());
+                Fail(sig, "I3", "BeforeFadeOut observado antes do ResetCompleted (gate/regra quebrada).", evt.context.ToString());
             }
 
             DebugUtility.LogVerbose<BaselineInvariantAsserter>(
@@ -371,12 +371,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
 
         private void OnCompleted(SceneTransitionCompletedEvent evt)
         {
-            string sig = SceneTransitionSignature.Compute(evt.Context);
+            string sig = SceneTransitionSignature.Compute(evt.context);
             var state = GetOrCreate(sig);
 
             if (!state.scenesReady)
             {
-                Fail(sig, "I2", "Completed observado antes de ScenesReady (ordem inválida).", evt.Context.ToString());
+                Fail(sig, "I2", "Completed observado antes de ScenesReady (ordem inválida).", evt.context.ToString());
             }
 
             state.completed = true;
@@ -386,14 +386,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             {
                 Fail(sig, "I3",
                     "Completed observado antes do ResetCompleted (ordem inválida).",
-                    evt.Context.ToString());
+                    evt.context.ToString());
             }
 
             if (EnsureGateResolved() && _gate.IsTokenActive(SceneTransitionToken))
             {
                 Fail(sig, "I1",
                     $"Token de transição '{SceneTransitionToken}' ainda está ativo após Completed (token preso).",
-                    evt.Context.ToString());
+                    evt.context.ToString());
             }
 
             DebugUtility.LogVerbose<BaselineInvariantAsserter>(

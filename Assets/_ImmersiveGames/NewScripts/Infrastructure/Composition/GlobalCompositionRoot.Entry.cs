@@ -26,7 +26,6 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -45,11 +44,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         // OpÃ§Ã£o B: mantÃ©m referÃªncia viva do coordinator (evita GC / descarte prematuro).
         private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
-
-        // Scene names (Unity: SceneManager.GetActiveScene().name)
-        private const string SceneNewBootstrap = "NewBootstrap";
-        private const string SceneMenu = "MenuScene";
-        private const string SceneUIGlobal = "UIGlobalScene";
 
         // --------------------------------------------------------------------
         // Entry

@@ -1,7 +1,7 @@
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.SkinSystems.Configurable;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Skins
@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
 
         protected override void Awake()
         {
-            // IMPORTANTÍSSIMO: o base usa 'targetModelType' (campo), não propriedade.
+            // IMPORTANTï¿½SSIMO: o base usa 'targetModelType' (campo), nï¿½o propriedade.
             targetModelType = ModelType.SoundRoot;
 
             base.Awake();
@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
             if (skinConfig is not ISkinAudioConfig audioConfig)
             {
                 DebugUtility.LogWarning<SkinAudioConfigurable>(
-                    $"[{name}] SkinConfig recebida não implementa ISkinAudioConfig.",
+                    $"[{name}] SkinConfig recebida nï¿½o implementa ISkinAudioConfig.",
                     this);
                 return;
             }
@@ -41,14 +41,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
             _currentAudioConfig = audioConfig;
 
             DebugUtility.Log<SkinAudioConfigurable>(
-                $"[{name}] Skin de áudio aplicada (SoundRoot). Entradas: {_currentAudioConfig.AudioEntries?.Count ?? 0}",
+                $"[{name}] Skin de ï¿½udio aplicada (SoundRoot). Entradas: {_currentAudioConfig.AudioEntries?.Count ?? 0}",
                 DebugUtility.Colors.CrucialInfo,
                 this);
         }
 
         protected override void ApplyDynamicModifications()
         {
-            // Nenhuma modificação dinâmica por enquanto
+            // Nenhuma modificaï¿½ï¿½o dinï¿½mica por enquanto
         }
 
         public bool TryGetSound(SkinAudioKey key, out SoundData sound)

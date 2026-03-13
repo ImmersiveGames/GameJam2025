@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
@@ -76,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
         private async Task HandleScenesReadyAsync(SceneTransitionScenesReadyEvent evt)
         {
-            var context = evt.Context;
+            var context = evt.context;
             string signature = SceneTransitionSignature.Compute(context);
 
             if (string.IsNullOrWhiteSpace(signature))

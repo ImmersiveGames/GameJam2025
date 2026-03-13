@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
 {
@@ -14,13 +15,15 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
 
         [Header("Level Flags")]
         [SerializeField] private bool hasIntroStage = true;
-        [SerializeField] private bool hasPostLevelStage = true;
+        [FormerlySerializedAs("hasPostLevelStage")]
+        [SerializeField] private bool hasPostGameReactionHook = true;
         [SerializeField] private bool allowLocalCurtainIn = true;
         [SerializeField] private bool allowLocalCurtainOut = true;
 
         public IReadOnlyList<SceneBuildIndexRef> AdditiveScenes => additiveScenes;
         public bool HasIntroStage => hasIntroStage;
-        public bool HasPostLevelStage => hasPostLevelStage;
+        public bool HasPostGameReactionHook => hasPostGameReactionHook;
+        public bool HasPostLevelStage => hasPostGameReactionHook;
         public bool AllowLocalCurtainIn => allowLocalCurtainIn;
         public bool AllowLocalCurtainOut => allowLocalCurtainOut;
 

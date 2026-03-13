@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -212,7 +212,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         #region Public API
         /// <summary>
-        /// Gera e aplica uma nova transformação aleatória
+        /// Gera e aplica uma nova transformaï¿½ï¿½o aleatï¿½ria
         /// </summary>
         public void RandomizeTransform()
         {
@@ -220,7 +220,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Define uma escala específica
+        /// Define uma escala especï¿½fica
         /// </summary>
         public void SetSpecificScale(Vector3 scale)
         {
@@ -229,7 +229,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Define uma rotação específica
+        /// Define uma rotaï¿½ï¿½o especï¿½fica
         /// </summary>
         public void SetSpecificRotation(Vector3 rotation)
         {
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Define os limites de rotação
+        /// Define os limites de rotaï¿½ï¿½o
         /// </summary>
         public void SetRotationRange(Vector3 newMinRotation, Vector3 newMaxRotation)
         {
@@ -256,7 +256,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Reseta todas as instâncias para suas transformações originais
+        /// Reseta todas as instï¿½ncias para suas transformaï¿½ï¿½es originais
         /// </summary>
         [ContextMenu("Reset Transform")]
         public void ResetToOriginalTransform()
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Obtém a transformação aleatória atual
+        /// Obtï¿½m a transformaï¿½ï¿½o aleatï¿½ria atual
         /// </summary>
         public TransformState GetCurrentTransformState()
         {

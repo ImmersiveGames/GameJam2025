@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manual Operacional - Core Modules</title>
+  <style>
+    :root {
+      --bg:#f3efe7;
+      --panel:#fffdf8;
+      --panel-strong:#fff7eb;
+      --line:#d8cfbf;
+      --line-strong:#c6b79b;
+      --text:#1f1a14;
+      --muted:#6c6356;
+      --accent:#9a4d1b;
+      --accent-soft:#fde8d7;
+      --ok:#156f63;
+      --ok-soft:#ddf5ee;
+      --warn:#9c6a00;
+      --warn-soft:#fff0c8;
+      --bad:#b42318;
+      --bad-soft:#ffe2dc;
+      --code:#201b17;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      font-family:"Segoe UI",Tahoma,sans-serif;
+      background:linear-gradient(180deg,#efe7da 0%,#f7f2e8 40%,#f3efe7 100%);
+      color:var(--text);
+      line-height:1.6;
+    }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code { background:#f1e7d8; padding:2px 6px; border-radius:6px; color:inherit; }
+    pre {
+      margin:0;
+      background:var(--code);
+      color:#f8f5ef;
+      border-radius:18px;
+      padding:16px;
+      overflow:auto;
+      border:1px solid #3c342d;
+    }
+    pre code,
+    pre code *,
+    pre samp,
+    pre kbd {
+      background:transparent !important;
+      color:#f8f5ef !important;
+      -webkit-text-fill-color:#f8f5ef !important;
+      padding:0 !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+      border:0 !important;
+      text-shadow:none !important;
+      font-family:Consolas, "Courier New", monospace !important;
+      font-size:.95rem;
+      line-height:1.7;
+      white-space:pre-wrap;
+      word-break:normal;
+    }
+    .app {
+      max-width:1440px;
+      margin:0 auto;
+      padding:24px;
+      display:grid;
+      grid-template-columns:300px minmax(0,1fr);
+      gap:24px;
+    }
+    .sidebar {
+      position:sticky;
+      top:20px;
+      align-self:start;
+      background:rgba(255,253,248,.92);
+      backdrop-filter:blur(10px);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:22px;
+      box-shadow:0 14px 36px rgba(40,31,20,.08);
+    }
+    .sidebar h1 { margin:0 0 10px; font-size:1.4rem; }
+    .sidebar p { margin:0 0 18px; color:var(--muted); }
+    .nav-group { margin-top:16px; }
+    .nav-group h2 { font-size:.88rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 8px; }
+    .nav-group a { display:block; padding:7px 10px; border-radius:10px; color:var(--text); }
+    .nav-group a:hover { background:#f4eadc; text-decoration:none; }
+    .content { display:grid; gap:22px; }
+    .hero, .panel {
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:28px;
+      box-shadow:0 16px 38px rgba(40,31,20,.07);
+    }
+    .hero {
+      background:radial-gradient(circle at top right,#fff2e2 0%,#fffdf8 45%,#fff8ef 100%);
+    }
+    .eyebrow {
+      display:inline-block;
+      padding:7px 12px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent);
+      font-size:.82rem;
+      font-weight:700;
+      letter-spacing:.03em;
+      margin-bottom:12px;
+    }
+    .hero h2, .panel h2 { margin:0 0 12px; }
+    .hero p { max-width:900px; }
+    .cards {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+      margin-top:18px;
+    }
+    .card {
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+      background:#fffaf2;
+    }
+    .card strong { display:block; margin-bottom:6px; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:18px; }
+    table { width:100%; border-collapse:collapse; min-width:760px; }
+    th, td { padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { background:#f5ede0; }
+    tr:last-child td { border-bottom:0; }
+    .grid-2 {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:16px;
+    }
+    .callout {
+      border-radius:18px;
+      padding:16px 18px;
+      border:1px solid var(--line);
+      background:var(--panel-strong);
+    }
+    .use { background:var(--ok-soft); color:var(--ok); border-color:#b8e6d9; }
+    .warn { background:var(--warn-soft); color:var(--warn); border-color:#f0d98f; }
+    .bad { background:var(--bad-soft); color:var(--bad); border-color:#f4b0a8; }
+    .step-list, .check-list { margin:0; padding-left:18px; }
+    .step-list li, .check-list li { margin:8px 0; }
+    .section-nav {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+    }
+    .section-nav a {
+      background:#f4eadc;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:.92rem;
+    }
+    .mini-title {
+      font-size:.86rem;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:var(--muted);
+      margin:0 0 8px;
+    }
+    @media (max-width: 1080px) {
+      .app { grid-template-columns:1fr; }
+      .sidebar { position:static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>Manual Operacional</h1>
+      <p>Camada visual completa do guia em Markdown. O conteudo tecnico continua canonico no arquivo <code>Production-How-To-Use-Core-Modules.md</code>.</p>
+      <div class="nav-group">
+        <h2>Visao Geral</h2>
+        <a href="#visao-geral">Comece por aqui</a>
+        <a href="#servicos">Servicos publicos</a>
+        <a href="#assets">Assets canonicos</a>
+      </div>
+      <div class="nav-group">
+        <h2>Receitas</h2>
+        <a href="#rota">Criar rota</a>
+        <a href="#style">Criar style</a>
+        <a href="#ligar-style">Ligar style na rota</a>
+        <a href="#startup">Configurar startup</a>
+        <a href="#level">Criar level</a>
+        <a href="#collection">Montar LevelCollection</a>
+        <a href="#intro">Adicionar IntroStage</a>
+        <a href="#posthook">Adicionar post hook</a>
+        <a href="#rearm">Participar do ActorGroupRearm</a>
+      </div>
+      <div class="nav-group">
+        <h2>Chamadas</h2>
+        <a href="#gameplay">Disparar gameplay</a>
+        <a href="#restart">Disparar restart</a>
+        <a href="#exit">Disparar exit to menu</a>
+        <a href="#nextlevel">Disparar next level</a>
+        <a href="#swaplocal">Disparar swap local</a>
+      </div>
+      <div class="nav-group">
+        <h2>Fechamento</h2>
+        <a href="#erros">Erros comuns</a>
+        <a href="#checklist">Checklist</a>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero" id="visao-geral">
+        <span class="eyebrow">Markdown canonico, HTML visual completo</span>
+        <h2>Como usar os modulos centrais em producao hoje</h2>
+        <p>O estado atual continua o mesmo: <code>startup</code> no bootstrap, <code>frontend</code> e <code>gameplay</code> em <code>SceneRouteKind</code>, navigation e transition por direct-ref + fail-fast, <code>IntroStage</code> level-owned e opcional, <code>PostGame</code> global com <code>Victory</code>, <code>Defeat</code> e <code>Exit</code>, e <code>Restart</code> fora do post hook.</p>
+        <div class="cards">
+          <article class="card"><strong>Use isto</strong><span><code>ILevelFlowRuntimeService</code> para abrir gameplay e trocar level local.</span></article>
+          <article class="card"><strong>Use isto</strong><span><code>IGameNavigationService</code> para menu e navegacao macro.</span></article>
+          <article class="card"><strong>Use isto</strong><span><code>IGameCommands</code> e <code>IPostLevelActionsService</code> para comandos da run e acoes do contexto atual.</span></article>
+          <article class="card"><strong>Use isto</strong><span><code>IActorGroupRearmOrchestrator</code> para rearm local de atores.</span></article>
+        </div>
+        <div class="section-nav">
+          <a href="#rota">Receitas do zero</a>
+          <a href="#gameplay">Chamadas reais</a>
+          <a href="#erros">Erros comuns</a>
+        </div>
+      </section>
+
+      <section class="panel" id="servicos">
+        <h2>Servicos publicos que voce realmente chama</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Servico</th><th>Assinatura real</th><th>Quando usar</th></tr></thead>
+            <tbody>
+              <tr><td><code>ILevelFlowRuntimeService</code></td><td><code>Task StartGameplayDefaultAsync(string reason = null, CancellationToken ct = default)</code><br><code>Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)</code><br><code>Task SwapLevelLocalAsync(LevelDefinitionAsset levelRef, string reason = null, CancellationToken ct = default)</code></td><td>entrada principal de gameplay e swap local</td></tr>
+              <tr><td><code>IPostLevelActionsService</code></td><td><code>Task RestartLevelAsync(string reason = null, CancellationToken ct = default)</code><br><code>Task NextLevelAsync(string reason = null, CancellationToken ct = default)</code><br><code>Task ExitToMenuAsync(string reason = null, CancellationToken ct = default)</code></td><td>acoes do contexto atual, sem transformar post em stage de level</td></tr>
+              <tr><td><code>IGameNavigationService</code></td><td><code>Task GoToMenuAsync(string reason = null)</code><br><code>Task ExitToMenuAsync(string reason = null)</code><br><code>Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null)</code></td><td>navegacao macro e saida para menu</td></tr>
+              <tr><td><code>IGameCommands</code></td><td><code>void RequestVictory(string reason)</code><br><code>void RequestDefeat(string reason)</code><br><code>void RequestRestart(string reason)</code><br><code>void RequestExitToMenu(string reason)</code></td><td>pedidos de run e comandos imediatos</td></tr>
+              <tr><td><code>IActorGroupRearmOrchestrator</code></td><td><code>Task&lt;bool&gt; RequestResetAsync(ActorGroupRearmRequest request)</code></td><td>rearm local de atores por grupo ou ids</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="callout use"><div class="mini-title">Use isto</div><div>Passe sempre um <code>reason</code> explicito, por exemplo <code>"Menu/PlayButton"</code>, <code>"Pause/RestartButton"</code> ou <code>"UI/SelectLevel"</code>.</div></div>
+          <div class="callout bad"><div class="mini-title">Evite isto</div><div>Chamar services internos de pipeline ou mexer em asset para simular runtime. Em producao, use a superficie publica acima.</div></div>
+        </div>
+      </section>
+
+      <section class="panel" id="assets">
+        <h2>Assets canonicos atuais</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Asset</th><th>Path confirmado</th><th>Funcao atual</th></tr></thead>
+            <tbody>
+              <tr><td><code>NewScriptsBootstrapConfigAsset</code></td><td><code>Assets/Resources/NewScriptsBootstrapConfig.asset</code></td><td>bootstrap, catalogs principais e startup transition</td></tr>
+              <tr><td><code>GameNavigationCatalogAsset</code></td><td><code>Assets/Resources/Navigation/GameNavigationCatalog.asset</code></td><td>navigation canonica por <code>routeRef + transitionStyleRef</code></td></tr>
+              <tr><td><code>SceneRouteCatalogAsset</code></td><td><code>Assets/Resources/SceneFlow/SceneRouteCatalog.asset</code></td><td>catalogo das rotas reais</td></tr>
+              <tr><td><code>TransitionStyleAsset</code></td><td><code>Assets/Resources/SceneFlow/Styles/*.asset</code></td><td>style estrutural por <code>profileRef + useFade</code></td></tr>
+              <tr><td><code>LevelCollectionAsset</code></td><td><code>Assets/Resources/SceneFlow/LevelCollectionAsset.asset</code></td><td>ordem dos levels da rota de gameplay</td></tr>
+              <tr><td><code>LevelDefinitionAsset</code></td><td><code>asset de conteudo referenciado pela LevelCollection</code></td><td>additive scenes, intro opcional e post hook opcional</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="rota">
+        <h2>Receita: criar uma rota nova do zero</h2>
+        <div class="grid-2">
+          <div class="callout"><div class="mini-title">O que precisa existir</div><ul class="step-list"><li><code>SceneRouteCatalogAsset</code></li><li><code>SceneKeyAsset</code> das cenas da rota</li><li><code>LevelCollectionAsset</code> se a rota for <code>Gameplay</code></li></ul></div>
+          <div class="callout use"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Criar <code>SceneRouteDefinitionAsset</code>.</li><li>Preencher <code>routeId</code>, cenas e <code>targetActiveSceneKey</code>.</li><li>Escolher <code>routeKind</code>.</li><li>Se for gameplay, usar <code>requiresWorldReset=true</code> e apontar <code>levelCollection</code>.</li><li>Adicionar a rota no <code>SceneRouteCatalogAsset</code>.</li></ol></div>
+        </div>
+        <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Configurar rota <code>Frontend</code> com <code>levelCollection</code> ou rota <code>Gameplay</code> sem <code>requiresWorldReset=true</code>.</div></div>
+      </section>
+
+      <section class="panel" id="style">
+        <h2>Receita: criar um <code>TransitionStyleAsset</code> do zero</h2>
+        <div class="grid-2">
+          <div class="callout"><div class="mini-title">O que precisa existir</div><ul class="step-list"><li><code>SceneTransitionProfile</code></li><li>Path coerente em <code>Assets/Resources/SceneFlow/Styles/</code></li></ul></div>
+          <div class="callout use"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Criar o asset.</li><li>Preencher <code>profileRef</code>.</li><li>Escolher <code>useFade</code>.</li><li>Dar nome estavel e legivel ao style.</li></ol></div>
+        </div>
+        <div class="callout bad" style="margin-top:16px;"><div class="mini-title">Evite isto</div><div>Usar o nome do style como semantica de fluxo. Hoje a semantica vem de bootstrap e <code>RouteKind</code>, nao do nome do style.</div></div>
+      </section>
+
+      <section class="panel" id="ligar-style">
+        <h2>Receita: ligar o style numa rota</h2>
+        <div class="callout"><div class="mini-title">Passo a passo</div><ol class="step-list"><li>Abrir <code>GameNavigationCatalogAsset</code>.</li><li>Preencher o slot core ou a entry extra com <code>routeRef</code> e <code>transitionStyleRef</code>.</li><li>Confirmar que ambos apontam para assets validos.</li></ol></div>
+        <pre><code>await navigation.GoToMenuAsync("Frontend/CloseModal");</code></pre>
+        <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Deixar <code>transitionStyleRef</code> vazio. O catalogo nao trata isso como opcional.</div></div>
+      </section>
+
+      <section class="panel" id="startup">
+        <h2>Receita: configurar <code>startupTransitionStyleRef</code></h2>
+        <div class="grid-2">
+          <div class="callout"><div class="mini-title">O que precisa existir</div><ul class="step-list"><li><code>Assets/Resources/NewScriptsBootstrapConfig.asset</code></li><li>um <code>TransitionStyleAsset</code> valido</li></ul></div>
+          <div class="callout use"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Preencher <code>startupTransitionStyleRef</code>.</li><li>Confirmar <code>profileRef</code> valido no style.</li><li>Manter <code>startup</code> no bootstrap, nao em route.</li></ol></div>
+        </div>
+      </section>
+
+      <section class="panel" id="level">
+        <h2>Receita: criar um level novo do zero</h2>
+        <div class="grid-2">
+          <div class="callout"><div class="mini-title">O que precisa existir</div><ul class="step-list"><li><code>SceneBuildIndexRef</code> das cenas do level</li><li><code>LevelDefinitionAsset</code></li></ul></div>
+          <div class="callout use"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Preencher <code>additiveScenes</code>.</li><li>Ajustar <code>hasIntroStage</code>.</li><li>Ajustar <code>hasPostGameReactionHook</code>.</li><li>Ajustar cortinas locais se o level precisar.</li></ol></div>
+        </div>
+        <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Criar <code>LevelDefinitionAsset</code> com <code>additiveScenes</code> vazio. Hoje isso invalida o asset.</div></div>
+      </section>
+
+      <section class="panel" id="collection">
+        <h2>Receita: colocar o level numa <code>LevelCollection</code></h2>
+        <div class="callout"><div class="mini-title">Passo a passo</div><ol class="step-list"><li>Abrir <code>LevelCollectionAsset</code>.</li><li>Adicionar os <code>LevelDefinitionAsset</code> em <code>levels</code>.</li><li>Deixar o default em <code>levels[0]</code>.</li><li>Nao repetir referencias.</li></ol></div>
+        <div class="callout use" style="margin-top:16px;"><div class="mini-title">O que esperar</div><div><code>levels[0]</code> vira o default usado por <code>LevelMacroPrepareService</code>, e a colecao passa a ser a fonte unica de levels da rota de gameplay.</div></div>
+      </section>
+
+      <section class="panel" id="intro">
+        <h2>Receita: adicionar uma <code>IntroStage</code> ao level</h2>
+        <div class="grid-2">
+          <div class="callout"><div class="mini-title">O que configurar</div><ol class="step-list"><li>No <code>LevelDefinitionAsset</code>, ligar <code>hasIntroStage</code>.</li><li>Garantir que o level esta na <code>LevelCollectionAsset</code> da rota atual.</li><li>Usar o mock atual apenas para testes de desenvolvimento.</li></ol></div>
+          <div class="callout use"><div class="mini-title">O que esperar</div><ul class="step-list"><li><code>LevelStageOrchestrator</code> continua owner da orquestracao.</li><li>Se houver intro, ela roda antes do gameplay.</li><li>Se nao houver intro, o fluxo segue sem erro.</li></ul></div>
+        </div>
+        <pre><code>await levelFlow.StartGameplayDefaultAsync("Menu/PlayButton", cancellationToken);</code></pre>
+        <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Esperar intro global ou por rota. Hoje ela e level-owned e opcional por <code>LevelDefinitionAsset</code>.</div></div>
+      </section>
+
+      <section class="panel" id="posthook">
+        <h2>Receita: adicionar hook opcional de post ao level</h2>
+        <div class="grid-2">
+          <div class="callout"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Ligar <code>hasPostGameReactionHook</code> no <code>LevelDefinitionAsset</code>.</li><li>Manter o owner do pos-run no fluxo global.</li><li>Usar esse contrato apenas para complementar <code>Victory</code>, <code>Defeat</code> ou <code>Exit</code>.</li></ol></div>
+          <div class="callout use"><div class="mini-title">O que esperar</div><ul class="step-list"><li><code>PostGame</code> continua global.</li><li>O level atual pode complementar com feedback visual.</li><li><code>Restart</code> fica fora desse hook.</li></ul></div>
+        </div>
+        <div class="callout bad" style="margin-top:16px;"><div class="mini-title">Evite isto</div><div>Tratar esse hook como <code>PostStage</code> por level. O contrato atual nao permite isso.</div></div>
+      </section>
+
+      <section class="panel" id="rearm">
+        <h2>Receita: fazer um ator participar do <code>ActorGroupRearm</code></h2>
+        <div class="grid-2">
+          <div class="callout"><div class="mini-title">O que precisa existir</div><ul class="step-list"><li>ator na cena de gameplay</li><li><code>IActorGroupRearmable</code> ou <code>IActorGroupRearmableSync</code></li><li><code>IActorKindProvider</code> quando o alvo for por grupo</li></ul></div>
+          <div class="callout use"><div class="mini-title">Use isto</div><div>Comece por <code>ActorGroupRearmRequest.ByActorKind(...)</code>. So use <code>ActorIdSet</code> quando o caso realmente exigir ids explicitos.</div></div>
+        </div>
+        <pre><code>public sealed class SampleEnemyRearm : MonoBehaviour, IActorGroupRearmable
+{
+    public Task ResetCleanupAsync(ActorGroupRearmContext ctx) => Task.CompletedTask;
+    public Task ResetRestoreAsync(ActorGroupRearmContext ctx) => Task.CompletedTask;
+    public Task ResetRebindAsync(ActorGroupRearmContext ctx) => Task.CompletedTask;
+}
+
+ActorGroupRearmRequest request = ActorGroupRearmRequest.ByActorKind(ActorKind.Player, "Gameplay/SoftReset");
+bool applied = await actorGroupRearm.RequestResetAsync(request);</code></pre>
+        <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Usar <code>ActorIdSet</code> como primeira escolha. Hoje o trilho principal e <code>ByActorKind</code>.</div></div>
+      </section>
+
+      <section class="panel" id="gameplay">
+        <h2>Disparar gameplay</h2>
+        <div class="callout"><div class="mini-title">O que precisa existir</div><div>Bootstrap valido, catalogos resolvidos e rota de gameplay com <code>levelCollection</code>.</div></div>
+        <pre><code>using System.Threading;
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+
+public async Task OnPlayPressedAsync(ILevelFlowRuntimeService levelFlow, CancellationToken cancellationToken)
+{
+    await levelFlow.StartGameplayDefaultAsync("Menu/PlayButton", cancellationToken);
+}</code></pre>
+        <div class="callout use" style="margin-top:16px;"><div class="mini-title">O que esperar</div><div>SceneFlow entra na rota de gameplay, o level default e preparado, a intro opcional roda se existir e a run chega em <code>Playing</code>.</div></div>
+      </section>
+
+      <section class="panel" id="restart">
+        <h2>Disparar restart</h2>
+        <pre><code>gameCommands.RequestRestart("Pause/RestartButton");
+
+await postLevelActions.RestartLevelAsync("PostGame/RestartButton", cancellationToken);</code></pre>
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="callout use"><div class="mini-title">Use isto</div><div>Use <code>IGameCommands</code> para UI simples ou <code>IPostLevelActionsService</code> no contexto atual.</div></div>
+          <div class="callout bad"><div class="mini-title">Evite isto</div><div>Esperar que restart passe por post hook. Hoje ele vai direto para reset/restart.</div></div>
+        </div>
+      </section>
+
+      <section class="panel" id="exit">
+        <h2>Disparar exit to menu</h2>
+        <pre><code>await navigation.ExitToMenuAsync("Pause/ExitToMenu");
+
+await postLevelActions.ExitToMenuAsync("PostGame/ExitToMenu", cancellationToken);</code></pre>
+        <div class="callout use" style="margin-top:16px;"><div class="mini-title">O que esperar</div><div>O fluxo publica a intencao de exit, o <code>PostGame</code> global formaliza <code>Exit</code> quando aplicavel e o level atual so pode complementar isso por hook opcional.</div></div>
+      </section>
+
+      <section class="panel" id="nextlevel">
+        <h2>Disparar next level</h2>
+        <pre><code>await postLevelActions.NextLevelAsync("PostGame/NextLevel", cancellationToken);</code></pre>
+        <div class="callout use" style="margin-top:16px;"><div class="mini-title">O que esperar</div><div>O proximo level sai da <code>LevelCollectionAsset</code> atual e a troca segue pelo trilho local do level atual.</div></div>
+      </section>
+
+      <section class="panel" id="swaplocal">
+        <h2>Disparar swap local</h2>
+        <pre><code>await levelFlow.SwapLevelLocalAsync(levelRef, "UI/SelectLevel", cancellationToken);</code></pre>
+        <div class="callout use" style="margin-top:16px;"><div class="mini-title">O que esperar</div><div><code>LevelSelectedEvent</code> abre o trilho, o reset local do level alvo acontece e <code>LevelSwapLocalAppliedEvent</code> fecha a troca local.</div></div>
+      </section>
+
+      <section class="panel" id="erros">
+        <h2>Erros comuns por assunto</h2>
+        <div class="cards">
+          <article class="card"><strong>Navigation</strong><span>Nao mexa em asset para simular runtime. Configure no editor e chame service publico com <code>reason</code> clara.</span></article>
+          <article class="card"><strong>Styles</strong><span>Nao trate nome de style como semantica. O owner estrutural continua sendo <code>TransitionStyleAsset</code>.</span></article>
+          <article class="card"><strong>Level</strong><span>Nao deixe <code>additiveScenes</code> vazio e nao esqueça de colocar o level na <code>LevelCollection</code>.</span></article>
+          <article class="card"><strong>Intro</strong><span>Nao espere intro global. Hoje ela e level-owned e opcional.</span></article>
+          <article class="card"><strong>Post hook</strong><span>Nao transforme o hook opcional em dono do pos-run. O owner continua global.</span></article>
+          <article class="card"><strong>Rearm</strong><span>Nao comece por <code>ActorIdSet</code> se <code>ByActorKind</code> resolve o caso.</span></article>
+        </div>
+      </section>
+
+      <section class="panel" id="checklist">
+        <h2>Checklist de producao</h2>
+        <ul class="check-list">
+          <li>bootstrap com <code>navigationCatalog</code>, <code>sceneRouteCatalog</code>, <code>startupTransitionStyleRef</code> e <code>fadeSceneKey</code></li>
+          <li><code>GameNavigationCatalogAsset</code> com slots core validos</li>
+          <li>rota <code>Gameplay</code> com <code>levelCollection</code></li>
+          <li><code>TransitionStyleAsset</code> com <code>profileRef</code></li>
+          <li><code>LevelCollectionAsset</code> com levels ordenados e sem duplicatas</li>
+          <li><code>LevelDefinitionAsset</code> com <code>additiveScenes</code> validas</li>
+          <li>flags corretas de <code>hasIntroStage</code> e <code>hasPostGameReactionHook</code></li>
+          <li>atores por grupo com <code>IActorKindProvider</code> quando necessario</li>
+          <li>componentes de rearm com <code>IActorGroupRearmable</code> ou <code>IActorGroupRearmableSync</code></li>
+          <li><code>reason</code> clara e rastreavel nas chamadas publicas</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

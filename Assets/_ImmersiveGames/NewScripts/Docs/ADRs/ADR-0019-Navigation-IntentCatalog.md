@@ -10,7 +10,7 @@
 ## Evidencias canonicas
 
 - `Docs/Reports/Audits/LATEST.md`
-- `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+- `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
 - `Docs/Reports/Evidence/LATEST.md`
 - `Docs/Reports/lastlog.log`
 
@@ -64,4 +64,4 @@ Nao existe fallback para `startupTransitionProfile` nem para catalogos legados.
 
 - Leitura operacional atual: `Docs/Reports/Audits/LATEST.md`
 - Evidencia runtime atual: `Docs/Reports/lastlog.log`
-- Fechamento docs-only do estado vigente: `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+- Fechamento docs-only do estado vigente: `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`

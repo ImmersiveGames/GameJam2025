@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -544,8 +544,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         private string ResolveTempActiveScene(IReadOnlyList<string> reloadScenes)
         {
             var reloadSet = new HashSet<string>(reloadScenes, StringComparer.Ordinal);
-            const string UiGlobalSceneName = "UIGlobalScene";
-            if (_loaderAdapter.IsSceneLoaded(UiGlobalSceneName) && !reloadSet.Contains(UiGlobalSceneName)) return UiGlobalSceneName;
+            const string uiGlobalSceneName = "UIGlobalScene";
+            if (_loaderAdapter.IsSceneLoaded(uiGlobalSceneName) && !reloadSet.Contains(uiGlobalSceneName)) return uiGlobalSceneName;
             string currentActive = _loaderAdapter.GetActiveSceneName();
             if (!string.IsNullOrWhiteSpace(currentActive) && !reloadSet.Contains(currentActive)) return currentActive;
             int sceneCount = SceneManager.sceneCount;
@@ -562,7 +562,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         private sealed class NoFadeAdapter : ISceneFlowFadeAdapter
         {
             public bool IsAvailable => false;
-            public void ConfigureFromProfile(_ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings.SceneTransitionProfile profile, string profileLabel) { }
+            public void ConfigureFromProfile(Bindings.SceneTransitionProfile profile, string profileLabel) { }
             public Task FadeInAsync(string? contextSignature = null) => Task.CompletedTask;
             public Task FadeOutAsync(string? contextSignature = null) => Task.CompletedTask;
         }

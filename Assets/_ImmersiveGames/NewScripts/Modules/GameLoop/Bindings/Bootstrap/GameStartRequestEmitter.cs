@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap
                 return;
             }
 
-            var existing = Object.FindFirstObjectByType<GameStartRequestEmitter>(FindObjectsInactive.Include);
+            var existing = FindFirstObjectByType<GameStartRequestEmitter>(FindObjectsInactive.Include);
             if (existing != null)
             {
                 _installed = true;
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap
             if (go == null)
             {
                 go = new GameObject(EmitterObjectName);
-                Object.DontDestroyOnLoad(go);
+                DontDestroyOnLoad(go);
             }
 
             if (!go.TryGetComponent<GameStartRequestEmitter>(out _))

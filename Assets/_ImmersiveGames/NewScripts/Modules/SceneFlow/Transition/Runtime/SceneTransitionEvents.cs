@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -161,9 +161,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         }
     }
 
-    public readonly struct SceneTransitionStartedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionStartedEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionFadeInCompletedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionFadeInCompletedEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionScenesReadyEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionScenesReadyEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { Context = context; } }
-    public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext Context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { Context = context; } }
+    public readonly struct SceneTransitionStartedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionStartedEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionFadeInCompletedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionFadeInCompletedEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionScenesReadyEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionScenesReadyEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { this.context = context; } }
 }

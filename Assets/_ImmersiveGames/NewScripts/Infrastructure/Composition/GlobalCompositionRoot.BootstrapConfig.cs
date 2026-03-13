@@ -9,15 +9,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static bool bootstrapConfigResolutionAttempted;
-        private static bool bootstrapConfigResolutionLogged;
-        private static NewScriptsBootstrapConfigAsset cachedBootstrapConfig;
-        private static string cachedBootstrapConfigVia = "None";
-        private static bool fatalAbortRequested;
+        private static bool _bootstrapConfigResolutionAttempted;
+        private static bool _bootstrapConfigResolutionLogged;
+        private static NewScriptsBootstrapConfigAsset _cachedBootstrapConfig;
+        private static string _cachedBootstrapConfigVia = "None";
+        private static bool _fatalAbortRequested;
 
         private static void FailFast(string message)
         {
-            fatalAbortRequested = true;
+            _fatalAbortRequested = true;
 
             DebugUtility.LogError(typeof(GlobalCompositionRoot), $"[FATAL][Config] {message}");
             StopPlayModeOrQuit();
@@ -35,42 +35,45 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
         }
 
-        static partial void RequestEditorStopPlayMode();
+        private static void RequestEditorStopPlayMode()
+        {
+            throw new NotImplementedException();
+        }
 
         private static NewScriptsBootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
         {
-            if (!bootstrapConfigResolutionAttempted)
+            if (!_bootstrapConfigResolutionAttempted)
             {
-                bootstrapConfigResolutionAttempted = true;
+                _bootstrapConfigResolutionAttempted = true;
 
                 if (DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var diConfig) && diConfig != null)
                 {
-                    cachedBootstrapConfig = diConfig;
-                    cachedBootstrapConfigVia = "DI";
+                    _cachedBootstrapConfig = diConfig;
+                    _cachedBootstrapConfigVia = "DI";
                 }
                 else
                 {
                     ResolveBootstrapConfigFromRuntimeModeConfigOrFail();
-                    DependencyManager.Provider.RegisterGlobal(cachedBootstrapConfig, allowOverride: false);
+                    DependencyManager.Provider.RegisterGlobal(_cachedBootstrapConfig, allowOverride: false);
                 }
             }
 
-            via = cachedBootstrapConfigVia;
+            via = _cachedBootstrapConfigVia;
 
-            if (!bootstrapConfigResolutionLogged)
+            if (!_bootstrapConfigResolutionLogged)
             {
-                bootstrapConfigResolutionLogged = true;
+                _bootstrapConfigResolutionLogged = true;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={cachedBootstrapConfig.name}",
+                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={_cachedBootstrapConfig.name}",
                     DebugUtility.Colors.Info);
             }
 
-            if (cachedBootstrapConfig == null || fatalAbortRequested)
+            if (_cachedBootstrapConfig == null || _fatalAbortRequested)
             {
                 throw new InvalidOperationException("[FATAL][Config] Bootstrap config resolution aborted.");
             }
 
-            return cachedBootstrapConfig;
+            return _cachedBootstrapConfig;
         }
 
         private static void ResolveBootstrapConfigFromRuntimeModeConfigOrFail()
@@ -87,8 +90,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 FailFast("RuntimeModeConfig.NewScriptsBootstrapConfig is null. Assign a valid NewScriptsBootstrapConfigAsset.");
             }
 
-            cachedBootstrapConfig = runtimeModeConfig.NewScriptsBootstrapConfig;
-            cachedBootstrapConfigVia = "RuntimeModeConfig";
+            _cachedBootstrapConfig = runtimeModeConfig.NewScriptsBootstrapConfig;
+            _cachedBootstrapConfigVia = "RuntimeModeConfig";
         }
     }
 }

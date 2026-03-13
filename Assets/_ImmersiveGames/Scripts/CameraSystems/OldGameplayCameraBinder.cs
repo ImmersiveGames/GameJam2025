@@ -1,12 +1,12 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.CameraSystems
 {
     /// <summary>
-    /// Responsável por registrar a câmera de gameplay no CameraResolver.
-    /// Deve ser colocado na câmera principal da GameplayScene.
+    /// Responsï¿½vel por registrar a cï¿½mera de gameplay no CameraResolver.
+    /// Deve ser colocado na cï¿½mera principal da GameplayScene.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -29,20 +29,20 @@ namespace _ImmersiveGames.Scripts.CameraSystems
                 DebugUtility.LogError<OldGameplayCameraBinder>("OldGameplayCameraBinder exige um componente Camera no mesmo GameObject.");
             }
 
-            // Não registra aqui. Apenas tenta resolver (pode falhar dependendo da ordem de bootstrap).
+            // Nï¿½o registra aqui. Apenas tenta resolver (pode falhar dependendo da ordem de bootstrap).
             TryResolve();
         }
 
         private void Start()
         {
-            // Caso o resolver global ainda não existisse no Awake, tenta novamente no Start.
+            // Caso o resolver global ainda nï¿½o existisse no Awake, tenta novamente no Start.
             if (_resolver == null)
             {
                 TryResolve();
             }
 
-            // Se o objeto já está enabled (normal), OnEnable já terá tentado registrar.
-            // Mas se a resolução só ficou pronta no Start, garantimos o registro aqui.
+            // Se o objeto jï¿½ estï¿½ enabled (normal), OnEnable jï¿½ terï¿½ tentado registrar.
+            // Mas se a resoluï¿½ï¿½o sï¿½ ficou pronta no Start, garantimos o registro aqui.
             TryRegister();
         }
 
@@ -67,9 +67,9 @@ namespace _ImmersiveGames.Scripts.CameraSystems
 
             if (!DependencyManager.Provider.TryGetGlobal(out _resolver) || _resolver == null)
             {
-                // Não é erro fatal; depende da ordem de bootstrap global.
+                // Nï¿½o ï¿½ erro fatal; depende da ordem de bootstrap global.
                 DebugUtility.LogWarning<OldGameplayCameraBinder>(
-                    "OldCameraResolverService não encontrado no DI global (ainda). Vou tentar novamente no Start.",
+                    "OldCameraResolverService nï¿½o encontrado no DI global (ainda). Vou tentar novamente no Start.",
                     this);
 
                 _resolver = null;
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.CameraSystems
 
             if (_resolver == null)
             {
-                // Tenta resolver caso ainda não tenha sido possível.
+                // Tenta resolver caso ainda nï¿½o tenha sido possï¿½vel.
                 TryResolve();
                 if (_resolver == null)
                 {
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.Scripts.CameraSystems
             _registered = true;
 
             DebugUtility.Log<OldGameplayCameraBinder>(
-                $"Câmera registrada como Player {playerId}: {_camera.name}",
+                $"Cï¿½mera registrada como Player {playerId}: {_camera.name}",
                 DebugUtility.Colors.Info);
         }
 

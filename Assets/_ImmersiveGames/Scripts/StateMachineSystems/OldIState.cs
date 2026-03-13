@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
-    public interface OldIState
+    public interface IOldIState
     {
         void Update();
         void FixedUpdate(){}

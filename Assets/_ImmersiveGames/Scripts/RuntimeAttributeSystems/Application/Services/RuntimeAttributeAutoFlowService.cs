@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {

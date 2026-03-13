@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
@@ -67,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
-        private static SceneRouteId ResolveBootStartRouteIdOrFailFast(Infrastructure.Config.NewScriptsBootstrapConfigAsset bootstrap)
+        private static SceneRouteId ResolveBootStartRouteIdOrFailFast(Config.NewScriptsBootstrapConfigAsset bootstrap)
         {
             var navigationCatalog = bootstrap.NavigationCatalog;
             if (navigationCatalog == null)
@@ -87,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 FailFast($"[FATAL][Config] Boot/StartPlan sem ISceneRouteResolver para routeId='{bootStartRouteId}'.");
             }
 
-            if (!routeResolver.TryResolve(bootStartRouteId, out _))
+            if (routeResolver != null && !routeResolver.TryResolve(bootStartRouteId, out _))
             {
                 FailFast($"[FATAL][Config] Boot/StartPlan routeId nao encontrado no catalogo de rotas. routeId='{bootStartRouteId}'.");
             }
@@ -99,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return bootStartRouteId;
         }
 
-        private static StartupTransitionResolution ResolveRequiredStartupTransition(Infrastructure.Config.NewScriptsBootstrapConfigAsset bootstrap)
+        private static StartupTransitionResolution ResolveRequiredStartupTransition(Config.NewScriptsBootstrapConfigAsset bootstrap)
         {
             TransitionStyleAsset styleRef = bootstrap.StartupTransitionStyleRef;
             if (styleRef == null)

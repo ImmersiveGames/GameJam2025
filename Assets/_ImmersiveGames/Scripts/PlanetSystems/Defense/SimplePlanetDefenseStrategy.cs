@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
-using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseTargetMode targetMode = DefenseTargetMode.PreferPlayer,
             string customStrategyId = DefaultStrategyId)
         {
-            this._targetMode = targetMode;
+            _targetMode = targetMode;
             _preferredRole = ResolvePreferredRole(targetMode);
             StrategyId = string.IsNullOrWhiteSpace(customStrategyId) ? DefaultStrategyId : customStrategyId;
             _cachedRoles = new Dictionary<string, DefenseRole>(StringComparer.OrdinalIgnoreCase);

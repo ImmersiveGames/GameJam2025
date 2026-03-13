@@ -1,9 +1,9 @@
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine.Events;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Threshold

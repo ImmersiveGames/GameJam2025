@@ -35,6 +35,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             var restartContextService = ResolveOrRegisterRestartContextService();
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var stagePresentationService) || stagePresentationService == null)
+            {
+                stagePresentationService = new LevelStagePresentationService(restartContextService);
+                DependencyManager.Provider.RegisterGlobal<ILevelStagePresentationService>(stagePresentationService);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] ILevelStagePresentationService registrado (LevelStagePresentationService).",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelPostGameHookService>(out var levelPostGameHookService) || levelPostGameHookService == null)
+            {
+                levelPostGameHookService = new LevelPostGameHookService(stagePresentationService);
+                DependencyManager.Provider.RegisterGlobal<ILevelPostGameHookService>(levelPostGameHookService);
+
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[OBS][LevelFlow] ILevelPostGameHookService registrado (LevelPostGameHookService).",
+                    DebugUtility.Colors.Info);
+            }
+
             IWorldResetCommands worldResetCommands = null;
             DependencyManager.Provider.TryGetGlobal(out worldResetCommands);
             if (worldResetCommands == null)

@@ -1,6 +1,6 @@
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
                 return;
             }
 
-            // Qualquer outro estado => garante que o terminal overlay não fique “travado”.
+            // Qualquer outro estado => garante que o terminal overlay nï¿½o fique ï¿½travadoï¿½.
             overlay.Hide();
         }
 

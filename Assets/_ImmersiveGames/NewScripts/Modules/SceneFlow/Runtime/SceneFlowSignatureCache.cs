@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+﻿using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
@@ -30,12 +30,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            UpdateFromContext(evt.Context);
+            UpdateFromContext(evt.context);
         }
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            UpdateFromContext(evt.Context);
+            UpdateFromContext(evt.context);
         }
 
         private void UpdateFromContext(SceneTransitionContext context)

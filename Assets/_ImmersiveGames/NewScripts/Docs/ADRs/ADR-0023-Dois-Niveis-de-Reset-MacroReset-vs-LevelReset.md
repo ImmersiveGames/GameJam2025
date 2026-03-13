@@ -11,14 +11,14 @@
   - `WorldLifecycle V2` ja nao promove `levelId/contentId` como shape principal de telemetria.
   - `Gameplay ActorGroupRearm` foi consolidado como soft reset local canonico por grupo de atores.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
   - `Docs/Reports/lastlog.log`
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-11
+- Ultima atualizacao: 2026-03-12
 
 ## Decisao canonica atual
 
@@ -42,5 +42,3 @@
 - O fechamento deste ADR vale para a separacao canonica entre MacroReset e LevelReset no eixo principal.
 - `Gameplay ActorGroupRearm` deixa de ser excecao arquitetural nessa borda: o subsistema agora usa contrato canonico por grupo (`ByActorKind`) e manteve `ActorIdSet` apenas como selecao tecnica explicita.
 - Nao ha mais residuo estrutural de navigation fora do trilho canonico atual.
-
-

@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States

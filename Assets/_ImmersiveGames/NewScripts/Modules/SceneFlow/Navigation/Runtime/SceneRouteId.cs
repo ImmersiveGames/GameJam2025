@@ -14,14 +14,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
     [Serializable]
     public struct SceneRouteId : IEquatable<SceneRouteId>
     {
-        [SerializeField] private string _value;
+        [SerializeField] private string value;
 
-        public string Value => _value ?? string.Empty;
+        public string Value => value ?? string.Empty;
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
         public SceneRouteId(string value)
         {
-            _value = Normalize(value);
+            this.value = Normalize(value);
         }
 
         public static SceneRouteId FromName(string name) => new(name);

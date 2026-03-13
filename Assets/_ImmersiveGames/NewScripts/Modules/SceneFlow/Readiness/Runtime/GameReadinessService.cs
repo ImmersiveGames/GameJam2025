@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             AcquireGate();
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionStarted â†’ gate adquirido e jogo marcado como NOT READY. Context={evt.Context}");
+                $"[Readiness] SceneTransitionStarted â†’ gate adquirido e jogo marcado como NOT READY. Context={evt.context}");
 
             PublishSnapshot("scene_transition_started", force: true);
         }
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
         private void OnSceneTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionScenesReady â†’ fase WorldLoaded sinalizada. Context={evt.Context}");
+                $"[Readiness] SceneTransitionScenesReady â†’ fase WorldLoaded sinalizada. Context={evt.context}");
 
             // Ainda nÃ£o marca gameplayReady, apenas sinaliza fase intermediÃ¡ria.
             PublishSnapshot("scene_transition_scenes_ready", force: true);
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             ReleaseGateHandle();
 
             // SemÃ¢ntica correta: GameplayReady sÃ³ deve subir em transiÃ§Ã£o de gameplay.
-            bool isGameplayTransition = evt.Context.RouteKind == SceneRouteKind.Gameplay;
+            bool isGameplayTransition = evt.context.RouteKind == SceneRouteKind.Gameplay;
             _gameplayReady = isGameplayTransition;
 
             string readinessPhase = isGameplayTransition
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionCompleted â†’ gate liberado e fase {readinessPhase} marcada. " +
-                $"gameplayReady={_gameplayReady}. Context={evt.Context}");
+                $"gameplayReady={_gameplayReady}. Context={evt.context}");
 
             PublishSnapshot(
                 isGameplayTransition

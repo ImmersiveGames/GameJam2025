@@ -1,9 +1,9 @@
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
+using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                     {
                         _animationController = resolvedController;
 
-                        DebugUtility.LogVerbose<Behavior.EaterBehavior>(
+                        DebugUtility.LogVerbose<EaterBehavior>(
                             $"EaterAnimationController resolvido via DependencyManager para ActorId={actorId}.");
                     }
                     // Se vier um AnimationControllerBase, tenta converter para EaterAnimationController
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                     {
                         _animationController = eaterController;
 
-                        DebugUtility.LogVerbose<Behavior.EaterBehavior>(
+                        DebugUtility.LogVerbose<EaterBehavior>(
                             $"AnimationControllerBase resolvido e convertido para EaterAnimationController (ActorId={actorId}).");
                     }
                 }

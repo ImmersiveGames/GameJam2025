@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             ResetWarnings();
 
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _activeSignature = signature;
             _pendingSignature = signature;
             _pendingStep = SceneFlowLoadingPhases.Started;
-            _pendingUseFade = evt.Context.UseFade;
+            _pendingUseFade = evt.context.UseFade;
 
             DebugUtility.LogVerbose<LoadingHudOrchestrator>(
                 $"[LoadingStart] signature='{signature}' useFade={_pendingUseFade}.",
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionFadeInCompleted(SceneTransitionFadeInCompletedEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (!EnsureActiveSignature(signature))
             {
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (IsSignatureMismatch(signature))
             {
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _activeSignature = signature;
             _pendingSignature = signature;
             _pendingStep = SceneFlowLoadingPhases.ScenesReady;
-            _pendingUseFade = evt.Context.UseFade;
+            _pendingUseFade = evt.context.UseFade;
 
 
             // Para fade/no-fade: Show e idempotente por assinatura quando a HUD ja estiver visivel.
@@ -122,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (!EnsureActiveSignature(signature))
             {
@@ -137,7 +137,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            string signature = SceneTransitionSignature.Compute(evt.Context);
+            string signature = SceneTransitionSignature.Compute(evt.context);
 
             if (!EnsureActiveSignature(signature, allowEmptyActive: true))
             {

@@ -1,39 +1,60 @@
 # NewScripts Docs
 
-Esta pasta documenta apenas o estado operacional atual de `Assets/_ImmersiveGames/NewScripts/**`.
+Esta pasta documenta o estado operacional atual de `Assets/_ImmersiveGames/NewScripts/**`.
 
-Estados intermediarios, trilhos de migracao e snapshots antigos nao sao mais documentacao operacional vigente. O historico que permanece existe apenas para rastreabilidade em:
-- `Docs/CHANGELOG.md`
-- `Docs/ADRs/**` vigentes
-- `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
-
-## Superficie canonica
+## Superficie oficial vigente
 
 Leia nesta ordem:
 1. `Docs/Canon/Canon-Index.md`
-2. `Docs/Modules/SceneFlow.md`
-3. `Docs/Modules/Navigation.md`
-4. `Docs/Modules/LevelFlow.md`
-5. `Docs/Modules/GameLoop.md`
-6. `Docs/Modules/Gameplay.md`
-7. `Docs/Modules/WorldLifecycle.md`
-8. `Docs/Modules/InputModes.md`
-9. `Docs/ADRs/README.md`
-10. `Docs/Reports/Audits/LATEST.md`
-11. `Docs/Reports/Evidence/LATEST.md`
-12. `Docs/Plans/Plan-Continuous.md`
-13. `Docs/CHANGELOG.md`
+2. `Docs/Guides/Production-How-To-Use-Core-Modules.md`
+3. `Docs/Guides/Event-Hooks-Reference.md`
+4. `Docs/Modules/SceneFlow.md`
+5. `Docs/Modules/Navigation.md`
+6. `Docs/Modules/LevelFlow.md`
+7. `Docs/Modules/GameLoop.md`
+8. `Docs/Modules/Gameplay.md`
+9. `Docs/Modules/WorldLifecycle.md`
+10. `Docs/Modules/InputModes.md`
+11. `Docs/ADRs/README.md`
+12. `Docs/Reports/Audits/LATEST.md`
+13. `Docs/Reports/Evidence/LATEST.md`
+14. `Docs/Plans/Plan-Continuous.md`
+15. `Docs/CHANGELOG.md`
 
-## Estado canonico atual
+## Guias de uso
+
+Fonte canonica em Markdown:
+- `Docs/Guides/Production-How-To-Use-Core-Modules.md`
+- `Docs/Guides/Event-Hooks-Reference.md`
+
+Camada visual completa em HTML:
+- `Docs/Guides/Manual-Operacional.html`
+- `Docs/Guides/Hooks-Reference.html`
+
+Regra:
+- o Markdown continua sendo a fonte canonica
+- o HTML replica o conteudo operacional principal em formato visual, sem trocar a fonte de verdade
+
+## Estado atual resumido
 
 - `startup` pertence ao bootstrap.
 - `frontend` e `gameplay` pertencem a `SceneRouteKind`.
-- Navigation/Transition operam em direct-ref + fail-fast.
+- Navigation e transition operam por direct-ref + fail-fast.
 - `GameNavigationCatalogAsset` e o asset canonico de navigation.
 - `TransitionStyleAsset` e o asset canonico de style.
 - `SceneTransitionProfile` e asset leaf visual.
-- `ActorGroupRearm` e a nomenclatura canonica de rearm/reset de gameplay.
+- `IntroStage` e level-owned e opcional.
+- `PostGame` e global, com resultados formais `Victory`, `Defeat` e `Exit`.
+- `Restart` nao passa por post hook.
+- O level atual pode expor apenas um hook opcional para complementar o `PostGame` global.
+- `ActorGroupRearm` e a nomenclatura canonica de rearm local de gameplay.
 
-## Leitura historica
+## Historico que permanece
 
-Qualquer documento historico remanescente fora da cadeia acima deve ser tratado como referencia arquivistica, nao como contrato operacional.
+Historico remanescente existe apenas para rastreabilidade em:
+- `Docs/CHANGELOG.md`
+- `Docs/ADRs/**` vigentes
+- `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
+- `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+
+Qualquer outro documento fora da cadeia oficial deve ser lido como historico arquivado, nao como guia operacional atual.

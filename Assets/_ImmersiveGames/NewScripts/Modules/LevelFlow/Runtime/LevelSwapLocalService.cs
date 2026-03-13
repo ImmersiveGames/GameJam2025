@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public LevelSwapLocalService(
             IRestartContextService restartContextService,
             IWorldResetCommands worldResetCommands,
-            object _navigationCatalog = null,
+            object navigationCatalog = null,
             ISimulationGateService simulationGateService = null,
             SceneRouteCatalogAsset sceneRouteCatalog = null)
         {

@@ -7,16 +7,16 @@
   - Em gameplay: `LevelPrepare` obrigatorio antes do FadeOut.
   - Em macro sem levels: `LevelClear` idempotente.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
   - `Docs/Reports/lastlog.log`
-- LEGACY / Compat (nao canonico):
+- LEGACY / Historico:
   - Contrato antigo sem etapa de level no gate.
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-11
+- Ultima atualizacao: 2026-03-12
 
 ## Decisao canonica atual
 
@@ -36,11 +36,7 @@
 - `lastlog:2185` `LevelCleared ...`
 - `lastlog:2254` `LevelClearSkipped reason='no_active_level' ...`
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
-- `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
 
-## Observacao LEGADO
+## Observacao historica
 
-- `PrepareAsync(...)` e contrato anterior (LEGADO), substituido por `PrepareOrClearAsync(...)`.
-
-
-
+- `PrepareAsync(...)` e contrato anterior, substituido por `PrepareOrClearAsync(...)`.

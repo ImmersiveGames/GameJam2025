@@ -95,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
                 _entries.Add(baseMsg, entry);
             }
 
-            entry.Count++;
+            entry.count++;
 
             bool shouldLog = ShouldLogNow(entry, now, settings);
             if (shouldLog)
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
                 string msg = baseMsg;
                 if (settings.includeCountInLog)
                 {
-                    msg += $" count={entry.Count}";
+                    msg += $" count={entry.count}";
                 }
 
                 LogWithSeverity(msg);
@@ -114,8 +114,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
                     throw new InvalidOperationException(msg);
                 }
 
-                entry.LastLogTime = now;
-                entry.LoggedOnce = true;
+                entry.lastLogTime = now;
+                entry.loggedOnce = true;
             }
 
             MaybeEmitSummary(now);
@@ -143,22 +143,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
             {
                 case DegradedDedupStrategy.PerSession:
                     // Loga apenas a primeira ocorrência (se permitido).
-                    return settings.logFirstOccurrence && !entry.LoggedOnce;
+                    return settings.logFirstOccurrence && !entry.loggedOnce;
 
                 case DegradedDedupStrategy.CooldownSeconds:
                 default:
                     // Cooldown=0 -> sempre loga (sem dedupe).
                     if (settings.cooldownSeconds <= 0f)
                     {
-                        return settings.logFirstOccurrence || entry.Count > 1;
+                        return settings.logFirstOccurrence || entry.count > 1;
                     }
 
-                    if (!entry.LoggedOnce)
+                    if (!entry.loggedOnce)
                     {
                         return settings.logFirstOccurrence;
                     }
 
-                    return now - entry.LastLogTime >= settings.cooldownSeconds;
+                    return now - entry.lastLogTime >= settings.cooldownSeconds;
             }
         }
 
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
             int total = _droppedKeyReports;
             foreach (var kv in _entries)
             {
-                total += kv.Value.Count;
+                total += kv.Value.count;
             }
 
             // Top 5 por count (sem LINQ).
@@ -191,7 +191,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
             foreach (var kv in _entries)
             {
                 var e = kv.Value;
-                int c = e.Count;
+                int c = e.count;
                 // Inserção simples em ranking.
                 for (int i = 0; i < topN; i++)
                 {
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
                     }
 
                     topCounts[i] = c;
-                    topLabels[i] = $"{e.Feature}/{e.Reason}={c}";
+                    topLabels[i] = $"{e.feature}/{e.reason}={c}";
                     break;
                 }
             }
@@ -267,20 +267,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 
         private sealed class Entry
         {
-            public readonly string Feature;
-            public readonly string Reason;
+            public readonly string feature;
+            public readonly string reason;
 
-            public int Count;
-            public float LastLogTime;
-            public bool LoggedOnce;
+            public int count;
+            public float lastLogTime;
+            public bool loggedOnce;
 
             public Entry(string feature, string reason)
             {
-                Feature = string.IsNullOrWhiteSpace(feature) ? DegradedKeys.Feature.Infrastructure : feature;
-                Reason = string.IsNullOrWhiteSpace(reason) ? DegradedKeys.Reason.Unknown : reason;
-                Count = 0;
-                LastLogTime = 0f;
-                LoggedOnce = false;
+                this.feature = string.IsNullOrWhiteSpace(feature) ? DegradedKeys.Feature.Infrastructure : feature;
+                this.reason = string.IsNullOrWhiteSpace(reason) ? DegradedKeys.Reason.Unknown : reason;
+                count = 0;
+                lastLogTime = 0f;
+                loggedOnce = false;
             }
         }
     }

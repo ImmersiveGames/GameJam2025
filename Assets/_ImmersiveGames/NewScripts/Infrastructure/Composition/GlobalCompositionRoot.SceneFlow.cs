@@ -5,8 +5,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
@@ -265,7 +263,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"[OBS][Fade] FadeScene ready (source=GlobalCompositionRoot/Preload, scene='{fadeSceneName}').",
                     DebugUtility.Colors.Success);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 HandleFadeRuntimeFailure(
                     $"Failed to preload FadeScene '{fadeSceneName}'. ex='{ex.GetType().Name}: {ex.Message}'",
@@ -307,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             StopPlayModeOrQuit();
 
-            throw new System.InvalidOperationException($"{tag} {reason}");
+            throw new InvalidOperationException($"{tag} {reason}");
         }
 
         static partial void TryResolveBuildSettingsScenePathEditor(string fadeSceneName, ref string scenePath);

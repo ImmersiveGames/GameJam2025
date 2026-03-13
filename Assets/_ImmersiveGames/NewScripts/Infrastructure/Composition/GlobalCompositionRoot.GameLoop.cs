@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Commands;
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             GameLoopBootstrap.Ensure(includeGameRunServices: false, includeOutcomeEventInputBridge: false);
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[GameLoop] GameLoopBootstrap.EnsureRegistered() executado (serviÃ§o + bridge no escopo global).",
+                "[GameLoop] GameLoopBootstrap.EnsureRegistered() executado (servico + bridge no escopo global).",
                 DebugUtility.Colors.Info);
         }
 
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoop] IGameRunEndRequestService jÃ¡ registrado no DI global.",
+                    "[GameLoop] IGameRunEndRequestService ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IGameCommands>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameCommands] IGameCommands jÃ¡ registrado no DI global.",
+                    "[GameCommands] IGameCommands ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -66,12 +66,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoop] IGameRunStateService jÃ¡ registrado no DI global.",
+                    "[GameLoop] IGameRunStateService ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            // MantÃ©m compatibilidade com a assinatura atual do GameRunStateService (injeÃ§Ã£o por construtor).
             RegisterIfMissing<IGameRunStateService>(() => new GameRunStateService(gameLoopService));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
@@ -84,12 +83,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoop] IGameRunOutcomeService jÃ¡ registrado no DI global.",
+                    "[GameLoop] IGameRunOutcomeService ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            // MantÃ©m compatibilidade com a assinatura atual do GameRunOutcomeService (injeÃ§Ã£o por construtor).
             RegisterIfMissing<IGameRunOutcomeService>(() => new GameRunOutcomeService(gameLoopService));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
@@ -102,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<GameRunOutcomeCommandBridge>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoop] GameRunOutcomeCommandBridge jÃ¡ registrado no DI global.",
+                    "[GameLoop] GameRunOutcomeCommandBridge ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -110,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) || outcomeService == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    "[GameLoop] NÃ£o foi possÃ­vel registrar GameRunOutcomeCommandBridge: IGameRunOutcomeService nÃ£o disponÃ­vel.");
+                    "[GameLoop] Nao foi possivel registrar GameRunOutcomeCommandBridge: IGameRunOutcomeService nao disponivel.");
                 return;
             }
 
@@ -121,12 +119,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterPostGameResultService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPostGameResultService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[PostGame] IPostGameResultService ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPostGameResultService>(new PostGameResultService());
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[PostGame] PostGameResultService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterPostPlayOwnershipService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IPostGameOwnershipService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[PostPlay] IPostGameOwnershipService jÃ¡ registrado no DI global.",
+                    "[PostPlay] IPostGameOwnershipService ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -144,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[IntroStageController] IIntroStageCoordinator jÃ¡ registrado no DI global.",
+                    "[IntroStageController] IIntroStageCoordinator ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -162,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[IntroStageController] IIntroStageControlService jÃ¡ registrado no DI global.",
+                    "[IntroStageController] IIntroStageControlService ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -180,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IIntroStagePolicyResolver>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[IntroStageController] IIntroStagePolicyResolver jÃ¡ registrado no DI global.",
+                    "[IntroStageController] IIntroStagePolicyResolver ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -198,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[Gameplay] IGameplaySceneClassifier jÃ¡ registrado no DI global.",
+                    "[Gameplay] IGameplaySceneClassifier ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -216,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageStep>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[IntroStageController] IIntroStageStep jÃ¡ registrado no DI global.",
+                    "[IntroStageController] IIntroStageStep ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -232,4 +247,3 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         // --------------------------------------------------------------------
     }
 }
-

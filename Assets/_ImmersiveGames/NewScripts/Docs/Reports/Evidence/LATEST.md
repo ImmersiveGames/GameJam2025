@@ -1,14 +1,14 @@
 # Latest Evidence
 
-Fonte operacional atual de evidencia runtime: `Docs/Reports/lastlog.log`.
+Fonte operacional vigente de evidencia runtime: `Docs/Reports/lastlog.log`.
 
 ## Leitura vigente
 
-- O log mais recente valida o runtime atual ja consolidado.
-- Snapshots antigos de evidence permanecem apenas se ainda forem necessarios para rastreabilidade historica especifica.
-- Para documentacao operacional, use somente:
+- O log mais recente sustenta o estado atual ja consolidado.
+- A leitura operacional parte de:
   - `Docs/Reports/lastlog.log`
   - `Docs/Reports/Audits/LATEST.md`
-  - `Docs/Modules/SceneFlow.md`
+  - docs modulares e guias oficiais atuais
+- Snapshots antigos de evidence permanecem apenas como historico rastreavel, fora da superficie operacional principal.
 
 Estados anteriores nao devem mais ser usados para interpretar o contrato atual.

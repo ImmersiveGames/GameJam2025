@@ -1,8 +1,8 @@
 using System;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 return;
             }
 
-            // Obtem ou cria o serviço global
+            // Obtem ou cria o serviï¿½o global
             if (!DependencyManager.Provider.TryGetGlobal(out _linkService))
             {
                 _linkService = new RuntimeAttributeLinkService();
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             {
                 if (link == null)
                 {
-                    DebugUtility.LogWarning<RuntimeAttributeLinkBridge>("Configuração de link nula ignorada.");
+                    DebugUtility.LogWarning<RuntimeAttributeLinkBridge>("Configuraï¿½ï¿½o de link nula ignorada.");
                     continue;
                 }
 

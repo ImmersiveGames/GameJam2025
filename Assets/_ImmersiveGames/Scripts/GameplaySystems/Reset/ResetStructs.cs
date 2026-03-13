@@ -16,29 +16,29 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
     }
     public readonly struct ResetRequest
     {
-        public readonly ResetScope Scope;
-        public readonly string Reason;
-        public readonly IReadOnlyList<string> ActorIds;
+        public readonly ResetScope scope;
+        public readonly string reason;
+        public readonly IReadOnlyList<string> actorIds;
 
         public ResetRequest(ResetScope scope, string reason = null, IReadOnlyList<string> actorIds = null)
         {
-            Scope = scope;
-            Reason = reason;
-            ActorIds = actorIds;
+            this.scope = scope;
+            this.reason = reason;
+            this.actorIds = actorIds;
         }
 
         public override string ToString()
         {
-            int count = ActorIds != null ? ActorIds.Count : 0;
-            return $"ResetRequest(Scope={Scope}, Reason='{Reason ?? "null"}', ActorIds={count})";
+            int count = actorIds != null ? actorIds.Count : 0;
+            return $"ResetRequest(Scope={scope}, Reason='{reason ?? "null"}', ActorIds={count})";
         }
     }
     public readonly struct ResetContext
     {
-        public readonly string SceneName;
-        public readonly ResetRequest Request;
-        public readonly int RequestSerial;
-        public readonly int FrameStarted;
+        public readonly string sceneName;
+        public readonly ResetRequest request;
+        public readonly int requestSerial;
+        public readonly int frameStarted;
         public readonly ResetStructs currentStructs;
 
         public ResetContext(
@@ -48,21 +48,21 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             int frameStarted,
             ResetStructs currentStructs)
         {
-            SceneName = sceneName;
-            Request = request;
-            RequestSerial = requestSerial;
-            FrameStarted = frameStarted;
+            this.sceneName = sceneName;
+            this.request = request;
+            this.requestSerial = requestSerial;
+            this.frameStarted = frameStarted;
             this.currentStructs = currentStructs;
         }
 
         public ResetContext WithStep(ResetStructs structs)
         {
-            return new ResetContext(SceneName, Request, RequestSerial, FrameStarted, structs);
+            return new ResetContext(sceneName, request, requestSerial, frameStarted, structs);
         }
 
         public override string ToString()
         {
-            return $"WorldResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Step={currentStructs}, {Request})";
+            return $"WorldResetContext(Scene='{sceneName}', Serial={requestSerial}, Frame={frameStarted}, Step={currentStructs}, {request})";
         }
     }
 }

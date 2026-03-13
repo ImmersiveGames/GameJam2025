@@ -6,6 +6,8 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gates.Interop;
+using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.PostGame;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
@@ -160,11 +162,24 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
             }
 
             ReleasePauseGateIfPresent(reason);
+            MarkExitResultIfInPostGame(loop, reason);
 
-            // Coment?rio: ordem can?nica e est?vel. Primeiro retira o loop de Playing/Paused, depois navega.
             loop.RequestReady();
             await navigation.ExitToMenuAsync(reason);
             return true;
+        }
+
+        private static void MarkExitResultIfInPostGame(IGameLoopService loop, string reason)
+        {
+            if (loop == null || !string.Equals(loop.CurrentStateIdName, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<IPostGameResultService>(out var resultService) && resultService != null)
+            {
+                resultService.TrySetExit(reason);
+            }
         }
 
         private bool TryResolveServices(out IGameLoopService loop, out IGameNavigationService navigation)

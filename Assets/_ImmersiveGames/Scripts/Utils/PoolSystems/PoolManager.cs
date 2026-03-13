@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using UnityEngine;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using UnityEngine;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             if (_pools.TryGetValue(data.ObjectName, out var existingPool))
             {
-                DebugUtility.LogVerbose<PoolManager>($"Pool '{data.ObjectName}' já estava registrado. Reutilizando instância existente.", "yellow", this);
+                DebugUtility.LogVerbose<PoolManager>($"Pool '{data.ObjectName}' jï¿½ estava registrado. Reutilizando instï¿½ncia existente.", "yellow", this);
                 return existingPool;
             }
 

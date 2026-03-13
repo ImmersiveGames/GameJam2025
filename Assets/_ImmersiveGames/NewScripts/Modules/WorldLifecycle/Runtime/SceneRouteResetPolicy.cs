@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {

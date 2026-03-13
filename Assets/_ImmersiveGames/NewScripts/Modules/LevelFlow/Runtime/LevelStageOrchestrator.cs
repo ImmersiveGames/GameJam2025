@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            if (evt.Context.RouteKind != SceneRouteKind.Gameplay)
+            if (evt.context.RouteKind != SceneRouteKind.Gameplay)
             {
                 return;
             }
@@ -51,10 +51,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            if (!TryResolveRestartContext(out var restartContextService)
-                || !restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
-                || !snapshot.IsValid
-                || !snapshot.HasLevelRef)
+            if (!TryResolveRestartContext(out var restartContextService) ||
+                !restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.HasLevelRef)
             {
                 DebugUtility.LogVerbose<LevelStageOrchestrator>(
                     "[LevelFlow] IntroStage via SceneFlowCompleted ignored: canonical snapshot unavailable/invalid.",
@@ -63,45 +63,25 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             string levelSig = snapshot.LevelSignature;
-            if (!string.IsNullOrWhiteSpace(levelSig))
+            if (!AdvanceDedupe(snapshot.SelectionVersion, levelSig, snapshot.MacroRouteId.ToString()))
             {
-                if (string.Equals(levelSig, _lastProcessedLevelSignature, StringComparison.Ordinal))
-                {
-                    DebugUtility.LogVerbose<LevelStageOrchestrator>(
-                        $"[LevelFlow] IntroStage via SceneFlowCompleted skipped reason='dedupe_level_signature' levelSignature='{levelSig}' routeId='{snapshot.MacroRouteId}'.",
-                        DebugUtility.Colors.Info);
-                    return;
-                }
-
-                _lastProcessedLevelSignature = levelSig;
-                _lastProcessedSelectionVersion = snapshot.SelectionVersion;
-            }
-            else
-            {
-                if (snapshot.SelectionVersion < _lastProcessedSelectionVersion)
-                {
-                    int previousVersion = _lastProcessedSelectionVersion;
-                    int nextVersion = snapshot.SelectionVersion;
-                    _lastProcessedSelectionVersion = -1;
-                    _lastProcessedLevelSignature = string.Empty;
-
-                    DebugUtility.Log<LevelStageOrchestrator>(
-                        $"[OBS][LevelFlow] LevelStageDedupeReset reason='selection_version_rewind' prev='{previousVersion}' next='{nextVersion}' routeId='{snapshot.MacroRouteId}'.",
-                        DebugUtility.Colors.Info);
-                }
-
-                if (snapshot.SelectionVersion <= _lastProcessedSelectionVersion)
-                {
-                    return;
-                }
-
-                _lastProcessedSelectionVersion = snapshot.SelectionVersion;
+                return;
             }
 
             string activeSceneName = SceneManager.GetActiveScene().name;
             string levelSignature = string.IsNullOrWhiteSpace(levelSig)
                 ? $"level:{snapshot.LevelRef.name}|route:{snapshot.MacroRouteId}|reason:SceneFlow/Completed"
                 : levelSig;
+
+            bool hasIntroStage = ResolveHasIntroStage();
+            if (!hasIntroStage)
+            {
+                DebugUtility.Log<LevelStageOrchestrator>(
+                    $"[OBS][IntroStageController] IntroStageSkipped source='SceneFlowCompleted' levelRef='{snapshot.LevelRef.name}' v='{snapshot.SelectionVersion}' reason='level_has_no_intro' levelSignature='{levelSignature}'.",
+                    DebugUtility.Colors.Info);
+                gameLoopService.RequestStart();
+                return;
+            }
 
             DebugUtility.Log<LevelStageOrchestrator>(
                 $"[OBS][IntroStageController] IntroStageStartRequested source='SceneFlowCompleted' levelRef='{snapshot.LevelRef.name}' v='{snapshot.SelectionVersion}' reason='SceneFlow/Completed' levelSignature='{levelSignature}'.",
@@ -110,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             gameLoopService.RequestIntroStageStart();
             var context = new IntroStageContext(
                 contextSignature: levelSignature,
-                routeKind: evt.Context.RouteKind,
+                routeKind: evt.context.RouteKind,
                 targetScene: activeSceneName,
                 reason: "SceneFlow/Completed");
 
@@ -147,6 +127,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 ? $"level:{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}|route:{evt.MacroRouteId}|reason:{normalizedReason}"
                 : evt.LevelSignature;
 
+            bool hasIntroStage = ResolveHasIntroStage();
+            if (!hasIntroStage)
+            {
+                DebugUtility.Log<LevelStageOrchestrator>(
+                    $"[OBS][IntroStageController] IntroStageSkipped source='LevelSwapLocal' levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' v='{evt.SelectionVersion}' reason='level_has_no_intro' levelSignature='{levelSignature}'.",
+                    DebugUtility.Colors.Info);
+                gameLoopService.RequestStart();
+                return;
+            }
+
             DebugUtility.Log<LevelStageOrchestrator>(
                 $"[OBS][IntroStageController] IntroStageStartRequested source='LevelSwapLocal' levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' v='{evt.SelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
@@ -159,6 +149,44 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 reason: normalizedReason);
 
             _ = coordinator.RunIntroStageAsync(context);
+        }
+
+        private bool AdvanceDedupe(int selectionVersion, string levelSig, string routeId)
+        {
+            if (!string.IsNullOrWhiteSpace(levelSig))
+            {
+                if (string.Equals(levelSig, _lastProcessedLevelSignature, StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<LevelStageOrchestrator>(
+                        $"[LevelFlow] IntroStage via SceneFlowCompleted skipped reason='dedupe_level_signature' levelSignature='{levelSig}' routeId='{routeId}'.",
+                        DebugUtility.Colors.Info);
+                    return false;
+                }
+
+                _lastProcessedLevelSignature = levelSig;
+                _lastProcessedSelectionVersion = selectionVersion;
+                return true;
+            }
+
+            if (selectionVersion < _lastProcessedSelectionVersion)
+            {
+                int previousVersion = _lastProcessedSelectionVersion;
+                int nextVersion = selectionVersion;
+                _lastProcessedSelectionVersion = -1;
+                _lastProcessedLevelSignature = string.Empty;
+
+                DebugUtility.Log<LevelStageOrchestrator>(
+                    $"[OBS][LevelFlow] LevelStageDedupeReset reason='selection_version_rewind' prev='{previousVersion}' next='{nextVersion}' routeId='{routeId}'.",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (selectionVersion <= _lastProcessedSelectionVersion)
+            {
+                return false;
+            }
+
+            _lastProcessedSelectionVersion = selectionVersion;
+            return true;
         }
 
         private static bool TryResolveIntroStageDependencies(out IGameLoopService gameLoopService, out IIntroStageCoordinator coordinator)
@@ -201,6 +229,19 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                    && restartContextService != null;
         }
 
+        private static bool ResolveHasIntroStage()
+        {
+            if (DependencyManager.HasInstance &&
+                DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var presentationService) &&
+                presentationService != null &&
+                presentationService.TryGetCurrentContract(out LevelStagePresentationContract contract))
+            {
+                return contract.HasIntroStage;
+            }
+
+            return true;
+        }
+
         private static bool IsGameplayScene()
         {
             if (DependencyManager.HasInstance
@@ -214,6 +255,3 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
-
-
-

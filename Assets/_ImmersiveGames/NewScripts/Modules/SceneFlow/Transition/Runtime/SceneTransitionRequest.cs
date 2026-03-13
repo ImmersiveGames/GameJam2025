@@ -1,9 +1,8 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime

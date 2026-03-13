@@ -196,7 +196,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 $"Created={createdCount}, FailedCreate={failedCreateCount}");
         }
 
-        private Transform EnsureWorldRoot(UnityEngine.SceneManagement.Scene scene)
+        private Transform EnsureWorldRoot(Scene scene)
         {
             var targetScene = scene.IsValid() ? scene : SceneManager.GetActiveScene();
             if (!scene.IsValid())
@@ -226,14 +226,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return selectedRoot.transform;
         }
 
-        private Transform CreateWorldRoot(UnityEngine.SceneManagement.Scene scene)
+        private Transform CreateWorldRoot(Scene scene)
         {
             var worldRootGo = new GameObject("WorldRoot");
             SceneManager.MoveGameObjectToScene(worldRootGo, scene);
             return worldRootGo.transform;
         }
 
-        private void LogMultipleWorldRoots(UnityEngine.SceneManagement.Scene scene, GameObject[] allRoots, int foundCount, GameObject selectedRoot)
+        private void LogMultipleWorldRoots(Scene scene, GameObject[] allRoots, int foundCount, GameObject selectedRoot)
         {
             DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
                 $"Multiple WorldRoot objects found in scene '{scene.name}': {foundCount}");

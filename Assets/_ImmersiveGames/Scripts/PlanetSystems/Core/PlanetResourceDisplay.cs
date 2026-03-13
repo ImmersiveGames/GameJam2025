@@ -1,6 +1,6 @@
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.UI;
-using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {

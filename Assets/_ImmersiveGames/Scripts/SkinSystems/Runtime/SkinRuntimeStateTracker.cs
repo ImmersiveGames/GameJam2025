@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Runtime

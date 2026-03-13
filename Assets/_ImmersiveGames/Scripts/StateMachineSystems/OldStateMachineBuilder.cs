@@ -10,13 +10,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems {
     public class OldStateMachineBuilder {
         private readonly OldStateMachine _stateMachine = new();
 
-        public OldStateMachineBuilder AddState(OldIState state, out OldIState reference) {
+        public OldStateMachineBuilder AddState(IOldIState state, out IOldIState reference) {
             reference = Preconditions.CheckNotNull(state, "State cannot be null.");
             _stateMachine.RegisterState(reference);
             return this;
         }
 
-        public OldStateMachineBuilder At(OldIState from, OldIState to, IPredicate predicate) {
+        public OldStateMachineBuilder At(IOldIState from, IOldIState to, IPredicate predicate) {
             Preconditions.CheckNotNull(from, "From state cannot be null.");
             Preconditions.CheckNotNull(to, "To state cannot be null.");
             Preconditions.CheckNotNull(predicate, "Predicate cannot be null.");
@@ -24,14 +24,14 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems {
             return this;
         }
 
-        public OldStateMachineBuilder Any(OldIState to, IPredicate predicate) {
+        public OldStateMachineBuilder Any(IOldIState to, IPredicate predicate) {
             Preconditions.CheckNotNull(to, "To state cannot be null.");
             Preconditions.CheckNotNull(predicate, "Predicate cannot be null.");
             _stateMachine.AddAnyTransition(to, predicate);
             return this;
         }
 
-        public OldStateMachineBuilder StateInitial(OldIState state) {
+        public OldStateMachineBuilder StateInitial(IOldIState state) {
             Preconditions.CheckNotNull(state, "Initial state cannot be null.");
             _stateMachine.SetState(state);
             return this;

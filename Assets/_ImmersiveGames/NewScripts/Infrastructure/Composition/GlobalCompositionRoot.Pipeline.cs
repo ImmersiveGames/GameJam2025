@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             Navigation,
             Levels,
             ContentSwap,
-            DevQA
+            DevQa
         }
 
         private static CompositionInstallStage _compositionInstallStage;
@@ -40,7 +40,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.Gates;
             InstallCompositionModules();
 
-            // Resolve ISimulationGateService UMA vez para os consumidores (reduz repeticao de TryGetGlobal).
             var gateService = ResolveSimulationGateServiceOrNull();
 
             RegisterPauseBridge(gateService);
@@ -48,7 +47,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.GameLoop;
             InstallCompositionModules();
 
-            // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             _compositionInstallStage = CompositionInstallStage.SceneFlow;
             InstallCompositionModules();
 
@@ -64,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.ContentSwap;
             InstallCompositionModules();
 
-            _compositionInstallStage = CompositionInstallStage.DevQA;
+            _compositionInstallStage = CompositionInstallStage.DevQa;
             InstallCompositionModules();
 
             RegisterExitToMenuCoordinator();
@@ -112,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 case CompositionInstallStage.ContentSwap:
                     InstallContentSwapServices();
                     break;
-                case CompositionInstallStage.DevQA:
+                case CompositionInstallStage.DevQa:
                     InstallDevQaServices();
                     break;
             }
@@ -137,12 +135,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterGameCommands();
             GameStartRequestEmitter.EnsureInstalled();
 
-            // Resolve IGameLoopService UMA vez para servicos dependentes.
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
 
             RegisterGameRunStatusService(gameLoopService);
             RegisterGameRunOutcomeService(gameLoopService);
             RegisterGameRunOutcomeEventInputBridge();
+            RegisterPostGameResultService();
             RegisterPostPlayOwnershipService();
         }
 
@@ -153,10 +151,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void InstallContentSwapServices()
         {
-            // ADR-0016: ContentSwapContext precisa existir no DI global.
             RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
-
-            // ContentSwapChange (InPlace-only): usa apenas ContentSwapContext e commit imediato.
             RegisterContentSwapChangeService();
         }
 

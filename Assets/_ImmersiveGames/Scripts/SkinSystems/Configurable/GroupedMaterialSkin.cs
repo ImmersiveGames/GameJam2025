@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             if (_groupedSlots == null) InitializeGroups();
 
-            // CADA SLOT SORTEIA SEU PRÓPRIO MATERIAL ALEATÓRIO
+            // CADA SLOT SORTEIA SEU PRï¿½PRIO MATERIAL ALEATï¿½RIO
             foreach (var slot in materialSlots)
             {
                 if (slot is { IsValid: true } && slot.CanApply())
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Aplica um material específico a um grupo (todos os slots do grupo recebem o MESMO material)
+        /// Aplica um material especï¿½fico a um grupo (todos os slots do grupo recebem o MESMO material)
         /// </summary>
         private void ApplyMaterialToGroup(MaterialGroupConfig group, Material material)
         {
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Randomiza os materiais de um grupo específico - CADA SLOT SORTEIA INDEPENDENTEMENTE
+        /// Randomiza os materiais de um grupo especï¿½fico - CADA SLOT SORTEIA INDEPENDENTEMENTE
         /// </summary>
         private void RandomizeGroup(MaterialGroupConfig group)
         {
@@ -173,7 +173,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Aplica uma progressão de materiais baseada em índice - TODOS OS SLOTS DO GRUPO RECEBEM O MESMO MATERIAL
+        /// Aplica uma progressï¿½o de materiais baseada em ï¿½ndice - TODOS OS SLOTS DO GRUPO RECEBEM O MESMO MATERIAL
         /// </summary>
         public void ApplyMaterialProgression(int materialIndex)
         {
@@ -209,7 +209,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Reseta um grupo específico para os materiais originais
+        /// Reseta um grupo especï¿½fico para os materiais originais
         /// </summary>
         public void ResetGroup(MaterialGroupConfig group)
         {
@@ -226,7 +226,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         #region Query Methods
         /// <summary>
-        /// Obtém todos os grupos únicos
+        /// Obtï¿½m todos os grupos ï¿½nicos
         /// </summary>
         private MaterialGroupConfig[] GetUniqueGroups()
         {
@@ -235,7 +235,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Obtém os slots de um grupo específico
+        /// Obtï¿½m os slots de um grupo especï¿½fico
         /// </summary>
         private MaterialSlot[] GetSlotsForGroup(MaterialGroupConfig group)
         {
@@ -246,7 +246,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Obtém o estado atual dos grupos
+        /// Obtï¿½m o estado atual dos grupos
         /// </summary>
         public GroupedMaterialState GetGroupedMaterialState()
         {
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         /// <summary>
-        /// Obtém informações detalhadas sobre todos os slots
+        /// Obtï¿½m informaï¿½ï¿½es detalhadas sobre todos os slots
         /// </summary>
         private SlotInfo[] GetAllSlotInfos()
         {

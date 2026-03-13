@@ -1,6 +1,6 @@
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// <summary>
     /// Estado base sem regras enquanto o comportamento completo é reimplementado.
     /// </summary>
-    internal abstract class EaterBehaviorState : OldIState
+    internal abstract class EaterBehaviorState : IOldIState
     {
         protected EaterBehaviorState(string stateName)
         {

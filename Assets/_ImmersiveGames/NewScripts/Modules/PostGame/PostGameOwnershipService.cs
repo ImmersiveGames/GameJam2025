@@ -1,9 +1,11 @@
-﻿using System;
+using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gates;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
     public readonly struct PostGameOwnershipContext
@@ -12,13 +14,17 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         public string SceneName { get; }
         public string Profile { get; }
         public int Frame { get; }
+        public PostGameResult Result { get; }
+        public string Reason { get; }
 
-        public PostGameOwnershipContext(string signature, string sceneName, string profile, int frame)
+        public PostGameOwnershipContext(string signature, string sceneName, string profile, int frame, PostGameResult result, string reason)
         {
             Signature = signature;
             SceneName = sceneName;
             Profile = profile;
             Frame = frame;
+            Result = result;
+            Reason = reason;
         }
     }
 
@@ -30,8 +36,9 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         public int Frame { get; }
         public string Reason { get; }
         public string NextState { get; }
+        public PostGameResult Result { get; }
 
-        public PostGameOwnershipExitContext(string signature, string sceneName, string profile, int frame, string reason, string nextState)
+        public PostGameOwnershipExitContext(string signature, string sceneName, string profile, int frame, string reason, string nextState, PostGameResult result)
         {
             Signature = signature;
             SceneName = sceneName;
@@ -39,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             Frame = frame;
             Reason = reason;
             NextState = nextState;
+            Result = result;
         }
     }
 
@@ -63,6 +71,11 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             _isActive = true;
             ApplyPostGameInputMode(context);
             AcquireGate();
+
+            if (context.Result == PostGameResult.Victory || context.Result == PostGameResult.Defeat)
+            {
+                _ = RunLevelHookSafelyAsync(context.Signature, context.SceneName, context.Result, context.Reason, context.Frame);
+            }
         }
 
         public void OnPostGameExited(PostGameOwnershipExitContext context)
@@ -75,12 +88,17 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             _isActive = false;
             ReleaseGate(context.Reason);
             ApplyExitInputMode(context);
+
+            if (context.Result == PostGameResult.Exit)
+            {
+                _ = RunLevelHookSafelyAsync(context.Signature, context.SceneName, context.Result, context.Reason, context.Frame);
+            }
         }
 
         private static void ApplyPostGameInputMode(PostGameOwnershipContext context)
         {
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostGame' reason='PostGame/Entered' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
@@ -95,11 +113,44 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             string reason = $"PostGame/{context.Reason}";
 
             DebugUtility.Log<PostGameOwnershipService>(
-                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='{reason}' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame}.",
+                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostGameExit' reason='{reason}' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(applyGameplay ? InputModeRequestKind.Gameplay : InputModeRequestKind.FrontendMenu, reason, "PostGame", context.Signature));
+        }
+
+        private async Task RunLevelHookSafelyAsync(string signature, string sceneName, PostGameResult result, string reason, int frame)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelPostGameHookService>(out var hookService) || hookService == null)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var stagePresentationService) ||
+                stagePresentationService == null ||
+                !stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
+                !contract.IsValid)
+            {
+                return;
+            }
+
+            try
+            {
+                await hookService.RunReactionAsync(new LevelPostGameHookContext(
+                    contract.LevelRef,
+                    contract.LevelSignature,
+                    signature,
+                    sceneName,
+                    result,
+                    reason,
+                    frame));
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning<PostGameOwnershipService>(
+                    $"[OBS][PostGame] LevelPostGameHookFailed levelRef='{contract.LevelRef.name}' result='{result}' ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
         }
 
         private void AcquireGate()

@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Fsm;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return;
             }
 
-            OldIState previous = _stateMachine.CurrentState;
+            IOldIState previous = _stateMachine.CurrentState;
             previous?.OnExit();
 
             _stateMachine.SetState(targetState);
@@ -271,7 +271,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _missingMasterForPredicatesLogged = true;
         }
 
-        private static string GetStateName(OldIState state)
+        private static string GetStateName(IOldIState state)
         {
             if (state is EaterBehaviorState eaterState)
             {

@@ -1,44 +1,41 @@
 # ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
 
-## Status atual (2026-03-06)
-- Status: **DONE**
-- Implementado no codigo:
-  - IntroStage/PostLevel sob responsabilidade do dominio de level.
-  - Assinatura de IntroStage por `levelSignature` (`level:...|route:...|reason:...`).
-  - Macros sem `LevelCollection` nao executam stages de level; fazem clear.
-- Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
-  - `Docs/Reports/lastlog.log`
-- LEGACY / Compat (nao canonico):
-  - Fluxos de stage orientados por `contentId/levelId` fora do trilho por `levelRef`.
-
 ## Status
 
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-11
+- Ultima atualizacao: 2026-03-12
+
+## Leitura atual deste ADR
+
+O nome do arquivo foi preservado por rastreabilidade historica, mas o contrato vigente ja foi refinado:
+
+- `IntroStage` permanece level-owned e opcional.
+- `PostGame` nao e um stage arbitrario de level.
+- O pos-run continua global e centralizado.
+- O level atual pode apenas complementar o pos-run por hook opcional.
+- `Restart` nao passa por post hook.
 
 ## Decisao canonica atual
 
-- IntroStage e acionada pelo dominio de level e assinada por `levelSignature`.
-- PostLevel actions pertencem ao dominio de level (`Restart`, `NextLevel`, `ExitToMenu`).
-- Macros sem `LevelCollection` nao executam stages de level; fazem clear do level ativo.
-- Snapshot/eventos do trilho principal promovem `LevelRef`, `MacroRouteId` e `LevelSignature`.
+- `IntroStage` e decidido pelo level atual (`LevelDefinitionAsset`) e orquestrado por `LevelStageOrchestrator`.
+- Se o level atual nao expuser intro, o fluxo segue direto para gameplay sem erro.
+- `PostGame` e global, com exatamente tres resultados formais:
+  - `Victory`
+  - `Defeat`
+  - `Exit`
+- O hook opcional do level para pos-run reage a esses resultados sem substituir o fluxo global.
+- `Restart` segue pelo trilho de reset/restart e fica fora do hook de post.
 
-## Evidencia (log)
+## Evidencia
 
-- `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
-- `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
-- `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
-- `lastlog:2181` `LevelAdditiveClearSummary ...`
-- `lastlog:2185` `LevelCleared ...`
-- `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
-- `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
-- `lastlog:2009` `PostLevelActionRequested action='ExitToMenu' ...`
+- `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
+- `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+- `Docs/Reports/lastlog.log`
 
-## Observacao LEGADO
+## Consequencias
 
-- Referencias a `levelId/contentId` como identidade de stage sao LEGADO no canônico atual.
-
-
-
+- O dominio de level continua owner apenas da intro opcional e do hook opcional de reacao visual.
+- O owner do pos-run permanece global no eixo `GameLoop` + `PostGame`.
+- Nao existe `PostStage` generico por level no contrato atual.
+- A superficie documental principal deixa de promover `PostLevel` como stage de level.

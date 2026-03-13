@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {

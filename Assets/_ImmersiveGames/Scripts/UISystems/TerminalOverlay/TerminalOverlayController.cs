@@ -1,6 +1,6 @@
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,11 +34,11 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
             if (canvasGroup == null)
             {
                 DebugUtility.LogWarning<TerminalOverlayController>(
-                    "[TerminalOverlay] CanvasGroup não configurado. Overlay não será exibido.");
+                    "[TerminalOverlay] CanvasGroup nï¿½o configurado. Overlay nï¿½o serï¿½ exibido.");
                 return;
             }
 
-            // ?? Garante que o overlay SEMPRE receba raycast quando visível
+            // ?? Garante que o overlay SEMPRE receba raycast quando visï¿½vel
             canvasGroup.ignoreParentGroups = true;
             SetVisible(false);
 

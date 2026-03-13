@@ -1,16 +1,16 @@
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
     /// <summary>
-    /// Gerencia o registro e a comunicação entre canvases e o sistema de recursos.
+    /// Gerencia o registro e a comunicaï¿½ï¿½o entre canvases e o sistema de recursos.
     /// Funciona em modo event-driven via EventBus, sem polling e sem delays.
     /// </summary>
     public class RuntimeAttributeCanvasManager : PersistentSingleton<RuntimeAttributeCanvasManager>, IInjectableComponent
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
             if (!_canvasRegistry.TryAdd(attributeCanvas.CanvasId, attributeCanvas))
             {
-                DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>($"?? Canvas '{attributeCanvas.CanvasId}' já está registrado — ignorado");
+                DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>($"?? Canvas '{attributeCanvas.CanvasId}' jï¿½ estï¿½ registrado ï¿½ ignorado");
                 return;
             }
 
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
 
         /// <summary>
-        /// Solicita um bind. Se o attributeCanvas estiver pronto, executa imediatamente; caso contrário, delega ao hub/eventbus.
+        /// Solicita um bind. Se o attributeCanvas estiver pronto, executa imediatamente; caso contrï¿½rio, delega ao hub/eventbus.
         /// </summary>
         public void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data, string targetCanvasId)
         {
@@ -111,13 +111,13 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 return;
             }
 
-            // Se o attributeCanvas não estiver pronto, delega via hub/eventbus
+            // Se o attributeCanvas nï¿½o estiver pronto, delega via hub/eventbus
             RuntimeAttributeEventHub.PublishBindRequest(request);
             DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>($"?? Bind delegado: {actorId}.{runtimeAttributeType} ? {targetCanvasId}");
         }
 
         /// <summary>
-        /// Tenta executar um bind diretamente se o attributeCanvas estiver disponível e pronto.
+        /// Tenta executar um bind diretamente se o attributeCanvas estiver disponï¿½vel e pronto.
         /// </summary>
         private bool TryExecuteBind(RuntimeAttributeEventHub.CanvasBindRequest request)
         {
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
 
         /// <summary>
-        /// Evento: reprocessar binds pendentes quando um attributeCanvas é registrado.
+        /// Evento: reprocessar binds pendentes quando um attributeCanvas ï¿½ registrado.
         /// </summary>
         private void OnCanvasRegisteredHandler(RuntimeAttributeEventHub.CanvasRegisteredEvent evt)
         {

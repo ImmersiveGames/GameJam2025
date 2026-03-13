@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters

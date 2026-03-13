@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public LevelMacroPrepareService(
             IRestartContextService restartContextService,
             IWorldResetCommands worldResetCommands,
-            object _navigationCatalog = null,
+            object navigationCatalog = null,
             SceneRouteCatalogAsset sceneRouteCatalog = null)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));

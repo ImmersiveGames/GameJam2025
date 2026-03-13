@@ -4,22 +4,26 @@
 
 - `GameNavigationCatalogAsset` e o unico asset canonico de navigation.
 - Cada entry resolve por `routeRef + transitionStyleRef`.
-- Navigation nao depende de catalogos nominais paralelos.
+- Navigation nao usa catalogos nominais paralelos.
 - `startup` nao pertence a navigation; pertence ao bootstrap.
 
 ## Ownership
 
-- `GameNavigationCatalogAsset`: owner de `routeRef + transitionStyleRef` por slot/entry.
-- `GameNavigationService`: resolve intent core para entry canonica e despacha `SceneTransitionRequest` fail-fast.
-- `TransitionStyleAsset`: owner do estilo visual associado a cada entry.
+- `GameNavigationCatalogAsset`: owner de slots e extras de navigation.
+- `GameNavigationService`: resolve a entry canonica e despacha a transicao fail-fast.
+- `TransitionStyleAsset`: style ligado a cada entry.
+- `ExitToMenuCoordinator`: owner da saida global para menu.
+- `MacroRestartCoordinator`: owner do restart macro.
 
-## Semantica de fluxo
+## Regras praticas
 
-- `frontend` e `gameplay` pertencem a `SceneRouteKind` da rota resolvida.
+- Semantica de `frontend/gameplay` vem da rota resolvida.
 - Labels de style/profile sao apenas observabilidade.
+- `Restart` segue por reset macro.
+- `Exit` pode encerrar o `PostGame` global, mas a navegacao continua centralizada em navigation.
 
 ## Leitura cruzada
 
 - `Docs/Modules/SceneFlow.md`
-- `Docs/Modules/LevelFlow.md`
 - `Docs/Modules/GameLoop.md`
+- `Docs/Guides/Production-How-To-Use-Core-Modules.md`

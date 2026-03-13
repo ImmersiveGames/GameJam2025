@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
@@ -168,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            if (!ShouldHandleTransition(evt.Context))
+            if (!ShouldHandleTransition(evt.context))
             {
                 return;
             }
@@ -180,12 +179,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            if (!ShouldHandleTransition(evt.Context))
+            if (!ShouldHandleTransition(evt.context))
             {
                 return;
             }
 
-            string ctxSig = SceneTransitionSignature.Compute(evt.Context);
+            string ctxSig = SceneTransitionSignature.Compute(evt.context);
             if (!string.IsNullOrEmpty(_expectedContextSignature) &&
                 !string.Equals(ctxSig, _expectedContextSignature, StringComparison.Ordinal))
             {

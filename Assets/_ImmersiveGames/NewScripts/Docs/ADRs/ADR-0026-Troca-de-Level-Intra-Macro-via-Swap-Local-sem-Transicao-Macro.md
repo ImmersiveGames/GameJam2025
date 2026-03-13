@@ -7,22 +7,22 @@
   - Restart local (`Level2 -> Level2`) faz reload local (unload+load do mesmo set).
   - QA confirma `transitionStartedCount='0'` no swap local.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
   - `Docs/Reports/lastlog.log`
-- LEGACY / Compat (nao canonico):
-  - Troca de level via trilho macro/fallback no caminho canonicamente local.
+- LEGACY / Historico:
+  - Troca de level via trilho macro no caminho que hoje e local.
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
 - Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-11
+- Ultima atualizacao: 2026-03-12
 
 ## Decisao canonica atual
 
 - Swap local usa `levelRef` (`LevelDefinitionAsset`) no dominio da macro atual.
 - Fonte de levels no swap: `SceneRouteDefinitionAsset.LevelCollection`.
-- Sem fallback para `LevelCatalog` no trilho canônico.
+- Sem fallback para `LevelCatalog` no trilho canonico.
 - A API publica principal nao promove mais overloads por `LevelId`.
 
 ## Evidencia (log)
@@ -33,11 +33,7 @@
 - `lastlog:2181` `LevelAdditiveClearSummary ...`
 - `lastlog:2185` `LevelCleared ...`
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
-- `lastlog:1459` `PostLevelActionRequested action='RestartLevel' ...`
 
-## Observacao LEGADO
+## Observacao historica
 
-- Qualquer referencia historica a `LevelId` neste contexto deve ser lida como legado removido do trilho canonico atual.
-
-
-
+- Qualquer referencia a `LevelId` neste contexto deve ser lida como historico fora do trilho canonico atual.
