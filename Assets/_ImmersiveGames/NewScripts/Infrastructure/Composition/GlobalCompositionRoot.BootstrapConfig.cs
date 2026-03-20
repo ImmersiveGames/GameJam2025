@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     {
         private static bool _bootstrapConfigResolutionAttempted;
         private static bool _bootstrapConfigResolutionLogged;
-        private static NewScriptsBootstrapConfigAsset _cachedBootstrapConfig;
+        private static BootstrapConfigAsset _cachedBootstrapConfig;
         private static string _cachedBootstrapConfigVia = "None";
         private static bool _fatalAbortRequested;
 
@@ -35,26 +35,82 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
         }
 
-        private static void RequestEditorStopPlayMode()
+        static partial void RequestEditorStopPlayMode();
+
+        private static bool TryResolveBootstrapConfigFromSources(out BootstrapConfigAsset bootstrapConfig, out string via, out string reason)
         {
-            throw new NotImplementedException();
+            bootstrapConfig = null;
+            via = "None";
+            reason = string.Empty;
+
+            if (_cachedBootstrapConfig != null)
+            {
+                bootstrapConfig = _cachedBootstrapConfig;
+                via = _cachedBootstrapConfigVia;
+                return true;
+            }
+
+            if (DependencyManager.HasInstance)
+            {
+                var provider = DependencyManager.Provider;
+                if (provider != null && provider.TryGetGlobal<BootstrapConfigAsset>(out var diConfig) && diConfig != null)
+                {
+                    bootstrapConfig = diConfig;
+                    via = "DI";
+                    _cachedBootstrapConfig = diConfig;
+                    _cachedBootstrapConfigVia = via;
+                    return true;
+                }
+            }
+
+            RuntimeModeConfig runtimeModeConfig = RuntimeModeConfigLoader.LoadOrNull();
+            if (runtimeModeConfig == null)
+            {
+                reason = "runtime_mode_config_missing";
+                return false;
+            }
+
+            if (runtimeModeConfig.BootstrapConfig == null)
+            {
+                reason = "runtime_mode_bootstrap_config_missing";
+                return false;
+            }
+
+            bootstrapConfig = runtimeModeConfig.BootstrapConfig;
+            via = "RuntimeModeConfig";
+            _cachedBootstrapConfig = bootstrapConfig;
+            _cachedBootstrapConfigVia = via;
+
+            if (DependencyManager.HasInstance)
+            {
+                DependencyManager.Provider.RegisterGlobal(_cachedBootstrapConfig, allowOverride: false);
+            }
+
+            return true;
         }
 
-        private static NewScriptsBootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
+        private static bool TryGetBootstrapConfigForLogging(out BootstrapConfigAsset bootstrapConfig, out string via, out string reason)
+        {
+            bool resolved = TryResolveBootstrapConfigFromSources(out bootstrapConfig, out via, out reason);
+            if (resolved && !_bootstrapConfigResolutionLogged)
+            {
+                _bootstrapConfigResolutionLogged = true;
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    $"[OBS][BOOT] BootstrapConfigResolvedVia={via} asset={bootstrapConfig.name}",
+                    DebugUtility.Colors.Info);
+            }
+
+            return resolved;
+        }
+
+        private static BootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
         {
             if (!_bootstrapConfigResolutionAttempted)
             {
                 _bootstrapConfigResolutionAttempted = true;
-
-                if (DependencyManager.Provider.TryGetGlobal<NewScriptsBootstrapConfigAsset>(out var diConfig) && diConfig != null)
+                if (!TryResolveBootstrapConfigFromSources(out _cachedBootstrapConfig, out _cachedBootstrapConfigVia, out var reason))
                 {
-                    _cachedBootstrapConfig = diConfig;
-                    _cachedBootstrapConfigVia = "DI";
-                }
-                else
-                {
-                    ResolveBootstrapConfigFromRuntimeModeConfigOrFail();
-                    DependencyManager.Provider.RegisterGlobal(_cachedBootstrapConfig, allowOverride: false);
+                    FailFast($"Missing required BootstrapConfigAsset. reason='{reason}'.");
                 }
             }
 
@@ -74,24 +130,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             return _cachedBootstrapConfig;
-        }
-
-        private static void ResolveBootstrapConfigFromRuntimeModeConfigOrFail()
-        {
-            RuntimeModeConfig runtimeModeConfig = RuntimeModeConfigLoader.LoadOrNull();
-            if (runtimeModeConfig == null)
-            {
-                FailFast(
-                    "Missing required RuntimeModeConfig. Create/place RuntimeModeConfig in Resources (path='RuntimeModeConfig').");
-            }
-
-            if (runtimeModeConfig.NewScriptsBootstrapConfig == null)
-            {
-                FailFast("RuntimeModeConfig.NewScriptsBootstrapConfig is null. Assign a valid NewScriptsBootstrapConfigAsset.");
-            }
-
-            _cachedBootstrapConfig = runtimeModeConfig.NewScriptsBootstrapConfig;
-            _cachedBootstrapConfigVia = "RuntimeModeConfig";
         }
     }
 }

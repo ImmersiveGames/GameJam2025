@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Logging.Config;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -18,6 +19,36 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
     public static class DebugUtility
     {
+        private readonly struct NamespaceRuleEntry
+        {
+            public NamespaceRuleEntry(string ruleId, string namespacePrefix, DebugLevel level)
+            {
+                RuleId = ruleId;
+                NamespacePrefix = namespacePrefix;
+                Level = level;
+            }
+
+            public string RuleId { get; }
+            public string NamespacePrefix { get; }
+            public DebugLevel Level { get; }
+        }
+
+        private readonly struct NamespaceRuleMatch
+        {
+            public NamespaceRuleMatch(bool hasMatch, string ruleId, string namespacePrefix, DebugLevel level)
+            {
+                HasMatch = hasMatch;
+                RuleId = ruleId;
+                NamespacePrefix = namespacePrefix;
+                Level = level;
+            }
+
+            public bool HasMatch { get; }
+            public string RuleId { get; }
+            public string NamespacePrefix { get; }
+            public DebugLevel Level { get; }
+        }
+
         private static bool _globalDebugEnabled = true;
         private static bool _verboseLoggingEnabled = true;
         private static bool _logFallbacks = true;
@@ -33,10 +64,14 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static bool _lastAppliedRepeatedVerboseEnabled;
         private static DebugLevel _lastAppliedDefaultLevel = DebugLevel.Logs;
         private static string _lastAppliedSource;
+        private static bool _lastAppliedEarlyDefault;
 
         private static readonly Dictionary<Type, DebugLevel> _scriptDebugLevels = new();
         private static readonly Dictionary<object, DebugLevel> _localLevels = new();
         private static readonly Dictionary<Type, DebugLevel> _attributeLevels = new();
+        private static readonly Dictionary<Type, DebugLevel> _effectiveLevels = new();
+        private static readonly Dictionary<Type, NamespaceRuleMatch> _matchedNamespaceRules = new();
+        private static readonly List<NamespaceRuleEntry> _activeNamespaceRules = new();
         private static readonly HashSet<Type> _disabledVerboseTypes = new();
 
         // Tracking por frame (limpamos quando o frame muda).
@@ -48,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static readonly Dictionary<string, string> _messagePool = new();
 
         private const string RepeatedCallColor = "#FFD54F";
-        private const string AlertIcon = "⚠️";
+        private const string AlertIcon = "[!]";
 
         public static class Colors
         {
@@ -68,6 +103,9 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _scriptDebugLevels.Clear();
             _localLevels.Clear();
             _attributeLevels.Clear();
+            _effectiveLevels.Clear();
+            _matchedNamespaceRules.Clear();
+            _activeNamespaceRules.Clear();
             _disabledVerboseTypes.Clear();
 
             _callTracker.Clear();
@@ -78,26 +116,20 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _policyApplyTick = 0;
             _hasAppliedPolicy = false;
             _lastAppliedGlobalDebugEnabled = true;
-            _lastAppliedVerboseEnabled = Application.isEditor;
-            _lastAppliedFallbacksEnabled = Application.isEditor;
-            _lastAppliedRepeatedVerboseEnabled = true;
+            _lastAppliedVerboseEnabled = false;
+            _lastAppliedFallbacksEnabled = false;
+            _lastAppliedRepeatedVerboseEnabled = false;
             _lastAppliedDefaultLevel = DebugLevel.Logs;
             _lastAppliedSource = null;
+            _lastAppliedEarlyDefault = true;
 
             _messagePool.Clear();
 
-            ApplyLoggingPolicyInternal(
-                globalDebugEnabled: true,
-                verboseEnabled: Application.isEditor,
-                fallbacksEnabled: Application.isEditor,
-                repeatedVerboseEnabled: true,
-                defaultLevel: DebugLevel.Logs,
-                source: "EarlyDefault");
-
-            LogInternal("DebugUtility inicializado antes de todos os sistemas.");
+            ApplyEarlyDefaultPolicy();
+            LogInternal("[BOOT] DebugUtility initialized with EarlyDefault policy.");
         }
 
-        #region Configurações
+        #region Configuracoes
         public static bool IsGlobalDebugEnabled => _globalDebugEnabled;
         public static bool IsVerboseLoggingEnabled => _verboseLoggingEnabled;
         public static bool IsFallbacksEnabled => _logFallbacks;
@@ -114,15 +146,54 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         public static void EnableVerboseForType(Type type) => _disabledVerboseTypes.Remove(type);
 
         public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
-        public static void RegisterScriptDebugLevel(Type type, DebugLevel level) => _scriptDebugLevels[type] = level;
+        public static void RegisterScriptDebugLevel(Type type, DebugLevel level)
+        {
+            _scriptDebugLevels[type] = level;
+            InvalidateResolvedCaches("type_runtime_override_updated");
+        }
+
         public static void SetLocalDebugLevel(object instance, DebugLevel level) => _localLevels[instance] = level;
+
+        public static void ApplyEarlyDefaultPolicy()
+        {
+            ApplyLoggingPolicyInternal(
+                globalDebugEnabled: true,
+                verboseEnabled: false,
+                fallbacksEnabled: false,
+                repeatedVerboseEnabled: false,
+                defaultLevel: DebugLevel.Logs,
+                source: "EarlyDefault",
+                namespaceRules: null,
+                isEarlyDefault: true);
+        }
+
+        public static void ApplyLoggingPolicyFromAsset(LoggingConfigAsset config, string source)
+        {
+            if (config == null)
+            {
+                LogRuntimeModeObs("[OBS][BOOT] LoggingPolicyApplySkipped reason='null_logging_config_asset'");
+                return;
+            }
+
+            List<NamespaceRuleEntry> entries = BuildNamespaceRules(config.Rules);
+            ApplyLoggingPolicyInternal(
+                globalDebugEnabled: config.GlobalEnabled,
+                verboseEnabled: config.VerboseEnabled,
+                fallbacksEnabled: config.FallbacksEnabled,
+                repeatedVerboseEnabled: config.RepeatedVerboseEnabled,
+                defaultLevel: config.DefaultLevel,
+                source: source,
+                namespaceRules: entries,
+                isEarlyDefault: false);
+        }
 
         public static void ApplyLoggingPolicyFromBootstrap(
             DebugLevel defaultLevel,
             bool verboseEnabled,
             bool fallbacksEnabled,
             bool globalDebugEnabled = true,
-            bool repeatedVerboseEnabled = true)
+            bool repeatedVerboseEnabled = true,
+            string source = "BootstrapFallbackHardcoded")
         {
             ApplyLoggingPolicyInternal(
                 globalDebugEnabled,
@@ -130,8 +201,11 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 fallbacksEnabled,
                 repeatedVerboseEnabled,
                 defaultLevel,
-                "BootstrapPolicy");
+                source,
+                namespaceRules: null,
+                isEarlyDefault: false);
         }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public static async void Dev_ForceReapplyLastLoggingPolicyForEvidence()
         {
@@ -147,7 +221,9 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 _lastAppliedFallbacksEnabled,
                 _lastAppliedRepeatedVerboseEnabled,
                 _lastAppliedDefaultLevel,
-                _lastAppliedSource);
+                _lastAppliedSource,
+                new List<NamespaceRuleEntry>(_activeNamespaceRules),
+                _lastAppliedEarlyDefault);
 
             await Task.Yield();
 
@@ -157,18 +233,21 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 _lastAppliedFallbacksEnabled,
                 _lastAppliedRepeatedVerboseEnabled,
                 _lastAppliedDefaultLevel,
-                _lastAppliedSource);
+                _lastAppliedSource,
+                new List<NamespaceRuleEntry>(_activeNamespaceRules),
+                _lastAppliedEarlyDefault);
         }
 #endif
         #endregion
 
-        #region Log estático por Type
+        #region Log estatico por Type
         public static void Log(Type type, string message, string color = null, Object context = null)
         {
             if (!ShouldLog(type, null, DebugLevel.Logs))
             {
                 return;
             }
+
             Debug.Log(ApplyColor(BuildLogMessage("INFO", type, message), color), context);
         }
 
@@ -178,6 +257,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             Debug.LogWarning(BuildLogMessage("WARNING", type, message), context);
         }
 
@@ -187,6 +267,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             Debug.LogError(BuildLogMessage("ERROR", type, message), context);
         }
 
@@ -201,11 +282,12 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
 
-        #region Log genérico por tipo (T)
+        #region Log generico por tipo (T)
         public static void Log<T>(string message, string color = null, Object context = null, T instance = null) where T : class
         {
             var type = typeof(T);
@@ -213,6 +295,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             Debug.Log(ApplyColor(BuildLogMessage("INFO", type, message), color), context);
         }
 
@@ -223,6 +306,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             Debug.LogWarning(BuildLogMessage("WARNING", type, message), context);
         }
 
@@ -233,6 +317,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             Debug.LogError(BuildLogMessage("ERROR", type, message), context);
         }
 
@@ -248,11 +333,12 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
 
-        #region Helpers Internos
+        #region Helpers internos
         private static bool ShouldLog(Type type, object instance, DebugLevel messageLevel)
         {
             if (!_globalDebugEnabled)
@@ -260,6 +346,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 return false;
             }
 
+            // Precedencia 1: override local por instancia.
             if (instance != null && _localLevels.TryGetValue(instance, out var localLevel))
             {
                 return (int)localLevel >= (int)messageLevel;
@@ -270,14 +357,34 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 return (int)_defaultDebugLevel >= (int)messageLevel;
             }
 
+            // Precedencia 2: override runtime por tipo.
             if (_scriptDebugLevels.TryGetValue(type, out var scriptLevel))
             {
                 return (int)scriptLevel >= (int)messageLevel;
             }
 
+            if (_effectiveLevels.TryGetValue(type, out var cachedEffectiveLevel))
+            {
+                return (int)cachedEffectiveLevel >= (int)messageLevel;
+            }
+
+            DebugLevel effectiveLevel = ResolveEffectiveLevel(type);
+            _effectiveLevels[type] = effectiveLevel;
+            return (int)effectiveLevel >= (int)messageLevel;
+        }
+
+        private static DebugLevel ResolveEffectiveLevel(Type type)
+        {
+            // Precedencia 3: regra de namespace (StartsWith + longest-prefix).
+            if (TryGetNamespaceRuleMatch(type, out var ruleMatch))
+            {
+                return ruleMatch.Level;
+            }
+
+            // Precedencia 4 e 5: atributo e default.
             if (_attributeLevels.TryGetValue(type, out var attributeLevel))
             {
-                return (int)attributeLevel >= (int)messageLevel;
+                return attributeLevel;
             }
 
             attributeLevel = Attribute.GetCustomAttribute(type, typeof(DebugLevelAttribute)) is DebugLevelAttribute attr
@@ -285,40 +392,104 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 : _defaultDebugLevel;
 
             _attributeLevels[type] = attributeLevel;
-            return (int)attributeLevel >= (int)messageLevel;
+            return attributeLevel;
         }
 
-        private static string BuildLogMessage(string level, Type type, string message)
+        private static bool TryGetNamespaceRuleMatch(Type type, out NamespaceRuleMatch match)
         {
-            _stringBuilder.Clear();
-            _stringBuilder.Append('[').Append(level).Append("] [").Append(type.Name).Append("] ").Append(message);
-            return _stringBuilder.ToString();
-        }
-
-        private static string GetPooledMessage(Type type, string message, bool isFallback)
-        {
-            string key = $"{type.Name}:{message}:{isFallback}";
-            if (!_messagePool.TryGetValue(key, out string baseMessage))
+            if (_matchedNamespaceRules.TryGetValue(type, out match))
             {
-                _stringBuilder.Clear();
-                _stringBuilder.Append("[VERBOSE] [").Append(type.Name).Append("] ").Append(message);
-                if (isFallback)
-                {
-                    _stringBuilder.Append(" (fallback)");
-                }
-                baseMessage = _stringBuilder.ToString();
-                _messagePool[key] = baseMessage;
+                return match.HasMatch;
             }
 
-            _stringBuilder.Clear();
-            _stringBuilder.Append(baseMessage)
-                          .Append(" (@ ").Append(Time.realtimeSinceStartup.ToString("F2")).Append("s)");
-            return _stringBuilder.ToString();
+            string typeNamespace = type?.Namespace;
+            if (string.IsNullOrWhiteSpace(typeNamespace))
+            {
+                match = new NamespaceRuleMatch(false, string.Empty, string.Empty, _defaultDebugLevel);
+                _matchedNamespaceRules[type] = match;
+                return false;
+            }
+
+            for (int i = 0; i < _activeNamespaceRules.Count; i++)
+            {
+                NamespaceRuleEntry entry = _activeNamespaceRules[i];
+                if (typeNamespace.StartsWith(entry.NamespacePrefix, StringComparison.Ordinal))
+                {
+                    match = new NamespaceRuleMatch(true, entry.RuleId, entry.NamespacePrefix, entry.Level);
+                    _matchedNamespaceRules[type] = match;
+                    return true;
+                }
+            }
+
+            match = new NamespaceRuleMatch(false, string.Empty, string.Empty, _defaultDebugLevel);
+            _matchedNamespaceRules[type] = match;
+            return false;
         }
 
-        private static string ApplyColor(string message, string color)
+        private static List<NamespaceRuleEntry> BuildNamespaceRules(IReadOnlyList<LoggingConfigAsset.NamespaceRule> rules)
         {
-            return string.IsNullOrEmpty(color) ? message : $"<color={color}>{message}</color>";
+            var entries = new List<NamespaceRuleEntry>();
+            if (rules == null)
+            {
+                return entries;
+            }
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                LoggingConfigAsset.NamespaceRule rule = rules[i];
+                if (rule == null || !rule.enabled)
+                {
+                    continue;
+                }
+
+                string prefix = (rule.namespacePrefix ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(prefix))
+                {
+                    continue;
+                }
+
+                string ruleId = string.IsNullOrWhiteSpace(rule.ruleId) ? $"rule_{i}" : rule.ruleId.Trim();
+                entries.Add(new NamespaceRuleEntry(ruleId, prefix, rule.level));
+            }
+
+            entries.Sort(static (a, b) =>
+            {
+                int prefixLengthCompare = b.NamespacePrefix.Length.CompareTo(a.NamespacePrefix.Length);
+                if (prefixLengthCompare != 0)
+                {
+                    return prefixLengthCompare;
+                }
+
+                return string.Compare(a.RuleId, b.RuleId, StringComparison.Ordinal);
+            });
+
+            return entries;
+        }
+
+        private static string BuildRuleSignature(IReadOnlyList<NamespaceRuleEntry> rules)
+        {
+            if (rules == null || rules.Count == 0)
+            {
+                return "no_rules";
+            }
+
+            var builder = new StringBuilder(128);
+            for (int i = 0; i < rules.Count; i++)
+            {
+                NamespaceRuleEntry rule = rules[i];
+                if (i > 0)
+                {
+                    builder.Append(',');
+                }
+
+                builder.Append(rule.RuleId)
+                    .Append('@')
+                    .Append(rule.NamespacePrefix)
+                    .Append('=')
+                    .Append(rule.Level);
+            }
+
+            return builder.ToString();
         }
 
         private static void ApplyLoggingPolicyInternal(
@@ -327,8 +498,11 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             bool fallbacksEnabled,
             bool repeatedVerboseEnabled,
             DebugLevel defaultLevel,
-            string source)
+            string source,
+            IReadOnlyList<NamespaceRuleEntry> namespaceRules,
+            bool isEarlyDefault)
         {
+            string rulesSignature = BuildRuleSignature(namespaceRules);
             string policyKey = BuildLoggingPolicyKey(
                 GetBuildVariant(),
                 GetNewscriptsModeState(),
@@ -337,18 +511,20 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 defaultLevel,
                 repeatedVerboseEnabled,
                 fallbacksEnabled,
-                source);
+                source,
+                isEarlyDefault,
+                rulesSignature);
             int policyFrame = GetPolicyFrame();
 
             if (policyFrame == _lastPolicyFrame && string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
             {
-                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_frame' key='{policyKey}'");
+                LogRuntimeModeObs($"[OBS][BOOT] LoggingPolicyApplySkipped reason='dedupe_same_frame' key='{policyKey}'");
                 return;
             }
 
             if (string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
             {
-                LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplySkipped reason='dedupe_same_key' key='{policyKey}'");
+                LogRuntimeModeObs($"[OBS][BOOT] LoggingPolicyApplySkipped reason='dedupe_same_key' key='{policyKey}'");
                 return;
             }
 
@@ -357,6 +533,17 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _logFallbacks = fallbacksEnabled;
             _repeatedCallVerboseEnabled = repeatedVerboseEnabled;
             _defaultDebugLevel = defaultLevel;
+
+            _activeNamespaceRules.Clear();
+            if (namespaceRules != null)
+            {
+                for (int i = 0; i < namespaceRules.Count; i++)
+                {
+                    _activeNamespaceRules.Add(namespaceRules[i]);
+                }
+            }
+
+            InvalidateResolvedCaches("policy_reapplied");
 
             _lastPolicyKey = policyKey;
             _lastPolicyFrame = policyFrame;
@@ -367,8 +554,29 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _lastAppliedRepeatedVerboseEnabled = repeatedVerboseEnabled;
             _lastAppliedDefaultLevel = defaultLevel;
             _lastAppliedSource = source;
+            _lastAppliedEarlyDefault = isEarlyDefault;
 
-            LogRuntimeModeObs($"[OBS][RuntimeMode] LoggingPolicyApplied source='{source}' key='{policyKey}'");
+            string phase = isEarlyDefault ? "BOOT" : "STARTUP";
+            string policyFlavor = isEarlyDefault ? "EarlyDefault" : "BootstrapConfigAsset";
+            LogRuntimeModeObs(
+                $"[OBS][{phase}] LoggingPolicyApplied source='{source}' policy='{policyFlavor}' " +
+                $"defaultLevel='{defaultLevel}' activeRuleCount={_activeNamespaceRules.Count} " +
+                $"global={globalDebugEnabled} verbose={verboseEnabled} fallbacks={fallbacksEnabled} repeatedVerbose={repeatedVerboseEnabled}");
+        }
+
+        private static void InvalidateResolvedCaches(string reason)
+        {
+            int effectiveCount = _effectiveLevels.Count;
+            int ruleMatchCount = _matchedNamespaceRules.Count;
+            int attributeCount = _attributeLevels.Count;
+
+            _effectiveLevels.Clear();
+            _matchedNamespaceRules.Clear();
+            _attributeLevels.Clear();
+
+            LogRuntimeModeObs(
+                $"[OBS][BOOT] LoggingPolicyCacheInvalidated reason='{reason}' " +
+                $"effectiveTypeCount={effectiveCount} matchedRuleCount={ruleMatchCount} attributeCount={attributeCount}");
         }
 
         // policyKey e um contrato estavel/deterministico usado para dedupe e evidencia.
@@ -380,19 +588,59 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             DebugLevel defaultLevel,
             bool repeatedVerboseEnabled,
             bool fallbacksEnabled,
-            string source)
+            string source,
+            bool isEarlyDefault,
+            string rulesSignature)
         {
-            var builder = new StringBuilder(128);
+            var builder = new StringBuilder(160);
             builder.Append(buildVariant)
-                   .Append('|').Append(newscriptsMode)
-                   .Append("|global=").Append(globalDebugEnabled)
-                   .Append(";verbose=").Append(verboseEnabled)
-                   .Append(";default=").Append(defaultLevel)
-                   .Append(";repeated=").Append(repeatedVerboseEnabled)
-                   .Append("|fallbacks=").Append(fallbacksEnabled)
-                   .Append('|').Append(source);
+                .Append('|').Append(newscriptsMode)
+                .Append("|global=").Append(globalDebugEnabled)
+                .Append(";verbose=").Append(verboseEnabled)
+                .Append(";default=").Append(defaultLevel)
+                .Append(";repeated=").Append(repeatedVerboseEnabled)
+                .Append(";fallbacks=").Append(fallbacksEnabled)
+                .Append(";early=").Append(isEarlyDefault)
+                .Append(";source=").Append(source)
+                .Append("|rules=").Append(rulesSignature);
             return builder.ToString();
         }
+
+        private static string BuildLogMessage(string level, Type type, string message)
+        {
+            _stringBuilder.Clear();
+            _stringBuilder.Append('[').Append(level).Append("] [").Append(type?.Name ?? nameof(DebugUtility)).Append("] ").Append(message);
+            return _stringBuilder.ToString();
+        }
+
+        private static string GetPooledMessage(Type type, string message, bool isFallback)
+        {
+            string typeName = type?.Name ?? nameof(DebugUtility);
+            string key = $"{typeName}:{message}:{isFallback}";
+            if (!_messagePool.TryGetValue(key, out string baseMessage))
+            {
+                _stringBuilder.Clear();
+                _stringBuilder.Append("[VERBOSE] [").Append(typeName).Append("] ").Append(message);
+                if (isFallback)
+                {
+                    _stringBuilder.Append(" (fallback)");
+                }
+
+                baseMessage = _stringBuilder.ToString();
+                _messagePool[key] = baseMessage;
+            }
+
+            _stringBuilder.Clear();
+            _stringBuilder.Append(baseMessage)
+                .Append(" (@ ").Append(Time.realtimeSinceStartup.ToString("F2")).Append("s)");
+            return _stringBuilder.ToString();
+        }
+
+        private static string ApplyColor(string message, string color)
+        {
+            return string.IsNullOrEmpty(color) ? message : $"<color={color}>{message}</color>";
+        }
+
         private static int GetPolicyFrame()
         {
             int frame = Time.frameCount;
@@ -431,12 +679,14 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         {
             Debug.Log(ApplyColor(BuildLogMessage("INFO", typeof(DebugUtility), message), Colors.Info));
         }
+
         private static void LogInternal(string message, Object context = null)
         {
             if (!ShouldLog(null, null, DebugLevel.Logs))
             {
                 return;
             }
+
             Debug.Log(ApplyColor(BuildLogMessage("INFO", typeof(DebugUtility), message), null), context);
         }
 
@@ -452,12 +702,12 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 _lastTrackedFrame = frame;
             }
 
+            string typeName = type?.Name ?? nameof(DebugUtility);
             int contextId = context != null ? context.GetInstanceID() : 0;
-            string key = $"{type.Name}:{message}:ctx={contextId}";
+            string key = $"{typeName}:{message}:ctx={contextId}";
             var trackerKey = (key, frame);
 
             bool isRepeat = _callTracker.Contains(trackerKey);
-
             if (isRepeat)
             {
                 if (!deduplicate && _repeatedCallVerboseEnabled)
@@ -481,10 +731,12 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             {
                 return;
             }
+
             if (type != null && _disabledVerboseTypes.Contains(type))
             {
                 return;
             }
+
             if (!ShouldLog(type, null, DebugLevel.Verbose))
             {
                 return;
@@ -492,13 +744,13 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
             _stringBuilder.Clear();
             _stringBuilder.Append("[DebugUtility] ")
-                          .Append(AlertIcon)
-                          .Append(" Chamada repetida no frame ")
-                          .Append(frame)
-                          .Append(": [")
-                          .Append(type?.Name ?? nameof(DebugUtility))
-                          .Append("] ")
-                          .Append(message);
+                .Append(AlertIcon)
+                .Append(" Chamada repetida no frame ")
+                .Append(frame)
+                .Append(": [")
+                .Append(type?.Name ?? nameof(DebugUtility))
+                .Append("] ")
+                .Append(message);
 
             Debug.Log(ApplyColor(_stringBuilder.ToString(), RepeatedCallColor));
         }
@@ -517,17 +769,11 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 return false;
             }
 
-            // Suprime apenas spam de observabilidade idempotente de catálogo.
+            // Suprime apenas spam de observabilidade idempotente de catalogo.
             return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
-                   message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
-                   message.Contains("[OBS][Config] SceneRouteCatalogBuild", StringComparison.Ordinal);
+                message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
+                message.Contains("[OBS][Config] SceneRouteCatalogBuild", StringComparison.Ordinal);
         }
         #endregion
     }
 }
-
-
-
-
-
-

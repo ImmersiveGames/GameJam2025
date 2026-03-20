@@ -50,16 +50,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (catalogAsset == null)
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    "[FATAL][Config] Missing required GameNavigationCatalogAsset in NewScriptsBootstrapConfigAsset.navigationCatalog.");
-                throw new InvalidOperationException("Missing required NewScriptsBootstrapConfigAsset.navigationCatalog (GameNavigationCatalogAsset).");
+                    "[FATAL][Config] Missing required GameNavigationCatalogAsset in BootstrapConfigAsset.navigationCatalog.");
+                throw new InvalidOperationException("Missing required BootstrapConfigAsset.navigationCatalog (GameNavigationCatalogAsset).");
             }
 
             var sceneRouteCatalogAsset = bootstrapConfig.SceneRouteCatalog;
             if (sceneRouteCatalogAsset == null)
             {
                 DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                    "[FATAL][Config] Missing required SceneRouteCatalogAsset in NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
-                throw new InvalidOperationException("Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
+                    "[FATAL][Config] Missing required SceneRouteCatalogAsset in BootstrapConfigAsset.sceneRouteCatalog.");
+                throw new InvalidOperationException("Missing required BootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

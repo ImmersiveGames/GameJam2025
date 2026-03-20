@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             {
                 NavigationCatalog = LoadRequiredAssetAtPath<GameNavigationCatalogAsset>(NavigationCatalogPath, context),
                 SceneRouteCatalog = LoadRequiredAssetAtPath<SceneRouteCatalogAsset>(SceneRouteCatalogPath, context),
-                BootstrapConfig = LoadRequiredAssetAtPath<NewScriptsBootstrapConfigAsset>(BootstrapConfigPath, context)
+                BootstrapConfig = LoadRequiredAssetAtPath<BootstrapConfigAsset>(BootstrapConfigPath, context)
             };
         }
 
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
         }
 
-        private static void ValidateStartupTransition(ValidationContext context, NewScriptsBootstrapConfigAsset bootstrapConfig)
+        private static void ValidateStartupTransition(ValidationContext context, BootstrapConfigAsset bootstrapConfig)
         {
             TransitionStyleAsset startupStyle = bootstrapConfig.StartupTransitionStyleRef;
             if (startupStyle == null || startupStyle.Profile == null)
@@ -150,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
         }
 
-        private static void ValidateAllTransitionStyleAssets(ValidationContext context, NewScriptsBootstrapConfigAsset bootstrapConfig)
+        private static void ValidateAllTransitionStyleAssets(ValidationContext context, BootstrapConfigAsset bootstrapConfig)
         {
             string[] guids = AssetDatabase.FindAssets("t:TransitionStyleAsset");
             if (guids.Length == 0)
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
         }
 
-        private static bool HasFadeSceneKeyConfigured(NewScriptsBootstrapConfigAsset bootstrapConfig)
+        private static bool HasFadeSceneKeyConfigured(BootstrapConfigAsset bootstrapConfig)
         {
             SerializedObject serializedObject = new SerializedObject(bootstrapConfig);
             SerializedProperty fadeSceneKeyProp = serializedObject.FindProperty("fadeSceneKey");
@@ -277,7 +277,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         {
             public GameNavigationCatalogAsset NavigationCatalog;
             public SceneRouteCatalogAsset SceneRouteCatalog;
-            public NewScriptsBootstrapConfigAsset BootstrapConfig;
+            public BootstrapConfigAsset BootstrapConfig;
         }
 
         private readonly struct AssetStatus

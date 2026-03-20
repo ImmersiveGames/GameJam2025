@@ -188,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
         }
 
-        private static string TryResolveFadeSceneName(NewScriptsBootstrapConfigAsset bootstrap, out string failureReason)
+        private static string TryResolveFadeSceneName(BootstrapConfigAsset bootstrap, out string failureReason)
         {
             var fadeSceneKey = bootstrap.FadeSceneKey;
             if (fadeSceneKey == null)

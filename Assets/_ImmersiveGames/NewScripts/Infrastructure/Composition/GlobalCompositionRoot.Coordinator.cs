@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.Colors.Info);
         }
 
-        private static SceneRouteId ResolveBootStartRouteIdOrFailFast(Config.NewScriptsBootstrapConfigAsset bootstrap)
+        private static SceneRouteId ResolveBootStartRouteIdOrFailFast(Config.BootstrapConfigAsset bootstrap)
         {
             var navigationCatalog = bootstrap.NavigationCatalog;
             if (navigationCatalog == null)
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return bootStartRouteId;
         }
 
-        private static StartupTransitionResolution ResolveRequiredStartupTransition(Config.NewScriptsBootstrapConfigAsset bootstrap)
+        private static StartupTransitionResolution ResolveRequiredStartupTransition(Config.BootstrapConfigAsset bootstrap)
         {
             TransitionStyleAsset styleRef = bootstrap.StartupTransitionStyleRef;
             if (styleRef == null)

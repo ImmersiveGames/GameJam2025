@@ -11,8 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a72db2945a1a4f9b9da4e214fd4a4f51, type: 3}
   m_Name: NewScriptsBootstrapConfig
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   navigationCatalog: {fileID: 11400000, guid: 199efb62d31d34e4f8862069f922a7a3, type: 2}
   sceneRouteCatalog: {fileID: 11400000, guid: 8f3d4c84c7f482241a6978dbc890c1cf, type: 2}
   startupTransitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1001, type: 2}
   fadeSceneKey: {fileID: 11400000, guid: 7983f5c5a711411887b7d73dd12c6702, type: 2}
+  loggingConfig: {fileID: 11400000, guid: 20b21d047cb64a7bbf6fd8db8e9aa773, type: 2}

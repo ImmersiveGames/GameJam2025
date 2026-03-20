@@ -24,6 +24,7 @@
 
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Logging.Config;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using UnityEngine;
@@ -86,16 +87,44 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void InitializeLogging()
         {
-            bool verboseEnabled = Application.isEditor;
-            bool fallbacksEnabled = Application.isEditor;
+            DebugUtility.ApplyEarlyDefaultPolicy();
+            DebugUtility.Log(typeof(GlobalCompositionRoot),
+                "[BOOT][Logging] EarlyDefault policy applied.",
+                DebugUtility.Colors.Info);
 
+            if (TryGetBootstrapConfigForLogging(out var bootstrapConfig, out var bootstrapVia, out var bootstrapReason))
+            {
+                LoggingConfigAsset loggingConfig = bootstrapConfig.LoggingConfig;
+                if (loggingConfig != null)
+                {
+                    string source = $"BootstrapConfigAsset/{bootstrapVia}";
+                    DebugUtility.ApplyLoggingPolicyFromAsset(loggingConfig, source);
+                    DebugUtility.Log(typeof(GlobalCompositionRoot),
+                        $"[STARTUP][Logging] Final policy applied from LoggingConfigAsset. source='{source}' asset='{loggingConfig.name}'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                ApplyHardcodedFallbackLoggingPolicy(
+                    $"bootstrap_without_logging_config via='{bootstrapVia}' bootstrap='{bootstrapConfig.name}'");
+                return;
+            }
+
+            ApplyHardcodedFallbackLoggingPolicy($"bootstrap_unresolved reason='{bootstrapReason}'");
+        }
+
+        private static void ApplyHardcodedFallbackLoggingPolicy(string reason)
+        {
             DebugUtility.ApplyLoggingPolicyFromBootstrap(
                 defaultLevel: DebugLevel.Verbose,
-                verboseEnabled: verboseEnabled,
-                fallbacksEnabled: fallbacksEnabled,
+                verboseEnabled: Application.isEditor,
+                fallbacksEnabled: Application.isEditor,
                 globalDebugEnabled: true,
-                repeatedVerboseEnabled: true);
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot), "NewScripts logging configured.");
+                repeatedVerboseEnabled: true,
+                source: "FallbackHardcoded");
+
+            DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                $"[STARTUP][Logging] Applied hardcoded fallback logging policy. reason='{reason}'.");
         }
 
         private static void EnsureDependencyProvider()

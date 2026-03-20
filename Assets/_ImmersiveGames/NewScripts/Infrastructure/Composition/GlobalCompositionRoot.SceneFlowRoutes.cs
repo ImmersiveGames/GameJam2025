@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var bootstrapRouteCatalog = bootstrap.SceneRouteCatalog;
             if (bootstrapRouteCatalog == null)
             {
-                FailFast("Missing required NewScriptsBootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
+                FailFast("Missing required BootstrapConfigAsset.sceneRouteCatalog (SceneRouteCatalogAsset).");
             }
 
             if (!provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) || routeCatalog == null)
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             if (routeCatalog == null)
             {
-                FailFast("SceneRouteCatalogAsset obrigatório ausente. Configure NewScriptsBootstrapConfigAsset.sceneRouteCatalog.");
+                FailFast("SceneRouteCatalogAsset obrigatório ausente. Configure BootstrapConfigAsset.sceneRouteCatalog.");
             }
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),

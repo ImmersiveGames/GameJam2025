@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 {
@@ -27,9 +28,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 
         [Header("Bootstrap")]
         [Tooltip("Config raiz obrigatÃ³rio do NewScripts (resolvido pelo GlobalCompositionRoot).")]
-        [SerializeField] private NewScriptsBootstrapConfigAsset newScriptsBootstrapConfig;
+        [FormerlySerializedAs("newScriptsBootstrapConfig")]
+        [SerializeField] private BootstrapConfigAsset bootstrapConfig;
 
-        public NewScriptsBootstrapConfigAsset NewScriptsBootstrapConfig => newScriptsBootstrapConfig;
+        public BootstrapConfigAsset BootstrapConfig => bootstrapConfig;
 
         [Header("Degraded Mode Reporter")]
         public DegradedReporterSettings reporter = new DegradedReporterSettings();
