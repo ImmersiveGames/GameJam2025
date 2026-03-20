@@ -18,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RuntimePolicy,
             Pooling,
             Gates,
+            Audio,
             GameLoop,
             SceneFlow,
             WorldLifecycle,
@@ -49,6 +50,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var gateService = ResolveSimulationGateServiceOrNull();
 
             RegisterPauseBridge(gateService);
+
+            _compositionInstallStage = CompositionInstallStage.Audio;
+            InstallCompositionModules();
 
             _compositionInstallStage = CompositionInstallStage.GameLoop;
             InstallCompositionModules();
@@ -97,6 +101,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     break;
                 case CompositionInstallStage.Gates:
                     InstallGatesServices();
+                    break;
+                case CompositionInstallStage.Audio:
+                    InstallAudioServices();
                     break;
                 case CompositionInstallStage.GameLoop:
                     InstallGameLoopServices();

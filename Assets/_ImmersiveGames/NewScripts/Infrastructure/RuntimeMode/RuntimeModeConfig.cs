@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 
         [Header("Bootstrap")]
         [Tooltip("Config raiz obrigatÃ³rio do NewScripts (resolvido pelo GlobalCompositionRoot).")]
-        [FormerlySerializedAs("newScriptsBootstrapConfig")]
+        [FormerlySerializedAs("BootstrapConfig")]
         [SerializeField] private BootstrapConfigAsset bootstrapConfig;
 
         public BootstrapConfigAsset BootstrapConfig => bootstrapConfig;

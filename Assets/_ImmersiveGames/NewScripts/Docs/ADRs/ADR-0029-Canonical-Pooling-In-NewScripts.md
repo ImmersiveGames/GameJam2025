@@ -1,4 +1,4 @@
-﻿# ADR-0029 â€” Canonical Pooling in NewScripts
+# ADR-0029 â€” Canonical Pooling in NewScripts
 
 - **Status:** Accepted
 - **Implementation Status:** Complete

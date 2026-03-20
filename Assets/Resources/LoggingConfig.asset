@@ -35,7 +35,7 @@ MonoBehaviour:
     namespacePrefix: _ImmersiveGames.NewScripts.Gameplay.PostGame
     level: 2
   - ruleId: modules_sceneflow_transition
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
     level: 4
   - ruleId: infra_pooling
