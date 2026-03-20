@@ -1,4 +1,4 @@
-# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
+﻿# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
@@ -7,8 +7,8 @@
   - Restart local (`Level2 -> Level2`) faz reload local (unload+load do mesmo set).
   - QA confirma `transitionStartedCount='0'` no swap local.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
-  - `Docs/Reports/lastlog.log`
+  - `Docs/Reports/Audits/LATEST.md`
+  - `Docs/Reports/Evidence/LATEST.md`
 - LEGACY / Historico:
   - Troca de level via trilho macro no caminho que hoje e local.
 

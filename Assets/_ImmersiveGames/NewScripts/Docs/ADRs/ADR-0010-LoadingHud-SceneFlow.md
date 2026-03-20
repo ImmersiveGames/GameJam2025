@@ -1,95 +1,95 @@
-# ADR-0010 — Loading HUD + SceneFlow (NewScripts)
+﻿# ADR-0010 â€” Loading HUD + SceneFlow (NewScripts)
 
 ## Status
 
 - Estado: Implementado
-- Data (decisão): 2025-12-24
-- Última atualização: 2026-02-04
-- Tipo: Implementação
+- Data (decisÃ£o): 2025-12-24
+- Ãšltima atualizaÃ§Ã£o: 2026-02-04
+- Tipo: ImplementaÃ§Ã£o
 - Escopo: SceneFlow + Loading HUD (NewScripts)
 
 ## Contexto
 
-O SceneFlow executa operações que podem causar “pop” visual (load/unload/setActive), especialmente em transições longas (Menu→Gameplay, Restart). O projeto precisava de um **Loading HUD** com as seguintes propriedades:
+O SceneFlow executa operaÃ§Ãµes que podem causar â€œpopâ€ visual (load/unload/setActive), especialmente em transiÃ§Ãµes longas (Menuâ†’Gameplay, Restart). O projeto precisava de um **Loading HUD** com as seguintes propriedades:
 
 - Integrar no envelope do SceneFlow (mesma `signature` / mesma ordem).
-- Ser **determinístico** (show/hide em pontos fixos) e **auditável** (logs canônicos).
-- Seguir política **Strict vs Release**:
+- Ser **determinÃ­stico** (show/hide em pontos fixos) e **auditÃ¡vel** (logs canÃ´nicos).
+- Seguir polÃ­tica **Strict vs Release**:
   - Strict (Dev/QA): falhar cedo se o HUD estiver mal configurado.
-  - Release: permitir seguir sem HUD somente com degraded explícito.
+  - Release: permitir seguir sem HUD somente com degraded explÃ­cito.
 
-Além disso, o HUD não deve depender de instanciar UI “em voo” de forma silenciosa.
+AlÃ©m disso, o HUD nÃ£o deve depender de instanciar UI â€œem vooâ€ de forma silenciosa.
 
-## Decisão
+## DecisÃ£o
 
-### Objetivo de produção
+### Objetivo de produÃ§Ã£o
 
-Garantir que transições do SceneFlow possam opcionalmente exibir um “Loading HUD” **sobre** o envelope de fade:
+Garantir que transiÃ§Ãµes do SceneFlow possam opcionalmente exibir um â€œLoading HUDâ€ **sobre** o envelope de fade:
 
-**FadeIn (escurece) → LoadingHUD.Show → operações de cena → ScenesReady → completion gate → LoadingHUD.Hide → FadeOut (revela) → Completed**
+**FadeIn (escurece) â†’ LoadingHUD.Show â†’ operaÃ§Ãµes de cena â†’ ScenesReady â†’ completion gate â†’ LoadingHUD.Hide â†’ FadeOut (revela) â†’ Completed**
 
-> O fade continua sendo a primeira/última camada visual (ADR-0009). O Loading HUD é uma camada intermediária, usada quando a transição requer feedback.
+> O fade continua sendo a primeira/Ãºltima camada visual (ADR-0009). O Loading HUD Ã© uma camada intermediÃ¡ria, usada quando a transiÃ§Ã£o requer feedback.
 
-### Contrato mínimo (produção)
+### Contrato mÃ­nimo (produÃ§Ã£o)
 
 1) **Pontos de show/hide (invariantes)**
-- `Show` ocorre após `FadeInCompleted` e antes das mutações de cena.
-- `Hide` ocorre após `ScenesReady` + completion gate e antes do `BeforeFadeOut`/`FadeOut`.
-- `Hide` é **forçado** no caminho de erro/early-exit para evitar HUD “preso”.
+- `Show` ocorre apÃ³s `FadeInCompleted` e antes das mutaÃ§Ãµes de cena.
+- `Hide` ocorre apÃ³s `ScenesReady` + completion gate e antes do `BeforeFadeOut`/`FadeOut`.
+- `Hide` Ã© **forÃ§ado** no caminho de erro/early-exit para evitar HUD â€œpresoâ€.
 
 2) **Strict vs Release (fail-fast + degraded)**
 - **Strict (UNITY_EDITOR / DEVELOPMENT_BUILD)**
   - Falha explicitamente quando:
-    - `ILoadingHudService` não existe no DI global,
-    - a cena/objeto do Loading HUD não está configurado,
-    - o controller do HUD não existe/é inválido.
+    - `ILoadingHudService` nÃ£o existe no DI global,
+    - a cena/objeto do Loading HUD nÃ£o estÃ¡ configurado,
+    - o controller do HUD nÃ£o existe/Ã© invÃ¡lido.
 - **Release**
-  - Pode seguir sem HUD **apenas** com `DEGRADED_MODE` explícito:
+  - Pode seguir sem HUD **apenas** com `DEGRADED_MODE` explÃ­cito:
     - `DEGRADED_MODE feature='loading_hud' reason='<...>' detail='<...>'`
-  - Após degradar, o HUD vira **no-op** preservando a ordem (show/hide são ignorados).
+  - ApÃ³s degradar, o HUD vira **no-op** preservando a ordem (show/hide sÃ£o ignorados).
 
-3) **Não criar UI “em voo”**
-- O Loading HUD é fornecido por cena/asset configurado (ou equivalente), não por instância silenciosa em runtime.
+3) **NÃ£o criar UI â€œem vooâ€**
+- O Loading HUD Ã© fornecido por cena/asset configurado (ou equivalente), nÃ£o por instÃ¢ncia silenciosa em runtime.
 
-### Não-objetivos (resumo)
+### NÃ£o-objetivos (resumo)
 
 - UX/arte do HUD (layout, progressos, textos).
-- Driver paralelo fora do pipeline canônico.
+- Driver paralelo fora do pipeline canÃ´nico.
 
 ## Fora de escopo
 
-- Recriar HUD por instância em runtime.
+- Recriar HUD por instÃ¢ncia em runtime.
 - Alterar o envelope de Fade (ver ADR-0009).
 
-## Consequências
+## ConsequÃªncias
 
-### Benefícios
+### BenefÃ­cios
 
-- Reduz “pop” visual e dá feedback em transições longas.
-- Mesma disciplina de contrato do SceneFlow: ordem fixa, evidência e policy.
-- Falhas de setup ficam óbvias em Strict; builds Release degradam explicitamente.
+- Reduz â€œpopâ€ visual e dÃ¡ feedback em transiÃ§Ãµes longas.
+- Mesma disciplina de contrato do SceneFlow: ordem fixa, evidÃªncia e policy.
+- Falhas de setup ficam Ã³bvias em Strict; builds Release degradam explicitamente.
 
 ### Trade-offs / riscos
 
-- Integração adiciona pontos extras de configuração (cena/controller/DI).
-- Release pode degradar (sem HUD) — mas fica explícito via `DEGRADED_MODE`.
+- IntegraÃ§Ã£o adiciona pontos extras de configuraÃ§Ã£o (cena/controller/DI).
+- Release pode degradar (sem HUD) â€” mas fica explÃ­cito via `DEGRADED_MODE`.
 
-## Mapeamento para implementação
+## Mapeamento para implementaÃ§Ã£o
 
 Arquivos (NewScripts):
 
-- Orquestração / ordem / anchors `[LoadingHud*]`:
+- OrquestraÃ§Ã£o / ordem / anchors `[LoadingHud*]`:
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudOrchestrator.cs`
-- Serviço de loading HUD (setup + Strict/Release + no-op em degraded):
+- ServiÃ§o de loading HUD (setup + Strict/Release + no-op em degraded):
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudService.cs`
 - Controller do HUD (visibilidade/efeito):
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Bindings/LoadingHudController.cs`
 
 ## Observabilidade (contrato)
 
-**Contrato canônico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
+**Contrato canÃ´nico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
-### Âncoras mínimas de Loading HUD (evidência)
+### Ã‚ncoras mÃ­nimas de Loading HUD (evidÃªncia)
 
 Emitidas por `LoadingHudService` e `LoadingHudOrchestrator` quando `UseLoadingHud=true`:
 
@@ -98,62 +98,63 @@ Emitidas por `LoadingHudService` e `LoadingHudOrchestrator` quando `UseLoadingHu
 - `[LoadingHudHide] ...`
 - `[LoadingDegraded] ...` (fallback)
 
-### Âncora canônica de fallback (Release)
+### Ã‚ncora canÃ´nica de fallback (Release)
 
-Quando o HUD não pode operar em Release:
+Quando o HUD nÃ£o pode operar em Release:
 
 - `DEGRADED_MODE feature='loading_hud' reason='<Reason>' detail='<...>'`
 
-## Critérios de pronto (DoD)
+## CritÃ©rios de pronto (DoD)
 
-### DoD (implementação)
+### DoD (implementaÃ§Ã£o)
 
-- [x] Pontos de show/hide obedecem a ordem do “Contrato mínimo”.
+- [x] Pontos de show/hide obedecem a ordem do â€œContrato mÃ­nimoâ€.
 - [x] Policy Strict vs Release aplicada.
-- [x] `DEGRADED_MODE` emitido em Release quando necessário.
-- [x] Logs canônicos emitidos (`LoadingHudEnsure/Show/Hide` + `LoadingDegraded`).
+- [x] `DEGRADED_MODE` emitido em Release quando necessÃ¡rio.
+- [x] Logs canÃ´nicos emitidos (`LoadingHudEnsure/Show/Hide` + `LoadingDegraded`).
 
-### DoD (evidência)
+### DoD (evidÃªncia)
 
-- [ ] Snapshot contendo uma transição com `UseLoadingHud=true` e as âncoras `LoadingHudEnsure/Show/Hide` na mesma `signature`.
+- [ ] Snapshot contendo uma transiÃ§Ã£o com `UseLoadingHud=true` e as Ã¢ncoras `LoadingHudEnsure/Show/Hide` na mesma `signature`.
 
-## Procedimento de verificação (QA)
+## Procedimento de verificaÃ§Ã£o (QA)
 
 1) **Happy path**
-- Dispare uma transição com `UseLoadingHud=true` (ex.: Menu→Gameplay em perfis que demandam HUD).
+- Dispare uma transiÃ§Ã£o com `UseLoadingHud=true` (ex.: Menuâ†’Gameplay em perfis que demandam HUD).
 - Confirme no log:
-  - `FadeInCompleted` → `[LoadingHudShow]` → operações de cena → `ScenesReady` → gate → `[LoadingHudHide]` → `FadeOut` → `Completed`.
+  - `FadeInCompleted` â†’ `[LoadingHudShow]` â†’ operaÃ§Ãµes de cena â†’ `ScenesReady` â†’ gate â†’ `[LoadingHudHide]` â†’ `FadeOut` â†’ `Completed`.
 
 2) **Fail-fast (Strict)**
 - Em Editor/Development:
   - remova temporariamente o service/controller do HUD.
-- Confirme falha explícita (exception) com `reason/detail`.
+- Confirme falha explÃ­cita (exception) com `reason/detail`.
 
 3) **Degraded mode (Release)**
 - Em build Release:
-  - reproduza a ausência e confirme:
-  - `DEGRADED_MODE feature='loading_hud' ...` e transição segue sem HUD.
+  - reproduza a ausÃªncia e confirme:
+  - `DEGRADED_MODE feature='loading_hud' ...` e transiÃ§Ã£o segue sem HUD.
 
-## Evidência
+## EvidÃªncia
 
-- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Ãšltima evidÃªncia (log bruto):** `Docs/Reports/Evidence/LATEST.md`
+- **Fonte canÃ´nica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 
-## Implementação (arquivos impactados)
+## ImplementaÃ§Ã£o (arquivos impactados)
 
-### Runtime / Editor (código e assets)
+### Runtime / Editor (cÃ³digo e assets)
 
 - **Infrastructure**
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/LoadingHudService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Runtime/SceneFlowAdapterFactory.cs`
 
-### Docs / evidências relacionadas
+### Docs / evidÃªncias relacionadas
 
 - `Reports/Evidence/LATEST.md`
 - `Standards/Standards.md`
 
-## Referências
+## ReferÃªncias
 
-- [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
+- [ADR-0009 â€” Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
 - [`Standards.md`](../Standards/Standards.md)
+

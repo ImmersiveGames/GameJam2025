@@ -1,7 +1,7 @@
-# Changelog - Docs
+﻿# Changelog - Docs
 
 ## 2026-03-13 - baseline v3 official freeze
-- promoveu oficialmente o Baseline V3 para `PASS` com freeze canonico em `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
+- promoveu oficialmente o Baseline V3 para `PASS` com freeze canonico em `Docs/Reports/Evidence/LATEST.md`
 - alinhou `README`, `Canon`, `LATEST`, `Plan-Continuous` e `CHANGELOG` para apontarem para o mesmo estado atual
 - registrou que `Menu -> Gameplay` segue canonico, `Victory/Defeat` permanecem mockados de forma explicita e controlada, `PostGame` segue desacoplado de `IntroStage` e `Restart` continua fora do post
 
@@ -18,13 +18,13 @@
 - fechou a superficie documental principal como current-state-only em `README`, canon, modulos, guias, ADRs vigentes e `LATEST`
 - alinhou a narrativa oficial com o runtime validado: bootstrap/startup, `RouteKind`, navigation/transition direct-ref, `IntroStage` level-owned opcional, `PostGame` global e `ActorGroupRearm`
 - removeu ou despromoveu historicos e auditorias superseded da superficie principal para evitar duas verdades operacionais
-- registrou o fechamento final em `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
+- registrou o fechamento final em `Docs/Reports/Audits/LATEST.md`
 
 ## 2026-03-12 - production guides public api deepening
 - auditou a superficie publica real de producao em Navigation, SceneFlow, WorldLifecycle, LevelFlow, GameLoop, Gameplay e assets canonicos atuais
 - aprofundou o manual operacional com servicos publicos, contratos de configuracao, IntroStage, ActorGroupRearm e exemplos curtos reais de codigo
 - aprofundou a referencia de hooks com casos reais de uso, exemplos de assinatura via `EventBus<T>` e separacao mais clara entre hooks operacionais e hooks tecnicos
-- refinou as versoes HTML para refletir melhor o uso de producao e registrou a auditoria em `Docs/Reports/Audits/2026-03-12/PRODUCTION-GUIDES-PUBLIC-API-DEEPENING.md`
+- refinou as versoes HTML para refletir melhor o uso de producao e registrou a auditoria em `Docs/Reports/Audits/LATEST.md`
 
 ## 2026-03-12 - visual guides layer
 - refinou os dois guias em Markdown com exemplos minimos de codigo usando servicos e metodos reais do runtime atual
@@ -36,19 +36,19 @@
 - simplificou a linguagem dos dois guias para leitura mais facil por pessoas com pouco conhecimento de programacao
 - adicionou tabelas, blocos de consulta rapida, exemplos curtos e checklist mais visivel
 - melhorou a navegacao no `Docs/README.md` sem mudar o conteudo tecnico dos guias
-- registrou o refinamento editorial em `Docs/Reports/Audits/2026-03-12/PRODUCTION-GUIDES-EDITORIAL-REFINEMENT.md`
+- registrou o refinamento editorial em `Docs/Reports/Audits/LATEST.md`
 
 ## 2026-03-12 - hooks docs refinement
 - refinou `Docs/Guides/Production-How-To-Use-Core-Modules.md` com uma secao curta de fluxos mais comuns
 - reorganizou `Docs/Guides/Event-Hooks-Reference.md` em hooks operacionais recomendados e hooks tecnicos do pipeline
 - deixou explicito na docs que os nomes e a API dos eventos nao foram refatorados nesta rodada
-- registrou a separacao operacional vs tecnica em `Docs/Reports/Audits/2026-03-12/HOOKS-DOC-REFINEMENT.md`
+- registrou a separacao operacional vs tecnica em `Docs/Reports/Audits/LATEST.md`
 
 ## 2026-03-12 - production usage guides
 - criou `Docs/Guides/Production-How-To-Use-Core-Modules.md` com o trilho pratico atual de bootstrap, navigation, SceneFlow, LevelFlow, WorldLifecycle e ActorGroupRearm
 - criou `Docs/Guides/Event-Hooks-Reference.md` com os hooks e eventos realmente publicados e uteis no runtime atual
 - atualizou `Docs/README.md` e docs modulares com links curtos para os novos guias
-- criou `Docs/Reports/Audits/2026-03-12/PRODUCTION-USAGE-GUIDES-CREATED.md` com fontes auditadas, criterios e exclusoes
+- criou `Docs/Reports/Audits/LATEST.md` com fontes auditadas, criterios e exclusoes
 
 ## 2026-03-12 - docs cleanup / current-state-only
 - reduziu a superficie documental para o estado operacional atual
@@ -130,4 +130,5 @@ All notable documentation changes to NewScripts are documented in this file.
 ## 2026-01-03
 - adicionou `Reports/Baseline-Audit-2026-01-03.md`
 - atualizou `README.md`, `WORLD_LIFECYCLE.md`, ADR-0014 e docs de QA para alinhamento do reset por `ActorKind`
+
 

@@ -1,4 +1,4 @@
-# ADR-0020 — Level/Content Progression vs SceneRoute
+﻿# ADR-0020 â€” Level/Content Progression vs SceneRoute
 
 ## Status
 - **State:** Implemented
@@ -11,107 +11,108 @@
 - **Related ADRs:** ADR-0017 (LevelManager/Config/Catalog), Plan-v2 (F4 LevelFlow)
 
 ## Summary
-**Decision:** manter *SceneRoute* responsável apenas por **carregamento/aplicação de cenas** (SceneFlow) e mover a noção de **progresso de gameplay** (LevelId → ContentId/ContentRef) para o trilho de **LevelFlow/LevelCatalog + RestartSnapshot**.
+**Decision:** manter *SceneRoute* responsÃ¡vel apenas por **carregamento/aplicaÃ§Ã£o de cenas** (SceneFlow) e mover a noÃ§Ã£o de **progresso de gameplay** (LevelId â†’ ContentId/ContentRef) para o trilho de **LevelFlow/LevelCatalog + RestartSnapshot**.
 
-Na prática:
+Na prÃ¡tica:
 - Um `LevelId` seleciona um *level entry* no `LevelCatalog`.
-- O entry referencia a rota (preferencialmente `routeRef`) e o conteúdo (ex.: `contentId`/`contentRef`).
-- `StartGameplay(levelId)` dispara o SceneFlow para a mesma rota de gameplay, mas a *identidade do conteúdo* fica no snapshot (e pode mudar sem mudar a rota).
+- O entry referencia a rota (preferencialmente `routeRef`) e o conteÃºdo (ex.: `contentId`/`contentRef`).
+- `StartGameplay(levelId)` dispara o SceneFlow para a mesma rota de gameplay, mas a *identidade do conteÃºdo* fica no snapshot (e pode mudar sem mudar a rota).
 
 ## Problem statement
 O sistema precisava suportar:
-1) **N→1**: múltiplos `LevelId` diferentes apontando para **a mesma rota** (ex.: `level.1`), mas com **conteúdos distintos**, para evidenciar progressão/variação sem multiplicar rotas.
-2) **ContentSwap in-place**: trocar conteúdo dentro da mesma gameplay (sem transição de cena) e garantir que o snapshot de “start/restart” reflita o conteúdo atual.
+1) **Nâ†’1**: mÃºltiplos `LevelId` diferentes apontando para **a mesma rota** (ex.: `level.1`), mas com **conteÃºdos distintos**, para evidenciar progressÃ£o/variaÃ§Ã£o sem multiplicar rotas.
+2) **ContentSwap in-place**: trocar conteÃºdo dentro da mesma gameplay (sem transiÃ§Ã£o de cena) e garantir que o snapshot de â€œstart/restartâ€ reflita o conteÃºdo atual.
 
-O risco original era “vazar” progressão de conteúdo para dentro do `SceneRoute` (ex.: criar rotas por conteúdo), criando:
-- explosão de rotas;
+O risco original era â€œvazarâ€ progressÃ£o de conteÃºdo para dentro do `SceneRoute` (ex.: criar rotas por conteÃºdo), criando:
+- explosÃ£o de rotas;
 - mais wiring por string;
-- dedupe de transição confundindo o cenário;
-- dificuldade de observabilidade do “conteúdo atual” versus “rota atual”.
+- dedupe de transiÃ§Ã£o confundindo o cenÃ¡rio;
+- dificuldade de observabilidade do â€œconteÃºdo atualâ€ versus â€œrota atualâ€.
 
 ## Constraints and requirements
-- **Direct-ref-first**: quando possível, preferir referências diretas (SO) em vez de strings.
-- **Fail-fast** para assets obrigatórios; sem fallback silencioso em runtime.
-- **Observabilidade**: logs [OBS] e [QA] com âncoras estáveis para gerar evidências.
-- **Compatibilidade**: aceitar, quando necessário, campos legados (ex.: `routeId`) sem divergir de `routeRef`.
+- **Direct-ref-first**: quando possÃ­vel, preferir referÃªncias diretas (SO) em vez de strings.
+- **Fail-fast** para assets obrigatÃ³rios; sem fallback silencioso em runtime.
+- **Observabilidade**: logs [OBS] e [QA] com Ã¢ncoras estÃ¡veis para gerar evidÃªncias.
+- **Compatibilidade**: aceitar, quando necessÃ¡rio, campos legados (ex.: `routeId`) sem divergir de `routeRef`.
 
 ## Options considered
-### Option A — Colocar progressão/conteúdo em SceneRoute
+### Option A â€” Colocar progressÃ£o/conteÃºdo em SceneRoute
 - Ex.: route por content (`level.1.content.2`), ou metadata de content dentro do route.
-- **Prós:** “um único lugar”.
-- **Contras:** acoplamento errado (cena ≠ conteúdo), explosão de rotas e churn no SceneFlow.
+- **PrÃ³s:** â€œum Ãºnico lugarâ€.
+- **Contras:** acoplamento errado (cena â‰  conteÃºdo), explosÃ£o de rotas e churn no SceneFlow.
 
-### Option B — LevelFlow/LevelCatalog como fonte de verdade de progressão
-- `SceneRoute` fica “sobre cenas”, `LevelId` fica “sobre gameplay/progressão”.
-- **Prós:** separa responsabilidades; N→1 vira uma configuração de catálogo; ContentSwap não precisa de cena.
+### Option B â€” LevelFlow/LevelCatalog como fonte de verdade de progressÃ£o
+- `SceneRoute` fica â€œsobre cenasâ€, `LevelId` fica â€œsobre gameplay/progressÃ£oâ€.
+- **PrÃ³s:** separa responsabilidades; Nâ†’1 vira uma configuraÃ§Ã£o de catÃ¡logo; ContentSwap nÃ£o precisa de cena.
 - **Contras:** exige trilho claro (StartGameplay(levelId)) e snapshot/telemetria bem definidos.
 
-### Option C — Híbrido (route + level)
+### Option C â€” HÃ­brido (route + level)
 - Parte no route, parte no level.
-- **Contras:** invariantes ambíguas e maior chance de divergência.
+- **Contras:** invariantes ambÃ­guas e maior chance de divergÃªncia.
 
 ## Decision
 Escolher **Option B**.
 
 ### Decision details
-- `SceneRouteDefinition`/`SceneRouteCatalog` definem **apenas**: cenas a carregar/descarregar, cena ativa, perfil/estilo de transição, e policy (ex.: requiresWorldReset).
-- `LevelCatalog` define: `levelId` + `routeRef` (source of truth) + `contentId`/`contentRef` (identidade do conteúdo).
+- `SceneRouteDefinition`/`SceneRouteCatalog` definem **apenas**: cenas a carregar/descarregar, cena ativa, perfil/estilo de transiÃ§Ã£o, e policy (ex.: requiresWorldReset).
+- `LevelCatalog` define: `levelId` + `routeRef` (source of truth) + `contentId`/`contentRef` (identidade do conteÃºdo).
 - `StartGameplay(levelId)`:
-    1) resolve o entry do catálogo;
-    2) publica/atualiza o snapshot (`RestartContext` / “GameplayStartSnapshot”) com `levelId/routeId/styleId/contentId`;
-    3) despacha o intent canônico de gameplay para aplicar a rota.
+    1) resolve o entry do catÃ¡logo;
+    2) publica/atualiza o snapshot (`RestartContext` / â€œGameplayStartSnapshotâ€) com `levelId/routeId/styleId/contentId`;
+    3) despacha o intent canÃ´nico de gameplay para aplicar a rota.
 - `ContentSwap in-place`:
-    - atualiza o “content atual” e também o snapshot de restart, **sem exigir** transition de rota.
+    - atualiza o â€œcontent atualâ€ e tambÃ©m o snapshot de restart, **sem exigir** transition de rota.
 
 ## Consequences
-- **N→1** é suportado naturalmente com múltiplos entries no `LevelCatalog` apontando para a mesma `routeRef`.
-- O SceneFlow pode **dedupar** transições repetidas (mesma signature) sem quebrar o conceito de “conteúdo atual” — porque o conteúdo não depende de uma transição de cena.
-- O catálogo pode conter rotas duplicadas (por design). Mantemos telemetria (ex.: `duplicatedRoutes`) como **[OBS]**, não fatal.
+- **Nâ†’1** Ã© suportado naturalmente com mÃºltiplos entries no `LevelCatalog` apontando para a mesma `routeRef`.
+- O SceneFlow pode **dedupar** transiÃ§Ãµes repetidas (mesma signature) sem quebrar o conceito de â€œconteÃºdo atualâ€ â€” porque o conteÃºdo nÃ£o depende de uma transiÃ§Ã£o de cena.
+- O catÃ¡logo pode conter rotas duplicadas (por design). Mantemos telemetria (ex.: `duplicatedRoutes`) como **[OBS]**, nÃ£o fatal.
 
 ## Implementation notes
 - Foram adicionadas entradas DEV/QA no `LevelCatalog`:
-    - `qa.level.nto1.a` → `routeRef=level.1` + `contentId=content.1`
-    - `qa.level.nto1.b` → `routeRef=level.1` + `contentId=content.2`
-    - `routeId` legado intencionalmente vazio para evitar divergência com `routeRef`.
-- Existe menu QA/Dev para acionar N→1:
+    - `qa.level.nto1.a` â†’ `routeRef=level.1` + `contentId=content.1`
+    - `qa.level.nto1.b` â†’ `routeRef=level.1` + `contentId=content.2`
+    - `routeId` legado intencionalmente vazio para evitar divergÃªncia com `routeRef`.
+- Existe menu QA/Dev para acionar Nâ†’1:
     - `QA/LevelFlow/NTo1/Start A`
     - `QA/LevelFlow/NTo1/Start B`
     - `QA/LevelFlow/NTo1/Run Sequence A->B`
 
 ## Observability and evidence
-### Evidence 1 — ContentSwap in-place atualiza snapshot de restart
-Arquivo de evidência:
+### Evidence 1 â€” ContentSwap in-place atualiza snapshot de restart
+Arquivo de evidÃªncia:
 - `ADR-0020-Evidence-ContentSwap-2026-02-18.log`
 
-Âncoras esperadas:
+Ã‚ncoras esperadas:
 - `[QA][ContentSwap] ... start contentId='content.2'`
 - `[OBS][ContentSwap] ContentSwapRequested ... contentId='content.2'`
 - `[OBS][Navigation] RestartSnapshotContentUpdated ... contentId='content.2'`
 
-### Evidence 2 — N→1 (A e B) com mesma rota e conteúdos diferentes
-Arquivo de evidência:
+### Evidence 2 â€” Nâ†’1 (A e B) com mesma rota e conteÃºdos diferentes
+Arquivo de evidÃªncia:
 - `ADR-0020-Evidence-LevelFlow-NTo1-2026-02-18.log`
 
-Âncoras esperadas:
+Ã‚ncoras esperadas:
 - `[QA][LevelFlow] NTo1 start levelId='qa.level.nto1.a' routeRef='level.1'`
 - `[OBS][SceneFlow] RouteResolvedVia=AssetRef levelId='qa.level.nto1.a' routeId='level.1'`
 - `[OBS][Level] LevelSelected ... levelId='qa.level.nto1.a' ... contentId='content.1'`
 - Repetir para `qa.level.nto1.b` com `contentId='content.2'`.
 
-### Evidence 3 — Sequência A→B pode dedupar transição (expected)
-Âncora:
+### Evidence 3 â€” SequÃªncia Aâ†’B pode dedupar transiÃ§Ã£o (expected)
+Ã‚ncora:
 - `[SceneFlow] Dedupe: TransitionAsync ignorado (signature repetida...)`
 
-Interpretação:
-- **Aceitável** para N→1 quando a rota é idêntica; o conteúdo/snapshot muda independentemente da transição.
+InterpretaÃ§Ã£o:
+- **AceitÃ¡vel** para Nâ†’1 quando a rota Ã© idÃªntica; o conteÃºdo/snapshot muda independentemente da transiÃ§Ã£o.
 
-### Commands (auditoria rápida)
+### Commands (auditoria rÃ¡pida)
 - `rg -n "\[QA\]\[ContentSwap\]|\[OBS\]\[ContentSwap\]|RestartSnapshotContentUpdated" Assets/_ImmersiveGames/NewScripts/`
 - `rg -n "\[QA\]\[LevelFlow\] NTo1 start|RouteResolvedVia=AssetRef|LevelSelected" Assets/_ImmersiveGames/NewScripts/`
 
 ## Follow-ups
-- Se o produto exigir “aplicar conteúdo” como efeito colateral do `LevelSelected` (além de snapshot), formalizar um *ContentApply* explícito (event-driven) separado do SceneFlow.
-- Evolução futura (fora do escopo deste ADR): migração de cenas para Addressables.
+- Se o produto exigir â€œaplicar conteÃºdoâ€ como efeito colateral do `LevelSelected` (alÃ©m de snapshot), formalizar um *ContentApply* explÃ­cito (event-driven) separado do SceneFlow.
+- EvoluÃ§Ã£o futura (fora do escopo deste ADR): migraÃ§Ã£o de cenas para Addressables.
 
 ## Sources
-- Logs de evidência anexados e logs [OBS]/[QA] do runtime.
+- Logs de evidÃªncia anexados e logs [OBS]/[QA] do runtime.
+

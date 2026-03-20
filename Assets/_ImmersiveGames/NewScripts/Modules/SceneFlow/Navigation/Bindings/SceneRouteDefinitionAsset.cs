@@ -59,6 +59,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         }
 #endif
 
+        private void ValidateRoutePolicyEditorOnly()
+        {
+            string validationError = GetRoutePolicyValidationError();
+            if (string.IsNullOrWhiteSpace(validationError))
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(
+                typeof(SceneRouteDefinitionAsset),
+                $"[Config][Editor] routeId='{routeId}' invalida. detail='{validationError}'");
+        }
+
         private void EnsureValidRoutePolicy()
         {
             string validationError = GetRoutePolicyValidationError();
@@ -196,6 +209,33 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 #else
             return -1;
 #endif
+        }
+
+        private static int ResolveBuildIndexEditorOnly(string sceneName)
+        {
+#if UNITY_EDITOR
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return -1;
+            }
+
+            var scenes = UnityEditor.EditorBuildSettings.scenes;
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                var scene = scenes[i];
+                if (scene == null || string.IsNullOrWhiteSpace(scene.path))
+                {
+                    continue;
+                }
+
+                string name = System.IO.Path.GetFileNameWithoutExtension(scene.path);
+                if (string.Equals(name, sceneName, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+#endif
+            return -1;
         }
 
         private static string ResolveSingleKey(SceneKeyAsset key, string fieldName)

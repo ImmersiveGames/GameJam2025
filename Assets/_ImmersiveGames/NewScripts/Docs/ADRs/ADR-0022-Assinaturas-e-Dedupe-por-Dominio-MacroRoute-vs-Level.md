@@ -1,4 +1,4 @@
-# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
+﻿# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
 
 ## Status atual (2026-03-11)
 - Status: **DONE**
@@ -7,8 +7,8 @@
   - `SelectionVersion` permanece apenas como metadado de observabilidade; nao e mais a identidade principal.
   - `LevelSignature` propagada em snapshot/eventos e consumida no IntroStage.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
-  - `Docs/Reports/lastlog.log`
+  - `Docs/Reports/Audits/LATEST.md`
+  - `Docs/Reports/Evidence/LATEST.md`
 
 ## Status
 

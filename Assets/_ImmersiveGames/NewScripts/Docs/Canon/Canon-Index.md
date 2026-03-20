@@ -5,8 +5,8 @@ Este indice resume owners e contratos canonicos vigentes.
 ## Status do baseline atual
 
 - Baseline V3 vigente: `PASS`
-- Evidencia canonica atual: `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
-- Evidencia runtime vigente: `Docs/Reports/lastlog.log`
+- Auditoria canonica atual: `Docs/Reports/Audits/2026-03-19/Audit-NewScripts-Canonical-Cleanup-Round1.md`
+- Evidencia vigente: `Docs/Reports/Evidence/LATEST.md`
 
 ## Ownership atual
 
@@ -31,7 +31,7 @@ Este indice resume owners e contratos canonicos vigentes.
 ## Regras de leitura
 
 - A docs oficial conta uma unica historia operacional atual.
-- Guias e modulos devem concordar com os ADRs vigentes, com o freeze atual do baseline e com o runtime validado em `Docs/Reports/lastlog.log`.
+- Guias e modulos devem concordar com os ADRs vigentes e com a auditoria canonica mais recente.
 - Historico nao substitui contrato atual.
 - `LoadingHudScene` faz parte do estado atual oficial: apresentacao canonica do macro flow, sem ownership do pipeline.
 - `Victory/Defeat` pertencem ao baseline atual via mock explicito e controlado, sem canonizar regra final de gameplay.
@@ -51,7 +51,5 @@ Este indice resume owners e contratos canonicos vigentes.
 11. `Docs/ADRs/README.md`
 12. `Docs/Reports/Audits/LATEST.md`
 13. `Docs/Reports/Evidence/LATEST.md`
-14. `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
-15. `Docs/Plans/Plan-Continuous.md`
-16. `Docs/CHANGELOG.md`
+14. `Docs/CHANGELOG.md`
 

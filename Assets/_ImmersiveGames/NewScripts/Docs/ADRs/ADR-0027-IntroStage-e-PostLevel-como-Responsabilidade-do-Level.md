@@ -1,4 +1,4 @@
-# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
+﻿# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
 
 ## Status
 
@@ -29,9 +29,9 @@ O nome do arquivo foi preservado por rastreabilidade historica, mas o contrato v
 
 ## Evidencia
 
-- `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
-- `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
-- `Docs/Reports/lastlog.log`
+- `Docs/Reports/Audits/LATEST.md`
+- `Docs/Reports/Audits/LATEST.md`
+- `Docs/Reports/Evidence/LATEST.md`
 
 ## Consequencias
 

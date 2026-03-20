@@ -1,4 +1,4 @@
-# ADR-0024 - LevelCollection por MacroRoute e Contrato de Selecao de Level Ativo
+﻿# ADR-0024 - LevelCollection por MacroRoute e Contrato de Selecao de Level Ativo
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
@@ -8,8 +8,8 @@
   - Identidade local por `levelRef` (`LevelDefinitionAsset`) + `LevelSignature`.
   - `LevelPrepare` executa no gate antes do FadeOut.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
-  - `Docs/Reports/lastlog.log`
+  - `Docs/Reports/Audits/LATEST.md`
+  - `Docs/Reports/Evidence/LATEST.md`
 - LEGACY / Historico:
   - Referencias a `levelId/contentId` como identidade de negocio.
 

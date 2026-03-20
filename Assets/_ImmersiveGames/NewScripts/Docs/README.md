@@ -18,9 +18,7 @@ Leia nesta ordem:
 11. `Docs/ADRs/README.md`
 12. `Docs/Reports/Audits/LATEST.md`
 13. `Docs/Reports/Evidence/LATEST.md`
-14. `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
-15. `Docs/Plans/Plan-Continuous.md`
-16. `Docs/CHANGELOG.md`
+14. `Docs/CHANGELOG.md`
 
 ## Guias de uso
 
@@ -40,8 +38,8 @@ Regra:
 ## Estado atual resumido
 
 - Baseline V3 vigente fechado em `PASS`.
-- A referencia canonica atual de evidence e `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`.
-- A evidencia runtime vigente desta promocao permanece em `Docs/Reports/lastlog.log`.
+- A referencia canonica atual de auditoria e `Docs/Reports/Audits/2026-03-19/Audit-NewScripts-Canonical-Cleanup-Round1.md`.
+- A evidencia vigente e consolidada em `Docs/Reports/Evidence/LATEST.md`.
 - `startup` pertence ao bootstrap.
 - `frontend` e `gameplay` pertencem a `SceneRouteKind`.
 - Navigation e transition operam por direct-ref + fail-fast.
@@ -56,17 +54,4 @@ Regra:
 - O level atual pode expor apenas um hook opcional para complementar o `PostGame` global.
 - `ActorGroupRearm` e a nomenclatura canonica de rearm local de gameplay.
 - `Victory/Defeat` fazem parte do baseline atual por mock explicito e controlado.
-
-## Historico que permanece
-
-Historico remanescente existe apenas para rastreabilidade em:
-- `Docs/CHANGELOG.md`
-- `Docs/ADRs/**` vigentes
-- `Docs/Reports/Audits/2026-03-12/INTRO-LEVEL-AND-POSTGAME-GLOBAL.md`
-- `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
-- `Docs/Reports/Audits/2026-03-12/LOADING-DOCS-CLOSEOUT.md`
-- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-BLOCKERS-FIX.md`
-- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-OUTCOME-MOCK-FIX.md`
-
-Qualquer outro documento fora da cadeia oficial deve ser lido como historico arquivado, nao como guia operacional atual.
 

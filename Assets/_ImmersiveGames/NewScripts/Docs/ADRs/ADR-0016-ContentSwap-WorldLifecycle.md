@@ -1,86 +1,86 @@
-# ADR-0016 — ContentSwap InPlace-only (NewScripts)
+﻿# ADR-0016 â€” ContentSwap InPlace-only (NewScripts)
 
 ## Status
 
 - Estado: Implementado
-- Data (decisão): 2026-01-28
-- Última atualização: 2026-02-04
-- Tipo: Implementação
-- Escopo: NewScripts → Modules/ContentSwap + Infrastructure (Bootstrap/QA)
+- Data (decisÃ£o): 2026-01-28
+- Ãšltima atualizaÃ§Ã£o: 2026-02-04
+- Tipo: ImplementaÃ§Ã£o
+- Escopo: NewScripts â†’ Modules/ContentSwap + Infrastructure (Bootstrap/QA)
 
 ## Contexto
 
-Em NewScripts, ContentSwap é um mecanismo simples e determinístico para trocar conteúdo **na mesma cena**, com reset/hard reset local. O escopo é intencionalmente reduzido e não considera transições entre cenas dentro do próprio ContentSwap.
+Em NewScripts, ContentSwap Ã© um mecanismo simples e determinÃ­stico para trocar conteÃºdo **na mesma cena**, com reset/hard reset local. O escopo Ã© intencionalmente reduzido e nÃ£o considera transiÃ§Ãµes entre cenas dentro do prÃ³prio ContentSwap.
 
-## Decisão
+## DecisÃ£o
 
-### Objetivo de produção (sistema ideal)
+### Objetivo de produÃ§Ã£o (sistema ideal)
 
-Permitir troca de conteúdo/configuração em runtime (in-place) sem reiniciar a cena, integrada ao WorldLifecycle, com contrato de gating e observabilidade para QA e produção.
+Permitir troca de conteÃºdo/configuraÃ§Ã£o em runtime (in-place) sem reiniciar a cena, integrada ao WorldLifecycle, com contrato de gating e observabilidade para QA e produÃ§Ã£o.
 
-### Contrato de produção (mínimo)
+### Contrato de produÃ§Ã£o (mÃ­nimo)
 
-- ContentSwap é uma operação explícita com reason canônico e assinatura observável.
+- ContentSwap Ã© uma operaÃ§Ã£o explÃ­cita com reason canÃ´nico e assinatura observÃ¡vel.
 - Pode executar reset in-place de subset de sistemas sem violar determinismo global.
-- Operação respeita gates (scene_transition/sim.gameplay) conforme necessário.
+- OperaÃ§Ã£o respeita gates (scene_transition/sim.gameplay) conforme necessÃ¡rio.
 
-### Não-objetivos (resumo)
+### NÃ£o-objetivos (resumo)
 
-Ver seção **Fora de escopo**.
+Ver seÃ§Ã£o **Fora de escopo**.
 
 ### API
-- Interface única: `IContentSwapChangeService`.
-- **Apenas** métodos `RequestContentSwapInPlaceAsync(...)` permanecem disponíveis.
+- Interface Ãºnica: `IContentSwapChangeService`.
+- **Apenas** mÃ©todos `RequestContentSwapInPlaceAsync(...)` permanecem disponÃ­veis.
 
-### Observabilidade mínima
+### Observabilidade mÃ­nima
 Para cada request InPlace, o sistema deve produzir logs/eventos contendo:
 - `mode=InPlace`
 - `contentId`
 - `reason`
 
-Eventos/logs mínimos:
+Eventos/logs mÃ­nimos:
 - `ContentSwapRequested`
 - `ContentSwapPendingSet`
 - `ContentSwapCommitted`
 - `ContentSwapPendingCleared`
 
 ### Bootstrap
-- `GlobalCompositionRoot` registra toda a infraestrutura NewScripts necessária.
-- ContentSwap é registrado **sempre** como InPlace-only.
+- `GlobalCompositionRoot` registra toda a infraestrutura NewScripts necessÃ¡ria.
+- ContentSwap Ã© registrado **sempre** como InPlace-only.
 
 ## Fora de escopo
 
-- Substituir o fluxo de transição de cenas (SceneFlow) para trocas que exigem load/unload.
+- Substituir o fluxo de transiÃ§Ã£o de cenas (SceneFlow) para trocas que exigem load/unload.
 
-- Qualquer expansão de escopo além do InPlace-only.
-- Integração do ContentSwap com transições de cena.
-- Registro/seleção dinâmica de implementação.
+- Qualquer expansÃ£o de escopo alÃ©m do InPlace-only.
+- IntegraÃ§Ã£o do ContentSwap com transiÃ§Ãµes de cena.
+- Registro/seleÃ§Ã£o dinÃ¢mica de implementaÃ§Ã£o.
 
-## Consequências
+## ConsequÃªncias
 
-### Política de falhas e fallback (fail-fast)
+### PolÃ­tica de falhas e fallback (fail-fast)
 
-- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
-- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
-- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
+- Em Unity, ausÃªncia de referÃªncias/configs crÃ­ticas deve **falhar cedo** (erro claro) para evitar estados invÃ¡lidos.
+- Evitar "auto-criaÃ§Ã£o em voo" (instanciar prefabs/serviÃ§os silenciosamente) em produÃ§Ã£o.
+- ExceÃ§Ãµes: apenas quando houver **config explÃ­cita** de modo degradado (ex.: HUD desabilitado) e com log Ã¢ncora indicando modo degradado.
 
 
-### Critérios de pronto (DoD)
+### CritÃ©rios de pronto (DoD)
 
-- Evidência mostra ContentSwap in-place com reason canônico.
+- EvidÃªncia mostra ContentSwap in-place com reason canÃ´nico.
 
-## Evidência
+## EvidÃªncia
 
-- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
+- **Ãšltima evidÃªncia (log bruto):** `Docs/Reports/Evidence/LATEST.md`
 
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- **Âncoras/assinaturas relevantes:**
+- **Fonte canÃ´nica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Ã‚ncoras/assinaturas relevantes:**
   - `[QA][ContentSwap] SwapInPlace contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
 - **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
-## Implementação (arquivos impactados)
+## ImplementaÃ§Ã£o (arquivos impactados)
 
-### Runtime / Editor (código e assets)
+### Runtime / Editor (cÃ³digo e assets)
 
 - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/ContentSwapContextService.cs`
@@ -90,14 +90,15 @@ Eventos/logs mínimos:
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gates/SimulationGateTokens.cs`
 
-### QA / evidência
+### QA / evidÃªncia
 
 - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Dev/Bindings/ContentSwapDevContextMenu.cs`
 
-## Referências
+## ReferÃªncias
 
 - ADR-TEMPLATE.md
 - Standards/Standards.md#observability-contract
 - Overview/Overview.md
 - [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 - [`Evidence/LATEST.md`](../Reports/Evidence/LATEST.md)
+

@@ -1,18 +1,18 @@
-# ADR-0013 — Ciclo de Vida do Jogo (NewScripts)
+﻿# ADR-0013 â€” Ciclo de Vida do Jogo (NewScripts)
 
 ## Status
 
 - Estado: Implementado
-- Data (decisão): 2025-12-24
+- Data (decisÃ£o): 2025-12-24
 - Ultima atualizacao: 2026-03-11
-- Tipo: Implementação
+- Tipo: ImplementaÃ§Ã£o
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
 
-### Status de implementação
+### Status de implementaÃ§Ã£o
 
-- Implementação concluída: 2026-01-31 (Baseline 2.2)
+- ImplementaÃ§Ã£o concluÃ­da: 2026-01-31 (Baseline 2.2)
 - Dono: (preencher)
-- Artefatos principais (produção):
+- Artefatos principais (produÃ§Ã£o):
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionEvents.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Application/WorldResetService.cs`
@@ -26,43 +26,43 @@
 
 ## Contexto
 
-O projeto precisa de um **ciclo de vida de jogo** determinístico e auditável, que sirva como “contrato de produção” e também como base de QA (Baseline 2.x):
+O projeto precisa de um **ciclo de vida de jogo** determinÃ­stico e auditÃ¡vel, que sirva como â€œcontrato de produÃ§Ã£oâ€ e tambÃ©m como base de QA (Baseline 2.x):
 
-- Transições controladas por **SceneFlow** (startup/frontend/gameplay).
-- Reset determinístico e pipeline de spawn via **WorldLifecycle**.
-- Entrada/saída de gameplay e estados do **GameLoop** (Intro → Playing → PostGame).
-- Política **Strict vs Release** (falhar cedo em Dev/QA; fallback apenas com degraded explícito em Release).
-- Observabilidade com âncoras canônicas e **reasons/contextSignature** consistentes.
+- TransiÃ§Ãµes controladas por **SceneFlow** (startup/frontend/gameplay).
+- Reset determinÃ­stico e pipeline de spawn via **WorldLifecycle**.
+- Entrada/saÃ­da de gameplay e estados do **GameLoop** (Intro â†’ Playing â†’ PostGame).
+- PolÃ­tica **Strict vs Release** (falhar cedo em Dev/QA; fallback apenas com degraded explÃ­cito em Release).
+- Observabilidade com Ã¢ncoras canÃ´nicas e **reasons/contextSignature** consistentes.
 
-Sem esse contrato, o sistema tende a “funcionar na minha máquina”: ordem variável, resets parciais e logs não comparáveis entre execuções.
+Sem esse contrato, o sistema tende a â€œfuncionar na minha mÃ¡quinaâ€: ordem variÃ¡vel, resets parciais e logs nÃ£o comparÃ¡veis entre execuÃ§Ãµes.
 
-## Decisão
+## DecisÃ£o
 
-### Objetivo de produção
+### Objetivo de produÃ§Ã£o
 
-Definir um ciclo de vida único, com fases e invariantes fixos:
+Definir um ciclo de vida Ãºnico, com fases e invariantes fixos:
 
 1) **Boot (startup)**
 - Inicializa infraestrutura global/DI.
 - Vai para **Menu** com `profile=startup`.
-- **Não** executa ResetWorld no frontend por padrão (skip explícito).
+- **NÃ£o** executa ResetWorld no frontend por padrÃ£o (skip explÃ­cito).
 
 2) **Menu (frontend)**
-- Permite navegação e comandos QA.
-- Ao entrar em gameplay, dispara transição via SceneFlow com `profile=gameplay`.
+- Permite navegaÃ§Ã£o e comandos QA.
+- Ao entrar em gameplay, dispara transiÃ§Ã£o via SceneFlow com `profile=gameplay`.
 
 3) **Entrada em Gameplay (gameplay profile)**
 - SceneFlow executa envelope visual e de gating (fade + tokens) conforme ADR-0009/0010.
-- Ao atingir `ScenesReady`, o **gatilho de produção** chama `ResetWorld(reason='SceneFlow/ScenesReady')`.
-- `ResetWorld` executa pipeline determinístico (reset → spawn → rearm) e publica `ResetCompleted`.
-- GameLoop faz **IntroStage** (bloqueia sim.gameplay) e só entra em Playing após confirmação de UI.
+- Ao atingir `ScenesReady`, o **gatilho de produÃ§Ã£o** chama `ResetWorld(reason='SceneFlow/ScenesReady')`.
+- `ResetWorld` executa pipeline determinÃ­stico (reset â†’ spawn â†’ rearm) e publica `ResetCompleted`.
+- GameLoop faz **IntroStage** (bloqueia sim.gameplay) e sÃ³ entra em Playing apÃ³s confirmaÃ§Ã£o de UI.
 
 4) **Playing**
-- Simulação liberada (`sim.gameplay` aberto) e input mode correto.
+- SimulaÃ§Ã£o liberada (`sim.gameplay` aberto) e input mode correto.
 
 5) **PostGame**
-- Finalização por Victory/Defeat.
-- Ações principais:
+- FinalizaÃ§Ã£o por Victory/Defeat.
+- AÃ§Ãµes principais:
   - Restart (volta para gameplay com reset completo).
   - ExitToMenu (volta para frontend; reset skip no frontend).
 
@@ -74,58 +74,58 @@ Definir um ciclo de vida único, com fases e invariantes fixos:
 - Envelope visual: ver ADR-0009 (fade) e ADR-0010 (loading HUD).
 
 **Invariantes de WorldLifecycle**
-- `ResetWorld` é determinístico para o mesmo `reason/contextSignature`.
-- `ResetCompleted` é publicado exatamente uma vez por reset efetivo.
-- Spawns essenciais em gameplay após reset: **Player + Eater** (ActorRegistry=2).
+- `ResetWorld` Ã© determinÃ­stico para o mesmo `reason/contextSignature`.
+- `ResetCompleted` Ã© publicado exatamente uma vez por reset efetivo.
+- Spawns essenciais em gameplay apÃ³s reset: **Player + Eater** (ActorRegistry=2).
 
 **Invariantes de GameLoop**
-- IntroStage bloqueia `sim.gameplay` até confirmação de UI.
-- `ENTER Playing` só ocorre após `GameplaySimulationUnblocked`.
+- IntroStage bloqueia `sim.gameplay` atÃ© confirmaÃ§Ã£o de UI.
+- `ENTER Playing` sÃ³ ocorre apÃ³s `GameplaySimulationUnblocked`.
 - PostGame deve ser idempotente (aplicar UI/estado sem duplicar efeitos).
 
-### Não-objetivos (resumo)
+### NÃ£o-objetivos (resumo)
 
 - Alterar contratos de Fade/LoadingHUD (ver ADR-0009/0010).
 - Reescrever GameLoop/SceneFlow fora do contrato atual.
 
-## Consequências
+## ConsequÃªncias
 
-### Benefícios
+### BenefÃ­cios
 
-- Pipeline com ordem fixa (SceneFlow → ResetWorld → GameLoop) e evidência comparável.
-- QA e produção compartilham o mesmo contrato (logs + invariantes).
-- Diagnóstico mais rápido: “onde quebrou” vira uma busca por âncoras.
+- Pipeline com ordem fixa (SceneFlow â†’ ResetWorld â†’ GameLoop) e evidÃªncia comparÃ¡vel.
+- QA e produÃ§Ã£o compartilham o mesmo contrato (logs + invariantes).
+- DiagnÃ³stico mais rÃ¡pido: â€œonde quebrouâ€ vira uma busca por Ã¢ncoras.
 
 ### Trade-offs / riscos
 
 - **Mais acoplamento por contrato** entre SceneFlow e WorldLifecycle (exige disciplina em `reason/contextSignature`).
-- **Mais verbosidade de logs** para manter âncoras estáveis.
-- Erros de ordering podem ser sutis; mitigação: invariantes + asserts/guards + evidência canônica.
-- Dependência de gates (`flow.scene_transition`, `sim.gameplay`) aumenta risco de deadlock se token não for liberado; mitigação: fail-fast em Strict e checks explícitos em Release.
+- **Mais verbosidade de logs** para manter Ã¢ncoras estÃ¡veis.
+- Erros de ordering podem ser sutis; mitigaÃ§Ã£o: invariantes + asserts/guards + evidÃªncia canÃ´nica.
+- DependÃªncia de gates (`flow.scene_transition`, `sim.gameplay`) aumenta risco de deadlock se token nÃ£o for liberado; mitigaÃ§Ã£o: fail-fast em Strict e checks explÃ­citos em Release.
 
 ## Fora de escopo
 
 - UX de loading (barras, progresso, textos), layout e arte final do HUD.
-- Migração/refatoração ampla de sistemas legados para NewScripts (apenas compatibilidade mínima quando necessário).
-- Refatorações estruturais grandes (ex.: migração completa para FSM) fora do necessário para sustentar este ciclo.
-- Otimizações e profiling do pipeline (tratadas por gargalo, não por decisão arquitetural).
+- MigraÃ§Ã£o/refatoraÃ§Ã£o ampla de sistemas legados para NewScripts (apenas compatibilidade mÃ­nima quando necessÃ¡rio).
+- RefatoraÃ§Ãµes estruturais grandes (ex.: migraÃ§Ã£o completa para FSM) fora do necessÃ¡rio para sustentar este ciclo.
+- OtimizaÃ§Ãµes e profiling do pipeline (tratadas por gargalo, nÃ£o por decisÃ£o arquitetural).
 
-## Mapeamento para implementação
+## Mapeamento para implementaÃ§Ã£o
 
 Principais pontos (NewScripts):
 
 - **SceneFlow envelope + gates**: `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 - **Fade**: ver ADR-0009 (`Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Fade/Runtime/*`)
 - **Loading HUD**: ver ADR-0010 (`Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/*`)
-- **Gatilho de ResetWorld em produção**: driver ligado ao `ScenesReady` (SceneFlow)
+- **Gatilho de ResetWorld em produÃ§Ã£o**: driver ligado ao `ScenesReady` (SceneFlow)
 - **WorldLifecycle reset pipeline**: `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/*`
 - **GameLoop Intro/Playing/PostGame**: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/*`
 
 ## Observabilidade
 
-**Contrato canônico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
+**Contrato canÃ´nico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
-Âncoras mínimas para evidência do ciclo:
+Ã‚ncoras mÃ­nimas para evidÃªncia do ciclo:
 
 - `SceneTransitionStartedEvent` (fecha `flow.scene_transition`)
 - `ScenesReadyEvent` (mesma `signature`)
@@ -135,20 +135,20 @@ Principais pontos (NewScripts):
 - `GameplaySimulationBlocked` / `GameplaySimulationUnblocked`
 - `GameLoop ENTER Playing`
 
-- Observação adicional: todas as âncoras acima devem incluir `reason` e `contextSignature` no payload/log para garantir correlação entre evidências.
+- ObservaÃ§Ã£o adicional: todas as Ã¢ncoras acima devem incluir `reason` e `contextSignature` no payload/log para garantir correlaÃ§Ã£o entre evidÃªncias.
 
-## Critérios de pronto (DoD)
+## CritÃ©rios de pronto (DoD)
 
-- [x] Invariantes descritos acima aparecem em logs canônicos (Baseline 2.x).
-- [x] Evidência datada com startup + gameplay e transições principais.
-- [x] `reason/contextSignature` presentes nas âncoras críticas (SceneFlow + ResetWorld).
-- [x] Implementação do pipeline de `ResetWorld` (WorldLifecycle).
-- [x] Integração do gatilho `ScenesReady` → `ResetWorld` (SceneFlow driver).
+- [x] Invariantes descritos acima aparecem em logs canÃ´nicos (Baseline 2.x).
+- [x] EvidÃªncia datada com startup + gameplay e transiÃ§Ãµes principais.
+- [x] `reason/contextSignature` presentes nas Ã¢ncoras crÃ­ticas (SceneFlow + ResetWorld).
+- [x] ImplementaÃ§Ã£o do pipeline de `ResetWorld` (WorldLifecycle).
+- [x] IntegraÃ§Ã£o do gatilho `ScenesReady` â†’ `ResetWorld` (SceneFlow driver).
 - [x] GameLoop (Intro/Playing/PostGame) com gates e sinais de observabilidade.
 
-## Implementação (arquivos impactados)
+## ImplementaÃ§Ã£o (arquivos impactados)
 
-### Runtime / Editor (código e assets)
+### Runtime / Editor (cÃ³digo e assets)
 
 - **Gameplay**
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/GameLoopStateMachine.cs`
@@ -157,21 +157,22 @@ Principais pontos (NewScripts):
 - **Infrastructure**
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 
-### Docs / evidências relacionadas
+### Docs / evidÃªncias relacionadas
 
 - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/README.md`
 - `Standards/Standards.md`
 
-## Notas de implementação
+## Notas de implementaÃ§Ã£o
 
-O pipeline está ativo em produção e segue a ordem: **SceneFlow → ScenesReady → ResetWorld → ResetCompleted → IntroStage → Playing**.
-Os pontos de integração canônicos são: `WorldLifecycleSceneFlowResetDriver` (gatilho de reset), `WorldLifecycleResetCompletionGate`
+O pipeline estÃ¡ ativo em produÃ§Ã£o e segue a ordem: **SceneFlow â†’ ScenesReady â†’ ResetWorld â†’ ResetCompleted â†’ IntroStage â†’ Playing**.
+Os pontos de integraÃ§Ã£o canÃ´nicos sÃ£o: `WorldLifecycleSceneFlowResetDriver` (gatilho de reset), `WorldLifecycleResetCompletionGate`
 (gate do SceneFlow), `SceneFlowInputModeBridge` (aplica input mode e dispara IntroStage) e `IntroStageCoordinator`
-(gate `sim.gameplay` e RequestStart após confirmação).
+(gate `sim.gameplay` e RequestStart apÃ³s confirmaÃ§Ã£o).
 
-## Evidência
+## EvidÃªncia
 
-- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
+- **Ãšltima evidÃªncia (log bruto):** `Docs/Reports/Evidence/LATEST.md`
 
-- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Fonte canÃ´nica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+
 

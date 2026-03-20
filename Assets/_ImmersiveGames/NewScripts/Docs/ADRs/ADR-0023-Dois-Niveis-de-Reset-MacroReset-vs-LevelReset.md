@@ -1,4 +1,4 @@
-# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
+﻿# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
 
 ## Status atual (2026-03-11)
 - Status: **DONE**
@@ -11,8 +11,8 @@
   - `WorldLifecycle V2` ja nao promove `levelId/contentId` como shape principal de telemetria.
   - `Gameplay ActorGroupRearm` foi consolidado como soft reset local canonico por grupo de atores.
 - Evidencia:
-  - `Docs/Reports/Audits/2026-03-12/DOCS-FINAL-CLOSEOUT.md`
-  - `Docs/Reports/lastlog.log`
+  - `Docs/Reports/Audits/LATEST.md`
+  - `Docs/Reports/Evidence/LATEST.md`
 
 ## Status
 

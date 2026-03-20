@@ -1,4 +1,4 @@
-# ADRs
+﻿# ADRs
 
 Este diretorio mantem apenas ADRs vigentes para entender o desenho atual.
 
@@ -34,3 +34,4 @@ Este diretorio mantem apenas ADRs vigentes para entender o desenho atual.
 
 - Leia ADRs como explicacao do desenho atual, nao como guia de integracao do dia a dia.
 - Quando houver conflito entre historico e docs oficiais, prevalece a cadeia oficial em `Docs/README.md` sustentada pelo runtime atual.
+

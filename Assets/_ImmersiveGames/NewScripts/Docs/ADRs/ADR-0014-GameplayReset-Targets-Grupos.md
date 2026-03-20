@@ -1,4 +1,4 @@
-# ADR-0014 - GameplayReset: grupos canonicos de atores
+﻿# ADR-0014 - GameplayReset: grupos canonicos de atores
 
 ## Status
 
@@ -29,7 +29,7 @@ A selecao de targets fica reduzida a dois contratos publicos e simetricos:
 
 1. `ByActorKind`
    - caminho principal e canonico para grupos de atores
-   - depende do contrato can�nico do ator (`IActorKindProvider`)
+   - depende do contrato canônico do ator (`IActorKindProvider`)
 2. `ActorIdSet`
    - mantido como contrato canonico suportado para selecao tecnica/deterministica por ids
 
@@ -166,6 +166,7 @@ Quando editar o reset de gameplay, revisar tambem:
 ### Docs
 
 - `Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0014-GameplayReset-Targets-Grupos.md`
-- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audits/2026-03-12/DOCS-CURRENT-STATE-CLEANUP.md`
+- `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audits/LATEST.md`
+
 
 

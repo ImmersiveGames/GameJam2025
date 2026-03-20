@@ -255,9 +255,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             WorldLifecycleHookRegistry hookRegistry,
             Transform worldRoot)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterSceneLifecycleHooksDevQa(hookRegistry, worldRoot);
-#endif
+            _ = hookRegistry;
+            _ = worldRoot;
         }
 
         private static string BuildTransformPath(Transform transform)

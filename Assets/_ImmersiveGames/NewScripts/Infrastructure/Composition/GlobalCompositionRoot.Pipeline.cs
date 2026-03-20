@@ -19,8 +19,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             WorldLifecycle,
             Navigation,
             Levels,
-            ContentSwap,
-            DevQa
+            ContentSwap
         }
 
         private static CompositionInstallStage _compositionInstallStage;
@@ -60,9 +59,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             InstallCompositionModules();
 
             _compositionInstallStage = CompositionInstallStage.ContentSwap;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.DevQa;
             InstallCompositionModules();
 
             RegisterExitToMenuCoordinator();
@@ -110,9 +106,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 case CompositionInstallStage.ContentSwap:
                     InstallContentSwapServices();
                     break;
-                case CompositionInstallStage.DevQa:
-                    InstallDevQaServices();
-                    break;
             }
         }
 
@@ -153,17 +146,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
             RegisterContentSwapChangeService();
-        }
-
-        private static void InstallDevQaServices()
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterIntroStageQaInstaller();
-            RegisterContentSwapQaInstaller();
-            RegisterSceneFlowQaInstaller();
-            RegisterWorldLifecycleQaInstaller();
-            RegisterIntroStageRuntimeDebugGui();
-#endif
         }
     }
 }
