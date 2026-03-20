@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core
 {
     /// <summary>
-    /// Orquestra GameplayReset (Cleanup/Restore/Rebind) por grupo canÙnico de atores.
+    /// Orquestra GameplayReset (Cleanup/Restore/Rebind) por grupo can√¥nico de atores.
     /// </summary>
     public sealed class ActorGroupRearmOrchestrator : IActorGroupRearmOrchestrator
     {
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
                 case ActorGroupRearmTarget.ByActorKind:
                     if (request.ActorKind == ActorKind.Unknown)
                     {
-                        throw new ArgumentException("ActorGroupRearmTarget.ByActorKind requer ActorKind v·lido.", nameof(request));
+                        throw new ArgumentException("ActorGroupRearmTarget.ByActorKind requer ActorKind v√°lido.", nameof(request));
                     }
                     break;
 
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(request), request.Target, "ActorGroupRearmTarget n„o suportado.");
+                    throw new ArgumentOutOfRangeException(nameof(request), request.Target, "ActorGroupRearmTarget n√£o suportado.");
             }
         }
 

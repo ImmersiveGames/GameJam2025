@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Core.Logging

@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 {
     [CreateAssetMenu(
         fileName = "NewScriptsBootstrapConfigAsset",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/Config/Configs/NewScriptsBootstrapConfigAsset",
+        menuName = "ImmersiveGames/NewScripts/Infrastructure/Config/NewScriptsBootstrapConfigAsset",
         order = 20)]
     public sealed class NewScriptsBootstrapConfigAsset : ScriptableObject
     {

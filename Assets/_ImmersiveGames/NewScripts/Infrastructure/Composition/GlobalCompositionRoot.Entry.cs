@@ -1,25 +1,25 @@
-﻿/*
+/*
  * ChangeLog
  * - Registrado IContentSwapContextService (ContentSwapContextService) no DI global (ADR-0016).
- * - ContentSwap permanece InPlace-only (sem integraÃ§Ã£o com SceneFlow).
- * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar fÃ­sica.
+ * - ContentSwap permanece InPlace-only (sem integração com SceneFlow).
+ * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas StateDependentService (legacy removido).
- * - Entrada de infraestrutura mÃ­nima (Gate/WorldLifecycle/DI/CÃ¢mera/StateBridge) para NewScripts.
- * - (OpÃ§Ã£o B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow
+ * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
+ * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow
  *   (GameStartRequestedEvent -> Transition -> ScenesReady -> RequestStart/Ready).
  *
  * Ajustes (jan/2026):
- * - Reduzidas resoluÃ§Ãµes repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
+ * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
  *   - Resolve IGameLoopService uma vez e injeta nos registradores de GameRunStatus/Outcome.
  *   - Resolve ISimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
  * - Removido registro duplicado de WorldLifecycleRuntimeCoordinator (centralizado em RegisterSceneFlowNative()).
  *
  * Nota (QA):
- * - O coordinator NÃƒO deve cachear IGameLoopService; deve resolver no momento do sync
+ * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do sync
  *   para que overrides de QA no DI sejam observados.
  *
- * ReorganizaÃ§Ã£o (jan/2026):
- * - Arquivo reordenado por seÃ§Ãµes (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.
+ * Reorganização (jan/2026):
+ * - Arquivo reordenado por seções (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.
  */
 
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static bool _initialized;
         private static GameReadinessService _gameReadinessService;
 
-        // OpÃ§Ã£o B: mantÃ©m referÃªncia viva do coordinator (evita GC / descarte prematuro).
+        // Opção B: mantém referência viva do coordinator (evita GC / descarte prematuro).
         private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
 
         // --------------------------------------------------------------------
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             DebugUtility.Log(
                 typeof(GlobalCompositionRoot),
-                "âœ… NewScripts global infrastructure initialized (Commit 1 minimal).",
+                "✅ NewScripts global infrastructure initialized (Commit 1 minimal).",
                 DebugUtility.Colors.Success);
 #endif
         }

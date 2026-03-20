@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Audio;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Configs
@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Configs
     /// não possuem ajustes específicos por som.
     /// </summary>
     [CreateAssetMenu(
-        menuName = "ImmersiveGames/Audio/Audio Config",
+        menuName = "ImmersiveGames/Legacy/Audio/Audio Config",
         fileName = "AudioConfig",
         order = 0)]
     public class AudioConfig : ScriptableObject

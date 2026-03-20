@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                     {
                         ExecuteRestartPipelineOrFail(effectiveReason, out var gameLoopService, out var levelFlowRuntimeService, out var restartContextService);
 
-                        // Comentario: ordem canÙnica e est·vel para evitar overlap de estados.
+                        // Comentario: ordem can√¥nica e est√°vel para evitar overlap de estados.
                         restartContextService.Clear(effectiveReason);
                         gameLoopService.RequestReset();
                         await levelFlowRuntimeService.StartGameplayDefaultAsync(effectiveReason, CancellationToken.None);

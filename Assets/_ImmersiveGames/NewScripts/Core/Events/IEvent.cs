@@ -1,4 +1,4 @@
-﻿namespace _ImmersiveGames.NewScripts.Core.Events
+namespace _ImmersiveGames.NewScripts.Core.Events
 {
     public interface IEvent { }
 

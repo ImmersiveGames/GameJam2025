@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +15,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
     {
         private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
         // Fail-safe operacional: evita travar o fluxo se nenhum sinal canônico for emitido.
-        private const int IntroStageCompletionTimeoutMs = 20000;
         private int _inProgress;
 
         public async Task RunIntroStageAsync(IntroStageContext context)
@@ -97,18 +96,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 
                 // IMPORTANT: Must resume on Unity main thread because this method touches Unity APIs
                 // (SceneManager, SimulationGate callbacks, etc.). Avoid ConfigureAwait(false) here.
-                Task<IntroStageCompletionResult> completionTask = controlService.WaitForCompletionAsync(CancellationToken.None);
-                var completedTask = await Task.WhenAny(completionTask, Task.Delay(IntroStageCompletionTimeoutMs));
-
-                if (completedTask != completionTask)
-                {
-                    DebugUtility.LogWarning<IntroStageCoordinator>(
-                        $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' routeKind='{routeLabel}' " +
-                        $"target='{targetScene}' timeoutMs={IntroStageCompletionTimeoutMs}.");
-                    controlService.SkipIntroStage("timeout");
-                }
-
-                var completion = await completionTask;
+                var completion = await controlService.WaitForCompletionAsync(CancellationToken.None);
                 if (completion.WasSkipped)
                 {
                     string skipReason = NormalizeValue(completion.Reason);

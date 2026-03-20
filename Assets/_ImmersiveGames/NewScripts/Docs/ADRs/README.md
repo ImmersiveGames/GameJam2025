@@ -1,4 +1,4 @@
-﻿# ADRs
+# ADRs
 
 Este diretorio mantem apenas ADRs vigentes para entender o desenho atual.
 

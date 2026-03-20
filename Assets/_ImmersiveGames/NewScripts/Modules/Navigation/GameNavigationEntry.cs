@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation

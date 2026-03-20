@@ -1,4 +1,4 @@
-﻿# ADR-0025 - Pipeline de Loading Macro inclui Etapa de Level antes do FadeOut
+# ADR-0025 - Pipeline de Loading Macro inclui Etapa de Level antes do FadeOut
 
 ## Status atual (2026-03-06)
 - Status: **DONE**

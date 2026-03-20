@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using UnityEngine;

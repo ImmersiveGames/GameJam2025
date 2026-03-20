@@ -1,4 +1,4 @@
-﻿# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
+# ADR-0027 - IntroStage e PostLevel como Responsabilidade do Level
 
 ## Status
 

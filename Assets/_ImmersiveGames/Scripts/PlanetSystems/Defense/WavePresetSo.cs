@@ -7,42 +7,42 @@ using UnityEngine.Serialization;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Representa um preset de wave, definindo quantas vezes uma entrada é
-    /// disparada e quantos minions surgem em cada disparo (lote). Mantém o
-    /// SRP ao separar a configuração de wave do mapeamento por alvo role
+    /// Representa um preset de wave, definindo quantas vezes uma entrada Ã©
+    /// disparada e quantos minions surgem em cada disparo (lote). MantÃ©m o
+    /// SRP ao separar a configuraÃ§Ã£o de wave do mapeamento por alvo role
     /// feito pelo DefenseEntryConfigSO.
     /// </summary>
     [CreateAssetMenu(
         fileName = "WavePreset",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Wave Preset")]
+        menuName = "ImmersiveGames/Legacy/PlanetSystems/Defense/Planets/Wave Preset")]
     public sealed class WavePresetSo : ScriptableObject
     {
-        [Header("Pool (Obrigatório)")]
-        [Tooltip("Pool de minions, obrigatório.")]
+        [Header("Pool (ObrigatÃ³rio)")]
+        [Tooltip("Pool de minions, obrigatÃ³rio.")]
         [SerializeField]
         private PoolData poolData;
 
-        [Header("Configuração de Onda")]
-        [Tooltip("Quantidade de minions por disparo de entrada (lote), obrigatório.")]
+        [Header("ConfiguraÃ§Ã£o de Onda")]
+        [Tooltip("Quantidade de minions por disparo de entrada (lote), obrigatÃ³rio.")]
         [FormerlySerializedAs("numberOfEnemiesPerWave")]
         [SerializeField]
         private int numberOfMinionsPerWave = 1;
 
-        [Tooltip("Tempo entre waves (disparos da mesma entrada), obrigatório.")]
+        [Tooltip("Tempo entre waves (disparos da mesma entrada), obrigatÃ³rio.")]
         [SerializeField]
         private float intervalBetweenWaves = 1f;
 
-        [Tooltip("Padrão de posicionamento, opcional.")]
+        [Tooltip("PadrÃ£o de posicionamento, opcional.")]
         [SerializeField]
         private DefenseSpawnPatternSo spawnPattern;
 
         [Header("Comportamento da Wave (opcional)")]
-        [Tooltip("Perfil de comportamento específico desta wave, opcional.")]
+        [Tooltip("Perfil de comportamento especÃ­fico desta wave, opcional.")]
         [SerializeField]
         private DefenseMinionBehaviorProfileSo waveBehaviorProfile;
 
         /// <summary>
-        /// Pool obrigatório para instanciar minions desta onda.
+        /// Pool obrigatÃ³rio para instanciar minions desta onda.
         /// </summary>
         public PoolData PoolData => poolData;
 
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public float IntervalBetweenWaves => intervalBetweenWaves;
 
         /// <summary>
-        /// Padrão opcional de posicionamento dos minions.
+        /// PadrÃ£o opcional de posicionamento dos minions.
         /// </summary>
         public DefenseSpawnPatternSo SpawnPattern => spawnPattern;
 
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (poolData == null)
             {
                 DebugUtility.LogError<WavePresetSo>(
-                    "PoolData obrigatório — configure ou waves falharão.",
+                    "PoolData obrigatÃ³rio â€” configure ou waves falharÃ£o.",
                     this);
             }
 
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (spawnPattern != null && numberOfMinionsPerWave <= 0)
             {
                 DebugUtility.LogError<WavePresetSo>(
-                    "SpawnPattern usado, mas número de minions zero — configure corretamente.",
+                    "SpawnPattern usado, mas nÃºmero de minions zero â€” configure corretamente.",
                     this);
             }
         }

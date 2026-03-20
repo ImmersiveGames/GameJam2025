@@ -1,7 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
 {
-    [CreateAssetMenu(fileName = "MaterialGroupConfig", menuName = "ImmersiveGames/Skin/MaterialGroupConfig", order = 4)]
+    [CreateAssetMenu(fileName = "MaterialGroupConfig", menuName = "ImmersiveGames/Legacy/Skin/MaterialGroupConfig", order = 4)]
     public class MaterialGroupConfig : ScriptableObject
     {
         [Header("Group Settings")]

@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using UnityEngine;

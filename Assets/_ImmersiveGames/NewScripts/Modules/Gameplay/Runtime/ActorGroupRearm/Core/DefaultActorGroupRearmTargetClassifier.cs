@@ -3,8 +3,8 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core
 {
     /// <summary>
-    /// Classificador padr„o de alvos de reset.
-    /// - ByActorKind: usa IActorKindProvider como contrato canÙnico de grupo.
+    /// Classificador padr√£o de alvos de reset.
+    /// - ByActorKind: usa IActorKindProvider como contrato can√¥nico de grupo.
     /// - ActorIdSet: usa ActorRegistry.TryGetActor para os ids do request.
     /// </summary>
     public sealed class DefaultActorGroupRearmTargetClassifier : IActorGroupRearmTargetClassifier

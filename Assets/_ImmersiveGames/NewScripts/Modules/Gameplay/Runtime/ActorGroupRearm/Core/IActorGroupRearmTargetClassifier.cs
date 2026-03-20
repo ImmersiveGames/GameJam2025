@@ -4,7 +4,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
 {
     /// <summary>
     /// Resolve quais atores devem participar de um ActorGroupRearmRequest.
-    /// MantÈm a lÛgica de "grupos/alvos" centralizada e test·vel.
+    /// Mant√©m a l√≥gica de "grupos/alvos" centralizada e test√°vel.
     /// </summary>
     public interface IActorGroupRearmTargetClassifier
     {

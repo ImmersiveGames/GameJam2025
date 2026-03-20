@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation

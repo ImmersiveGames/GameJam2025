@@ -15,23 +15,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 {
     /// <summary>
     /// Passo minimo de IntroStageController com confirmacao via input.
-    /// O timeout e opcional e so deve ser habilitado para QA/dev.
     /// </summary>
     public sealed class ConfirmToStartIntroStageStep : IIntroStageStep
     {
-        private const float DefaultTimeoutSeconds = 10f;
         private const string UiMapName = "UI";
         private const string SubmitActionName = "Submit";
         private const string CancelActionName = "Cancel";
 
-        private readonly float _timeoutSeconds;
-        private readonly bool _timeoutEnabled;
-
-        public ConfirmToStartIntroStageStep(bool enableTimeout = false, float timeoutSeconds = DefaultTimeoutSeconds)
-        {
-            _timeoutEnabled = enableTimeout;
-            _timeoutSeconds = Mathf.Max(0.1f, timeoutSeconds);
-        }
+        public ConfirmToStartIntroStageStep() { }
 
         public bool HasContent => true;
 
@@ -60,11 +51,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 
             try
             {
-                if (_timeoutEnabled)
-                {
-                    _ = TriggerTimeoutAsync(controlService, cancellationToken);
-                }
-
                 await controlService.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
             }
             finally
@@ -84,19 +70,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "IntroStageController/ConfirmToStart", "IntroStage", signature));
-        }
-
-        private async Task TriggerTimeoutAsync(IIntroStageControlService controlService, CancellationToken cancellationToken)
-        {
-            try
-            {
-                await Task.Delay(TimeSpan.FromSeconds(_timeoutSeconds), cancellationToken).ConfigureAwait(false);
-                controlService.CompleteIntroStage("timeout");
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
         }
 
         private static void TryBindUiActions(List<InputAction> actions, Action<InputAction.CallbackContext> handler)

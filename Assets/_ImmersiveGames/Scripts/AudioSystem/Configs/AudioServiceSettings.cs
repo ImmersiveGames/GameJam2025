@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Configs
 {
@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Configs
     /// Esta é a "fonte da verdade" para os volumes globais usados pelos serviços de áudio.
     /// </summary>
     [CreateAssetMenu(
-        menuName = "ImmersiveGames/Audio/Audio Service Settings",
+        menuName = "ImmersiveGames/Legacy/Audio/Audio Service Settings",
         fileName = "AudioServiceSettings")]
     public class AudioServiceSettings : ScriptableObject
     {

@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters
 {
     /// <summary>
-    /// Adaptador default: expÃµe ISceneRouteCatalog como ISceneRouteResolver.
+    /// Adaptador default: expõe ISceneRouteCatalog como ISceneRouteResolver.
     /// </summary>
         /// <summary>
     /// OWNER: resolucao routeId -> SceneRouteDefinition em runtime.

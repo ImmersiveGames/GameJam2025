@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.InputModes;
 using UnityEngine;
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
     /// </summary>
     [CreateAssetMenu(
         fileName = "RuntimeModeConfig",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/Configs/RuntimeModeConfig",
+        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/RuntimeModeConfig",
         order = 20)]
     public sealed class RuntimeModeConfig : ScriptableObject
     {

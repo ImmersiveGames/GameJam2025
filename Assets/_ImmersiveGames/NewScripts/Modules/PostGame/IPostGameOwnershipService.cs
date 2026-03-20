@@ -1,4 +1,4 @@
-﻿namespace _ImmersiveGames.NewScripts.Modules.PostGame
+namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
     /// <summary>
     /// Owner do input/gate do PostGame, evitando duplicidade com overlays.

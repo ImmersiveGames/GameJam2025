@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -21,6 +22,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public LevelStageOrchestrator()
         {
+            DefaultLevelIntroOverlayPresenter.EnsureInstalled();
+
             _sceneTransitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
             _levelSwapLocalAppliedBinding = new EventBinding<LevelSwapLocalAppliedEvent>(OnLevelSwapLocalApplied);
 
@@ -252,6 +255,146 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", StringComparison.Ordinal);
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class DefaultLevelIntroOverlayPresenter : MonoBehaviour
+    {
+        private const string RootName = "__DefaultLevelIntroOverlayPresenter";
+        private static bool _installed;
+
+        private readonly Rect _panelRect = new(16f, 16f, 380f, 180f);
+
+        private IGameLoopService _gameLoopService;
+        private IIntroStageControlService _introStageControlService;
+        private ILevelStagePresentationService _levelStagePresentationService;
+
+        public static void EnsureInstalled()
+        {
+            if (_installed)
+            {
+                return;
+            }
+
+            var existing = GameObject.Find(RootName);
+            if (existing != null)
+            {
+                if (existing.GetComponent<DefaultLevelIntroOverlayPresenter>() == null)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][LevelFlow] Root '{RootName}' existe sem DefaultLevelIntroOverlayPresenter.");
+                }
+
+                _installed = true;
+                return;
+            }
+
+            var root = new GameObject(RootName);
+            DontDestroyOnLoad(root);
+            root.AddComponent<DefaultLevelIntroOverlayPresenter>();
+            _installed = true;
+        }
+
+        private void OnGUI()
+        {
+            if (!TryBuildViewModel(out var model))
+            {
+                return;
+            }
+
+            GUILayout.BeginArea(_panelRect, GUI.skin.box);
+            GUILayout.Label("Level Intro Active");
+            GUILayout.Label($"Level: {model.LevelName}");
+            GUILayout.Label($"State: {model.StateName}");
+            GUILayout.Label($"Signature: {model.LevelSignature}");
+
+            if (GUILayout.Button("Start Gameplay"))
+            {
+                model.ControlService.CompleteIntroStage("LevelIntro/ConfirmButton");
+            }
+
+            GUILayout.EndArea();
+        }
+
+        private bool TryBuildViewModel(out IntroOverlayViewModel model)
+        {
+            model = default;
+            ResolveDependencies();
+
+            if (_gameLoopService == null ||
+                _introStageControlService == null ||
+                _levelStagePresentationService == null)
+            {
+                return false;
+            }
+
+            if (!_levelStagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
+                !contract.IsValid ||
+                !contract.HasIntroStage)
+            {
+                return false;
+            }
+
+            bool stateIsIntro = string.Equals(
+                _gameLoopService.CurrentStateIdName,
+                nameof(GameLoopStateId.IntroStage),
+                StringComparison.Ordinal);
+
+            if (!stateIsIntro || !_introStageControlService.IsIntroStageActive)
+            {
+                return false;
+            }
+
+            model = new IntroOverlayViewModel(
+                _introStageControlService,
+                _gameLoopService.CurrentStateIdName,
+                contract.LevelRef != null ? contract.LevelRef.name : "<none>",
+                string.IsNullOrWhiteSpace(contract.LevelSignature) ? "<none>" : contract.LevelSignature.Trim());
+            return true;
+        }
+
+        private void ResolveDependencies()
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                return;
+            }
+
+            if (_gameLoopService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _gameLoopService);
+            }
+
+            if (_introStageControlService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _introStageControlService);
+            }
+
+            if (_levelStagePresentationService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _levelStagePresentationService);
+            }
+        }
+
+        private readonly struct IntroOverlayViewModel
+        {
+            public IntroOverlayViewModel(
+                IIntroStageControlService controlService,
+                string stateName,
+                string levelName,
+                string levelSignature)
+            {
+                ControlService = controlService;
+                StateName = string.IsNullOrWhiteSpace(stateName) ? "<none>" : stateName.Trim();
+                LevelName = string.IsNullOrWhiteSpace(levelName) ? "<none>" : levelName.Trim();
+                LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? "<none>" : levelSignature.Trim();
+            }
+
+            public IIntroStageControlService ControlService { get; }
+            public string StateName { get; }
+            public string LevelName { get; }
+            public string LevelSignature { get; }
         }
     }
 }

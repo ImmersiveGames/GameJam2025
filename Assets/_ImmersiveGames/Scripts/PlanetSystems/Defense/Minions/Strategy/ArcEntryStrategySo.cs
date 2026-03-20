@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using DG.Tweening;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 {
     [CreateAssetMenu(
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Entry Strategies/Arc",
+        menuName = "ImmersiveGames/Legacy/PlanetSystems/Defense/Entry Strategies/Arc",
         fileName = "ArcEntryStrategy")]
     public sealed class ArcEntryStrategySo : MinionEntryStrategySo
     {

@@ -4,21 +4,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Pacote completo de comportamento para um minion de defesa.
-    /// Reúne o conjunto de ajustes que antes estavam espalhados em
-    /// prefab + profile, incluindo as estratégias de entrada/perseguição.
+    /// ReÃºne o conjunto de ajustes que antes estavam espalhados em
+    /// prefab + profile, incluindo as estratÃ©gias de entrada/perseguiÃ§Ã£o.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseMinionBehaviorProfileV2",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Minions/Behavior Profile V2",
+        menuName = "ImmersiveGames/Legacy/PlanetSystems/Defense/Minions/Behavior Profile V2",
         order = 201)]
     public class DefenseMinionBehaviorProfileSo : ScriptableObject
     {
-        [Header("Identidade (opcional, para debug/organização)")]
+        [Header("Identidade (opcional, para debug/organizaÃ§Ã£o)")]
         [SerializeField]
         private string variantId = "Default";
 
-        [Header("Entrada / Órbita")]
-        [Tooltip("Duração da animação de saída do centro do planeta até a órbita.")]
+        [Header("Entrada / Ã“rbita")]
+        [Tooltip("DuraÃ§Ã£o da animaÃ§Ã£o de saÃ­da do centro do planeta atÃ© a Ã³rbita.")]
         [SerializeField, Min(0.1f)]
         private float entryDurationSeconds = 0.75f;
 
@@ -26,30 +26,30 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         [SerializeField, Range(0.05f, 1f)]
         private float initialScaleFactor = 0.2f;
 
-        [Tooltip("Tempo parado em órbita antes de iniciar a perseguição (Entry -> OrbitWait -> Chase).")]
+        [Tooltip("Tempo parado em Ã³rbita antes de iniciar a perseguiÃ§Ã£o (Entry -> OrbitWait -> Chase).")]
         [SerializeField, Min(0f)]
         private float orbitIdleSeconds = 0.75f;
 
-        [Header("Perseguição básica")]
-        [Tooltip("Velocidade base da perseguição do minion.")]
+        [Header("PerseguiÃ§Ã£o bÃ¡sica")]
+        [Tooltip("Velocidade base da perseguiÃ§Ã£o do minion.")]
         [SerializeField, Min(0.1f)]
         private float chaseSpeed = 3f;
 
-        [Header("Rotação na perseguição")]
-        [Tooltip("Se verdadeiro, quando a perseguição começa o minion já alinha o forward diretamente para o alvo.")]
+        [Header("RotaÃ§Ã£o na perseguiÃ§Ã£o")]
+        [Tooltip("Se verdadeiro, quando a perseguiÃ§Ã£o comeÃ§a o minion jÃ¡ alinha o forward diretamente para o alvo.")]
         [SerializeField]
         private bool snapFacingOnChaseStart = true;
 
-        [Tooltip("Fator de interpolação da rotação durante a perseguição (0 = não gira, 1 = vira instantaneamente).")]
+        [Tooltip("Fator de interpolaÃ§Ã£o da rotaÃ§Ã£o durante a perseguiÃ§Ã£o (0 = nÃ£o gira, 1 = vira instantaneamente).")]
         [SerializeField, Range(0f, 1f)]
         private float chaseRotationLerpFactor = 0.2f;
 
-        [Header("Estratégias")]
-        [Tooltip("Define como o minion sai do planeta e chega na órbita.")]
+        [Header("EstratÃ©gias")]
+        [Tooltip("Define como o minion sai do planeta e chega na Ã³rbita.")]
         [SerializeField]
         private MinionEntryStrategySo entryStrategy;
 
-        [Tooltip("Estratégia de perseguição do minion (zigzag, reto, etc.).")]
+        [Tooltip("EstratÃ©gia de perseguiÃ§Ã£o do minion (zigzag, reto, etc.).")]
         [SerializeField]
         private MinionChaseStrategySo chaseStrategy;
 

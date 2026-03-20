@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine.SceneManagement;

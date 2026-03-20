@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         ISkinConfig GetConfig(ModelType modelType);
         IEnumerable<ISkinConfig> GetAllConfigs();
     }
-    [CreateAssetMenu(fileName = "SkinCollectionData", menuName = "ImmersiveGames/Skin/SkinCollectionData", order = 2)]
+    [CreateAssetMenu(fileName = "SkinCollectionData", menuName = "ImmersiveGames/Legacy/Skin/SkinCollectionData", order = 2)]
     public class SkinCollectionData : ScriptableObject, ISkinCollection
     {
         [SerializeField] private string collectionName = "Collection Name";

@@ -1,4 +1,4 @@
-﻿# SceneFlow
+# SceneFlow
 
 ## Estado atual
 

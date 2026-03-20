@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 
@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
 {
     [CreateAssetMenu(
         fileName = "LevelCollectionAsset",
-        menuName = "ImmersiveGames/NewScripts/LevelFlow/Level Collection",
+        menuName = "ImmersiveGames/NewScripts/Modules/LevelFlow/Catalogs/LevelCollectionAsset",
         order = 31)]
     public sealed class LevelCollectionAsset : ScriptableObject
     {

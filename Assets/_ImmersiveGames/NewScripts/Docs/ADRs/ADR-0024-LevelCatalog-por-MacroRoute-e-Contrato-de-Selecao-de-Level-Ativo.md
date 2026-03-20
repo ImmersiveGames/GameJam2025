@@ -1,4 +1,4 @@
-﻿# ADR-0024 - LevelCollection por MacroRoute e Contrato de Selecao de Level Ativo
+# ADR-0024 - LevelCollection por MacroRoute e Contrato de Selecao de Level Ativo
 
 ## Status atual (2026-03-06)
 - Status: **DONE**

@@ -1,4 +1,4 @@
-﻿# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
+# ADR-0023 - Dois niveis de reset: MacroReset vs LevelReset
 
 ## Status atual (2026-03-11)
 - Status: **DONE**

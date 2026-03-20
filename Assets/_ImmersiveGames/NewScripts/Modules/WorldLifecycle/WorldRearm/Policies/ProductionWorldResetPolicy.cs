@@ -2,7 +2,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies
 {
     /// <summary>
-    /// Policy padr„o de produÁ„o.
+    /// Policy padr√£o de produ√ß√£o.
     /// - Strict = UNITY_EDITOR/DEVELOPMENT_BUILD
     /// - SceneScan: opt-in apenas em Strict (QA/Dev)
     /// </summary>

@@ -1,4 +1,4 @@
-﻿# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
+# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
 
 ## Status atual (2026-03-11)
 - Status: **DONE**

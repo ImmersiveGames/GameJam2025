@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core
 {
     /// <summary>
-    /// Etapas assÌncronas de reset para componentes de gameplay.
+    /// Etapas ass√≠ncronas de reset para componentes de gameplay.
     /// </summary>
     public enum ActorGroupRearmStep
     {
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
     }
 
     /// <summary>
-    /// Alvos canÙnicos suportados para reset de gameplay.
+    /// Alvos can√¥nicos suportados para reset de gameplay.
     /// </summary>
     public enum ActorGroupRearmTarget
     {
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
     }
 
     /// <summary>
-    /// Pedido de reset contextualizado com alvo e actorIds (quando aplic·vel).
+    /// Pedido de reset contextualizado com alvo e actorIds (quando aplic√°vel).
     /// </summary>
     public readonly struct ActorGroupRearmRequest
     {
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
     }
 
     /// <summary>
-    /// Participante assÌncrono de reset de gameplay (recomendado).
+    /// Participante ass√≠ncrono de reset de gameplay (recomendado).
     /// </summary>
     public interface IActorGroupRearmable
     {
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
     }
 
     /// <summary>
-    /// Participante sÌncrono. Um orchestrator pode adaptar para Task.
+    /// Participante s√≠ncrono. Um orchestrator pode adaptar para Task.
     /// </summary>
     public interface IActorGroupRearmableSync
     {
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
     }
 
     /// <summary>
-    /// Opcional: controla a ordem de execuÁ„o dentro de cada etapa. Menor primeiro.
+    /// Opcional: controla a ordem de execu√ß√£o dentro de cada etapa. Menor primeiro.
     /// </summary>
     public interface IActorGroupRearmOrder
     {
@@ -148,8 +148,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
         bool IsResetInProgress { get; }
 
         /// <summary>
-        /// Solicita reset e aguarda conclus„o.
-        /// Se j· houver reset em andamento, a implementaÁ„o pode ignorar (retornando false) ou aguardar.
+        /// Solicita reset e aguarda conclus√£o.
+        /// Se j√° houver reset em andamento, a implementa√ß√£o pode ignorar (retornando false) ou aguardar.
         /// </summary>
         Task<bool> RequestResetAsync(ActorGroupRearmRequest request);
     }

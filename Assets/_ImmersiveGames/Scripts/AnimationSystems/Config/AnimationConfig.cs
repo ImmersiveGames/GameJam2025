@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Config
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Animation/Animation Config")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/Animation/Animation Config")]
     public class AnimationConfig : ScriptableObject
     {
         [Header("Basic Animations")]

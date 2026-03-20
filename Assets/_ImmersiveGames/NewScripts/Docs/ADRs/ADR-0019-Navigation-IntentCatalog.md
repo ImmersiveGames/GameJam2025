@@ -1,4 +1,4 @@
-﻿# ADR-0019 - Navigation Catalog as the Single Canonical Navigation Asset
+# ADR-0019 - Navigation Catalog as the Single Canonical Navigation Asset
 
 ## Status
 

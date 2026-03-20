@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;

@@ -1,4 +1,4 @@
-﻿# Changelog - Docs
+# Changelog - Docs
 
 ## 2026-03-13 - baseline v3 official freeze
 - promoveu oficialmente o Baseline V3 para `PASS` com freeze canonico em `Docs/Reports/Evidence/LATEST.md`

@@ -1,104 +1,104 @@
-﻿# ADR-0009 â€” Fade + SceneFlow (NewScripts)
+# ADR-0009 — Fade + SceneFlow (NewScripts)
 
 ## Status
 
 - Estado: Implementado
-- Data (decisÃ£o): 2025-12-24
-- Ãšltima atualizaÃ§Ã£o: 2026-02-04
-- Tipo: ImplementaÃ§Ã£o
-- Escopo: SceneFlow + Fade (NewScripts). *(Loading HUD Ã© ADR-0010.)*
+- Data (decisão): 2025-12-24
+- Última atualização: 2026-02-04
+- Tipo: Implementação
+- Escopo: SceneFlow + Fade (NewScripts). *(Loading HUD é ADR-0010.)*
 
 ## Contexto
 
 O pipeline NewScripts precisava:
 
-- Aplicar **FadeIn/FadeOut** durante transiÃ§Ãµes do SceneFlow.
-- Evitar dependÃªncia do fade legado.
+- Aplicar **FadeIn/FadeOut** durante transições do SceneFlow.
+- Evitar dependência do fade legado.
 - Permitir configurar timings por **profile** (startup/frontend/gameplay).
-- Garantir **comportamento determinÃ­stico** (ordem fixa) e **observÃ¡vel** (logs canÃ´nicos).
-- Aplicar polÃ­tica **Strict vs Release**:
-  - Strict (Dev/QA): **falhar cedo** quando prÃ©-condiÃ§Ãµes crÃ­ticas nÃ£o existem.
-  - Release: permitir fallback **somente via modo degradado explÃ­cito**.
+- Garantir **comportamento determinístico** (ordem fixa) e **observável** (logs canônicos).
+- Aplicar política **Strict vs Release**:
+  - Strict (Dev/QA): **falhar cedo** quando pré-condições críticas não existem.
+  - Release: permitir fallback **somente via modo degradado explícito**.
 
-## DecisÃ£o
+## Decisão
 
-### Objetivo de produÃ§Ã£o (sistema ideal)
+### Objetivo de produção (sistema ideal)
 
-Garantir que TODA transiÃ§Ã£o de cena do SceneFlow tenha um envelope visual determinÃ­stico:
+Garantir que TODA transição de cena do SceneFlow tenha um envelope visual determinístico:
 
-**FadeIn (escurece) â†’ operaÃ§Ãµes de cena â†’ ScenesReady â†’ completion gate â†’ FadeOut (revela) â†’ Completed**
+**FadeIn (escurece) → operações de cena → ScenesReady → completion gate → FadeOut (revela) → Completed**
 
-> Nota: no naming atual do runtime, `FadeInAsync()` = â€œescurecerâ€ (0â†’1) e `FadeOutAsync()` = â€œrevelarâ€ (1â†’0).
+> Nota: no naming atual do runtime, `FadeInAsync()` = “escurecer” (0→1) e `FadeOutAsync()` = “revelar” (1→0).
 
-### Contrato mÃ­nimo (produÃ§Ã£o)
+### Contrato mínimo (produção)
 
 1) **Ordem (invariantes)**
-- **FadeIn** inicia **antes** de qualquer mutaÃ§Ã£o visual (load/unload/setActive).
-- `ScenesReady` Ã© emitido **apÃ³s** operaÃ§Ãµes de cena e **antes** de `Completed` (mesma `signature`).
-- **Completion gate** Ã© aguardado **antes** do `BeforeFadeOut` e do `FadeOut`.
-- `Completed` sÃ³ ocorre **apÃ³s** `FadeOut` (quando `UseFade=true`), preservando â€œreveal before completionâ€.
+- **FadeIn** inicia **antes** de qualquer mutação visual (load/unload/setActive).
+- `ScenesReady` é emitido **após** operações de cena e **antes** de `Completed` (mesma `signature`).
+- **Completion gate** é aguardado **antes** do `BeforeFadeOut` e do `FadeOut`.
+- `Completed` só ocorre **após** `FadeOut` (quando `UseFade=true`), preservando “reveal before completion”.
 
 2) **Strict vs Release (fail-fast + degraded)**
 - **Strict (UNITY_EDITOR / DEVELOPMENT_BUILD)**
   - Falha explicitamente quando:
-    - profile nÃ£o Ã© encontrado em Resources,
-    - `IFadeService` nÃ£o existe no DI global,
-    - `FadeScene` nÃ£o carrega,
-    - `FadeController` nÃ£o existe na `FadeScene`.
+    - profile não é encontrado em Resources,
+    - `IFadeService` não existe no DI global,
+    - `FadeScene` não carrega,
+    - `FadeController` não existe na `FadeScene`.
 - **Release**
-  - Pode seguir sem fade **apenas** com `DEGRADED_MODE` explÃ­cito:
+  - Pode seguir sem fade **apenas** com `DEGRADED_MODE` explícito:
     - `DEGRADED_MODE feature='fade' reason='<...>' detail='<...>'`
-  - ApÃ³s degradar, o fade vira **no-op** (dur=0) mantendo a ordem do pipeline.
+  - Após degradar, o fade vira **no-op** (dur=0) mantendo a ordem do pipeline.
 
-3) **NÃ£o criar UI â€œem vooâ€**
+3) **Não criar UI “em voo”**
 - O fade depende de `FadeScene` + `FadeController`.
-- O runtime nÃ£o deve instanciar canvas/cÃ¢mera de forma silenciosa.
+- O runtime não deve instanciar canvas/câmera de forma silenciosa.
 
-### NÃ£o-objetivos (resumo)
+### Não-objetivos (resumo)
 
 - Loading HUD (ver ADR-0010).
-- UX/arte fina do fade (layout, brand, animaÃ§Ãµes especÃ­ficas).
+- UX/arte fina do fade (layout, brand, animações específicas).
 
 ## Fora de escopo
 
-- AlteraÃ§Ãµes no pipeline de Loading HUD.
-- RefatoraÃ§Ãµes fora do envelope de Fade/SceneFlow.
+- Alterações no pipeline de Loading HUD.
+- Refatorações fora do envelope de Fade/SceneFlow.
 
-## ConsequÃªncias
+## Consequências
 
-### BenefÃ­cios
+### Benefícios
 
-- Envelope visual determinÃ­stico em todas as transiÃ§Ãµes do SceneFlow.
+- Envelope visual determinístico em todas as transições do SceneFlow.
 - Timings declarativos por profile, sem strings/timings espalhados.
-- Comportamento auditÃ¡vel via Ã¢ncoras canÃ´nicas `[OBS][Fade]`.
-- PolÃ­tica Strict/Release explÃ­cita, reduzindo â€œfallback silenciosoâ€.
+- Comportamento auditável via âncoras canônicas `[OBS][Fade]`.
+- Política Strict/Release explícita, reduzindo “fallback silencioso”.
 
 ### Trade-offs / riscos
 
-- Strict pode â€œquebrar cedoâ€ durante integraÃ§Ã£o (o objetivo Ã© expor setup incompleto imediatamente).
-- Release pode degradar visualmente (sem fade) â€” mas isso fica **explÃ­cito** via `DEGRADED_MODE`.
+- Strict pode “quebrar cedo” durante integração (o objetivo é expor setup incompleto imediatamente).
+- Release pode degradar visualmente (sem fade) — mas isso fica **explícito** via `DEGRADED_MODE`.
 
-## Mapeamento para implementaÃ§Ã£o
+## Mapeamento para implementação
 
 Arquivos (NewScripts):
 
-- OrquestraÃ§Ã£o / ordem / anchors `[OBS][Fade]`:
+- Orquestração / ordem / anchors `[OBS][Fade]`:
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 - Policy Strict/Release + degraded reporter:
   - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/IRuntimeModeProvider.cs`
   - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/UnityRuntimeModeProvider.cs`
   - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/IDegradedModeReporter.cs`
   - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/DegradedModeReporter.cs`
-- Adapter (profile â†’ config â†’ policy):
+- Adapter (profile → config → policy):
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Adapters/SceneFlowFadeAdapter.cs` (`SceneFlowFadeAdapter`)
-- ServiÃ§o de fade (garante FadeScene + Controller; falha explÃ­cita se invÃ¡lido):
+- Serviço de fade (garante FadeScene + Controller; falha explícita se inválido):
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Fade/Runtime/FadeService.cs`
 
 ## Observabilidade (contrato)
 
-**Contrato canÃ´nico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
+**Contrato canônico:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
-### Ã‚ncoras mÃ­nimas de Fade (evidÃªncia)
+### Âncoras mínimas de Fade (evidência)
 
 Emitidas por `SceneTransitionService` quando `UseFade=true`:
 
@@ -107,55 +107,55 @@ Emitidas por `SceneTransitionService` quando `UseFade=true`:
 - `[OBS][Fade] FadeOutStarted ...`
 - `[OBS][Fade] FadeOutCompleted ...`
 
-### Ã‚ncora canÃ´nica de fallback (Release)
+### Âncora canônica de fallback (Release)
 
-Quando o fade nÃ£o pode operar em Release:
+Quando o fade não pode operar em Release:
 
 - `DEGRADED_MODE feature='fade' reason='<Reason>' detail='<...>'`
 
-## CritÃ©rios de pronto (DoD)
+## Critérios de pronto (DoD)
 
-### DoD (implementaÃ§Ã£o)
+### DoD (implementação)
 
-- [x] Ordem e gating conforme â€œContrato mÃ­nimoâ€.
+- [x] Ordem e gating conforme “Contrato mínimo”.
 - [x] Policy Strict vs Release aplicada no caminho do fade.
-- [x] `DEGRADED_MODE` emitido em Release quando necessÃ¡rio.
+- [x] `DEGRADED_MODE` emitido em Release quando necessário.
 - [x] Logs `[OBS][Fade]` emitidos no envelope (Start/Complete por fase).
 
-### DoD (evidÃªncia)
+### DoD (evidência)
 
-- [x] Snapshot com transiÃ§Ãµes (startup + gameplay) contendo as 4 Ã¢ncoras `[OBS][Fade]` na mesma `signature`: `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`.
-- [ ] (Opcional) Um snapshot de falha em Strict comprovando erro explÃ­cito para `FadeScene`/controller ausente.
+- [x] Snapshot com transições (startup + gameplay) contendo as 4 âncoras `[OBS][Fade]` na mesma `signature`: `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`.
+- [ ] (Opcional) Um snapshot de falha em Strict comprovando erro explícito para `FadeScene`/controller ausente.
 
-## Procedimento de verificaÃ§Ã£o (QA)
+## Procedimento de verificação (QA)
 
 1) **Happy path**
 - Use: `QA/SceneFlow/EnterGameplay (TC: Menu->Gameplay ResetWorld)` (ContextMenu).
-- Verifique no log da transiÃ§Ã£o:
-  - `SceneTransitionStartedEvent` â†’ `[OBS][Fade] FadeInStarted/Completed` â†’ `ScenesReady` â†’ gate â†’ `[OBS][Fade] FadeOutStarted/Completed` â†’ `SceneTransitionCompletedEvent`.
+- Verifique no log da transição:
+  - `SceneTransitionStartedEvent` → `[OBS][Fade] FadeInStarted/Completed` → `ScenesReady` → gate → `[OBS][Fade] FadeOutStarted/Completed` → `SceneTransitionCompletedEvent`.
 
 2) **Fail-fast (Strict)**
 - Em Editor/Development:
   - Remova temporariamente a `FadeScene` do Build Settings **ou** remova `FadeController` dela.
-- Dispare a mesma transiÃ§Ã£o e confirme:
-  - exceÃ§Ã£o clara (`InvalidOperationException`) com `reason`/`detail` (sem seguir â€œsilenciosamenteâ€).
+- Dispare a mesma transição e confirme:
+  - exceção clara (`InvalidOperationException`) com `reason`/`detail` (sem seguir “silenciosamente”).
 
 3) **Degraded mode (Release)**
 - Em build Release:
-  - reproduza a ausÃªncia (scene/controller/service) e confirme:
-  - `DEGRADED_MODE feature='fade' ...` e transiÃ§Ã£o segue sem fade (no-op), sem crash.
+  - reproduza a ausência (scene/controller/service) e confirme:
+  - `DEGRADED_MODE feature='fade' ...` e transição segue sem fade (no-op), sem crash.
 
-## EvidÃªncia
+## Evidência
 
-- **Ãšltima evidÃªncia (log bruto):** `Docs/Reports/Evidence/LATEST.md`
-- **Fonte canÃ´nica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Última evidência (log bruto):** `Docs/Reports/Evidence/LATEST.md`
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
 - **Snapshot datado (PASS, startup + gameplay):** `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
-  - ContÃ©m Ã¢ncoras `[OBS][Fade]` (`FadeInStarted/Completed`, `FadeOutStarted/Completed`) para `profile=startup` e `profile=gameplay` com `signature` completa.
-  - ContÃ©m evidÃªncia de ordenaÃ§Ã£o: `FadeInCompleted` ocorre antes do load; `ScenesReady` + completion gate antes de `FadeOut`; `FadeOutCompleted` antes de `TransitionCompleted`.
+  - Contém âncoras `[OBS][Fade]` (`FadeInStarted/Completed`, `FadeOutStarted/Completed`) para `profile=startup` e `profile=gameplay` com `signature` completa.
+  - Contém evidência de ordenação: `FadeInCompleted` ocorre antes do load; `ScenesReady` + completion gate antes de `FadeOut`; `FadeOutCompleted` antes de `TransitionCompleted`.
 
-## ImplementaÃ§Ã£o (arquivos impactados)
+## Implementação (arquivos impactados)
 
-### Runtime / Editor (cÃ³digo e assets)
+### Runtime / Editor (código e assets)
 
 - **Infrastructure**
   - `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/DegradedModeReporter.cs`
@@ -166,15 +166,15 @@ Quando o fade nÃ£o pode operar em Release:
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Fade/Runtime/FadeService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Adapters/SceneFlowFadeAdapter.cs`
 
-### Docs / evidÃªncias relacionadas
+### Docs / evidências relacionadas
 
 - `Docs/Reports/Evidence/2026-01-31/Baseline-2.2-Evidence-2026-01-31.md`
 - `Reports/Evidence/LATEST.md`
 - `Standards/Standards.md`
 
-## ReferÃªncias
+## Referências
 
-- [ADR-0010 â€” Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)
+- [ADR-0010 — Loading HUD + SceneFlow (NewScripts)](ADR-0010-LoadingHud-SceneFlow.md)
 - [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 - [`Production-Policy-Strict-Release.md`](../Standards/Standards.md#politica-strict-vs-release)
 

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 {
     /// <summary>

@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using DG.Tweening;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 {
     [CreateAssetMenu(
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Entry Strategies/Straight",
+        menuName = "ImmersiveGames/Legacy/PlanetSystems/Defense/Entry Strategies/Straight",
         fileName = "StraightEntryStrategy")]
     public sealed class StraightEntryStrategySo : MinionEntryStrategySo
     {

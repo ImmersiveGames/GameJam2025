@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         Conical
     }
 
-    [CreateAssetMenu(fileName = "SensorConfig", menuName = "ImmersiveGames/Detection/SensorConfig", order = 2)]
+    [CreateAssetMenu(fileName = "SensorConfig", menuName = "ImmersiveGames/Legacy/Detection/SensorConfig", order = 2)]
     public class SensorConfig : ScriptableObject
     {
         [SerializeField] private DetectionType detectionType;

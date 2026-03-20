@@ -9,37 +9,37 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Define uma entrada de defesa completa (Entry v2), similar ao PlanetDefenseEntrySo, mas com
-    /// dados extras de spawn e referência opcional a um perfil de comportamento padrão para
-    /// minions desse tipo de defesa. Não referência DefensesMinionPoolData; o pool está exclusivamente
-    /// em <see cref="WavePresetSo.PoolData"/>. A configuração de minions agora depende apenas de
-    /// <see cref="WavePresetSo"/> (pool + padrão de spawn) e <see cref="DefenseMinionBehaviorProfileSo"/>,
+    /// dados extras de spawn e referÃªncia opcional a um perfil de comportamento padrÃ£o para
+    /// minions desse tipo de defesa. NÃ£o referÃªncia DefensesMinionPoolData; o pool estÃ¡ exclusivamente
+    /// em <see cref="WavePresetSo.PoolData"/>. A configuraÃ§Ã£o de minions agora depende apenas de
+    /// <see cref="WavePresetSo"/> (pool + padrÃ£o de spawn) e <see cref="DefenseMinionBehaviorProfileSo"/>,
     /// pois o legado DefenseMinionConfigSO foi removido.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseEntryConfig",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Entry Config")]
+        menuName = "ImmersiveGames/Legacy/PlanetSystems/Defense/Planets/Defense Entry Config")]
     public sealed class DefenseEntryConfigSo : ScriptableObject
     {
-        [Header("Configuração padrão")]
-        [Tooltip("Preset de wave padrão usado quando o role não está mapeado. O pool está em WavePresetSo.PoolData.")]
+        [Header("ConfiguraÃ§Ã£o padrÃ£o")]
+        [Tooltip("Preset de wave padrÃ£o usado quando o role nÃ£o estÃ¡ mapeado. O pool estÃ¡ em WavePresetSo.PoolData.")]
         [SerializeField]
         private WavePresetSo defaultWavePreset;
 
-        [Tooltip("Perfil de comportamento padrão (opcional) usado quando o role não está mapeado.")]
+        [Tooltip("Perfil de comportamento padrÃ£o (opcional) usado quando o role nÃ£o estÃ¡ mapeado.")]
         [SerializeField]
         private DefenseMinionBehaviorProfileSo defaultMinionBehaviorProfile;
 
         [Header("Spawn")]
-        [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn por padrão.")]
+        [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn por padrÃ£o.")]
         [SerializeField]
         private float defaultSpawnOffset;
 
-        [Tooltip("Se verdadeiro, gira as posições de spawn entre waves para distribuir minions.")]
+        [Tooltip("Se verdadeiro, gira as posiÃ§Ãµes de spawn entre waves para distribuir minions.")]
         [SerializeField]
         private bool rotatePositions;
 
         [Header("Mapeamento por target role")]
-        [Tooltip("Lista de binds entre target role detectado, perfil de comportamento opcional, preset de wave específico e offset dedicado.")]
+        [Tooltip("Lista de binds entre target role detectado, perfil de comportamento opcional, preset de wave especÃ­fico e offset dedicado.")]
         [SerializeField]
         private List<RoleDefenseConfigBinding> roleBindings = new();
 
@@ -69,12 +69,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (defaultWavePreset == null)
             {
-                DebugUtility.LogError<DefenseEntryConfigSo>("DefaultWavePreset é obrigatório para roles não mapeados.", this);
+                DebugUtility.LogError<DefenseEntryConfigSo>("DefaultWavePreset Ã© obrigatÃ³rio para roles nÃ£o mapeados.", this);
             }
 
             if (defaultMinionBehaviorProfile == null)
             {
-                DebugUtility.LogWarning<DefenseEntryConfigSo>("DefaultMinionBehaviorProfile vazio — defina apenas se quiser guiar o design.", this);
+                DebugUtility.LogWarning<DefenseEntryConfigSo>("DefaultMinionBehaviorProfile vazio â€” defina apenas se quiser guiar o design.", this);
             }
         }
 #endif
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (!_runtimeBindings.TryAdd(role, config))
                 {
-                    DebugUtility.LogError<DefenseEntryConfigSo>($"Role '{role}' duplicado no bind — mantenha apenas uma configuração por role.", this);
+                    DebugUtility.LogError<DefenseEntryConfigSo>($"Role '{role}' duplicado no bind â€” mantenha apenas uma configuraÃ§Ã£o por role.", this);
                     continue;
                 }
 
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private DefenseRole role;
 
-            [Tooltip("Preset de wave específico para este role.")]
+            [Tooltip("Preset de wave especÃ­fico para este role.")]
             [SerializeField]
             private WavePresetSo wavePreset;
 
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private DefenseMinionBehaviorProfileSo minionBehaviorProfile;
 
-            [Tooltip("Offset específico para este role (opcional). Se zero, usa o default da entrada.")]
+            [Tooltip("Offset especÃ­fico para este role (opcional). Se zero, usa o default da entrada.")]
             [SerializeField]
             private float spawnOffsetOverride;
 

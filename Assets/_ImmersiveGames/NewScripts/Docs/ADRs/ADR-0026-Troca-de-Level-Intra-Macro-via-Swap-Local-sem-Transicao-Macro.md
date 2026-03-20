@@ -1,4 +1,4 @@
-﻿# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
+# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
 
 ## Status atual (2026-03-06)
 - Status: **DONE**

@@ -1,7 +1,7 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/UI/Resource UI Style")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/UI/Resource UI Style")]
     public class RuntimeAttributeUIStyle : ScriptableObject
     {
         [Header("Fill Colors")]
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
         }
 
         /// <summary>
-        /// Indica se o gradiente está configurado corretamente para avaliação.
+        /// Indica se o gradiente estÃ¡ configurado corretamente para avaliaÃ§Ã£o.
         /// </summary>
         public bool HasFillGradient()
         {

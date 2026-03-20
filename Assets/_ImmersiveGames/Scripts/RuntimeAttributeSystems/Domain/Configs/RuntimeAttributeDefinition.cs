@@ -1,7 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/RuntimeAttribute/RuntimeAttribute Definition")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/RuntimeAttribute/RuntimeAttribute Definition")]
     public class RuntimeAttributeDefinition : ScriptableObject
     {
         [Header("Basic Settings")]

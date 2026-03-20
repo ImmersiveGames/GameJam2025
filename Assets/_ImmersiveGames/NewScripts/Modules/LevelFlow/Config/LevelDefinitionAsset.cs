@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
 {
     [CreateAssetMenu(
         fileName = "LevelDefinitionAsset",
-        menuName = "ImmersiveGames/NewScripts/LevelFlow/Level Definition",
+        menuName = "ImmersiveGames/NewScripts/Modules/LevelFlow/Definitions/LevelDefinitionAsset",
         order = 30)]
     public sealed class LevelDefinitionAsset : ScriptableObject
     {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             if (string.IsNullOrEmpty(signature))
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleResetCompletionGate),
-                    "[SceneFlowGate] ContextSignature vazia. NÃ£o Ã© possÃ­vel correlacionar gate; liberando sem aguardar reset.");
+                    "[SceneFlowGate] ContextSignature vazia. Não é possível correlacionar gate; liberando sem aguardar reset.");
                 return;
             }
 
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 if (_completedReasons.ContainsKey(signature))
                 {
                     DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
-                        $"[SceneFlowGate] JÃ¡ concluÃ­do (cached). signature='{signature}'.");
+                        $"[SceneFlowGate] Já concluído (cached). signature='{signature}'.");
                     return;
                 }
             }
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             string reason = await tcs.Task;
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
-                $"[SceneFlowGate] ConcluÃ­do. signature='{signature}', reason='{reason ?? "<null>"}'.");
+                $"[SceneFlowGate] Concluído. signature='{signature}', reason='{reason ?? "<null>"}'.");
         }
 
         private void OnCompleted(WorldLifecycleResetCompletedEvent evt)
@@ -119,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 DebugUtility.LogWarning(typeof(WorldLifecycleResetCompletionGate),
                     $"[SceneFlowGate] WorldLifecycleResetCompletedEvent recebido com ContextSignature vazia. reason='{reason ?? "<null>"}'.");
 
-                // NÃ£o faz cache nem tenta completar awaiters sem assinatura correlacionÃ¡vel.
+                // Não faz cache nem tenta completar awaiters sem assinatura correlacionável.
                 return;
             }
 
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             {
                 PruneCompletedCacheIfNeeded();
 
-                // MantÃ©m o primeiro reason (estÃ¡vel p/ debug). Se preferir "Ãºltimo ganha", troque por _completedReasons[signature] = reason;
+                // Mantém o primeiro reason (estável p/ debug). Se preferir "último ganha", troque por _completedReasons[signature] = reason;
                 if (!_completedReasons.ContainsKey(signature))
                 {
                     _completedReasons.Add(signature, reason);

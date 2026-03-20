@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime

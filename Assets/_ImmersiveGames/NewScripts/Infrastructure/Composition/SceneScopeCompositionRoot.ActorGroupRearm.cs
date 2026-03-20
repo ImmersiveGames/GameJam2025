@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // ----------------------------
             // ActorGroupRearm (grupos/targets)
             // ----------------------------
-            // Classificador de alvos can�nicos por grupo/ids para reset de gameplay.
+            // Classificador de alvos can?nicos por grupo/ids para reset de gameplay.
             if (!provider.TryGetForScene<IActorGroupRearmTargetClassifier>(_sceneName, out var classifier) || classifier == null)
             {
                 classifier = new DefaultActorGroupRearmTargetClassifier();
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"IActorGroupRearmTargetClassifier registrado para a cena '{_sceneName}'.");
             }
 
-            // Orquestrador de reset de gameplay (por fases) acion�vel por participantes do WorldLifecycle.
+            // Orquestrador de reset de gameplay (por fases) acion?vel por participantes do WorldLifecycle.
             if (!provider.TryGetForScene<IActorGroupRearmOrchestrator>(_sceneName, out var gameplayReset) || gameplayReset == null)
             {
                 gameplayReset = new ActorGroupRearmOrchestrator(_sceneName);

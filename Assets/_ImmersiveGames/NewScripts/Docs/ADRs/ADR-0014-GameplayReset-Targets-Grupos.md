@@ -1,4 +1,4 @@
-﻿# ADR-0014 - GameplayReset: grupos canonicos de atores
+# ADR-0014 - GameplayReset: grupos canonicos de atores
 
 ## Status
 

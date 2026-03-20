@@ -1,4 +1,4 @@
-﻿# Audit NewScripts Canonical Cleanup Round 1
+# Audit NewScripts Canonical Cleanup Round 1
 
 ## 1. Resumo executivo
 - Estado encontrado: coexistência de trilho canônico com trilho `Dev/QA`, além de histórico documental operacional antigo em `Docs/Reports/**`.

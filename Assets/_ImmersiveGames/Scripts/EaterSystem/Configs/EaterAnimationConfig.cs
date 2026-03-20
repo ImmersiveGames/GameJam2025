@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.AnimationSystems.Config;
+using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Configs
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
     /// que podem ser referenciados tanto por nome (para configuração no Animator)
     /// quanto por hash (para uso em runtime sem alocação de strings).
     /// </summary>
-    [CreateAssetMenu(menuName = "ImmersiveGames/Animation/Eater Animation Config")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/Animation/Eater Animation Config")]
     public class EaterAnimationConfig : AnimationConfig
     {
         [Header("Eater Animations")]

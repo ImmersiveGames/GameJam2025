@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn
 {

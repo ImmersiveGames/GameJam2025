@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;

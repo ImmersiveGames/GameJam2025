@@ -1,9 +1,9 @@
-﻿using DG.Tweening;
+using DG.Tweening;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 {
     [CreateAssetMenu(
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Chase Strategies/Direct",
+        menuName = "ImmersiveGames/Legacy/PlanetSystems/Defense/Chase Strategies/Direct",
         fileName = "DirectChaseStrategy")]
     public sealed class DirectChaseStrategySo : MinionChaseStrategySo
     {

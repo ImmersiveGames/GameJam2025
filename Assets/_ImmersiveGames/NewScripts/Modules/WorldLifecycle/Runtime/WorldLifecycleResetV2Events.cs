@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 

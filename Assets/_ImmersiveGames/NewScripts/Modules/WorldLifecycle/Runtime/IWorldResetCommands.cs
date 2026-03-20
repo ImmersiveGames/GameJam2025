@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;

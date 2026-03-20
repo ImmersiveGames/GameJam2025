@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 namespace _ImmersiveGames.NewScripts.Core.Events
 {
     public interface IEventBinding<T>

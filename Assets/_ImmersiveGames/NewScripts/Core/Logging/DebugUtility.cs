@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static readonly Dictionary<string, string> _messagePool = new();
 
         private const string RepeatedCallColor = "#FFD54F";
-        private const string AlertIcon = "âš ï¸";
+        private const string AlertIcon = "⚠️";
 
         public static class Colors
         {
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             LogInternal("DebugUtility inicializado antes de todos os sistemas.");
         }
 
-        #region ConfiguraÃ§Ãµes
+        #region Configurações
         public static bool IsGlobalDebugEnabled => _globalDebugEnabled;
         public static bool IsVerboseLoggingEnabled => _verboseLoggingEnabled;
         public static bool IsFallbacksEnabled => _logFallbacks;
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 #endif
         #endregion
 
-        #region Log estÃ¡tico por Type
+        #region Log estático por Type
         public static void Log(Type type, string message, string color = null, Object context = null)
         {
             if (!ShouldLog(type, null, DebugLevel.Logs))
@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         }
         #endregion
 
-        #region Log genÃ©rico por tipo (T)
+        #region Log genérico por tipo (T)
         public static void Log<T>(string message, string color = null, Object context = null, T instance = null) where T : class
         {
             var type = typeof(T);
@@ -517,7 +517,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 return false;
             }
 
-            // Suprime apenas spam de observabilidade idempotente de catÃ¡logo.
+            // Suprime apenas spam de observabilidade idempotente de catálogo.
             return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
                    message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
                    message.Contains("[OBS][Config] SceneRouteCatalogBuild", StringComparison.Ordinal);

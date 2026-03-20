@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Pool
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Audio/SoundEmitter Pool Data")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/Audio/SoundEmitter Pool Data")]
     public class SoundEmitterPoolData : PoolData
     {
         [Header("Audio Pool Settings")]
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Pool
             if (maxSoundInstances < initialPoolSize)
             {
                 DebugUtility.LogWarning<SoundEmitterPoolData>(
-                    $"MaxSoundInstances n�o pode ser menor que InitialPoolSize em {name}. Ajustando...",
+                    $"MaxSoundInstances nï¿½o pode ser menor que InitialPoolSize em {name}. Ajustando...",
                     this);
                 maxSoundInstances = initialPoolSize;
             }

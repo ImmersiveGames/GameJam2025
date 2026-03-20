@@ -1,86 +1,86 @@
-﻿# ADR-0016 â€” ContentSwap InPlace-only (NewScripts)
+# ADR-0016 — ContentSwap InPlace-only (NewScripts)
 
 ## Status
 
 - Estado: Implementado
-- Data (decisÃ£o): 2026-01-28
-- Ãšltima atualizaÃ§Ã£o: 2026-02-04
-- Tipo: ImplementaÃ§Ã£o
-- Escopo: NewScripts â†’ Modules/ContentSwap + Infrastructure (Bootstrap/QA)
+- Data (decisão): 2026-01-28
+- Última atualização: 2026-02-04
+- Tipo: Implementação
+- Escopo: NewScripts → Modules/ContentSwap + Infrastructure (Bootstrap/QA)
 
 ## Contexto
 
-Em NewScripts, ContentSwap Ã© um mecanismo simples e determinÃ­stico para trocar conteÃºdo **na mesma cena**, com reset/hard reset local. O escopo Ã© intencionalmente reduzido e nÃ£o considera transiÃ§Ãµes entre cenas dentro do prÃ³prio ContentSwap.
+Em NewScripts, ContentSwap é um mecanismo simples e determinístico para trocar conteúdo **na mesma cena**, com reset/hard reset local. O escopo é intencionalmente reduzido e não considera transições entre cenas dentro do próprio ContentSwap.
 
-## DecisÃ£o
+## Decisão
 
-### Objetivo de produÃ§Ã£o (sistema ideal)
+### Objetivo de produção (sistema ideal)
 
-Permitir troca de conteÃºdo/configuraÃ§Ã£o em runtime (in-place) sem reiniciar a cena, integrada ao WorldLifecycle, com contrato de gating e observabilidade para QA e produÃ§Ã£o.
+Permitir troca de conteúdo/configuração em runtime (in-place) sem reiniciar a cena, integrada ao WorldLifecycle, com contrato de gating e observabilidade para QA e produção.
 
-### Contrato de produÃ§Ã£o (mÃ­nimo)
+### Contrato de produção (mínimo)
 
-- ContentSwap Ã© uma operaÃ§Ã£o explÃ­cita com reason canÃ´nico e assinatura observÃ¡vel.
+- ContentSwap é uma operação explícita com reason canônico e assinatura observável.
 - Pode executar reset in-place de subset de sistemas sem violar determinismo global.
-- OperaÃ§Ã£o respeita gates (scene_transition/sim.gameplay) conforme necessÃ¡rio.
+- Operação respeita gates (scene_transition/sim.gameplay) conforme necessário.
 
-### NÃ£o-objetivos (resumo)
+### Não-objetivos (resumo)
 
-Ver seÃ§Ã£o **Fora de escopo**.
+Ver seção **Fora de escopo**.
 
 ### API
-- Interface Ãºnica: `IContentSwapChangeService`.
-- **Apenas** mÃ©todos `RequestContentSwapInPlaceAsync(...)` permanecem disponÃ­veis.
+- Interface única: `IContentSwapChangeService`.
+- **Apenas** métodos `RequestContentSwapInPlaceAsync(...)` permanecem disponíveis.
 
-### Observabilidade mÃ­nima
+### Observabilidade mínima
 Para cada request InPlace, o sistema deve produzir logs/eventos contendo:
 - `mode=InPlace`
 - `contentId`
 - `reason`
 
-Eventos/logs mÃ­nimos:
+Eventos/logs mínimos:
 - `ContentSwapRequested`
 - `ContentSwapPendingSet`
 - `ContentSwapCommitted`
 - `ContentSwapPendingCleared`
 
 ### Bootstrap
-- `GlobalCompositionRoot` registra toda a infraestrutura NewScripts necessÃ¡ria.
-- ContentSwap Ã© registrado **sempre** como InPlace-only.
+- `GlobalCompositionRoot` registra toda a infraestrutura NewScripts necessária.
+- ContentSwap é registrado **sempre** como InPlace-only.
 
 ## Fora de escopo
 
-- Substituir o fluxo de transiÃ§Ã£o de cenas (SceneFlow) para trocas que exigem load/unload.
+- Substituir o fluxo de transição de cenas (SceneFlow) para trocas que exigem load/unload.
 
-- Qualquer expansÃ£o de escopo alÃ©m do InPlace-only.
-- IntegraÃ§Ã£o do ContentSwap com transiÃ§Ãµes de cena.
-- Registro/seleÃ§Ã£o dinÃ¢mica de implementaÃ§Ã£o.
+- Qualquer expansão de escopo além do InPlace-only.
+- Integração do ContentSwap com transições de cena.
+- Registro/seleção dinâmica de implementação.
 
-## ConsequÃªncias
+## Consequências
 
-### PolÃ­tica de falhas e fallback (fail-fast)
+### Política de falhas e fallback (fail-fast)
 
-- Em Unity, ausÃªncia de referÃªncias/configs crÃ­ticas deve **falhar cedo** (erro claro) para evitar estados invÃ¡lidos.
-- Evitar "auto-criaÃ§Ã£o em voo" (instanciar prefabs/serviÃ§os silenciosamente) em produÃ§Ã£o.
-- ExceÃ§Ãµes: apenas quando houver **config explÃ­cita** de modo degradado (ex.: HUD desabilitado) e com log Ã¢ncora indicando modo degradado.
+- Em Unity, ausência de referências/configs críticas deve **falhar cedo** (erro claro) para evitar estados inválidos.
+- Evitar "auto-criação em voo" (instanciar prefabs/serviços silenciosamente) em produção.
+- Exceções: apenas quando houver **config explícita** de modo degradado (ex.: HUD desabilitado) e com log âncora indicando modo degradado.
 
 
-### CritÃ©rios de pronto (DoD)
+### Critérios de pronto (DoD)
 
-- EvidÃªncia mostra ContentSwap in-place com reason canÃ´nico.
+- Evidência mostra ContentSwap in-place com reason canônico.
 
-## EvidÃªncia
+## Evidência
 
-- **Ãšltima evidÃªncia (log bruto):** `Docs/Reports/Evidence/LATEST.md`
+- **Última evidência (log bruto):** `Docs/Reports/Evidence/LATEST.md`
 
-- **Fonte canÃ´nica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
-- **Ã‚ncoras/assinaturas relevantes:**
+- **Fonte canônica atual:** [`LATEST.md`](../Reports/Evidence/LATEST.md)
+- **Âncoras/assinaturas relevantes:**
   - `[QA][ContentSwap] SwapInPlace contentId='content.2' reason='QA/ContentSwap/InPlace/NoVisuals'`
 - **Contrato de observabilidade:** [`Observability-Contract.md`](../Standards/Standards.md#observability-contract)
 
-## ImplementaÃ§Ã£o (arquivos impactados)
+## Implementação (arquivos impactados)
 
-### Runtime / Editor (cÃ³digo e assets)
+### Runtime / Editor (código e assets)
 
 - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/ContentSwapContextService.cs`
@@ -90,11 +90,11 @@ Eventos/logs mÃ­nimos:
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gates/SimulationGateTokens.cs`
 
-### QA / evidÃªncia
+### QA / evidência
 
 - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Dev/Bindings/ContentSwapDevContextMenu.cs`
 
-## ReferÃªncias
+## Referências
 
 - ADR-TEMPLATE.md
 - Standards/Standards.md#observability-contract

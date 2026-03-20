@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
     /// </summary>
     [CreateAssetMenu(
         fileName = "SkinAudioConfigData",
-        menuName = "ImmersiveGames/Skin/Skin Audio Config",
+        menuName = "ImmersiveGames/Legacy/Skin/Skin Audio Config",
         order = 3)]
     public class SkinAudioConfigData : SkinConfigData, ISkinAudioConfig
     {

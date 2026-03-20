@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.In
 {
     /// <summary>
     /// Participante de soft reset do WorldLifecycle para o escopo Players.
-    /// Implementa��o de gameplay (n�o infra).
+    /// Implementa??o de gameplay (n?o infra).
     /// Ponte: WorldLifecycle(WorldResetScope.Players) -> ActorGroupRearm(ByActorKind(Player)).
     /// </summary>
     public sealed class PlayersActorGroupRearmWorldParticipant : IActorGroupRearmWorldParticipant
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.In
             if (_actorGroupRearm == null)
             {
                 DebugUtility.LogWarning(typeof(PlayersActorGroupRearmWorldParticipant),
-                    "[IActorGroupRearmWorldBridge] IActorGroupRearmOrchestrator ausente. Soft reset Players n�o executar� ActorGroupRearm.");
+                    "[IActorGroupRearmWorldBridge] IActorGroupRearmOrchestrator ausente. Soft reset Players n?o executar? ActorGroupRearm.");
                 return;
             }
 
