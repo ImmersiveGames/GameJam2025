@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Composition;
+﻿using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
@@ -8,36 +8,35 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.AudioSystem.Core
 {
     /// <summary>
-    /// Ponto central de bootstrap do sistema de áudio.
-    /// - Garante o registro de serviços base (Math, Volume, SFX) no DI.
-    /// - Garante a existência de um GlobalBgmAudioService em cena.
+    /// Ponto central de bootstrap do sistema de Ã¡udio.
+    /// - Garante o registro de serviÃ§os base (Math, Volume, SFX) no DI.
+    /// - Garante a existÃªncia de um GlobalBgmAudioService em cena.
     /// </summary>
     public static class AudioSystemBootstrap
     {
         private static GlobalBgmAudioService _cachedGlobalBgmAudioService;
 
         /// <summary>
-        /// Método chamado automaticamente após o carregamento da primeira cena.
+        /// MÃ©todo chamado automaticamente apÃ³s o carregamento da primeira cena.
         /// Pode ser chamado manualmente por outros sistemas que precisem garantir
-        /// que o áudio está pronto antes do uso.
+        /// que o Ã¡udio estÃ¡ pronto antes do uso.
         /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         public static void EnsureAudioSystemInitialized()
         {
 #if NEWSCRIPTS_MODE
             DebugUtility.Log(typeof(AudioSystemBootstrap), "NEWSCRIPTS_MODE ativo: AudioSystemBootstrap ignorado.");
-            return;
-#endif
-            // Garantir serviços base no DI
+            #else
+            // Garantir serviÃ§os base no DI
             RegisterMathServiceIfNeeded();
             RegisterVolumeServiceIfNeeded();
             RegisterSfxServiceIfNeeded();
 
-            // Se já existe um serviço global de BGM válido, não há mais nada a fazer.
+            // Se jÃ¡ existe um serviÃ§o global de BGM vÃ¡lido, nÃ£o hÃ¡ mais nada a fazer.
             if (IsInitialized())
                 return;
 
-            // Garantir referência do GlobalBgmAudioService em cena
+            // Garantir referÃªncia do GlobalBgmAudioService em cena
             RefreshCachedAudioManagerReference();
             if (_cachedGlobalBgmAudioService != null)
             {
@@ -45,16 +44,17 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
                 {
                     DebugUtility.LogWarning(
                         typeof(AudioSystemBootstrap),
-                        "GlobalBgmAudioService encontrado mas ainda não inicializado. Verifique a ordem de inicialização.");
+                        "GlobalBgmAudioService encontrado mas ainda nÃ£o inicializado. Verifique a ordem de inicializaÃ§Ã£o.");
                 }
 
                 return;
             }
 
             CreateAudioManagerFromResources();
+#endif
         }
 
-        #region Registro de serviços base
+        #region Registro de serviÃ§os base
 
         private static void RegisterMathServiceIfNeeded()
         {
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         private static IAudioMathService ResolveMathService()
         {
-            // Se não há DI disponível, devolve uma instância local simples.
+            // Se nÃ£o hÃ¡ DI disponÃ­vel, devolve uma instÃ¢ncia local simples.
             if (DependencyManager.Provider == null)
                 return new AudioMathService();
 
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
                 ? serviceSettings
                 : LoadDefaultAudioServiceSettings();
 
-            // AudioConfig padrão (perfil base de SFX)
+            // AudioConfig padrÃ£o (perfil base de SFX)
             var resolvedConfig = DependencyManager.Provider.TryGetGlobal(out AudioConfig defaultConfig)
                 ? defaultConfig
                 : LoadDefaultAudioConfig();
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         private static void RefreshCachedAudioManagerReference()
         {
-            // Se o cache ainda aponta para um objeto válido, nada a fazer.
+            // Se o cache ainda aponta para um objeto vÃ¡lido, nada a fazer.
             if (_cachedGlobalBgmAudioService != null && _cachedGlobalBgmAudioService)
                 return;
 
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
             {
                 DebugUtility.LogError(
                     typeof(AudioSystemBootstrap),
-                    "Prefab do GlobalBgmAudioService não encontrado em Resources/Audio/Prefabs/GlobalBgmAudioService");
+                    "Prefab do GlobalBgmAudioService nÃ£o encontrado em Resources/Audio/Prefabs/GlobalBgmAudioService");
                 return;
             }
 
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         }
 
         /// <summary>
-        /// Helper para obter o serviço de BGM atual via DI.
+        /// Helper para obter o serviÃ§o de BGM atual via DI.
         /// </summary>
         public static IBgmAudioService GetAudioService()
         {

@@ -1,3 +1,4 @@
+#nullable enable
 using System.Threading.Tasks;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 {

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config
 {
@@ -16,6 +17,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config
         [SerializeField] private int maxSize = 32;
         [SerializeField] private float autoReturnSeconds;
         [SerializeField] private string poolLabel = "pool";
+        [FormerlySerializedAs("prewarmOnEnsure")]
+        [SerializeField] private bool prewarm;
 
         public GameObject Prefab => prefab;
         public int InitialSize => initialSize;
@@ -23,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config
         public int MaxSize => maxSize;
         public float AutoReturnSeconds => autoReturnSeconds;
         public string PoolLabel => poolLabel;
+        public bool Prewarm => prewarm;
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -53,6 +57,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config
             {
                 FailFast("PoolDefinitionAsset invalid: 'maxSize' must be >= 'initialSize'.");
             }
+
         }
 #endif
 

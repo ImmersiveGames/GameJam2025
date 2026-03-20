@@ -40,16 +40,18 @@ Este indice resume owners e contratos canonicos vigentes.
 
 1. `Docs/README.md`
 2. `Docs/Guides/Production-How-To-Use-Core-Modules.md`
-3. `Docs/Guides/Event-Hooks-Reference.md`
-4. `Docs/Modules/SceneFlow.md`
-5. `Docs/Modules/Navigation.md`
-6. `Docs/Modules/LevelFlow.md`
-7. `Docs/Modules/GameLoop.md`
-8. `Docs/Modules/Gameplay.md`
-9. `Docs/Modules/WorldLifecycle.md`
-10. `Docs/Modules/InputModes.md`
-11. `Docs/ADRs/README.md`
-12. `Docs/Reports/Audits/LATEST.md`
-13. `Docs/Reports/Evidence/LATEST.md`
-14. `Docs/CHANGELOG.md`
+3. `Docs/Guides/Pooling-How-To.md`
+4. `Docs/Guides/Pooling-Quick-Access.html`
+5. `Docs/Guides/Event-Hooks-Reference.md`
+6. `Docs/Modules/SceneFlow.md`
+7. `Docs/Modules/Navigation.md`
+8. `Docs/Modules/LevelFlow.md`
+9. `Docs/Modules/GameLoop.md`
+10. `Docs/Modules/Gameplay.md`
+11. `Docs/Modules/WorldLifecycle.md`
+12. `Docs/Modules/InputModes.md`
+13. `Docs/ADRs/README.md`
+14. `Docs/Reports/Audits/LATEST.md`
+15. `Docs/Reports/Evidence/LATEST.md`
+16. `Docs/CHANGELOG.md`
 

@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             var hydratedRequest = BuildRequestFromRouteDefinition(request, out var routeDefinition);
             EnsureTransitionProfileOrFailFast(hydratedRequest);
             var context = BuildContextWithResetDecision(hydratedRequest, routeDefinition);
-            string signature = SceneTransitionSignature.Compute(context);
+            string signature = SceneTransitionSignature.Compute(context) ?? string.Empty;
             LogResolvedRouteForObservability(hydratedRequest, signature);
 
             DebugUtility.Log<SceneTransitionService>(
@@ -359,7 +359,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             return ex.InnerException != null && IsFatalH1Exception(ex.InnerException);
         }
 
-        private async Task RunFadeInIfNeeded(SceneTransitionContext context, long transitionId, string signature)
+        private async Task RunFadeInIfNeeded(SceneTransitionContext context, long transitionId, string? signature)
         {
             if (!context.UseFade || context.TransitionProfile == null) return;
             _fadeAdapter.ConfigureFromProfile(context.TransitionProfile, context.TransitionProfileName);
@@ -369,7 +369,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             LogObsFade("FadeInCompleted", transitionId, signature, context.TransitionProfileName);
         }
 
-        private async Task RunFadeOutIfNeeded(SceneTransitionContext context, long transitionId, string signature)
+        private async Task RunFadeOutIfNeeded(SceneTransitionContext context, long transitionId, string? signature)
         {
             if (!context.UseFade) return;
             LogObsFade("FadeOutStarted", transitionId, signature, context.TransitionProfileName);
@@ -377,9 +377,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             LogObsFade("FadeOutCompleted", transitionId, signature, context.TransitionProfileName);
         }
 
-        private static void LogObsFade(string phase, long transitionId, string signature, string profile)
+        private static void LogObsFade(string phase, long transitionId, string? signature, string profile)
         {
-            DebugUtility.Log<SceneTransitionService>($"[OBS][Fade] {phase} id={transitionId} signature='{signature}' profile='{profile}'.");
+            string normalizedSignature = string.IsNullOrWhiteSpace(signature) ? "n/a" : signature;
+            DebugUtility.Log<SceneTransitionService>($"[OBS][Fade] {phase} id={transitionId} signature='{normalizedSignature}' profile='{profile}'.");
         }
 
         private static void LogLoadedScenesSnapshot(string stage)

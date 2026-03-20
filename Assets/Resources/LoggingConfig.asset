@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f6935924c1f1494e9b6c0fcc546001b1, type: 3}
   m_Name: LoggingConfig
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   globalEnabled: 1
   verboseEnabled: 1
   fallbacksEnabled: 1
@@ -37,4 +37,8 @@ MonoBehaviour:
   - ruleId: modules_sceneflow_transition
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
+    level: 4
+  - ruleId: infra_pooling
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure.Pooling
     level: 4

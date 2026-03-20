@@ -11,8 +11,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
         {
 #if NEWSCRIPTS_MODE
             DebugUtility.Log(typeof(AnimationBootstrapper), "NEWSCRIPTS_MODE ativo: AnimationBootstrapper ignorado.");
-            return;
-#endif
+#else
             var configProvider = new AnimationConfigProvider();
 
             // Registra configs padrão por tipo de controller (nome da classe)
@@ -28,6 +27,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
             DebugUtility.LogVerbose<AnimationBootstrapper>(
                 "AnimationBootstrapper inicializado (AnimationConfigProvider + GlobalAnimationService registrados).",
                 DebugUtility.Colors.Info);
+#endif
         }
 
         private static void RegisterDefaultConfig(AnimationConfigProvider provider, string controllerTypeName, string resourcePath)

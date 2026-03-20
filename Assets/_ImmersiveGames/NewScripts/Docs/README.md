@@ -7,27 +7,31 @@ Esta pasta documenta o estado operacional atual de `Assets/_ImmersiveGames/NewSc
 Leia nesta ordem:
 1. `Docs/Canon/Canon-Index.md`
 2. `Docs/Guides/Production-How-To-Use-Core-Modules.md`
-3. `Docs/Guides/Event-Hooks-Reference.md`
-4. `Docs/Modules/SceneFlow.md`
-5. `Docs/Modules/Navigation.md`
-6. `Docs/Modules/LevelFlow.md`
-7. `Docs/Modules/GameLoop.md`
-8. `Docs/Modules/Gameplay.md`
-9. `Docs/Modules/WorldLifecycle.md`
-10. `Docs/Modules/InputModes.md`
-11. `Docs/ADRs/README.md`
-12. `Docs/Reports/Audits/LATEST.md`
-13. `Docs/Reports/Evidence/LATEST.md`
-14. `Docs/CHANGELOG.md`
+3. `Docs/Guides/Pooling-How-To.md`
+4. `Docs/Guides/Pooling-Quick-Access.html`
+5. `Docs/Guides/Event-Hooks-Reference.md`
+6. `Docs/Modules/SceneFlow.md`
+7. `Docs/Modules/Navigation.md`
+8. `Docs/Modules/LevelFlow.md`
+9. `Docs/Modules/GameLoop.md`
+10. `Docs/Modules/Gameplay.md`
+11. `Docs/Modules/WorldLifecycle.md`
+12. `Docs/Modules/InputModes.md`
+13. `Docs/ADRs/README.md`
+14. `Docs/Reports/Audits/LATEST.md`
+15. `Docs/Reports/Evidence/LATEST.md`
+16. `Docs/CHANGELOG.md`
 
 ## Guias de uso
 
 Fonte canonica em Markdown:
 - `Docs/Guides/Production-How-To-Use-Core-Modules.md`
+- `Docs/Guides/Pooling-How-To.md`
 - `Docs/Guides/Event-Hooks-Reference.md`
 
 Camada visual completa em HTML:
 - `Docs/Guides/Manual-Operacional.html`
+- `Docs/Guides/Pooling-Quick-Access.html`
 - `Docs/Guides/Hooks-Reference.html`
 
 Regra:

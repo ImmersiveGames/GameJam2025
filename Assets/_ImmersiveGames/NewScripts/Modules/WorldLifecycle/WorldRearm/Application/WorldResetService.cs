@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
 
         private bool _dependenciesResolved;
-        private WorldResetOrchestrator _orchestrator;
+        private WorldResetOrchestrator? _orchestrator;
 
         public async Task<WorldResetResult> TriggerResetAsync(string? contextSignature, string? reason)
         {
@@ -61,7 +61,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
 
             try
             {
-                return await _orchestrator.ExecuteAsync(request);
+                var orchestrator = _orchestrator
+                    ?? throw new InvalidOperationException("WorldResetOrchestrator was not initialized.");
+                return await orchestrator.ExecuteAsync(request);
             }
             catch (Exception ex)
             {

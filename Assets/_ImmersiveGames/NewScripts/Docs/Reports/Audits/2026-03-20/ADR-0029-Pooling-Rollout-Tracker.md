@@ -1,87 +1,106 @@
-# ADR-0029 Pooling Rollout Tracker (Package A)
+# ADR-0029 Pooling Rollout Tracker (Packages A+B+C+D)
 
 - Date: 2026-03-20
 - Scope: `Assets/_ImmersiveGames/NewScripts/Infrastructure/Pooling/**`
 - Reference ADR: `Docs/ADRs/ADR-0029-Canonical-Pooling-In-NewScripts.md`
-- Tracker status: OPEN (Package A complete; Package B next)
+- Tracker status: CLOSED (Rollout COMPLETE)
 
 ## 1) Baseline real (repo state at rollout start)
 
-- ADR-0029 remains **Accepted / Complete / PASS** as architectural contract.
-- Current repository state before this rollout had **no usable canonical pooling module** in:
+- ADR-0029 remained **Accepted / Complete / PASS** as architectural contract.
+- At rollout start, the repository snapshot did not have a usable canonical pooling implementation under:
   - `Infrastructure/Pooling/Contracts/**`
   - `Infrastructure/Pooling/Config/**`
   - `Infrastructure/Pooling/Runtime/**`
 - Conclusion:
-  - Contract is valid.
-  - Implementation availability in this repo snapshot needed reconstruction from zero.
+  - contract validity stayed intact;
+  - implementation had to be reconstructed incrementally in this rollout.
 
-## 2) Phase status (Package A only)
+## 2) Final status by package
 
-| Phase | Name | Goal | Status | Evidence |
-|---|---|---|---|---|
-| F0 | Baseline + tracker | Freeze real baseline, guardrails, stop/go, residual risks | DONE | This tracker |
-| F1 | Structure + contracts | Create canonical shape and freeze base contracts/config | DONE | `Infrastructure/Pooling/**` created |
-| F2 | Bootstrap + DI base | Wire pooling stage in global pipeline and register `IPoolService` | DONE | `GlobalCompositionRoot` updated |
+| Package | Goal | Final Status | Evidence |
+|---|---|---|---|
+| A (F0/F1/F2) | Baseline + structure + bootstrap/DI | DONE | `Infrastructure/Pooling/**`, `GlobalCompositionRoot.Pipeline.cs` |
+| B | Runtime core (ensure/prewarm/rent/return/expand/max-limit/cleanup) | DONE | `PoolService.cs`, `GameObjectPool.cs`, `PoolRuntimeHost.cs`, `PoolRuntimeInstance.cs` |
+| C | Standalone QA harness (ContextMenu / Play Mode) | DONE | `Infrastructure/Pooling/QA/**` |
+| D | `autoReturnSeconds` runtime + QA validation flow reuse | DONE | `PoolAutoReturnTracker.cs`, `GameObjectPool.cs`, `PoolingQaContextMenuDriver.cs` |
 
-## 3) Guardrails (mandatory)
+## 3) Rollout close-out validation (manual Play Mode)
 
-- Pooling stays in `Infrastructure/Pooling/**` as shared infrastructure.
+Validated as PASS for:
+
+- ensure/register by `PoolDefinitionAsset`
+- prewarm
+- rent
+- manual return
+- controlled expansion + explicit max-limit failure
+- cleanup/shutdown
+- auto-return (`autoReturnSeconds`)
+- auto-return cancellation on manual return
+- auto-return cancellation on cleanup
+- multiple simultaneous rented instances with auto-return
+- QA harness operation via ContextMenu
+
+## 4) Final QA harness observability alignment
+
+- Residual observability gap was closed in QA driver:
+  - local rented cache reconciliation now updates return counters when instances auto-return.
+  - driver logs/snapshots now stay coherent with runtime state after timer-based returns.
+- Scope remained harness-only (no structural runtime refactor).
+
+## 5) Guardrails final check
+
+- Identity by `PoolDefinitionAsset` reference (no string structural key).
 - Ownership remains in `GlobalCompositionRoot`.
-- Structural identity is always `PoolDefinitionAsset` reference (never string).
 - No `PersistentSingleton`.
-- No `RuntimeInitializeOnLoadMethod` as pooling owner.
+- No `RuntimeInitializeOnLoadMethod`.
 - No `Resources.Load`.
-- No domain coupling (`Gameplay`, `Audio`, `UI`, `VFX`, `Actor`, `spawner`).
-- No hardcoded world positioning rule (`y = 0` or equivalent).
-- Package A must not claim full runtime delivery.
+- No coupling with Audio/Gameplay/UI/VFX/Actor/spawner domains.
 
-## 4) Stop/Go criteria
+## 6) Final capability snapshot
 
-### GO criteria for Package A completion
+Canonical pooling in `Infrastructure/Pooling/**` is operational for:
 
-- Tracker exists and documents baseline discrepancy explicitly.
-- Canonical folders exist: `Contracts`, `Config`, `Runtime`.
-- Base artifacts exist:
-  - `IPoolService`
-  - `IPoolableObject`
-  - `PooledBehaviour`
-  - `PoolDefinitionAsset` with required fields:
-    - `prefab`
-    - `initialSize`
-    - `canExpand`
-    - `maxSize`
-    - `autoReturnSeconds`
-    - `poolLabel`
-- Global pipeline includes `Pooling` stage.
-- `IPoolService` is registered in global DI.
-- Canonical boot logs for pooling are present in composition/service code.
+- ensure/register
+- prewarm
+- rent
+- return (manual and auto-return)
+- controlled expansion with max limit and explicit failure at ceiling
+- cleanup/shutdown
+- standalone QA harness validation via ContextMenu
 
-### STOP criteria
+## 7) Rollout closure and handoff
 
-- Any identity keyed by string for canonical pool registration.
-- Any structural dependency on domain modules.
-- Any hidden bootstrap outside `GlobalCompositionRoot`.
-- Any implementation that implies runtime completeness not delivered in Package A.
-- Compilation blockers introduced by Package A changes.
+- ADR-0029 rollout is formally closed as COMPLETE.
+- Module is ready for consumption by other modules through canonical global bootstrap/DI (no alternate bootstrap required).
+- Next project step after this closure: resume Audio roadmap at ADR-0028 / F3 (`IAudioBgmService` runtime).
 
-## 5) Residual risks after Package A
+## 8) Post-close operational improvement (2026-03-20)
 
-- Runtime behavior is intentionally incomplete (`prewarm`, `rent`, `return`, expansion and auto-return execution still Package B).
-- Consumers calling runtime operations now receive explicit "Package B" failure by design.
-- No standalone scene/mock validation executed in this package (kept for Package B validation phase).
-- Additional runtime internals (`GameObjectPool`, host/instance lifecycle, auto-return timing) are placeholders only.
+- Final canonical strategy for prewarm is consumer-driven with explicit asset intent:
+  - `PoolDefinitionAsset.prewarm` declares whether the pool should be prewarmed.
+  - `PoolService.EnsureRegistered(...)` is ensure-only (register/create/idempotent), with no hidden prewarm.
+  - `PoolConsumerBehaviourBase` (reusable consumer base in namespace `Infrastructure.Pooling.Interop`) resolves `IPoolService` and runs:
+    - `EnsureRegistered(definition)` for every explicit dependency
+    - `Prewarm(definition)` only when `definition.prewarm == true`
+  - `PoolingQaContextMenuDriver` now inherits from that base directly (no complementary `MonoBehaviour` required in the same GameObject); base + QA implementation are colocated in `Infrastructure/Pooling/QA/PoolingQaContextMenuDriver.cs`.
+- Global boot prewarm list strategy remains removed:
+  - no `BootstrapConfigAsset.bootPoolDefinitions`
+  - no pool prewarm loop in `GlobalCompositionRoot` boot stage
+- Operational guardrails remain unchanged:
+  - no global asset scan
+  - no `Resources.Load`
+  - no domain coupling
 
-## 6) Explicit handoff to Package B
+## 9) Documentary close-out (2026-03-20)
 
-- Handoff status: Package A concluido; Package B e o proximo passo do rollout.
-- Implement operational runtime for:
-  - pool creation and internal storage
-  - prewarm
-  - rent
-  - return
-  - controlled expansion with max ceiling
-  - optional auto-return timer behavior
-  - shutdown cleanup
-- Add standalone validation flow (mock object + controlled scenario) as required by ADR-0029.
-- Keep contract and ownership frozen as delivered in Package A.
+- Final module documentation is now available in `Docs/Guides/**`:
+  - `Docs/Guides/Pooling-How-To.md` (technical view + operational how-to)
+  - `Docs/Guides/Pooling-Quick-Access.html` (fast practical reference)
+- Both docs reflect the accepted final shape:
+  - `PoolDefinitionAsset.prewarm` declares intent
+  - consumer-side reusable base applies ensure + conditional prewarm
+  - no global pool boot list
+  - no hidden prewarm inside `EnsureRegistered(...)`
+- Rollout status remains `CLOSED / COMPLETE` for ADR-0029 scope.
+- Next natural project step remains Audio roadmap: ADR-0028 / F3 (`IAudioBgmService` runtime).

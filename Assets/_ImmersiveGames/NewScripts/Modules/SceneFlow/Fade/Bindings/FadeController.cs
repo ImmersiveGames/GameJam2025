@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
     public sealed class FadeController : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private CanvasGroup? canvasGroup;
 
         [Header("Render Order (FadeScene)")]
         [Tooltip("SortingOrder do Canvas do Fade. Deve ficar acima de UI comum e abaixo de HUDs especiais (ex.: loading).")]
@@ -22,8 +23,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
 
         private float _fadeInDuration = 0.5f;
         private float _fadeOutDuration = 0.5f;
-        private AnimationCurve _fadeInCurve;
-        private AnimationCurve _fadeOutCurve;
+        private AnimationCurve _fadeInCurve = LinearCurve;
+        private AnimationCurve _fadeOutCurve = LinearCurve;
 
         private static readonly AnimationCurve LinearCurve =
             AnimationCurve.Linear(0f, 0f, 1f, 1f);
@@ -32,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
         private string? _activeContextSignature;
 
         // Evento para integração com SceneFlow
-        public event Action<string> OnFadeComplete;
+        public event Action<string>? OnFadeComplete;
 
         // Permite que adaptadores/SceneTransitionService definam explicitamente a signature antes do fade.
         public void SetContextSignature(string? contextSignature)
@@ -201,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
 
         private string ResolveContextSignature(string? contextSignature)
         {
-            string resolved = contextSignature;
+            string? resolved = contextSignature;
             if (string.IsNullOrWhiteSpace(resolved) || string.Equals(resolved, "no-signature", StringComparison.Ordinal))
             {
                 resolved = _lastContextSignature;
