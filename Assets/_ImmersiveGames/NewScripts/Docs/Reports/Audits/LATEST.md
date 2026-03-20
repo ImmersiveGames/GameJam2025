@@ -1,11 +1,10 @@
-# Latest Audit
+﻿# Latest Audit
 
-Relatorio canônico vigente:
-- `Docs/Reports/Audits/2026-03-19/Audit-NewScripts-Canonical-Cleanup-Round1.md`
+Relatorio canonico vigente:
+- `Docs/Reports/Audits/2026-03-20/ADR-0029-Pooling-Rollout-Tracker.md`
 
 ## Estado vigente
 
-- Round 1 de canonical cleanup aplicado.
-- Trilho `Dev/QA` removido de `NewScripts`.
-- Historico de reports anteriores removido; manter este ponteiro sempre atualizado para a auditoria vigente.
-
+- ADR-0029 Pooling Package A (F0+F1+F2) aplicado em NewScripts.
+- Fundacao canonica de pooling criada em `Infrastructure/Pooling/**` com wiring no `GlobalCompositionRoot`.
+- Package A esta concluido; o proximo passo operacional permanece o Package B de pooling.
