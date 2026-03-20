@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
@@ -25,6 +26,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         [Tooltip("Referencia direta obrigatoria para o TransitionStyleAsset canonico.")]
         public TransitionStyleAsset transitionStyleRef;
+
+        [Tooltip("BGM opcional para este intent core.")]
+        public AudioBgmCueAsset bgmCueRef;
     }
 
     [CreateAssetMenu(
@@ -53,6 +57,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             public NavigationIntentId intentId;
             public SceneRouteDefinitionAsset routeRef;
             public TransitionStyleAsset transitionStyleRef;
+            public AudioBgmCueAsset bgmCueRef;
 
             public SceneRouteId ResolveRouteRefIdOrFail(string owner)
             {
@@ -171,6 +176,29 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 DebugUtility.Colors.Info);
 
             return new GameNavigationEntry(routeRefId, slot.transitionStyleRef, SceneTransitionPayload.Empty);
+        }
+
+        public bool TryResolveBgmCueByRoute(SceneRouteId routeId, out AudioBgmCueAsset cue, out string owner)
+        {
+            cue = null;
+            owner = string.Empty;
+
+            if (!routeId.IsValid)
+            {
+                return false;
+            }
+
+            if (TryResolveCoreBgmCueByRoute(routeId, out cue, out owner))
+            {
+                return cue != null;
+            }
+
+            if (TryResolveExtraBgmCueByRoute(routeId, out cue, out owner))
+            {
+                return cue != null;
+            }
+
+            return false;
         }
 
         public void GetObservabilitySnapshot(out int rawRoutesCount, out int builtRouteIdsCount, out bool hasToGameplay)
@@ -427,6 +455,82 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
             entry = new GameNavigationEntry(resolvedRouteId, route.transitionStyleRef, SceneTransitionPayload.Empty);
             return true;
+        }
+
+        private bool TryResolveCoreBgmCueByRoute(SceneRouteId routeId, out AudioBgmCueAsset cue, out string owner)
+        {
+            cue = null;
+            owner = string.Empty;
+
+            foreach (GameNavigationIntentKind kind in RequiredCoreIntents)
+            {
+                if (TryResolveCoreSlotBgmCue(kind, routeId, out cue, out owner))
+                {
+                    return true;
+                }
+            }
+
+            foreach (GameNavigationIntentKind kind in OptionalCoreIntents)
+            {
+                if (TryResolveCoreSlotBgmCue(kind, routeId, out cue, out owner))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryResolveCoreSlotBgmCue(
+            GameNavigationIntentKind kind,
+            SceneRouteId routeId,
+            out AudioBgmCueAsset cue,
+            out string owner)
+        {
+            cue = null;
+            owner = string.Empty;
+
+            CoreIntentSlot slot = GetCoreSlot(kind);
+            if (slot.routeRef == null || !slot.routeRef.RouteId.IsValid || slot.routeRef.RouteId != routeId)
+            {
+                return false;
+            }
+
+            cue = slot.bgmCueRef;
+            owner = $"core:{kind}:{GetIntentId(kind)}";
+            return cue != null;
+        }
+
+        private bool TryResolveExtraBgmCueByRoute(SceneRouteId routeId, out AudioBgmCueAsset cue, out string owner)
+        {
+            cue = null;
+            owner = string.Empty;
+
+            if (routes == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < routes.Count; i++)
+            {
+                RouteEntry route = routes[i];
+                if (route == null || route.routeRef == null || !route.routeRef.RouteId.IsValid || route.routeRef.RouteId != routeId)
+                {
+                    continue;
+                }
+
+                if (route.bgmCueRef == null)
+                {
+                    continue;
+                }
+
+                NavigationIntentId intentId = route.ResolveIntentId();
+                owner = intentId.IsValid ? $"extra:{intentId.Value}" : $"extra:index:{i}";
+                cue = route.bgmCueRef;
+                return true;
+            }
+
+            return false;
         }
 
         private void ValidateCriticalCoreSlotsInEditorOrFail()

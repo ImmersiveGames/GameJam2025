@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         void Play(AudioBgmCueAsset cue, float fadeInSeconds = -1f, string reason = null);
 
-        void Stop(float fadeOutSeconds = 0f, string reason = null);
+        void Stop(float fadeOutSeconds = -1f, string reason = null);
 
         void StopImmediate(string reason = null);
 

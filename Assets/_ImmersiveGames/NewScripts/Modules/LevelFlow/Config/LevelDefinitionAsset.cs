@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -20,12 +21,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
         [SerializeField] private bool allowLocalCurtainIn = true;
         [SerializeField] private bool allowLocalCurtainOut = true;
 
+        [Header("Audio (Optional)")]
+        [SerializeField] private AudioBgmCueAsset bgmCue;
+
         public IReadOnlyList<SceneBuildIndexRef> AdditiveScenes => additiveScenes;
         public bool HasIntroStage => hasIntroStage;
         public bool HasPostGameReactionHook => hasPostGameReactionHook;
         public bool HasPostLevelStage => hasPostGameReactionHook;
         public bool AllowLocalCurtainIn => allowLocalCurtainIn;
         public bool AllowLocalCurtainOut => allowLocalCurtainOut;
+        public AudioBgmCueAsset BgmCue => bgmCue;
 
         public bool TryValidateRuntime(out string error)
         {

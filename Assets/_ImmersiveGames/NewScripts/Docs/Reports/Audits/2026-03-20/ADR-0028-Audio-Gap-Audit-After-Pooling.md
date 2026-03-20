@@ -1,14 +1,23 @@
 ﻿# ADR-0028 Audio Gap Audit After Pooling
 
+> Status note (2026-03-20): este documento nasceu como fotografia pre-F3. Os addendums no fim deste arquivo atualizam o estado real apos cleanup + F3. O estado atual correto e: F3 DONE e proximo passo natural F4.
+
 ## 1. Resumo executivo
 
-O estado real do modulo canonico de Audio em `Modules/Audio/**` confirma que o rollout parou no fechamento do pacote de fundacao (F0/F1/F2), com contratos e assets base presentes, bootstrap no `GlobalCompositionRoot` e servicos de defaults/settings/routing registrados.
+Este relatorio passou a ter dois contextos:
 
-Ainda nao existe runtime real para BGM, SFX global ou EntityAudio. Logo, os contratos de playback estao no shape correto, mas sem implementacao funcional de trilha.
+- Fotografia original pre-F3 (historico da auditoria inicial).
+- Estado atual pos-addendums (source of truth para retomada do rollout).
 
-O ponto mais critico para retomada apos ADR-0029 e o acoplamento residual de `AudioSfxVoiceProfileAsset` com `PoolData` legado (`_ImmersiveGames.Scripts.Utils.PoolSystems`), divergindo do contrato ADR-0028 que exige integracao por `PoolDefinitionAsset` da infraestrutura canonica `Infrastructure/Pooling/**`.
+Estado atual valido em 2026-03-20:
 
-Conclusao operacional: a base esta pronta para retomar, mas existe cleanup arquitetural obrigatorio no eixo `voiceProfile/poolData` antes de declarar trilha pooled (F5) como iniciada de forma canonica.
+- F0/F1/F2: DONE.
+- Cleanup de AudioSfxVoiceProfileAsset para PoolDefinitionAsset: DONE.
+- F3 (IAudioBgmService runtime): DONE e validado funcionalmente.
+- Listener global canonico no boot, independente de camera: DONE.
+- F4/F5/F6+: ainda nao iniciados.
+
+Conclusao operacional atual: nao existe mais bloqueio de F3; o proximo passo natural do rollout e F4 (Global SFX direto), mantendo F5 (pooled voices) para a sequencia.
 
 ## 2. Matriz de cobertura do ADR
 
@@ -18,7 +27,7 @@ Conclusao operacional: a base esta pronta para retomar, mas existe cleanup arqui
 | modulo Audio standalone (sem consumer-specific deps) | `Modules/Audio/**` | DONE | Nao ha dependencia estrutural de `Navigation/Gameplay/Presentation/Skin`. |
 | contracts publicos base | `Modules/Audio/Runtime/*.cs` (interfaces) | DONE | Interfaces canonicamente definidas para BGM/Global/Entity/Settings/Handle/Context/Routing. |
 | assets base | `Modules/Audio/Config/AudioCueAsset.cs`, `AudioBgmCueAsset.cs`, `AudioSfxCueAsset.cs`, `AudioDefaultsAsset.cs`, `AudioSfxVoiceProfileAsset.cs` | DONE | Todos os tipos base existem. |
-| `IAudioBgmService` | `Modules/Audio/Runtime/IAudioBgmService.cs` | PARTIAL | So contrato; nenhuma implementacao concreta registrada em DI. |
+| `IAudioBgmService` | `Modules/Audio/Runtime/IAudioBgmService.cs`, `Modules/Audio/Runtime/AudioBgmService.cs`, `Infrastructure/Composition/GlobalCompositionRoot.Audio.cs` | DONE | Contrato + runtime concreto + registro DI global (F3). |
 | `IGlobalAudioService` | `Modules/Audio/Runtime/IGlobalAudioService.cs` | PARTIAL | So contrato; sem runtime real de SFX global. |
 | `IEntityAudioService` | `Modules/Audio/Runtime/IEntityAudioService.cs` | PARTIAL | So contrato; sem runtime semantico `purpose -> cue`. |
 | `IAudioSettingsService` | `Modules/Audio/Runtime/IAudioSettingsService.cs`, `AudioSettingsService.cs`, `Infrastructure/Composition/GlobalCompositionRoot.Audio.cs` | DONE | Contrato + implementacao + registro DI. |
@@ -28,13 +37,13 @@ Conclusao operacional: a base esta pronta para retomar, mas existe cleanup arqui
 | `AudioSfxCueAsset` | `Modules/Audio/Config/AudioSfxCueAsset.cs` | DONE | Inclui playback mode, execution mode, cooldown e limite declarativo. |
 | `AudioDefaultsAsset` | `Modules/Audio/Config/AudioDefaultsAsset.cs`, `Modules/Audio/Content/AudioDefaults.asset` | DONE | Defaults e campos de routing/profile presentes. |
 | `AudioSfxVoiceProfileAsset` | `Modules/Audio/Config/AudioSfxVoiceProfileAsset.cs`, `Modules/Audio/Content/VoicesProfile/*.asset` | PARTIAL | Tipo existe, mas integra por `PoolData` legado e assets estao sem referencia de pool. |
-| runtime real de BGM | (nao encontrado) | MISSING | Nao ha classe implementando `IAudioBgmService`. |
+| runtime real de BGM | `Modules/Audio/Runtime/AudioBgmService.cs` | DONE | Runtime global single-channel logico com fade/crossfade/pause ducking. |
 | runtime real de SFX | (nao encontrado) | MISSING | Nao ha classe implementando `IGlobalAudioService`. |
 | pooled voices / voice allocation | (nao encontrado em `Modules/Audio/**`) | MISSING | Sem `AudioSfxVoice`, sem rent/return via `IPoolService`. |
 | handle semantics (`IsPlaying`/`Stop`) | `IAudioPlaybackHandle.cs`, `NullAudioPlaybackHandle.cs` | PARTIAL | Contrato existe; sem enforcement semantico real em playback concreto. |
 | mixer/routing | `IAudioRoutingResolver.cs`, `AudioRoutingResolver.cs`, `AudioDefaultsAsset.cs` | PARTIAL | Resolver base implementado; sem aplicacao efetiva em runtime de BGM/SFX. |
-| pause/resume (ducking) | `IAudioBgmService.cs` | MISSING | API existe, runtime inexistente. |
-| fade/crossfade | `IAudioBgmService.cs`, `AudioDefaultsAsset.cs` | MISSING | API e defaults existem, sem implementacao funcional. |
+| pause/resume (ducking) | `Modules/Audio/Runtime/AudioBgmService.cs` | DONE | `SetPauseDucking` funcional no runtime de BGM. |
+| fade/crossfade | `Modules/Audio/Runtime/AudioBgmService.cs`, `Modules/Audio/Config/AudioDefaultsAsset.cs` | DONE | Fade-in/fade-out/crossfade implementados e validados em F3. |
 | anti-spam / cooldown / dedupe | `AudioSfxCueAsset.cs` | PARTIAL | Campos declarados (`SfxRetriggerCooldownSeconds`, `MaxSimultaneousInstances`), sem enforcement runtime. |
 | separacao runtime canonico vs tooling/QA | `Modules/Audio/{Runtime,Editor,QA,Interop,Bindings}` | DIFFERENT-BUT-EQUIVALENT | Separacao estrutural de pastas existe; `Editor/QA/Interop/Bindings` ainda vazios. |
 | integracao planejada com Pooling (ADR-0029) | `AudioSfxVoiceProfileAsset.cs`, `Infrastructure/Pooling/**` | PARTIAL | Pooling canonico pronto, mas Audio ainda nao consome `IPoolService` nem `PoolDefinitionAsset`. |
@@ -48,7 +57,7 @@ Fonte do plano vigente: `Docs/Reports/Plan-Audio-ADR-0028-Implementation-v2.md`.
 | F0 | DONE | Existe tracker de rollout em `Docs/Reports/Audits/2026-03-20/ADR-0028-Audio-Rollout-Tracker.md` com baseline congelado. |
 | F1 | DONE | Contratos e assets base implementados em `Modules/Audio/Runtime/*.cs` e `Modules/Audio/Config/*.cs`. |
 | F2 | DONE | Bootstrap no `GlobalCompositionRoot` (`GlobalCompositionRoot.Pipeline.cs` + `GlobalCompositionRoot.Audio.cs`), com registro de `AudioDefaultsAsset`, `IAudioSettingsService` e `IAudioRoutingResolver`. |
-| F3 | MISSING | Nao existe implementacao de `IAudioBgmService` nem registro DI desse runtime. |
+| F3 | DONE | Implementacao concreta em `Modules/Audio/Runtime/AudioBgmService.cs` e registro em `Infrastructure/Composition/GlobalCompositionRoot.Audio.cs`. |
 | F4 | MISSING | Nao existe implementacao de `IGlobalAudioService` para trilha `DirectOneShot`. |
 | F5 | MISSING | Nao existe runtime pooled de SFX; sem consumo de `IPoolService` em Audio. |
 | F6 | MISSING | Nao existe implementacao funcional de `IEntityAudioService` semantico. |
@@ -59,9 +68,9 @@ Fonte do plano vigente: `Docs/Reports/Plan-Audio-ADR-0028-Implementation-v2.md`.
 
 ## 4. Onde o rollout realmente parou
 
-- Ultimo ponto consolidado no codigo: **F2 (bootstrap + defaults/settings/routing base)**.
-- Primeiro ponto claramente incompleto: **F3 (runtime BGM)**.
-- Proximo passo real mais correto: **iniciar F3 com implementacao concreta de `IAudioBgmService` e registro DI no `GlobalCompositionRoot`, mantendo Audio standalone**.
+- Ultimo ponto consolidado no codigo: **F3 (BGM runtime funcional + listener global no boot)**.
+- Primeiro ponto claramente incompleto: **F4 (runtime Global SFX direto)**.
+- Proximo passo real mais correto: **iniciar F4 (`IGlobalAudioService` direto), mantendo Audio standalone e sem acoplamento a modulos consumidores**.
 
 Observacao importante de encadeamento: embora F5 seja a fase formal de pooled voices, o desalinhamento atual de `AudioSfxVoiceProfileAsset` com ADR-0029 deve ser limpo antes de avancar para pooled runtime, para evitar retrabalho.
 
@@ -137,12 +146,11 @@ Pacote recomendado (ordem pratica):
 
 ## 10. Veredito
 
-**NEEDS CLEANUP BEFORE RESUMING**
+**READY TO RESUME AT F4**
 
 Correcoes obrigatorias antes de avancar:
 
-- Corrigir o acoplamento residual `PoolData` em `AudioSfxVoiceProfileAsset` para o contrato canonico de `Infrastructure/Pooling/**`.
-- Definir e implementar runtime concreto de BGM (F3) antes de anunciar retomada de trilhas seguintes.
+- Nenhuma correcao obrigatoria remanescente para F3 (cleanup de contrato e runtime BGM ja aplicados).
 
 Observacoes opcionais:
 
@@ -151,7 +159,7 @@ Observacoes opcionais:
 
 Proximo pacote de implementacao recomendado:
 
-- **Pacote B (F3 + preparacao de contrato para F5)**, com foco inicial em BGM runtime e cleanup de voice profile para pooling canonico.
+- **Pacote C (F4, Global SFX direto)**, mantendo F5 (pooled voices) para a etapa seguinte.
 
 ---
 
@@ -167,3 +175,38 @@ Importante:
 
 - Este addendum fecha apenas o alinhamento de contrato para preparar F5.
 - Continua sem implementação de runtime BGM/SFX/Entity e sem consumo runtime de `IPoolService`.
+
+## Addendum - F3 Implemented (2026-03-20)
+
+Evolução aplicada após esta auditoria:
+
+- F3 (BGM runtime) foi implementado no core standalone de Audio.
+- `IAudioBgmService` agora possui runtime concreto registrado no DI global.
+- O runtime de BGM fecha trilha global single-channel lógica com:
+  - `Play`, `Stop`, `StopImmediate`
+  - fade-in/fade-out
+  - crossfade
+  - pause/resume via `SetPauseDucking(bool paused, ...)`
+  - consumo de `AudioBgmCueAsset`, `AudioDefaultsAsset`, `IAudioSettingsService` e `IAudioRoutingResolver`
+
+Fora de escopo mantido:
+
+- sem F4 (`IGlobalAudioService` direto)
+- sem F5 (pooled voices / integração de pooling no runtime de áudio)
+- sem `IEntityAudioService` runtime
+
+## Addendum - Defaults Scope Corrected (2026-03-20)
+
+Correção arquitetural aplicada após os addendums anteriores:
+
+- `AudioDefaultsAsset` foi reduzido para configuração técnica inicial/fallback.
+- Foram removidas do defaults referências de conteúdo (`AudioBgmCueAsset`) e de seleção de profile/pool de voice.
+- `AudioBgmService` permanece dependente de cue explícita por chamada, sem resolver conteúdo via defaults.
+
+Separação consolidada:
+
+- defaults = valores técnicos iniciais
+- settings service = estado runtime mutável
+- conteúdo (BGM/SFX/profile) = camada chamadora/bridge/catálogo acima do core
+
+

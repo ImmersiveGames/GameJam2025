@@ -21,9 +21,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
         [Header("BGM Defaults")]
         [SerializeField] [Min(0f)] private float defaultBgmFadeSeconds = 1f;
         [SerializeField] [Range(0f, 1f)] private float pauseDuckingScale = 0.35f;
-        [SerializeField] private AudioBgmCueAsset startupBgmCue;
-        [SerializeField] private AudioBgmCueAsset frontendBgmCue;
-        [SerializeField] private AudioBgmCueAsset gameplayBgmCue;
 
         [Header("Mixer Routing Base")]
         [SerializeField] private AudioMixerGroup defaultBgmMixerGroup;
@@ -31,10 +28,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
         [SerializeField] private string masterVolumeParameter = "MasterVolume";
         [SerializeField] private string bgmVolumeParameter = "BGM_Volume";
         [SerializeField] private string sfxVolumeParameter = "SFX_Volume";
-
-        [Header("Pooled Voice Profiles")]
-        [SerializeField] private AudioSfxVoiceProfileAsset defaultGlobalPooledSfxVoiceProfile;
-        [SerializeField] private AudioSfxVoiceProfileAsset defaultSpatialPooledSfxVoiceProfile;
 
         public float MasterVolume => masterVolume;
         public float BgmVolume => bgmVolume;
@@ -44,17 +37,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
         public float DefaultBgmFadeSeconds => defaultBgmFadeSeconds;
         public float PauseDuckingScale => pauseDuckingScale;
 
-        public AudioBgmCueAsset StartupBgmCue => startupBgmCue;
-        public AudioBgmCueAsset FrontendBgmCue => frontendBgmCue;
-        public AudioBgmCueAsset GameplayBgmCue => gameplayBgmCue;
-
         public AudioMixerGroup DefaultBgmMixerGroup => defaultBgmMixerGroup;
         public AudioMixerGroup DefaultSfxMixerGroup => defaultSfxMixerGroup;
         public string MasterVolumeParameter => masterVolumeParameter;
         public string BgmVolumeParameter => bgmVolumeParameter;
         public string SfxVolumeParameter => sfxVolumeParameter;
-
-        public AudioSfxVoiceProfileAsset DefaultGlobalPooledSfxVoiceProfile => defaultGlobalPooledSfxVoiceProfile;
-        public AudioSfxVoiceProfileAsset DefaultSpatialPooledSfxVoiceProfile => defaultSpatialPooledSfxVoiceProfile;
     }
 }

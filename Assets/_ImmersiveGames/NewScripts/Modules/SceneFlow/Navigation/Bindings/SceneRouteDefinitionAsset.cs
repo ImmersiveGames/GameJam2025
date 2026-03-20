@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine;
@@ -33,9 +34,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [SerializeField] private bool requiresWorldReset;
         [SerializeField] private LevelCollectionAsset levelCollection;
 
+        [Header("Audio (Optional)")]
+        [SerializeField] private AudioBgmCueAsset bgmCue;
+
         public SceneRouteId RouteId => routeId;
         public SceneRouteKind RouteKind => routeKind;
         public LevelCollectionAsset LevelCollection => levelCollection;
+        public AudioBgmCueAsset BgmCue => bgmCue;
 
         public SceneRouteDefinition ToDefinition()
         {

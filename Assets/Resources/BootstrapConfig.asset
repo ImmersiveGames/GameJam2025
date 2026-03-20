@@ -17,3 +17,4 @@ MonoBehaviour:
   startupTransitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1001, type: 2}
   fadeSceneKey: {fileID: 11400000, guid: 7983f5c5a711411887b7d73dd12c6702, type: 2}
   loggingConfig: {fileID: 11400000, guid: 20b21d047cb64a7bbf6fd8db8e9aa773, type: 2}
+  audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}

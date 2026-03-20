@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.Navigation.Runtime;
@@ -111,6 +112,38 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterIfMissing(() => new LevelSelectedRestartSnapshotBridge(),
                 "[Navigation] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
                 "[Navigation] LevelSelectedRestartSnapshotBridge registrado no DI global.");
+        }
+
+        private static void RegisterNavigationLevelRouteBgmBridge()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) || bgmService == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                    "[Audio][BGM][Bridge] Skipped registration: IAudioBgmService unavailable.");
+                return;
+            }
+
+            var bootstrap = GetRequiredBootstrapConfig(out _);
+            var navigationCatalog = bootstrap.NavigationCatalog;
+            var sceneRouteCatalog = bootstrap.SceneRouteCatalog;
+
+            if (navigationCatalog == null || sceneRouteCatalog == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                    "[Audio][BGM][Bridge] Skipped registration: NavigationCatalog or SceneRouteCatalog missing in bootstrap.");
+                return;
+            }
+
+            DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext);
+
+            RegisterIfMissing(
+                () => new NavigationLevelRouteBgmBridge(
+                    bgmService,
+                    navigationCatalog,
+                    sceneRouteCatalog,
+                    restartContext),
+                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge already registered in global DI.",
+                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge registered in global DI.");
         }
     }
 }

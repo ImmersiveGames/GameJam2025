@@ -2,6 +2,10 @@
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 {
+    /// <summary>
+    /// Estado runtime mutável da sessão do jogador.
+    /// É semeado pelos defaults técnicos no boot, mas não carrega seleção de conteúdo.
+    /// </summary>
     public sealed class AudioSettingsService : IAudioSettingsService
     {
         private float _masterVolume;

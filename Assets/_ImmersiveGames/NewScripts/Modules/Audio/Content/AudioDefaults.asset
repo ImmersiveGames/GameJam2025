@@ -19,13 +19,8 @@ MonoBehaviour:
   sfxCategoryMultiplier: 1
   defaultBgmFadeSeconds: 1
   pauseDuckingScale: 0.35
-  startupBgmCue: {fileID: 0}
-  frontendBgmCue: {fileID: 0}
-  gameplayBgmCue: {fileID: 0}
-  defaultBgmMixerGroup: {fileID: 0}
-  defaultSfxMixerGroup: {fileID: 0}
+  defaultBgmMixerGroup: {fileID: -7983509360594917467, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+  defaultSfxMixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
   masterVolumeParameter: MasterVolume
   bgmVolumeParameter: BGM_Volume
   sfxVolumeParameter: SFX_Volume
-  defaultGlobalPooledSfxVoiceProfile: {fileID: 0}
-  defaultSpatialPooledSfxVoiceProfile: {fileID: 0}

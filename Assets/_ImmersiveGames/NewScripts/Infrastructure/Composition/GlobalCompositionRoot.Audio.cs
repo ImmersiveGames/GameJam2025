@@ -14,10 +14,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterAudioDefaults();
             RegisterAudioSettings();
             RegisterAudioRoutingResolver();
+            RegisterAudioListenerHost();
+            RegisterAudioBgmService();
 
             DebugUtility.LogVerbose(
                 typeof(GlobalCompositionRoot),
-                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing).",
+                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime).",
                 DebugUtility.Colors.Info);
         }
 
@@ -85,6 +87,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IAudioRoutingResolver already registered.",
                 registeredMessage: "[Audio][BOOT] IAudioRoutingResolver registered.");
+        }
+
+        private static void RegisterAudioBgmService()
+        {
+            RegisterIfMissing<IAudioBgmService>(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
+                    DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var settings);
+                    DependencyManager.Provider.TryGetGlobal<IAudioRoutingResolver>(out var routing);
+
+                    return AudioBgmService.Create(defaults, settings, routing);
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IAudioBgmService already registered.",
+                registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
+        }
+
+        private static void RegisterAudioListenerHost()
+        {
+            AudioListenerRuntimeHost.EnsureCreated();
+
+            DebugUtility.LogVerbose(
+                typeof(GlobalCompositionRoot),
+                "[Audio][BOOT] Canonical AudioListener runtime host ensured.",
+                DebugUtility.Colors.Info);
         }
 
         private static void ReportAudioDegraded(string reason, string detail)
