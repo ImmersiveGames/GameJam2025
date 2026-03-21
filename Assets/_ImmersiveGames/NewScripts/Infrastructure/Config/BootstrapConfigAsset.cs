@@ -20,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private SceneKeyAsset fadeSceneKey;
         [SerializeField] private LoggingConfigAsset loggingConfig;
         [SerializeField] private AudioDefaultsAsset audioDefaults;
+        [SerializeField] private EntityAudioSemanticMapAsset entityAudioSemanticMap;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
         public SceneRouteCatalogAsset SceneRouteCatalog => sceneRouteCatalog;
@@ -27,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
         public LoggingConfigAsset LoggingConfig => loggingConfig;
         public AudioDefaultsAsset AudioDefaults => audioDefaults;
+        public EntityAudioSemanticMapAsset EntityAudioSemanticMap => entityAudioSemanticMap;
 
 #if UNITY_EDITOR
         private void OnValidate()

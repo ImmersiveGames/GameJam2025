@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d39a5e7f7ea4f78a8d87e0896b5c4e4, type: 3}
+  m_Name: EntityAudioSemanticMap_Default
+  m_EditorClassIdentifier: 
+  entries:
+  - purpose: semantic_global_direct
+    cue: {fileID: 11400000, guid: 18941817fb8b70d40a32a5149c115458, type: 2}
+    emissionProfileOverride: {fileID: 11400000, guid: 05169bbef57849f8bfd11c10fd4140f0, type: 2}
+    executionProfileOverride: {fileID: 11400000, guid: 8f854571724f45b58b4e07f17f82f6e8, type: 2}
+    voiceProfileOverride: {fileID: 0}
+    useOwnerAsFollowTarget: 0
+    volumeScaleMultiplier: 1
+    reasonTag: entity_purpose:global_direct
+  - purpose: semantic_spatial_direct
+    cue: {fileID: 11400000, guid: 4d09929d1aac5364cacc40f436669b9d, type: 2}
+    emissionProfileOverride: {fileID: 11400000, guid: 1464f936bdb44a278345f37abcc6e53b, type: 2}
+    executionProfileOverride: {fileID: 11400000, guid: 8f854571724f45b58b4e07f17f82f6e8, type: 2}
+    voiceProfileOverride: {fileID: 0}
+    useOwnerAsFollowTarget: 1
+    volumeScaleMultiplier: 1
+    reasonTag: entity_purpose:spatial_direct
+  - purpose: semantic_spatial_pooled
+    cue: {fileID: 11400000, guid: 79902214d7c76454f9a90389b7ea4610, type: 2}
+    emissionProfileOverride: {fileID: 11400000, guid: 1464f936bdb44a278345f37abcc6e53b, type: 2}
+    executionProfileOverride: {fileID: 11400000, guid: c6d53845840f4a98b65655a236147454, type: 2}
+    voiceProfileOverride: {fileID: 11400000, guid: 827b095c46ab3e44bb1d322e4ecdc86b, type: 2}
+    useOwnerAsFollowTarget: 1
+    volumeScaleMultiplier: 1
+    reasonTag: entity_purpose:spatial_pooled

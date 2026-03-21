@@ -40,7 +40,7 @@ Pacote A: FECHADO (F0/F1/F2 concluídos, sem playback real ainda)
 | F3 - GlobalAudio BGM | DONE | `IAudioBgmService` runtime canônico implementado e registrado no DI global (single-channel lógico com fade/crossfade e pause/resume via ducking). |
 | F4 - GlobalAudio SFX direto | DONE | `IGlobalAudioService` runtime canônico implementado (direct one-shot 2D/3D, anti-spam real e handle funcional). |
 | F5 - GlobalAudio pooled voices | DONE | `IGlobalAudioService` passou a consumir `IPoolService` + `PoolDefinitionAsset` para cues `PooledOneShot`, mantendo trilha direta como fallback canônico. |
-| F6 - EntityAudio semântico | NOT STARTED | Dependente de F5. |
+| F6 - EntityAudio semântico | DONE | Serviço semântico standalone implementado (`IEntityAudioService`) com mapeamento `purpose -> cue/perfis`, reaproveitando `IGlobalAudioService` sem duplicar engine. |
 | F7 - EntityAudioEmitter mínimo | NOT STARTED | Dependente de F6. |
 | F8 - Integrações opcionais | NOT STARTED | Dependente de F7. |
 | F9 - Tooling/QA/hardening | NOT STARTED | Dependente de F8. |
@@ -65,7 +65,8 @@ Só avança quando:
 
 ## Riscos residuais conhecidos após Pacote A
 
-- Playback real de BGM e Global SFX (direto + pooled) fechados em F3/F4/F5; permanece sem runtime real `IEntityAudioService` (F6+).
+- Playback real de BGM e Global SFX (direto + pooled) fechados em F3/F4/F5.
+- F6 semântico standalone está ativo com QA mínimo dedicado; F7 (emitter/bridge de cena) permanece pendente.
 - `AudioDefaultsAsset` ausente no bootstrap entra em modo degradado com fallback runtime (já logado/trackeado).
 - Contrato detalhado de mixer/routing segue base inicial (refino previsto para F3+).
 
@@ -152,6 +153,17 @@ Só avança quando:
   - cada passo aguarda término natural do handle (com timeout explícito);
   - reduz falso negativo por `block_limit` em burst não controlado;
   - evidencia múltiplos ciclos `Pool rent -> Playback complete -> Pool return -> Pool rent`.
+
+## Atualização de hardening final (2026-03-21) — BGM telemetry + pooled sequence determinístico
+
+- BGM (`AudioBgmService`) com telemetria de fade/crossfade endurecida:
+  - `elapsed` de `FadeIn/FadeOut/Crossfade complete` passa a usar acumulador da coroutine em tempo não escalado;
+  - log explicita `elapsedMode='coroutine_unscaled'` no fechamento normal de transição;
+  - objetivo: remover ruído de medição por relógio global em cenários com frame hitch/interrupção.
+- `ProbePooledSequenceReuse` (`AudioSfxPooledQaSceneHarness`) ajustado para maior determinismo:
+  - espera por deadline absoluto (`realtimeSinceStartup`) em vez de acumulação sensível a spikes de frame;
+  - clone de probe fixa `pitchMin=1`, `pitchMax=1` e `randomVolumeJitter=0` para duração previsível;
+  - mantém `loop=false` e trilho finito de one-shot.
 
 ## Atualização de refatoração incremental SFX (2026-03-21) — Etapa 1 + Etapa 2
 
@@ -258,9 +270,30 @@ Só avança quando:
   - `QA/Audio/SFX/Pooled/Probe Budget (Forced Diagnostic)`
   - `QA/Audio/SFX/Pooled/Probe Fallback (Forced Diagnostic)`
   - `QA/Audio/SFX/Pooled/Probe Sequence Reuse`
-  - `QA/Audio/SFX/Pooled/Log State`
+  - `QA/Audio/SFX/Pooled/Log Harness State`
   - `QA/Audio/SFX/Pooled/Stop Last Handle`
+- `Modules/Audio/QA/AudioEntitySemanticQaSceneHarness.cs` (trilho semantico F6):
+  - `QA/Audio/Entity/Validate Setup`
+  - `QA/Audio/Entity/Play Purpose Global`
+  - `QA/Audio/Entity/Play Purpose Spatial`
+  - `QA/Audio/Entity/Play Purpose Pooled`
+  - `QA/Audio/Entity/Play Purpose Missing`
+  - `QA/Audio/Entity/Play Cue`
+  - `QA/Audio/Entity/Stop Last Handle`
+  - `QA/Audio/Entity/Log Harness State`
 - `Modules/Audio/QA/AudioSfxQaSceneHarness.cs` foi reduzido para shim legado de migração, sem concentrar testes.
+
+## Trilho oficial de QA manual na MenuScene (2026-03-21)
+
+- A `MenuScene` passa a ser o trilho principal de QA manual do modulo de audio.
+- Rig canonico consolidado para uso na cena:
+  - `Modules/Audio/QA/Prefabs/AudioQaMenuSceneRig.prefab`
+- O rig agrupa os quatro harnesses canonicos em um unico ponto de configuracao:
+  - F3: `AudioBgmQaSceneHarness`
+  - F4: `AudioSfxDirectQaSceneHarness`
+  - F5: `AudioSfxPooledQaSceneHarness`
+  - F6: `AudioEntitySemanticQaSceneHarness`
+- O prefab inclui `AudioQa_SpatialOwner` como target espacial padrao para testes 3D/semanticos.
 
 ## Evidência funcional de fechamento F3 (validação manual)
 
@@ -368,4 +401,27 @@ Só avança quando:
   - `ProbePooledSequenceReuse` valida sequência finita (`rent -> play -> complete -> return -> rent`) com espera por término natural + timeout.
   - `ProbePooledSequenceReuse` passou a usar cue de sequência determinístico (campo dedicado ou fallback preferencial 2D) e clone com clip mais curto para reduzir variância por duração de conteúdo.
   - pools canônicos auditados para QA (`Global2D` e `Spatial3D`): `autoReturnSeconds=0`, `canExpand=true` e limites/sizes compatíveis com reuso manual sem interferência indevida.
+
+## Atualização F6 (2026-03-21) — EntityAudio semântico standalone
+
+- Status: DONE (escopo F6 core standalone, sem iniciar F7 emitter/bridge).
+- Implementação concreta adicionada:
+  - `Modules/Audio/Runtime/AudioEntitySemanticService.cs`.
+- Contrato semântico mínimo de configuração:
+  - `Modules/Audio/Config/EntityAudioSemanticMapAsset.cs` (`purpose -> cue/perfis`).
+- Registro em DI global:
+  - `IEntityAudioService` registrado em `Infrastructure/Composition/GlobalCompositionRoot.Audio.cs`.
+  - serviço recebe mapa semântico opcional do `BootstrapConfigAsset`.
+- Reuso explícito do pipeline existente:
+  - `AudioEntitySemanticService` atua como adaptador semântico;
+  - execução final permanece em `IGlobalAudioService` (direct/pooled, anti-spam, budget, fallback, handles).
+- QA mínimo dedicado de F6 (separado dos harnesses de F4/F5):
+  - `Modules/Audio/QA/AudioEntitySemanticQaSceneHarness.cs`.
+  - cobre: setup, purpose válido, purpose sem mapping, global/spatial/pooled semântico e delegação `PlayCue`.
+- Seed canônico para authoring/QA semântico:
+  - `Modules/Audio/Content/Entity/EntityAudioSemanticMap_Default.asset`.
+- Escopo preservado:
+  - sem `EntityAudioEmitter` de cena;
+  - sem bridge com módulos consumidores;
+  - sem alterações de semântica em BGM/F3 e SFX direct/pooled já validados.
 

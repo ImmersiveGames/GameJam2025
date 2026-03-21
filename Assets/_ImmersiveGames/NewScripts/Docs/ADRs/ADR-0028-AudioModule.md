@@ -624,12 +624,16 @@ O mÃ³dulo pode manter:
 - cues QA dedicadas,
 - tooling de inspeÃ§Ã£o e diagnÃ³stico.
 
-Estado atual de QA de SFX (pre-F6/F7):
+Estado atual de QA de Audio (F3/F4/F5/F6):
 
-- `AudioSfxDirectQaSceneHarness` cobre somente trilho direto (2D/3D + cooldown/limit/stop basico).
-- `AudioSfxPooledQaSceneHarness` cobre somente trilho pooled (restart_existing, budget, fallback e sequence reuse).
+- `AudioBgmQaSceneHarness` cobre o trilho F3 (BGM global).
+- `AudioSfxDirectQaSceneHarness` cobre somente trilho direto de SFX (F4: 2D/3D + cooldown/limit/stop basico).
+- `AudioSfxPooledQaSceneHarness` cobre somente trilho pooled de SFX (F5: restart_existing, budget, fallback e sequence reuse).
+- `AudioEntitySemanticQaSceneHarness` cobre o trilho semantico standalone (F6: purpose -> cue/perfis).
 - probes forcados de diagnostico ficam restritos ao harness pooled.
 - `AudioSfxQaSceneHarness` permanece apenas como shim legado de migracao, sem concentrar todos os testes.
+- trilho manual oficial de cena: `MenuScene`, via rig canonico:
+  - `Modules/Audio/QA/Prefabs/AudioQaMenuSceneRig.prefab`.
 
 Esses artefatos sÃ£o suporte operacional do mÃ³dulo e nÃ£o alteram o contrato arquitetural central.
 
@@ -743,3 +747,26 @@ Status de progresso:
 - F0/F1/F2/F3: DONE.
 - F4 (Global SFX direto): proximo passo natural.
 - F5+ permanece fora de escopo desta etapa.
+
+## Addendum de estado validado (2026-03-21)
+
+Este addendum consolida o baseline fechado antes de F7/F8:
+
+- F3 (BGM runtime): fechado e validado.
+- F4 (Global SFX direct): fechado e validado.
+- F5 (Global SFX pooled one-shot): fechado e validado.
+- Hardening final de F5 concluido:
+  - pooled one-shot proibindo loop em runtime (`loopPolicy='forced_off_for_pooled_oneshot'`);
+  - probes de QA pooled fechados para `restart_existing`, `block_budget`, `fallback_direct` e `sequence reuse`.
+
+Shape canonico de SFX em uso real minimo:
+
+- `Cue` (conteudo base);
+- `EmissionProfile` (eixo de emissao);
+- `ExecutionProfile` (eixo de execucao);
+- dual-read mantido para compatibilidade gradual com campos legados.
+
+Estado ativo a partir deste ponto:
+
+- F6 (EntityAudio semantico standalone) passa a ser trilho ativo.
+- F7 (EntityAudioEmitter/bridge de cena) permanece fora do escopo deste addendum.

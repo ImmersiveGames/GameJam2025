@@ -234,7 +234,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             _pooledSequenceRoutine = StartCoroutine(ProbePooledSequenceReuseRoutine(cue, sequenceCueSource));
         }
 
-        [ContextMenu("QA/Audio/SFX/Pooled/Log State")]
+        [ContextMenu("QA/Audio/SFX/Pooled/Log Harness State")]
         private void LogPooledState()
         {
             bool serviceResolved = TryEnsureService();
@@ -452,14 +452,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 bool completedBeforeTimeout = false;
                 if (handle != null && handle.IsValid)
                 {
-                    float waited = 0f;
-                    while (handle.IsValid && handle.IsPlaying && waited < waitTimeout)
+                    double waitStartAt = Time.realtimeSinceStartupAsDouble;
+                    double waitDeadlineAt = waitStartAt + waitTimeout;
+                    while (handle.IsValid && handle.IsPlaying && Time.realtimeSinceStartupAsDouble < waitDeadlineAt)
                     {
-                        waited += Time.unscaledDeltaTime;
                         yield return null;
                     }
 
-                    completedBeforeTimeout = !handle.IsPlaying;
+                    double waited = Math.Max(0d, Time.realtimeSinceStartupAsDouble - waitStartAt);
+                    waited = Math.Min(waited, waitTimeout);
+                    completedBeforeTimeout = !(handle.IsValid && handle.IsPlaying);
                     if (completedBeforeTimeout)
                     {
                         completedBeforeTimeoutCount++;
@@ -700,6 +702,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
 
             SetPrivateField(probeCue, "maxSimultaneousInstances", 1);
             SetPrivateField(probeCue, "sfxRetriggerCooldownSeconds", 0f);
+            SetPrivateField(probeCue, "pitchMin", 1f);
+            SetPrivateField(probeCue, "pitchMax", 1f);
+            SetPrivateField(probeCue, "randomVolumeJitter", 0f);
             SetPrivateField(probeCue, "loop", false);
             return probeCue;
         }

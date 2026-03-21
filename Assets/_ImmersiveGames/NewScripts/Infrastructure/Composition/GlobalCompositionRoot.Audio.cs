@@ -17,10 +17,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterAudioListenerHost();
             RegisterAudioBgmService();
             RegisterGlobalAudioService();
+            RegisterEntityAudioService();
 
             DebugUtility.LogVerbose(
                 typeof(GlobalCompositionRoot),
-                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime + Global SFX Runtime).",
+                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime + Global SFX Runtime + Entity Semantic Runtime).",
                 DebugUtility.Colors.Info);
         }
 
@@ -118,6 +119,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IGlobalAudioService already registered.",
                 registeredMessage: "[Audio][BOOT] IGlobalAudioService registered (F4/F5 direct + pooled SFX runtime).");
+        }
+
+        private static void RegisterEntityAudioService()
+        {
+            RegisterIfMissing<IEntityAudioService>(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out var globalAudio);
+                    var bootstrap = GetRequiredBootstrapConfig(out var via);
+                    var semanticMap = bootstrap != null ? bootstrap.EntityAudioSemanticMap : null;
+
+                    var service = new AudioEntitySemanticService(globalAudio, semanticMap);
+
+                    DebugUtility.LogVerbose(
+                        typeof(GlobalCompositionRoot),
+                        $"[Audio][BOOT] IEntityAudioService semantic map source='{via}' map='{(semanticMap != null ? semanticMap.name : "null")}'.",
+                        DebugUtility.Colors.Info);
+
+                    return service;
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IEntityAudioService already registered.",
+                registeredMessage: "[Audio][BOOT] IEntityAudioService registered (F6 semantic standalone runtime).");
         }
 
         private static void RegisterAudioListenerHost()
