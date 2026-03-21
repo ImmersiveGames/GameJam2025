@@ -21,6 +21,8 @@ MonoBehaviour:
   pitchMin: 1
   pitchMax: 1
   randomVolumeJitter: 0
+  emissionProfile: {fileID: 11400000, guid: 1464f936bdb44a278345f37abcc6e53b, type: 2}
+  executionProfile: {fileID: 11400000, guid: c6d53845840f4a98b65655a236147454, type: 2}
   playbackMode: 1
   spatialBlend: 1
   minDistance: 1

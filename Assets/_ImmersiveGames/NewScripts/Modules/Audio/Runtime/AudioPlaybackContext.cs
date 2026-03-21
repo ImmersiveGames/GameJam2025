@@ -15,6 +15,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         public float VolumeScale;
         public string Reason;
         public AudioSfxVoiceProfileAsset VoiceProfile;
+        public AudioSfxEmissionProfileAsset EmissionProfile;
+        public AudioSfxExecutionProfileAsset ExecutionProfile;
 
         public static AudioPlaybackContext Global(string reason = null, float volumeScale = 1f)
         {
@@ -25,7 +27,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 FollowTarget = null,
                 VolumeScale = Mathf.Max(0f, volumeScale),
                 Reason = reason,
-                VoiceProfile = null
+                VoiceProfile = null,
+                EmissionProfile = null,
+                ExecutionProfile = null
             };
         }
 
@@ -43,7 +47,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 FollowTarget = followTarget,
                 VolumeScale = Mathf.Max(0f, volumeScale),
                 Reason = reason,
-                VoiceProfile = voiceProfile
+                VoiceProfile = voiceProfile,
+                EmissionProfile = null,
+                ExecutionProfile = null
             };
         }
     }

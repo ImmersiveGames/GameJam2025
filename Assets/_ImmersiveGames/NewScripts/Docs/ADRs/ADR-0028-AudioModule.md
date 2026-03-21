@@ -348,6 +348,31 @@ Campos canÃ´nicos:
 - `MaxSimultaneousInstances`
 - `SfxRetriggerCooldownSeconds` quando houver policy de anti-spam por cue
 
+Evolucao incremental (Etapa 1 + Etapa 2):
+
+- `AudioSfxCueAsset` passa a suportar referencias opcionais para:
+  - `AudioSfxEmissionProfileAsset` (eixo de emissao);
+  - `AudioSfxExecutionProfileAsset` (eixo de execucao).
+- Campos legados do cue permanecem temporariamente para compatibilidade de migracao (sem big bang).
+- Runtime de SFX opera em dual-read:
+  - tenta resolver pelo shape novo (`context/profile`);
+  - sem dados novos, cai para resolucao legada do cue.
+- Semantica funcional de F4/F5 permanece inalterada nesta etapa.
+
+Evolucao incremental (Etapa 3):
+
+- conjunto canonico minimo de cues foi migrado para usar `EmissionProfile` + `ExecutionProfile`:
+  - `AudioSfxCue_Global.asset` (direct/global 2D);
+  - `AudioSfxCue_Spetial.asset` (direct/spatial 3D);
+  - `AudioSfxCue_GlobalPooled.asset` (pooled/global 2D);
+  - `AudioSfxCue_SpetialPooled.asset` (pooled/spatial 3D).
+- assets seed base de execucao permanecem validos e, quando necessario para manter coerencia de profile pooled, podem existir derivados minimos por contexto (ex.: pooled spatial).
+- campos legados permanecem ativos como trilho de compatibilidade e rollback.
+- runtime continua em dual-read, com observabilidade explicita de origem:
+  - emissao: `context | emission_profile | legacy_cue`;
+  - execucao: `context | execution_profile | legacy_cue`;
+  - voice profile pooled: `context | execution_profile | legacy_cue`.
+
 ## Defaults do projeto vs estado do jogador
 
 ### `AudioDefaultsAsset`

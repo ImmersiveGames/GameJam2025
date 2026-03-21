@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -18,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
         [Header("Pooled Cues")]
         [SerializeField] private AudioSfxCueAsset pooled2dCue;
         [SerializeField] private AudioSfxCueAsset pooled3dCue;
+        [SerializeField] private AudioSfxCueAsset pooledSequenceCue;
         [SerializeField] private AudioSfxVoiceProfileAsset pooledVoiceProfile;
 
         [Header("3D QA")]
@@ -56,35 +58,26 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return;
             }
 
-            if (pooledVoiceProfile == null)
+            if (!IsCueConfiguredForPooled(pooled2dCue))
             {
-                LogError("ValidatePooledSetup", "pooledVoiceProfile is null");
+                LogError("ValidatePooledSetup", $"pooled2dCue='{SafeName(pooled2dCue)}' must resolve execution as pooled (execution profile or legacy field)");
                 return;
             }
 
-            if (pooledVoiceProfile.PooledVoicePoolDefinition == null)
+            if (!IsCueConfiguredForPooled(pooled3dCue))
             {
-                LogError("ValidatePooledSetup", $"pooledVoiceProfile='{pooledVoiceProfile.name}' has null pool definition");
+                LogError("ValidatePooledSetup", $"pooled3dCue='{SafeName(pooled3dCue)}' must resolve execution as pooled (execution profile or legacy field)");
                 return;
             }
 
-            if (pooled2dCue != null && pooled2dCue.ExecutionMode != AudioSfxExecutionMode.PooledOneShot)
-            {
-                LogError("ValidatePooledSetup", $"pooled2dCue='{pooled2dCue.name}' must use executionMode='PooledOneShot'");
-                return;
-            }
-
-            if (pooled3dCue != null && pooled3dCue.ExecutionMode != AudioSfxExecutionMode.PooledOneShot)
-            {
-                LogError("ValidatePooledSetup", $"pooled3dCue='{pooled3dCue.name}' must use executionMode='PooledOneShot'");
-                return;
-            }
-
-            var effective2d = ResolveEffectiveProfile(pooled2dCue, pooledVoiceProfile, out string source2d);
-            var effective3d = ResolveEffectiveProfile(pooled3dCue, pooledVoiceProfile, out string source3d);
+            var effective2d = ResolveEffectiveProfile(pooled2dCue, null, out string source2d);
+            var effective3d = ResolveEffectiveProfile(pooled3dCue, null, out string source3d);
+            var effectivePool = effective3d != null && effective3d.PooledVoicePoolDefinition != null
+                ? effective3d.PooledVoicePoolDefinition
+                : (effective2d != null ? effective2d.PooledVoicePoolDefinition : null);
 
             LogInfo("ValidatePooledSetup",
-                $"ok pooled2d='{SafeName(pooled2dCue)}' pooled3d='{SafeName(pooled3dCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2d)}' source2d='{source2d}' effective3d='{SafeName(effective3d)}' source3d='{source3d}' pool='{SafeName(pooledVoiceProfile.PooledVoicePoolDefinition)}' allowDirectFallback={pooledVoiceProfile.AllowDirectFallback}");
+                $"ok pooled2d='{SafeName(pooled2dCue)}' pooled3d='{SafeName(pooled3dCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2d)}' source2d='{source2d}' effective3d='{SafeName(effective3d)}' source3d='{source3d}' pool='{SafeName(effectivePool)}' allowDirectFallback={(effective3d != null ? effective3d.AllowDirectFallback : (effective2d != null && effective2d.AllowDirectFallback))}");
         }
 
         [ContextMenu("QA/Audio/SFX/Pooled/Play 2D")]
@@ -95,9 +88,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return;
             }
 
-            var context = AttachVoiceProfile(
-                AudioPlaybackContext.Global(reason: "qa_pooled_play_2d"),
-                pooledVoiceProfile);
+            var context = BuildDefaultPooledContext(
+                cue: pooled2dCue,
+                context: AudioPlaybackContext.Global(reason: "qa_pooled_play_2d"));
             PlayAndLog(pooled2dCue, context, "PlayPooled2d");
         }
 
@@ -109,12 +102,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return;
             }
 
-            var context = AttachVoiceProfile(
-                AudioPlaybackContext.Spatial(
+            var context = BuildDefaultPooledContext(
+                cue: pooled3dCue,
+                context: AudioPlaybackContext.Spatial(
                     worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
                     followTarget: spatialFollowTarget,
-                    reason: "qa_pooled_play_3d"),
-                pooledVoiceProfile);
+                    reason: "qa_pooled_play_3d"));
             PlayAndLog(pooled3dCue, context, "PlayPooled3d");
         }
 
@@ -167,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return;
             }
 
-            var baseEffectiveProfile = ResolveEffectiveProfile(pooled2dCue, pooledVoiceProfile, out _);
+            var baseEffectiveProfile = ResolveEffectiveProfile(pooled2dCue, null, out _);
             if (baseEffectiveProfile == null)
             {
                 LogError("ProbePooledFallbackForced", "cannot resolve base effective profile");
@@ -187,10 +180,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 playbackMode: AudioSfxPlaybackMode.Global,
                 voiceProfileOverride: forcedFallbackProfile,
                 maxSimultaneousInstances: 64,
-                cooldownSeconds: 0f,
-                forceLoop: false);
+                cooldownSeconds: 0f);
 
-            var context = AudioPlaybackContext.Global(reason: "qa_sfx_probe_pooled_fallback_forced");
+            var context = BuildContextWithForcedProfile(
+                cue: probeCue,
+                context: AudioPlaybackContext.Global(reason: "qa_sfx_probe_pooled_fallback_forced"),
+                forcedProfile: forcedFallbackProfile);
             var handle = _globalAudioService.Play(probeCue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
@@ -218,9 +213,15 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return;
             }
 
-            var cue = pooled3dCue != null ? pooled3dCue : pooled2dCue;
+            var cue = ResolveSequenceCue(out string sequenceCueSource);
             if (!TryValidateCue(cue, "ProbePooledSequenceReuse"))
             {
+                return;
+            }
+
+            if (!IsCueConfiguredForPooled(cue))
+            {
+                LogError("ProbePooledSequenceReuse", $"cue='{SafeName(cue)}' is not configured as pooled");
                 return;
             }
 
@@ -230,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 _pooledSequenceRoutine = null;
             }
 
-            _pooledSequenceRoutine = StartCoroutine(ProbePooledSequenceReuseRoutine(cue));
+            _pooledSequenceRoutine = StartCoroutine(ProbePooledSequenceReuseRoutine(cue, sequenceCueSource));
         }
 
         [ContextMenu("QA/Audio/SFX/Pooled/Log State")]
@@ -240,8 +241,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             string pool = pooledVoiceProfile != null && pooledVoiceProfile.PooledVoicePoolDefinition != null
                 ? pooledVoiceProfile.PooledVoicePoolDefinition.name
                 : "null";
-            var effective2d = ResolveEffectiveProfile(pooled2dCue, pooledVoiceProfile, out string source2d);
-            var effective3d = ResolveEffectiveProfile(pooled3dCue, pooledVoiceProfile, out string source3d);
+            var effective2d = ResolveEffectiveProfile(pooled2dCue, null, out string source2d);
+            var effective3d = ResolveEffectiveProfile(pooled3dCue, null, out string source3d);
 
             DebugUtility.Log(typeof(AudioSfxPooledQaSceneHarness),
                 $"[QA][Audio][SFX][Pooled] action='LogPooledState' serviceResolved={serviceResolved} pooled2d='{SafeName(pooled2dCue)}' pooled3d='{SafeName(pooled3dCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' poolDefault='{pool}' effective2d='{SafeName(effective2d)}' effective2dSource='{source2d}' effective3d='{SafeName(effective3d)}' effective3dSource='{source3d}' budget={(pooledVoiceProfile != null ? pooledVoiceProfile.DefaultVoiceBudget : 0)} releaseGrace={(pooledVoiceProfile != null ? pooledVoiceProfile.ReleaseGraceSeconds : 0f):0.###}.",
@@ -269,9 +270,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             LogInfo("ProbePooledRestartExisting",
                 $"start cue='{pooled2dCue.name}' delay={delay:0.###} repeatCount={repeats} profileDefault='{SafeName(pooledVoiceProfile)}'");
 
-            var firstContext = AttachVoiceProfile(
-                AudioPlaybackContext.Global(reason: "qa_pooled_restart_first"),
-                pooledVoiceProfile);
+            var firstContext = BuildDefaultPooledContext(
+                cue: pooled2dCue,
+                context: AudioPlaybackContext.Global(reason: "qa_pooled_restart_first"));
             var first = _globalAudioService.Play(pooled2dCue, firstContext);
             _lastHandle = first ?? NullAudioPlaybackHandle.Instance;
 
@@ -279,9 +280,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             {
                 yield return new WaitForSeconds(delay);
 
-                var nextContext = AttachVoiceProfile(
-                    AudioPlaybackContext.Global(reason: $"qa_pooled_restart_repeat_{i + 1}"),
-                    pooledVoiceProfile);
+                var nextContext = BuildDefaultPooledContext(
+                    cue: pooled2dCue,
+                    context: AudioPlaybackContext.Global(reason: $"qa_pooled_restart_repeat_{i + 1}"));
                 var next = _globalAudioService.Play(pooled2dCue, nextContext);
                 _lastHandle = next ?? NullAudioPlaybackHandle.Instance;
 
@@ -299,7 +300,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             int attempts = Mathf.Max(2, pooledBudgetBurstCount);
             float stepDelay = Mathf.Max(0f, pooledBudgetStepDelaySeconds);
 
-            var baseEffectiveProfile = ResolveEffectiveProfile(cue, pooledVoiceProfile, out string source);
+            var baseEffectiveProfile = ResolveEffectiveProfile(cue, null, out string source);
             if (baseEffectiveProfile == null || baseEffectiveProfile.PooledVoicePoolDefinition == null)
             {
                 LogError("ProbePooledBudgetForced", $"aborted: missing effective pooled profile for cue='{cue.name}' source='{source}'");
@@ -320,26 +321,31 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 playbackMode: AudioSfxPlaybackMode.Spatial,
                 voiceProfileOverride: forcedBudgetProfile,
                 maxSimultaneousInstances: 64,
-                cooldownSeconds: 0f,
-                forceLoop: true);
+                cooldownSeconds: 0f);
 
             LogInfo("ProbePooledBudgetForced",
                 $"start cue='{cue.name}' attempts={attempts} stepDelay={stepDelay:0.###} expectedPolicy='block_budget' effectiveProfile='cue_override:{forcedBudgetProfile.name}' source='{source}'");
 
-            var firstContext = AudioPlaybackContext.Spatial(
-                worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                followTarget: spatialFollowTarget,
-                reason: "qa_pooled_budget_forced_first");
+            var firstContext = BuildContextWithForcedProfile(
+                cue: probeCue,
+                context: AudioPlaybackContext.Spatial(
+                    worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                    followTarget: spatialFollowTarget,
+                    reason: "qa_pooled_budget_forced_first"),
+                forcedProfile: forcedBudgetProfile);
             var firstHandle = _globalAudioService.Play(probeCue, firstContext);
             _lastHandle = firstHandle ?? NullAudioPlaybackHandle.Instance;
             bool firstValid = firstHandle != null && firstHandle.IsValid;
 
             yield return null;
 
-            var secondContext = AudioPlaybackContext.Spatial(
-                worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                followTarget: spatialFollowTarget,
-                reason: "qa_pooled_budget_forced_second");
+            var secondContext = BuildContextWithForcedProfile(
+                cue: probeCue,
+                context: AudioPlaybackContext.Spatial(
+                    worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                    followTarget: spatialFollowTarget,
+                    reason: "qa_pooled_budget_forced_second"),
+                forcedProfile: forcedBudgetProfile);
             var secondHandle = _globalAudioService.Play(probeCue, secondContext);
             bool secondValid = secondHandle != null && secondHandle.IsValid;
             if (secondValid)
@@ -352,10 +358,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             int additionalAttempts = Mathf.Max(0, attempts - 2);
             for (int i = 0; i < additionalAttempts; i++)
             {
-                var context = AudioPlaybackContext.Spatial(
-                    worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                    followTarget: spatialFollowTarget,
-                    reason: $"qa_pooled_budget_forced_extra_{i + 1}");
+                var context = BuildContextWithForcedProfile(
+                    cue: probeCue,
+                    context: AudioPlaybackContext.Spatial(
+                        worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                        followTarget: spatialFollowTarget,
+                        reason: $"qa_pooled_budget_forced_extra_{i + 1}"),
+                    forcedProfile: forcedBudgetProfile);
 
                 var handle = _globalAudioService.Play(probeCue, context);
                 if (handle != null && handle.IsValid)
@@ -395,32 +404,41 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             _pooledBudgetRoutine = null;
         }
 
-        private IEnumerator ProbePooledSequenceReuseRoutine(AudioSfxCueAsset cue)
+        private IEnumerator ProbePooledSequenceReuseRoutine(AudioSfxCueAsset cue, string sequenceCueSource)
         {
             int count = Mathf.Max(1, pooledSequenceCount);
             float stepDelay = Mathf.Max(0.01f, pooledSequenceStepDelaySeconds);
-            float waitTimeout = Mathf.Max(0.25f, pooledSequenceWaitTimeoutSeconds);
             int validCount = 0;
             int blockedCount = 0;
             int completedBeforeTimeoutCount = 0;
 
+            var sequenceProbeCue = CreateSequenceProbeCue(cue, out float selectedClipLengthSeconds, out int sourceClipCount);
+            var sequenceEffectiveProfile = ResolveEffectiveProfile(sequenceProbeCue, null, out string sequenceProfileSource);
+            var sequencePool = sequenceEffectiveProfile != null ? sequenceEffectiveProfile.PooledVoicePoolDefinition : null;
+            float profileReleaseGrace = sequenceEffectiveProfile != null ? Mathf.Max(0f, sequenceEffectiveProfile.ReleaseGraceSeconds) : 0f;
+            float waitTimeout = Mathf.Max(
+                0.25f,
+                Mathf.Max(
+                    pooledSequenceWaitTimeoutSeconds,
+                    selectedClipLengthSeconds > 0f ? selectedClipLengthSeconds + profileReleaseGrace + 0.5f : pooledSequenceWaitTimeoutSeconds));
+
             LogInfo("ProbePooledSequenceReuse",
-                $"start cue='{cue.name}' count={count} stepDelay={stepDelay:0.###} waitTimeout={waitTimeout:0.###} expected='rent_play_complete_return_cycles'");
+                $"start cue='{cue.name}' sequenceCueSource='{sequenceCueSource}' probeCue='{sequenceProbeCue.name}' selectedClipLength={selectedClipLengthSeconds:0.###} sourceClipCount={sourceClipCount} count={count} stepDelay={stepDelay:0.###} waitTimeout={waitTimeout:0.###} effectiveProfile='{SafeName(sequenceEffectiveProfile)}' profileSource='{sequenceProfileSource}' pool='{SafeName(sequencePool)}' poolInitial={(sequencePool != null ? sequencePool.InitialSize : 0)} poolCanExpand={(sequencePool != null && sequencePool.CanExpand)} poolMax={(sequencePool != null ? sequencePool.MaxSize : 0)} poolAutoReturn={(sequencePool != null ? sequencePool.AutoReturnSeconds : 0f):0.###} expected='rent_play_complete_return_cycles'");
 
             for (int i = 0; i < count; i++)
             {
-                var context = cue.PlaybackMode == AudioSfxPlaybackMode.Spatial
-                    ? AttachVoiceProfile(
-                        AudioPlaybackContext.Spatial(
+                var context = sequenceProbeCue.PlaybackMode == AudioSfxPlaybackMode.Spatial
+                    ? BuildDefaultPooledContext(
+                        cue: sequenceProbeCue,
+                        context: AudioPlaybackContext.Spatial(
                             worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
                             followTarget: spatialFollowTarget,
-                            reason: $"qa_pooled_sequence_{i + 1}"),
-                        pooledVoiceProfile)
-                    : AttachVoiceProfile(
-                        AudioPlaybackContext.Global(reason: $"qa_pooled_sequence_{i + 1}"),
-                        pooledVoiceProfile);
+                            reason: $"qa_pooled_sequence_{i + 1}"))
+                    : BuildDefaultPooledContext(
+                        cue: sequenceProbeCue,
+                        context: AudioPlaybackContext.Global(reason: $"qa_pooled_sequence_{i + 1}"));
 
-                var handle = _globalAudioService.Play(cue, context);
+                var handle = _globalAudioService.Play(sequenceProbeCue, context);
                 if (handle != null && handle.IsValid)
                 {
                     validCount++;
@@ -460,8 +478,32 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
 
             yield return new WaitForSeconds(Mathf.Max(0.75f, stepDelay));
             LogInfo("ProbePooledSequenceReuse",
-                $"complete cue='{cue.name}' valid={validCount} blocked={blockedCount} completedBeforeTimeout={completedBeforeTimeoutCount} expectedRuntimeLogs='Pool rent + Playback complete + Pool return + Pool rent'");
+                $"complete cue='{cue.name}' probeCue='{sequenceProbeCue.name}' sequenceCueSource='{sequenceCueSource}' valid={validCount} blocked={blockedCount} completedBeforeTimeout={completedBeforeTimeoutCount} expectedRuntimeLogs='Pool rent + Playback complete + Pool return + Pool rent'");
+
+            if (sequenceProbeCue != null)
+            {
+                Destroy(sequenceProbeCue);
+            }
+
             _pooledSequenceRoutine = null;
+        }
+
+        private AudioSfxCueAsset ResolveSequenceCue(out string source)
+        {
+            if (pooledSequenceCue != null)
+            {
+                source = "pooled_sequence_cue";
+                return pooledSequenceCue;
+            }
+
+            if (pooled2dCue != null)
+            {
+                source = "pooled2dCue";
+                return pooled2dCue;
+            }
+
+            source = "pooled3dCue";
+            return pooled3dCue;
         }
 
         private void PlayAndLog(AudioSfxCueAsset cue, AudioPlaybackContext context, string action)
@@ -513,31 +555,73 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             return false;
         }
 
-        private AudioPlaybackContext AttachVoiceProfile(AudioPlaybackContext context, AudioSfxVoiceProfileAsset profile)
-        {
-            context.VoiceProfile = profile;
-            return context;
-        }
-
         private AudioSfxVoiceProfileAsset ResolveEffectiveProfile(
             AudioSfxCueAsset cue,
             AudioSfxVoiceProfileAsset contextProfile,
             out string source)
         {
-            if (cue != null && cue.VoiceProfileOverride != null)
-            {
-                source = "cue_override";
-                return cue.VoiceProfileOverride;
-            }
-
             if (contextProfile != null)
             {
                 source = "context";
                 return contextProfile;
             }
 
+            if (cue != null && cue.ExecutionProfile != null && cue.ExecutionProfile.PooledVoiceProfile != null)
+            {
+                source = "execution_profile";
+                return cue.ExecutionProfile.PooledVoiceProfile;
+            }
+
+            if (cue != null && cue.VoiceProfileOverride != null)
+            {
+                source = "cue_override";
+                return cue.VoiceProfileOverride;
+            }
+
             source = "none";
             return null;
+        }
+
+        private AudioPlaybackContext BuildDefaultPooledContext(AudioSfxCueAsset cue, AudioPlaybackContext context)
+        {
+            var effectiveProfile = ResolveEffectiveProfile(cue, null, out _);
+            if (effectiveProfile != null)
+            {
+                return context;
+            }
+
+            context.VoiceProfile = pooledVoiceProfile;
+            return context;
+        }
+
+        private static AudioPlaybackContext BuildContextWithForcedProfile(
+            AudioSfxCueAsset cue,
+            AudioPlaybackContext context,
+            AudioSfxVoiceProfileAsset forcedProfile)
+        {
+            var hasExecutionProfile = cue != null && cue.ExecutionProfile != null;
+            if (!hasExecutionProfile && cue != null && cue.VoiceProfileOverride != null)
+            {
+                return context;
+            }
+
+            context.VoiceProfile = forcedProfile;
+            return context;
+        }
+
+        private static bool IsCueConfiguredForPooled(AudioSfxCueAsset cue)
+        {
+            if (cue == null)
+            {
+                return true;
+            }
+
+            if (cue.ExecutionProfile != null)
+            {
+                return cue.ExecutionProfile.ExecutionMode == AudioSfxExecutionMode.PooledOneShot;
+            }
+
+            return cue.ExecutionMode == AudioSfxExecutionMode.PooledOneShot;
         }
 
         private static string InferPathFromHandle(IAudioPlaybackHandle handle)
@@ -563,8 +647,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             AudioSfxPlaybackMode playbackMode,
             AudioSfxVoiceProfileAsset voiceProfileOverride,
             int maxSimultaneousInstances,
-            float cooldownSeconds,
-            bool forceLoop)
+            float cooldownSeconds)
         {
             var clone = Instantiate(sourceCue);
             clone.name = $"{sourceCue.name}_RuntimeProbeClone";
@@ -573,8 +656,52 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             SetPrivateField(clone, "voiceProfileOverride", voiceProfileOverride);
             SetPrivateField(clone, "maxSimultaneousInstances", Mathf.Max(1, maxSimultaneousInstances));
             SetPrivateField(clone, "sfxRetriggerCooldownSeconds", Mathf.Max(0f, cooldownSeconds));
-            SetPrivateField(clone, "loop", forceLoop);
+            SetPrivateField(clone, "loop", false);
             return clone;
+        }
+
+        private static AudioSfxCueAsset CreateSequenceProbeCue(
+            AudioSfxCueAsset sourceCue,
+            out float selectedClipLengthSeconds,
+            out int sourceClipCount)
+        {
+            var probeCue = Instantiate(sourceCue);
+            probeCue.name = $"{sourceCue.name}_SequenceProbeClone";
+
+            selectedClipLengthSeconds = 0f;
+            sourceClipCount = sourceCue.Clips != null ? sourceCue.Clips.Count : 0;
+            AudioClip selectedClip = null;
+            float shortestLength = float.MaxValue;
+
+            if (sourceCue.Clips != null)
+            {
+                for (int i = 0; i < sourceCue.Clips.Count; i++)
+                {
+                    var clip = sourceCue.Clips[i];
+                    if (clip == null || clip.length <= 0f)
+                    {
+                        continue;
+                    }
+
+                    if (clip.length < shortestLength)
+                    {
+                        shortestLength = clip.length;
+                        selectedClip = clip;
+                    }
+                }
+            }
+
+            if (selectedClip != null)
+            {
+                selectedClipLengthSeconds = selectedClip.length;
+                var clips = new List<AudioClip> { selectedClip };
+                SetPrivateField(probeCue, "clips", clips);
+            }
+
+            SetPrivateField(probeCue, "maxSimultaneousInstances", 1);
+            SetPrivateField(probeCue, "sfxRetriggerCooldownSeconds", 0f);
+            SetPrivateField(probeCue, "loop", false);
+            return probeCue;
         }
 
         private static AudioSfxVoiceProfileAsset CreateRuntimeVoiceProfileClone(

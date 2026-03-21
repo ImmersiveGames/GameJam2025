@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             }
 
             LogInfo("ValidateSetup",
-                $"ok direct2d='{SafeName(direct2dCue)}' direct3d='{SafeName(direct3dCue)}' followTarget='{SafeName(spatialFollowTarget)}'");
+                $"ok direct2d='{SafeName(direct2dCue)}' direct2dEmission='{SafeName(direct2dCue != null ? direct2dCue.EmissionProfile : null)}' direct2dExecution='{SafeName(direct2dCue != null ? direct2dCue.ExecutionProfile : null)}' direct3d='{SafeName(direct3dCue)}' direct3dEmission='{SafeName(direct3dCue != null ? direct3dCue.EmissionProfile : null)}' direct3dExecution='{SafeName(direct3dCue != null ? direct3dCue.ExecutionProfile : null)}' followTarget='{SafeName(spatialFollowTarget)}'");
         }
 
         [ContextMenu("QA/Audio/SFX/Direct/Play 2D")]

@@ -153,6 +153,51 @@ Só avança quando:
   - reduz falso negativo por `block_limit` em burst não controlado;
   - evidencia múltiplos ciclos `Pool rent -> Playback complete -> Pool return -> Pool rent`.
 
+## Atualização de refatoração incremental SFX (2026-03-21) — Etapa 1 + Etapa 2
+
+- Status: DONE (introdução de shape novo + runtime dual-read, sem migração big bang).
+- Novos eixos de configuração introduzidos no contrato:
+  - `AudioSfxEmissionProfileAsset` (emissão: `Global/2D` vs `Spatial/3D`);
+  - `AudioSfxExecutionProfileAsset` (execução: `DirectOneShot` vs `PooledOneShot`, com profile pooled opcional).
+- `AudioSfxCueAsset` evoluído para referências opcionais:
+  - `EmissionProfile`;
+  - `ExecutionProfile`.
+- Compatibilidade preservada:
+  - campos legados do cue permanecem ativos nesta etapa;
+  - não houve remoção de campos antigos nem migração massiva de assets.
+- Runtime SFX atualizado para dual-read explícito:
+  - emissão: `context -> emission_profile -> legacy_cue`;
+  - execução: `context -> execution_profile -> legacy_cue`;
+  - voice profile pooled: `context -> execution_profile.pooledVoiceProfile -> legacy_cue.voiceProfileOverride -> none`.
+- Semântica funcional preservada (sem regressão intencional):
+  - `Global/2D` continua com `restart_existing`;
+  - `Spatial/3D` mantém policy atual de concorrência;
+  - trilhas F4 direto e F5 pooled continuam válidas.
+
+## Atualização de refatoração incremental SFX (2026-03-21) — Etapa 3 (migração canônica mínima)
+
+- Status: DONE (migração mínima de cues canônicos para o shape novo, com compatibilidade legada ativa).
+- Cues migrados para `EmissionProfile` + `ExecutionProfile`:
+  - `Modules/Audio/Content/Cue/AudioSfxCue_Global.asset` (direct/global 2D);
+  - `Modules/Audio/Content/Cue/AudioSfxCue_Spetial.asset` (direct/spatial 3D);
+  - `Modules/Audio/Content/Cue/AudioSfxCue_GlobalPooled.asset` (pooled/global 2D);
+  - `Modules/Audio/Content/Cue/AudioSfxCue_SpetialPooled.asset` (pooled/spatial 3D).
+- Assets seed usados como trilho principal dos cues migrados:
+  - emissao: `AudioSfxEmission_Global2D.asset`, `AudioSfxEmission_Spatial3D.asset`;
+  - execucao: `AudioSfxExecution_DirectOneShot.asset`, `AudioSfxExecution_PooledOneShot.asset`;
+  - derivado minimo de execucao pooled para spatial: `AudioSfxExecution_PooledOneShotSpatial.asset`.
+- QA principal alinhado aos cues migrados:
+  - `AudioSfxDirectQaSceneHarness` e `AudioSfxPooledQaSceneHarness` passam a validar/logar profile efetivo do shape novo por padrão.
+- Observabilidade canônica de resolução:
+  - `emissionSource='context|emission_profile|legacy_cue'`;
+  - `executionSource='context|execution_profile|legacy_cue'`;
+  - source de pooled voice profile em `Pool rent`:
+    - `source='context|execution_profile|legacy_cue'`.
+- Compatibilidade preservada:
+  - campos legados de cue permanecem ativos;
+  - fallback dual-read permanece habilitado para migração gradual;
+  - sem migração em massa de authoring nesta etapa.
+
 ## Atualização F5 (2026-03-21) — Fechamento de authoring/config de pooled audio
 
 - Status: DONE (shape canônico de authoring fechado para F5).
@@ -307,4 +352,20 @@ Só avança quando:
 - Escopo preservado:
   - sem alterações em `Modules/Audio/**` além da execução de `IAudioBgmService`.
   - sem F4/F5, sem SFX e sem pooling nesta entrega.
+
+## Atualização F5 (2026-03-21) — Guardrail de loop no pooled one-shot
+
+- Status: DONE (hardening pontual de runtime + QA pooled, sem alteração da semântica base F4/F5).
+- Regra canônica consolidada:
+  - `PooledOneShot` nunca opera com loop.
+  - qualquer tentativa de loop em cue/config/contexto é neutralizada no runtime (`AudioSource.loop=false`).
+- Observabilidade de guardrail:
+  - log explícito quando houver neutralização: `loopPolicy='forced_off_for_pooled_oneshot'`.
+- QA pooled endurecido para cenários finitos reais:
+  - probes diagnósticos não usam mais clone com `loop=true`;
+  - `ProbePooledBudgetForced` evidencia `policy='block_budget'` sem lifetime artificial;
+  - `ProbePooledFallbackForced` segue evidenciando `path='fallback_direct'`;
+  - `ProbePooledSequenceReuse` valida sequência finita (`rent -> play -> complete -> return -> rent`) com espera por término natural + timeout.
+  - `ProbePooledSequenceReuse` passou a usar cue de sequência determinístico (campo dedicado ou fallback preferencial 2D) e clone com clip mais curto para reduzir variância por duração de conteúdo.
+  - pools canônicos auditados para QA (`Global2D` e `Spatial3D`): `autoReturnSeconds=0`, `canExpand=true` e limites/sizes compatíveis com reuso manual sem interferência indevida.
 

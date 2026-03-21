@@ -37,6 +37,38 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             public float ReleaseGraceSeconds;
         }
 
+        private readonly struct ResolvedEmission
+        {
+            public ResolvedEmission(bool useSpatial, float spatialBlend, float minDistance, float maxDistance, string source)
+            {
+                UseSpatial = useSpatial;
+                SpatialBlend = spatialBlend;
+                MinDistance = minDistance;
+                MaxDistance = maxDistance;
+                Source = source;
+            }
+
+            public bool UseSpatial { get; }
+            public float SpatialBlend { get; }
+            public float MinDistance { get; }
+            public float MaxDistance { get; }
+            public string Source { get; }
+        }
+
+        private readonly struct ResolvedExecution
+        {
+            public ResolvedExecution(AudioSfxExecutionMode mode, AudioSfxExecutionProfileAsset profile, string source)
+            {
+                Mode = mode;
+                Profile = profile;
+                Source = source;
+            }
+
+            public AudioSfxExecutionMode Mode { get; }
+            public AudioSfxExecutionProfileAsset Profile { get; }
+            public string Source { get; }
+        }
+
         public static IGlobalAudioService Create(
             AudioDefaultsAsset defaults,
             IAudioSettingsService settings,
@@ -77,10 +109,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
 
             int cueId = cue.GetInstanceID();
-            bool useSpatial = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial;
+            var resolvedEmission = ResolveEmission(cue, context);
+            var resolvedExecution = ResolveExecution(cue, context);
             float now = Time.realtimeSinceStartup;
             int activeInstances = GetActiveInstances(cueId);
-            bool hasActive2d = !useSpatial && HasActive2dHandle(cueId);
+            bool hasActive2d = !resolvedEmission.UseSpatial && HasActive2dHandle(cueId);
             bool previousHandleStopped = hasActive2d && StopActive2dHandles(cueId);
             float? lastPlayTime = _lastPlayRealtimeByCueId.TryGetValue(cueId, out var lastPlayTimeValue)
                 ? lastPlayTimeValue
@@ -88,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
             var directDecision = AudioSfxDirectPolicyEngine.Evaluate(
                 cue: cue,
-                useSpatial: useSpatial,
+                useSpatial: resolvedEmission.UseSpatial,
                 now: now,
                 lastPlayTime: lastPlayTime,
                 activeInstances: activeInstances,
@@ -124,13 +157,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
 
             string path = "direct";
-            string mode = useSpatial ? "3D" : "2D";
+            string mode = resolvedEmission.UseSpatial ? "3D" : "2D";
             AudioSfxPlaybackHandle handle;
-            if (cue.ExecutionMode == AudioSfxExecutionMode.PooledOneShot)
+            if (resolvedExecution.Mode == AudioSfxExecutionMode.PooledOneShot)
             {
-                if (!TryCreatePooledHandle(cue, clip, context, reason, out handle, out mode, out path))
+                if (!TryCreatePooledHandle(cue, clip, context, resolvedEmission, resolvedExecution, reason, out handle, out mode, out path))
                 {
-                    if (!TryCreateDirectHandle(cue, clip, context, reason, fallbackPath: path, out handle, out mode, out path))
+                    if (!TryCreateDirectHandle(cue, clip, context, resolvedEmission, reason, fallbackPath: path, out handle, out mode, out path))
                     {
                         return NullAudioPlaybackHandle.Instance;
                     }
@@ -138,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
             else
             {
-                if (!TryCreateDirectHandle(cue, clip, context, reason, fallbackPath: "direct", out handle, out mode, out path))
+                if (!TryCreateDirectHandle(cue, clip, context, resolvedEmission, reason, fallbackPath: "direct", out handle, out mode, out path))
                 {
                     return NullAudioPlaybackHandle.Instance;
                 }
@@ -156,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             _activeInstancesByCueId[cueId] = activeInstances + 1;
 
             DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                $"[Audio][SFX] Play start cue='{cue.name}' cueId={cueId} mode='{mode}' path='{path}' retrigger='{(directDecision.RestartedExisting ? "restart_existing" : "none")}' reason='{reason}'.",
+                $"[Audio][SFX] Play start cue='{cue.name}' cueId={cueId} mode='{mode}' path='{path}' emissionSource='{resolvedEmission.Source}' executionSource='{resolvedExecution.Source}' retrigger='{(directDecision.RestartedExisting ? "restart_existing" : "none")}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return handle;
@@ -181,16 +214,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             AudioSfxCueAsset cue,
             AudioClip clip,
             AudioPlaybackContext context,
+            ResolvedEmission resolvedEmission,
+            ResolvedExecution resolvedExecution,
             string reason,
             out AudioSfxPlaybackHandle handle,
             out string mode,
             out string path)
         {
             handle = null;
-            mode = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial ? "3D" : "2D";
+            mode = resolvedEmission.UseSpatial ? "3D" : "2D";
             path = "pooled";
 
-            ResolveVoiceProfile(cue, context, out var profile, out var profileSource);
+            ResolveVoiceProfile(cue, context, resolvedExecution, out var profile, out var profileSource);
             var profileDecision = AudioSfxPooledPolicyEngine.EvaluateProfile(profile);
             if (profileDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
             {
@@ -325,7 +360,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 source = rentedInstance.AddComponent<AudioSource>();
             }
 
-            ConfigureSource(source, cue, clip, context);
+            ConfigureSource(source, cue, clip, context, resolvedEmission, resolvedExecution, reason);
 
             handle = rentedInstance.GetComponent<AudioSfxPlaybackHandle>();
             if (handle == null)
@@ -360,6 +395,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             AudioSfxCueAsset cue,
             AudioClip clip,
             AudioPlaybackContext context,
+            ResolvedEmission resolvedEmission,
             string reason,
             string fallbackPath,
             out AudioSfxPlaybackHandle handle,
@@ -367,14 +403,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             out string path)
         {
             handle = null;
-            mode = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial ? "3D" : "2D";
+            mode = resolvedEmission.UseSpatial ? "3D" : "2D";
             path = string.IsNullOrWhiteSpace(fallbackPath) ? "direct" : fallbackPath;
 
             var playbackObject = new GameObject($"SFX_{cue.name}");
             playbackObject.transform.SetParent(transform, false);
 
             var source = playbackObject.AddComponent<AudioSource>();
-            ConfigureSource(source, cue, clip, context);
+            ConfigureSource(source, cue, clip, context, resolvedEmission, default, reason);
 
             handle = playbackObject.AddComponent<AudioSfxPlaybackHandle>();
             mode = source.spatialBlend > 0f ? "3D" : "2D";
@@ -393,10 +429,27 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             return true;
         }
 
-        private void ConfigureSource(AudioSource source, AudioSfxCueAsset cue, AudioClip clip, AudioPlaybackContext context)
+        private void ConfigureSource(
+            AudioSource source,
+            AudioSfxCueAsset cue,
+            AudioClip clip,
+            AudioPlaybackContext context,
+            ResolvedEmission resolvedEmission,
+            ResolvedExecution resolvedExecution,
+            string reason)
         {
             source.clip = clip;
             source.loop = cue.Loop;
+
+            // Guardrail canonico: pooled one-shot nunca deve operar em loop.
+            if (resolvedExecution.Mode == AudioSfxExecutionMode.PooledOneShot && source.loop)
+            {
+                source.loop = false;
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] loopPolicy='forced_off_for_pooled_oneshot' cue='{cue.name}' path='pooled' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+            }
+
             source.outputAudioMixerGroup = _routing != null ? _routing.ResolveSfxMixerGroup(cue) : null;
 
             float jitter = cue.RandomVolumeJitter > 0f
@@ -412,12 +465,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             source.volume = Mathf.Clamp01(cueVolume * contextVolume * master * sfx * category);
             source.pitch = UnityEngine.Random.Range(cue.PitchMin, cue.PitchMax);
 
-            bool useSpatial = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial;
+            bool useSpatial = resolvedEmission.UseSpatial;
             if (useSpatial)
             {
-                source.spatialBlend = Mathf.Clamp01(cue.SpatialBlend);
-                source.minDistance = Mathf.Max(0f, cue.MinDistance);
-                source.maxDistance = Mathf.Max(source.minDistance, cue.MaxDistance);
+                source.spatialBlend = Mathf.Clamp01(resolvedEmission.SpatialBlend);
+                source.minDistance = Mathf.Max(0f, resolvedEmission.MinDistance);
+                source.maxDistance = Mathf.Max(source.minDistance, resolvedEmission.MaxDistance);
                 source.rolloffMode = AudioRolloffMode.Logarithmic;
 
                 if (context.FollowTarget != null)
@@ -438,16 +491,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         private void ResolveVoiceProfile(
             AudioSfxCueAsset cue,
             AudioPlaybackContext context,
+            ResolvedExecution resolvedExecution,
             out AudioSfxVoiceProfileAsset profile,
             out string source)
         {
-            if (cue != null && cue.VoiceProfileOverride != null)
-            {
-                profile = cue.VoiceProfileOverride;
-                source = "cue_override";
-                return;
-            }
-
             if (context.VoiceProfile != null)
             {
                 profile = context.VoiceProfile;
@@ -455,8 +502,79 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return;
             }
 
+            if (resolvedExecution.Profile != null && resolvedExecution.Profile.PooledVoiceProfile != null)
+            {
+                profile = resolvedExecution.Profile.PooledVoiceProfile;
+                source = "execution_profile";
+                return;
+            }
+
+            if (cue != null && cue.VoiceProfileOverride != null)
+            {
+                profile = cue.VoiceProfileOverride;
+                source = "legacy_cue";
+                return;
+            }
+
             profile = null;
             source = "none";
+        }
+
+        private static ResolvedEmission ResolveEmission(AudioSfxCueAsset cue, AudioPlaybackContext context)
+        {
+            if (context.EmissionProfile != null)
+            {
+                bool useSpatialFromContextProfile = context.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
+                return new ResolvedEmission(
+                    useSpatial: useSpatialFromContextProfile,
+                    spatialBlend: context.EmissionProfile.SpatialBlend,
+                    minDistance: context.EmissionProfile.MinDistance,
+                    maxDistance: context.EmissionProfile.MaxDistance,
+                    source: "context");
+            }
+
+            if (cue != null && cue.EmissionProfile != null)
+            {
+                bool useSpatialFromCueProfile = cue.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
+                return new ResolvedEmission(
+                    useSpatial: useSpatialFromCueProfile,
+                    spatialBlend: cue.EmissionProfile.SpatialBlend,
+                    minDistance: cue.EmissionProfile.MinDistance,
+                    maxDistance: cue.EmissionProfile.MaxDistance,
+                    source: "emission_profile");
+            }
+
+            bool useSpatialLegacy = context.UseSpatial || (cue != null && cue.PlaybackMode == AudioSfxPlaybackMode.Spatial);
+            return new ResolvedEmission(
+                useSpatial: useSpatialLegacy,
+                spatialBlend: cue != null ? cue.SpatialBlend : 1f,
+                minDistance: cue != null ? cue.MinDistance : 1f,
+                maxDistance: cue != null ? cue.MaxDistance : 40f,
+                source: "legacy_cue");
+        }
+
+        private static ResolvedExecution ResolveExecution(AudioSfxCueAsset cue, AudioPlaybackContext context)
+        {
+            if (context.ExecutionProfile != null)
+            {
+                return new ResolvedExecution(
+                    mode: context.ExecutionProfile.ExecutionMode,
+                    profile: context.ExecutionProfile,
+                    source: "context");
+            }
+
+            if (cue != null && cue.ExecutionProfile != null)
+            {
+                return new ResolvedExecution(
+                    mode: cue.ExecutionProfile.ExecutionMode,
+                    profile: cue.ExecutionProfile,
+                    source: "execution_profile");
+            }
+
+            return new ResolvedExecution(
+                mode: cue != null ? cue.ExecutionMode : AudioSfxExecutionMode.DirectOneShot,
+                profile: null,
+                source: "legacy_cue");
         }
 
         private void OnPlaybackCompleted(AudioSfxPlaybackHandle handle, int cueId, string cueName, string modeLabel, string completionReason)
