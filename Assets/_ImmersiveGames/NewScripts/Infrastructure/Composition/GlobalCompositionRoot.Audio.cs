@@ -16,10 +16,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterAudioRoutingResolver();
             RegisterAudioListenerHost();
             RegisterAudioBgmService();
+            RegisterGlobalAudioService();
 
             DebugUtility.LogVerbose(
                 typeof(GlobalCompositionRoot),
-                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime).",
+                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime + Global SFX Runtime).",
                 DebugUtility.Colors.Info);
         }
 
@@ -102,6 +103,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IAudioBgmService already registered.",
                 registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
+        }
+
+        private static void RegisterGlobalAudioService()
+        {
+            RegisterIfMissing<IGlobalAudioService>(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
+                    DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var settings);
+                    DependencyManager.Provider.TryGetGlobal<IAudioRoutingResolver>(out var routing);
+
+                    return AudioGlobalSfxService.Create(defaults, settings, routing);
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IGlobalAudioService already registered.",
+                registeredMessage: "[Audio][BOOT] IGlobalAudioService registered (F4 direct SFX runtime).");
         }
 
         private static void RegisterAudioListenerHost()

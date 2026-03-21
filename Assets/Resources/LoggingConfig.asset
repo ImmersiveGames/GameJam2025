@@ -30,6 +30,10 @@ MonoBehaviour:
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules
     level: 2
+  - ruleId: infra_composition
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure.Composition
+    level: 4
   - ruleId: postgame_legacy_namespace
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Gameplay.PostGame
@@ -38,7 +42,7 @@ MonoBehaviour:
     enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
     level: 4
-  - ruleId: infra_pooling
+  - ruleId: infra_audio
     enabled: 1
-    namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure.Pooling
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.Audio
     level: 4

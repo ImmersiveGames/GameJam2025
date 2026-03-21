@@ -15,19 +15,25 @@ MonoBehaviour:
   menuSlot:
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     transitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1002, type: 2}
+    bgmCueRef: {fileID: 11400000, guid: 25cf9ecd2e0df8c40bb384c00bcc510a, type: 2}
   gameplaySlot:
     routeRef: {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
     transitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1003, type: 2}
+    bgmCueRef: {fileID: 11400000, guid: 8bdd0f6cc3520b24bae1d6e1e1b57835, type: 2}
   gameOverSlot:
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     transitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1005, type: 2}
+    bgmCueRef: {fileID: 0}
   victorySlot:
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     transitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1005, type: 2}
+    bgmCueRef: {fileID: 0}
   restartSlot:
     routeRef: {fileID: 11400000, guid: 26fcd85590868ae46a33dd769e1145fc, type: 2}
     transitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1005, type: 2}
+    bgmCueRef: {fileID: 0}
   exitToMenuSlot:
     routeRef: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
     transitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1002, type: 2}
+    bgmCueRef: {fileID: 0}
   routes: []

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06c7c3656b60bac4e8bf9756ec833563, type: 3}
+  m_Name: AudioSfxCue_Spetial
+  m_EditorClassIdentifier: 
+  clips:
+  - {fileID: 8300000, guid: 05bcb9ac9fd43a04cb00a0b2bc69ba6e, type: 3}
+  - {fileID: 8300000, guid: 4f66a3b63139ff1469327f274505a1de, type: 3}
+  mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+  baseVolume: 1
+  loop: 0
+  pitchMin: 1
+  pitchMax: 1
+  randomVolumeJitter: 0
+  playbackMode: 1
+  spatialBlend: 1
+  minDistance: 1
+  maxDistance: 40
+  executionMode: 0
+  voiceProfileOverride: {fileID: 0}
+  maxSimultaneousInstances: 1
+  sfxRetriggerCooldownSeconds: 0

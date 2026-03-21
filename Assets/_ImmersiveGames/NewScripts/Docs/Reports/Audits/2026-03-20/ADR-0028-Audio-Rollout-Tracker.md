@@ -38,8 +38,8 @@ Pacote A: FECHADO (F0/F1/F2 concluídos, sem playback real ainda)
 | F1 - Contratos e estrutura | DONE | Estrutura `Modules/Audio/**` criada com contratos e assets base do ADR-0028. |
 | F2 - Bootstrap + defaults/settings/routing base | DONE | Estágio `Audio` adicionado ao pipeline global antes de GameLoop, com registro DI e logs de boot. |
 | F3 - GlobalAudio BGM | DONE | `IAudioBgmService` runtime canônico implementado e registrado no DI global (single-channel lógico com fade/crossfade e pause/resume via ducking). |
-| F4 - GlobalAudio SFX direto | NOT STARTED | Próxima fase natural após fechamento de F3. |
-| F5 - GlobalAudio pooled voices | NOT STARTED | Dependente de F4 (sem consumo de pooling nesta fase F3). |
+| F4 - GlobalAudio SFX direto | DONE | `IGlobalAudioService` runtime canônico implementado (direct one-shot 2D/3D, anti-spam real e handle funcional). |
+| F5 - GlobalAudio pooled voices | NOT STARTED | Próxima fase natural após F4 (sem consumo de pooling nesta entrega). |
 | F6 - EntityAudio semântico | NOT STARTED | Dependente de F5. |
 | F7 - EntityAudioEmitter mínimo | NOT STARTED | Dependente de F6. |
 | F8 - Integrações opcionais | NOT STARTED | Dependente de F7. |
@@ -65,7 +65,7 @@ Só avança quando:
 
 ## Riscos residuais conhecidos após Pacote A
 
-- Playback real de BGM fechado em F3; permanecem sem runtime real apenas `IGlobalAudioService` (F4/F5) e `IEntityAudioService` (F6+).
+- Playback real de BGM e Global SFX direto fechados em F3/F4; permanecem sem runtime real `IGlobalAudioService` pooled (F5) e `IEntityAudioService` (F6+).
 - `AudioDefaultsAsset` ausente no bootstrap entra em modo degradado com fallback runtime (já logado/trackeado).
 - Contrato detalhado de mixer/routing segue base inicial (refino previsto para F3+).
 
@@ -76,6 +76,72 @@ Só avança quando:
 - Registro DI global realizado em `Infrastructure/Composition/GlobalCompositionRoot.Audio.cs`.
 - Escopo respeitado: sem implementação de `IGlobalAudioService`, sem `IEntityAudioService` runtime e sem consumo de `Infrastructure/Pooling/**` nesta fase.
 - Próximo passo natural do rollout: F4 (Global SFX direto), seguido de F5 (pooled voices).
+
+## Atualização F4 (2026-03-21) — SFX-1
+
+- Status: DONE (escopo F4 direto, sem pooling).
+- Implementação concreta de `IGlobalAudioService` adicionada em `Modules/Audio/Runtime/AudioGlobalSfxService.cs`.
+- Handle real de playback direto adicionado em `Modules/Audio/Runtime/AudioSfxPlaybackHandle.cs`.
+- Registro DI global realizado em `Infrastructure/Composition/GlobalCompositionRoot.Audio.cs`.
+- Escopo respeitado:
+  - sem consumo de `IPoolService`;
+  - sem uso de `PoolDefinitionAsset` no runtime de execução;
+  - sem mudanças em bridges de domínio consumidor.
+- Ajuste semântico aplicado (F4 hardening):
+  - retrigger do mesmo cue em `Global/2D` usa `restart_existing` (interrompe a instância anterior e toca novamente de imediato);
+  - nesse retrigger específico, cooldown e limite de simultâneos não bloqueiam o novo feedback;
+  - trilha `Spatial/3D` mantém a política de cooldown/limite desta fase.
+- Próximo passo natural do rollout: F5 (Global SFX pooled voices).
+
+## Evidência funcional de fechamento F4 (validação manual)
+
+- `IGlobalAudioService` resolve via DI global em runtime.
+- `Play` direto 2D funcional (`AudioSfxCueAsset` + `AudioPlaybackContext.Global`).
+- `Play` direto 3D funcional por posição/follow target (`AudioPlaybackContext.Spatial`).
+- Enforcement real de anti-spam:
+  - `Global/2D` (mesmo cue, retrigger): `restart_existing` em vez de supressão;
+  - `Spatial/3D`: bloqueio por cooldown (`SfxRetriggerCooldownSeconds`);
+  - `Spatial/3D`: bloqueio por limite de simultâneos (`MaxSimultaneousInstances`).
+- `IAudioPlaybackHandle` funcional:
+  - `IsValid` e `IsPlaying` refletem estado real;
+  - `Stop()` encerra playback (com suporte a fade no handle direto).
+- Observabilidade adicionada:
+  - `play start`;
+  - `retrigger='restart_existing'` para `Global/2D`;
+  - `blocked by cooldown`;
+  - `blocked by simultaneous limit`;
+  - `stop/completion`;
+  - modo `2D/3D`;
+  - cue/cueId;
+  - reason/routing.
+
+## Harness QA de cena para F4 (2026-03-21)
+
+- Arquivo: `Modules/Audio/QA/AudioSfxQaSceneHarness.cs`.
+- Objetivo: validar runtime F4 (SFX direto) em Play Mode sem integração de domínio.
+- Campos principais:
+  - `direct2dCue`
+  - `direct3dCue`
+  - `spatialFollowTarget`
+  - `spatialProbePosition`
+  - `burstCount`
+  - `burstStepDelaySeconds`
+  - `verboseLogs`
+- ContextMenu disponível:
+  - `QA/Audio/SFX/Validate Setup`
+  - `QA/Audio/SFX/Play Direct 2D`
+  - `QA/Audio/SFX/Play Direct 3D Position`
+  - `QA/Audio/SFX/Play Direct 3D Follow`
+  - `QA/Audio/SFX/Probe Global Restart Interrupt`
+  - `QA/Audio/SFX/Burst Simultaneous`
+  - `QA/Audio/SFX/Stop Last Handle`
+  - `QA/Audio/SFX/Log Harness State`
+
+### Hardening de QA para retrigger Global/2D (2026-03-21)
+
+- Adicionado probe dedicado `QA/Audio/SFX/Probe Global Restart Interrupt`.
+- O probe executa dois (ou mais) disparos automáticos do mesmo cue `Global/2D` com delay configurável, sem depender de timing manual entre cliques.
+- Logs do harness deixam explícitos: início, delay, cue usado, cada etapa de retrigger e conclusão do probe.
 
 ## Evidência funcional de fechamento F3 (validação manual)
 
@@ -150,11 +216,13 @@ Só avança quando:
   - `SceneRouteDefinitionAsset` (owner por route como default estrutural).
 - Bridge de integração registrado fora do core de Audio:
   - `Modules/Navigation/Runtime/NavigationLevelRouteBgmBridge.cs`
-  - inscrição em `SceneTransitionBeforeFadeOutEvent` e `LevelSwapLocalAppliedEvent`.
+  - inscrição em `SceneTransitionStartedEvent`, `SceneTransitionBeforeFadeOutEvent` e `LevelSwapLocalAppliedEvent`.
 - Timing de aplicação:
-  - resolve/aplica a cue efetiva do proximo estado em `SceneTransitionBeforeFadeOutEvent` (antes de FadeOut visual).
-  - usa contexto futuro apos `LevelPrepare` para priorizar `level > navigation/intent > route`.
-  - evita double-switch na mesma transicao com dedupe por signature.
+  - `SceneTransitionStartedEvent` = gatilho principal para macro transition (initial apply).
+  - resolve no started com melhor contexto disponivel: `level_snapshot > navigation > route`.
+  - `SceneTransitionBeforeFadeOutEvent` = confirmacao/correcao final (final confirm) com contexto pos-`LevelPrepare`.
+  - `LevelSwapLocalAppliedEvent` = gatilho principal para troca intra-macro (local swap) com transicao sonora perceptivel.
+  - dedupe por signature permanece no gatilho `before_fade_out`; divergencia entre cue inicial e final gera correction log explicito.
 - Precedência efetiva aplicada pelo bridge:
   - `level > navigation/intent > route > sem troca automática`.
 - Semântica final de aplicação registrada:

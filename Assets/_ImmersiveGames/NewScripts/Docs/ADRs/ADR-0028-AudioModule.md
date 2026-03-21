@@ -494,6 +494,21 @@ O mÃ³dulo inclui proteÃ§Ã£o mÃ­nima via:
 - limite simples de instÃ¢ncias simultÃ¢neas por cue,
 - drop simples quando o limite Ã© atingido.
 
+### Politica de retrigger para SFX Global / 2D
+
+- SFX `Global/2D` representa feedback imediato e nao deve ser suprimido quando repetido.
+- Quando o mesmo cue `Global/2D` for solicitado novamente:
+  - a instancia ativa anterior deve ser interrompida;
+  - o novo playback deve iniciar imediatamente (`restart_existing`);
+  - cooldown e limite de simultaneos nao devem bloquear esse retrigger.
+
+Esta semantica vale no F4 (direct one-shot) e deve ser preservada no F5 (pooled).
+
+### Politica para SFX Spatial / 3D
+
+- SFX `Spatial/3D` pode seguir politica distinta de concorrencia.
+- Cooldown e limite de simultaneos permanecem validos conforme runtime/fase.
+
 Importante:
 
 esses limites devem ser **enforcement real** do runtime, e nÃ£o apenas campos declarativos sem efeito prÃ¡tico.
@@ -652,10 +667,11 @@ Precedencia de resolucao no bridge de integracao:
 
 Timing canonico de aplicacao no fluxo de transicao:
 
-- o bridge resolve/aplica BGM do proximo estado no ponto `SceneTransitionBeforeFadeOutEvent`.
-- esse ponto acontece apos `ScenesReady` e apos completion gate (`LevelPrepare`), mas antes de `FadeOutStarted`.
+- em transicoes macro, `SceneTransitionStartedEvent` e o gatilho principal para resolver/aplicar BGM com a melhor informacao disponivel (ordem: level snapshot -> navigation -> route).
+- `SceneTransitionBeforeFadeOutEvent` e o ponto de confirmacao/correcao final com contexto consolidado pos-`LevelPrepare` (ainda antes de `FadeOutStarted`).
+- em trocas locais de level sem loading visual, `LevelSwapLocalAppliedEvent` e o gatilho principal e deve manter transicao sonora perceptivel.
 - objetivo: quando a imagem voltar, a proxima musica ja deve estar tocando ou em crossfade.
-- para evitar dupla troca na mesma transicao, o bridge deduplica por assinatura de transicao.
+- para evitar ruido de reaplicacao, o bridge deduplica por assinatura no gatilho `before_fade_out`; quando a cue final diverge da inicial, a correcao final e aplicada explicitamente.
 
 Semantica final de aplicacao de BGM:
 

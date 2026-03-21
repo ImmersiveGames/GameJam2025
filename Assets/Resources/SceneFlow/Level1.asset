@@ -12,13 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14301cfefefbb9f4f98f52e9b0934bae, type: 3}
   m_Name: Level1
   m_EditorClassIdentifier: 
-  levelId:
-    _value: level1
   additiveScenes:
-  - sceneAsset: {fileID: 102900000, guid: 2039167f662f2e34a99f630eadbe66c0, type: 3}
-    buildIndex: 7
+  - buildIndex: 7
     sceneName: SceneTest
   hasIntroStage: 1
-  hasPostLevelStage: 1
+  hasPostGameReactionHook: 1
   allowLocalCurtainIn: 1
   allowLocalCurtainOut: 1
+  bgmCue: {fileID: 0}

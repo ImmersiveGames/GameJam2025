@@ -22,9 +22,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
         private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
         private readonly IRestartContextService _restartContextService;
 
+        private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
         private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _beforeFadeOutBinding;
         private readonly EventBinding<LevelSwapLocalAppliedEvent> _levelSwapAppliedBinding;
-        private string _lastAppliedTransitionSignature = string.Empty;
+        private string _lastBeforeFadeOutTransitionSignature = string.Empty;
+        private string _lastStartedTransitionSignature = string.Empty;
+        private AudioBgmCueAsset _lastStartedResolvedCue;
         private bool _disposed;
 
         public NavigationLevelRouteBgmBridge(
@@ -38,14 +41,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
             _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
             _restartContextService = restartContextService;
 
+            _startedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
             _beforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnSceneTransitionBeforeFadeOut);
             _levelSwapAppliedBinding = new EventBinding<LevelSwapLocalAppliedEvent>(OnLevelSwapLocalApplied);
 
+            EventBus<SceneTransitionStartedEvent>.Register(_startedBinding);
             EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_beforeFadeOutBinding);
             EventBus<LevelSwapLocalAppliedEvent>.Register(_levelSwapAppliedBinding);
 
             DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                "[Audio][BGM][Bridge] Registered (SceneTransitionBeforeFadeOutEvent + LevelSwapLocalAppliedEvent).",
+                "[Audio][BGM][Bridge] Registered (SceneTransitionStartedEvent + SceneTransitionBeforeFadeOutEvent + LevelSwapLocalAppliedEvent).",
                 DebugUtility.Colors.Info);
         }
 
@@ -57,15 +62,31 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
             }
 
             _disposed = true;
+            EventBus<SceneTransitionStartedEvent>.Unregister(_startedBinding);
             EventBus<SceneTransitionBeforeFadeOutEvent>.Unregister(_beforeFadeOutBinding);
             EventBus<LevelSwapLocalAppliedEvent>.Unregister(_levelSwapAppliedBinding);
+        }
+
+        private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
+        {
+            string transitionSignature = SceneTransitionSignature.Compute(evt.context);
+            LevelDefinitionAsset levelRef = ResolveLevelFromSnapshot(evt.context.RouteId);
+            var resolvedCue = ApplyResolvedCue(
+                routeId: evt.context.RouteId,
+                levelRef: levelRef,
+                trigger: "transition_started",
+                phase: "initial_apply",
+                reason: $"bgm_bridge_transition_started:{evt.context.RouteKind}");
+
+            _lastStartedTransitionSignature = transitionSignature ?? string.Empty;
+            _lastStartedResolvedCue = resolvedCue;
         }
 
         private void OnSceneTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
             string transitionSignature = SceneTransitionSignature.Compute(evt.context);
             if (!string.IsNullOrWhiteSpace(transitionSignature) &&
-                string.Equals(_lastAppliedTransitionSignature, transitionSignature, StringComparison.Ordinal))
+                string.Equals(_lastBeforeFadeOutTransitionSignature, transitionSignature, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
                     $"[Audio][BGM][Bridge] Resolve skipped: duplicate transition signature='{transitionSignature}' trigger='before_fade_out'.",
@@ -74,15 +95,28 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
             }
 
             LevelDefinitionAsset levelRef = ResolveLevelFromSnapshot(evt.context.RouteId);
-            ApplyResolvedCue(
+            AudioBgmCueAsset beforeCue = _bgmService.ActiveCue;
+            AudioBgmCueAsset resolvedCue = ApplyResolvedCue(
                 routeId: evt.context.RouteId,
                 levelRef: levelRef,
                 trigger: "before_fade_out",
+                phase: "final_confirm",
                 reason: $"bgm_bridge_scene_transition_before_fade_out:{evt.context.RouteKind}");
+
+            if (!string.IsNullOrWhiteSpace(transitionSignature) &&
+                string.Equals(_lastStartedTransitionSignature, transitionSignature, StringComparison.Ordinal) &&
+                resolvedCue != null &&
+                _lastStartedResolvedCue != null &&
+                resolvedCue != _lastStartedResolvedCue)
+            {
+                DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
+                    $"[Audio][BGM][Bridge] Final correction applied signature='{transitionSignature}' trigger='before_fade_out' phase='final_confirm' initialCue='{_lastStartedResolvedCue.name}' finalCue='{resolvedCue.name}' activeBefore='{(beforeCue != null ? beforeCue.name : "<none>")}'.",
+                    DebugUtility.Colors.Info);
+            }
 
             if (!string.IsNullOrWhiteSpace(transitionSignature))
             {
-                _lastAppliedTransitionSignature = transitionSignature;
+                _lastBeforeFadeOutTransitionSignature = transitionSignature;
             }
         }
 
@@ -92,60 +126,69 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                 routeId: evt.MacroRouteId,
                 levelRef: evt.LevelRef,
                 trigger: "level_swap_local_applied",
+                phase: "local_swap",
                 reason: "bgm_bridge_level_swap_local_applied");
         }
 
-        private void ApplyResolvedCue(SceneRouteId routeId, LevelDefinitionAsset levelRef, string trigger, string reason)
+        private AudioBgmCueAsset ApplyResolvedCue(SceneRouteId routeId, LevelDefinitionAsset levelRef, string trigger, string phase, string reason)
         {
             if (!routeId.IsValid)
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                    $"[Audio][BGM][Bridge] Resolve skipped: invalid routeId. trigger='{NormalizeTrigger(trigger)}' reason='{NormalizeReason(reason)}'.",
+                    $"[Audio][BGM][Bridge] Resolve skipped: invalid routeId. trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' reason='{NormalizeReason(reason)}'.",
                     DebugUtility.Colors.Info);
-                return;
+                return null;
             }
 
-            if (!TryResolveEffectiveCue(routeId, levelRef, out AudioBgmCueAsset cue, out string source))
+            if (!TryResolveEffectiveCue(routeId, levelRef, trigger, out AudioBgmCueAsset cue, out string source, out string sourceName))
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                    $"[Audio][BGM][Bridge] Resolve no-op: no cue mapped for routeId='{routeId}' trigger='{NormalizeTrigger(trigger)}' reason='{NormalizeReason(reason)}'.",
+                    $"[Audio][BGM][Bridge] Resolve no-op: no cue mapped for routeId='{routeId}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' source='none' reason='{NormalizeReason(reason)}'.",
                     DebugUtility.Colors.Info);
-                return;
+                return null;
             }
 
             if (cue == null)
             {
-                return;
+                return null;
             }
 
             if (_bgmService.ActiveCue == cue)
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                    $"[Audio][BGM][Bridge] Resolve no-op: cue already active. routeId='{routeId}' cue='{cue.name}' source='{source}' trigger='{NormalizeTrigger(trigger)}'.",
+                    $"[Audio][BGM][Bridge] Resolve no-op: cue already active. routeId='{routeId}' cue='{cue.name}' source='{source}' sourceName='{sourceName}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}'.",
                     DebugUtility.Colors.Info);
-                return;
+                return cue;
             }
 
+            var previousCue = _bgmService.ActiveCue != null ? _bgmService.ActiveCue.name : "<none>";
             DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                $"[Audio][BGM][Bridge] Applying cue routeId='{routeId}' cue='{cue.name}' source='{source}' trigger='{NormalizeTrigger(trigger)}' reason='{NormalizeReason(reason)}'.",
+                $"[Audio][BGM][Bridge] Applying cue routeId='{routeId}' prevCue='{previousCue}' nextCue='{cue.name}' source='{source}' sourceName='{sourceName}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' origin='bridge-synced' reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);
 
-            _bgmService.Play(cue, fadeInSeconds: -1f, reason: NormalizeReason(reason));
+            _bgmService.Play(cue, fadeInSeconds: -1f, reason: $"bridge-synced:{NormalizeReason(reason)}");
+            return cue;
         }
 
         private bool TryResolveEffectiveCue(
             SceneRouteId routeId,
             LevelDefinitionAsset levelRef,
+            string trigger,
             out AudioBgmCueAsset cue,
-            out string source)
+            out string source,
+            out string sourceName)
         {
             cue = null;
             source = string.Empty;
+            sourceName = string.Empty;
+            bool isMacroTransitionTrigger = string.Equals(trigger, "transition_started", StringComparison.Ordinal) ||
+                                            string.Equals(trigger, "before_fade_out", StringComparison.Ordinal);
 
             if (levelRef != null && levelRef.BgmCue != null)
             {
                 cue = levelRef.BgmCue;
-                source = $"level:{levelRef.name}";
+                source = isMacroTransitionTrigger ? "level_snapshot" : "level";
+                sourceName = levelRef.name;
                 return true;
             }
 
@@ -153,7 +196,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                 intentCue != null)
             {
                 cue = intentCue;
-                source = $"navigation:{intentOwner}";
+                source = "navigation";
+                sourceName = intentOwner;
                 return true;
             }
 
@@ -162,7 +206,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                 routeAsset.BgmCue != null)
             {
                 cue = routeAsset.BgmCue;
-                source = $"route:{routeAsset.name}";
+                source = "route";
+                sourceName = routeAsset.name;
                 return true;
             }
 
@@ -199,6 +244,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
         private static string NormalizeTrigger(string trigger)
         {
             return string.IsNullOrWhiteSpace(trigger) ? "unspecified" : trigger.Trim();
+        }
+
+        private static string NormalizePhase(string phase)
+        {
+            return string.IsNullOrWhiteSpace(phase) ? "unspecified" : phase.Trim();
         }
     }
 }
