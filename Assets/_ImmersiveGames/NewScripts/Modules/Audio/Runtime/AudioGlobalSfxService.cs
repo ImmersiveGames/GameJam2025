@@ -1,12 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 {
     /// <summary>
-    /// Runtime canônico de SFX global direto (F4, sem pooling).
+    /// Runtime canônico de SFX global (F4/F5: direto + pooled).
     /// </summary>
     public sealed class AudioGlobalSfxService : MonoBehaviour, IGlobalAudioService
     {
@@ -15,10 +20,22 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         private readonly Dictionary<int, int> _activeInstancesByCueId = new Dictionary<int, int>();
         private readonly Dictionary<int, float> _lastPlayRealtimeByCueId = new Dictionary<int, float>();
         private readonly Dictionary<int, List<AudioSfxPlaybackHandle>> _activeHandlesByCueId = new Dictionary<int, List<AudioSfxPlaybackHandle>>();
+        private readonly Dictionary<AudioSfxPlaybackHandle, PooledPlaybackState> _pooledPlaybackByHandle = new Dictionary<AudioSfxPlaybackHandle, PooledPlaybackState>();
+        private readonly Dictionary<int, int> _activePooledByProfileId = new Dictionary<int, int>();
+        private readonly HashSet<PoolDefinitionAsset> _prewarmedDefinitions = new HashSet<PoolDefinitionAsset>();
 
         private AudioDefaultsAsset _defaults;
         private IAudioSettingsService _settings;
         private IAudioRoutingResolver _routing;
+        private IPoolService _poolService;
+
+        private struct PooledPlaybackState
+        {
+            public PoolDefinitionAsset Definition;
+            public AudioSfxVoiceProfileAsset Profile;
+            public GameObject Instance;
+            public float ReleaseGraceSeconds;
+        }
 
         public static IGlobalAudioService Create(
             AudioDefaultsAsset defaults,
@@ -45,13 +62,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return NullAudioPlaybackHandle.Instance;
             }
 
-            if (cue.ExecutionMode != AudioSfxExecutionMode.DirectOneShot)
-            {
-                DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
-                    $"[Audio][SFX] Play blocked: cue='{cue.name}' executionMode='{cue.ExecutionMode}' is not supported in F4 direct runtime.");
-                return NullAudioPlaybackHandle.Instance;
-            }
-
             if (!cue.ValidateRuntime(out var validationReason))
             {
                 DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
@@ -68,62 +78,85 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
             int cueId = cue.GetInstanceID();
             bool useSpatial = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial;
-            bool isGlobal2dRequest = !useSpatial;
+            float now = Time.realtimeSinceStartup;
+            int activeInstances = GetActiveInstances(cueId);
+            bool hasActive2d = !useSpatial && HasActive2dHandle(cueId);
+            bool previousHandleStopped = hasActive2d && StopActive2dHandles(cueId);
+            float? lastPlayTime = _lastPlayRealtimeByCueId.TryGetValue(cueId, out var lastPlayTimeValue)
+                ? lastPlayTimeValue
+                : null;
 
-            bool restartedExisting = false;
-            bool previousHandleStopped = false;
-            if (isGlobal2dRequest && HasActive2dHandle(cueId))
+            var directDecision = AudioSfxDirectPolicyEngine.Evaluate(
+                cue: cue,
+                useSpatial: useSpatial,
+                now: now,
+                lastPlayTime: lastPlayTime,
+                activeInstances: activeInstances,
+                hasActive2dHandle: hasActive2d,
+                previousHandleStopped: previousHandleStopped);
+
+            if (directDecision.RestartedExisting)
             {
-                restartedExisting = true;
-                previousHandleStopped = StopActive2dHandles(cueId);
-
                 DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                    $"[Audio][SFX] Play policy retrigger='restart_existing' cue='{cue.name}' cueId={cueId} mode='2D' previousHandleStopped={previousHandleStopped} reason='{reason}'.",
+                    $"[Audio][SFX] Play policy retrigger='restart_existing' cue='{cue.name}' cueId={cueId} mode='2D' previousHandleStopped={directDecision.PreviousHandleStopped} reason='{reason}'.",
                     DebugUtility.Colors.Info);
             }
 
-            float now = Time.realtimeSinceStartup;
-            float cooldown = Mathf.Max(0f, cue.SfxRetriggerCooldownSeconds);
-            if (!restartedExisting && cooldown > 0f && _lastPlayRealtimeByCueId.TryGetValue(cueId, out var lastPlayTime))
+            if (directDecision.ShouldBlock)
             {
-                float elapsed = now - lastPlayTime;
-                if (elapsed < cooldown)
+                if (directDecision.BlockPolicy == AudioSfxBlockPolicy.Cooldown)
                 {
+                    float cooldown = Mathf.Max(0f, cue.SfxRetriggerCooldownSeconds);
+                    float elapsed = now - (lastPlayTime ?? now);
                     DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
                         $"[Audio][SFX] Play blocked policy='block_cooldown' cue='{cue.name}' cueId={cueId} elapsed={elapsed:0.###} cooldown={cooldown:0.###} reason='{reason}'.",
                         DebugUtility.Colors.Info);
+                }
+                else
+                {
+                    int maxSimultaneous = Mathf.Max(1, cue.MaxSimultaneousInstances);
+                    DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Play blocked policy='block_limit' cue='{cue.name}' cueId={cueId} active={activeInstances} max={maxSimultaneous} reason='{reason}'.",
+                        DebugUtility.Colors.Info);
+                }
+
+                return NullAudioPlaybackHandle.Instance;
+            }
+
+            string path = "direct";
+            string mode = useSpatial ? "3D" : "2D";
+            AudioSfxPlaybackHandle handle;
+            if (cue.ExecutionMode == AudioSfxExecutionMode.PooledOneShot)
+            {
+                if (!TryCreatePooledHandle(cue, clip, context, reason, out handle, out mode, out path))
+                {
+                    if (!TryCreateDirectHandle(cue, clip, context, reason, fallbackPath: path, out handle, out mode, out path))
+                    {
+                        return NullAudioPlaybackHandle.Instance;
+                    }
+                }
+            }
+            else
+            {
+                if (!TryCreateDirectHandle(cue, clip, context, reason, fallbackPath: "direct", out handle, out mode, out path))
+                {
                     return NullAudioPlaybackHandle.Instance;
                 }
             }
 
-            int maxSimultaneous = Mathf.Max(1, cue.MaxSimultaneousInstances);
-            int activeInstances = GetActiveInstances(cueId);
-            if (!restartedExisting && activeInstances >= maxSimultaneous)
+            if (handle == null || !handle.IsValid)
             {
                 DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                    $"[Audio][SFX] Play blocked policy='block_limit' cue='{cue.name}' cueId={cueId} active={activeInstances} max={maxSimultaneous} reason='{reason}'.",
+                    $"[Audio][SFX] Play no-op: no valid handle created cue='{cue.name}' path='{path}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return NullAudioPlaybackHandle.Instance;
             }
 
-            var playbackObject = new GameObject($"SFX_{cue.name}");
-            playbackObject.transform.SetParent(transform, false);
-
-            var source = playbackObject.AddComponent<AudioSource>();
-            ConfigureSource(source, cue, clip, context);
-
-            var handle = playbackObject.AddComponent<AudioSfxPlaybackHandle>();
-            string mode = source.spatialBlend > 0f ? "3D" : "2D";
-            handle.Initialize(cueId, cue.name, source, context.FollowTarget, mode, reason, OnPlaybackCompleted);
-
             _lastPlayRealtimeByCueId[cueId] = now;
             _activeInstancesByCueId[cueId] = activeInstances + 1;
-            RegisterHandle(cueId, handle);
-
-            source.Play();
 
             DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                $"[Audio][SFX] Play start cue='{cue.name}' cueId={cueId} mode='{mode}' retrigger='{(restartedExisting ? "restart_existing" : "none")}' volume={source.volume:0.###} pitch={source.pitch:0.###} reason='{reason}' routing='{ResolveRoutingName(source.outputAudioMixerGroup)}'.",
+                $"[Audio][SFX] Play start cue='{cue.name}' cueId={cueId} mode='{mode}' path='{path}' retrigger='{(directDecision.RestartedExisting ? "restart_existing" : "none")}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return handle;
@@ -137,10 +170,227 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             _defaults = defaults;
             _settings = settings;
             _routing = routing;
+            TryResolvePoolService(out _);
 
             DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                "[Audio][BOOT] IGlobalAudioService runtime created (F4, direct SFX without pooling).",
+                "[Audio][BOOT] IGlobalAudioService runtime created (F4/F5 direct + pooled).",
                 DebugUtility.Colors.Info);
+        }
+
+        private bool TryCreatePooledHandle(
+            AudioSfxCueAsset cue,
+            AudioClip clip,
+            AudioPlaybackContext context,
+            string reason,
+            out AudioSfxPlaybackHandle handle,
+            out string mode,
+            out string path)
+        {
+            handle = null;
+            mode = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial ? "3D" : "2D";
+            path = "pooled";
+
+            ResolveVoiceProfile(cue, context, out var profile, out var profileSource);
+            var profileDecision = AudioSfxPooledPolicyEngine.EvaluateProfile(profile);
+            if (profileDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
+            {
+                path = "direct";
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Pooled bypass: no voice profile resolved cue='{cue.name}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
+
+            var poolDefinition = profile.PooledVoicePoolDefinition;
+            var poolDefinitionDecision = AudioSfxPooledPolicyEngine.EvaluatePoolDefinition(profile);
+            if (poolDefinitionDecision.Type != AudioSfxPooledDecisionType.Proceed)
+            {
+                if (poolDefinitionDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
+                {
+                    path = "fallback_direct";
+                    DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='missing_pool_definition' source='{profileSource}'.",
+                        DebugUtility.Colors.Info);
+                    return false;
+                }
+
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Play blocked policy='block_budget' cue='{cue.name}' path='pooled' reason='missing_pool_definition' profile='{profile.name}'.",
+                    DebugUtility.Colors.Info);
+                return true;
+            }
+
+            bool hasPoolService = TryResolvePoolService(out var poolService);
+            var poolServiceDecision = AudioSfxPooledPolicyEngine.EvaluatePoolService(profile, hasPoolService);
+            if (poolServiceDecision.Type != AudioSfxPooledDecisionType.Proceed)
+            {
+                if (poolServiceDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
+                {
+                    path = "fallback_direct";
+                    DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='pool_service_unavailable'.",
+                        DebugUtility.Colors.Info);
+                    return false;
+                }
+
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Play blocked policy='block_budget' cue='{cue.name}' path='pooled' reason='pool_service_unavailable'.",
+                    DebugUtility.Colors.Info);
+                return true;
+            }
+
+            int budget = Mathf.Max(0, profile.DefaultVoiceBudget);
+            int activeForProfile = GetActivePooledForProfile(profile);
+            var budgetDecision = AudioSfxPooledPolicyEngine.EvaluateBudget(profile, activeForProfile);
+            if (budgetDecision.Type != AudioSfxPooledDecisionType.Proceed)
+            {
+                if (budgetDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
+                {
+                    path = "fallback_direct";
+                    DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' policy='block_budget' active={activeForProfile} budget={budget}.",
+                        DebugUtility.Colors.Info);
+                    return false;
+                }
+
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Play blocked policy='block_budget' cue='{cue.name}' path='pooled' profile='{profile.name}' active={activeForProfile} budget={budget}.",
+                    DebugUtility.Colors.Info);
+                return true;
+            }
+
+            try
+            {
+                poolService.EnsureRegistered(poolDefinition);
+                if (poolDefinition.Prewarm && _prewarmedDefinitions.Add(poolDefinition))
+                {
+                    poolService.Prewarm(poolDefinition);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (profile.AllowDirectFallback)
+                {
+                    path = "fallback_direct";
+                    DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='pool_registration_failed' message='{ex.Message}'.");
+                    return false;
+                }
+
+                DebugUtility.LogError(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Play blocked policy='block_budget' cue='{cue.name}' path='pooled' reason='pool_registration_failed' message='{ex.Message}'.");
+                return true;
+            }
+
+            GameObject rentedInstance;
+            try
+            {
+                rentedInstance = poolService.Rent(poolDefinition, transform);
+            }
+            catch (Exception ex)
+            {
+                if (profile.AllowDirectFallback)
+                {
+                    path = "fallback_direct";
+                    DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' policy='block_budget' rentFailed='{ex.Message}'.");
+                    return false;
+                }
+
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Play blocked policy='block_budget' cue='{cue.name}' path='pooled' rentFailed='{ex.Message}'.",
+                    DebugUtility.Colors.Info);
+                return true;
+            }
+
+            if (rentedInstance == null)
+            {
+                if (profile.AllowDirectFallback)
+                {
+                    path = "fallback_direct";
+                    DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='rent_returned_null'.");
+                    return false;
+                }
+
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Play blocked policy='block_budget' cue='{cue.name}' path='pooled' reason='rent_returned_null'.",
+                    DebugUtility.Colors.Info);
+                return true;
+            }
+
+            var source = rentedInstance.GetComponent<AudioSource>();
+            if (source == null)
+            {
+                source = rentedInstance.AddComponent<AudioSource>();
+            }
+
+            ConfigureSource(source, cue, clip, context);
+
+            handle = rentedInstance.GetComponent<AudioSfxPlaybackHandle>();
+            if (handle == null)
+            {
+                handle = rentedInstance.AddComponent<AudioSfxPlaybackHandle>();
+            }
+
+            mode = source.spatialBlend > 0f ? "3D" : "2D";
+            handle.Initialize(
+                cueId: cue.GetInstanceID(),
+                cueName: cue.name,
+                source: source,
+                followTarget: context.FollowTarget,
+                modeLabel: mode,
+                reason: reason,
+                destroyOwnerOnComplete: false,
+                onCompleted: OnPlaybackCompleted);
+
+            RegisterHandle(cue.GetInstanceID(), handle);
+            RegisterPooledHandle(handle, profile, poolDefinition, rentedInstance, profile.ReleaseGraceSeconds);
+
+            source.Play();
+
+            DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                $"[Audio][SFX] Pool rent cue='{cue.name}' profile='{profile.name}' source='{profileSource}' pool='{poolDefinition.name}' mode='{mode}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            return true;
+        }
+
+        private bool TryCreateDirectHandle(
+            AudioSfxCueAsset cue,
+            AudioClip clip,
+            AudioPlaybackContext context,
+            string reason,
+            string fallbackPath,
+            out AudioSfxPlaybackHandle handle,
+            out string mode,
+            out string path)
+        {
+            handle = null;
+            mode = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial ? "3D" : "2D";
+            path = string.IsNullOrWhiteSpace(fallbackPath) ? "direct" : fallbackPath;
+
+            var playbackObject = new GameObject($"SFX_{cue.name}");
+            playbackObject.transform.SetParent(transform, false);
+
+            var source = playbackObject.AddComponent<AudioSource>();
+            ConfigureSource(source, cue, clip, context);
+
+            handle = playbackObject.AddComponent<AudioSfxPlaybackHandle>();
+            mode = source.spatialBlend > 0f ? "3D" : "2D";
+            handle.Initialize(
+                cueId: cue.GetInstanceID(),
+                cueName: cue.name,
+                source: source,
+                followTarget: context.FollowTarget,
+                modeLabel: mode,
+                reason: reason,
+                destroyOwnerOnComplete: true,
+                onCompleted: OnPlaybackCompleted);
+
+            RegisterHandle(cue.GetInstanceID(), handle);
+            source.Play();
+            return true;
         }
 
         private void ConfigureSource(AudioSource source, AudioSfxCueAsset cue, AudioClip clip, AudioPlaybackContext context)
@@ -150,7 +400,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             source.outputAudioMixerGroup = _routing != null ? _routing.ResolveSfxMixerGroup(cue) : null;
 
             float jitter = cue.RandomVolumeJitter > 0f
-                ? Random.Range(-cue.RandomVolumeJitter, cue.RandomVolumeJitter)
+                ? UnityEngine.Random.Range(-cue.RandomVolumeJitter, cue.RandomVolumeJitter)
                 : 0f;
             float cueVolume = Mathf.Clamp01(cue.BaseVolume + jitter);
             float contextVolume = Mathf.Max(0f, context.VolumeScale <= 0f ? 1f : context.VolumeScale);
@@ -160,7 +410,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             float category = _settings != null ? Mathf.Max(0f, _settings.SfxCategoryMultiplier) : (_defaults != null ? Mathf.Max(0f, _defaults.SfxCategoryMultiplier) : 1f);
 
             source.volume = Mathf.Clamp01(cueVolume * contextVolume * master * sfx * category);
-            source.pitch = Random.Range(cue.PitchMin, cue.PitchMax);
+            source.pitch = UnityEngine.Random.Range(cue.PitchMin, cue.PitchMax);
 
             bool useSpatial = context.UseSpatial || cue.PlaybackMode == AudioSfxPlaybackMode.Spatial;
             if (useSpatial)
@@ -185,6 +435,30 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
         }
 
+        private void ResolveVoiceProfile(
+            AudioSfxCueAsset cue,
+            AudioPlaybackContext context,
+            out AudioSfxVoiceProfileAsset profile,
+            out string source)
+        {
+            if (cue != null && cue.VoiceProfileOverride != null)
+            {
+                profile = cue.VoiceProfileOverride;
+                source = "cue_override";
+                return;
+            }
+
+            if (context.VoiceProfile != null)
+            {
+                profile = context.VoiceProfile;
+                source = "context";
+                return;
+            }
+
+            profile = null;
+            source = "none";
+        }
+
         private void OnPlaybackCompleted(AudioSfxPlaybackHandle handle, int cueId, string cueName, string modeLabel, string completionReason)
         {
             UnregisterHandle(cueId, handle);
@@ -202,9 +476,156 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 }
             }
 
+            if (_pooledPlaybackByHandle.TryGetValue(handle, out var pooledState))
+            {
+                _pooledPlaybackByHandle.Remove(handle);
+                DecrementActivePooledForProfile(pooledState.Profile);
+                SchedulePooledReturn(pooledState, completionReason);
+            }
+
             DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
                 $"[Audio][SFX] Playback complete cue='{cueName}' cueId={cueId} mode='{modeLabel}' completion='{completionReason}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void SchedulePooledReturn(PooledPlaybackState state, string completionReason)
+        {
+            float grace = Mathf.Max(0f, state.ReleaseGraceSeconds);
+            if (grace <= 0f)
+            {
+                ReturnPooledInstance(state, completionReason, delayed: false);
+                return;
+            }
+
+            StartCoroutine(ReturnPooledAfterDelay(state, grace, completionReason));
+        }
+
+        private IEnumerator ReturnPooledAfterDelay(PooledPlaybackState state, float delaySeconds, string completionReason)
+        {
+            yield return new WaitForSeconds(delaySeconds);
+            ReturnPooledInstance(state, completionReason, delayed: true);
+        }
+
+        private void ReturnPooledInstance(PooledPlaybackState state, string completionReason, bool delayed)
+        {
+            if (state.Instance == null || state.Definition == null)
+            {
+                return;
+            }
+
+            if (!TryResolvePoolService(out var poolService))
+            {
+                DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Pool return skipped cueInstance='{state.Instance.name}' reason='pool_service_unavailable' delayed={delayed} completion='{completionReason}'.");
+                return;
+            }
+
+            try
+            {
+                poolService.Return(state.Definition, state.Instance);
+                DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Pool return cueInstance='{state.Instance.name}' pool='{state.Definition.name}' delayed={delayed} completion='{completionReason}'.",
+                    DebugUtility.Colors.Info);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message != null && ex.Message.IndexOf("not currently rented", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                        $"[Audio][SFX] Pool return skipped cueInstance='{state.Instance.name}' pool='{state.Definition.name}' delayed={delayed} completion='{completionReason}' reason='already_returned'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
+                    $"[Audio][SFX] Pool return failed pool='{state.Definition.name}' delayed={delayed} message='{ex.Message}'.");
+            }
+        }
+
+        private void RegisterPooledHandle(
+            AudioSfxPlaybackHandle handle,
+            AudioSfxVoiceProfileAsset profile,
+            PoolDefinitionAsset definition,
+            GameObject instance,
+            float releaseGraceSeconds)
+        {
+            if (handle == null || profile == null || definition == null || instance == null)
+            {
+                return;
+            }
+
+            _pooledPlaybackByHandle[handle] = new PooledPlaybackState
+            {
+                Definition = definition,
+                Profile = profile,
+                Instance = instance,
+                ReleaseGraceSeconds = Mathf.Max(0f, releaseGraceSeconds)
+            };
+
+            int profileId = profile.GetInstanceID();
+            int current = 0;
+            _activePooledByProfileId.TryGetValue(profileId, out current);
+            _activePooledByProfileId[profileId] = current + 1;
+        }
+
+        private int GetActivePooledForProfile(AudioSfxVoiceProfileAsset profile)
+        {
+            if (profile == null)
+            {
+                return 0;
+            }
+
+            int profileId = profile.GetInstanceID();
+            return _activePooledByProfileId.TryGetValue(profileId, out int active)
+                ? Mathf.Max(0, active)
+                : 0;
+        }
+
+        private void DecrementActivePooledForProfile(AudioSfxVoiceProfileAsset profile)
+        {
+            if (profile == null)
+            {
+                return;
+            }
+
+            int profileId = profile.GetInstanceID();
+            if (!_activePooledByProfileId.TryGetValue(profileId, out int active))
+            {
+                return;
+            }
+
+            active = Mathf.Max(0, active - 1);
+            if (active == 0)
+            {
+                _activePooledByProfileId.Remove(profileId);
+            }
+            else
+            {
+                _activePooledByProfileId[profileId] = active;
+            }
+        }
+
+        private bool TryResolvePoolService(out IPoolService poolService)
+        {
+            if (_poolService != null)
+            {
+                poolService = _poolService;
+                return true;
+            }
+
+            poolService = null;
+            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
+            {
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPoolService>(out poolService) || poolService == null)
+            {
+                return false;
+            }
+
+            _poolService = poolService;
+            return true;
         }
 
         private void RegisterHandle(int cueId, AudioSfxPlaybackHandle handle)
@@ -324,14 +745,167 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             return _activeInstancesByCueId.TryGetValue(cueId, out int active) ? Mathf.Max(0, active) : 0;
         }
 
-        private static string ResolveRoutingName(UnityEngine.Audio.AudioMixerGroup group)
-        {
-            return group != null ? group.name : "none";
-        }
-
         private static string ResolveReason(string reason)
         {
             return string.IsNullOrWhiteSpace(reason) ? "unspecified" : reason.Trim();
+        }
+    }
+
+    internal enum AudioSfxBlockPolicy
+    {
+        None = 0,
+        Cooldown = 1,
+        SimultaneousLimit = 2
+    }
+
+    internal readonly struct AudioSfxDirectPolicyDecision
+    {
+        public AudioSfxDirectPolicyDecision(
+            bool shouldBlock,
+            AudioSfxBlockPolicy blockPolicy,
+            bool restartedExisting,
+            bool previousHandleStopped)
+        {
+            ShouldBlock = shouldBlock;
+            BlockPolicy = blockPolicy;
+            RestartedExisting = restartedExisting;
+            PreviousHandleStopped = previousHandleStopped;
+        }
+
+        public bool ShouldBlock { get; }
+        public AudioSfxBlockPolicy BlockPolicy { get; }
+        public bool RestartedExisting { get; }
+        public bool PreviousHandleStopped { get; }
+    }
+
+    /// <summary>
+    /// Regras de retrigger/cooldown/limit para trilho SFX direto.
+    /// </summary>
+    internal static class AudioSfxDirectPolicyEngine
+    {
+        public static AudioSfxDirectPolicyDecision Evaluate(
+            AudioSfxCueAsset cue,
+            bool useSpatial,
+            float now,
+            float? lastPlayTime,
+            int activeInstances,
+            bool hasActive2dHandle,
+            bool previousHandleStopped)
+        {
+            bool isGlobal2dRequest = !useSpatial;
+            bool restartedExisting = isGlobal2dRequest && hasActive2dHandle;
+
+            float cooldown = Mathf.Max(0f, cue.SfxRetriggerCooldownSeconds);
+            if (!restartedExisting && cooldown > 0f && lastPlayTime.HasValue)
+            {
+                float elapsed = now - lastPlayTime.Value;
+                if (elapsed < cooldown)
+                {
+                    return new AudioSfxDirectPolicyDecision(
+                        shouldBlock: true,
+                        blockPolicy: AudioSfxBlockPolicy.Cooldown,
+                        restartedExisting: false,
+                        previousHandleStopped: false);
+                }
+            }
+
+            int maxSimultaneous = Mathf.Max(1, cue.MaxSimultaneousInstances);
+            if (!restartedExisting && activeInstances >= maxSimultaneous)
+            {
+                return new AudioSfxDirectPolicyDecision(
+                    shouldBlock: true,
+                    blockPolicy: AudioSfxBlockPolicy.SimultaneousLimit,
+                    restartedExisting: false,
+                    previousHandleStopped: false);
+            }
+
+            return new AudioSfxDirectPolicyDecision(
+                shouldBlock: false,
+                blockPolicy: AudioSfxBlockPolicy.None,
+                restartedExisting: restartedExisting,
+                previousHandleStopped: restartedExisting && previousHandleStopped);
+        }
+    }
+
+    internal enum AudioSfxPooledDecisionType
+    {
+        Proceed = 0,
+        FallbackToDirect = 1,
+        Blocked = 2
+    }
+
+    internal readonly struct AudioSfxPooledPolicyDecision
+    {
+        public AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType type, string reason)
+        {
+            Type = type;
+            Reason = reason;
+        }
+
+        public AudioSfxPooledDecisionType Type { get; }
+        public string Reason { get; }
+    }
+
+    /// <summary>
+    /// Regras de budget/fallback para trilho pooled de SFX.
+    /// </summary>
+    internal static class AudioSfxPooledPolicyEngine
+    {
+        public static AudioSfxPooledPolicyDecision EvaluateProfile(AudioSfxVoiceProfileAsset profile)
+        {
+            if (profile != null)
+            {
+                return new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.Proceed, "profile_ok");
+            }
+
+            return new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.FallbackToDirect, "missing_profile");
+        }
+
+        public static AudioSfxPooledPolicyDecision EvaluatePoolDefinition(AudioSfxVoiceProfileAsset profile)
+        {
+            if (profile == null)
+            {
+                return new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.FallbackToDirect, "missing_profile");
+            }
+
+            if (profile.PooledVoicePoolDefinition != null)
+            {
+                return new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.Proceed, "pool_ok");
+            }
+
+            return profile.AllowDirectFallback
+                ? new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.FallbackToDirect, "missing_pool_definition")
+                : new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.Blocked, "missing_pool_definition");
+        }
+
+        public static AudioSfxPooledPolicyDecision EvaluatePoolService(AudioSfxVoiceProfileAsset profile, bool hasPoolService)
+        {
+            if (hasPoolService)
+            {
+                return new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.Proceed, "pool_service_ok");
+            }
+
+            return profile != null && profile.AllowDirectFallback
+                ? new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.FallbackToDirect, "pool_service_unavailable")
+                : new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.Blocked, "pool_service_unavailable");
+        }
+
+        public static AudioSfxPooledPolicyDecision EvaluateBudget(AudioSfxVoiceProfileAsset profile, int activeForProfile)
+        {
+            if (profile == null)
+            {
+                return new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.FallbackToDirect, "missing_profile");
+            }
+
+            int budget = Mathf.Max(0, profile.DefaultVoiceBudget);
+            if (budget <= 0 || activeForProfile < budget)
+            {
+                return new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.Proceed, "budget_ok");
+            }
+
+            return profile.AllowDirectFallback
+                ? new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.FallbackToDirect, "block_budget")
+                : new AudioSfxPooledPolicyDecision(AudioSfxPooledDecisionType.Blocked, "block_budget");
         }
     }
 }

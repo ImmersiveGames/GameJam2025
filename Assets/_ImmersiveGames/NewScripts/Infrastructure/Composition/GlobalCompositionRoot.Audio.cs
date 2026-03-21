@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     return AudioGlobalSfxService.Create(defaults, settings, routing);
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IGlobalAudioService already registered.",
-                registeredMessage: "[Audio][BOOT] IGlobalAudioService registered (F4 direct SFX runtime).");
+                registeredMessage: "[Audio][BOOT] IGlobalAudioService registered (F4/F5 direct + pooled SFX runtime).");
         }
 
         private static void RegisterAudioListenerHost()

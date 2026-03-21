@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe4284627b46c7c46b7e5132e5451ab6, type: 3}
   m_Name: AudioSfxVoiceSpatialProfile
   m_EditorClassIdentifier: 
-  pooledVoicePoolDefinition: {fileID: 0}
+  pooledVoicePoolDefinition: {fileID: 11400000, guid: 6cad211f6ff5404497cf7fa32db78601, type: 2}
   allowDirectFallback: 1
   defaultVoiceBudget: 16
   releaseGraceSeconds: 0.05
+
+

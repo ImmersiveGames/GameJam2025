@@ -39,7 +39,7 @@ Pacote A: FECHADO (F0/F1/F2 concluídos, sem playback real ainda)
 | F2 - Bootstrap + defaults/settings/routing base | DONE | Estágio `Audio` adicionado ao pipeline global antes de GameLoop, com registro DI e logs de boot. |
 | F3 - GlobalAudio BGM | DONE | `IAudioBgmService` runtime canônico implementado e registrado no DI global (single-channel lógico com fade/crossfade e pause/resume via ducking). |
 | F4 - GlobalAudio SFX direto | DONE | `IGlobalAudioService` runtime canônico implementado (direct one-shot 2D/3D, anti-spam real e handle funcional). |
-| F5 - GlobalAudio pooled voices | NOT STARTED | Próxima fase natural após F4 (sem consumo de pooling nesta entrega). |
+| F5 - GlobalAudio pooled voices | DONE | `IGlobalAudioService` passou a consumir `IPoolService` + `PoolDefinitionAsset` para cues `PooledOneShot`, mantendo trilha direta como fallback canônico. |
 | F6 - EntityAudio semântico | NOT STARTED | Dependente de F5. |
 | F7 - EntityAudioEmitter mínimo | NOT STARTED | Dependente de F6. |
 | F8 - Integrações opcionais | NOT STARTED | Dependente de F7. |
@@ -65,7 +65,7 @@ Só avança quando:
 
 ## Riscos residuais conhecidos após Pacote A
 
-- Playback real de BGM e Global SFX direto fechados em F3/F4; permanecem sem runtime real `IGlobalAudioService` pooled (F5) e `IEntityAudioService` (F6+).
+- Playback real de BGM e Global SFX (direto + pooled) fechados em F3/F4/F5; permanece sem runtime real `IEntityAudioService` (F6+).
 - `AudioDefaultsAsset` ausente no bootstrap entra em modo degradado com fallback runtime (já logado/trackeado).
 - Contrato detalhado de mixer/routing segue base inicial (refino previsto para F3+).
 
@@ -93,6 +93,86 @@ Só avança quando:
   - trilha `Spatial/3D` mantém a política de cooldown/limite desta fase.
 - Próximo passo natural do rollout: F5 (Global SFX pooled voices).
 
+## Atualização F5 (2026-03-21) — SFX-2 (Pooled Voices)
+
+- Status: DONE (escopo F5 pooled, sem iniciar EntityAudio).
+- `AudioGlobalSfxService` agora decide runtime path por cue/contexto:
+  - `path='direct'`
+  - `path='pooled'`
+  - `path='fallback_direct'`
+- Consumo canônico de pooling implementado:
+  - resolve `AudioSfxVoiceProfileAsset` (cue override > context);
+  - usa `PoolDefinitionAsset` do profile;
+  - `IPoolService.EnsureRegistered(...)`;
+  - `Prewarm(...)` quando `PoolDefinitionAsset.Prewarm` estiver ativo;
+  - `Rent(...)` para playback pooled;
+  - `Return(...)` no término natural ou `Stop()`, respeitando `releaseGraceSeconds`.
+- Semântica preservada:
+  - `Global/2D` mantém `retrigger='restart_existing'` também no pooled;
+  - `Spatial/3D` mantém política de cooldown/limite;
+  - fallback para trilha direta só quando `allowDirectFallback=true`.
+- Enforcement mínimo adicional:
+  - `defaultVoiceBudget` do profile passa a bloquear trilha pooled por budget (`policy='block_budget'`) com fallback direto opcional.
+- Observabilidade de F5:
+  - `path='direct|pooled|fallback_direct'`;
+  - `retrigger='restart_existing'`;
+  - `policy='block_cooldown|block_limit|block_budget'`;
+  - rent/return de pool com profile/pool/reason.
+- QA F5 fortalecido com probes determinísticos:
+  - `Probe Pooled Budget Forced` para evidenciar `policy='block_budget'` sem colisão com `block_limit`;
+  - `Probe Pooled Fallback Forced` para evidenciar `path='fallback_direct'` de forma controlada;
+  - `Probe Pooled Sequence Reuse` para observar ciclo saudável de `rent -> complete -> return` em sequência com espaçamento.
+- Próximo passo natural do rollout: F6 (EntityAudio semântico).
+
+## Atualização de saneamento arquitetural SFX (2026-03-21) — A1 + B1
+
+- Status: DONE (pré-F6/F7, sem redesign completo de authoring).
+- Objetivo cumprido:
+  - reduzir acoplamento interno do runtime de SFX;
+  - separar QA por trilho/tipo para eliminar harness único "deus".
+- Extração de policy interna no runtime:
+  - `AudioSfxDirectPolicyEngine` centraliza decisão de `restart_existing`, `block_cooldown` e `block_limit`;
+  - `AudioSfxPooledPolicyEngine` centraliza decisão de `pooled proceed`, `fallback_direct` e `block_budget`;
+  - `AudioGlobalSfxService` permanece como orquestrador (resolução + execução), sem concentrar toda a policy no mesmo bloco monolítico.
+- Semântica preservada:
+  - `Global/2D` mantém `restart_existing`;
+  - `Spatial/3D` mantém policy de concorrência da fase;
+  - trilha pooled segue consumindo `IPoolService` + `PoolDefinitionAsset`.
+- Escopo respeitado:
+  - sem mudanças em BGM/F3;
+  - sem início de F6/F7;
+  - sem redesign estrutural completo de `AudioSfxCueAsset`.
+
+## Atualização F5 (2026-03-21) — Hardening de retorno pooled e sequence reuse
+
+- Corrigido risco de dupla origem de retorno (`autoReturn` de pool vs retorno manual por completion/stop do handle):
+  - pools canônicos de áudio (`Global2D` e `Spatial3D`) ajustados para `autoReturnSeconds=0` (retorno ownership do runtime de áudio);
+  - `AudioGlobalSfxService` trata `already_returned` como skip idempotente (log observável, sem warning ruidoso).
+- `ProbePooledSequenceReuse` fortalecido para validar ciclo real de reuso:
+  - cada passo aguarda término natural do handle (com timeout explícito);
+  - reduz falso negativo por `block_limit` em burst não controlado;
+  - evidencia múltiplos ciclos `Pool rent -> Playback complete -> Pool return -> Pool rent`.
+
+## Atualização F5 (2026-03-21) — Fechamento de authoring/config de pooled audio
+
+- Status: DONE (shape canônico de authoring fechado para F5).
+- Prefabs canônicos de voice pooled criados:
+  - `Modules/Audio/Content/Pooled/Prefabs/AudioSfxVoiceGlobal.prefab`
+  - `Modules/Audio/Content/Pooled/Prefabs/AudioSfxVoiceSpatial.prefab`
+- Pool definitions canônicos de audio criados:
+  - `Modules/Audio/Content/Pooled/Pools/AudioSfxPoolDefinition_Global2D.asset`
+  - `Modules/Audio/Content/Pooled/Pools/AudioSfxPoolDefinition_Spatial3D.asset`
+- Voice profiles canônicos alinhados:
+  - `AudioSfxVoiceGlobalProfile.asset` -> `AudioSfxPoolDefinition_Global2D.asset`
+  - `AudioSfxVoiceSpatialProfile.asset` -> `AudioSfxPoolDefinition_Spatial3D.asset`
+- Cues pooled alinhados para trilha real de pooling:
+  - `AudioSfxCue_GlobalPooled.asset` com `executionMode=PooledOneShot`
+  - `AudioSfxCue_SpetialPooled.asset` com `executionMode=PooledOneShot`
+- Diretriz consolidada:
+  - conteudo permanece no `AudioSfxCueAsset`;
+  - `PoolDefinitionAsset` define apenas a voice runtime pooled;
+  - Audio pooled nao usa mais `Infrastructure/Testing/TestPools.prefab` como shape final.
+
 ## Evidência funcional de fechamento F4 (validação manual)
 
 - `IGlobalAudioService` resolve via DI global em runtime.
@@ -115,33 +195,27 @@ Só avança quando:
   - cue/cueId;
   - reason/routing.
 
-## Harness QA de cena para F4 (2026-03-21)
+## Harnesses QA de cena para SFX (2026-03-21)
 
-- Arquivo: `Modules/Audio/QA/AudioSfxQaSceneHarness.cs`.
-- Objetivo: validar runtime F4 (SFX direto) em Play Mode sem integração de domínio.
-- Campos principais:
-  - `direct2dCue`
-  - `direct3dCue`
-  - `spatialFollowTarget`
-  - `spatialProbePosition`
-  - `burstCount`
-  - `burstStepDelaySeconds`
-  - `verboseLogs`
-- ContextMenu disponível:
-  - `QA/Audio/SFX/Validate Setup`
-  - `QA/Audio/SFX/Play Direct 2D`
-  - `QA/Audio/SFX/Play Direct 3D Position`
-  - `QA/Audio/SFX/Play Direct 3D Follow`
-  - `QA/Audio/SFX/Probe Global Restart Interrupt`
-  - `QA/Audio/SFX/Burst Simultaneous`
-  - `QA/Audio/SFX/Stop Last Handle`
-  - `QA/Audio/SFX/Log Harness State`
-
-### Hardening de QA para retrigger Global/2D (2026-03-21)
-
-- Adicionado probe dedicado `QA/Audio/SFX/Probe Global Restart Interrupt`.
-- O probe executa dois (ou mais) disparos automáticos do mesmo cue `Global/2D` com delay configurável, sem depender de timing manual entre cliques.
-- Logs do harness deixam explícitos: início, delay, cue usado, cada etapa de retrigger e conclusão do probe.
+- `Modules/Audio/QA/AudioSfxDirectQaSceneHarness.cs` (trilho direto F4):
+  - `QA/Audio/SFX/Direct/Validate Setup`
+  - `QA/Audio/SFX/Direct/Play 2D`
+  - `QA/Audio/SFX/Direct/Play 3D Position`
+  - `QA/Audio/SFX/Direct/Play 3D Follow`
+  - `QA/Audio/SFX/Direct/Burst Simultaneous`
+  - `QA/Audio/SFX/Direct/Stop Last Handle`
+  - `QA/Audio/SFX/Direct/Log Harness State`
+- `Modules/Audio/QA/AudioSfxPooledQaSceneHarness.cs` (trilho pooled F5):
+  - `QA/Audio/SFX/Pooled/Validate Setup`
+  - `QA/Audio/SFX/Pooled/Play 2D`
+  - `QA/Audio/SFX/Pooled/Play 3D`
+  - `QA/Audio/SFX/Pooled/Probe Restart Existing`
+  - `QA/Audio/SFX/Pooled/Probe Budget (Forced Diagnostic)`
+  - `QA/Audio/SFX/Pooled/Probe Fallback (Forced Diagnostic)`
+  - `QA/Audio/SFX/Pooled/Probe Sequence Reuse`
+  - `QA/Audio/SFX/Pooled/Log State`
+  - `QA/Audio/SFX/Pooled/Stop Last Handle`
+- `Modules/Audio/QA/AudioSfxQaSceneHarness.cs` foi reduzido para shim legado de migração, sem concentrar testes.
 
 ## Evidência funcional de fechamento F3 (validação manual)
 

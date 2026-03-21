@@ -406,6 +406,15 @@ Ele liga o domÃ­nio de Ã¡udio ao pooling canÃ´nico, definindo:
 - polÃ­tica de fallback direto quando aplicÃ¡vel,
 - tuning por famÃ­lia de uso.
 
+Estado canonico de authoring (F5):
+
+- pools de audio sao definidos por `PoolDefinitionAsset` e referenciados no voice profile;
+- existem dois trilhos canonicos de pool:
+  - global/2D (`AudioSfxPoolDefinition_Global2D.asset` -> `AudioSfxVoiceGlobal.prefab`);
+  - spatial/3D (`AudioSfxPoolDefinition_Spatial3D.asset` -> `AudioSfxVoiceSpatial.prefab`);
+- o prefab do pool representa a voice runtime (carrier), nao o conteudo final do som;
+- o conteudo continua no `AudioSfxCueAsset` (clip/volume/pitch/routing/playback policy).
+
 ## Runtime canÃ´nico
 
 ### `IAudioBgmService`
@@ -437,6 +446,21 @@ Ele deve resolver:
 - anti-spam simples,
 - concorrÃªncia por cue,
 - handle real ou no-op conforme o modo de execuÃ§Ã£o.
+
+Estado atual (F5):
+
+- `IGlobalAudioService` jÃ¡ opera com trilha direta e trilha pooled.
+- Em cues `PooledOneShot`, o runtime consome `IPoolService` + `PoolDefinitionAsset` via `AudioSfxVoiceProfileAsset`.
+- Sem profile/pool vÃ¡lido, aplica fallback para trilha direta apenas quando `allowDirectFallback` estiver habilitado.
+- O authoring canonico de pooled audio usa prefabs dedicados de audio (`AudioSfxVoiceGlobal.prefab` e `AudioSfxVoiceSpatial.prefab`), sem depender de prefab generico de teste.
+
+Saneamento arquitetural pre-F6/F7 (A1 + B1):
+
+- policy interna de SFX extraida do fluxo monolitico para componentes dedicados:
+  - `AudioSfxDirectPolicyEngine` (retrigger/cooldown/limit no trilho direto);
+  - `AudioSfxPooledPolicyEngine` (budget/fallback/bloqueio no trilho pooled).
+- `AudioGlobalSfxService` permanece como orquestrador, com menor concentracao de decisao no mesmo metodo.
+- sem redesign completo de authoring/asset contract nesta etapa (Opção C permanece fora de escopo).
 
 ### `IEntityAudioService`
 
@@ -503,6 +527,8 @@ O mÃ³dulo inclui proteÃ§Ã£o mÃ­nima via:
   - cooldown e limite de simultaneos nao devem bloquear esse retrigger.
 
 Esta semantica vale no F4 (direct one-shot) e deve ser preservada no F5 (pooled).
+
+No F5, o mesmo comportamento `restart_existing` tambem vale quando a instancia anterior estiver em voice pooled (com retorno correto ao pool).
 
 ### Politica para SFX Spatial / 3D
 
@@ -572,6 +598,13 @@ O mÃ³dulo pode manter:
 - preview/harness de QA,
 - cues QA dedicadas,
 - tooling de inspeÃ§Ã£o e diagnÃ³stico.
+
+Estado atual de QA de SFX (pre-F6/F7):
+
+- `AudioSfxDirectQaSceneHarness` cobre somente trilho direto (2D/3D + cooldown/limit/stop basico).
+- `AudioSfxPooledQaSceneHarness` cobre somente trilho pooled (restart_existing, budget, fallback e sequence reuse).
+- probes forcados de diagnostico ficam restritos ao harness pooled.
+- `AudioSfxQaSceneHarness` permanece apenas como shim legado de migracao, sem concentrar todos os testes.
 
 Esses artefatos sÃ£o suporte operacional do mÃ³dulo e nÃ£o alteram o contrato arquitetural central.
 

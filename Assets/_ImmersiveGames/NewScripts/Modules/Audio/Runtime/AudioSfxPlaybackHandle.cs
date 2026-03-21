@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         private string _reason;
         private bool _isValid;
         private bool _isStopping;
+        private bool _destroyOwnerOnComplete;
 
         public bool IsValid => _isValid;
         public bool IsPlaying => _isValid && _source != null && _source.isPlaying;
@@ -32,6 +33,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             Transform followTarget,
             string modeLabel,
             string reason,
+            bool destroyOwnerOnComplete,
             Action<AudioSfxPlaybackHandle, int, string, string, string> onCompleted)
         {
             _cueId = cueId;
@@ -40,9 +42,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             _followTarget = followTarget;
             _modeLabel = string.IsNullOrWhiteSpace(modeLabel) ? "2D" : modeLabel.Trim();
             _reason = string.IsNullOrWhiteSpace(reason) ? "unspecified" : reason.Trim();
+            _destroyOwnerOnComplete = destroyOwnerOnComplete;
             _onCompleted = onCompleted;
             _isValid = true;
             _isStopping = false;
+            enabled = true;
         }
 
         public void Stop(float fadeOutSeconds = 0f)
@@ -167,7 +171,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             _onCompleted?.Invoke(this, _cueId, _cueName, _modeLabel, completionReason);
             _onCompleted = null;
 
-            Destroy(gameObject);
+            if (_destroyOwnerOnComplete)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            enabled = false;
         }
     }
 }
