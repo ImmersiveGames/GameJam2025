@@ -23,6 +23,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
 
         public override string Name => nameof(DummyActorSpawnService);
 
+        public override ActorKind SpawnedActorKind => ActorKind.Dummy;
+
+        public override bool IsRequiredForWorldReset => false;
+
         protected override IActor ResolveActor(GameObject instance)
         {
             return instance.GetComponent<DummyActor>();

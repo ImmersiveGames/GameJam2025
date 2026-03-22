@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
 {
     /// <summary>
@@ -34,6 +35,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
         }
 
         public virtual string Name => GetType().Name;
+
+        /// <summary>
+        /// Kind canônico do actor criado por este serviço.
+        /// </summary>
+        public abstract ActorKind SpawnedActorKind { get; }
+
+        /// <summary>
+        /// Indica se o actor deste serviço deve existir após o hard reset macro.
+        /// </summary>
+        public virtual bool IsRequiredForWorldReset => false;
 
         public Task SpawnAsync()
         {
@@ -115,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
             string prefabName = _prefab != null ? _prefab.name : "<null>";
             string instanceName = _spawnedObject != null ? _spawnedObject.name : "<null>";
             DebugUtility.Log(GetType(),
-                $"Actor spawned: {_spawnedActor.ActorId} (prefab={prefabName}, instance={instanceName}, root={_context.WorldRoot?.name}, scene={_context.SceneName})");
+                $"Actor spawned: {_spawnedActor.ActorId} (kind={SpawnedActorKind}, requiredForWorldReset={IsRequiredForWorldReset}, prefab={prefabName}, instance={instanceName}, root={_context.WorldRoot?.name}, scene={_context.SceneName})");
             DebugUtility.Log(GetType(), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;
@@ -157,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
             _spawnedObject = null;
 
             DebugUtility.Log(GetType(),
-                $"Actor despawned: {actorId} (root={_context?.WorldRoot?.name}, scene={_context?.SceneName})");
+                $"Actor despawned: {actorId} (kind={SpawnedActorKind}, root={_context?.WorldRoot?.name}, scene={_context?.SceneName})");
             DebugUtility.Log(GetType(), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;
@@ -193,4 +204,3 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
         protected virtual void InjectStateService(GameObject instance) { }
     }
 }
-

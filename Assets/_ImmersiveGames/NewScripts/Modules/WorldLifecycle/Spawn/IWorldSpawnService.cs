@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
+
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn
 {
     /// <summary>
@@ -10,9 +12,19 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn
     {
         string Name { get; }
 
+        /// <summary>
+        /// Identidade tipada do actor materializado por este serviço.
+        /// O pipeline de reset do mundo deve consumir esta metadata em vez de inferir por nome.
+        /// </summary>
+        ActorKind SpawnedActorKind { get; }
+
+        /// <summary>
+        /// Indica se este serviço participa da garantia mínima do hard reset macro.
+        /// </summary>
+        bool IsRequiredForWorldReset { get; }
+
         Task SpawnAsync();
 
         Task DespawnAsync();
     }
 }
-

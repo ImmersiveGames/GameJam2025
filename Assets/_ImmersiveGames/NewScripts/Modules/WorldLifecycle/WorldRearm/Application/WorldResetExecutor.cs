@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -9,10 +10,12 @@ using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application
 {
     /// <summary>
-    /// Executa a parte determinística do reset (controllers + spawns essenciais + rearm hooks).
+    /// Coordena a execução determinística do trilho local de cena e valida as pós-condições
+    /// mínimas do hard reset macro. Não é owner do spawn concreto.
     /// </summary>
     public sealed class WorldResetExecutor
     {
@@ -29,8 +32,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             IWorldResetPolicy policy)
         {
             await ExecuteResetOnControllersAsync(controllers, request.Reason);
-            await EnsureEssentialSpawnsAsync(request.TargetScene, policy);
-            await ActorGroupRearmHooksAsync();
+            ValidateEssentialActorsPostReset(request.TargetScene, policy);
         }
 
         private static async Task ExecuteResetOnControllersAsync(
@@ -63,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             await Task.WhenAll(tasks);
         }
 
-        private async Task EnsureEssentialSpawnsAsync(string targetScene, IWorldResetPolicy policy)
+        private void ValidateEssentialActorsPostReset(string targetScene, IWorldResetPolicy policy)
         {
             string sceneName = !string.IsNullOrWhiteSpace(targetScene)
                 ? targetScene
@@ -72,114 +74,173 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             if (_provider == null)
             {
                 DebugUtility.LogWarning<WorldResetExecutor>(
-                    $"[{ResetLogTags.DegradedMode}][DEGRADED_MODE] IDependencyProvider ausente. Não é possível verificar spawns essenciais. scene='{sceneName}'.");
+                    $"[{ResetLogTags.DegradedMode}][DEGRADED_MODE] IDependencyProvider ausente. Não é possível validar pós-condições do hard reset. scene='{sceneName}'.");
                 return;
             }
 
             if (!_provider.TryGetForScene<IActorRegistry>(sceneName, out var actorRegistry) || actorRegistry == null)
             {
                 LogDegraded(policy,
-                    $"IActorRegistry não disponível para scene='{sceneName}'. Não é possível verificar spawns essenciais.");
+                    $"IActorRegistry não disponível para scene='{sceneName}'. Não é possível validar presença mínima de actors após o reset.");
                 return;
             }
 
             if (!_provider.TryGetForScene<IWorldSpawnServiceRegistry>(sceneName, out var spawnRegistry) || spawnRegistry == null)
             {
                 LogDegraded(policy,
-                    $"IWorldSpawnServiceRegistry não disponível para scene='{sceneName}'. Não é possível disparar spawn de serviços.");
+                    $"IWorldSpawnServiceRegistry não disponível para scene='{sceneName}'. Não é possível validar contratos essenciais de spawn.");
                 return;
             }
 
-            // Detecta se Player/Eater já existem pelo tipo do ator.
+            HashSet<ActorKind> presentActorKinds = CollectPresentActorKinds(actorRegistry);
+            IReadOnlyList<IWorldSpawnService> essentialServices = CollectEssentialSpawnServices(spawnRegistry, sceneName, policy);
+            if (essentialServices.Count == 0)
+            {
+                return;
+            }
+
+            var missingKinds = new List<ActorKind>();
+            for (int i = 0; i < essentialServices.Count; i++)
+            {
+                IWorldSpawnService service = essentialServices[i];
+                ActorKind actorKind = service.SpawnedActorKind;
+
+                if (presentActorKinds.Contains(actorKind))
+                {
+                    DebugUtility.LogVerbose<WorldResetExecutor>(
+                        $"[WorldResetExecutor] Pós-condição satisfeita. kind={actorKind}, service={DescribeService(service)}",
+                        DebugUtility.Colors.Info);
+                    continue;
+                }
+
+                missingKinds.Add(actorKind);
+            }
+
+            if (missingKinds.Count == 0)
+            {
+                DebugUtility.LogVerbose<WorldResetExecutor>(
+                    $"[OBS][WorldLifecycle] Post-reset essential actor validation passed. scene='{sceneName}', required={essentialServices.Count}, presentKinds={presentActorKinds.Count}.",
+                    DebugUtility.Colors.Success);
+                return;
+            }
+
+            string missingKindsText = string.Join(", ", missingKinds.Select(static kind => kind.ToString()));
+            string detail = $"Hard reset finalizou sem garantir actors essenciais. scene='{sceneName}', missingKinds=[{missingKindsText}]";
+
+            if (policy != null && policy.IsStrict)
+            {
+                policy.ReportDegraded(
+                    ResetFeatureIds.WorldReset,
+                    "MissingEssentialActorsAfterReset",
+                    detail,
+                    signature: sceneName,
+                    profile: policy.Name);
+
+                throw new InvalidOperationException(detail);
+            }
+
+            LogDegraded(policy, detail, reason: "MissingEssentialActorsAfterReset", signature: sceneName, profile: policy?.Name);
+        }
+
+        private static HashSet<ActorKind> CollectPresentActorKinds(IActorRegistry actorRegistry)
+        {
+            var presentKinds = new HashSet<ActorKind>();
+            if (actorRegistry == null)
+            {
+                return presentKinds;
+            }
+
             var actorsList = new List<IActor>();
             actorRegistry.GetActors(actorsList);
 
-            bool playerPresent = false;
-            bool eaterPresent = false;
-            foreach (var a in actorsList)
+            for (int i = 0; i < actorsList.Count; i++)
             {
-                if (a == null)
+                IActor actor = actorsList[i];
+                if (actor is not IActorKindProvider kindProvider)
                 {
                     continue;
                 }
 
-                string typeName = a.GetType().Name;
-                if (!playerPresent && typeName.IndexOf("Player", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    playerPresent = true;
-                }
-                if (!eaterPresent && typeName.IndexOf("Eater", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    eaterPresent = true;
-                }
-                if (playerPresent && eaterPresent)
-                {
-                    break;
-                }
-            }
-
-            // Localiza services correspondentes no registry por nome (convenção: PlayerSpawnService / EaterSpawnService).
-            IWorldSpawnService playerService = null;
-            IWorldSpawnService eaterService = null;
-            foreach (var s in spawnRegistry.Services)
-            {
-                if (s == null)
+                ActorKind kind = kindProvider.Kind;
+                if (kind == ActorKind.Unknown)
                 {
                     continue;
                 }
-                string name = s.Name ?? s.GetType().Name;
-                if (playerService == null && name.IndexOf("PlayerSpawnService", StringComparison.Ordinal) >= 0)
-                {
-                    playerService = s;
-                }
-                if (eaterService == null && name.IndexOf("EaterSpawnService", StringComparison.Ordinal) >= 0)
-                {
-                    eaterService = s;
-                }
+
+                presentKinds.Add(kind);
             }
 
-            // Executa spawn se necessário.
-            if (!playerPresent && playerService != null)
-            {
-                DebugUtility.LogVerbose<WorldResetExecutor>(
-                    $"[OBS][WorldLifecycle] Player ausente; disparando spawn via {playerService.Name}.",
-                    DebugUtility.Colors.Info);
-                try { await playerService.SpawnAsync(); }
-                catch (Exception ex) { DebugUtility.LogError<WorldResetExecutor>($"[WorldResetExecutor] Falha ao spawnar Player: {ex}"); }
-            }
-            else
-            {
-                DebugUtility.LogVerbose<WorldResetExecutor>(
-                    $"[WorldResetExecutor] Player já presente ou serviço ausente. present={playerPresent}, service={(playerService == null ? "<null>" : playerService.Name)}",
-                    DebugUtility.Colors.Info);
-            }
-
-            if (!eaterPresent && eaterService != null)
-            {
-                DebugUtility.LogVerbose<WorldResetExecutor>(
-                    $"[OBS][WorldLifecycle] Eater ausente; disparando spawn via {eaterService.Name}.",
-                    DebugUtility.Colors.Info);
-                try { await eaterService.SpawnAsync(); }
-                catch (Exception ex) { DebugUtility.LogError<WorldResetExecutor>($"[WorldResetExecutor] Falha ao spawnar Eater: {ex}"); }
-            }
-            else
-            {
-                DebugUtility.LogVerbose<WorldResetExecutor>(
-                    $"[WorldResetExecutor] Eater já presente ou serviço ausente. present={eaterPresent}, service={(eaterService == null ? "<null>" : eaterService.Name)}",
-                    DebugUtility.Colors.Info);
-            }
+            return presentKinds;
         }
 
-        private static Task ActorGroupRearmHooksAsync()
+        private static IReadOnlyList<IWorldSpawnService> CollectEssentialSpawnServices(
+            IWorldSpawnServiceRegistry spawnRegistry,
+            string sceneName,
+            IWorldResetPolicy policy)
         {
-            // Placeholder for post-reset hooks (e.g., rearming systems, telemetry warmups)
-            DebugUtility.LogVerbose<WorldResetExecutor>(
-                $"[WorldResetExecutor] ActorGroupRearmHooks (placeholder).",
-                DebugUtility.Colors.Info);
-            return Task.CompletedTask;
+            var essentialServices = new List<IWorldSpawnService>();
+            var seenKinds = new HashSet<ActorKind>();
+
+            if (spawnRegistry?.Services == null)
+            {
+                return essentialServices;
+            }
+
+            for (int i = 0; i < spawnRegistry.Services.Count; i++)
+            {
+                IWorldSpawnService service = spawnRegistry.Services[i];
+                if (service == null || !service.IsRequiredForWorldReset)
+                {
+                    continue;
+                }
+
+                ActorKind actorKind = service.SpawnedActorKind;
+                if (actorKind == ActorKind.Unknown)
+                {
+                    LogDegraded(policy,
+                        $"Serviço essencial com ActorKind.Unknown detectado em scene='{sceneName}'. service={DescribeService(service)}.");
+                    continue;
+                }
+
+                if (!seenKinds.Add(actorKind))
+                {
+                    LogDegraded(policy,
+                        $"Serviços essenciais duplicados para ActorKind='{actorKind}' em scene='{sceneName}'. service={DescribeService(service)}.");
+                    continue;
+                }
+
+                essentialServices.Add(service);
+            }
+
+            if (essentialServices.Count == 0)
+            {
+                LogDegraded(policy,
+                    $"Nenhum serviço essencial registrado em scene='{sceneName}'. O hard reset não conseguirá validar presença mínima de actors.");
+            }
+
+            return essentialServices;
         }
 
-        private static void LogDegraded(IWorldResetPolicy policy, string message)
+        private static string DescribeService(IWorldSpawnService service)
+        {
+            if (service == null)
+            {
+                return "<null>";
+            }
+
+            string serviceName = string.IsNullOrWhiteSpace(service.Name)
+                ? service.GetType().Name
+                : service.Name;
+
+            return $"{serviceName}(kind={service.SpawnedActorKind}, required={service.IsRequiredForWorldReset})";
+        }
+
+        private static void LogDegraded(
+            IWorldResetPolicy policy,
+            string message,
+            string reason = "WorldResetDegraded",
+            string signature = null,
+            string profile = null)
         {
             if (policy != null && policy.IsStrict)
             {
@@ -194,9 +255,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
 
             policy?.ReportDegraded(
                 ResetFeatureIds.WorldReset,
-                "WorldResetDegraded",
-                message);
+                reason,
+                message,
+                signature,
+                profile);
         }
     }
 }
-

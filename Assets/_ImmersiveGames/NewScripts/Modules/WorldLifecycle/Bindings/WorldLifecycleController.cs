@@ -32,8 +32,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
         // Guardrail: este controller apenas consome o WorldLifecycleHookRegistry criado no bootstrapper.
         [Inject] private WorldLifecycleHookRegistry _hookRegistry;
 
-        private readonly List<IWorldSpawnService> _spawnServices = new();
-        private WorldLifecycleOrchestrator _orchestrator;
         private bool _dependenciesInjected;
         private bool _destroyed;
 
@@ -269,7 +267,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 startLog: $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.",
                 endLog: $"Reset concluído. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): ",
-                execute: o => o.ResetWorldAsync());
+                execute: runner => runner.ExecuteWorldResetAsync());
         }
 
         private async Task RunPlayersResetAsync(string reason)
@@ -279,7 +277,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 startLog: $"Soft reset (Players) iniciado. reason='{reason}', scene='{_sceneName}'.",
                 endLog: $"Soft reset (Players) concluído. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): ",
-                execute: o => o.ResetScopesAsync(new List<WorldResetScope> { WorldResetScope.Players }, reason));
+                execute: runner => runner.ExecutePlayersResetAsync(reason));
         }
 
         private async Task RunResetInternalAsync(
@@ -287,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             string startLog,
             string endLog,
             string exceptionLog,
-            Func<WorldLifecycleOrchestrator, Task> execute)
+            Func<WorldLifecycleSceneResetRunner, Task> execute)
         {
             try
             {
@@ -302,10 +300,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                     DebugUtility.Log(typeof(WorldLifecycleController), startLog);
                 }
 
-                BuildSpawnServices();
-                _orchestrator = CreateOrchestrator();
-
-                await execute(_orchestrator);
+                WorldLifecycleSceneResetRunner runner = CreateSceneResetRunner();
+                await execute(runner);
 
                 if (verboseLogs)
                 {
@@ -355,52 +351,17 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             }
         }
 
-        private void BuildSpawnServices()
-        {
-            _spawnServices.Clear();
-
-            if (_spawnRegistry == null)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"Nenhum IWorldSpawnServiceRegistry encontrado para a cena '{_sceneName}'. Lista ficará vazia.",
-                    this);
-                return;
-            }
-
-            foreach (var service in _spawnRegistry.Services)
-            {
-                if (service != null)
-                {
-                    _spawnServices.Add(service);
-                }
-                else
-                {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                        $"Serviço de spawn nulo detectado na cena '{_sceneName}'. Ignorado.");
-                }
-            }
-
-            DebugUtility.Log(typeof(WorldLifecycleController),
-                $"Spawn services coletados para a cena '{_sceneName}': {_spawnServices.Count} (registry total: {_spawnRegistry.Services.Count}).");
-
-            if (_actorRegistry != null)
-            {
-                DebugUtility.Log(typeof(WorldLifecycleController),
-                    $"ActorRegistry count antes de orquestrar: {_actorRegistry.Count}");
-            }
-        }
-
-        private WorldLifecycleOrchestrator CreateOrchestrator()
+        private WorldLifecycleSceneResetRunner CreateSceneResetRunner()
         {
             EnsureDependenciesInjected();
 
-            return new WorldLifecycleOrchestrator(
+            return new WorldLifecycleSceneResetRunner(
                 _gateService,
-                _spawnServices,
+                _spawnRegistry,
                 _actorRegistry,
                 provider: DependencyManager.Provider,
-                sceneName: _sceneName,
-                hookRegistry: _hookRegistry);
+                hookRegistry: _hookRegistry,
+                sceneName: _sceneName);
         }
 
         private bool HasCriticalDependencies()

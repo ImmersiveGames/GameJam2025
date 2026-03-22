@@ -29,6 +29,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
 
         public override string Name => nameof(PlayerSpawnService);
 
+        public override ActorKind SpawnedActorKind => ActorKind.Player;
+
+        public override bool IsRequiredForWorldReset => true;
+
         protected override IActor ResolveActor(GameObject instance) =>
             PlayerSpawnResolver.Resolve(instance, EnsureActorIdForPlayer, EnsureActorIdForAdapter);
 

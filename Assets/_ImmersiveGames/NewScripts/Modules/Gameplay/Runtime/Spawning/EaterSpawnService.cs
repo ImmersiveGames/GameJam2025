@@ -29,6 +29,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
 
         public override string Name => nameof(EaterSpawnService);
 
+        public override ActorKind SpawnedActorKind => ActorKind.Eater;
+
+        public override bool IsRequiredForWorldReset => true;
+
         protected override IActor ResolveActor(GameObject instance)
         {
             return instance ? instance.GetComponent<EaterActor>() as IActor : null;
