@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     if (incoming == _selectionVersionCounter)
                     {
                         DebugUtility.Log<RestartContextService>(
-                            $"[OBS][LevelFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}'",
+                            $"[OBS][LevelFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' localContentId='{snapshot.LocalContentId}'",
                             DebugUtility.Colors.Info);
                     }
 
@@ -69,6 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 _current = new GameplayStartSnapshot(
                     snapshot.LevelRef,
                     snapshot.MacroRouteId,
+                    snapshot.LocalContentId,
                     snapshot.Reason,
                     next,
                     snapshot.LevelSignature);
@@ -77,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 _selectionVersionCounter = Math.Max(_selectionVersionCounter, next);
 
                 DebugUtility.Log<RestartContextService>(
-                    $"[OBS][Navigation] GameplayStartSnapshotUpdated levelRef='{(_current.HasLevelRef ? _current.LevelRef.name : "<none>")}' routeId='{_current.MacroRouteId}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
+                    $"[OBS][Navigation] GameplayStartSnapshotUpdated levelRef='{(_current.HasLevelRef ? _current.LevelRef.name : "<none>")}' routeId='{_current.MacroRouteId}' contentId='{_current.LocalContentId}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
                     DebugUtility.Colors.Info);
 
                 return _current;
@@ -118,6 +119,3 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
-
-
-

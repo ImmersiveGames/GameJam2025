@@ -109,7 +109,7 @@ Evidência canônica mostra:
 
 ## Fora de escopo
 
-- Integração com LevelManager/ContentSwap (ver ADR-0016/0017).
+- Integração com LevelFlow/SceneComposition (ver ADR-0017 e plano de SceneComposition).
 - Alterar contratos de SceneFlow ou WorldLifecycle.
 
 ## Consequências

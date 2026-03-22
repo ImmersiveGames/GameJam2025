@@ -24,7 +24,7 @@
 
 - `ResetMacroAsync(...)` permanece no domínio macro.
 - `ResetLevelAsync(...)` canônico recebe `LevelDefinitionAsset levelRef`.
-- `contentId='level-ref:...'` no reset é token de operação, não identidade de negócio.
+- `ResetLevelAsync(...)` não depende mais de `contentId` operacional; a identidade local vive no snapshot semântico (`LocalContentId`).
 - `WorldLifecycle V1` continua sendo gate/correlação do SceneFlow.
 - `WorldLifecycle V2` continua sendo telemetria/observabilidade.
 - O reset local/gameplay passa por `ActorGroupRearm` canônico por grupo de atores, centrado em `ByActorKind`.
@@ -33,7 +33,6 @@
 
 - `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
 - `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
-- `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
 - `lastlog:1685` `[OBS][Navigation] MacroRestartStart runId='1' effectiveReason='PostGame/Restart#r1'`
 - `lastlog:2033` `[OBS][LevelFlow] LevelDefaultSelected ... levelRef='Level1' reason='PostGame/Restart#r1'`
 

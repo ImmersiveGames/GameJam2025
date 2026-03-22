@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
@@ -67,13 +68,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             ISimulationGateService simulationGateService = null;
             DependencyManager.Provider.TryGetGlobal(out simulationGateService);
 
+            ISceneCompositionExecutor sceneCompositionExecutor = null;
+            DependencyManager.Provider.TryGetGlobal(out sceneCompositionExecutor);
+            if (sceneCompositionExecutor == null)
+            {
+                DebugUtility.LogError(typeof(GlobalCompositionRoot),
+                    "[FATAL][Config] Missing required ISceneCompositionExecutor in global DI before LevelFlow services registration.");
+                throw new InvalidOperationException("Missing required ISceneCompositionExecutor in global DI.");
+            }
+
             ILevelSwapLocalService levelSwapLocalService = null;
             if (!DependencyManager.Provider.TryGetGlobal(out levelSwapLocalService) || levelSwapLocalService == null)
             {
                 levelSwapLocalService = new LevelSwapLocalService(
                     restartContextService,
                     worldResetCommands,
-                    catalogAsset,
+                    sceneCompositionExecutor,
                     simulationGateService,
                     sceneRouteCatalogAsset);
 
@@ -123,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 var prepareService = new LevelMacroPrepareService(
                     restartContextService,
                     worldResetCommands,
-                    catalogAsset,
+                    sceneCompositionExecutor,
                     sceneRouteCatalogAsset);
 
                 DependencyManager.Provider.RegisterGlobal<ILevelMacroPrepareService>(prepareService);

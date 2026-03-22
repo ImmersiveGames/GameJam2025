@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -17,16 +18,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         private readonly IRestartContextService _restartContextService;
         private readonly IWorldResetCommands _worldResetCommands;
+        private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
         private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
 
         public LevelMacroPrepareService(
             IRestartContextService restartContextService,
             IWorldResetCommands worldResetCommands,
-            object navigationCatalog = null,
+            ISceneCompositionExecutor sceneCompositionExecutor,
             SceneRouteCatalogAsset sceneRouteCatalog = null)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _worldResetCommands = worldResetCommands ?? throw new ArgumentNullException(nameof(worldResetCommands));
+            _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
             _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
         }
 
@@ -108,12 +111,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     DebugUtility.Colors.Info);
             }
 
+            string localContentId = useSnapshot && currentSnapshot.HasLocalContentId
+                ? LevelFlowContentDefaults.Normalize(currentSnapshot.LocalContentId, selectedLevelRef)
+                : LevelFlowContentDefaults.BuildCanonicalLevelContentId(selectedLevelRef);
             string levelSignature = CreateLevelSignature(selectedLevelRef, macroRouteId, normalizedReason);
 
             EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
                 macroRouteId,
                 selectedLevelRef,
                 selectionVersion,
+                localContentId,
                 normalizedReason,
                 levelSignature));
 
@@ -137,17 +144,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 $"[OBS][LevelFlow] LevelPreparePreviousResolved source='{previousSource}' prevLevelRef='{previousRefLabel}' targetLevelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            (int scenesAdded, int scenesRemoved) = await LevelAdditiveSceneRuntimeApplier.ApplyAsync(
-                previousLevelRef,
-                selectedLevelRef,
+            SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(
+                new SceneCompositionRequest(
+                    SceneCompositionScope.Local,
+                    normalizedReason,
+                    levelSignature,
+                    previousLevelRef,
+                    selectedLevelRef),
                 ct);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelApplied levelRef='{selectedLevelRef.name}' scenesAdded={scenesAdded} scenesRemoved={scenesRemoved} macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}'.",
+                $"[OBS][LevelFlow] LevelApplied levelRef='{selectedLevelRef.name}' contentId='{localContentId}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' levelRef='{selectedLevelRef.name}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -178,11 +189,19 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             LevelDefinitionAsset previousLevelRef = snapshot.LevelRef;
             previousLevelRef.ValidateOrFailFast($"LevelClear destinationRouteId='{destinationRouteId}' reason='{reason}'");
 
-            int scenesRemoved = await LevelAdditiveSceneRuntimeApplier.ClearAsync(previousLevelRef, ct);
+            SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(
+                new SceneCompositionRequest(
+                    SceneCompositionScope.Local,
+                    reason,
+                    signature,
+                    previousLevelRef,
+                    targetLevelRef: null),
+                ct);
+
             _restartContextService.Clear($"LevelFlow/ClearOnMacroExit/{reason}");
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelCleared macroRouteId='{destinationRouteId}' previousLevelRef='{previousLevelRef.name}' scenesRemoved={scenesRemoved} reason='{reason}'.",
+                $"[OBS][LevelFlow] LevelCleared macroRouteId='{destinationRouteId}' previousLevelRef='{previousLevelRef.name}' scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -268,7 +287,3 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
     }
 }
-
-
-
-

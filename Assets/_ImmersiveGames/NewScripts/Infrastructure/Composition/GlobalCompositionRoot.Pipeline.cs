@@ -3,11 +3,12 @@ using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
+using _ImmersiveGames.NewScripts.Modules.Gates;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -23,8 +24,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             SceneFlow,
             WorldLifecycle,
             Navigation,
-            Levels,
-            ContentSwap
+            SceneComposition,
+            Levels
         }
 
         private static CompositionInstallStage _compositionInstallStage;
@@ -66,10 +67,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.Navigation;
             InstallCompositionModules();
 
-            _compositionInstallStage = CompositionInstallStage.Levels;
+            _compositionInstallStage = CompositionInstallStage.SceneComposition;
             InstallCompositionModules();
 
-            _compositionInstallStage = CompositionInstallStage.ContentSwap;
+            _compositionInstallStage = CompositionInstallStage.Levels;
             InstallCompositionModules();
 
             RegisterExitToMenuCoordinator();
@@ -77,9 +78,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterLevelSelectedRestartSnapshotBridge();
             RegisterNavigationLevelRouteBgmBridge();
 
-            RegisterInputModeCoordinator();
             RegisterSceneFlowInputModeBridge();
-
             RegisterLevelStageOrchestrator();
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
@@ -120,11 +119,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 case CompositionInstallStage.Navigation:
                     InstallNavigationServices();
                     break;
+                case CompositionInstallStage.SceneComposition:
+                    InstallSceneCompositionServices();
+                    break;
                 case CompositionInstallStage.Levels:
                     RegisterLevelsServices();
-                    break;
-                case CompositionInstallStage.ContentSwap:
-                    InstallContentSwapServices();
                     break;
             }
         }
@@ -160,12 +159,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void InstallNavigationServices()
         {
             RegisterGameNavigationService();
-        }
-
-        private static void InstallContentSwapServices()
-        {
-            RegisterIfMissing<IContentSwapContextService>(() => new ContentSwapContextService());
-            RegisterContentSwapChangeService();
         }
 
         private static void InstallPoolingServices()

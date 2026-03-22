@@ -13,7 +13,7 @@
 
 ## Contexto
 
-O subsistema de Levels já existe em `Assets/_ImmersiveGames/NewScripts/Modules/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions). O ContentSwap é InPlace-only e é o executor técnico real; o LevelManager orquestra a mudança de conteúdo. A etapa de "start" (IntroStage/GameLoop) é tratada por módulos próprios (fora do LevelManager). Porém, **não existe** hoje uma fonte de verdade configurável para níveis (LevelDefinition/LevelCatalog): as intenções aparecem em docs (Baseline 2.2), mas não há assets concretos nem resolver/provedor para evitar hardcode. Essa lacuna conflita com o objetivo de padronização.
+O subsistema legado de Levels já existiu em `Assets/_ImmersiveGames/NewScripts/Modules/Levels/` (ILevelManager, LevelManager, LevelPlan, LevelChangeOptions), mas o trilho canônico atual está em `LevelFlow`. A composição técnica local agora passa por `SceneComposition`, enquanto `LevelFlow` orquestra a semântica da mudança de conteúdo. A etapa de "start" (IntroStage/GameLoop) é tratada por módulos próprios (fora do LevelFlow). O problema estrutural original deste ADR permanece válido: é necessária uma fonte de verdade configurável para níveis (LevelDefinition/LevelCatalog) para evitar hardcode.
 
 Para manter consistência arquitetural (SRP, DIP) e evitar dependências diretas em listas hardcoded, precisamos de uma **configuração centralizada via ScriptableObjects**, consumida pelo LevelManager/QA/resolvedor, com observabilidade alinhada ao contrato canônico.
 
@@ -27,7 +27,7 @@ Centralizar definição e descoberta de levels/fases via um catálogo de configs
 
 - Catálogo é a fonte de verdade para enumerar conteúdos jogáveis (ids, metadata, configs).
 - Seleção de level/fase não depende de assets soltos; deve ser resolvida via id/config.
-- Mudança de level pode ser in-place (ContentSwap) ou via transição (SceneFlow), explicitando o modo.
+- Mudança de level pode usar composição local (`SceneComposition`) ou transição macro (`SceneFlow`), explicitando o modo.
 - Falhas de id/config ausente são fail-fast (não gerar level default silencioso).
 
 ### Não-objetivos (resumo)
@@ -39,7 +39,7 @@ Ver seção **Fora de escopo**.
 - UI/UX completa de seleção de level (apenas contrato e plumbing).
 
 - Refactor total de nomenclaturas legadas no runtime.
-- Remoção imediata de bridges legadas (ContentSwapStart*), que permanecem até migração completa.
+- Remoção imediata de bridges legadas históricas, quando ainda existirem fora do trilho canônico.
 - Implementar um sistema de campanha completo (Campaign/Progression) além de LevelCatalog.
 
 ## Consequências
@@ -76,7 +76,7 @@ Ver seção **Fora de escopo**.
   - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Providers/ILevelDefinitionProvider.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Resolvers/LevelCatalogResolver.cs`
 - **Gameplay**
-  - `Assets/_ImmersiveGames/NewScripts/Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs`
+  - Histórico: o executor técnico local anterior foi substituído por `Infrastructure/SceneComposition/**`.
   - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/LevelManager.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/LevelPlan.cs`
 
@@ -118,7 +118,7 @@ Ver seção **Fora de escopo**.
 
 - Snapshot datado em `Docs/Reports/Evidence/<YYYY-MM-DD>/` com:
   - Resolução por catálogo (`QA/Levels/Resolve/Definitions`).
-  - Mudança de nível (LevelChange + ContentSwap + IntroStage).
+  - Mudança de nível (LevelFlow + SceneComposition + IntroStage).
 - Atualização do `Docs/Reports/Evidence/LATEST.md`.
 
 ## Referências
@@ -128,6 +128,6 @@ Ver seção **Fora de escopo**.
 - [Observability-Contract.md](../Standards/Standards.md#observability-contract)
 - LevelManager (historical): `../../Modules/Levels/LevelManager.cs` (removed/deprecated)
 - LevelPlan (historical): `../../Modules/Levels/LevelPlan.cs` (removed/deprecated)
-- [ContentSwap Change Service](../../Modules/ContentSwap/Runtime/InPlaceContentSwapService.cs)
+- Histórico: `ContentSwap` foi removido do trilho canônico; usar `Infrastructure/SceneComposition/**`.
 - [LATEST.md](../Reports/Evidence/LATEST.md)
 

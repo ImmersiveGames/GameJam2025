@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -70,8 +69,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 
             string normalizedReason = NormalizeReason(reason, "WorldReset/Level");
             var restartContext = ResolveGlobalOrFail<IRestartContextService>("IRestartContextService");
-            var contentSwap = ResolveGlobalOrFail<IContentSwapChangeService>("IContentSwapChangeService");
-
             if (!restartContext.TryGetCurrent(out GameplayStartSnapshot snapshot) || !snapshot.IsValid)
             {
                 FailFastConfig($"ResetLevelAsync without valid gameplay snapshot. levelRef='{levelRef.name}', reason='{normalizedReason}'.");
@@ -82,14 +79,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 FailFastConfig($"ResetLevelAsync levelRef mismatch. expected='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}', got='{levelRef.name}', reason='{normalizedReason}'.");
             }
 
-            string canonicalContentToken = $"level-ref:{levelRef.name}";
             SceneRouteId macroRouteId = snapshot.MacroRouteId;
 
             PublishRequested(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature);
 
             try
             {
-                await contentSwap.RequestContentSwapInPlaceAsync(canonicalContentToken, normalizedReason);
                 PublishCompleted(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, true, string.Empty);
             }
             catch (Exception ex)

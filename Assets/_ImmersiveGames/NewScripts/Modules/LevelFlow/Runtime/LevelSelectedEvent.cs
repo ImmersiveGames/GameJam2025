@@ -10,12 +10,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             SceneRouteId macroRouteId,
             LevelDefinitionAsset levelRef,
             int selectionVersion,
+            string localContentId,
             string reason,
             string levelSignature)
         {
             MacroRouteId = macroRouteId;
             LevelRef = levelRef;
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
+            LocalContentId = LevelFlowContentDefaults.Normalize(localContentId, levelRef);
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
         }
@@ -23,6 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public SceneRouteId MacroRouteId { get; }
         public LevelDefinitionAsset LevelRef { get; }
         public int SelectionVersion { get; }
+        public string LocalContentId { get; }
         public string Reason { get; }
         public string LevelSignature { get; }
     }

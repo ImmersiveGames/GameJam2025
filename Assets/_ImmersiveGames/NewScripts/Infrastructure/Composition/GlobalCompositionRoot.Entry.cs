@@ -1,7 +1,5 @@
 /*
  * ChangeLog
- * - Registrado IContentSwapContextService (ContentSwapContextService) no DI global (ADR-0016).
- * - ContentSwap permanece InPlace-only (sem integração com SceneFlow).
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas StateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.

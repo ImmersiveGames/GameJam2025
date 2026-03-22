@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             bool serviceResolved = DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext) && restartContext != null;
 
             DebugUtility.Log(typeof(LevelSelectedRestartSnapshotBridge),
-                $"[OBS][Navigation] LevelSelectedEventConsumed levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' levelSignature='{evt.LevelSignature}' restartContextResolved='{serviceResolved}'.",
+                $"[OBS][Navigation] LevelSelectedEventConsumed levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' routeId='{evt.MacroRouteId}' contentId='{evt.LocalContentId}' v='{evt.SelectionVersion}' levelSignature='{evt.LevelSignature}' restartContextResolved='{serviceResolved}'.",
                 DebugUtility.Colors.Info);
 
             if (!serviceResolved)
@@ -48,6 +48,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             var snapshot = new GameplayStartSnapshot(
                 evt.LevelRef,
                 evt.MacroRouteId,
+                evt.LocalContentId,
                 evt.Reason,
                 evt.SelectionVersion,
                 evt.LevelSignature);

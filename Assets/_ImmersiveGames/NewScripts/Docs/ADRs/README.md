@@ -13,7 +13,6 @@ Este diretorio mantem apenas ADRs vigentes para entender o desenho atual.
 | `ADR-0011-WorldDefinition-MultiActor-GameplayScene.md` | world definition de gameplay |
 | `ADR-0013-Ciclo-de-Vida-Jogo.md` | ciclo de vida da run |
 | `ADR-0014-GameplayReset-Targets-Grupos.md` | ActorGroupRearm |
-| `ADR-0016-ContentSwap-WorldLifecycle.md` | content swap in-place |
 | `ADR-0017-LevelManager-Config-Catalog.md` | configuracao de level e catalogos de level |
 | `ADR-0018-Fade-TransitionStyle-SoftFail.md` | resiliencia do fade/style |
 | `ADR-0019-Navigation-IntentCatalog.md` | navigation asset unico e direct-ref |
@@ -35,3 +34,9 @@ Este diretorio mantem apenas ADRs vigentes para entender o desenho atual.
 - Leia ADRs como explicacao do desenho atual, nao como guia de integracao do dia a dia.
 - Quando houver conflito entre historico e docs oficiais, prevalece a cadeia oficial em `Docs/README.md` sustentada pelo runtime atual.
 
+
+## ADRs substituídos
+
+- `ADR-0016-ContentSwap-WorldLifecycle.md`
+  - mantido apenas como registro histórico;
+  - não representa mais o trilho canônico.

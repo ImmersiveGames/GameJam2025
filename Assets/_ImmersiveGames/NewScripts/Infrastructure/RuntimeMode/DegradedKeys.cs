@@ -15,7 +15,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
             public const string GameLoop = "GameLoop";
             public const string Gameplay = "Gameplay";
             public const string Levels = "Levels";
-            public const string ContentSwap = "ContentSwap";
             public const string Navigation = "Navigation";
             public const string Gates = "Gates";
             public const string InputModes = "InputModes";

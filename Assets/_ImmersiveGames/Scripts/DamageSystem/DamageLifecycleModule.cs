@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;

@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
@@ -24,9 +23,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<GameRunStartedEvent>.Clear();
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
-            EventBus<ContentSwapCommittedEvent>.Clear();
-            EventBus<ContentSwapPendingSetEvent>.Clear();
-            EventBus<ContentSwapPendingClearedEvent>.Clear();
             EventBus<LevelSelectedEvent>.Clear();
 
             // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.

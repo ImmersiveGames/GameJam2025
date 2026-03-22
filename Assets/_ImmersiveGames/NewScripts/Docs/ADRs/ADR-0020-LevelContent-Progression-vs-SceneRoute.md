@@ -4,7 +4,7 @@
 - **State:** Implemented
 - **Date:** 2026-02-19
 - **Owner:** Innocenti
-- **Tags:** LevelFlow, LevelCatalog, ContentSwap, SceneFlow, Navigation, WorldLifecycle
+- **Tags:** LevelFlow, LevelCatalog, SceneComposition, SceneFlow, Navigation, WorldLifecycle
 - **Scope:**
     - Runtime: `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/**`, `.../Modules/Navigation/**`, `.../Modules/SceneFlow/**`
     - Assets: `Assets/Resources/Navigation/LevelCatalog.asset`
@@ -21,7 +21,7 @@ Na prática:
 ## Problem statement
 O sistema precisava suportar:
 1) **N→1**: múltiplos `LevelId` diferentes apontando para **a mesma rota** (ex.: `level.1`), mas com **conteúdos distintos**, para evidenciar progressão/variação sem multiplicar rotas.
-2) **ContentSwap in-place**: trocar conteúdo dentro da mesma gameplay (sem transição de cena) e garantir que o snapshot de “start/restart” reflita o conteúdo atual.
+2) **Composição local de cenas**: trocar conteúdo dentro da mesma gameplay (sem transição macro) e garantir que o snapshot de “start/restart” reflita o conteúdo atual.
 
 O risco original era “vazar” progressão de conteúdo para dentro do `SceneRoute` (ex.: criar rotas por conteúdo), criando:
 - explosão de rotas;
@@ -43,7 +43,7 @@ O risco original era “vazar” progressão de conteúdo para dentro do `SceneR
 
 ### Option B — LevelFlow/LevelCatalog como fonte de verdade de progressão
 - `SceneRoute` fica “sobre cenas”, `LevelId` fica “sobre gameplay/progressão”.
-- **Prós:** separa responsabilidades; N→1 vira uma configuração de catálogo; ContentSwap não precisa de cena.
+- **Prós:** separa responsabilidades; N→1 vira uma configuração de catálogo; a composição local não força rota nova.
 - **Contras:** exige trilho claro (StartGameplay(levelId)) e snapshot/telemetria bem definidos.
 
 ### Option C — Híbrido (route + level)
@@ -60,8 +60,9 @@ Escolher **Option B**.
     1) resolve o entry do catálogo;
     2) publica/atualiza o snapshot (`RestartContext` / “GameplayStartSnapshot”) com `levelId/routeId/styleId/contentId`;
     3) despacha o intent canônico de gameplay para aplicar a rota.
-- `ContentSwap in-place`:
-    - atualiza o “content atual” e também o snapshot de restart, **sem exigir** transition de rota.
+- `SceneComposition` local:
+    - aplica a composição técnica local;
+    - o snapshot de restart continua sendo atualizado pelo trilho semântico (`LevelFlow`/`RestartContext`), **sem exigir** transição de rota.
 
 ## Consequences
 - **N→1** é suportado naturalmente com múltiplos entries no `LevelCatalog` apontando para a mesma `routeRef`.
@@ -79,13 +80,12 @@ Escolher **Option B**.
     - `QA/LevelFlow/NTo1/Run Sequence A->B`
 
 ## Observability and evidence
-### Evidence 1 — ContentSwap in-place atualiza snapshot de restart
+### Evidence 1 — Histórico: swap in-place atualizava snapshot de restart
 Arquivo de evidência:
 - `ADR-0020-Evidence-ContentSwap-2026-02-18.log`
 
 Âncoras esperadas:
-- `[QA][ContentSwap] ... start contentId='content.2'`
-- `[OBS][ContentSwap] ContentSwapRequested ... contentId='content.2'`
+- Histórico de evidência anterior ao `SceneComposition`; manter apenas como referência de migração.
 - `[OBS][Navigation] RestartSnapshotContentUpdated ... contentId='content.2'`
 
 ### Evidence 2 — N→1 (A e B) com mesma rota e conteúdos diferentes
@@ -116,3 +116,13 @@ Interpretação:
 ## Sources
 - Logs de evidência anexados e logs [OBS]/[QA] do runtime.
 
+
+
+## Status de atualização (2026-03-22)
+
+O desenho conceitual deste ADR permanece útil, mas a implementação canônica local já não passa por `ContentSwap`.
+
+No runtime atual:
+- `LevelFlow` continua dono da semântica local;
+- `RestartContext` continua dono do snapshot semântico;
+- `SceneComposition` é o executor técnico local.
