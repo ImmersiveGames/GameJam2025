@@ -193,13 +193,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out loop) || loop == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out loop) || loop == null)
             {
                 LogMissingGameLoopOnce();
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out navigation) || navigation == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out navigation) || navigation == null)
             {
                 LogMissingNavigationOnce();
                 return false;

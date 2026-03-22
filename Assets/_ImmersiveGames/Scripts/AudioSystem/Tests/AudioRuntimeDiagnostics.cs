@@ -135,7 +135,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void HandlePeriodicLog()
         {
-            if (!logSummaryPeriodically) return;
+            if (!logSummaryPeriodically)
+            {
+                return;
+            }
 
             _logTimer += Time.unscaledDeltaTime;
             if (_logTimer >= logInterval)
@@ -216,13 +219,22 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             int listed = 0;
             foreach (var emitter in emitters)
             {
-                if (emitter == null || !emitter.isActiveAndEnabled) continue;
+                if (emitter == null || !emitter.isActiveAndEnabled)
+                {
+                    continue;
+                }
 
                 var src = emitter.GetComponent<AudioSource>();
-                if (src == null) continue;
+                if (src == null)
+                {
+                    continue;
+                }
 
                 bool playing = src.isPlaying;
-                if (playing) _sfxEmitterPlaying++;
+                if (playing)
+                {
+                    _sfxEmitterPlaying++;
+                }
 
                 if (listed < maxEmittersToList)
                 {
@@ -247,7 +259,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void OnGUI()
         {
-            if (!overlayEnabled) return;
+            if (!overlayEnabled)
+            {
+                return;
+            }
 
             var rect = new Rect(overlayPosition.x, overlayPosition.y, overlaySize.x, overlaySize.y);
             GUI.depth = 0;

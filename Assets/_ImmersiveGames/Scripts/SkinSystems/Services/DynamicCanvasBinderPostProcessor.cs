@@ -11,7 +11,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
     {
         public void Process(GameObject instance, ISkinConfig config, IActor owner)
         {
-            if (instance == null) return;
+            if (instance == null)
+            {
+                return;
+            }
 
             RuntimeAttributeDynamicCanvasBinder[] dynamicBinders = instance.GetComponentsInChildren<RuntimeAttributeDynamicCanvasBinder>(true);
             foreach (var binder in dynamicBinders)

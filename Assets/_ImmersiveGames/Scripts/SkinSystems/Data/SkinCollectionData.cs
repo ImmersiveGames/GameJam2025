@@ -34,7 +34,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
 
         private void EnsureMap()
         {
-            if (_configMap != null) return;
+            if (_configMap != null)
+            {
+                return;
+            }
             _configMap = configs
                 .Where(c => c != null)
                 .GroupBy(c => c.ModelType)

@@ -25,9 +25,12 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
 
         public static void RegisterPendingBind(CanvasBindRequest request)
         {
-            if (string.IsNullOrEmpty(request.targetCanvasId)) return;
+            if (string.IsNullOrEmpty(request.targetCanvasId))
+            {
+                return;
+            }
 
-            var dict = _pendingBinds.GetValueOrDefault(request.targetCanvasId)
+            Dictionary<(string actorId, RuntimeAttributeType resourceType), CanvasBindRequest> dict = _pendingBinds.GetValueOrDefault(request.targetCanvasId)
                        ?? (_pendingBinds[request.targetCanvasId] = new());
 
             dict[(request.actorId, request.runtimeAttributeType)] = request;
@@ -38,16 +41,25 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
 
         public static bool TryRemovePendingBind(string canvasId, string actorId, RuntimeAttributeType runtimeAttributeType)
         {
-            if (!_pendingBinds.TryGetValue(canvasId, out var dict)) return false;
-            if (!dict.Remove((actorId, runtimeAttributeType))) return false;
+            if (!_pendingBinds.TryGetValue(canvasId, out Dictionary<(string actorId, RuntimeAttributeType resourceType), CanvasBindRequest> dict))
+            {
+                return false;
+            }
+            if (!dict.Remove((actorId, runtimeAttributeType)))
+            {
+                return false;
+            }
 
-            if (dict.Count == 0) _pendingBinds.Remove(canvasId);
+            if (dict.Count == 0)
+            {
+                _pendingBinds.Remove(canvasId);
+            }
             return true;
         }
 
         public static IReadOnlyDictionary<(string actorId, RuntimeAttributeType resourceType), CanvasBindRequest> GetPendingForCanvas(string canvasId)
         {
-            return _pendingBinds.TryGetValue(canvasId, out var dict)
+            return _pendingBinds.TryGetValue(canvasId, out Dictionary<(string actorId, RuntimeAttributeType resourceType), CanvasBindRequest> dict)
                 ? dict
                 : new Dictionary<(string, RuntimeAttributeType), CanvasBindRequest>();
         }
@@ -56,10 +68,12 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
 
         public static void NotifyCanvasRegistered(string canvasId)
         {
-            if (_pendingBinds.TryGetValue(canvasId, out var binds))
+            if (_pendingBinds.TryGetValue(canvasId, out Dictionary<(string actorId, RuntimeAttributeType resourceType), CanvasBindRequest> binds))
             {
                 foreach (var req in binds.Values.ToList())
+                {
                     EventBus<CanvasBindRequest>.Raise(req);
+                }
             }
 
             EventBus<CanvasRegisteredEvent>.Raise(new CanvasRegisteredEvent(canvasId));

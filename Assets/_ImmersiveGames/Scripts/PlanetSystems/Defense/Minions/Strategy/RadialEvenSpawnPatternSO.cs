@@ -9,7 +9,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
         public override Vector3 GetSpawnOffset(int index, int total, float radius, float heightOffset)
         {
             if (total <= 0 || radius <= 0f)
+            {
                 return Vector3.zero;
+            }
 
             float angle = (Mathf.PI * 2f) * (index / (float)total);
             float x = Mathf.Cos(angle) * radius;

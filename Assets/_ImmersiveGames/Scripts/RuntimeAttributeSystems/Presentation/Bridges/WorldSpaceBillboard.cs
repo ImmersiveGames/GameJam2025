@@ -3,8 +3,8 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
     /// <summary>
-    /// Mantém o attributeCanvas sempre virado para a câmera (billboard effect)
-    /// Para canvases em world space, com suporte a offset de posição/rotação
+    /// Mantï¿½m o attributeCanvas sempre virado para a cï¿½mera (billboard effect)
+    /// Para canvases em world space, com suporte a offset de posiï¿½ï¿½o/rotaï¿½ï¿½o
     /// </summary>
     public class WorldSpaceBillboard : MonoBehaviour
     {
@@ -93,7 +93,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             if (_cameraTransform == null)
             {
                 FindCamera();
-                if (_cameraTransform == null) return;
+                if (_cameraTransform == null)
+                {
+                    return;
+                }
             }
 
             // Verificar intervalo de update
@@ -103,29 +106,44 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             }
             _lastUpdateTime = Time.time;
 
-            // Aplicar offset de posição
+            // Aplicar offset de posiï¿½ï¿½o
             var finalPosition = _originalPosition + positionOffset;
             if (positionOffset != Vector3.zero)
             {
                 transform.position = finalPosition;
             }
 
-            // Calcular direção para a câmera
+            // Calcular direï¿½ï¿½o para a cï¿½mera
             var directionToCamera = _cameraTransform.position - transform.position;
 
-            // Aplicar restrições de eixo
-            if (!billboardX) directionToCamera.x = 0f;
-            if (!billboardY) directionToCamera.y = 0f;
-            if (!billboardZ) directionToCamera.z = 0f;
+            // Aplicar restriï¿½ï¿½es de eixo
+            if (!billboardX)
+            {
+                directionToCamera.x = 0f;
+            }
+            if (!billboardY)
+            {
+                directionToCamera.y = 0f;
+            }
+            if (!billboardZ)
+            {
+                directionToCamera.z = 0f;
+            }
 
-            // Inverter se necessário
-            if (invertForward) directionToCamera = -directionToCamera;
+            // Inverter se necessï¿½rio
+            if (invertForward)
+            {
+                directionToCamera = -directionToCamera;
+            }
 
-            // Aplicar rotação apenas se a direção for válida
-            if (directionToCamera == Vector3.zero) return;
+            // Aplicar rotaï¿½ï¿½o apenas se a direï¿½ï¿½o for vï¿½lida
+            if (directionToCamera == Vector3.zero)
+            {
+                return;
+            }
             var targetRotation = Quaternion.LookRotation(directionToCamera);
                 
-            // Aplicar offset de rotação
+            // Aplicar offset de rotaï¿½ï¿½o
             if (rotationOffset != Vector3.zero)
             {
                 targetRotation *= Quaternion.Euler(rotationOffset);

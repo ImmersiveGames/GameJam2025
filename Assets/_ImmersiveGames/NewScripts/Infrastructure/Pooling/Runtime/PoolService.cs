@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime
 
         public void Shutdown()
         {
-            foreach (var kv in _pools)
+            foreach (KeyValuePair<PoolDefinitionAsset, GameObjectPool> kv in _pools)
             {
                 kv.Value.Cleanup();
             }

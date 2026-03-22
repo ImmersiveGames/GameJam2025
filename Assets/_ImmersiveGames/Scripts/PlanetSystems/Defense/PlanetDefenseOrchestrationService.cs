@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var entries = defenseEntries ?? Array.Empty<DefenseEntryConfigSo>();
+            IReadOnlyList<DefenseEntryConfigSo> entries = defenseEntries ?? Array.Empty<DefenseEntryConfigSo>();
             _configuredDefenseEntriesV2[planet] = new DefenseEntryConfigV2(entries, defenseChoiceMode);
             ClearCachedContext(planet);
 
@@ -164,7 +164,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var cacheKey = (detectionType, targetRole);
 
-            if (_resolvedContexts.TryGetValue(planet, out var contextsByDetection) &&
+            if (_resolvedContexts.TryGetValue(planet, out Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext> contextsByDetection) &&
                 contextsByDetection != null &&
                 contextsByDetection.TryGetValue(cacheKey, out var context) &&
                 context != null)
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (!_resolvedContexts.TryGetValue(planet, out var contextsByDetection) || contextsByDetection == null)
+            if (!_resolvedContexts.TryGetValue(planet, out Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext> contextsByDetection) || contextsByDetection == null)
             {
                 contextsByDetection = new Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext>();
                 _resolvedContexts[planet] = contextsByDetection;
@@ -242,7 +242,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var roleConfig = ResolveRoleConfig(selectedEntry, targetRole);
             var wavePreset = roleConfig.WavePreset;
             var minionBehaviorProfile = roleConfig.MinionBehaviorProfile;
-            var spawnRadius = CalculatePlanetRadius(planet, roleConfig.SpawnOffset);
+            float spawnRadius = CalculatePlanetRadius(planet, roleConfig.SpawnOffset);
             var spawnOffset = Vector3.zero;
             var entryConfig = selectedEntry;
 
@@ -291,13 +291,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
-            var index = UnityEngine.Random.Range(0, entries.Count);
+            int index = UnityEngine.Random.Range(0, entries.Count);
             return entries[index];
         }
 
         private DefenseEntryConfigSo SelectSequentialEntry(IReadOnlyList<DefenseEntryConfigSo> entries, PlanetsMaster planet)
         {
-            var currentIndex = _sequentialIndices.GetValueOrDefault(planet, 0);
+            int currentIndex = _sequentialIndices.GetValueOrDefault(planet, 0);
 
             if (entries.Count == 0)
             {
@@ -319,7 +319,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private DefenseEntryConfigSo ResolveCachedSequentialEntryV2(PlanetsMaster planet, int index)
         {
-            if (!_sequentialEntryCacheV2.TryGetValue(planet, out var cache) || cache == null)
+            if (!_sequentialEntryCacheV2.TryGetValue(planet, out Dictionary<int, DefenseEntryConfigSo> cache) || cache == null)
             {
                 return null;
             }
@@ -334,7 +334,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (!_sequentialEntryCacheV2.TryGetValue(planet, out var cache) || cache == null)
+            if (!_sequentialEntryCacheV2.TryGetValue(planet, out Dictionary<int, DefenseEntryConfigSo> cache) || cache == null)
             {
                 cache = new Dictionary<int, DefenseEntryConfigSo>();
                 _sequentialEntryCacheV2[planet] = cache;
@@ -365,7 +365,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return 0f;
             }
 
-            if (!_cachedApproxRadii.TryGetValue(planet, out var approxRadius))
+            if (!_cachedApproxRadii.TryGetValue(planet, out float approxRadius))
             {
                 if (!DependencyManager.Provider.TryGetForObject(planet.ActorId, out SkinRuntimeStateTracker tracker))
                 {

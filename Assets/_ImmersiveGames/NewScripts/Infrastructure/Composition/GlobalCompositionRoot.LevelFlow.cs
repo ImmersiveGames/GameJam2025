@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var stagePresentationService) || stagePresentationService == null)
             {
                 stagePresentationService = new LevelStagePresentationService(restartContextService);
-                DependencyManager.Provider.RegisterGlobal<ILevelStagePresentationService>(stagePresentationService);
+                DependencyManager.Provider.RegisterGlobal(stagePresentationService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[OBS][LevelFlow] ILevelStagePresentationService registrado (LevelStagePresentationService).",
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!DependencyManager.Provider.TryGetGlobal<ILevelPostGameHookService>(out var levelPostGameHookService) || levelPostGameHookService == null)
             {
                 levelPostGameHookService = new LevelPostGameHookService(stagePresentationService);
-                DependencyManager.Provider.RegisterGlobal<ILevelPostGameHookService>(levelPostGameHookService);
+                DependencyManager.Provider.RegisterGlobal(levelPostGameHookService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[OBS][LevelFlow] ILevelPostGameHookService registrado (LevelPostGameHookService).",
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DependencyManager.Provider.TryGetGlobal(out simulationGateService);
 
             ILevelSwapLocalService levelSwapLocalService = null;
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelSwapLocalService>(out levelSwapLocalService) || levelSwapLocalService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out levelSwapLocalService) || levelSwapLocalService == null)
             {
                 levelSwapLocalService = new LevelSwapLocalService(
                     restartContextService,
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     simulationGateService,
                     sceneRouteCatalogAsset);
 
-                DependencyManager.Provider.RegisterGlobal<ILevelSwapLocalService>(levelSwapLocalService);
+                DependencyManager.Provider.RegisterGlobal(levelSwapLocalService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[OBS][LevelFlow] ILevelSwapLocalService registrado (LevelSwapLocalService).",
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     sceneRouteCatalogAsset,
                     navigationService);
 
-                DependencyManager.Provider.RegisterGlobal<IPostLevelActionsService>(postLevelActions);
+                DependencyManager.Provider.RegisterGlobal(postLevelActions);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[OBS][LevelFlow] IPostLevelActionsService registrado (PostLevelActionsService).",

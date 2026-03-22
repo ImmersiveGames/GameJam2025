@@ -202,14 +202,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out gameLoopService) || gameLoopService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out gameLoopService) || gameLoopService == null)
             {
                 DebugUtility.LogWarning<LevelStageOrchestrator>(
                     "[LevelFlow] IGameLoopService unavailable; IntroStage will not start.");
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out coordinator) || coordinator == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out coordinator) || coordinator == null)
             {
                 DebugUtility.LogWarning<LevelStageOrchestrator>(
                     "[LevelFlow] IIntroStageCoordinator unavailable; IntroStage will not start.");
@@ -228,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return false;
             }
 
-            return DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out restartContextService)
+            return DependencyManager.Provider.TryGetGlobal(out restartContextService)
                    && restartContextService != null;
         }
 

@@ -211,12 +211,21 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnStartRequested(OldGameStartRequestedEvent _)
         {
-            if (_startRequestedPredicate == null) return;
+            if (_startRequestedPredicate == null)
+            {
+                return;
+            }
 
             int frame = Time.frameCount;
-            if (_lastStartRequestedFrame == frame) return;
+            if (_lastStartRequestedFrame == frame)
+            {
+                return;
+            }
 
-            if (_stateMachine?.CurrentState is not OldMenuState) return;
+            if (_stateMachine?.CurrentState is not OldMenuState)
+            {
+                return;
+            }
 
             _lastStartRequestedFrame = frame;
             _startRequestedPredicate.Trigger();
@@ -224,12 +233,21 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnPauseRequested(GamePauseRequestedEvent _)
         {
-            if (_pauseRequestedPredicate == null) return;
+            if (_pauseRequestedPredicate == null)
+            {
+                return;
+            }
 
             int frame = Time.frameCount;
-            if (_lastPauseRequestedFrame == frame) return;
+            if (_lastPauseRequestedFrame == frame)
+            {
+                return;
+            }
 
-            if (_stateMachine?.CurrentState is OldPausedState) return;
+            if (_stateMachine?.CurrentState is OldPausedState)
+            {
+                return;
+            }
 
             _lastPauseRequestedFrame = frame;
             _pauseRequestedPredicate.Trigger();
@@ -237,12 +255,21 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnResumeRequested(OldGameResumeRequestedEvent _)
         {
-            if (_resumeRequestedPredicate == null) return;
+            if (_resumeRequestedPredicate == null)
+            {
+                return;
+            }
 
             int frame = Time.frameCount;
-            if (_lastResumeRequestedFrame == frame) return;
+            if (_lastResumeRequestedFrame == frame)
+            {
+                return;
+            }
 
-            if (_stateMachine?.CurrentState is not OldPausedState) return;
+            if (_stateMachine?.CurrentState is not OldPausedState)
+            {
+                return;
+            }
 
             _lastResumeRequestedFrame = frame;
             _resumeRequestedPredicate.Trigger();
@@ -250,10 +277,16 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnResetRequested(OldGameResetRequestedEvent _)
         {
-            if (_resetRequestedPredicate == null) return;
+            if (_resetRequestedPredicate == null)
+            {
+                return;
+            }
 
             int frame = Time.frameCount;
-            if (_lastResetRequestedFrame == frame) return;
+            if (_lastResetRequestedFrame == frame)
+            {
+                return;
+            }
 
             _lastResetRequestedFrame = frame;
             _resetRequestedPredicate.Trigger();
@@ -261,13 +294,22 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnReturnToMenuRequested(GameReturnToMenuRequestedEvent _)
         {
-            if (_returnToMenuRequestedPredicate == null) return;
+            if (_returnToMenuRequestedPredicate == null)
+            {
+                return;
+            }
 
             int frame = Time.frameCount;
-            if (_lastReturnToMenuRequestedFrame == frame) return;
+            if (_lastReturnToMenuRequestedFrame == frame)
+            {
+                return;
+            }
 
             // Se j� est� no menu, ignora.
-            if (_stateMachine?.CurrentState is OldMenuState) return;
+            if (_stateMachine?.CurrentState is OldMenuState)
+            {
+                return;
+            }
 
             _lastReturnToMenuRequestedFrame = frame;
             _returnToMenuRequestedPredicate.Trigger();
@@ -275,10 +317,16 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnGameOver(GameOverEvent _)
         {
-            if (_gameOverPredicate == null) return;
+            if (_gameOverPredicate == null)
+            {
+                return;
+            }
 
             int frame = Time.frameCount;
-            if (_lastGameOverFrame == frame) return;
+            if (_lastGameOverFrame == frame)
+            {
+                return;
+            }
 
             if (!IsPlaying())
             {
@@ -292,10 +340,16 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnVictory(GameVictoryEvent _)
         {
-            if (_victoryPredicate == null) return;
+            if (_victoryPredicate == null)
+            {
+                return;
+            }
 
             int frame = Time.frameCount;
-            if (_lastVictoryFrame == frame) return;
+            if (_lastVictoryFrame == frame)
+            {
+                return;
+            }
 
             if (!IsPlaying())
             {

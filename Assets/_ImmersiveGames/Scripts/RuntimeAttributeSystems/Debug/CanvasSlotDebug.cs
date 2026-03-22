@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu("🔍 Find and Debug All Slots")]
         public void FindAndDebugAllSlots()
         {
-            var slots = FindObjectsByType<RuntimeAttributeUISlot>(FindObjectsSortMode.None);
+            RuntimeAttributeUISlot[] slots = FindObjectsByType<RuntimeAttributeUISlot>(FindObjectsSortMode.None);
             DebugUtility.LogVerbose<CanvasDebugUtility>($"🎯 Found {slots.Length} ResourceUISlots in scene");
 
             foreach (var slot in slots)
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu("🔄 Force Update All Slots")]
         public void ForceUpdateAllSlots()
         {
-            var slots = FindObjectsByType<RuntimeAttributeUISlot>(FindObjectsSortMode.None);
+            RuntimeAttributeUISlot[] slots = FindObjectsByType<RuntimeAttributeUISlot>(FindObjectsSortMode.None);
             foreach (var slot in slots)
             {
                 slot.ForceVisualUpdate();
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu("📊 Check Canvas Components")]
         public void CheckCanvasComponents()
         {
-            var canvasBinders = FindObjectsByType<RuntimeAttributeActorCanvas>(FindObjectsSortMode.None);
+            RuntimeAttributeActorCanvas[] canvasBinders = FindObjectsByType<RuntimeAttributeActorCanvas>(FindObjectsSortMode.None);
             DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 Found {canvasBinders.Length} Canvas Binders");
 
             foreach (var binder in canvasBinders)
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
                 DebugCanvas(binder);
             }
 
-            var slots = FindObjectsByType<RuntimeAttributeUISlot>(FindObjectsSortMode.None);
+            RuntimeAttributeUISlot[] slots = FindObjectsByType<RuntimeAttributeUISlot>(FindObjectsSortMode.None);
             foreach (var slot in slots)
             {
                 DebugSlotState(slot);
@@ -75,9 +75,12 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
                     var config = ResolveInstanceConfig(actorId, resourceType);
                     DebugUtility.LogVerbose<CanvasDebugUtility>($"   - {resourceType}: Config={config != null}, Style={config?.slotStyle != null} ({config?.slotStyle?.name})");
 
-                    if (config == null) continue;
+                    if (config == null)
+                    {
+                        continue;
+                    }
 
-                    var canvasBinders = FindObjectsByType<RuntimeAttributeActorCanvas>(FindObjectsSortMode.None);
+                    RuntimeAttributeActorCanvas[] canvasBinders = FindObjectsByType<RuntimeAttributeActorCanvas>(FindObjectsSortMode.None);
                     foreach (var binder in canvasBinders)
                     {
                         if (binder.TryGetSlot(actorId, resourceType, out var slot) && slot != null)
@@ -97,7 +100,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
             DebugUtility.LogVerbose<CanvasDebugUtility>($"- Type: {binder.Type}, CanAcceptBinds: {binder.CanAcceptBinds()}");
             DebugUtility.LogVerbose<CanvasDebugUtility>($"- Actor Slots: {binder.GetActorSlotsCount()} actors");
 
-            foreach ((string actorId, var slots) in binder.GetActorSlots())
+            foreach ((string actorId, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot> slots) in binder.GetActorSlots())
             {
                 DebugUtility.LogVerbose<CanvasDebugUtility>($"  - Actor '{actorId}': {slots.Count} slots");
                 foreach (var (resourceType, slot) in slots)
@@ -126,7 +129,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
         private RuntimeAttributeInstanceConfig ResolveInstanceConfig(string actorId, RuntimeAttributeType runtimeAttributeType)
         {
-            if (_orchestrator == null || !_orchestrator.TryGetActorResource(actorId, out var svc)) return null;
+            if (_orchestrator == null || !_orchestrator.TryGetActorResource(actorId, out var svc))
+            {
+                return null;
+            }
             return svc.GetInstanceConfig(runtimeAttributeType);
         }
     }

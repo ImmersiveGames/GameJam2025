@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         [Header("Event Wiring")]
         [Tooltip("Se ligado, o Orchestrator tamb�m escuta OldGameResetRequestedEvent. " +
                  "Desligue para evitar conflito com fluxos macro de reset (GameManager/MenuContext).")]
-        [SerializeField] private bool listenToGameResetRequestedEvent = false;
+        [SerializeField] private bool listenToGameResetRequestedEvent;
 
         [Header("Scene-level Participants")]
         [Tooltip("Se ligado, executa reset tamb�m em participantes da cena (ex.: GameTimer), mesmo que n�o sejam filhos de um IActor-alvo.")]
@@ -82,7 +82,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         private void OnEnable()
         {
             if (!listenToGameResetRequestedEvent)
+            {
                 return;
+            }
 
             _resetRequestedBinding = new EventBinding<OldGameResetRequestedEvent>(OnResetRequested);
             EventBus<OldGameResetRequestedEvent>.Register(_resetRequestedBinding);
@@ -103,9 +105,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
             provider.TryGetGlobal(out _gate);
 
-            provider.TryGetForScene<IOldActorRegistry>(_sceneName, out _actorRegistry);
-            provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
-            provider.TryGetForScene<IEaterDomain>(_sceneName, out _eaterDomain);
+            provider.TryGetForScene(_sceneName, out _actorRegistry);
+            provider.TryGetForScene(_sceneName, out _playerDomain);
+            provider.TryGetForScene(_sceneName, out _eaterDomain);
 
             if (_gate == null)
             {
@@ -244,7 +246,10 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                     {
                         foreach (var a in _actorRegistry.Actors)
                         {
-                            if (a != null) _targets.Add(a);
+                            if (a != null)
+                            {
+                                _targets.Add(a);
+                            }
                         }
                     }
                     break;
@@ -255,13 +260,19 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                         for (int i = 0; i < _playerDomain.Players.Count; i++)
                         {
                             var p = _playerDomain.Players[i];
-                            if (p != null) _targets.Add(p);
+                            if (p != null)
+                            {
+                                _targets.Add(p);
+                            }
                         }
                     }
                     break;
 
                 case ResetScope.EaterOnly:
-                    if (_eaterDomain?.Eater != null) _targets.Add(_eaterDomain.Eater);
+                    if (_eaterDomain?.Eater != null)
+                    {
+                        _targets.Add(_eaterDomain.Eater);
+                    }
                     break;
 
                 case ResetScope.ActorIdSet:
@@ -269,11 +280,16 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                     {
                         for (int i = 0; i < request.actorIds.Count; i++)
                         {
-                            var id = request.actorIds[i];
-                            if (string.IsNullOrWhiteSpace(id)) continue;
+                            string id = request.actorIds[i];
+                            if (string.IsNullOrWhiteSpace(id))
+                            {
+                                continue;
+                            }
 
                             if (_actorRegistry.TryGetActor(id, out var actor) && actor != null)
+                            {
                                 _targets.Add(actor);
+                            }
                         }
                     }
                     break;
@@ -296,8 +312,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
                 for (int p = 0; p < _sceneParticipants.Count; p++)
                 {
-                    var participant = _sceneParticipants[p];
-                    if (participant == null) continue;
+                    object participant = _sceneParticipants[p];
+                    if (participant == null)
+                    {
+                        continue;
+                    }
 
                     try
                     {
@@ -311,7 +330,10 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                             $"[Reset] Erro (scene-level) em '{participant.GetType().Name}' Step={step} | Ex={ex.Message}",
                             this);
 
-                        if (!bestEffort) throw;
+                        if (!bestEffort)
+                        {
+                            throw;
+                        }
                     }
                 }
 
@@ -323,18 +345,27 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             for (int i = 0; i < _targets.Count; i++)
             {
                 var actor = _targets[i];
-                if (actor == null) continue;
+                if (actor == null)
+                {
+                    continue;
+                }
 
                 var root = actor.Transform != null ? actor.Transform.gameObject : null;
-                if (root == null) continue;
+                if (root == null)
+                {
+                    continue;
+                }
 
                 CollectParticipants(root, ctx.request.scope);
                 SortParticipantsByOrder();
 
                 for (int p = 0; p < _participants.Count; p++)
                 {
-                    var participant = _participants[p];
-                    if (participant == null) continue;
+                    object participant = _participants[p];
+                    if (participant == null)
+                    {
+                        continue;
+                    }
 
                     try
                     {
@@ -348,7 +379,10 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                             $"[Reset] Erro em '{participant.GetType().Name}' | Actor='{actor.ActorName}' Step={step} | Ex={ex.Message}",
                             this);
 
-                        if (!bestEffort) throw;
+                        if (!bestEffort)
+                        {
+                            throw;
+                        }
                     }
                 }
 
@@ -365,33 +399,49 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
             Scene scene = SceneManager.GetSceneByName(_sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
+            {
                 return;
+            }
 
             scene.GetRootGameObjects(_sceneRoots);
 
             for (int r = 0; r < _sceneRoots.Count; r++)
             {
                 var root = _sceneRoots[r];
-                if (root == null) continue;
+                if (root == null)
+                {
+                    continue;
+                }
 
                 // Se esse root � um ator, ele ser� resetado no loop de targets (evita duplicar).
                 if (root.GetComponent<IActor>() != null)
+                {
                     continue;
+                }
 
                 _monoBuffer.Clear();
 
                 if (includeChildren)
+                {
                     root.GetComponentsInChildren(includeInactive, _monoBuffer);
+                }
                 else
+                {
                     root.GetComponents(_monoBuffer);
+                }
 
                 for (int i = 0; i < _monoBuffer.Count; i++)
                 {
                     var mb = _monoBuffer[i];
-                    if (mb == null) continue;
+                    if (mb == null)
+                    {
+                        continue;
+                    }
 
                     if (mb is IResetScopeFilter filter && !filter.ShouldParticipate(scope))
+                    {
                         continue;
+                    }
 
                     if (mb is IResetInterfaces)
                     {
@@ -400,7 +450,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                     }
 
                     if (mb is IResetParticipantSync)
+                    {
                         _sceneParticipants.Add(mb);
+                    }
                 }
             }
         }
@@ -411,17 +463,26 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             _monoBuffer.Clear();
 
             if (includeChildren)
+            {
                 root.GetComponentsInChildren(includeInactive, _monoBuffer);
+            }
             else
+            {
                 root.GetComponents(_monoBuffer);
+            }
 
             for (int i = 0; i < _monoBuffer.Count; i++)
             {
                 var mb = _monoBuffer[i];
-                if (mb == null) continue;
+                if (mb == null)
+                {
+                    continue;
+                }
 
                 if (mb is IResetScopeFilter filter && !filter.ShouldParticipate(scope))
+                {
                     continue;
+                }
 
                 if (mb is IResetInterfaces)
                 {
@@ -430,7 +491,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 }
 
                 if (mb is IResetParticipantSync)
+                {
                     _participants.Add(mb);
+                }
             }
         }
 
@@ -441,16 +504,28 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
         private static void SortListByOrder(List<object> list)
         {
-            if (list == null || list.Count <= 1) return;
+            if (list == null || list.Count <= 1)
+            {
+                return;
+            }
 
             list.Sort((a, b) =>
             {
                 int oa = 0, ob = 0;
-                if (a is IResetOrder ra) oa = ra.ResetOrder;
-                if (b is IResetOrder rb) ob = rb.ResetOrder;
+                if (a is IResetOrder ra)
+                {
+                    oa = ra.ResetOrder;
+                }
+                if (b is IResetOrder rb)
+                {
+                    ob = rb.ResetOrder;
+                }
 
                 int c = oa.CompareTo(ob);
-                if (c != 0) return c;
+                if (c != 0)
+                {
+                    return c;
+                }
                 return string.CompareOrdinal(a.GetType().Name, b.GetType().Name);
             });
         }

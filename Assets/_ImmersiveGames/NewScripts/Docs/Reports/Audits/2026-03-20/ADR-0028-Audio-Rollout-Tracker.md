@@ -1,4 +1,4 @@
-﻿# ADR-0028 Audio Rollout Tracker
+# ADR-0028 Audio Rollout Tracker
 
 Data: 2026-03-20
 Status geral: IN PROGRESS
@@ -41,7 +41,7 @@ Pacote A: FECHADO (F0/F1/F2 concluídos, sem playback real ainda)
 | F4 - GlobalAudio SFX direto | DONE | `IGlobalAudioService` runtime canônico implementado (direct one-shot 2D/3D, anti-spam real e handle funcional). |
 | F5 - GlobalAudio pooled voices | DONE | `IGlobalAudioService` passou a consumir `IPoolService` + `PoolDefinitionAsset` para cues `PooledOneShot`, mantendo trilha direta como fallback canônico. |
 | F6 - EntityAudio semântico | DONE | Serviço semântico standalone implementado (`IEntityAudioService`) com mapeamento `purpose -> cue/perfis`, reaproveitando `IGlobalAudioService` sem duplicar engine. |
-| F7 - EntityAudioEmitter mínimo | NOT STARTED | Dependente de F6. |
+| F7 - EntityAudioEmitter mínimo | DONE | Emitter mínimo validado com harness dedicada, auto-stop exercitado e telemetria de owner saneada. |
 | F8 - Integrações opcionais | NOT STARTED | Dependente de F7. |
 | F9 - Tooling/QA/hardening | NOT STARTED | Dependente de F8. |
 | F10 - Cleanup final | NOT STARTED | Dependente de F9. |
@@ -66,7 +66,7 @@ Só avança quando:
 ## Riscos residuais conhecidos após Pacote A
 
 - Playback real de BGM e Global SFX (direto + pooled) fechados em F3/F4/F5.
-- F6 semântico standalone está ativo com QA mínimo dedicado; F7 (emitter/bridge de cena) permanece pendente.
+- F6 semântico standalone está ativo com QA mínimo dedicado; F7 foi validada com emitter mínimo, harness dedicado, auto-stop exercitado e telemetria saneada.
 - `AudioDefaultsAsset` ausente no bootstrap entra em modo degradado com fallback runtime (já logado/trackeado).
 - Contrato detalhado de mixer/routing segue base inicial (refino previsto para F3+).
 
@@ -77,6 +77,47 @@ Só avança quando:
 - Registro DI global realizado em `Infrastructure/Composition/GlobalCompositionRoot.Audio.cs`.
 - Escopo respeitado: sem implementação de `IGlobalAudioService`, sem `IEntityAudioService` runtime e sem consumo de `Infrastructure/Pooling/**` nesta fase.
 - Próximo passo natural do rollout: F4 (Global SFX direto), seguido de F5 (pooled voices).
+
+## Atualização F7 (2026-03-22)
+
+- Status: DONE.
+- `EntityAudioEmitter` mínimo já existe no core de `Modules/Audio/**`, sem assumir resolução semântica.
+- `AudioEntityEmitterQaSceneHarness` cobre os quatro caminhos base da fase: `PlayPurposeViaEmitter`, `PlayCueViaEmitter`, `PlayPurposeWithoutEmitter` e `PlayCueWithoutEmitter`.
+- Auto-stop foi adicionado ao harness (`Play Cue Via Emitter And Auto Stop` / `Play Purpose Via Emitter And Auto Stop`) para fechar a evidência de `StopLastHandle` em handle ativo.
+- Telemetria do harness foi saneada para distinguir `configuredOwner`, `effectiveOwner` e `ownerSource`, removendo o ruído anterior de `owner='null'` quando o fallback real era o transform do rig.
+- Evidência final observada: `PlayPurposeViaEmitterAndAutoStop` e `PlayCueViaEmitterAndAutoStop` passaram com `AutoStopBeforeStop`, `StopLastHandle`, `completion='stop_immediate'` e estado final `handleValid=False isPlaying=False`.
+
+## Saneamento pós-F7 — P1 / Etapa 2 (2026-03-22)
+
+- Status: DONE.
+- Objetivo: unificar a precedência canônica de `EmissionProfile` / `ExecutionProfile` e a intenção espacial em helper puro de runtime.
+- Escopo desta etapa:
+  - novo helper interno `Modules/Audio/Runtime/AudioPlaybackResolutionHelper.cs`;
+  - `AudioEntitySemanticService` passa a consumir a mesma regra canônica de spatial intent;
+  - `AudioGlobalSfxService` passa a resolver profiles via helper sem alterar ownership do playback.
+- Fora de escopo:
+  - pooling de `AudioPlaybackContext`;
+  - troca de `Dictionary` por arrays;
+  - integrações F8+ com módulos consumidores.
+- Validação esperada:
+  - rerodar QA semântica e F7 (`PlayPurpose...` / `PlayCue...`) e confirmar ausência de regressão nos logs de source/path.
+
+
+## Saneamento pós-F7 — P1 / Etapa 3 (2026-03-22)
+
+- Status: IN PROGRESS.
+- Objetivo: consolidar o `EntityAudioEmitter` antes de abrir integrações F8+, mantendo contrato público e responsabilidade mínima.
+- Escopo desta etapa:
+  - refactor interno de `Modules/Audio/Bindings/EntityAudioEmitter.cs`;
+  - unificação do trilho de preparação de playback (`service + context defaults + warning path`);
+  - preservação explícita do papel do emitter como binding estrutural local.
+- Fora de escopo:
+  - mover semântica para o emitter;
+  - adicionar catálogos/default cues como authoring central;
+  - integrações com `Gameplay`, `Navigation` ou `Presentation`.
+- Validação esperada:
+  - rerodar F7 (`PlayPurposeViaEmitterAndAutoStop`, `PlayCueViaEmitterAndAutoStop`, `PlayPurposeWithoutEmitter`);
+  - confirmar ausência de regressão funcional e manutenção do contrato observável do emitter.
 
 ## Atualização F4 (2026-03-21) — SFX-1
 

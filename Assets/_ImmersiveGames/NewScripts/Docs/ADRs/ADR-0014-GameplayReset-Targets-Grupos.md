@@ -1,11 +1,11 @@
-# ADR-0014 - GameplayReset: grupos canonicos de atores
+# ADR-0014 - GameplayReset: grupos canônicos de atores
 
 ## Status
 
 - Estado: Implementado
-- Data (decisao): 2026-02-01
-- Ultima atualizacao: 2026-03-11
-- Tipo: Implementacao
+- Data (decisão): 2026-02-01
+- Última atualização: 2026-03-11
+- Tipo: Implementação
 - Escopo:
   - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/*`
   - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/*`
@@ -15,11 +15,11 @@
 
 O fluxo de `ResetWorld` (WorldLifecycle) precisa executar um **reset local de gameplay** de forma:
 
-- **deterministica** (mesmas regras e ordem entre execucoes)
-- **auditavel** (fica claro quem foi rearmado e por que)
-- **com contrato explicito** (sem targets especiais herdados de compat)
+- **determinística** (mesmas regras e ordem entre execuções)
+- **auditável** (fica claro quem foi rearmado e por que)
+- **com contrato explícito** (sem targets especiais herdados de compat)
 
-A versao anterior de `ActorGroupRearm` misturava um contrato geral (`ByActorKind`) com superficies especiais (`PlayersOnly`, `EaterOnly`, `AllActorsInScene`) e um fallback legado para inferir `Eater` por componente/string. Isso deixava o subsistema parcialmente canonico, mas ainda `MIXED`.
+A versão anterior de `ActorGroupRearm` misturava um contrato geral (`ByActorKind`) com superfícies especiais (`PlayersOnly`, `EaterOnly`, `AllActorsInScene`) e um fallback legado para inferir `Eater` por componente/string. Isso deixava o subsistema parcialmente canônico, mas ainda `MIXED`.
 
 ## Decisao
 

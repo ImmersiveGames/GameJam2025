@@ -35,14 +35,20 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
         protected virtual void Start()
         {
-            if (!enabled) return;
+            if (!enabled)
+            {
+                return;
+            }
 
             TryInitialize();
         }
 
         protected virtual void TryInitialize()
         {
-            if (_initialized || actor == null) return;
+            if (_initialized || actor == null)
+            {
+                return;
+            }
 
             if (!DependencyManager.Provider.TryGetGlobal(out orchestrator))
             {
@@ -71,7 +77,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         protected virtual void OnDestroy()
         {
             _destroyed = true;
-            if (_initialized) OnServiceDispose();
+            if (_initialized)
+            {
+                OnServiceDispose();
+            }
             runtimeAttributeContext = null;
             orchestrator = null;
         }

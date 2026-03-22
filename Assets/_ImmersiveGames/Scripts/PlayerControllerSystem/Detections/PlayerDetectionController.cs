@@ -132,7 +132,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
             foreach (var sensor in collection.Sensors)
             {
-                if (sensor?.DetectionType == null) continue;
+                if (sensor?.DetectionType == null)
+                {
+                    continue;
+                }
 
                 _registeredDetectionTypes.Add(sensor.DetectionType);
 

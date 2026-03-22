@@ -27,7 +27,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         public AudioMixerGroup ResolveBgmMixerGroup(AudioBgmCueAsset cue)
         {
             if (cue != null && cue.MixerGroup != null)
+            {
                 return cue.MixerGroup;
+            }
 
             return _defaults != null ? _defaults.DefaultBgmMixerGroup : null;
         }
@@ -35,7 +37,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         public AudioMixerGroup ResolveSfxMixerGroup(AudioSfxCueAsset cue)
         {
             if (cue != null && cue.MixerGroup != null)
+            {
                 return cue.MixerGroup;
+            }
 
             return _defaults != null ? _defaults.DefaultSfxMixerGroup : null;
         }

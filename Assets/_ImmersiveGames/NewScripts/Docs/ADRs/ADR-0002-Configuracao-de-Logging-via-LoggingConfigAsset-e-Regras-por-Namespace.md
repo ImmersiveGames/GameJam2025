@@ -88,17 +88,17 @@ Nesse caso:
 - `SceneFlow.Transition.*` usa `Verbose`
 - tipos sem match usam `defaultLevel`
 
-### 4. Precedencia efetiva
+### 4. Precedência efetiva
 
-A ordem final obrigatoria e:
+A ordem final obrigatória é:
 
-1. local instance override ja existente
-2. type override runtime ja existente
+1. local instance override já existente
+2. type override runtime já existente
 3. namespace rule do `LoggingConfigAsset`
 4. `[DebugLevel]`
 5. `defaultLevel`
 
-Essa ordem preserva compatibilidade com o comportamento anterior de `DebugUtility` e corrige o controle por namespace para que ele tenha precedencia sobre o atributo.
+Essa ordem preserva compatibilidade com o comportamento anterior de `DebugUtility` e corrige o controle por namespace para que ele tenha precedência sobre o atributo.
 
 ### 5. Boot e source da policy
 
@@ -113,37 +113,37 @@ Comportamento:
   - registrar observabilidade clara com `source='BootstrapConfigAsset/RuntimeModeConfig'` ou equivalente
 - se `BootstrapConfigAsset` existir mas `loggingConfig` estiver nulo:
   - manter fallback hardcoded
-  - registrar fallback explicito
-- se ainda nao for possivel resolver `BootstrapConfigAsset`:
+  - registrar fallback explícito
+- se ainda não for possível resolver `BootstrapConfigAsset`:
   - manter fallback hardcoded
   - registrar o motivo
 
-Nao existe segundo estagio de policy.
-Nao existe pipeline paralelo de logging.
+Não existe segundo estágio de policy.
+Não existe pipeline paralelo de logging.
 
-### 6. Semantica de fases e severidade
+### 6. Semântica de fases e severidade
 
-`BOOT`, `STARTUP` e `RUNTIME` sao tags/fases semanticas, nao `DebugLevel`.
+`BOOT`, `STARTUP` e `RUNTIME` são tags/fases semânticas, não `DebugLevel`.
 
 - `BOOT`
   - logs emitidos antes da policy final do `LoggingConfigAsset`
-  - inclui reset do `DebugUtility` e aplicacao de `EarlyDefault`
+  - inclui reset do `DebugUtility` e aplicação de `EarlyDefault`
 
 - `STARTUP`
   - logs da montagem inicial principal
-  - inclui composition roots, servicos registrados, scene scopes criados e policy final aplicada no boot
+  - inclui composition roots, serviços registrados, scene scopes criados e policy final aplicada no boot
 
 - `RUNTIME`
-  - logs da operacao normal apos o startup
+  - logs da operação normal após o startup
 
-Os niveis continuam sendo:
+Os níveis continuam sendo:
 
 - `ERROR`: falha real / impeditiva / inconsistente
-- `WARNING`: degradacao, fallback, comportamento inesperado, config parcial
+- `WARNING`: degradação, fallback, comportamento inesperado, config parcial
 - `INFO`: marco operacional importante
 - `VERBOSE`: detalhe de continuidade, fluxo e rastreio fino
 
-Definicao semantica:
+Definição semântica:
 
 - `INFO` representa registrado, pronto, carregado, resolvido, operacional
 - `VERBOSE` representa continuidade de fluxo, etapa interna, rastreio fino
@@ -158,27 +158,27 @@ Antes da policy final, o `DebugUtility` aplica uma policy conservadora:
 - `fallbacksEnabled = false`
 - `repeatedVerboseEnabled = false`
 
-Essa janela de `BOOT` preserva diagnostico minimo sem reabrir ruido excessivo no early boot.
+Essa janela de `BOOT` preserva diagnóstico mínimo sem reabrir ruído excessivo no early boot.
 
-### 8. Cache e reaplicacao
+### 8. Cache e reaplicação
 
-Se houver cache `Type -> nivel efetivo` ou `Type -> regra casada`:
+Se houver cache `Type -> nível efetivo` ou `Type -> regra casada`:
 
 - ele deve ser invalidado ao reaplicar policy
 - ele deve ser invalidado ao trocar a source de policy
-- a reaplicacao da policy final nao deve deixar residuos de `EarlyDefault`
+- a reaplicação da policy final não deve deixar resíduos de `EarlyDefault`
 
 A observabilidade da policy deve registrar:
 
 - source ativa
 - `defaultLevel`
 - quantidade de regras ativas
-- invalidacao de cache
-- se a policy ativa e `EarlyDefault` ou `BootstrapConfigAsset`
+- invalidação de cache
+- se a policy ativa é `EarlyDefault` ou `BootstrapConfigAsset`
 
-### 9. Validacoes leves do asset
+### 9. Validações leves do asset
 
-O `LoggingConfigAsset` deve, no minimo:
+O `LoggingConfigAsset` deve, no mínimo:
 
 - aplicar `Trim()` em `namespacePrefix`
 - alertar `namespacePrefix` vazio
@@ -186,55 +186,55 @@ O `LoggingConfigAsset` deve, no minimo:
 - alertar `namespacePrefix` duplicado
 - alertar prefixo suspeito sem underscore inicial quando parecer namespace do projeto
 
-Sem fail-fast pesado aqui, salvo corrupcao estrutural grave.
+Sem fail-fast pesado aqui, salvo corrupção estrutural grave.
 
-### 10. Nao-objetivos
+### 10. Não-objetivos
 
-- nao criar override operacional por classe/tipo no asset
-- nao criar dropdown gigante de tipos/classes
-- nao criar UI de runtime para alternancia de logging
-- nao reescrever call sites atuais de `DebugUtility`
-- nao transformar `BootstrapConfigAsset` em container de detalhes internos do modulo
+- não criar override operacional por classe/tipo no asset
+- não criar dropdown gigante de tipos/classes
+- não criar UI de runtime para alternância de logging
+- não reescrever call sites atuais de `DebugUtility`
+- não transformar `BootstrapConfigAsset` em container de detalhes internos do módulo
 
-## Consequencias
+## Consequências
 
-### Beneficios
+### Benefícios
 
-- configuracao por feature real, alinhada aos namespaces do projeto
-- menor ruido operacional por dominio arquitetural
-- granularidade natural por modulo e submodulo
+- configuração por feature real, alinhada aos namespaces do projeto
+- menor ruído operacional por domínio arquitetural
+- granularidade natural por módulo e submódulo
 - bootstrap menos acoplado aos detalhes da policy
-- melhor auditabilidade da configuracao
+- melhor auditabilidade da configuração
 
 ### Custos e riscos
 
-- dependencia de string por namespace
+- dependência de string por namespace
 - necessidade de manter prefixos coerentes com a arquitetura real
-- sobreposicao de regras pode causar confusao sem disciplina
+- sobreposição de regras pode causar confusão sem disciplina
 - namespaces fora da taxonomia esperada podem escapar de regras amplas
 
-## Politica de falhas e fallback
+## Política de falhas e fallback
 
-A ausencia de `LoggingConfigAsset` nao deve quebrar o boot por padrao.
+A ausência de `LoggingConfigAsset` não deve quebrar o boot por padrão.
 
-A politica recomendada e:
+A política recomendada é:
 
-- fallback explicito e observavel quando `LoggingConfigAsset` nao existir
-- fail-fast apenas em corrupcao estrutural grave, quando nao houver nem policy valida nem fallback seguro
+- fallback explícito e observável quando `LoggingConfigAsset` não existir
+- fail-fast apenas em corrupção estrutural grave, quando não houver nem policy válida nem fallback seguro
 
-## Criterios de pronto
+## Critérios de pronto
 
 - `BootstrapConfigAsset` referencia apenas `LoggingConfigAsset` no aspecto de logging
 - `LoggingConfigAsset` concentra toda a policy operacional
 - regras por `namespacePrefix` funcionam com `longest-prefix match`
-- a regra de namespace tem precedencia sobre `[DebugLevel]`
-- e possivel configurar um modulo inteiro para `None`, `Warning`, `Logs` ou `Verbose`
-- e possivel tornar um submodulo mais verboso que o modulo pai
+- a regra de namespace tem precedência sobre `[DebugLevel]`
+- é possível configurar um módulo inteiro para `None`, `Warning`, `Logs` ou `Verbose`
+- é possível tornar um submódulo mais verboso que o módulo pai
 - o boot aplica a policy do asset quando configurada
-- o fallback hardcoded continua funcional quando a config nao existir, com log explicito
+- o fallback hardcoded continua funcional quando a config não existir, com log explícito
 - nenhum call site existente de logging precisa ser alterado
-- `BOOT`, `STARTUP` e `RUNTIME` estao padronizados como fases/tags, nao como levels
-- o sistema nao usa override operacional por classe no asset
+- `BOOT`, `STARTUP` e `RUNTIME` estão padronizados como fases/tags, não como levels
+- o sistema não usa override operacional por classe no asset
 
 ## Implementacao (arquivos impactados)
 

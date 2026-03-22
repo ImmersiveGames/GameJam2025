@@ -27,17 +27,26 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public void CheckDeath(RuntimeAttributeContext system, RuntimeAttributeType runtimeAttributeType)
         {
             var value = system.Get(runtimeAttributeType);
-            if (value == null) return;
+            if (value == null)
+            {
+                return;
+            }
 
             if (value.GetCurrentValue() > 0)
             {
-                if (!IsDead) return;
+                if (!IsDead)
+                {
+                    return;
+                }
                 IsDead = false;
                 FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
                 return;
             }
 
-            if (IsDead) return;
+            if (IsDead)
+            {
+                return;
+            }
             IsDead = true;
             FilteredEventBus<DeathEvent>.RaiseFiltered(
                 new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),

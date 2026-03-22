@@ -76,11 +76,26 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (fadeInDuration < 0f) fadeInDuration = 0f;
-            if (fadeOutDuration < 0f) fadeOutDuration = 0f;
-            if (minHudVisibleSeconds < 0f) minHudVisibleSeconds = 0f;
-            if (hudFadeInDuration < 0f) hudFadeInDuration = 0f;
-            if (hudFadeOutDuration < 0f) hudFadeOutDuration = 0f;
+            if (fadeInDuration < 0f)
+            {
+                fadeInDuration = 0f;
+            }
+            if (fadeOutDuration < 0f)
+            {
+                fadeOutDuration = 0f;
+            }
+            if (minHudVisibleSeconds < 0f)
+            {
+                minHudVisibleSeconds = 0f;
+            }
+            if (hudFadeInDuration < 0f)
+            {
+                hudFadeInDuration = 0f;
+            }
+            if (hudFadeOutDuration < 0f)
+            {
+                hudFadeOutDuration = 0f;
+            }
         }
 #endif
     }

@@ -29,13 +29,17 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy
             var spawnDataList = new List<SpawnData>();
 
             if (baseDirection.sqrMagnitude < Mathf.Epsilon)
+            {
                 baseDirection = Vector3.forward;
+            }
 
             baseDirection = baseDirection.normalized;
 
             var up = Vector3.up;
             if (Vector3.Dot(baseDirection, up) > 0.99f)
+            {
                 up = Vector3.right;
+            }
 
             float step = (count > 1) ? arcAngle / (arcAngle >= 360f ? count : count - 1) : 0f;
             float startAngle = -arcAngle / 2f;

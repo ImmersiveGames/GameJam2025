@@ -19,16 +19,22 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies
             _residual = residual;
 
             if (_residual != null)
+            {
                 _residual.gameObject.SetActive(false); // desativa a residual nesse modo
+            }
         }
 
         public void SetInstant(float value)
         {
             if (_main != null)
+            {
                 _main.fillAmount = value;
+            }
 
             if (_residual != null)
+            {
                 _residual.fillAmount = value;
+            }
         }
 
         public void AnimateTo(float target)

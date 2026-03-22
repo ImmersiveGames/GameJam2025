@@ -277,8 +277,39 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: 1c5fc760a59045f7b97fd50b4c8f2b83, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 843532123}
   m_SourcePrefab: {fileID: 100100000, guid: 1c5fc760a59045f7b97fd50b4c8f2b83, type: 3}
+--- !u!1 &843532122 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100000, guid: 1c5fc760a59045f7b97fd50b4c8f2b83, type: 3}
+  m_PrefabInstance: {fileID: 843532121}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &843532123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 843532122}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81d0fb57de6e4ee4b04ec66d925f5f68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  emitterUnderTest: {fileID: 1256861814}
+  emitterPurpose: semantic_spatial_direct
+  ownerTransform: {fileID: 0}
+  noEmitterPurpose: semantic_spatial_direct
+  fallbackSpatialPosition: {x: 0, y: 1.5, z: 2}
+  noEmitterVolumeScale: 1
+  semanticMap: {fileID: 11400000, guid: 8655b820fdbe45eb902e5e8086929880, type: 2}
+  explicitCue: {fileID: 11400000, guid: 6b9495d8817ee8e43987d6e7d5673563, type: 2}
+  autoStopDelaySeconds: 0.8
+  autoStopUseUnscaledTime: 1
+  verboseLogs: 1
 --- !u!1 &856986247
 GameObject:
   m_ObjectHideFlags: 0
@@ -486,6 +517,53 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 43.77, y: -0.3006996, z: -0.011759713}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1256861813
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1256861815}
+  - component: {fileID: 1256861814}
+  m_Layer: 0
+  m_Name: EmitterUnderTest
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1256861814
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1256861813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76f3d0950d8d4c8db443aee3f0e354e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  spatialAnchor: {fileID: 1256861815}
+  defaultVolumeScale: 1
+  defaultVoiceProfile: {fileID: 11400000, guid: 73c8f4d806986184fa813e63d9c1d571, type: 2}
+--- !u!4 &1256861815
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1256861813}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 20, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -21698,3 +21776,4 @@ SceneRoots:
   - {fileID: 606554097}
   - {fileID: 1181325256}
   - {fileID: 843532121}
+  - {fileID: 1256861815}

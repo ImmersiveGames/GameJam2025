@@ -35,7 +35,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 _linkService = new RuntimeAttributeLinkService();
             }
 
-            if (configs == null) return;
+            if (configs == null)
+            {
+                return;
+            }
 
             foreach (var cfg in configs.Where(c => c != null && c.runtimeAttributeDefinition != null && c.runtimeAttributeDefinition.enabled))
             {
@@ -47,7 +50,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void Set(RuntimeAttributeType type, float value, RuntimeAttributeChangeSource source = RuntimeAttributeChangeSource.Manual)
         {
-            if (!_resources.TryGetValue(type, out var resource)) return;
+            if (!_resources.TryGetValue(type, out var resource))
+            {
+                return;
+            }
 
             float previous = resource.GetCurrentValue();
             float clamped = Mathf.Clamp(value, 0, resource.GetMaxValue());
@@ -65,7 +71,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void Modify(RuntimeAttributeType type, float delta, RuntimeAttributeChangeSource source = RuntimeAttributeChangeSource.Manual)
         {
-            if (!_resources.TryGetValue(type, out var resource)) return;
+            if (!_resources.TryGetValue(type, out var resource))
+            {
+                return;
+            }
 
             // Verificar se há link para este recurso
             var linkConfig = _linkService.GetLink(EntityId, type);
@@ -125,14 +134,18 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         private bool ApplyDelta(RuntimeAttributeType type, IRuntimeAttributeValue runtimeAttribute, float delta, RuntimeAttributeChangeSource source, bool isLinkedChange)
         {
             if (runtimeAttribute == null)
+            {
                 return false;
+            }
 
             float previous = runtimeAttribute.GetCurrentValue();
             float target = Mathf.Clamp(previous + delta, 0f, runtimeAttribute.GetMaxValue());
             float appliedDelta = target - previous;
 
             if (Mathf.Approximately(appliedDelta, 0f))
+            {
                 return false;
+            }
 
             var context = new RuntimeAttributeChangeContext(this, type, previous, target, appliedDelta, runtimeAttribute.GetMaxValue(), source, isLinkedChange);
             ResourceChanging?.Invoke(context);
@@ -167,14 +180,19 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         /// </summary>
         public void ResetToInitialValues(RuntimeAttributeChangeSource source = RuntimeAttributeChangeSource.Manual, bool forceNotify = true)
         {
-            foreach (var kv in _instanceConfigs)
+            foreach (KeyValuePair<RuntimeAttributeType, RuntimeAttributeInstanceConfig> kv in _instanceConfigs)
             {
                 var type = kv.Key;
                 var cfg = kv.Value;
-                if (cfg == null || cfg.runtimeAttributeDefinition == null) continue;
+                if (cfg == null || cfg.runtimeAttributeDefinition == null)
+                {
+                    continue;
+                }
 
                 if (!_resources.TryGetValue(type, out var resource) || resource == null)
+                {
                     continue;
+                }
 
                 float previous = resource.GetCurrentValue();
                 float initial = Mathf.Clamp(cfg.runtimeAttributeDefinition.initialValue, 0f, resource.GetMaxValue());

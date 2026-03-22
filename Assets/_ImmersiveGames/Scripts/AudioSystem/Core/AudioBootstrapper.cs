@@ -64,7 +64,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         private static bool IsServiceValid(IBgmAudioService service)
         {
-            if (service == null) return false;
+            if (service == null)
+            {
+                return false;
+            }
 
             if (service is Object unityObj)
             {

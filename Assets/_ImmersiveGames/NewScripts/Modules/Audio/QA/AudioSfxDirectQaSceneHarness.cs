@@ -201,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out _globalAudioService) || _globalAudioService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _globalAudioService) || _globalAudioService == null)
             {
                 return false;
             }

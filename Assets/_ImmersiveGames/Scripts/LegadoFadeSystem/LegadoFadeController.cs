@@ -33,7 +33,9 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         private void Awake()
         {
             if (canvasGroup == null)
+            {
                 canvasGroup = GetComponent<CanvasGroup>();
+            }
 
             DebugUtility.LogVerbose<LegadoFadeController>(
                 "Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULO"));
@@ -97,7 +99,9 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         private async Task FadeToAsync(float targetAlpha)
         {
             if (canvasGroup == null)
+            {
                 return;
+            }
 
             float currentAlpha = canvasGroup.alpha;
             bool isFadeIn = targetAlpha > currentAlpha;
@@ -139,7 +143,9 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         private static float EvaluateCurve(AnimationCurve curve, float t)
         {
             if (curve?.keys == null || curve.keys.Length == 0)
+            {
                 return t;
+            }
 
             return curve.Evaluate(t);
         }

@@ -8,18 +8,43 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 {
+    /// <summary>
+    /// Configuração raiz obrigatória que contém todas as referências críticas de infraestrutura do projeto.
+    /// Inclui navegação, roteamento de cenas, áudio, logging e transições.
+    /// </summary>
     [CreateAssetMenu(
         fileName = "BootstrapConfigAsset",
         menuName = "ImmersiveGames/NewScripts/Infrastructure/Config/BootstrapConfigAsset",
         order = 20)]
     public sealed class BootstrapConfigAsset : ScriptableObject
     {
+        /// <summary>
+        /// Catálogo de navegação global com intenções críticas mapeadas.
+        /// </summary>
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
+        /// <summary>
+        /// Catálogo de roteamento de cenas e mapeamento de rotas.
+        /// </summary>
         [SerializeField] private SceneRouteCatalogAsset sceneRouteCatalog;
+        /// <summary>
+        /// Estilo de transição de inicialização.
+        /// </summary>
         [SerializeField] private TransitionStyleAsset startupTransitionStyleRef;
+        /// <summary>
+        /// Referência da chave de cena para fade/transição.
+        /// </summary>
         [SerializeField] private SceneKeyAsset fadeSceneKey;
+        /// <summary>
+        /// Configuração de logging (níveis, canais, etc).
+        /// </summary>
         [SerializeField] private LoggingConfigAsset loggingConfig;
+        /// <summary>
+        /// Configuração padrão de áudio (volumes, mixer groups, multiplicadores).
+        /// </summary>
         [SerializeField] private AudioDefaultsAsset audioDefaults;
+        /// <summary>
+        /// Mapa semântico de propósitos de áudio para entidades.
+        /// </summary>
         [SerializeField] private EntityAudioSemanticMapAsset entityAudioSemanticMap;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
@@ -41,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
             if (startupTransitionStyleRef == null || startupTransitionStyleRef.Profile == null)
             {
                 string message =
-                    $"[FATAL][Config] BootstrapConfigAsset invalido: configure startupTransitionStyleRef com profileRef valido. asset='{name}'.";
+                    $"[FATAL][Config] BootstrapConfigAsset inválido: configure startupTransitionStyleRef com profileRef válido. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);

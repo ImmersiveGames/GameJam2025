@@ -12,8 +12,11 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges{
     
         public string ResolveCanvasId(RuntimeAttributeInstanceConfig config, string actorId)
         {
-            if (config == null) return MainUICanvasId;
-        
+            if (config == null)
+            {
+                return MainUICanvasId;
+            }
+
             return config.attributeCanvasTargetMode switch
             {
                 AttributeCanvasTargetMode.ActorSpecific => $"{actorId}_Canvas",

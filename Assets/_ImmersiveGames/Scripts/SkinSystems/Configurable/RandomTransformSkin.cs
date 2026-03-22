@@ -45,7 +45,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             {
                 ApplyRandomTransform();
             }
-            if (showDebugLogs) DebugUtility.LogVerbose<RandomTransformSkin>($"Initialized");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<RandomTransformSkin>($"Initialized");
+            }
         }
         #endregion
 
@@ -66,8 +69,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected override void OnSkinInstancesCreated(ModelType modelType, List<GameObject> instances)
         {
-            if (modelType != targetModelType) return;
-            
+            if (modelType != targetModelType)
+            {
+                return;
+            }
+
             CacheOriginalTransforms(instances);
             
             if (randomizeOnSkinInstances)
@@ -105,7 +111,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             GenerateRandomRotation();
             ApplyTransformToInstances();
             
-            if (showDebugLogs) DebugUtility.LogVerbose<RandomTransformSkin>($"Applied transform - Scale: {_currentRandomScale}, Rotation: {_currentRandomRotation}");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<RandomTransformSkin>($"Applied transform - Scale: {_currentRandomScale}, Rotation: {_currentRandomRotation}");
+            }
         }
 
         private void GenerateRandomScale()
@@ -153,7 +162,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             List<GameObject> instances = GetSkinInstances();
             if (instances == null) 
             {
-                if (showDebugLogs) DebugUtility.LogWarning<RandomTransformSkin>("[RandomTransformSkin] No instances found");
+                if (showDebugLogs)
+                {
+                    DebugUtility.LogWarning<RandomTransformSkin>("[RandomTransformSkin] No instances found");
+                }
                 return;
             }
 
@@ -164,7 +176,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private void ApplyCurrentTransformToInstances()
         {
             List<GameObject> instances = GetSkinInstances();
-            if (instances == null) return;
+            if (instances == null)
+            {
+                return;
+            }
 
             foreach (var instance in instances.Where(instance => instance != null))
             {
@@ -197,7 +212,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         private void ApplyRotationToInstance(GameObject instance)
         {
-            if (!applyRandomRotation) return;
+            if (!applyRandomRotation)
+            {
+                return;
+            }
 
             if (!_originalRotations.ContainsKey(instance))
             {
@@ -277,7 +295,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 }
             }
             
-            if (showDebugLogs) DebugUtility.LogVerbose<RandomTransformSkin>("[Reset to original transform");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<RandomTransformSkin>("[Reset to original transform");
+            }
         }
 
         /// <summary>
@@ -297,7 +318,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private void ApplyScaleToInstances()
         {
             List<GameObject> instances = GetSkinInstances();
-            if (instances == null) return;
+            if (instances == null)
+            {
+                return;
+            }
 
             foreach (var instance in instances)
             {
@@ -308,7 +332,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private void ApplyRotationToInstances()
         {
             List<GameObject> instances = GetSkinInstances();
-            if (instances == null) return;
+            if (instances == null)
+            {
+                return;
+            }
 
             foreach (var instance in instances)
             {

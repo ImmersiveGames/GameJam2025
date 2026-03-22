@@ -42,7 +42,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
         private void OnThresholdEvent(RuntimeAttributeThresholdEvent evt)
         {
-            if (evt.ActorId != actor.ActorId) return;
+            if (evt.ActorId != actor.ActorId)
+            {
+                return;
+            }
 
             EventBus<RuntimeAttributeVisualFeedbackEvent>.Raise(
                 new RuntimeAttributeVisualFeedbackEvent(evt.ActorId, evt.RuntimeAttributeType, evt.Threshold, evt.IsAscending));

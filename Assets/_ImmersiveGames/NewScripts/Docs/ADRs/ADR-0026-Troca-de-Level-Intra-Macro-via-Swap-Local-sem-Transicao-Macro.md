@@ -1,31 +1,31 @@
-# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transicao Macro)
+# ADR-0026 - Troca de Level Intra-Macro via Swap Local (sem Transição Macro)
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
-- Implementado no codigo:
-  - `LevelSwapLocalService` aplica unload/load local sem transicao macro.
+- Implementado no código:
+  - `LevelSwapLocalService` aplica unload/load local sem transição macro.
   - Restart local (`Level2 -> Level2`) faz reload local (unload+load do mesmo set).
   - QA confirma `transitionStartedCount='0'` no swap local.
-- Evidencia:
+- Evidência:
   - `Docs/Reports/Audits/LATEST.md`
   - `Docs/Reports/Evidence/LATEST.md`
-- LEGACY / Historico:
-  - Troca de level via trilho macro no caminho que hoje e local.
+- LEGACY / Histórico:
+  - Troca de level via trilho macro no caminho que hoje é local.
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
-- Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-12
+- Data (decisão): 2026-02-19
+- Última atualização: 2026-03-12
 
-## Decisao canonica atual
+## Decisão canônica atual
 
-- Swap local usa `levelRef` (`LevelDefinitionAsset`) no dominio da macro atual.
+- Swap local usa `levelRef` (`LevelDefinitionAsset`) no domínio da macro atual.
 - Fonte de levels no swap: `SceneRouteDefinitionAsset.LevelCollection`.
-- Sem fallback para `LevelCatalog` no trilho canonico.
-- A API publica principal nao promove mais overloads por `LevelId`.
+- Sem fallback para `LevelCatalog` no trilho canônico.
+- A API pública principal não promove mais overloads por `LevelId`.
 
-## Evidencia (log)
+## Evidência (log)
 
 - `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
 - `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
@@ -34,6 +34,6 @@
 - `lastlog:2185` `LevelCleared ...`
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
 
-## Observacao historica
+## Observação histórica
 
-- Qualquer referencia a `LevelId` neste contexto deve ser lida como historico fora do trilho canonico atual.
+- Qualquer referência a `LevelId` neste contexto deve ser lida como histórico fora do trilho canônico atual.

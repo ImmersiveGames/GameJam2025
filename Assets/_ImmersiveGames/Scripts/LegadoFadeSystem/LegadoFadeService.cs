@@ -33,12 +33,16 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         private async Task EnsureFadeControllerAsync()
         {
             if (_legadoFadeController != null)
+            {
                 return;
+            }
 
             lock (_lock)
             {
                 if (_isLoadingFadeScene)
+                {
                     return;
+                }
 
                 _isLoadingFadeScene = true;
             }
@@ -53,7 +57,9 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
                     var loadOp = SceneManager.LoadSceneAsync(FadeSceneName, LoadSceneMode.Additive);
 
                     if (loadOp != null)
+                    {
                         await loadOp;
+                    }
                 }
 
                 await Task.Yield();
@@ -81,7 +87,9 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
         private void ApplyProfileToController()
         {
             if (_legadoFadeController == null)
+            {
                 return;
+            }
 
             if (_currentProfile == null || !_currentProfile.UseFade)
             {
@@ -105,7 +113,9 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
             await EnsureFadeControllerAsync();
 
             if (_legadoFadeController == null)
+            {
                 return;
+            }
 
             ApplyProfileToController();
             await _legadoFadeController.FadeInAsync();
@@ -116,7 +126,9 @@ namespace _ImmersiveGames.Scripts.LegadoFadeSystem
             await EnsureFadeControllerAsync();
 
             if (_legadoFadeController == null)
+            {
                 return;
+            }
 
             ApplyProfileToController();
             await _legadoFadeController.FadeOutAsync();

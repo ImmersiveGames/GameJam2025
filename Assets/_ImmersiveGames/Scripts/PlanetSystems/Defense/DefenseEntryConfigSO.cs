@@ -156,7 +156,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             public RoleDefenseConfig ToConfig(float entryDefaultSpawnOffset)
             {
-                var offset = Mathf.Approximately(spawnOffsetOverride, 0f)
+                float offset = Mathf.Approximately(spawnOffsetOverride, 0f)
                     ? entryDefaultSpawnOffset
                     : spawnOffsetOverride;
 

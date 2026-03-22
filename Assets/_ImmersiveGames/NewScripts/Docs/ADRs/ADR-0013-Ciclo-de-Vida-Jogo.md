@@ -4,7 +4,7 @@
 
 - Estado: Implementado
 - Data (decisão): 2025-12-24
-- Ultima atualizacao: 2026-03-11
+- Última atualização: 2026-03-11
 - Tipo: Implementação
 - Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
 

@@ -35,12 +35,18 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         private void Update()
         {
-            if (showDebugRays && Application.isPlaying) DrawDebugRays();
+            if (showDebugRays && Application.isPlaying)
+            {
+                DrawDebugRays();
+            }
         }
 
         private void OnDrawGizmos()
         {
-            if (!showGizmos || sensorController?.Collection == null) return;
+            if (!showGizmos || sensorController?.Collection == null)
+            {
+                return;
+            }
 
             var collection = sensorController.Collection;
             if (Application.isPlaying && sensorController.Service != null)
@@ -57,7 +63,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         {
             foreach (var sensor in sensorController.Service.GetSensors())
             {
-                if (!sensor.Config.DebugMode) continue;
+                if (!sensor.Config.DebugMode)
+                {
+                    continue;
+                }
 
                 var color = sensor.IsDetecting ? sensor.Config.DetectingColor : sensor.Config.IdleColor;
                 if (sensor.Config.DetectionMode == SensorDetectionMode.Spherical)
@@ -91,7 +100,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         {
             foreach (var sensor in service.GetSensors())
             {
-                if (!sensor.Config.DebugMode) continue;
+                if (!sensor.Config.DebugMode)
+                {
+                    continue;
+                }
 
                 bool isDetecting = sensor.IsDetecting;
                 var gizmoColor = isDetecting ? sensor.Config.DetectingColor : sensor.Config.IdleColor;
@@ -135,25 +147,40 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         private int GetDetectionCountForConfig(SensorConfig config, DetectorService service)
         {
-            if (service == null) return 0;
+            if (service == null)
+            {
+                return 0;
+            }
 
             foreach (var sensor in service.GetSensors())
             {
-                if (sensor.Config == config) return sensor.CurrentlyDetected.Count;
+                if (sensor.Config == config)
+                {
+                    return sensor.CurrentlyDetected.Count;
+                }
             }
             return 0;
         }
 
         private void DrawDetectionLines(Sensor sensor)
         {
-            if (sensor.CurrentlyDetected.Count == 0) return;
+            if (sensor.CurrentlyDetected.Count == 0)
+            {
+                return;
+            }
 
             Gizmos.color = sensor.Config.DetectingColor;
             foreach (var detectable in sensor.CurrentlyDetected)
             {
-                if (detectable == null) continue;
+                if (detectable == null)
+                {
+                    continue;
+                }
 
-                if (!TryGetDetectablePosition(detectable, out var targetPosition)) continue;
+                if (!TryGetDetectablePosition(detectable, out var targetPosition))
+                {
+                    continue;
+                }
 
                 var originPosition = sensor.Origin != null
                     ? sensor.Origin.position
@@ -189,7 +216,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         private void OnDrawGizmosSelected()
         {
-            if (!showGizmos || sensorController?.Collection == null) return;
+            if (!showGizmos || sensorController?.Collection == null)
+            {
+                return;
+            }
 
             foreach (var config in sensorController.Collection.Sensors)
             {

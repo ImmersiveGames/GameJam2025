@@ -92,7 +92,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Components
         /// </summary>
         public void PlayAtSelf(SoundData soundData, float fadeInSeconds = 0f)
         {
-            var useSpatial = defaults?.useSpatialBlend ?? true;
+            bool useSpatial = defaults?.useSpatialBlend ?? true;
             var ctx = AudioContext.Default(transform.position, useSpatial);
             Play(soundData, ctx, fadeInSeconds);
         }

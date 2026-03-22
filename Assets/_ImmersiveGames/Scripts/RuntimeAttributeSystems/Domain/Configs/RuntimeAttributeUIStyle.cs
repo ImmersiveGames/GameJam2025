@@ -16,7 +16,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
         public Color EvaluateFillColor(float normalizedValue)
         {
             if (!HasFillGradient())
+            {
                 return Color.white;
+            }
 
             return fillGradient.Evaluate(Mathf.Clamp01(normalizedValue));
         }

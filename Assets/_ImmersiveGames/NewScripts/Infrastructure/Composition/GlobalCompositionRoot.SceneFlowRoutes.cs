@@ -24,11 +24,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     $"[OBS][Config] CatalogResolvedVia=BootstrapConfig field=sceneRouteCatalog asset={bootstrapRouteCatalog.name}",
                     DebugUtility.Colors.Info);
-                provider.RegisterGlobal<ISceneRouteCatalog>(routeCatalog);
+                provider.RegisterGlobal(routeCatalog);
             }
             else if (!ReferenceEquals(routeCatalog, bootstrapRouteCatalog))
             {
-                var diAssetName = routeCatalog is UnityEngine.Object diObject ? diObject.name : routeCatalog.GetType().Name;
+                string diAssetName = routeCatalog is UnityEngine.Object diObject ? diObject.name : routeCatalog.GetType().Name;
                 FailFast($"SceneRouteCatalog mismatch: DI has {diAssetName} but BootstrapConfig has {bootstrapRouteCatalog.name}.");
             }
 
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!provider.TryGetGlobal<ISceneRouteResolver>(out var routeResolver) || routeResolver == null)
             {
                 routeResolver = new SceneRouteCatalogResolver(routeCatalog);
-                provider.RegisterGlobal<ISceneRouteResolver>(routeResolver);
+                provider.RegisterGlobal(routeResolver);
             }
         }
 

@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 throw new InvalidOperationException("IGameNavigationService requer ISceneTransitionService. Verifique o registro do SceneFlow no GlobalCompositionRoot.");
             }
 
-            var bootstrapConfig = GetRequiredBootstrapConfig(out var bootstrapVia);
+            var bootstrapConfig = GetRequiredBootstrapConfig(out string bootstrapVia);
             var catalogAsset = bootstrapConfig.NavigationCatalog;
             if (catalogAsset == null)
             {
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 throw new InvalidOperationException("ISceneRouteResolver obrigatorio ausente no DI global. Garanta RegisterSceneFlowRoutesRequired no pipeline antes de RegisterGameNavigationService.");
             }
 
-            catalogAsset.GetObservabilitySnapshot(out var rawRoutesCount, out var builtRouteIdsCount, out var hasToGameplay);
+            catalogAsset.GetObservabilitySnapshot(out int rawRoutesCount, out int builtRouteIdsCount, out bool hasToGameplay);
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[OBS][Navigation] Catalog boot snapshot: " +
                 $"bootstrapVia={bootstrapVia}, navigationVia=BootstrapConfig navigationAsset={catalogAsset.name}, stylesVia=DirectRefsOnly, rawRoutesCount={rawRoutesCount}, builtRouteIdsCount={builtRouteIdsCount}, hasToGameplay={hasToGameplay}.",

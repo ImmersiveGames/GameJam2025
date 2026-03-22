@@ -60,7 +60,9 @@ namespace _ImmersiveGames.Scripts.QA
         private GameManager ResolveGameManager()
         {
             if (gameManager != null)
+            {
                 return gameManager;
+            }
 
             gameManager = FindAnyObjectByType<GameManager>();
             return gameManager;
@@ -69,7 +71,9 @@ namespace _ImmersiveGames.Scripts.QA
         private bool TryResolveGateService()
         {
             if (_gateService != null)
+            {
                 return true;
+            }
 
             var provider = DependencyManager.Provider;
             if (provider != null && provider.TryGetGlobal<IOldSimulationGateService>(out var gate))
@@ -398,8 +402,14 @@ namespace _ImmersiveGames.Scripts.QA
 
         public void QA_GateTogglePauseToken()
         {
-            if (_qaGateTokenHeld) QA_GateReleasePauseToken();
-            else QA_GateAcquirePauseToken();
+            if (_qaGateTokenHeld)
+            {
+                QA_GateReleasePauseToken();
+            }
+            else
+            {
+                QA_GateAcquirePauseToken();
+            }
         }
 
         #endregion

@@ -20,7 +20,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
 
         public float CalculateBgmVolume(SoundData soundData, AudioServiceSettings settings, float contextMultiplier = 1f)
         {
-            if (soundData == null) return 0f;
+            if (soundData == null)
+            {
+                return 0f;
+            }
 
             float master = settings != null ? settings.masterVolume : 1f;
             float categoryVolume = settings != null ? settings.bgmVolume : 1f;
@@ -43,7 +46,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
 
         public float CalculateSfxVolume(SoundData soundData, AudioConfig config, AudioServiceSettings settings, AudioContext context)
         {
-            if (soundData == null) return 0f;
+            if (soundData == null)
+            {
+                return 0f;
+            }
 
             float master = settings != null ? settings.masterVolume : 1f;
             float categoryVolume = settings != null ? settings.sfxVolume : 1f;
@@ -64,7 +70,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
 
             float baseVolume = soundData.volume * configDefault * categoryVolume * categoryMultiplier * master * context.volumeMultiplier;
             if (context.volumeOverride >= 0f)
+            {
                 baseVolume = context.volumeOverride;
+            }
 
             return Mathf.Clamp01(baseVolume);
         }

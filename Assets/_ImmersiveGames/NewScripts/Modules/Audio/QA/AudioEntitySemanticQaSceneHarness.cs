@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return;
             }
 
-            var mapInfo = semanticMap != null ? semanticMap.name : "null";
+            string mapInfo = semanticMap != null ? semanticMap.name : "null";
             int entries = semanticMap != null && semanticMap.Entries != null ? semanticMap.Entries.Count : 0;
             LogInfo("ValidateSetup",
                 $"ok map='{mapInfo}' entries={entries} globalPurpose='{globalPurpose}' spatialPurpose='{spatialPurpose}' pooledPurpose='{pooledPurpose}' owner='{SafeName(ownerTransform)}'");
@@ -178,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IEntityAudioService>(out _entityAudioService) || _entityAudioService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _entityAudioService) || _entityAudioService == null)
             {
                 return false;
             }

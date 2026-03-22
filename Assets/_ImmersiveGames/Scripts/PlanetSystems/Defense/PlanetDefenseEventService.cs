@@ -103,7 +103,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             bool noDetectorsRemaining = disengagedEvent.IsLastDisengagement || state?.ActiveDetectors <= 0;
 
-            if (!noDetectorsRemaining) return;
+            if (!noDetectorsRemaining)
+            {
+                return;
+            }
             DebugUtility.LogVerbose<PlanetDefenseEventService>(
                 $"[Debug] Nenhum detector restante em {disengagedEvent.Planet.ActorName}. Encerrando waves e logging.");
 

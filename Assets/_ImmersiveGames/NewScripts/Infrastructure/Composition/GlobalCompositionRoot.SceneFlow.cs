@@ -164,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void RegisterSceneFlowFadeModule()
         {
             var bootstrap = GetRequiredBootstrapConfig(out _);
-            var fadeSceneName = TryResolveFadeSceneName(bootstrap, out var failureReason);
+            string fadeSceneName = TryResolveFadeSceneName(bootstrap, out string failureReason);
 
             if (string.IsNullOrWhiteSpace(fadeSceneName))
             {
@@ -197,7 +197,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return string.Empty;
             }
 
-            var fadeSceneName = (fadeSceneKey.SceneName ?? string.Empty).Trim();
+            string fadeSceneName = (fadeSceneKey.SceneName ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(fadeSceneName))
             {
                 failureReason =
@@ -300,7 +300,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            var tag = isConfigFatal ? "[FATAL][Config][Fade]" : "[FATAL][Fade]";
+            string tag = isConfigFatal ? "[FATAL][Config][Fade]" : "[FATAL][Fade]";
             DebugUtility.LogError(typeof(GlobalCompositionRoot), $"{tag} {reason}");
 
             StopPlayModeOrQuit();

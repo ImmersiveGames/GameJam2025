@@ -142,7 +142,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             TryStartWhenPlaying();
 
             if (!_sessionActive || _isPaused)
+            {
                 return;
+            }
 
             AdvanceCountdown(Time.deltaTime);
         }
@@ -160,7 +162,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void StartSession()
         {
             if (_sessionActive)
+            {
                 return;
+            }
 
             float duration = LoadConfiguredDuration();
             _configuredDuration = duration;
@@ -203,7 +207,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void PauseSession()
         {
             if (!_sessionActive || _isPaused)
+            {
                 return;
+            }
 
             _remainingTime = ReadTimerTime();
             if (_timer != null)
@@ -219,7 +225,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void ResumeSession()
         {
             if (!_sessionActive || !_isPaused || _remainingTime <= 0f)
+            {
                 return;
+            }
 
             EnsureTimerInstance();
             if (_timer != null)
@@ -236,7 +244,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void HandleTimeEnded()
         {
             if (!_sessionActive)
+            {
                 return;
+            }
 
             StopSession(false, 0f, "Tempo esgotado");
 
@@ -284,14 +294,22 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void HandlePauseEvent(GamePauseEvent pauseEvent)
         {
-            if (pauseEvent.IsPaused) PauseSession();
-            else ResumeSession();
+            if (pauseEvent.IsPaused)
+            {
+                PauseSession();
+            }
+            else
+            {
+                ResumeSession();
+            }
         }
 
         private float ReadTimerTime()
         {
             if (_timer == null)
+            {
                 return Mathf.Max(_remainingTime, 0f);
+            }
 
             float pluginTime = Mathf.Max(_timer.CurrentTime, 0f);
             return Mathf.Max(Mathf.Min(_remainingTime, pluginTime), 0f);
@@ -300,7 +318,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void AdvanceCountdown(float deltaTime)
         {
             if (deltaTime > 0f)
+            {
                 _remainingTime = Mathf.Max(_remainingTime - deltaTime, 0f);
+            }
 
             if (_timer != null)
             {
@@ -319,17 +339,23 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             LogWholeSecond();
 
             if (_remainingTime <= 0f)
+            {
                 HandleTimeEnded();
+            }
         }
 
         private void LogWholeSecond()
         {
             if (!_sessionActive)
+            {
                 return;
+            }
 
             int second = Mathf.CeilToInt(_remainingTime);
             if (second == _lastLoggedSecond)
+            {
                 return;
+            }
 
             _lastLoggedSecond = second;
             DebugUtility.LogVerbose<GameTimer>($"Tempo restante: {Mathf.Max(second, 0)}s.", context: this);
@@ -338,11 +364,15 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void TryStartWhenPlaying()
         {
             if (_sessionActive || _autoStartLocked)
+            {
                 return;
+            }
 
             var stateMachine = OldGameManagerStateMachine.Instance;
             if (stateMachine == null || stateMachine.CurrentState is not OldPlayingState)
+            {
                 return;
+            }
 
             StartSession();
         }
@@ -352,10 +382,18 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             if (stateEvent.isGameActive)
             {
                 if (_autoStartLocked)
+                {
                     return;
+                }
 
-                if (_sessionActive) ResumeSession();
-                else StartSession();
+                if (_sessionActive)
+                {
+                    ResumeSession();
+                }
+                else
+                {
+                    StartSession();
+                }
             }
             else if (_sessionActive)
             {
@@ -366,7 +404,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void EnsureTimerInstance()
         {
             if (_timer != null)
+            {
                 return;
+            }
 
             float safeDuration = Mathf.Max(_configuredDuration, 0f);
             _timer = new CountdownTimer(safeDuration);
@@ -377,10 +417,14 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void PrepareTimer(float duration)
         {
             if (_timer == null)
+            {
                 EnsureTimerInstance();
+            }
 
             if (_timer == null)
+            {
                 return;
+            }
 
             float safeDuration = Mathf.Max(duration, 0f);
             _timer.Stop();
@@ -390,7 +434,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private float LoadConfiguredDuration()
         {
             if (Config != null)
+            {
                 return Mathf.Max(Config.TimerSeconds, 0f);
+            }
 
             return Mathf.Max(_configuredDuration, 0f);
         }

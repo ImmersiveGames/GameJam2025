@@ -333,7 +333,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                 return false;
             }
 
-            var roots = scene.GetRootGameObjects();
+            GameObject[] roots = scene.GetRootGameObjects();
             LoadingHudController resolved = null;
 
             for (int i = 0; i < roots.Length; i++)

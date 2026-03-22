@@ -69,7 +69,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void HandleTriggerCollision(Collider other)
         {
-            if (other == null) return;
+            if (other == null)
+            {
+                return;
+            }
             var hitPoint = other.ClosestPoint(transform.position);
             Vector3? normal = null;
 
@@ -85,24 +88,39 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private IActor ResolveActor()
         {
             if (_actor != null)
+            {
                 return _actor;
+            }
 
             if (_pooledObject != null && _pooledObject.Spawner != null)
+            {
                 return _pooledObject.Spawner;
+            }
 
             return null;
         }
 
         public bool TryDealDamage(GameObject other, Vector3? hitPoint = null, Vector3? hitNormal = null)
         {
-            if (other == null) return false;
-            if (!IsTargetLayerValid(other.layer)) return false;
+            if (other == null)
+            {
+                return false;
+            }
+            if (!IsTargetLayerValid(other.layer))
+            {
+                return false;
+            }
 
             if (_lastProcessedFrame == Time.frameCount && _lastProcessedTarget == other)
+            {
                 return false;
+            }
 
             var receiver = other.GetComponentInParent<IDamageReceiver>();
-            if (receiver == null) return false;
+            if (receiver == null)
+            {
+                return false;
+            }
 
             var sourceActor = ResolveActor();
             var ctx = new DamageContext(

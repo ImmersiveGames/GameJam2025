@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Co
                 _classifier = new DefaultActorGroupRearmTargetClassifier();
             }
 
-            provider.TryGetGlobal<IWorldResetPolicy>(out _worldResetPolicy);
+            provider.TryGetGlobal(out _worldResetPolicy);
             if (_worldResetPolicy == null)
             {
                 provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);

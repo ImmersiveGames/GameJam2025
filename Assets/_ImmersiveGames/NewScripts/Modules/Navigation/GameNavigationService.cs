@@ -10,6 +10,10 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
+    /// <summary>
+    /// Serviço de navegação canônico que gerencia transições entre estados principais do jogo.
+    /// Coordena requisições de navegação (Menu, Gameplay, Exit, etc) com o SceneFlow.
+    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameNavigationService : IGameNavigationService
     {
@@ -150,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[Navigation] Navegacao ja em progresso. Ignorando intent core='{intent}'.");
+                    $"[Navigation] Navegação já em progresso. Ignorando intent core='{intent}'.");
                 return Task.CompletedTask;
             }
 
@@ -172,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] Excecao ao navegar (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
+                    $"[Navigation] Exceção ao navegar (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {
@@ -197,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             NavigationIntentId intentId = GameNavigationIntents.GetCoreId(intent);
             if (!intentId.IsValid)
             {
-                string message = $"[FATAL][Config] GameNavigationIntents invalido para intent core. intent='{intent}', intentId='<empty>'.";
+                string message = $"[FATAL][Config] GameNavigationIntents inválido para intent core. intent='{intent}', intentId='<empty>'.";
                 DebugUtility.LogError(typeof(GameNavigationService), message);
                 throw new InvalidOperationException(message);
             }
@@ -220,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 requestedBy: reason,
                 reason: reason);
 
-            var signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
+            string signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
             DebugUtility.Log(typeof(GameNavigationService),
                 $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
@@ -232,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         {
             if (entry.StyleRef == null)
             {
-                throw new InvalidOperationException($"[FATAL][Config] Navegacao sem TransitionStyleAsset direto. routeId='{entry.RouteId}'.");
+                throw new InvalidOperationException($"[FATAL][Config] Navegação sem TransitionStyleAsset direto. routeId='{entry.RouteId}'.");
             }
 
             return entry.StyleRef.ToDefinitionOrFail(nameof(GameNavigationService), $"routeId='{entry.RouteId}'");

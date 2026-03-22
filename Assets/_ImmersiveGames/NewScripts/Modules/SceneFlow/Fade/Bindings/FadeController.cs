@@ -39,7 +39,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
         public void SetContextSignature(string? contextSignature)
         {
             if (!string.IsNullOrEmpty(contextSignature) && contextSignature != "no-signature")
+            {
                 _lastContextSignature = contextSignature;
+            }
         }
 
         private void Awake()
@@ -115,7 +117,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
 
         private async Task FadeToAsync(float targetAlpha, string? contextSignature)
         {
-            if (canvasGroup == null) return;
+            if (canvasGroup == null)
+            {
+                return;
+            }
 
             // Resolve signature: usa contexto explícito quando houver; fallback para último contexto conhecido.
             _activeContextSignature = ResolveContextSignature(contextSignature);
@@ -185,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
 
         private void SafeNotifyFadeComplete(string signature)
         {
-            var handler = OnFadeComplete;
+            Action<string>? handler = OnFadeComplete;
             if (handler == null)
             {
                 return;

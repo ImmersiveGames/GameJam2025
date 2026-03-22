@@ -171,7 +171,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_actorSkinController != null)
             {
-                var animators = _actorSkinController.GetComponentsFromSkinInstances<Animator>(ModelType.ModelRoot);
+                List<Animator> animators = _actorSkinController.GetComponentsFromSkinInstances<Animator>(ModelType.ModelRoot);
                 if (animators.Count > 0)
                 {
                     return animators[0];

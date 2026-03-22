@@ -74,7 +74,7 @@ Cada fase só avança quando:
 | Anti-spam/cooldown por cue | Parcial | Sim | F5 | spam de evento repetitivo | NOT STARTED |
 | Limite de instâncias por cue com enforcement real | Parcial | Sim | F5 | lotação de voices | NOT STARTED |
 | EntityAudio semântico (`purpose`) | Parcial | Sim | F6 | attack/impact/death local | NOT STARTED |
-| EntityAudioEmitter mínimo | Sim | Sim | F7 | entidade com/sem emitter | NOT STARTED |
+| EntityAudioEmitter mínimo | Sim | Sim | F7 | entidade com/sem emitter + auto-stop do handle | DONE |
 | Defaults do projeto separados do estado runtime do jogador | Parcial | Sim | F2 | UI/settings não alteram defaults | NOT STARTED |
 | Mixer/routing base | Parcial | Sim | F2/F3/F4 | grupos/params básicos | NOT STARTED |
 | Gameplay integration por bridge | Sim | Futuro | F8 | tiro/hit/death/FX | NOT STARTED |
@@ -407,6 +407,24 @@ Cada fase só avança quando:
 - semântica de `purpose` mal definida virar novo acoplamento implícito;
 - começar a depender de catálogos de gameplay cedo demais.
 
+### Fechamento observado
+
+- `Validate Setup` confirmou `serviceResolved=True`, `emitterResolved=True` e telemetria coerente de `effectiveOwner`;
+- `PlayPurposeViaEmitterAndAutoStop` validou `AutoStopBeforeStop` + `StopLastHandle` + `completion='stop_immediate'`;
+- `PlayCueViaEmitterAndAutoStop` validou o mesmo fluxo também para cue explícito pooled/direto.
+
+### Saneamento pós-F7 (P1 / Etapa 2) — fechamento observado
+
+- regra canônica de `EmissionProfile` / `ExecutionProfile` e de intenção espacial foi unificada em helper puro de runtime;
+- `AudioEntitySemanticService` passou a consumir a mesma regra canônica sem assumir ownership de playback;
+- `AudioGlobalSfxService` permaneceu owner da resolução final e do runtime observável.
+
+### Próximo saneamento pós-F7 (P1 / Etapa 3)
+
+- consolidar a implementação interna do `EntityAudioEmitter` em um único trilho de preparação;
+- preservar o contrato público atual do emitter;
+- manter o emitter estritamente como binding estrutural mínimo, sem semântica e sem catálogo.
+
 ### Não entra nesta fase
 
 - bridges específicas de gameplay;
@@ -417,7 +435,7 @@ Cada fase só avança quando:
 
 ## F7 — `EntityAudio` trilha 2: `EntityAudioEmitter` mínimo
 
-- **Status:** `NOT STARTED`
+- **Status:** `DONE`
 - **Objetivo:** reduzir `EntityAudioEmitter` ao mínimo estrutural ou provar sua remoção.
 
 ### Escopo
@@ -431,25 +449,32 @@ Cada fase só avança quando:
 
 ### Entregáveis
 
-- [ ] `EntityAudioEmitter` mínimo ou removido;
-- [ ] nenhum fallback estrutural escondido;
-- [ ] nenhuma responsabilidade semântica no emitter.
+- [x] `EntityAudioEmitter` mínimo entregue;
+- [x] nenhum fallback estrutural escondido;
+- [x] nenhuma responsabilidade semântica no emitter;
+- [x] harness dedicado `AudioEntityEmitterQaSceneHarness` criado para F7;
+- [x] evidência final de stop/go rerrodada com auto-stop ativo.
 
 ### Critérios de pronto
 
-- [ ] emitter não é authoring central;
-- [ ] emitter não resolve `purpose`;
-- [ ] emitter não mascara lacuna de arquitetura.
+- [x] emitter não é authoring central;
+- [x] emitter não resolve `purpose`;
+- [x] emitter não mascara lacuna de arquitetura;
+- [x] evidência manual final de `StopLastHandle` em handle ativo foi reexecutada no Play Mode.
 
 ### Testes manuais
 
-- entidade com emitter mínimo continua tocando;
-- entidade sem emitter pode funcionar se esse for o desenho final.
+- `Validate Setup` resolve DI global e loga `configuredOwner`, `effectiveOwner` e `ownerSource`;
+- `Play Purpose Via Emitter` continua tocando com `handleValid=True`;
+- `Play Cue Via Emitter` continua tocando com `handleValid=True`;
+- `Play Purpose Without Emitter` continua válido no trilho standalone;
+- `Play Cue Via Emitter And Auto Stop` e `Play Purpose Via Emitter And Auto Stop` já foram rerrodados com `completion='stop_immediate'`.
 
 ### Riscos
 
 - convenience API crescer e virar novo owner implícito;
-- manter defaults demais no emitter.
+- manter defaults demais no emitter;
+- telemetria do harness ficar ambígua sobre owner efetivo (corrigido nesta etapa, requer rerun de evidência).
 
 ### Não entra nesta fase
 

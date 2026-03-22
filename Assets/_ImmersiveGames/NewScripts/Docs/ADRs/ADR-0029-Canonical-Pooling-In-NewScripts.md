@@ -1,4 +1,4 @@
-# ADR-0029 â€” Canonical Pooling in NewScripts
+﻿# ADR-0029 – Canonical Pooling in NewScripts
 
 - **Status:** Accepted
 - **Implementation Status:** Complete
@@ -7,9 +7,9 @@
 - **Last Validated:** 2026-03-14
 - **Scope:** `Assets/_ImmersiveGames/NewScripts/Infrastructure/Pooling/**`
 
-> **Nota de rollout (2026-03-20):** Este ADR permanece aceito como contrato arquitetural. No snapshot atual do repositorio, o modulo canÃƒÂ´nico precisou de reimplementacao incremental; o estado real de rollout esta rastreado em `Docs/Reports/Audits/2026-03-20/ADR-0029-Pooling-Rollout-Tracker.md`. O status historico "Complete/PASS" nao deve ser lido, isoladamente, como garantia de modulo operacional ja presente neste snapshot.
+> **Nota de rollout (2026-03-20):** Este ADR permanece aceito como contrato arquitetural. No snapshot atual do repositório, o módulo canônico precisou de reimplementação incremental; o estado real de rollout está rastreado em `Docs/Reports/Audits/2026-03-20/ADR-0029-Pooling-Rollout-Tracker.md`. O status histórico "Complete/PASS" não deve ser lido, isoladamente, como garantia de módulo operacional já presente neste snapshot.
 >
-> **Nota de fechamento operacional (2026-03-20):** O rollout incremental iniciado em 2026-03-20 foi concluido. A implementacao canonica atual esta disponivel em `Infrastructure/Pooling/**`, com rastreabilidade operacional no tracker de 2026-03-20, e o modulo esta pronto para consumo por outros modulos sem bootstrap alternativo.
+> **Nota de fechamento operacional (2026-03-20):** O rollout incremental iniciado em 2026-03-20 foi concluído. A implementação canônica atual está disponível em `Infrastructure/Pooling/**`, com rastreabilidade operacional no tracker de 2026-03-20, e o módulo está pronto para consumo por outros módulos sem bootstrap alternativo.
 
 ---
 
@@ -17,74 +17,74 @@
 
 O projeto consolidou um canon em `NewScripts` baseado em:
 
-- `GlobalCompositionRoot` como owner da inicializaÃ§Ã£o global
+- `GlobalCompositionRoot` como owner da inicialização global
 - direct-ref + fail-fast
-- eliminaÃ§Ã£o de bootstrap paralelo, singleton estrutural e fallback frouxo
-- separaÃ§Ã£o entre infraestrutura compartilhada e mÃ³dulos de domÃ­nio
-- integraÃ§Ã£o explÃ­cita com serviÃ§os globais via DI
+- eliminação de bootstrap paralelo, singleton estrutural e fallback frouxo
+- separação entre infraestrutura compartilhada e módulos de domínio
+- integração explícita com serviços globais via DI
 
-No legado existia uma infraestrutura de pooling funcional com capacidades Ãºteis:
+No legado existia uma infraestrutura de pooling funcional com capacidades úteis:
 
 - prewarm
-- rent / return explÃ­citos
+- rent / return explícitos
 - reset do objeto pooled
-- expansÃ£o opcional
+- expansão opcional
 - auto-return por lifetime
 - batch acquire
 
-Essa base tinha valor real, mas nÃ£o podia ser promovida diretamente ao canon porque trazia decisÃµes incompatÃ­veis com `NewScripts`, como:
+Essa base tinha valor real, mas não podia ser promovida diretamente ao canon porque trazia decisões incompatíveis com `NewScripts`, como:
 
 - ownership por `PersistentSingleton`
 - identidade por `string`
-- acoplamento do nÃºcleo com domÃ­nio (`IActor`, `spawner`)
+- acoplamento do núcleo com domínio (`IActor`, `spawner`)
 - regra hardcoded de posicionamento (`y = 0`)
-- lifetime obrigatÃ³rio
-- expansÃ£o sem teto explÃ­cito
-- reconfiguraÃ§Ã£o implÃ­cita
-- mistura entre infraestrutura compartilhada e detalhes de domÃ­nio
+- lifetime obrigatório
+- expansão sem teto explícito
+- reconfiguração implícita
+- mistura entre infraestrutura compartilhada e detalhes de domínio
 
 ---
 
 ## Problema
 
-O projeto precisava de uma infraestrutura canÃ´nica de pooling que:
+O projeto precisava de uma infraestrutura canônica de pooling que:
 
 - preservasse o valor funcional do legado
-- eliminasse acoplamentos incompatÃ­veis com o canon atual
-- fosse genÃ©rica o suficiente para servir mÃºltiplos domÃ­nios
-- fosse ownership de infraestrutura compartilhada, nÃ£o de um mÃ³dulo especÃ­fico
-- pudesse ser validada de forma standalone, sem depender de um mÃ³dulo consumidor real
+- eliminasse acoplamentos incompatíveis com o canon atual
+- fosse genérica o suficiente para servir múltiplos domínios
+- fosse ownership de infraestrutura compartilhada, não de um módulo específico
+- pudesse ser validada de forma standalone, sem depender de um módulo consumidor real
 
 ---
 
 ## Drivers
 
-- aderÃªncia ao canon atual de `NewScripts`
+- aderência ao canon atual de `NewScripts`
 - pooling como infraestrutura compartilhada do projeto
-- fail-fast em configuraÃ§Ã£o invÃ¡lida
+- fail-fast em configuração inválida
 - ownership claro no `GlobalCompositionRoot`
-- eliminaÃ§Ã£o de singleton estrutural
-- eliminaÃ§Ã£o de `string` como identidade principal de pool
-- separaÃ§Ã£o entre nÃºcleo genÃ©rico e domÃ­nio
-- preservaÃ§Ã£o de prewarm, rent/return e auto-return opcional
+- eliminação de singleton estrutural
+- eliminação de `string` como identidade principal de pool
+- separação entre núcleo genérico e domínio
+- preservação de prewarm, rent/return e auto-return opcional
 - capacidade de servir como base para os usos existentes no legado
-- evitar regressÃ£o funcional
+- evitar regressão funcional
 
 ---
 
-## DecisÃ£o
+## Decisão
 
-Foi criada uma infraestrutura canÃ´nica de pooling em:
+Foi criada uma infraestrutura canônica de pooling em:
 
 `Assets/_ImmersiveGames/NewScripts/Infrastructure/Pooling/**`
 
-Essa infraestrutura Ã© tratada como **infraestrutura compartilhada** do projeto.
+Essa infraestrutura é tratada como **infraestrutura compartilhada** do projeto.
 
-### ConsequÃªncia direta
+### Consequência direta
 
-Nenhum mÃ³dulo de domÃ­nio deve criar seu prÃ³prio â€œpool manager estruturalâ€ paralelo.
+Nenhum módulo de domínio deve criar seu próprio "pool manager estrutural" paralelo.
 
-O pooling canÃ´nico existe e Ã© considerado vÃ¡lido por si sÃ³, independentemente de qual mÃ³dulo venha a consumi-lo depois.
+O pooling canônico existe e é considerado válido por si só, independentemente de qual módulo venha a consumi-lo depois.
 
 ---
 
@@ -98,39 +98,39 @@ O pooling canÃ´nico existe e Ã© considerado vÃ¡lido por si sÃ³, independ
 
 ## Ownership
 
-A inicializaÃ§Ã£o e o ownership da infraestrutura de pooling pertencem ao `GlobalCompositionRoot`.
+A inicialização e o ownership da infraestrutura de pooling pertencem ao `GlobalCompositionRoot`.
 
-NÃ£o entram no canon:
+Não entram no canon:
 
 - `PersistentSingleton`
 - `RuntimeInitializeOnLoadMethod` como owner estrutural
-- bootstrap estÃ¡tico paralelo
+- bootstrap estático paralelo
 - `Resources.Load`
-- singletons privados por mÃ³dulo como base do pooling
+- singletons privados por módulo como base do pooling
 
-O pooling canÃ´nico sobe como serviÃ§o global registrado no DI.
+O pooling canônico sobe como serviço global registrado no DI.
 
 ---
 
 ## Identidade dos pools
 
-A identidade estrutural de um pool Ã© feita por **referÃªncia direta de asset**, nÃ£o por `string`.
+A identidade estrutural de um pool é feita por **referência direta de asset**, não por `string`.
 
-### ConsequÃªncias
+### Consequências
 
-- nÃ£o usar `ObjectName` string como chave principal
-- nÃ£o usar nome de prefab como identidade estrutural
-- a definiÃ§Ã£o canÃ´nica do pool Ã© um asset prÃ³prio
+- não usar `ObjectName` string como chave principal
+- não usar nome de prefab como identidade estrutural
+- a definição canônica do pool é um asset próprio
 
 ---
 
-## Asset canÃ´nico de definiÃ§Ã£o
+## Asset canônico de definição
 
-A definiÃ§Ã£o canÃ´nica adotada Ã©:
+A definição canônica adotada é:
 
 **`PoolDefinitionAsset`**
 
-Campos da versÃ£o atual:
+Campos da versão atual:
 
 - `prefab`
 - `initialSize`
@@ -142,60 +142,60 @@ Campos da versÃ£o atual:
 ### Regras
 
 - um prefab por pool
-- `poolLabel` serve para observabilidade, nÃ£o como identidade estrutural
-- `autoReturnSeconds <= 0` significa sem retorno automÃ¡tico
+- `poolLabel` serve para observabilidade, não como identidade estrutural
+- `autoReturnSeconds <= 0` significa sem retorno automático
 - `canExpand = false` limita o pool ao `initialSize`
 - `canExpand = true` respeita `maxSize` como teto
 
 ---
 
-## NÃºcleo genÃ©rico
+## Núcleo genérico
 
-O nÃºcleo do pooling Ã© genÃ©rico e nÃ£o conhece domÃ­nio.
+O núcleo do pooling é genérico e não conhece domínio.
 
-### NÃ£o entram no nÃºcleo
+### Não entram no núcleo
 
 - `IActor`
 - `spawner`
 - regras de gameplay
-- regras de Ã¡udio
+- regras de áudio
 - regras de UI
-- clamp de posiÃ§Ã£o
-- qualquer semÃ¢ntica de domÃ­nio
+- clamp de posição
+- qualquer semântica de domínio
 
-### Regra explÃ­cita
+### Regra explícita
 
 Nada de:
 
 - `y = 0`
-- correÃ§Ã£o de posiÃ§Ã£o hardcoded
-- contexto de domÃ­nio embutido no core
+- correção de posição hardcoded
+- contexto de domínio embutido no core
 
-Se um domÃ­nio precisar de contexto adicional, isso entra por camada externa, nunca pelo nÃºcleo do pooling.
+Se um domínio precisar de contexto adicional, isso entra por camada externa, nunca pelo núcleo do pooling.
 
 ---
 
 ## Contrato base de objeto pooled
 
-O contrato base adotado Ã© simples e previsÃ­vel:
+O contrato base adotado é simples e previsível:
 
 - `OnPoolCreated()`
 - `OnPoolRent()`
 - `OnPoolReturn()`
 - `OnPoolDestroyed()`
 
-A base opcional fornecida pelo mÃ³dulo Ã©:
+A base opcional fornecida pelo módulo é:
 
 - `IPoolableObject`
 - `PooledBehaviour`
 
-Isso preserva hooks Ãºteis de ciclo de vida sem contaminar o nÃºcleo.
+Isso preserva hooks úteis de ciclo de vida sem contaminar o núcleo.
 
 ---
 
 ## Runtime core
 
-A infraestrutura runtime canÃ´nica inclui:
+A infraestrutura runtime canônica inclui:
 
 - `IPoolService`
 - `PoolService`
@@ -210,7 +210,7 @@ A infraestrutura runtime canÃ´nica inclui:
 - garantir prewarm
 - realizar rent
 - realizar return
-- aplicar expansÃ£o controlada
+- aplicar expansão controlada
 - falhar explicitamente ao atingir o teto
 - limpar corretamente no shutdown
 
@@ -218,11 +218,11 @@ A infraestrutura runtime canÃ´nica inclui:
 
 ## Prewarm, rent e return
 
-As capacidades funcionais obrigatÃ³rias foram preservadas:
+As capacidades funcionais obrigatórias foram preservadas:
 
 - prewarm do pool
-- rent explÃ­cito
-- return explÃ­cito
+- rent explícito
+- return explícito
 - reset do objeto retornado
 - hooks de ciclo de vida
 
@@ -230,20 +230,20 @@ As capacidades funcionais obrigatÃ³rias foram preservadas:
 
 ## Lifetime / auto-return
 
-O auto-return por tempo Ã© **opcional**.
+O auto-return por tempo é **opcional**.
 
-### SemÃ¢ntica adotada
+### Semântica adotada
 
-- `autoReturnSeconds <= 0` â†’ desabilitado
-- `autoReturnSeconds > 0` â†’ habilitado
+- `autoReturnSeconds <= 0` → desabilitado
+- `autoReturnSeconds > 0` → habilitado
 
 Isso permite tanto usos com retorno manual quanto usos dirigidos apenas por tempo.
 
 ---
 
-## ExpansÃ£o
+## Expansão
 
-A expansÃ£o opcional foi preservada com regra segura.
+A expansão opcional foi preservada com regra segura.
 
 ### Estrutura adotada
 
@@ -251,11 +251,11 @@ A expansÃ£o opcional foi preservada com regra segura.
 - `canExpand`
 - `maxSize`
 
-### ConsequÃªncia
+### Consequência
 
-NÃ£o existe crescimento indefinido sem teto explÃ­cito.
+Não existe crescimento indefinido sem teto explícito.
 
-Quando o limite Ã© atingido, o sistema falha de forma explÃ­cita.
+Quando o limite é atingido, o sistema falha de forma explícita.
 
 ---
 
@@ -263,14 +263,14 @@ Quando o limite Ã© atingido, o sistema falha de forma explÃ­cita.
 
 A infraestrutura possui logs observacionais coerentes com o canon.
 
-Os eventos de observaÃ§Ã£o cobertos incluem:
+Os eventos de observação cobertos incluem:
 
 - pool criado
-- prewarm concluÃ­do
+- prewarm concluído
 - rent
 - return
-- expansÃ£o
-- falha de configuraÃ§Ã£o
+- expansão
+- falha de configuração
 - falha por limite
 - shutdown / cleanup
 
@@ -278,25 +278,25 @@ Os eventos de observaÃ§Ã£o cobertos incluem:
 
 ## Scope global vs scene
 
-A primeira versÃ£o canÃ´nica nasce com ownership **global** e persistente.
+A primeira versão canônica nasce com ownership **global** e persistente.
 
-Isso Ã© suficiente para a versÃ£o standalone do mÃ³dulo.
+Isso é suficiente para a versão standalone do módulo.
 
-Scene-aware pooling continua sendo uma extensÃ£o possÃ­vel, mas nÃ£o Ã© requisito para a completude desta decisÃ£o.
+Scene-aware pooling continua sendo uma extensão possível, mas não é requisito para a completude desta decisão.
 
 ---
 
-## EstratÃ©gia de validaÃ§Ã£o
+## Estratégia de validação
 
-A validaÃ§Ã£o do pooling canÃ´nico Ã© **standalone**.
+A validação do pooling canônico é **standalone**.
 
-### Regra explÃ­cita
+### Regra explícita
 
-O mÃ³dulo nÃ£o depende de Ã¡udio, gameplay, VFX ou qualquer domÃ­nio real para ser considerado vÃ¡lido.
+O módulo não depende de áudio, gameplay, VFX ou qualquer domínio real para ser considerado válido.
 
-### Forma de validaÃ§Ã£o adotada
+### Forma de validação adotada
 
-A validaÃ§Ã£o foi feita com:
+A validação foi feita com:
 
 - mocks simples
 - um objeto bem simples
@@ -311,12 +311,12 @@ Exemplos usados:
   - prewarm
   - rent
   - return
-  - stress atÃ© o limite
+  - stress até o limite
   - shutdown
 
 ### Resultado
 
-A validaÃ§Ã£o standalone foi concluÃ­da com **PASS**.
+A validação standalone foi concluída com **PASS**.
 
 Foram comprovados, de ponta a ponta:
 
@@ -324,16 +324,16 @@ Foram comprovados, de ponta a ponta:
 - prewarm
 - rent
 - return
-- expansÃ£o atÃ© o teto
-- falha explÃ­cita ao atingir o limite
+- expansão até o teto
+- falha explícita ao atingir o limite
 - hooks de ciclo de vida
 - cleanup correto
 
 ---
 
-## RelaÃ§Ã£o com o legado
+## Relação com o legado
 
-O pooling canÃ´nico serve como base para as capacidades que existiam no legado, mas sem copiar sua estrutura.
+O pooling canônico serve como base para as capacidades que existiam no legado, mas sem copiar sua estrutura.
 
 ### Preservado conceitualmente
 
@@ -341,69 +341,70 @@ O pooling canÃ´nico serve como base para as capacidades que existiam no legado
 - rent / return
 - auto-return opcional
 - reset do objeto pooled
-- expansÃ£o opcional
+- expansão opcional
 
-### Mantido como capacidade futura possÃ­vel sobre a base atual
+### Mantido como capacidade futura possível sobre a base atual
 
 - batch acquire
 - scene-aware pooling
 - tooling/editor
-- adapters especializados de domÃ­nio
+- adapters especializados de domínio
 
-### NÃ£o preservado como estrutura
+### Não preservado como estrutura
 
 - `PersistentSingleton`
 - `PoolManager` legado
 - `LifetimeManager` legado como singleton estrutural
 - identidade por `string`
-- `IActor` / `spawner` no nÃºcleo
+- `IActor` / `spawner` no núcleo
 - `y = 0`
 - `Resources.Load`
-- reconfiguraÃ§Ã£o implÃ­cita por Ã­ndice
-- lifetime obrigatÃ³rio
+- reconfiguração implícita por índice
+- lifetime obrigatório
 
 ---
 
-## ConsequÃªncias positivas
+## Consequências positivas
 
 - pooling passou a pertencer ao canon de `NewScripts`
-- a infraestrutura pode ser usada por mÃºltiplos mÃ³dulos sem duplicaÃ§Ã£o
-- dependÃªncias legadas invÃ¡lidas foram eliminadas
-- o nÃºcleo ficou genÃ©rico e desacoplado
-- o mÃ³dulo pode ser validado isoladamente
-- a base atual jÃ¡ suporta os comportamentos essenciais do legado
+- a infraestrutura pode ser usada por múltiplos módulos sem duplicação
+- dependências legadas inválidas foram eliminadas
+- o núcleo ficou genérico e desacoplado
+- o módulo pode ser validado isoladamente
+- a base atual já suporta os comportamentos essenciais do legado
 
 ---
 
-## ConsequÃªncias negativas / trade-offs
+## Consequências negativas / trade-offs
 
-- exigiu reescrita, nÃ£o simples cÃ³pia
-- a primeira versÃ£o nÃ£o replica literalmente todos os formatos operacionais do legado
-- batch acquire e scene-aware continuam como extensÃµes
-- a validaÃ§Ã£o inicial Ã© por mock, nÃ£o por um domÃ­nio final de produÃ§Ã£o
+- exigiu reescrita, não simples cópia
+- a primeira versão não replica literalmente todos os formatos operacionais do legado
+- batch acquire e scene-aware continuam como extensões
+- a validação inicial é por mock, não por um domínio final de produção
 
 ---
 
-## CritÃ©rio de sucesso
+## Critério de sucesso
 
-A promoÃ§Ã£o do pooling ao canon Ã© considerada bem-sucedida porque hoje existe em `NewScripts` uma infraestrutura que:
+A promoção do pooling ao canon é considerada bem-sucedida porque hoje existe em `NewScripts` uma infraestrutura que:
 
 - inicializa via `GlobalCompositionRoot`
-- resolve pools por asset canÃ´nico, nÃ£o por string
+- resolve pools por asset canônico, não por string
 - faz prewarm
 - suporta rent / return
-- suporta expansÃ£o opcional com teto
+- suporta expansão opcional com teto
 - suporta auto-return opcional
 - faz cleanup correto no shutdown
-- nÃ£o depende de singleton estrutural
-- nÃ£o conhece domÃ­nio especÃ­fico no nÃºcleo
-- nÃ£o altera posiÃ§Ã£o do mundo com regra hardcoded
+- não depende de singleton estrutural
+- não conhece domínio específico no núcleo
+- não altera posição do mundo com regra hardcoded
 - foi validada de ponta a ponta em uma cena de testes simples com mocks
 
 ---
 
-## ConclusÃ£o
+## Conclusão
 
-Esta decisÃ£o estÃ¡ **aceita, implementada e validada**.
+Esta decisão está **aceita, implementada e validada**.
 
-O mÃ³dulo de pooling estÃ¡ fechado como infraestrutura canÃ´nica standalone de `NewScripts`.
+O módulo de pooling está fechado como infraestrutura canônica standalone de `NewScripts`.
+

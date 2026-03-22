@@ -202,7 +202,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            var radii = _orbitArranger.ArrangePlanetsInOrbits(_spawnedPlanetMasters);
+            List<float> radii = _orbitArranger.ArrangePlanetsInOrbits(_spawnedPlanetMasters);
             _calculatedOrbitRadii.AddRange(radii);
         }
 

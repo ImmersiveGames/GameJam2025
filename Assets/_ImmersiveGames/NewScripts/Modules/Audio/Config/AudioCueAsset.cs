@@ -1,15 +1,17 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Audio;
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
 {
     /// <summary>
-    /// Base abstrata de cue de áudio.
+    /// Classe base abstrata para configuração de cue de áudio.
+    /// Define propriedades compartilhadas entre diferentes tipos de cues (BGM, SFX, etc).
     /// </summary>
     public abstract class AudioCueAsset : ScriptableObject
     {
-        [SerializeField] private List<AudioClip> clips = new List<AudioClip>();
+        [SerializeField] private List<AudioClip> clips = new();
         [SerializeField] private AudioMixerGroup mixerGroup;
         [SerializeField] [Range(0f, 1f)] private float baseVolume = 1f;
         [SerializeField] private bool loop;
@@ -25,41 +27,37 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
         public float PitchMax => pitchMax;
         public float RandomVolumeJitter => randomVolumeJitter;
 
+        /// <summary>
+        /// Tenta selecionar um clip aleatório da lista, priorizando clips não-nulos.
+        /// </summary>
+        /// <param name="clip">O clip selecionado aleatoriamente ou o primeiro válido encontrado.</param>
+        /// <returns>Verdadeiro se um clip válido foi encontrado.</returns>
         public bool TryPickClip(out AudioClip clip)
         {
             clip = null;
 
             if (clips == null || clips.Count == 0)
-                return false;
-
-            var valid = 0;
-            for (var i = 0; i < clips.Count; i++)
             {
-                if (clips[i] != null)
-                    valid++;
+                return false;
             }
 
-            if (valid <= 0)
-                return false;
-
-            var index = Random.Range(0, clips.Count);
-            clip = clips[index];
-
-            if (clip != null)
-                return true;
-
-            for (var i = 0; i < clips.Count; i++)
+            var validClips = clips.Where(t => t != null).ToList();
+            if (validClips.Count == 0)
             {
-                if (clips[i] != null)
-                {
-                    clip = clips[i];
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            int index = Random.Range(0, validClips.Count);
+            clip = validClips[index];
+            return true;
         }
 
+
+        /// <summary>
+        /// Valida a configuração do cue em tempo de execução.
+        /// </summary>
+        /// <param name="reason">String que descreve o motivo da validação falhar, se aplicável.</param>
+        /// <returns>Verdadeiro se a configuração é válida para execução.</returns>
         public bool ValidateRuntime(out string reason)
         {
             if (clips == null || clips.Count == 0)
@@ -68,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
                 return false;
             }
 
-            if (baseVolume < 0f || baseVolume > 1f)
+            if (baseVolume is < 0f or > 1f)
             {
                 reason = "invalid_base_volume";
                 return false;

@@ -31,7 +31,9 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         public Color GetColorForResource(PlanetResources resourceType, Color defaultColor)
         {
             if (entries == null || entries.Count == 0)
+            {
                 return defaultColor;
+            }
 
             foreach (var entry in entries.Where(entry => entry != null && entry.resourceType == resourceType))
             {

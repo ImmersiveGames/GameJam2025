@@ -27,7 +27,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
 
         public void Initialize()
         {
-            if (_isInitialized || targetRenderers == null) return;
+            if (_isInitialized || targetRenderers == null)
+            {
+                return;
+            }
 
             _originalMaterials = new Material[targetRenderers.Length][];
 
@@ -36,7 +39,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
                 var renderer = targetRenderers[i];
                 if (renderer != null)
                 {
-                    var materials = renderer.sharedMaterials;
+                    Material[] materials = renderer.sharedMaterials;
                     _originalMaterials[i] = new Material[materials.Length];
                     
                     for (int j = 0; j < materials.Length; j++)
@@ -54,15 +57,21 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         /// </summary>
         public void ApplyMaterial(Material material)
         {
-            if (!IsValid) return;
+            if (!IsValid)
+            {
+                return;
+            }
 
             _currentAppliedMaterial = material;
 
             foreach (var renderer in targetRenderers)
             {
-                if (renderer == null) continue;
+                if (renderer == null)
+                {
+                    continue;
+                }
 
-                var materials = renderer.materials;
+                Material[] materials = renderer.materials;
                 if (materialIndex >= 0 && materialIndex < materials.Length)
                 {
                     materials[materialIndex] = material;
@@ -76,8 +85,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         /// </summary>
         public void ApplyRandomMaterial()
         {
-            if (!IsValid) return;
-            
+            if (!IsValid)
+            {
+                return;
+            }
+
             // Cada slot sorteia seu próprio material aleatório
             var randomMaterial = materialGroup.GetRandomMaterial();
             if (randomMaterial != null)
@@ -91,12 +103,18 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         /// </summary>
         public void ResetToOriginal()
         {
-            if (!IsValid || !_isInitialized) return;
+            if (!IsValid || !_isInitialized)
+            {
+                return;
+            }
 
             for (int i = 0; i < targetRenderers.Length; i++)
             {
                 var renderer = targetRenderers[i];
-                if (renderer == null) continue;
+                if (renderer == null)
+                {
+                    continue;
+                }
 
                 if (_originalMaterials[i] != null)
                 {
@@ -112,12 +130,18 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         /// </summary>
         public Material GetCurrentMaterial()
         {
-            if (!IsValid || targetRenderers.Length == 0) return null;
+            if (!IsValid || targetRenderers.Length == 0)
+            {
+                return null;
+            }
 
             var renderer = targetRenderers[0];
-            if (renderer == null) return null;
+            if (renderer == null)
+            {
+                return null;
+            }
 
-            var materials = renderer.materials;
+            Material[] materials = renderer.materials;
             if (materialIndex >= 0 && materialIndex < materials.Length)
             {
                 return materials[materialIndex];
@@ -131,8 +155,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         /// </summary>
         public bool CanApply()
         {
-            if (!IsValid) return false;
-            
+            if (!IsValid)
+            {
+                return false;
+            }
+
             foreach (var renderer in targetRenderers)
             {
                 if (renderer != null && materialIndex < renderer.sharedMaterials.Length)

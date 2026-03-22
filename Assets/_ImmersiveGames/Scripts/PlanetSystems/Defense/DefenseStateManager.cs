@@ -66,7 +66,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 state.LastDetectorName = detectorName ?? state.LastDetectorName;
                 state.ActiveDetectors = Mathf.Max(0, activeDetectors);
 
-                if (state.ActiveDetectors > 0) return state;
+                if (state.ActiveDetectors > 0)
+                {
+                    return state;
+                }
                 _states.Remove(planet);
                 removed = true;
 

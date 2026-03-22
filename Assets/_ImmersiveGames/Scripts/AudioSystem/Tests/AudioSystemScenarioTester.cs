@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (autoRunBgmOnStart)
             {
                 // roda ap�s um pequeno atraso para n�o conflitar com o in�cio dos SFX
-                var delay = autoRunSfxOnStart ? (stepDelay * 8f) : 0f;
+                float delay = autoRunSfxOnStart ? (stepDelay * 8f) : 0f;
                 _runningBgmScenario = StartCoroutine(RunBgmScenarioWithDelay(delay));
             }
         }

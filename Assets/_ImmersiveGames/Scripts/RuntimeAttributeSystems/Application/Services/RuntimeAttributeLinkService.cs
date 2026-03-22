@@ -35,8 +35,11 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void RegisterLink(string actorId, RuntimeAttributeLinkConfig cfg)
         {
-            if (string.IsNullOrEmpty(actorId) || cfg == null) return;
-            if (!_links.TryGetValue(actorId, out var dict))
+            if (string.IsNullOrEmpty(actorId) || cfg == null)
+            {
+                return;
+            }
+            if (!_links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict))
             {
                 dict = new Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig>();
                 _links[actorId] = dict;
@@ -47,38 +50,57 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void UnregisterLink(string actorId, RuntimeAttributeType src)
         {
-            if (_links.TryGetValue(actorId, out var dict) && dict.Remove(src))
+            if (_links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict) && dict.Remove(src))
+            {
                 DebugUtility.LogVerbose<RuntimeAttributeLinkService>($"Link removido: {actorId} - {src}");
-            if (dict is { Count: 0 }) _links.Remove(actorId);
+            }
+            if (dict is { Count: 0 })
+            {
+                _links.Remove(actorId);
+            }
         }
 
         public void UnregisterAllLinks(string actorId)
         {
             if (_links.Remove(actorId))
+            {
                 DebugUtility.LogVerbose<RuntimeAttributeLinkService>($"Todos os links removidos de {actorId}");
+            }
         }
 
         public bool HasLink(string actorId, RuntimeAttributeType src) =>
-            _links.TryGetValue(actorId, out var dict) && dict.ContainsKey(src);
+            _links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict) && dict.ContainsKey(src);
 
         public RuntimeAttributeLinkConfig GetLink(string actorId, RuntimeAttributeType src) =>
-            _links.TryGetValue(actorId, out var dict) && dict.TryGetValue(src, out var cfg) ? cfg : null;
+            _links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict) && dict.TryGetValue(src, out var cfg) ? cfg : null;
 
         public float ProcessLinkedDrain(string actorId, RuntimeAttributeType type, float desired, RuntimeAttributeContext sys, RuntimeAttributeChangeSource source = RuntimeAttributeChangeSource.Manual)
         {
             var cfg = GetLink(actorId, type);
-            if (cfg == null || !cfg.affectTargetWithAutoFlow) return desired;
+            if (cfg == null || !cfg.affectTargetWithAutoFlow)
+            {
+                return desired;
+            }
 
             var src = sys.Get(type);
             var tgt = sys.Get(cfg.targetRuntimeAttribute);
-            if (src == null || tgt == null) return desired;
+            if (src == null || tgt == null)
+            {
+                return desired;
+            }
 
-            if (!cfg.ShouldTransfer(src.GetCurrentValue(), src.GetMaxValue())) return desired;
+            if (!cfg.ShouldTransfer(src.GetCurrentValue(), src.GetMaxValue()))
+            {
+                return desired;
+            }
 
             float available = src.GetCurrentValue();
             float srcDrain = Mathf.Min(desired, available);
             float remaining = desired - srcDrain;
-            if (remaining > 0) sys.Modify(cfg.targetRuntimeAttribute, -remaining, source);
+            if (remaining > 0)
+            {
+                sys.Modify(cfg.targetRuntimeAttribute, -remaining, source);
+            }
 
             DebugUtility.LogVerbose<RuntimeAttributeLinkService>(
                 $"AutoFlow link aplicado: {type}↓{srcDrain}, {cfg.targetRuntimeAttribute}↓{remaining}");
@@ -87,16 +109,25 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         private void OnResourceUpdated(RuntimeAttributeUpdateEvent evt)
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
             var cfg = GetLink(evt.ActorId, evt.RuntimeAttributeType);
-            if (cfg == null) return;
+            if (cfg == null)
+            {
+                return;
+            }
             DebugUtility.LogVerbose<RuntimeAttributeLinkService>(
                 $"Evento de atualização em link ativo: {evt.ActorId} - {cfg.sourceRuntimeAttribute} → {cfg.targetRuntimeAttribute}");
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
             _disposed = true;
 
             if (_binding != null)

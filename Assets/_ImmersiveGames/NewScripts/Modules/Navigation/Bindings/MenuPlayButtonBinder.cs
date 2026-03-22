@@ -5,6 +5,13 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 {
+    /// <summary>
+    /// Binder (produção) para o botão "Play" do Frontend.
+    /// - OnClick() deve ser ligado no Inspector.
+    /// - Sem corrotinas.
+    ///
+    /// Inicializa LevelFlow no Awake e inicia gameplay padrão no click.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class MenuPlayButtonBinder : FrontendButtonBinderBase
     {

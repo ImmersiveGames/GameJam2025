@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -46,9 +47,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             EnsureValidRoutePolicy();
 
-            var load = ResolveKeys(scenesToLoadKeys, nameof(scenesToLoadKeys));
-            var unload = ResolveKeys(scenesToUnloadKeys, nameof(scenesToUnloadKeys));
-            var active = ResolveSingleKey(targetActiveSceneKey, nameof(targetActiveSceneKey));
+            string[] load = ResolveKeys(scenesToLoadKeys, nameof(scenesToLoadKeys));
+            string[] unload = ResolveKeys(scenesToUnloadKeys, nameof(scenesToUnloadKeys));
+            string active = ResolveSingleKey(targetActiveSceneKey, nameof(targetActiveSceneKey));
 
             DebugUtility.Log(typeof(SceneRouteDefinitionAsset),
                 $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{nameof(scenesToUnloadKeys)}' scenes=[{FormatSceneDetails(unload)}].",
@@ -224,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 return -1;
             }
 
-            var scenes = UnityEditor.EditorBuildSettings.scenes;
+            EditorBuildSettingsScene[] scenes = UnityEditor.EditorBuildSettings.scenes;
             for (int i = 0; i < scenes.Length; i++)
             {
                 var scene = scenes[i];

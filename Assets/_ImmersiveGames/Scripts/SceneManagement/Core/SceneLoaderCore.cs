@@ -43,7 +43,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
 
             // Usando um loop async sem coroutines
             while (!op.isDone)
+            {
                 await Task.Yield();
+            }
 
             DebugUtility.Log<SceneLoaderCore>($"Cena '{sceneName}' carregada.");
         }
@@ -82,7 +84,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
             }
 
             while (!op.isDone)
+            {
                 await Task.Yield();
+            }
 
             DebugUtility.Log<SceneLoaderCore>($"Cena '{sceneName}' descarregada.");
         }
@@ -90,13 +94,17 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
         public bool IsSceneLoaded(string sceneName)
         {
             if (string.IsNullOrWhiteSpace(sceneName))
+            {
                 return false;
+            }
 
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
                 if (scene.name == sceneName)
+                {
                     return scene.isLoaded;
+                }
             }
             return false;
         }

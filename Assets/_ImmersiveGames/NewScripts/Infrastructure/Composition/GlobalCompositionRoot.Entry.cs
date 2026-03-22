@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 "[BOOT][Logging] EarlyDefault policy applied.",
                 DebugUtility.Colors.Info);
 
-            if (TryGetBootstrapConfigForLogging(out var bootstrapConfig, out var bootstrapVia, out var bootstrapReason))
+            if (TryGetBootstrapConfigForLogging(out var bootstrapConfig, out string bootstrapVia, out string bootstrapReason))
             {
                 LoggingConfigAsset loggingConfig = bootstrapConfig.LoggingConfig;
                 if (loggingConfig != null)

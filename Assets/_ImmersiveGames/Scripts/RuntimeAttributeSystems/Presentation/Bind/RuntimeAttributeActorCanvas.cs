@@ -94,28 +94,39 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             {
                 var actor = GetComponentInParent<IActor>();
                 if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
+                {
                     _canvasIdResolved = $"{actor.ActorId}_Canvas";
+                }
                 else
+                {
                     _canvasIdResolved = idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString();
+                }
             }
             else
+            {
                 _canvasIdResolved = canvasId;
+            }
 
             if (string.IsNullOrEmpty(_canvasIdResolved))
+            {
                 _canvasIdResolved = gameObject.name;
+            }
         }
 
         public virtual bool CanAcceptBinds() => State == AttributeCanvasInitializationState.Ready;
 
         public virtual void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data)
         {
-            if (!CanAcceptBinds()) return;
+            if (!CanAcceptBinds())
+            {
+                return;
+            }
             CreateSlotForActor(actorId, runtimeAttributeType, data);
         }
 
         private void CreateSlotForActor(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data, RuntimeAttributeInstanceConfig instanceConfig = null)
         {
-            if (!_actorSlots.TryGetValue(actorId, out var actorDict))
+            if (!_actorSlots.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot> actorDict))
             {
                 actorDict = new Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>();
                 _actorSlots[actorId] = actorDict;
@@ -171,7 +182,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             );
 
             for (int i = 0; i < initialPoolSize; i++)
+            {
                 _pool.Release(_pool.Get());
+            }
         }
 
         protected virtual void OnDestroy()
@@ -180,7 +193,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             {
                 orchestrator?.UnregisterCanvas(CanvasId);
                 if (RuntimeAttributeCanvasManager.HasInstance)
+                {
                     RuntimeAttributeCanvasManager.Instance.UnregisterCanvas(CanvasId);
+                }
             }
             catch (Exception ex)
             {
@@ -192,7 +207,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         public bool TryGetSlot(string actorId, RuntimeAttributeType runtimeAttributeType, out RuntimeAttributeUISlot slot)
         {
             slot = null;
-            return _actorSlots.TryGetValue(actorId, out var actorDict) &&
+            return _actorSlots.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot> actorDict) &&
                 actorDict.TryGetValue(runtimeAttributeType, out slot) && slot != null;
         }
         public int GetActorSlotsCount() => _actorSlots.Count;

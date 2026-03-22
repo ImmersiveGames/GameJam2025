@@ -123,7 +123,9 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         public void SetSkinActive(bool active)
         {
             if (_modelRoot != null)
+            {
                 _modelRoot.gameObject.SetActive(active);
+            }
         }
 
         protected virtual void OnDestroy()

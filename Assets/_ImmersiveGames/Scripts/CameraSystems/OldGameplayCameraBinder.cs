@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.CameraSystems
     [DebugLevel(DebugLevel.Verbose)]
     public class OldGameplayCameraBinder : MonoBehaviour
     {
-        [SerializeField] private int playerId = 0;
+        [SerializeField] private int playerId;
 
         private IOldCameraResolver _resolver;
         private Camera _camera;

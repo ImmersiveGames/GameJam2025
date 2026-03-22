@@ -177,19 +177,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                     $"[FATAL][H1][Navigation] MacroRestart missing DependencyManager.Provider. reason='{reason}'.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out gameLoopService) || gameLoopService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out gameLoopService) || gameLoopService == null)
             {
                 HardFailFastH1.Trigger(typeof(MacroRestartCoordinator),
                     $"[FATAL][H1][Navigation] MacroRestart missing IGameLoopService. reason='{reason}'.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out levelFlowRuntimeService) || levelFlowRuntimeService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out levelFlowRuntimeService) || levelFlowRuntimeService == null)
             {
                 HardFailFastH1.Trigger(typeof(MacroRestartCoordinator),
                     $"[FATAL][H1][Navigation] MacroRestart missing ILevelFlowRuntimeService. reason='{reason}'.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out restartContextService) || restartContextService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out restartContextService) || restartContextService == null)
             {
                 HardFailFastH1.Trigger(typeof(MacroRestartCoordinator),
                     $"[FATAL][H1][Navigation] MacroRestart missing IRestartContextService. reason='{reason}'.");

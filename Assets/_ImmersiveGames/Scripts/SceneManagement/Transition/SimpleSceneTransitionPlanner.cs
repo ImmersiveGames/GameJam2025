@@ -222,13 +222,19 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             string explicitTargetActiveScene)
         {
             if (!string.IsNullOrWhiteSpace(explicitTargetActiveScene))
+            {
                 return explicitTargetActiveScene;
+            }
 
             if (targetScenes is { Count: > 0 })
+            {
                 return targetScenes[0];
+            }
 
             if (!string.IsNullOrWhiteSpace(currentState.ActiveSceneName))
+            {
                 return currentState.ActiveSceneName;
+            }
 
             return string.Empty;
         }

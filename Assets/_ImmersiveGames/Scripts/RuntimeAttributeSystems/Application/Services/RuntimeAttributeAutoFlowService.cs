@@ -81,17 +81,26 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void Process(float deltaTime)
         {
-            if (IsPaused || _configs.Count == 0) return;
+            if (IsPaused || _configs.Count == 0)
+            {
+                return;
+            }
 
             foreach (var (type, cfg) in _configs.ToList())
             {
                 _timers[type] += deltaTime;
-                if (_timers[type] < cfg.tickInterval) continue;
+                if (_timers[type] < cfg.tickInterval)
+                {
+                    continue;
+                }
 
                 _timers[type] -= cfg.tickInterval;
 
                 float perTick = CalculateDelta(cfg, type);
-                if (Mathf.Abs(perTick) <= 0.0001f) continue;
+                if (Mathf.Abs(perTick) <= 0.0001f)
+                {
+                    continue;
+                }
 
                 _runtimeAttributeContext.Modify(type, perTick, RuntimeAttributeChangeSource.AutoFlow);
 
@@ -108,8 +117,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 : cfg.amountPerTick;
 
             float delta = 0f;
-            if (cfg.autoFill) delta += amount;
-            if (cfg.autoDrain) delta -= _linkService.ProcessLinkedDrain(_runtimeAttributeContext.EntityId, type, amount, _runtimeAttributeContext, RuntimeAttributeChangeSource.AutoFlow);
+            if (cfg.autoFill)
+            {
+                delta += amount;
+            }
+            if (cfg.autoDrain)
+            {
+                delta -= _linkService.ProcessLinkedDrain(_runtimeAttributeContext.EntityId, type, amount, _runtimeAttributeContext, RuntimeAttributeChangeSource.AutoFlow);
+            }
             return delta;
         }
 

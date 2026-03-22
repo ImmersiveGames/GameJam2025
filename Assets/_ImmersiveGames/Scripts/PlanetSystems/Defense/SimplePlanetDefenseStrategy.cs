@@ -78,7 +78,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return requestedRole;
             }
 
-            var cacheKey = targetIdentifier ?? string.Empty;
+            string cacheKey = targetIdentifier ?? string.Empty;
             if (_cachedRoles.TryGetValue(cacheKey, out var cachedRole))
             {
                 return cachedRole;
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return DefenseRole.Unknown;
             }
 
-            var normalized = targetIdentifier.Trim();
+            string normalized = targetIdentifier.Trim();
             if (normalized.Equals("player", StringComparison.OrdinalIgnoreCase))
             {
                 return DefenseRole.Player;

@@ -6,9 +6,9 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.CameraSystems
 {
     /// <summary>
-    /// Implementação global do sistema de resolução de câmeras.
-    /// Suporta multiplayer futuro através da indexação por playerId.
-    /// Fornece fallback seguro e notificação de troca da câmera padrão.
+    /// Implementaï¿½ï¿½o global do sistema de resoluï¿½ï¿½o de cï¿½meras.
+    /// Suporta multiplayer futuro atravï¿½s da indexaï¿½ï¿½o por playerId.
+    /// Fornece fallback seguro e notificaï¿½ï¿½o de troca da cï¿½mera padrï¿½o.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public class OldCameraResolverService : IOldCameraResolver
@@ -23,9 +23,11 @@ namespace _ImmersiveGames.Scripts.CameraSystems
         public void RegisterCamera(int playerId, Camera camera)
         {
             if (camera == null)
+            {
                 return;
+            }
 
-            // Idempotência: se já é a mesma câmera, não faz nada.
+            // Idempotï¿½ncia: se jï¿½ ï¿½ a mesma cï¿½mera, nï¿½o faz nada.
             if (_cameraByPlayerId.TryGetValue(playerId, out var current) && current == camera)
             {
                 return;
@@ -51,7 +53,9 @@ namespace _ImmersiveGames.Scripts.CameraSystems
         public void UnregisterCamera(int playerId, Camera camera)
         {
             if (camera == null)
+            {
                 return;
+            }
 
             if (_cameraByPlayerId.TryGetValue(playerId, out var current) && current == camera)
             {

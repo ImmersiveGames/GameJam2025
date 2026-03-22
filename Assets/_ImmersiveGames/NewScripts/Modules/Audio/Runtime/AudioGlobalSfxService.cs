@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -522,57 +522,36 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         private static ResolvedEmission ResolveEmission(AudioSfxCueAsset cue, AudioPlaybackContext context)
         {
-            if (context.EmissionProfile != null)
+            if (AudioPlaybackResolutionHelper.TryResolveEmissionProfile(cue, context, out var emissionProfile, out var source))
             {
-                bool useSpatialFromContextProfile = context.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
                 return new ResolvedEmission(
-                    useSpatial: useSpatialFromContextProfile,
-                    spatialBlend: context.EmissionProfile.SpatialBlend,
-                    minDistance: context.EmissionProfile.MinDistance,
-                    maxDistance: context.EmissionProfile.MaxDistance,
-                    source: "context");
+                    useSpatial: AudioPlaybackResolutionHelper.ResolveUseSpatial(cue, context, emissionProfile),
+                    spatialBlend: emissionProfile.SpatialBlend,
+                    minDistance: emissionProfile.MinDistance,
+                    maxDistance: emissionProfile.MaxDistance,
+                    source: source);
             }
 
-            if (cue != null && cue.EmissionProfile != null)
-            {
-                bool useSpatialFromCueProfile = cue.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
-                return new ResolvedEmission(
-                    useSpatial: useSpatialFromCueProfile,
-                    spatialBlend: cue.EmissionProfile.SpatialBlend,
-                    minDistance: cue.EmissionProfile.MinDistance,
-                    maxDistance: cue.EmissionProfile.MaxDistance,
-                    source: "emission_profile");
-            }
-
-            bool useSpatialLegacy = context.UseSpatial || (cue != null && cue.PlaybackMode == AudioSfxPlaybackMode.Spatial);
             return new ResolvedEmission(
-                useSpatial: useSpatialLegacy,
-                spatialBlend: cue != null ? cue.SpatialBlend : 1f,
-                minDistance: cue != null ? cue.MinDistance : 1f,
-                maxDistance: cue != null ? cue.MaxDistance : 40f,
+                useSpatial: AudioPlaybackResolutionHelper.ResolveUseSpatial(cue, context, resolvedEmissionProfile: null),
+                spatialBlend: AudioPlaybackResolutionHelper.ResolveLegacySpatialBlend(cue),
+                minDistance: AudioPlaybackResolutionHelper.ResolveLegacyMinDistance(cue),
+                maxDistance: AudioPlaybackResolutionHelper.ResolveLegacyMaxDistance(cue),
                 source: "legacy_cue");
         }
 
         private static ResolvedExecution ResolveExecution(AudioSfxCueAsset cue, AudioPlaybackContext context)
         {
-            if (context.ExecutionProfile != null)
+            if (AudioPlaybackResolutionHelper.TryResolveExecutionProfile(cue, context, out var executionProfile, out var source))
             {
                 return new ResolvedExecution(
-                    mode: context.ExecutionProfile.ExecutionMode,
-                    profile: context.ExecutionProfile,
-                    source: "context");
-            }
-
-            if (cue != null && cue.ExecutionProfile != null)
-            {
-                return new ResolvedExecution(
-                    mode: cue.ExecutionProfile.ExecutionMode,
-                    profile: cue.ExecutionProfile,
-                    source: "execution_profile");
+                    mode: AudioPlaybackResolutionHelper.ResolveExecutionMode(cue, executionProfile),
+                    profile: executionProfile,
+                    source: source);
             }
 
             return new ResolvedExecution(
-                mode: cue != null ? cue.ExecutionMode : AudioSfxExecutionMode.DirectOneShot,
+                mode: AudioPlaybackResolutionHelper.ResolveExecutionMode(cue, resolvedExecutionProfile: null),
                 profile: null,
                 source: "legacy_cue");
         }

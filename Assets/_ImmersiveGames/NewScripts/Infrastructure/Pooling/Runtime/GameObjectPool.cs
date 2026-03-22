@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime
         {
             _autoReturnTracker.Clear("pool-cleanup");
 
-            foreach (var kv in _instancesByObject)
+            foreach (KeyValuePair<GameObject, PoolRuntimeInstance> kv in _instancesByObject)
             {
                 GameObject instance = kv.Key;
                 if (instance == null)

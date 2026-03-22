@@ -98,7 +98,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         public void SetExecutionAllowed(bool allowed)
         {
             if (_isAllowed == allowed)
+            {
                 return;
+            }
 
             _isAllowed = allowed;
 
@@ -132,9 +134,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         private void TryResolveCoordinator()
         {
             if (_coordinator != null)
+            {
                 return;
+            }
 
-            var sceneName = gameObject.scene.name;
+            string sceneName = gameObject.scene.name;
 
             if (DependencyManager.Provider.TryGetForScene<IGameplayExecutionCoordinator>(sceneName, out var coord) && coord != null)
             {
@@ -145,7 +149,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         private void TryRegister()
         {
             if (_registered)
+            {
                 return;
+            }
 
             if (_coordinator == null)
             {
@@ -166,7 +172,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         private void TryUnregister()
         {
             if (!_registered)
+            {
                 return;
+            }
 
             if (_coordinator != null)
             {
@@ -223,10 +231,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             {
                 var b = collected[i];
                 if (b == null)
+                {
                     continue;
+                }
 
                 if (ShouldExcludeFromAutoCollect(b))
+                {
                     continue;
+                }
 
                 if (!behavioursToToggle.Contains(b))
                 {
@@ -249,7 +261,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         private bool ShouldExcludeFromAutoCollect(Behaviour b)
         {
             if (ReferenceEquals(b, this))
+            {
                 return true;
+            }
 
             var t = b.GetType();
 
@@ -261,7 +275,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
             if (excludeUiRelatedBehaviours)
             {
-                var ns = t.Namespace ?? string.Empty;
+                string ns = t.Namespace ?? string.Empty;
 
                 if (ns.StartsWith("UnityEngine.UI", StringComparison.Ordinal) ||
                     ns.StartsWith("TMPro", StringComparison.Ordinal) ||
@@ -278,9 +292,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
                 for (int i = 0; i < excludedTypeNames.Count; i++)
                 {
-                    var ex = excludedTypeNames[i];
+                    string ex = excludedTypeNames[i];
                     if (string.IsNullOrWhiteSpace(ex))
+                    {
                         continue;
+                    }
 
                     if (string.Equals(ex, typeName, StringComparison.Ordinal) ||
                         string.Equals(ex, fullName, StringComparison.Ordinal))
@@ -291,7 +307,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             }
 
             if (b is IGameplayExecutionCoordinator)
+            {
                 return true;
+            }
 
             return false;
         }

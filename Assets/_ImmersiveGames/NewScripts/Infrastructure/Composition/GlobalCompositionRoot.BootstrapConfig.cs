@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!_bootstrapConfigResolutionAttempted)
             {
                 _bootstrapConfigResolutionAttempted = true;
-                if (!TryResolveBootstrapConfigFromSources(out _cachedBootstrapConfig, out _cachedBootstrapConfigVia, out var reason))
+                if (!TryResolveBootstrapConfigFromSources(out _cachedBootstrapConfig, out _cachedBootstrapConfigVia, out string reason))
                 {
                     FailFast($"Missing required BootstrapConfigAsset. reason='{reason}'.");
                 }

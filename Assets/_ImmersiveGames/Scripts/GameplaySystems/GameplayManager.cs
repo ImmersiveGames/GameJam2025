@@ -60,10 +60,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         private void TryResolveEaterDomainIfNeeded()
         {
             if (_eaterDomain != null)
+            {
                 return;
+            }
 
             if (string.IsNullOrWhiteSpace(_sceneNameCached))
+            {
                 _sceneNameCached = gameObject.scene.name;
+            }
 
             if (DependencyManager.Provider.TryGetForScene<IEaterDomain>(_sceneNameCached, out var domain) && domain != null)
             {

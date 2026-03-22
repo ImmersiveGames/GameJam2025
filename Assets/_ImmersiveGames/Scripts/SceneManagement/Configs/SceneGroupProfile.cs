@@ -84,7 +84,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
             for (int i = sceneNames.Count - 1; i >= 0; i--)
             {
                 if (string.IsNullOrWhiteSpace(sceneNames[i]))
+                {
                     sceneNames.RemoveAt(i);
+                }
             }
 
             // Warning se não houver nenhuma cena configurada.

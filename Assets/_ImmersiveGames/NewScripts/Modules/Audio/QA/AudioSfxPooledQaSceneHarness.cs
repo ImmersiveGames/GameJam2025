@@ -537,7 +537,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out _globalAudioService) || _globalAudioService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _globalAudioService) || _globalAudioService == null)
             {
                 return false;
             }
@@ -601,7 +601,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             AudioPlaybackContext context,
             AudioSfxVoiceProfileAsset forcedProfile)
         {
-            var hasExecutionProfile = cue != null && cue.ExecutionProfile != null;
+            bool hasExecutionProfile = cue != null && cue.ExecutionProfile != null;
             if (!hasExecutionProfile && cue != null && cue.VoiceProfileOverride != null)
             {
                 return context;

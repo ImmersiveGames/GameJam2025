@@ -24,7 +24,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         public static Vector3 DefaultRandomOffset(float radius, float heightOffset)
         {
             if (radius <= 0f && Mathf.Approximately(heightOffset, 0f))
+            {
                 return Vector3.zero;
+            }
 
             var planar = Random.insideUnitCircle * radius;
             return new Vector3(planar.x, heightOffset, planar.y);

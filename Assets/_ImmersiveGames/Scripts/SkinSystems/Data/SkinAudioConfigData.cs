@@ -63,16 +63,22 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         private void EnsureMap()
         {
             if (_audioMap != null)
+            {
                 return;
+            }
 
             _audioMap = new Dictionary<SkinAudioKey, SoundData>();
             if (audioEntries == null)
+            {
                 return;
+            }
 
             foreach (var entry in audioEntries)
             {
                 if (entry.sound == null)
+                {
                     continue;
+                }
 
                 _audioMap[entry.key] = entry.sound;
             }

@@ -139,10 +139,22 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             }
 
             // Re-resolve refer�ncias cr�ticas (caso tenham mudado durante o reset in-place).
-            if (_playerInput == null) _playerInput = GetComponent<PlayerInput>();
-            if (_actor == null) _actor = GetComponent<IActor>();
-            if (_audioEmitter == null) _audioEmitter = GetComponent<EntityAudioEmitter>();
-            if (_skinAudioProvider == null) _skinAudioProvider = GetComponentInParent<IActorSkinAudioProvider>();
+            if (_playerInput == null)
+            {
+                _playerInput = GetComponent<PlayerInput>();
+            }
+            if (_actor == null)
+            {
+                _actor = GetComponent<IActor>();
+            }
+            if (_audioEmitter == null)
+            {
+                _audioEmitter = GetComponent<EntityAudioEmitter>();
+            }
+            if (_skinAudioProvider == null)
+            {
+                _skinAudioProvider = GetComponentInParent<IActorSkinAudioProvider>();
+            }
 
             // Rebind input action
             RebindInputAction();
@@ -336,7 +348,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         {
             // Idempotente: remove e adiciona de volta.
             if (_playerInput == null || _playerInput.actions == null)
+            {
                 return;
+            }
 
             UnsubscribeFromSpawnAction();
 
@@ -355,7 +369,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         private void SubscribeToSpawnAction()
         {
             if (_spawnAction == null)
+            {
                 return;
+            }
 
             // defesa contra double-subscription
             _spawnAction.performed -= OnSpawnPerformed;
@@ -377,13 +393,19 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         private void OnSpawnPerformed(InputAction.CallbackContext context)
         {
             if (!_actor.IsActive || !_stateService.CanExecuteAction(OldActionType.Shoot))
+            {
                 return;
+            }
 
             if (_pool == null)
+            {
                 return;
+            }
 
             if (Time.time < _lastShotTime + cooldown)
+            {
                 return;
+            }
 
             var basePosition = transform.position;
             var baseDirection = transform.forward;
@@ -432,7 +454,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         private void PlayShootAudio()
         {
             if (_audioEmitter == null)
+            {
                 return;
+            }
 
             if (_skinAudioProvider == null)
             {

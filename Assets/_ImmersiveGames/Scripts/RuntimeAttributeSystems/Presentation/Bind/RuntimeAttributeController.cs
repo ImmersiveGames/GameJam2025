@@ -50,7 +50,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 
         public void OnDependenciesInjected()
         {
-            if (_isDestroyed) return;
+            if (_isDestroyed)
+            {
+                return;
+            }
 
             InjectionState = DependencyInjectionState.Injecting;
 
@@ -64,7 +67,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 
                 // Registro idempotente: se já estiver registrado, não deve quebrar.
                 if (_orchestrator != null && !_orchestrator.IsActorRegistered(_actor.ActorId))
+                {
                     _orchestrator.RegisterActor(_service);
+                }
 
                 InjectionState = DependencyInjectionState.Ready;
 
@@ -139,7 +144,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             if (_actor != null && _service != null && _orchestrator != null)
             {
                 if (!_orchestrator.IsActorRegistered(_actor.ActorId))
+                {
                     _orchestrator.RegisterActor(_service);
+                }
             }
 
             // Importante: os eventos do ResetToInitialValues já “cutucam” a UI via EventBus<RuntimeAttributeUpdateEvent>.

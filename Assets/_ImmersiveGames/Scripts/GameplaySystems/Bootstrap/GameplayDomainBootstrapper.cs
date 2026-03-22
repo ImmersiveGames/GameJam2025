@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Bootstrap
 
         private void Awake()
         {
-            var sceneName = gameObject.scene.name;
+            string sceneName = gameObject.scene.name;
 
             var registry = new OldActorRegistry();
             var playerDomain = new PlayerDomain();

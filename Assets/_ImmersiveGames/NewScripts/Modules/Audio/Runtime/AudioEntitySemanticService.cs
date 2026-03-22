@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             float multiplier = Mathf.Max(0f, entry.VolumeScaleMultiplier);
             resolvedContext.VolumeScale = contextVolume * multiplier;
 
-            bool expectsSpatial = ResolveSpatialIntent(entry.Cue, resolvedContext);
+            bool expectsSpatial = AudioPlaybackResolutionHelper.ResolveUseSpatial(entry.Cue, resolvedContext);
             if (entry.UseOwnerAsFollowTarget && owner != null && expectsSpatial)
             {
                 resolvedContext.UseSpatial = true;
@@ -120,20 +120,5 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
             return _globalAudioService.Play(entry.Cue, resolvedContext);
         }
-
-        private static bool ResolveSpatialIntent(AudioSfxCueAsset cue, AudioPlaybackContext context)
-        {
-            if (context.EmissionProfile != null)
-            {
-                return context.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
-            }
-
-            if (cue != null && cue.EmissionProfile != null)
-            {
-                return cue.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
-            }
-
-            return context.UseSpatial || (cue != null && cue.PlaybackMode == AudioSfxPlaybackMode.Spatial);
-        }
-    }
+}
 }

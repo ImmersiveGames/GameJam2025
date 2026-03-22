@@ -4,8 +4,8 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Servico de navegacao de producao (NewScripts).
-    /// Mantem rotas/planos centralizados e dispara transicoes via SceneFlow.
+    /// Serviço de navegação em produção (NewScripts).
+    /// Mantém rotas/planos centralizados e dispara transições via SceneFlow.
     /// </summary>
     public interface IGameNavigationService
     {
@@ -15,27 +15,27 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         Task GoToMenuAsync(string reason = null);
 
         /// <summary>
-        /// Reinicia o gameplay atual usando o snapshot canonico de runtime.
+        /// Reinicia o gameplay atual usando o snapshot canônico de runtime.
         /// </summary>
         Task RestartAsync(string reason = null);
 
         /// <summary>
-        /// Sai do gameplay para Menu (semantica de pos-jogo/pause).
+        /// Sai do gameplay para Menu (semântica de pós-jogo/pause).
         /// </summary>
         Task ExitToMenuAsync(string reason = null);
 
         /// <summary>
-        /// Resolve a gameplay route principal a partir do catalogo core canonico.
+        /// Resolve a gameplay route principal a partir do catálogo core canônico.
         /// </summary>
         SceneRouteId ResolveGameplayRouteIdOrFail();
 
         /// <summary>
-        /// Inicia gameplay a partir de um SceneRouteId ja resolvido pelo LevelFlow.
+        /// Inicia gameplay a partir de um SceneRouteId já resolvido pelo LevelFlow.
         /// </summary>
         Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null);
 
         /// <summary>
-        /// Navegacao por intent core tipado (slots explicitos no catalogo).
+        /// Navegação por intent core tipado (slots explícitos no catálogo).
         /// </summary>
         Task NavigateAsync(GameNavigationIntentKind intent, string reason = null);
     }

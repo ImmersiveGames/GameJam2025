@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Fonte canonica em codigo para os intents core e aliases oficiais de navigation.
+    /// Fonte canônica em código para os intents core e aliases oficiais de navigation.
     /// </summary>
     public static class GameNavigationIntents
     {

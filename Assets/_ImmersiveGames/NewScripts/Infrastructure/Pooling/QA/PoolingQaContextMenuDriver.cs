@@ -119,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Interop
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPoolService>(out poolService) || poolService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out poolService) || poolService == null)
             {
                 LogDependencyError("failed reason='IPoolService-not-registered'");
                 return false;

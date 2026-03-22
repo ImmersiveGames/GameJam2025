@@ -45,15 +45,21 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
         private IAudioHandle PlayInternal(SoundData sound, AudioContext context, float fadeInSeconds, bool forceLoop)
         {
             if (sound == null || sound.clip == null)
+            {
                 return NullHandle;
+            }
 
             EnsurePoolInitialized();
             if (_sfxPool == null)
+            {
                 return NullHandle;
+            }
 
             var emitter = _sfxPool.GetObject(context.position, null, null, false) as SoundEmitter;
             if (emitter == null)
+            {
                 return NullHandle;
+            }
 
             bool originalLoop = sound.loop;
             if (forceLoop && !sound.loop)
@@ -91,7 +97,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
                 float category = _serviceSettings != null ? _serviceSettings.sfxVolume : 1f;
                 finalVolume = Mathf.Clamp01(baseVolume * configVol * category * master * context.volumeMultiplier);
                 if (context.volumeOverride >= 0f)
+                {
                     finalVolume = Mathf.Clamp01(context.volumeOverride);
+                }
             }
 
             float multiplier = sound.volume > 0f
@@ -122,7 +130,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
         private void EnsurePoolInitialized()
         {
             if (_sfxPool != null)
+            {
                 return;
+            }
 
             var poolManager = PoolManager.Instance;
             if (poolManager == null)
@@ -159,7 +169,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
                 get
                 {
                     if (_emitter == null)
+                    {
                         return false;
+                    }
 
                     var go = _emitter.gameObject;
                     return go != null && go.activeInHierarchy;
@@ -169,11 +181,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
             public void Stop(float fadeOutSeconds = 0f)
             {
                 if (_emitter == null)
+                {
                     return;
+                }
 
                 var go = _emitter.gameObject;
                 if (go == null)
+                {
                     return;
+                }
 
                 _emitter.Stop();
             }

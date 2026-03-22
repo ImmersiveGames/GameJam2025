@@ -14,7 +14,10 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
         protected override void OnValidate()
         {
             base.OnValidate();
-            if (!(speed < 0)) return;
+            if (!(speed < 0))
+            {
+                return;
+            }
             DebugUtility.LogWarning<BulletObjectData>($"Speed cannot be negative in {name}. Setting to 0.", this);
             speed = 0;
         }

@@ -75,7 +75,9 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
         private void Subscribe()
         {
             if (_resolver == null || _subscribed)
+            {
                 return;
+            }
 
             _resolver.OnDefaultCameraChanged += OnCameraChanged;
             _subscribed = true;
@@ -84,7 +86,9 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
         private void Unsubscribe()
         {
             if (_resolver == null || !_subscribed)
+            {
                 return;
+            }
 
             _resolver.OnDefaultCameraChanged -= OnCameraChanged;
             _subscribed = false;
@@ -93,13 +97,19 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
         private void BindCamera()
         {
             if (_canvas == null)
+            {
                 return;
+            }
 
             if (_canvas.renderMode != RenderMode.WorldSpace)
+            {
                 return;
+            }
 
             if (_resolver == null)
+            {
                 return;
+            }
 
             var cam = _resolver.GetDefaultCamera();
             if (cam == null)
@@ -116,13 +126,19 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
         private void OnCameraChanged(Camera newCamera)
         {
             if (_canvas == null)
+            {
                 return;
+            }
 
             if (_canvas.renderMode != RenderMode.WorldSpace)
+            {
                 return;
+            }
 
             if (newCamera == null)
+            {
                 return;
+            }
 
             _canvas.worldCamera = newCamera;
         }

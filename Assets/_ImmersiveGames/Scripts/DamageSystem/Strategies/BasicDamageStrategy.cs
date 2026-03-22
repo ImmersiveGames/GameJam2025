@@ -59,12 +59,16 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
             _strategies = new List<IDamageStrategy>();
 
             if (strategies == null)
+            {
                 return;
+            }
 
             foreach (var strategy in strategies)
             {
                 if (strategy == null)
+                {
                     continue;
+                }
 
                 _strategies.Add(strategy);
             }
@@ -73,7 +77,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         public float CalculateDamage(DamageContext ctx)
         {
             if (_strategies == null || _strategies.Count == 0)
+            {
                 return ctx.damageValue;
+            }
 
             float current = ctx.damageValue;
 

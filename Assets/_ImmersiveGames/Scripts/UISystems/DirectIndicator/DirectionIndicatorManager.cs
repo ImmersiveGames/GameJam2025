@@ -55,14 +55,18 @@ namespace _ImmersiveGames.Scripts.UISystems.DirectIndicator
         private void TrySpawnEaterIndicator()
         {
             if (_hasSpawnedEaterIndicator)
+            {
                 return;
+            }
 
             if (_gameplayManager == null)
             {
                 // Mantém fallback para não quebrar cenas antigas, mas evita acoplamento como evolução.
                 var legacy = GameplayManager.Instance;
                 if (legacy == null)
+                {
                     return;
+                }
 
                 _eaterTransform = legacy.WorldEater;
             }
@@ -83,7 +87,9 @@ namespace _ImmersiveGames.Scripts.UISystems.DirectIndicator
         private void SpawnIndicator(Transform targetIndicator, Sprite targetIcon, bool isHidden)
         {
             if (indicatorObject == null || targetIndicator == null)
+            {
                 return;
+            }
 
             var indicator = Instantiate(indicatorObject, transform.position, Quaternion.identity);
             indicator.SetParent(transform);

@@ -161,7 +161,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                 return cue;
             }
 
-            var previousCue = _bgmService.ActiveCue != null ? _bgmService.ActiveCue.name : "<none>";
+            string previousCue = _bgmService.ActiveCue != null ? _bgmService.ActiveCue.name : "<none>";
             DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
                 $"[Audio][BGM][Bridge] Applying cue routeId='{routeId}' prevCue='{previousCue}' nextCue='{cue.name}' source='{source}' sourceName='{sourceName}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' origin='bridge-synced' reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);

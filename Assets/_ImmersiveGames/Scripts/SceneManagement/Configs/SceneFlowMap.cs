@@ -69,7 +69,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
         public SceneGroupProfile GetGroupByKey(string key)
         {
             if (string.IsNullOrWhiteSpace(key) || namedGroups == null)
+            {
                 return null;
+            }
 
             return (from entry in namedGroups where entry != null && string.Equals(entry.key, key, StringComparison.Ordinal) select entry.@group).FirstOrDefault();
 

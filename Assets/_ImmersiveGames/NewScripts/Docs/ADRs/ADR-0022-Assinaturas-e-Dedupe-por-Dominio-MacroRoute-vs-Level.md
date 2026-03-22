@@ -1,38 +1,38 @@
-# ADR-0022 - Assinaturas e Dedupe por Dominio (MacroRoute vs Level)
+# ADR-0022 - Assinaturas e Dedupe por Domínio (MacroRoute vs Level)
 
 ## Status atual (2026-03-11)
 - Status: **DONE**
-- Implementado no codigo:
+- Implementado no código:
   - Dedupe local por `LevelSignature` no `LevelStageOrchestrator`.
-  - `SelectionVersion` permanece apenas como metadado de observabilidade; nao e mais a identidade principal.
+  - `SelectionVersion` permanece apenas como metadado de observabilidade; não é mais a identidade principal.
   - `LevelSignature` propagada em snapshot/eventos e consumida no IntroStage.
-- Evidencia:
+- Evidência:
   - `Docs/Reports/Audits/LATEST.md`
   - `Docs/Reports/Evidence/LATEST.md`
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
-- Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-12
+- Data (decisão): 2026-02-19
+- Última atualização: 2026-03-12
 
-## Decisao canonica atual
+## Decisão canônica atual
 
 - Macro assinatura: `SceneTransitionContext.ContextSignature`.
 - Level assinatura: `levelSignature` baseada em `levelRef` (`level:...|route:...|reason:...`).
 - Dedupe de level por `LevelSignature`.
-- `SelectionVersion` nao define identidade canonica.
-- `levelId/contentId` nao definem identidade canonica de level.
+- `SelectionVersion` não define identidade canônica.
+- `levelId/contentId` não definem identidade canônica de level.
 
-## Evidencia (log)
+## Evidência (log)
 
 - `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
 - `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
 - `lastlog:1783` `RestartMacroRequested reason='PostGame/Restart' dispatched='GameResetRequestedEvent'.`
 
-## Observacao de escopo
+## Observação de escopo
 
 - O fechamento deste ADR vale para o eixo principal de `LevelFlow`.
-- Qualquer referencia historica a `levelId/contentId` deve ser lida como legado fora do contrato canonico atual.
-- A excecao remanescente de `Gameplay ActorGroupRearm` fica fora deste escopo.
+- Qualquer referência histórica a `levelId/contentId` deve ser lida como legado fora do contrato canônico atual.
+- A exceção remanescente de `Gameplay ActorGroupRearm` fica fora deste escopo.

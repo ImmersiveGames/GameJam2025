@@ -21,13 +21,17 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public bool CanDealDamage(string attackerId, string targetId)
         {
             if (string.IsNullOrEmpty(attackerId) || string.IsNullOrEmpty(targetId))
+            {
                 return false;
+            }
 
             var key = (attackerId, targetId);
             if (_cooldowns.TryGetValue(key, out float lastHit))
             {
                 if (Time.time - lastHit < _cooldownTime)
+                {
                     return false;
+                }
             }
 
             _cooldowns[key] = Time.time;
@@ -37,7 +41,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public float? PeekCooldown(string attackerId, string targetId)
         {
             if (string.IsNullOrEmpty(attackerId) || string.IsNullOrEmpty(targetId))
+            {
                 return null;
+            }
 
             var key = (attackerId, targetId);
             return _cooldowns.TryGetValue(key, out float value) ? value : null;
@@ -46,7 +52,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public void RestoreCooldown(string attackerId, string targetId, float? timestamp)
         {
             if (string.IsNullOrEmpty(attackerId) || string.IsNullOrEmpty(targetId))
+            {
                 return;
+            }
 
             var key = (attackerId, targetId);
 
@@ -65,7 +73,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             var keysToRemove = (from kvp in _cooldowns where kvp.Key.attackerId == actorId || kvp.Key.targetId == actorId select kvp.Key).ToList();
 
             foreach (var key in keysToRemove)
+            {
                 _cooldowns.Remove(key);
+            }
         }
 
         public void Clear() => _cooldowns.Clear();

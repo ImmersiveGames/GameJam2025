@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             DependencyManager.Provider.RegisterForScene<IGameplayExecutionCoordinator>(_sceneName, this, allowOverride: true);
 
             // 2) Resolver Gate global
-            if (!DependencyManager.Provider.TryGetGlobal<IOldSimulationGateService>(out _gate) || _gate == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _gate) || _gate == null)
             {
                 DebugUtility.LogWarning<GameplayExecutionCoordinator>(
                     "IOldSimulationGateService n�o encontrado no DI global. Coordinator ficar� inativo.",
@@ -55,7 +55,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         private void Start()
         {
             if (_gate == null)
+            {
                 return;
+            }
 
             if (autoDiscoverParticipants)
             {
@@ -79,7 +81,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         public void Register(IGameplayExecutionParticipant participant)
         {
             if (participant == null)
+            {
                 return;
+            }
 
             if (_participants.Add(participant))
             {
@@ -90,7 +94,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         public void Unregister(IGameplayExecutionParticipant participant)
         {
             if (participant == null)
+            {
                 return;
+            }
 
             _participants.Remove(participant);
         }
@@ -105,7 +111,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             bool allowed = isOpen;
 
             if (!forceReapplyToParticipants && _isExecutionAllowed == allowed)
+            {
                 return;
+            }
 
             _isExecutionAllowed = allowed;
 
@@ -135,7 +143,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         private void AutoDiscoverAndRegisterParticipants()
         {
             // Busca somente dentro da mesma cena (evita pegar coisas da UIGlobalScene, etc.)
-            var found = FindObjectsByType<GameplayExecutionParticipantBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            GameplayExecutionParticipantBehaviour[] found = FindObjectsByType<GameplayExecutionParticipantBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
             int registered = 0;
 
@@ -143,10 +151,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             {
                 var p = found[i];
                 if (p == null)
+                {
                     continue;
+                }
 
                 if (p.gameObject.scene.name != _sceneName)
+                {
                     continue;
+                }
 
                 Register(p);
                 registered++;

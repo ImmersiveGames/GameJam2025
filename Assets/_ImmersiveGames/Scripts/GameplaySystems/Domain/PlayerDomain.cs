@@ -39,13 +39,19 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         public bool RegisterPlayer(IActor actor)
         {
             if (actor == null)
+            {
                 return false;
+            }
 
             if (string.IsNullOrWhiteSpace(actor.ActorId))
+            {
                 return false;
+            }
 
             if (_playerIds.Contains(actor.ActorId))
+            {
                 return false;
+            }
 
             _playerIds.Add(actor.ActorId);
             _players.Add(actor);
@@ -71,10 +77,14 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         public bool UnregisterPlayer(IActor actor)
         {
             if (actor == null || string.IsNullOrWhiteSpace(actor.ActorId))
+            {
                 return false;
+            }
 
             if (!_playerIds.Remove(actor.ActorId))
+            {
                 return false;
+            }
 
             _players.RemoveAll(p => p == null || p.ActorId == actor.ActorId);
 
@@ -91,7 +101,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             player = null;
 
             if (index < 0 || index >= _players.Count)
+            {
                 return false;
+            }
 
             player = _players[index];
             return player != null;
@@ -102,7 +114,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             pose = default;
 
             if (string.IsNullOrWhiteSpace(actorId))
+            {
                 return false;
+            }
 
             return _spawnPoses.TryGetValue(actorId, out pose);
         }
@@ -110,7 +124,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         public void SetSpawnPose(string actorId, Pose pose)
         {
             if (string.IsNullOrWhiteSpace(actorId))
+            {
                 return;
+            }
 
             _spawnPoses[actorId] = pose;
 

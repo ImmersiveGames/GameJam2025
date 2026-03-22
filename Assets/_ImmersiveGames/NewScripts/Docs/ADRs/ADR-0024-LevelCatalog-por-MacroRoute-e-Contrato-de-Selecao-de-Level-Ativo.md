@@ -1,35 +1,35 @@
-# ADR-0024 - LevelCollection por MacroRoute e Contrato de Selecao de Level Ativo
+# ADR-0024 - LevelCollection por MacroRoute e Contrato de Seleção de Level Ativo
 
 ## Status atual (2026-03-06)
 - Status: **DONE**
-- Implementado no codigo:
-  - `LevelCollection` por macro gameplay como fonte unica de levels.
+- Implementado no código:
+  - `LevelCollection` por macro gameplay como fonte única de levels.
   - Default fixo por `levels[0]` no `LevelPrepare`.
   - Identidade local por `levelRef` (`LevelDefinitionAsset`) + `LevelSignature`.
   - `LevelPrepare` executa no gate antes do FadeOut.
-- Evidencia:
+- Evidência:
   - `Docs/Reports/Audits/LATEST.md`
   - `Docs/Reports/Evidence/LATEST.md`
-- LEGACY / Historico:
-  - Referencias a `levelId/contentId` como identidade de negocio.
+- LEGACY / Histórico:
+  - Referências a `levelId/contentId` como identidade de negócio.
 
 ## Status
 
 - Estado: **Aceito (Implementado)**
-- Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-12
+- Data (decisão): 2026-02-19
+- Última atualização: 2026-03-12
 
-## Mini-resumo (status atual + contrato canonico)
+## Mini-resumo (status atual + contrato canônico)
 
-- Identidade de level no canonico: `LevelDefinitionAsset` (`levelRef`).
-- Fonte unica em gameplay: `SceneRouteDefinitionAsset.LevelCollection`.
-- Colecao ordenada; default = `levels[0]`.
+- Identidade de level no canônico: `LevelDefinitionAsset` (`levelRef`).
+- Fonte única em gameplay: `SceneRouteDefinitionAsset.LevelCollection`.
+- Coleção ordenada; default = `levels[0]`.
 - Gate executa `PrepareOrClear` antes do FadeOut.
 - Macro sem `LevelCollection`: `LevelClear` (idempotente: sem ativo => skip observado).
-- Mudanca de macro invalida selecao anterior por unload/clear.
-- `LevelDefinition` nao comunica mais identidades paralelas por `levelId/routeId/contentId`.
+- Mudança de macro invalida seleção anterior por unload/clear.
+- `LevelDefinition` não comunica mais identidades paralelas por `levelId/routeId/contentId`.
 
-## Evidencia (log)
+## Evidência (log)
 
 - `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
 - `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
@@ -39,6 +39,6 @@
 - `lastlog:2254` `LevelClearSkipped reason='no_active_level' ...`
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`
 
-## Observacao historica
+## Observação histórica
 
-- Referencias a `LevelCatalog`, `levelId` e `contentId` como identidade pertencem ao historico.
+- Referências a `LevelCatalog`, `levelId` e `contentId` como identidade pertencem ao histórico.

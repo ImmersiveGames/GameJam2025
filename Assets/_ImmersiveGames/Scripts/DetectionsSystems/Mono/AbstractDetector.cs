@@ -54,15 +54,20 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         // Manipula��o de eventos
         protected virtual void OnDetectionEnterEvent(DetectionEnterEvent enterEvent)
         {
-            if (!ReferenceEquals(enterEvent.Detector, this) || enterEvent.DetectionType == null) return;
+            if (!ReferenceEquals(enterEvent.Detector, this) || enterEvent.DetectionType == null)
+            {
+                return;
+            }
 
             // Criar chave �nica para este evento
             string eventKey = $"ENTER_{enterEvent.Detectable.GetHashCode()}_{enterEvent.DetectionType.GetHashCode()}";
             
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
+            {
                 return;
-            
+            }
+
             _processedEvents[eventKey] = Time.frameCount;
 
             // Adiciona ao cache de detec��es
@@ -83,15 +88,20 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         protected virtual void OnDetectionExitEvent(DetectionExitEvent exitEvent)
         {
-            if (!ReferenceEquals(exitEvent.Detector, this) || exitEvent.DetectionType == null) return;
+            if (!ReferenceEquals(exitEvent.Detector, this) || exitEvent.DetectionType == null)
+            {
+                return;
+            }
 
             // Criar chave �nica para este evento
             string eventKey = $"EXIT_{exitEvent.Detectable.GetHashCode()}_{exitEvent.DetectionType.GetHashCode()}";
             
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
+            {
                 return;
-            
+            }
+
             _processedEvents[eventKey] = Time.frameCount;
 
             // Remove do cache de detec��es
@@ -117,7 +127,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
                                           .Select(kvp => kvp.Key).ToList();
             
             foreach (string key in oldEvents)
+            {
                 _processedEvents.Remove(key);
+            }
         }
 
         private static string GetName(IDetectable detectable)

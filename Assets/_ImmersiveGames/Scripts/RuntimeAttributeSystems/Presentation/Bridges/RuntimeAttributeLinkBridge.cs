@@ -49,7 +49,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
         protected override void OnServiceDispose()
         {
-            if (_linkService == null || actor == null) return;
+            if (_linkService == null || actor == null)
+            {
+                return;
+            }
             _linkService.UnregisterAllLinks(actor.ActorId);
             DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>(
                 "??? Todos os links removidos",
@@ -58,7 +61,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
         public void AddLink(RuntimeAttributeLinkConfig link)
         {
-            if (_linkService == null || actor == null || link == null) return;
+            if (_linkService == null || actor == null || link == null)
+            {
+                return;
+            }
             _linkService.RegisterLink(actor.ActorId, link);
             DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>($"? Link adicionado: {link.sourceRuntimeAttribute} -> {link.targetRuntimeAttribute}");
         }

@@ -60,7 +60,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static void CreateRootIfNeeded()
         {
             if (_root != null && _root)
+            {
                 return;
+            }
 
             var existing = GameObject.Find(RootName);
             if (existing != null)

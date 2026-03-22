@@ -69,10 +69,12 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     int totalToLoad = context.scenesToLoad.Count;
                     int loadedCount = 0;
 
-                    foreach (var sceneName in context.scenesToLoad)
+                    foreach (string sceneName in context.scenesToLoad)
                     {
                         if (string.IsNullOrWhiteSpace(sceneName))
+                        {
                             continue;
+                        }
 
                         DebugUtility.LogVerbose<OldSceneTransitionService>(
                             $"[Scenes] Carregando cena '{sceneName}' (mode=Additive).");
@@ -97,10 +99,12 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     DebugUtility.LogVerbose<OldSceneTransitionService>(
                         $"[Scenes] Descarregando cenas obsoletas: [{string.Join(", ", context.scenesToUnload)}]");
 
-                    foreach (var sceneName in context.scenesToUnload)
+                    foreach (string sceneName in context.scenesToUnload)
                     {
                         if (string.IsNullOrWhiteSpace(sceneName))
+                        {
                             continue;
+                        }
 
                         DebugUtility.LogVerbose<OldSceneTransitionService>(
                             $"[Scenes] Descarregando cena '{sceneName}'.");
@@ -136,7 +140,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         private static async Task SetActiveSceneAsync(string sceneName)
         {
             if (string.IsNullOrWhiteSpace(sceneName))
+            {
                 return;
+            }
 
             var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid())

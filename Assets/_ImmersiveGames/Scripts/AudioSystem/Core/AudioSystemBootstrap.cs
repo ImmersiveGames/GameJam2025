@@ -59,7 +59,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static void RegisterMathServiceIfNeeded()
         {
             if (DependencyManager.Provider == null)
+            {
                 return;
+            }
 
             if (!DependencyManager.Provider.TryGetGlobal<IAudioMathService>(out _))
             {
@@ -76,10 +78,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         {
             // Se nÃ£o hÃ¡ DI disponÃ­vel, devolve uma instÃ¢ncia local simples.
             if (DependencyManager.Provider == null)
+            {
                 return new AudioMathService();
+            }
 
             if (DependencyManager.Provider.TryGetGlobal<IAudioMathService>(out var math))
+            {
                 return math;
+            }
 
             var newMath = new AudioMathService();
             DependencyManager.Instance.RegisterGlobal<IAudioMathService>(newMath);
@@ -95,10 +101,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static void RegisterVolumeServiceIfNeeded()
         {
             if (DependencyManager.Provider == null)
+            {
                 return;
+            }
 
             if (DependencyManager.Provider.TryGetGlobal<IAudioVolumeService>(out _))
+            {
                 return;
+            }
 
             var mathService = ResolveMathService();
             DependencyManager.Provider.RegisterGlobal<IAudioVolumeService>(new AudioVolumeService(mathService));
@@ -112,10 +122,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static void RegisterSfxServiceIfNeeded()
         {
             if (DependencyManager.Provider == null)
+            {
                 return;
+            }
 
             if (DependencyManager.Provider.TryGetGlobal<IAudioSfxService>(out _))
+            {
                 return;
+            }
 
             // Volume service
             var resolvedVolume = DependencyManager.Provider.TryGetGlobal<IAudioVolumeService>(out var volumeService)
@@ -149,7 +163,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         {
             // Se o cache ainda aponta para um objeto vÃ¡lido, nada a fazer.
             if (_cachedGlobalBgmAudioService != null && _cachedGlobalBgmAudioService)
+            {
                 return;
+            }
 
             _cachedGlobalBgmAudioService = Object.FindAnyObjectByType<GlobalBgmAudioService>();
         }
@@ -178,10 +194,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static bool IsInitialized()
         {
             if (DependencyManager.Provider == null)
+            {
                 return false;
+            }
 
             if (!DependencyManager.Provider.TryGetGlobal<IBgmAudioService>(out var service))
+            {
                 return false;
+            }
 
             return IsServiceValid(service);
         }
@@ -189,10 +209,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static bool IsServiceValid(IBgmAudioService service)
         {
             if (service == null)
+            {
                 return false;
+            }
 
             if (service is Object unityObj)
+            {
                 return unityObj;
+            }
 
             return true;
         }
@@ -221,7 +245,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         public static IBgmAudioService GetAudioService()
         {
             if (DependencyManager.Provider == null)
+            {
                 return null;
+            }
 
             return DependencyManager.Provider.TryGetGlobal<IBgmAudioService>(out var service)
                 ? service

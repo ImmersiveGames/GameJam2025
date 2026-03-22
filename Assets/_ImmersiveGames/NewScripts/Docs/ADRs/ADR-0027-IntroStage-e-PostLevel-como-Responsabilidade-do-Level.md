@@ -3,39 +3,39 @@
 ## Status
 
 - Estado: **Aceito (Implementado)**
-- Data (decisao): 2026-02-19
-- Ultima atualizacao: 2026-03-12
+- Data (decisão): 2026-02-19
+- Última atualização: 2026-03-12
 
 ## Leitura atual deste ADR
 
-O nome do arquivo foi preservado por rastreabilidade historica, mas o contrato vigente ja foi refinado:
+O nome do arquivo foi preservado por rastreabilidade histórica, mas o contrato vigente já foi refinado:
 
 - `IntroStage` permanece level-owned e opcional.
-- `PostGame` nao e um stage arbitrario de level.
-- O pos-run continua global e centralizado.
-- O level atual pode apenas complementar o pos-run por hook opcional.
-- `Restart` nao passa por post hook.
+- `PostGame` não é um stage arbitrário de level.
+- O pós-run continua global e centralizado.
+- O level atual pode apenas complementar o pós-run por hook opcional.
+- `Restart` não passa por post hook.
 
-## Decisao canonica atual
+## Decisão canônica atual
 
-- `IntroStage` e decidido pelo level atual (`LevelDefinitionAsset`) e orquestrado por `LevelStageOrchestrator`.
-- Se o level atual nao expuser intro, o fluxo segue direto para gameplay sem erro.
-- `PostGame` e global, com exatamente tres resultados formais:
+- `IntroStage` é decidido pelo level atual (`LevelDefinitionAsset`) e orquestrado por `LevelStageOrchestrator`.
+- Se o level atual não expuser intro, o fluxo segue direto para gameplay sem erro.
+- `PostGame` é global, com exatamente três resultados formais:
   - `Victory`
   - `Defeat`
   - `Exit`
-- O hook opcional do level para pos-run reage a esses resultados sem substituir o fluxo global.
+- O hook opcional do level para pós-run reage a esses resultados sem substituir o fluxo global.
 - `Restart` segue pelo trilho de reset/restart e fica fora do hook de post.
 
-## Evidencia
+## Evidência
 
 - `Docs/Reports/Audits/LATEST.md`
 - `Docs/Reports/Audits/LATEST.md`
 - `Docs/Reports/Evidence/LATEST.md`
 
-## Consequencias
+## Consequências
 
-- O dominio de level continua owner apenas da intro opcional e do hook opcional de reacao visual.
-- O owner do pos-run permanece global no eixo `GameLoop` + `PostGame`.
-- Nao existe `PostStage` generico por level no contrato atual.
-- A superficie documental principal deixa de promover `PostLevel` como stage de level.
+- O domínio de level continua owner apenas da intro opcional e do hook opcional de reação visual.
+- O owner do pós-run permanece global no eixo `GameLoop` + `PostGame`.
+- Não existe `PostStage` genérico por level no contrato atual.
+- A superfície documental principal deixa de promover `PostLevel` como stage de level.

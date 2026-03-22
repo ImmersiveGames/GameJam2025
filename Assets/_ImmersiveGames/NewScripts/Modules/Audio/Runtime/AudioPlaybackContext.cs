@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         public static AudioListenerRuntimeHost EnsureCreated()
         {
-            var existingHosts = Object.FindObjectsByType<AudioListenerRuntimeHost>(
+            AudioListenerRuntimeHost[] existingHosts = Object.FindObjectsByType<AudioListenerRuntimeHost>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return;
             }
 
-            var listeners = Object.FindObjectsByType<AudioListener>(
+            AudioListener[] listeners = Object.FindObjectsByType<AudioListener>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 

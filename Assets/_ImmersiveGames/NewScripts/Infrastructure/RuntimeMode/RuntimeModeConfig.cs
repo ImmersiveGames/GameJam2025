@@ -7,11 +7,11 @@ using UnityEngine.Serialization;
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 {
     /// <summary>
-    /// ConfiguraÃ§Ã£o global (asset) para controlar o modo de execuÃ§Ã£o e a polÃ­tica do reporter de degradaÃ§Ã£o.
+    /// Configuração global (asset) para controlar o modo de execução e a política do reporter de degradação.
     ///
     /// Uso esperado:
-    /// - Criar um asset em Resources com o nome "RuntimeModeConfig" para carregamento automÃ¡tico.
-    /// - Se o asset nÃ£o existir, o sistema opera em modo Auto (comportamento atual).
+    /// - Criar um asset em Resources com o nome "RuntimeModeConfig" para carregamento automático.
+    /// - Se o asset não existir, o sistema opera em modo Auto (comportamento atual).
     /// </summary>
     [CreateAssetMenu(
         fileName = "RuntimeModeConfig",
@@ -19,92 +19,175 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
         order = 20)]
     public sealed class RuntimeModeConfig : ScriptableObject
     {
-        // Caminho canÃ´nico para carregamento via Resources.
+        /// <summary>
+        /// Caminho canônico para carregamento via Resources.
+        /// </summary>
         public const string DefaultResourcesPath = "RuntimeModeConfig";
 
+        /// <summary>
+        /// Modo de execução: Auto (automático), ForceStrict (strict mode) ou ForceRelease (release mode).
+        /// </summary>
         [Header("Modo")]
-        [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: forÃ§a o modo, Ãºtil para testes.")]
+        [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: força o modo, útil para testes.")]
         public RuntimeModeOverride modeOverride = RuntimeModeOverride.Auto;
 
+        /// <summary>
+        /// Configuração raiz obrigatória do NewScripts (resolvida pelo GlobalCompositionRoot).
+        /// </summary>
         [Header("Bootstrap")]
-        [Tooltip("Config raiz obrigatÃ³rio do NewScripts (resolvido pelo GlobalCompositionRoot).")]
+        [Tooltip("Config raiz obrigatório do NewScripts (resolvido pelo GlobalCompositionRoot).")]
         [FormerlySerializedAs("BootstrapConfig")]
         [SerializeField] private BootstrapConfigAsset bootstrapConfig;
 
         public BootstrapConfigAsset BootstrapConfig => bootstrapConfig;
 
+        /// <summary>
+        /// Configurações do reporter de degradação (dedupe, resumo, etc).
+        /// </summary>
         [Header("Degraded Mode Reporter")]
-        public DegradedReporterSettings reporter = new DegradedReporterSettings();
+        public DegradedReporterSettings reporter = new();
 
+        /// <summary>
+        /// Configurações de strictness aplicadas quando em modo Strict.
+        /// </summary>
         [Header("Strictness (somente em Strict)")]
-        public StrictnessSettings strictness = new StrictnessSettings();
+        public StrictnessSettings strictness = new();
 
+        /// <summary>
+        /// Configurações do módulo InputModes.
+        /// </summary>
         [Header("Input Modes")]
-        public InputModesSettings inputModes = new InputModesSettings();
+        public InputModesSettings inputModes = new();
 
+        /// <summary>
+        /// Configurações do reporter de degradação: dedupe, resumos periódicos e limite de chaves.
+        /// </summary>
         [Serializable]
         public sealed class DegradedReporterSettings
         {
-            [Tooltip("Como evitar repetiÃ§Ã£o de logs de degradaÃ§Ã£o.")]
+            /// <summary>
+            /// Estratégia para evitar repetição de logs de degradação.
+            /// </summary>
+            [Tooltip("Como evitar repetição de logs de degradação.")]
             public DegradedDedupStrategy dedupStrategy = DegradedDedupStrategy.CooldownSeconds;
 
-            [Tooltip("Se DedupStrategy=CooldownSeconds, define o intervalo mÃ­nimo entre logs iguais (segundos).")]
+            /// <summary>
+            /// Intervalo mínimo (em segundos) entre logs iguais. Aplicado se DedupStrategy=CooldownSeconds.
+            /// </summary>
+            [Tooltip("Se DedupStrategy=CooldownSeconds, define o intervalo mínimo entre logs iguais (segundos).")]
             [Range(0f, 60f)]
             public float cooldownSeconds = 5f;
 
-            [Tooltip("Emite um resumo periÃ³dico com contagens (0 desliga).")]
+            /// <summary>
+            /// Intervalo (em segundos) para emissão periódica de resumo. 0 desliga o resumo.
+            /// </summary>
+            [Tooltip("Emite um resumo periódico com contagens (0 desliga).")]
             [Range(0f, 300f)]
             public float emitSummaryEverySeconds = 30f;
 
-            [Tooltip("Limite de chaves Ãºnicas rastreadas por sessÃ£o (proteÃ§Ã£o contra explosÃ£o de keys).")]
+            /// <summary>
+            /// Limite máximo de chaves únicas rastreadas por sessão (proteção contra explosão de memory).
+            /// </summary>
+            [Tooltip("Limite de chaves únicas rastreadas por sessão (proteção contra explosão de keys).")]
             [Range(16, 4096)]
             public int maxUniqueKeys = 256;
 
-            [Tooltip("Imprime a primeira ocorrÃªncia imediatamente, mesmo com dedupe ligado.")]
+            /// <summary>
+            /// Se verdadeiro, imprime a primeira ocorrência imediatamente, mesmo com dedupe ligado.
+            /// </summary>
+            [Tooltip("Imprime a primeira ocorrência imediatamente, mesmo com dedupe ligado.")]
             public bool logFirstOccurrence = true;
 
+            /// <summary>
+            /// Se verdadeiro, inclui a contagem acumulada no log (ex.: count=7).
+            /// </summary>
             [Tooltip("Inclui a contagem acumulada no log (ex.: count=7).")]
             public bool includeCountInLog = true;
         }
 
+        /// <summary>
+        /// Configurações de comportamento em modo Strict.
+        /// </summary>
         [Serializable]
         public sealed class StrictnessSettings
         {
-            [Tooltip("Em Strict, logs de degradaÃ§Ã£o sobem para erro (sem exceÃ§Ã£o).")]
+            /// <summary>
+            /// Se verdadeiro, logs de degradação sobem para erro (sem exceção).
+            /// </summary>
+            [Tooltip("Em Strict, logs de degradação sobem para erro (sem exceção).")]
             public bool degradedAsError = true;
 
-            [Tooltip("Em Strict, permite falhar hard (exceÃ§Ã£o) em casos de degradaÃ§Ã£o. Recomendado manter falso nesta fase.")]
-            public bool degradedAsException = false;
+            /// <summary>
+            /// Se verdadeiro, permite falhar hard (exceção) em casos de degradação.
+            /// Recomendado manter falso nesta fase.
+            /// </summary>
+            [Tooltip("Em Strict, permite falhar hard (exceção) em casos de degradação. Recomendado manter falso nesta fase.")]
+            public bool degradedAsException;
         }
 
+        /// <summary>
+        /// Configurações do módulo InputModes.
+        /// </summary>
         [Serializable]
         public sealed class InputModesSettings
         {
-            [Tooltip("Habilita o mÃ³dulo InputModes (registro do IInputModeService no DI global).")]
+            /// <summary>
+            /// Se verdadeiro, habilita o módulo InputModes (registro do IInputModeService no DI global).
+            /// </summary>
+            [Tooltip("Habilita o módulo InputModes (registro do IInputModeService no DI global).")]
             public bool enableInputModes = true;
 
+            /// <summary>
+            /// Nome do action map de gameplay (Player).
+            /// </summary>
             [Tooltip("Nome do action map de gameplay (Player).")]
             public string playerActionMapName = InputModesDefaults.PlayerActionMapName;
 
+            /// <summary>
+            /// Nome do action map de menu/UI.
+            /// </summary>
             [Tooltip("Nome do action map de menu/UI.")]
             public string menuActionMapName = InputModesDefaults.MenuActionMapName;
 
-            [Tooltip("Emite logs verbosos de configuraÃ§Ã£o/registro.")]
+            /// <summary>
+            /// Se verdadeiro, emite logs verbosos de configuração/registro.
+            /// </summary>
+            [Tooltip("Emite logs verbosos de configuração/registro.")]
             public bool logVerbose = true;
         }
     }
 
+    /// <summary>
+    /// Define como o sistema deve se comportar em termos de modo de execução.
+    /// </summary>
     public enum RuntimeModeOverride
     {
+        /// <summary>
+        /// Modo automático: o sistema decide entre Strict ou Release baseado no build.
+        /// </summary>
         Auto = 0,
+        /// <summary>
+        /// Força modo Strict: validações rígidas, erros em degradação.
+        /// </summary>
         ForceStrict = 1,
+        /// <summary>
+        /// Força modo Release: lenient, tenta se recuperar de degradação.
+        /// </summary>
         ForceRelease = 2
     }
 
+    /// <summary>
+    /// Estratégia de dedupe para evitar repetição excessiva de logs de degradação.
+    /// </summary>
     public enum DegradedDedupStrategy
     {
+        /// <summary>
+        /// Uma única vez por sessão: cada chave é logada apenas uma vez.
+        /// </summary>
         PerSession = 0,
+        /// <summary>
+        /// Com cooldown em segundos: mesma chave só é logada se passou o intervalo.
+        /// </summary>
         CooldownSeconds = 1
     }
 }
-

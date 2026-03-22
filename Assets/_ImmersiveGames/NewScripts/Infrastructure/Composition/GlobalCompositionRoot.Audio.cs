@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            var bootstrap = GetRequiredBootstrapConfig(out var via);
+            var bootstrap = GetRequiredBootstrapConfig(out string via);
             var defaults = bootstrap.AudioDefaults;
 
             if (defaults == null)
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterAudioBgmService()
         {
-            RegisterIfMissing<IAudioBgmService>(
+            RegisterIfMissing(
                 factory: () =>
                 {
                     DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterGlobalAudioService()
         {
-            RegisterIfMissing<IGlobalAudioService>(
+            RegisterIfMissing(
                 factory: () =>
                 {
                     DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 factory: () =>
                 {
                     DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out var globalAudio);
-                    var bootstrap = GetRequiredBootstrapConfig(out var via);
+                    var bootstrap = GetRequiredBootstrapConfig(out string via);
                     var semanticMap = bootstrap != null ? bootstrap.EntityAudioSemanticMap : null;
 
                     var service = new AudioEntitySemanticService(globalAudio, semanticMap);
