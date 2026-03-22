@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gates;
-using _ImmersiveGames.NewScripts.Modules.Gates.Interop;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {

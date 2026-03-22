@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gates;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Player.Movement
 {

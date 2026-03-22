@@ -8,8 +8,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Interop
+namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.QA
 {
     /// <summary>
     /// Reusable consumer base for explicit pool dependencies.
@@ -152,11 +151,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Interop
                 $"[OBS][Pooling][ConsumerBase] label='{dependencyLabel}' {message}.");
         }
     }
-}
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.QA
-{
-    using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Interop;
 
     /// <summary>
     /// Driver de QA via ContextMenu para validar o pooling canônico em Play Mode.

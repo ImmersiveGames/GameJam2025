@@ -1,6 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.InputModes;
+using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
 

@@ -3,8 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.InputModes
+namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
 {
     /// <summary>
     /// Coordinator canonico do trilho de requests de InputMode.

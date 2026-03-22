@@ -1,5 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gates;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Guards

@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.Gates
+namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate
 {
     /// <summary>
     /// Tokens padrão para bloquear/liberar simulação.

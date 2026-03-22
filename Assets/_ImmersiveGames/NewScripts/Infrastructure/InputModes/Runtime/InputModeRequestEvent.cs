@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.InputModes
+namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
 {
     public enum InputModeRequestKind
     {

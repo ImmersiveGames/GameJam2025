@@ -3,11 +3,11 @@ using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.ContentSwap.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
-using _ImmersiveGames.NewScripts.Modules.Gates;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {

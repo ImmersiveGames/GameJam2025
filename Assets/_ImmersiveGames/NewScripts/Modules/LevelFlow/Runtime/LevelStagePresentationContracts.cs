@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime

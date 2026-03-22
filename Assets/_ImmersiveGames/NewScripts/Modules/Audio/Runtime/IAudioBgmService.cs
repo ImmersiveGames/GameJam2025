@@ -1,5 +1,4 @@
-﻿using System;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
+﻿using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 {

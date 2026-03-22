@@ -1,5 +1,5 @@
 // LEGACY: isolado em Core/Events/Legacy. Nao usar em codigo novo. Mantido por compatibilidade.
-namespace _ImmersiveGames.NewScripts.Core.Events
+namespace _ImmersiveGames.NewScripts.Core.Events.Legacy
 {
     /// <summary>
     /// Legacy compatibility wrapper for code that expects FilteredEventBus&lt;TEvent&gt;

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-namespace _ImmersiveGames.NewScripts.Modules.Gates
+namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate
 {
     /// <summary>
     /// Implementação thread-safe do gate baseada em tokens com ref-count.

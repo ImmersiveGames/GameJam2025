@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-
-namespace _ImmersiveGames.NewScripts.Modules.InputModes
+namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
 {
     internal static class InputModesDefaults
     {

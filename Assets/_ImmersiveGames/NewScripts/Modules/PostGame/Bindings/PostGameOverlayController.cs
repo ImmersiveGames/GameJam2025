@@ -4,16 +4,14 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.Gates;
-using _ImmersiveGames.NewScripts.Modules.InputModes;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.PostGame;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
+namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 {
     /// <summary>
     /// Controller do overlay de pós-game (Game Over / Victory).
