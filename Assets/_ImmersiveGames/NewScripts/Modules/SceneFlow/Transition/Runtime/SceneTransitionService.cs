@@ -10,7 +10,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime

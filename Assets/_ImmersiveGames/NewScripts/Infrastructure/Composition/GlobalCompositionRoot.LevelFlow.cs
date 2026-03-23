@@ -5,7 +5,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {

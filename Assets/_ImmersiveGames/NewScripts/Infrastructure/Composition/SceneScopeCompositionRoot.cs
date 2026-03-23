@@ -5,8 +5,8 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition

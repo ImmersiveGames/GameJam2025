@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot

@@ -6,8 +6,8 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Domain;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Policies;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions
 {

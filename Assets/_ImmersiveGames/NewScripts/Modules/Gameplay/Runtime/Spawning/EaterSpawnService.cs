@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Eater.Movement;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning
 {

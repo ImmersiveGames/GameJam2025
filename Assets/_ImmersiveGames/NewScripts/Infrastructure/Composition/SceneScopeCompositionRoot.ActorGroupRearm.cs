@@ -2,7 +2,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition

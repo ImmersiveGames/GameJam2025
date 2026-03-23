@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Application;
-
+using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Application;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
