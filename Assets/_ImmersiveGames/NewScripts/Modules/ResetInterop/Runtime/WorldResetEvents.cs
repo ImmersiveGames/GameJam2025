@@ -8,9 +8,9 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
     /// Evento V2 de telemetria/observabilidade de reset.
     /// V1 continua sendo o plano de gate/correlacao do SceneFlow.
     /// </summary>
-    public readonly struct WorldLifecycleResetRequestedV2Event : IEvent
+    public readonly struct WorldResetEvents : IEvent
     {
-        public WorldLifecycleResetRequestedV2Event(
+        public WorldResetEvents(
             ResetKind kind,
             SceneRouteId macroRouteId,
             string reason,
@@ -40,9 +40,9 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
     /// Evento V2 de conclusao de reset para telemetria/observabilidade.
     /// V1 continua sendo o plano de gate/correlacao do SceneFlow.
     /// </summary>
-    public readonly struct WorldLifecycleResetCompletedV2Event : IEvent
+    public readonly struct ResetCompletedEvent : IEvent
     {
-        public WorldLifecycleResetCompletedV2Event(
+        public ResetCompletedEvent(
             ResetKind kind,
             SceneRouteId macroRouteId,
             string reason,

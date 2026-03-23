@@ -1,48 +1,25 @@
 # SceneReset
 
 ## Papel
-`SceneReset` é o módulo **local** de reset da cena. Ele contém o pipeline determinístico do reset local, os hooks locais e a infraestrutura de spawn usada pelo trilho local.
+`SceneReset` é o módulo do reset local da cena.
 
-## Owner
-- controller local do reset
-- runner local
+## Responsabilidades
+- controller do trilho local
+- runner de montagem do pipeline
 - façade local
-- pipeline local explícito
-- fases do reset local
-- hook registry local
-- spawn registry/context do reset local
+- pipeline e fases
+- hooks locais
+- spawn services/registry do trilho local
 
-## Estrutura atual
-- `Bindings/`
-  - `SceneResetController`
-  - `SceneResetRunner`
-- `Runtime/`
-  - `SceneResetContext`
-  - `SceneResetControllerLocator`
-  - `SceneResetFacade`
-  - `SceneResetHookRunner`
-  - `SceneResetPipeline`
-  - `ISceneResetPhase`
-  - `Phases/*`
-- `Hooks/`
-  - `ISceneResetHook`
-  - `ISceneResetHookOrdered`
-  - `SceneResetHookBase`
-  - `SceneResetHookRegistry`
-- `Spawn/`
-  - `IWorldSpawnContext`
-  - `IWorldSpawnService`
-  - `IWorldSpawnServiceRegistry`
-  - `WorldSpawnContext`
-  - `WorldSpawnServiceFactory`
-  - `WorldSpawnServiceRegistry`
+## Não é responsabilidade de `SceneReset`
+- policy macro de reset
+- comandos públicos de reset macro
+- bridge com `SceneFlow` como superfície pública
+- eventos macro de reset
 
-## Não é owner
-- pedido macro de reset
-- política macro
-- eventos públicos de reset em `ResetInterop`
-- integração com SceneFlow como owner de transição
-
-## Observações
-- o naming local já foi consolidado em `SceneReset*`
-- o pipeline local já não deve ser descrito como `WorldLifecycle*`
+## Subáreas esperadas
+- `Bindings`
+- `Runtime`
+- `Runtime/Phases`
+- `Hooks`
+- `Spawn`

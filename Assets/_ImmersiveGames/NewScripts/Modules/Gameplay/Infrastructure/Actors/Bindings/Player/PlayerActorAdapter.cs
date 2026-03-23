@@ -3,7 +3,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Player
 {
     /// <summary>
-    /// Adaptador para expor atores legados do Player como IActor do pipeline de WorldLifecycle.
+    /// Adaptador para expor atores legados do Player como IActor do pipeline de SceneReset.
     /// Mantém o ActorId sincronizado com o ator legado quando disponível.
     /// </summary>
     [DisallowMultipleComponent]

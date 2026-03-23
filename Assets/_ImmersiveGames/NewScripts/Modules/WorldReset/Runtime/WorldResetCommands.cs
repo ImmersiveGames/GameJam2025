@@ -145,10 +145,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
             LevelContextSignature levelSignature)
         {
             DebugUtility.Log<WorldResetCommands>(
-                $"[OBS][WorldLifecycle] ResetRequestedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}'.",
+                $"[OBS][WorldReset] ResetRequestedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<WorldLifecycleResetRequestedV2Event>.Raise(new WorldLifecycleResetRequestedV2Event(
+            EventBus<WorldResetEvents>.Raise(new WorldResetEvents(
                 kind,
                 macroRouteId,
                 reason,
@@ -166,10 +166,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
             string notes)
         {
             DebugUtility.Log<WorldResetCommands>(
-                $"[OBS][WorldLifecycle] ResetCompletedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}' success={success} notes='{notes}'.",
+                $"[OBS][WorldReset] ResetCompletedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}' success={success} notes='{notes}'.",
                 success ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
-            EventBus<WorldLifecycleResetCompletedV2Event>.Raise(new WorldLifecycleResetCompletedV2Event(
+            EventBus<ResetCompletedEvent>.Raise(new ResetCompletedEvent(
                 kind,
                 macroRouteId,
                 reason,

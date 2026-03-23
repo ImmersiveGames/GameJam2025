@@ -6,7 +6,7 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
     /// <summary>
-    /// Centraliza a assinatura de correlacao usada entre SceneFlow e WorldLifecycle.
+    /// Centraliza a assinatura de correlacao usada entre SceneFlow e WorldReset.
     ///
     /// Importante:
     /// - A assinatura canonica e <see cref="SceneTransitionContext.ContextSignature"/>.

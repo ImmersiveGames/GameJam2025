@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
                 // Como este caminho não passa pelo SceneFlow, usamos uma assinatura manual correlacionável.
                 string signature = $"directReset:scene={activeScene};src={normalizedSource}";
                 DebugUtility.LogVerbose(typeof(WorldResetRequestService),
-                    $"[OBS][WorldLifecycle] ResetRequested signature='{signature}' sourceSignature='{signature}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
+                    $"[OBS][WorldReset] ResetRequested signature='{signature}' sourceSignature='{signature}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
                     DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
                     resetService != null)
                 {
                     DebugUtility.LogVerbose<WorldResetRequestService>(
-                        $"[WorldLifecycle] RequestResetAsync -> IWorldResetService.TriggerResetAsync. source='{normalizedSource}', scene='{activeScene}', reason='{reason}'.",
+                        $"[WorldReset] RequestResetAsync -> IWorldResetService.TriggerResetAsync. source='{normalizedSource}', scene='{activeScene}', reason='{reason}'.",
                         DebugUtility.Colors.Info);
                     await resetService.TriggerResetAsync(request);
                     return;
@@ -63,16 +63,16 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
                 if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
                 {
                     DebugUtility.LogWarning<WorldResetRequestService>(
-                        $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [WorldLifecycle] RequestResetAsync chamado durante SceneTransition. source='{source ?? "<null>"}', activeScene='{activeScene}'.");
+                        $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [WorldReset] RequestResetAsync chamado durante SceneTransition. source='{source ?? "<null>"}', activeScene='{activeScene}'.");
                 }
 
                 DebugUtility.LogError<WorldResetRequestService>(
-                    $"[{ResetLogTags.Failed}][DEGRADED_MODE] [WorldLifecycle] IWorldResetService ausente. Reset manual ignorado. source='{source ?? "<null>"}', activeScene='{activeScene}'.");
+                    $"[{ResetLogTags.Failed}][DEGRADED_MODE] [WorldReset] IWorldResetService ausente. Reset manual ignorado. source='{source ?? "<null>"}', activeScene='{activeScene}'.");
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<WorldResetRequestService>(
-                    $"[WorldLifecycle] Erro em RequestResetAsync. source='{source ?? "<null>"}', ex='{ex}'.");
+                    $"[WorldReset] Erro em RequestResetAsync. source='{source ?? "<null>"}', ex='{ex}'.");
             }
         }
 

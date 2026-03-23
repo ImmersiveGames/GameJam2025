@@ -1,7 +1,7 @@
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
 {
     /// <summary>
-    /// Reasons canônicas para reset do WorldLifecycle (evita strings mágicas).
+    /// Reasons canônicas para reset do WorldReset (evita strings mágicas).
     /// </summary>
     public static class WorldResetReasons
     {

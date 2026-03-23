@@ -55,16 +55,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (completionGate is not MacroLevelPrepareCompletionGate)
             {
-                WorldLifecycleResetCompletionGate innerGate = completionGate as WorldLifecycleResetCompletionGate;
+                WorldResetCompletionGate innerGate = completionGate as WorldResetCompletionGate;
                 if (innerGate == null)
                 {
                     if (completionGate != null)
                     {
                         DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                            $"[SceneFlow] ISceneTransitionCompletionGate não é WorldLifecycleResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
+                            $"[SceneFlow] ISceneTransitionCompletionGate não é WorldResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
                     }
 
-                    innerGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
+                    innerGate = new WorldResetCompletionGate(timeoutMs: 20000);
                 }
 
                 completionGate = new MacroLevelPrepareCompletionGate(innerGate);

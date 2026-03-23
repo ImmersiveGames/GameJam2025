@@ -2,16 +2,16 @@ using _ImmersiveGames.NewScripts.Core.Events;
 namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 {
     /// <summary>
-    /// COMMAND/Signal: indica que o reset determinístico do WorldLifecycle concluiu.
+    /// COMMAND/Signal: indica que o reset determinístico do WorldReset concluiu.
     /// Usado para liberar start do GameLoop após ScenesReady + Reset.
     ///
     /// Ownership (canônico):
     /// - Publisher (producao): WorldResetService (Lifecycle) / WorldResetOrchestrator (driver publica apenas em SKIP/fallback).
-    /// - Consumidores (produção): WorldLifecycleResetCompletionGate (SceneFlow) e GameLoopSceneFlowCoordinator (GameLoop).
+    /// - Consumidores (produção): WorldResetCompletionGate (SceneFlow) e GameLoopSceneFlowCoordinator (GameLoop).
     /// </summary>
-    public readonly struct WorldLifecycleResetCompletedEvent : IEvent
+    public readonly struct WorldResetCompletedEvent : IEvent
     {
-        public WorldLifecycleResetCompletedEvent(string contextSignature, string reason)
+        public WorldResetCompletedEvent(string contextSignature, string reason)
         {
             ContextSignature = contextSignature ?? string.Empty;
             Reason = reason ?? string.Empty;
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 
         public override string ToString()
         {
-            return $"WorldLifecycleResetCompleted(ContextSignature='{ContextSignature}', Reason='{Reason}')";
+            return $"WorldResetCompletedEvent(ContextSignature='{ContextSignature}', Reason='{Reason}')";
         }
     }
 }

@@ -18,8 +18,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _beforeFadeOutBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneFlowRouteLoadingProgressEvent> _routeProgressBinding;
-        private readonly EventBinding<WorldLifecycleResetStartedEvent> _resetStartedBinding;
-        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _resetCompletedBinding;
+        private readonly EventBinding<WorldResetStartedEvent> _resetStartedBinding;
+        private readonly EventBinding<WorldResetCompletedEvent> _resetCompletedBinding;
         private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
 
         private ILoadingPresentationService _presentationService;
@@ -32,8 +32,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _beforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnBeforeFadeOut);
             _completedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnCompleted);
             _routeProgressBinding = new EventBinding<SceneFlowRouteLoadingProgressEvent>(OnRouteProgress);
-            _resetStartedBinding = new EventBinding<WorldLifecycleResetStartedEvent>(OnResetStarted);
-            _resetCompletedBinding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnResetCompleted);
+            _resetStartedBinding = new EventBinding<WorldResetStartedEvent>(OnResetStarted);
+            _resetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnResetCompleted);
             _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
 
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
@@ -41,8 +41,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_beforeFadeOutBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
             EventBus<SceneFlowRouteLoadingProgressEvent>.Register(_routeProgressBinding);
-            EventBus<WorldLifecycleResetStartedEvent>.Register(_resetStartedBinding);
-            EventBus<WorldLifecycleResetCompletedEvent>.Register(_resetCompletedBinding);
+            EventBus<WorldResetStartedEvent>.Register(_resetStartedBinding);
+            EventBus<WorldResetCompletedEvent>.Register(_resetCompletedBinding);
             EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
         }
 
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             PublishCurrent();
         }
 
-        private void OnResetStarted(WorldLifecycleResetStartedEvent evt)
+        private void OnResetStarted(WorldResetStartedEvent evt)
         {
             if (!HasActiveSignature(evt.ContextSignature))
             {
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             PublishCurrent();
         }
 
-        private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
+        private void OnResetCompleted(WorldResetCompletedEvent evt)
         {
             if (!HasActiveSignature(evt.ContextSignature))
             {

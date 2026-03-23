@@ -14,7 +14,7 @@ using _ImmersiveGames.NewScripts.Modules.WorldReset.Validation;
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 {
     /// <summary>
-    /// Orquestra o pipeline de reset do WorldLifecycle.
+    /// Orquestra o pipeline de reset do WorldReset.
     /// Guard -> Validate -> Discover -> Execute -> PublishCompleted.
     /// </summary>
     public sealed class WorldResetOrchestrator
@@ -152,20 +152,20 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
         internal static void PublishResetStartedV1(string contextSignature, string reason)
         {
-            EventBus<WorldLifecycleResetStartedEvent>.Raise(
-                new WorldLifecycleResetStartedEvent(contextSignature ?? string.Empty, reason ?? string.Empty));
+            EventBus<WorldResetStartedEvent>.Raise(
+                new WorldResetStartedEvent(contextSignature ?? string.Empty, reason ?? string.Empty));
         }
 
         internal static void PublishResetCompletedV1(string contextSignature, string reason)
         {
-            EventBus<WorldLifecycleResetCompletedEvent>.Raise(
-                new WorldLifecycleResetCompletedEvent(contextSignature ?? string.Empty, reason ?? string.Empty));
+            EventBus<WorldResetCompletedEvent>.Raise(
+                new WorldResetCompletedEvent(contextSignature ?? string.Empty, reason ?? string.Empty));
         }
 
         private static void PublishResetStarted(WorldResetRequest request)
         {
             DebugUtility.LogVerbose<WorldResetOrchestrator>(
-                $"[{ResetLogTags.Start}][OBS][WorldLifecycle] ResetWorldStarted signature='{request.ContextSignature}' reason='{request.Reason}'.",
+                $"[{ResetLogTags.Start}][OBS][WorldReset] ResetWorldStarted signature='{request.ContextSignature}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
             PublishResetStartedV1(request.ContextSignature, request.Reason);
@@ -176,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             string completionReason = reason ?? string.Empty;
 
             DebugUtility.LogVerbose<WorldResetOrchestrator>(
-                $"[{ResetLogTags.Completed}][OBS][WorldLifecycle] ResetCompleted signature='{request.ContextSignature}' reason='{completionReason}'.",
+                $"[{ResetLogTags.Completed}][OBS][WorldReset] ResetCompleted signature='{request.ContextSignature}' reason='{completionReason}'.",
                 DebugUtility.Colors.Success);
 
             PublishResetCompletedV1(request.ContextSignature, completionReason);

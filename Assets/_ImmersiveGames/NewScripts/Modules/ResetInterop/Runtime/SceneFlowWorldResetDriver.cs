@@ -12,11 +12,11 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 {
     /// <summary>
-    /// Driver canônico (produção) para integrar SceneFlow → WorldLifecycle.
+    /// Driver canônico (produção) para integrar SceneFlow → WorldReset.
     ///
     /// Responsabilidades:
     /// - Ao receber SceneTransitionScenesReadyEvent, resolve política por rota/contexto e dispara ResetWorld quando aplicável.
-    /// - Publica WorldLifecycleResetCompletedEvent(signature) apenas em SKIP/fallback para liberar o completion gate do SceneFlow.
+    /// - Publica WorldResetCompletedEvent(signature) apenas em SKIP/fallback para liberar o completion gate do SceneFlow.
     ///
     /// Observações:
     /// - Não depende de "coordinator" obsoleto.
@@ -25,11 +25,11 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
         /// <summary>
     /// OWNER: handoff SceneFlow -> WorldResetService para macro reset por transicao.
     /// NAO E OWNER: eventos V2 de comando/telemetria (permanecem em WorldResetCommands).
-    /// PUBLISH/CONSUME: consome SceneTransitionScenesReadyEvent; publica WorldLifecycleResetCompletedEvent em SKIP/fallback.
+    /// PUBLISH/CONSUME: consome SceneTransitionScenesReadyEvent; publica WorldResetCompletedEvent em SKIP/fallback.
     /// Fases tocadas: ScenesReady e Gate (sinaliza completion V1 antes do BeforeFadeOut).
     /// </summary>
 [DebugLevel(DebugLevel.Verbose)]
-    public sealed class WorldLifecycleSceneFlowResetDriver : IDisposable
+    public sealed class SceneFlowWorldResetDriver : IDisposable
     {
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
         private readonly object _guardLock = new();
@@ -44,13 +44,13 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
         private const int DuplicateSignatureWindowMs = 750;
         private const int CompletedCacheLimit = 128;
 
-        public WorldLifecycleSceneFlowResetDriver()
+        public SceneFlowWorldResetDriver()
         {
             _scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
 
-            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                $"[WorldLifecycle] Driver registrado: SceneFlow ScenesReady -> ResetWorld -> ResetCompleted. reason='{WorldResetReasons.SceneFlowScenesReady}'.",
+            DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                $"[ResetInterop] Driver registrado: SceneFlow ScenesReady -> ResetWorld -> ResetCompleted. reason='{WorldResetReasons.SceneFlowScenesReady}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -81,8 +81,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
             if (string.IsNullOrWhiteSpace(signature))
             {
                 // Defensivo: assinatura vazia nao deve travar o SceneFlow; apenas libera.
-                DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                    "[WorldLifecycle] ScenesReady recebido com ContextSignature vazia. Liberando gate sem reset.");
+                DebugUtility.LogWarning<SceneFlowWorldResetDriver>(
+                    "[ResetInterop] ScenesReady recebido com ContextSignature vazia. Liberando gate sem reset.");
                 LogObsResetRequested(
                     signature: string.Empty,
                     sourceSignature: string.Empty,
@@ -110,8 +110,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
             string decisionSource = string.IsNullOrWhiteSpace(context.ResetDecisionSource) ? "context:missingDecisionSource" : context.ResetDecisionSource;
             string decisionReason = string.IsNullOrWhiteSpace(context.ResetDecisionReason) ? "context:missingDecisionReason" : context.ResetDecisionReason;
 
-            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                $"[OBS][WorldLifecycle] ResetPolicy routeId='{routeId}' requiresWorldReset={requiresWorldReset} signature='{signature}' reason='{decisionReason}' decisionSource='{decisionSource}'.",
+            DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                $"[OBS][ResetInterop] ResetPolicy routeId='{routeId}' requiresWorldReset={requiresWorldReset} signature='{signature}' reason='{decisionReason}' decisionSource='{decisionSource}'.",
                 DebugUtility.Colors.Info);
 
             if (!requiresWorldReset)
@@ -138,8 +138,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                     decisionSource: decisionSource,
                     reason: skippedReason);
 
-                DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[{ResetLogTags.Skipped}] [ResetSkip] [WorldLifecycle] ResetWorld SKIP. signature='{signature}', routeId='{routeId}', routeKind='{context.RouteKind}', profileLabel='{context.TransitionProfileName}', targetScene='{targetScene}', decisionSource='{decisionSource}', reason='{skippedReason}'.",
+                DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                    $"[{ResetLogTags.Skipped}] [ResetSkip] [ResetInterop] ResetWorld SKIP. signature='{signature}', routeId='{routeId}', routeKind='{context.RouteKind}', profileLabel='{context.TransitionProfileName}', targetScene='{targetScene}', decisionSource='{decisionSource}', reason='{skippedReason}'.",
                 DebugUtility.Colors.Info);
 
                 PublishResetCompleted(signature, skippedReason, routeId, context.RouteKind, context.TransitionProfileName, targetScene, decisionSource);
@@ -192,8 +192,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
             // Primeiro: se um WorldResetService estiver registrado no DI, use-o (ponto canonico).
             if (DependencyManager.HasInstance && DependencyManager.Provider.TryGetGlobal<WorldResetService>(out var resetService) && resetService != null)
             {
-                DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                    $"[WorldLifecycle] Usando WorldResetService (Lifecycle) para executar reset. signature='{signature}', targetScene='{targetScene}'.",
+                DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                    $"[ResetInterop] Usando WorldResetService para executar reset. signature='{signature}', targetScene='{targetScene}'.",
                 DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
@@ -212,27 +212,27 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                 {
                     if (!IsDevelopmentEscapeHatch())
                     {
-                        HardFailFastH1.Trigger(typeof(WorldLifecycleSceneFlowResetDriver),
-                            $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService.TriggerResetAsync failed. signature='{signature}', targetScene='{targetScene}', ex='{ex.GetType().Name}'.",
+                        HardFailFastH1.Trigger(typeof(SceneFlowWorldResetDriver),
+                            $"[FATAL][H1][ResetInterop] Reset required but WorldResetService.TriggerResetAsync failed. signature='{signature}', targetScene='{targetScene}', ex='{ex.GetType().Name}'.",
                             ex);
                     }
 
                     int degradedOnFailureCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
-                    DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                        $"[WARN][DEGRADED][WorldLifecycle] ResetWorld fallback completion enabled (DEV). count='{degradedOnFailureCount}' signature='{signature}' targetScene='{targetScene}' ex='{ex.GetType().Name}'.");
+                    DebugUtility.LogWarning<SceneFlowWorldResetDriver>(
+                        $"[WARN][DEGRADED][ResetInterop] ResetWorld fallback completion enabled (DEV). count='{degradedOnFailureCount}' signature='{signature}' targetScene='{targetScene}' ex='{ex.GetType().Name}'.");
                     return (true, WorldResetReasons.FailedNoResetService);
                 }
             }
 
             if (!IsDevelopmentEscapeHatch())
             {
-                HardFailFastH1.Trigger(typeof(WorldLifecycleSceneFlowResetDriver),
-                    $"[FATAL][H1][WorldLifecycle] Reset required but WorldResetService missing in DI. signature='{signature}', targetScene='{targetScene}'.");
+                HardFailFastH1.Trigger(typeof(SceneFlowWorldResetDriver),
+                    $"[FATAL][H1][ResetInterop] Reset required but WorldResetService missing in DI. signature='{signature}', targetScene='{targetScene}'.");
             }
 
             int degradedMissingServiceCount = System.Threading.Interlocked.Increment(ref _degradedFallbackCount);
-            DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                $"[WARN][DEGRADED][WorldLifecycle] WorldResetService missing in DI (DEV escape hatch). count='{degradedMissingServiceCount}' signature='{signature}' targetScene='{targetScene}'.");
+            DebugUtility.LogWarning<SceneFlowWorldResetDriver>(
+                $"[WARN][DEGRADED][ResetInterop] WorldResetService missing in DI (DEV escape hatch). count='{degradedMissingServiceCount}' signature='{signature}' targetScene='{targetScene}'.");
 
             return (true, WorldResetReasons.FailedNoResetService);
         }
@@ -260,8 +260,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                 decisionSource: decisionSource,
                 reason: reason);
 
-            DebugUtility.LogVerbose<WorldLifecycleSceneFlowResetDriver>(
-                $"[OBS][WorldLifecycle] V1FallbackPublish signature='{signature ?? string.Empty}' reason='{reason ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}'.",
+            DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                $"[OBS][ResetInterop] V1FallbackPublish signature='{signature ?? string.Empty}' reason='{reason ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}'.",
                 DebugUtility.Colors.Info);
 
             WorldResetOrchestrator.PublishResetCompletedV1(signature ?? string.Empty, reason);
@@ -278,8 +278,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
             string reason)
         {
             // Observabilidade canonica (Contrato): ResetRequested com sourceSignature/reason/routeKind e profileLabel descritivo.
-            DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
-                $"[OBS][WorldLifecycle] ResetRequested signature='{signature ?? string.Empty}' sourceSignature='{sourceSignature ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+            DebugUtility.LogVerbose(typeof(SceneFlowWorldResetDriver),
+                $"[OBS][ResetInterop] ResetRequested signature='{signature ?? string.Empty}' sourceSignature='{sourceSignature ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -293,8 +293,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
             string reason)
         {
             // Observabilidade canonica (Contrato): ResetCompleted correlacionavel ao gate (signature) e reason final.
-            DebugUtility.LogVerbose(typeof(WorldLifecycleSceneFlowResetDriver),
-                $"[OBS][WorldLifecycle] ResetCompleted signature='{signature ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+            DebugUtility.LogVerbose(typeof(SceneFlowWorldResetDriver),
+                $"[OBS][ResetInterop] ResetCompleted signature='{signature ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -380,8 +380,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 
         private static void LogDuplicateGuard(string signature, SceneRouteKind routeKind, string profileLabel, string target, string guardReason)
         {
-            DebugUtility.LogWarning<WorldLifecycleSceneFlowResetDriver>(
-                $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [WorldLifecycle] ResetWorld guard: ScenesReady duplicado. signature='{signature}', routeKind='{routeKind}', profileLabel='{profileLabel}', targetScene='{target}', guard='{guardReason}'.");
+            DebugUtility.LogWarning<SceneFlowWorldResetDriver>(
+                $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [ResetInterop] ResetWorld guard: ScenesReady duplicado. signature='{signature}', routeKind='{routeKind}', profileLabel='{profileLabel}', targetScene='{target}', guard='{guardReason}'.");
         }
     }
 }

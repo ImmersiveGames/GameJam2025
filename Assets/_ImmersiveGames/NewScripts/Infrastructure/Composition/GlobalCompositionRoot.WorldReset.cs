@@ -5,9 +5,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static void InstallWorldLifecycleServices()
+        private static void InstallWorldResetServices()
         {
-            RegisterIfMissing(() => new WorldLifecycleSceneFlowResetDriver());
+            RegisterIfMissing(() => new SceneFlowWorldResetDriver());
             RegisterIfMissing(() => new WorldResetService());
             RegisterIfMissing<IWorldResetCommands>(() => new WorldResetCommands());
 

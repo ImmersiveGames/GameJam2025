@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReady;
         private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _beforeFadeOut;
         private readonly EventBinding<SceneTransitionCompletedEvent> _completed;
-        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _resetCompleted;
+        private readonly EventBinding<WorldResetCompletedEvent> _resetCompleted;
 
         private readonly EventBinding<GameRunStartedEvent> _runStarted;
         private readonly EventBinding<GameRunEndedEvent> _runEnded;
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
         private IEventBus<SceneTransitionScenesReadyEvent> _scenesReadyBus;
         private IEventBus<SceneTransitionBeforeFadeOutEvent> _beforeFadeOutBus;
         private IEventBus<SceneTransitionCompletedEvent> _completedBus;
-        private IEventBus<WorldLifecycleResetCompletedEvent> _resetCompletedBus;
+        private IEventBus<WorldResetCompletedEvent> _resetCompletedBus;
 
         private IEventBus<GameRunStartedEvent> _runStartedBus;
         private IEventBus<GameRunEndedEvent> _runEndedBus;
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             _scenesReady = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
             _beforeFadeOut = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnBeforeFadeOut);
             _completed = new EventBinding<SceneTransitionCompletedEvent>(OnCompleted);
-            _resetCompleted = new EventBinding<WorldLifecycleResetCompletedEvent>(OnResetCompleted);
+            _resetCompleted = new EventBinding<WorldResetCompletedEvent>(OnResetCompleted);
 
             _runStarted = new EventBinding<GameRunStartedEvent>(OnRunStarted);
             _runEnded = new EventBinding<GameRunEndedEvent>(OnRunEnded);
@@ -170,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 _scenesReadyBus != EventBus<SceneTransitionScenesReadyEvent>.GlobalBus ||
                 _beforeFadeOutBus != EventBus<SceneTransitionBeforeFadeOutEvent>.GlobalBus ||
                 _completedBus != EventBus<SceneTransitionCompletedEvent>.GlobalBus ||
-                _resetCompletedBus != EventBus<WorldLifecycleResetCompletedEvent>.GlobalBus ||
+                _resetCompletedBus != EventBus<WorldResetCompletedEvent>.GlobalBus ||
                 _runStartedBus != EventBus<GameRunStartedEvent>.GlobalBus ||
                 _runEndedBus != EventBus<GameRunEndedEvent>.GlobalBus ||
                 _pauseBus != EventBus<GamePauseCommandEvent>.GlobalBus ||
@@ -224,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 _scenesReadyBus = EventBus<SceneTransitionScenesReadyEvent>.GlobalBus;
                 _beforeFadeOutBus = EventBus<SceneTransitionBeforeFadeOutEvent>.GlobalBus;
                 _completedBus = EventBus<SceneTransitionCompletedEvent>.GlobalBus;
-                _resetCompletedBus = EventBus<WorldLifecycleResetCompletedEvent>.GlobalBus;
+                _resetCompletedBus = EventBus<WorldResetCompletedEvent>.GlobalBus;
 
                 _runStartedBus = EventBus<GameRunStartedEvent>.GlobalBus;
                 _runEndedBus = EventBus<GameRunEndedEvent>.GlobalBus;
@@ -305,13 +305,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 DebugUtility.Colors.Info);
         }
 
-        private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
+        private void OnResetCompleted(WorldResetCompletedEvent evt)
         {
             string rawSig = evt.ContextSignature ?? string.Empty;
             if (string.IsNullOrWhiteSpace(rawSig))
             {
                 Fail("<missing-signature>", "I3",
-                    "WorldLifecycleResetCompletedEvent recebido sem ContextSignature (correlação quebrada).",
+                    "WorldResetCompletedEvent recebido sem ContextSignature (correlação quebrada).",
                     contextText: "<no-scene-context>",
                     extra: evt.ToString());
 

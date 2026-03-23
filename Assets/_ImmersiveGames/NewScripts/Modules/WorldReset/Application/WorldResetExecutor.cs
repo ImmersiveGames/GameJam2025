@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             if (missingKinds.Count == 0)
             {
                 DebugUtility.LogVerbose<WorldResetExecutor>(
-                    $"[OBS][WorldLifecycle] Post-reset essential actor validation passed. scene='{sceneName}', required={essentialServices.Count}, presentKinds={presentActorKinds.Count}.",
+                    $"[OBS][WorldReset] Post-reset essential actor validation passed. scene='{sceneName}', required={essentialServices.Count}, presentKinds={presentActorKinds.Count}.",
                     DebugUtility.Colors.Success);
                 return;
             }

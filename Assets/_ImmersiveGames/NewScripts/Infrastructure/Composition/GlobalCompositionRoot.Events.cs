@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<SceneTransitionCompletedEvent>.Clear();
 
             // WorldLifecycle (NewScripts): reset completion gate depende deste evento.
-            EventBus<WorldLifecycleResetCompletedEvent>.Clear();
+            EventBus<WorldResetCompletedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle).",

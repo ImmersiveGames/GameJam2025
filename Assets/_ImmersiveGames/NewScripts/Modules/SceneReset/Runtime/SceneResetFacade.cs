@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
         {
             return ExecuteAsync(
                 resetContext: null,
-                gateToken: WorldLifecycleTokens.WorldResetToken,
+                gateToken: WorldResetTokens.WorldResetToken,
                 startLog: "World Reset Started",
                 completionLog: "World Reset Completed");
         }

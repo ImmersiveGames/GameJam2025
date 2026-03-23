@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
 {
     /// <summary>
-    /// Contrato para orquestrar um reset determinístico do WorldLifecycle.
+    /// Contrato para orquestrar um reset determinístico do WorldReset.
     /// Implementações devem garantir idempotência e determinismo por `reason/contextSignature`.
     /// Implementacao canonica: Lifecycle/World/Reset/Application/WorldResetService.
     /// </summary>

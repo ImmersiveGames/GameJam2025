@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
         private readonly EventBinding<GameStartRequestedEvent> _startRequestedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
-        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _worldResetCompletedBinding;
+        private readonly EventBinding<WorldResetCompletedEvent> _worldResetCompletedBinding;
 
         private bool _disposed;
 
@@ -37,12 +37,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             _startRequestedBinding = new EventBinding<GameStartRequestedEvent>(_ => OnStartRequestedCommon());
             _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
-            _worldResetCompletedBinding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnWorldResetCompleted);
+            _worldResetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnWorldResetCompleted);
 
             EventBus<GameStartRequestedEvent>.Register(_startRequestedBinding);
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
-            EventBus<WorldLifecycleResetCompletedEvent>.Register(_worldResetCompletedBinding);
+            EventBus<WorldResetCompletedEvent>.Register(_worldResetCompletedBinding);
 
             if (_startPlan == null)
             {
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
             EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
-            EventBus<WorldLifecycleResetCompletedEvent>.Unregister(_worldResetCompletedBinding);
+            EventBus<WorldResetCompletedEvent>.Unregister(_worldResetCompletedBinding);
         }
 
         private void OnStartRequestedCommon()
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             TryIssueGameLoopSync();
         }
 
-        private void OnWorldResetCompleted(WorldLifecycleResetCompletedEvent evt)
+        private void OnWorldResetCompleted(WorldResetCompletedEvent evt)
         {
             if (!_startInProgress)
             {
@@ -219,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
                 else if (!string.Equals(evt.ContextSignature, _expectedContextSignature, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                        $"[GameLoopSceneFlow] WorldLifecycleResetCompleted ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', reason='{evt.Reason ?? "<null>"}'.",
+                        $"[GameLoopSceneFlow] WorldResetCompletedEvent ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', reason='{evt.Reason ?? "<null>"}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -227,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             else if (!string.IsNullOrEmpty(_expectedContextSignature))
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                    $"[GameLoopSceneFlow] WorldLifecycleResetCompleted ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). reason='{evt.Reason ?? "<null>"}'.",
+                    $"[GameLoopSceneFlow] WorldResetCompletedEvent ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). reason='{evt.Reason ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -235,7 +235,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges
             _worldResetCompleted = true;
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
-                $"[GameLoopSceneFlow] WorldLifecycle reset concluido (ou skip). reason='{evt.Reason ?? "<null>"}'.",
+                $"[GameLoopSceneFlow] WorldReset concluido (ou skip). reason='{evt.Reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
 
             TryIssueGameLoopSync();

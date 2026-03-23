@@ -2,7 +2,7 @@ using System;
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
 {
     /// <summary>
-    /// Request imutavel para reset do WorldLifecycle.
+    /// Request imutavel para reset do WorldReset.
     /// Carrega apenas dados necessarios para correlacao e observabilidade de alto valor.
     /// </summary>
     public readonly struct WorldResetRequest

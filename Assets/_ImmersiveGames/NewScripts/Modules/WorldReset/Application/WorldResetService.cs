@@ -14,7 +14,7 @@ using _ImmersiveGames.NewScripts.Modules.WorldReset.Validation;
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 {
     /// <summary>
-    /// Servico canonico do reset do WorldLifecycle.
+    /// Servico canonico do reset do WorldReset.
     /// Fonte de verdade para policy/guards/validation/orchestration.
     /// Ownership (Baseline 3.1):
     /// - OWNER do macro reset (world reset) no runtime.

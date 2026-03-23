@@ -1,7 +1,7 @@
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
 {
     /// <summary>
-    /// Tipos de reset explícitos do domínio WorldLifecycle.
+    /// Tipos de reset explícitos do domínio WorldReset.
     /// </summary>
     public enum ResetKind
     {

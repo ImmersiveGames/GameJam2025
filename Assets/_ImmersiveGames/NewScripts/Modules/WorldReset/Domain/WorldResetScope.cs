@@ -1,7 +1,7 @@
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
 {
     /// <summary>
-    /// Escopos suportados para reset parcial (soft reset) do WorldLifecycle.
+    /// Escopos suportados para reset parcial (soft reset) do WorldReset/SceneReset.
     /// </summary>
     public enum WorldResetScope
     {

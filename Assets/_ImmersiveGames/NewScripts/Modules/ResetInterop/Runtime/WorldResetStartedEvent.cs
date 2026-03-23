@@ -4,9 +4,9 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
     /// <summary>
     /// Evento canônico publicado quando um ResetWorld inicia.
     /// </summary>
-    public readonly struct WorldLifecycleResetStartedEvent : IEvent
+    public readonly struct WorldResetStartedEvent : IEvent
     {
-        public WorldLifecycleResetStartedEvent(string contextSignature, string reason)
+        public WorldResetStartedEvent(string contextSignature, string reason)
         {
             ContextSignature = contextSignature ?? string.Empty;
             Reason = reason ?? string.Empty;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 
         public override string ToString()
         {
-            return $"WorldLifecycleResetStarted(ContextSignature='{ContextSignature}', Reason='{Reason}')";
+            return $"WorldResetStartedEvent(ContextSignature='{ContextSignature}', Reason='{Reason}')";
         }
     }
 }

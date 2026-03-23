@@ -3,15 +3,14 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop
 {
     /// <summary>
-    /// Participante de soft reset do WorldLifecycle para o escopo Players.
+    /// Participante de soft reset do SceneReset para o escopo Players.
     /// Implementa??o de gameplay (n?o infra).
-    /// Ponte: WorldLifecycle(WorldResetScope.Players) -> ActorGroupRearm(ByActorKind(Player)).
+    /// Ponte: SceneReset(WorldResetScope.Players) -> ActorGroupRearm(ByActorKind(Player)).
     /// </summary>
     public sealed class PlayersActorGroupRearmWorldParticipant : IActorGroupRearmWorldParticipant
     {
