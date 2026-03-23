@@ -8,22 +8,19 @@
 
 ## Visão geral atual
 
-| Módulo / capability | Estado atual | Observação |
+| Referência nas análises | Estado atual | Observação |
 |---|---|---|
-| **Audio** | ✅ Vigente | Sem mudança estrutural relevante nesta rodada. |
-| **ContentSwap** | ❌ Removido | Código removido; relatório mantido apenas como histórico. |
-| **GameLoop** | ⚠️ Aberto | Ainda não revisitado em profundidade nesta rodada. |
-| **Gameplay** | ⚠️ Parcial | Boundary com reset melhorou; revisão estrutural maior pendente. |
-| **SimulationGate** | ✅ Consolidado | Capability em `Infrastructure`; há resíduo de `SimulationGateTokens` em `Modules/Gates`. |
-| **InputModes** | ✅ Consolidado | Núcleo em `Infrastructure`; bridge em `Modules/SceneFlow/Interop`. |
-| **LevelFlow** | ✅ Melhorado | Semântica local + snapshot + factory local; execução técnica via `SceneComposition`. |
-| **Navigation** | ✅ Estável | Continua owner de intenções e bridge de snapshot. |
-| **PostGame** | ✅ Estável | Sem mudança estrutural relevante nesta rodada. |
-| **SceneFlow** | ✅ Melhorado | Macro usa `SceneComposition` para `load/unload`; `set-active` segue em `SceneFlow`. |
-| **WorldLifecycle** | ⚠️ Aberto | Reset estabilizado, mas ainda com dívida estrutural interna. |
-| **SceneComposition** | ✅ Canônico | Executor técnico único de composição de cenas. |
-
----
+| **Audio** | ✅ Vigente | Sem relatório consolidado específico nesta pasta. |
+| **ContentSwap** | ❌ Removido | Relatório mantido apenas como histórico. |
+| **GameLoop** | ⚠️ Vigente | Relatório continua útil; revisão profunda ainda pendente. |
+| **Gameplay** | ⚠️ Vigente | Boundary com reset mudou; relatório continua útil com ressalvas. |
+| **SimulationGate** | ⚠️ Parcial | No snapshot de módulos resta apenas `SimulationGateTokens.cs`; a capability completa não está neste recorte. |
+| **LevelFlow** | ✅ Vigente | Semântica local, snapshot e factories continuam centrais. |
+| **Navigation** | ✅ Vigente | Intent/catalog/service e bridges continuam ativos. |
+| **PostGame** | ✅ Vigente | Pequeno e estável. |
+| **SceneFlow** | ⚠️ Vigente | Continua hotspot estrutural do fluxo macro. |
+| **WorldLifecycle** | 📚 Histórico | Área hoje dividida em `WorldReset`, `SceneReset` e `ResetInterop`. |
+| **WorldReset / SceneReset / ResetInterop** | ✅ Vigentes | Ainda não possuem relatórios próprios nesta pasta consolidada. |
 
 ## Leituras principais
 

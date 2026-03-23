@@ -1,4 +1,4 @@
-> [!WARNING]
+﻿> [!WARNING]
 > **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
 >
 > **Uso correto:** tratar este documento como **hipótese de auditoria / backlog de verificação**.
@@ -85,7 +85,7 @@ Navigation/
     └── [Other editor tools]
 ```
 
-**Total:** ~1600 linhas de código (Runtime + Config + Bindings)
+**Total:** ~2957 LOC no snapshot atual (Runtime + Config + Bindings)
 
 ---
 

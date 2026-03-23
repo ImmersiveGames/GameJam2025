@@ -1,4 +1,4 @@
-> [!WARNING]
+﻿> [!WARNING]
 > **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
 >
 > **Uso correto:** tratar este documento como **hipótese de auditoria / backlog de verificação**.
@@ -17,13 +17,13 @@
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
 **Módulo:** PostGame (`Assets/_ImmersiveGames/NewScripts/Modules/PostGame`)
-**Status:** ✅ Análise Completa
+**Status:** ✅ Análise Completa (ainda útil no snapshot atual)
 
 ---
 
 ## 📋 RESUMO EXECUTIVO
 
-**Tamanho:** ~300 LOC (pequeno, bem focado)
+**Tamanho:** ~823 LOC no snapshot atual (pequeno, bem focado)
 **Status:** ✅ Excelente - Mínimas redundâncias
 **Problemas:** 2 identificados
 **Redundância:** ~30 LOC (10% de escopo)

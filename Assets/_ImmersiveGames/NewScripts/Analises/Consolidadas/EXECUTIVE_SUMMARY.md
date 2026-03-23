@@ -2,7 +2,7 @@
 
 **Data:** 23 de março de 2026  
 **Projeto:** GameJam2025  
-**Escopo:** atualização do status das análises importadas frente ao estado atual do runtime e do código.
+**Escopo:** atualização do status das análises importadas frente ao estado atual dos módulos do snapshot atual.
 
 ---
 
@@ -11,41 +11,39 @@
 As análises importadas continuam úteis como histórico, mas **não refletem mais completamente o estado atual**.
 
 ### O que mudou de verdade no projeto
-- `SimulationGate` e `InputModes` já estão em `Infrastructure` como capabilities transversais.
 - `ContentSwap` foi removido do código e ficou apenas como histórico nas análises.
-- `SceneComposition` já é a capability técnica canônica para composição de cenas.
-- `LevelFlow` delega a composição **local** para `SceneComposition` e o snapshot já carrega `LocalContentId`.
-- `SceneFlow` delega `load/unload` **macro** para `SceneComposition`, mantendo `set-active`, fade, loading e readiness em `SceneFlow`.
-- O executor vigente já foi consolidado como `SceneCompositionExecutor`.
+- `LevelFlow` segue dono da semântica local, restart e preparação macro-local.
+- `SceneFlow` continua dono da transição macro, loading, fade, readiness e sequencing.
+- A área antiga de `WorldLifecycle` foi reorganizada em `WorldReset`, `SceneReset` e `ResetInterop`.
 
 ### Consequência
-Documentos antigos que tratam `ContentSwap` como módulo vigente, ou tratam macro/local como trilhos técnicos completamente separados, devem ser lidos como **estado anterior**.
+Documentos antigos que tratam `WorldLifecycle` como módulo único ou `ContentSwap` como módulo vigente devem ser lidos como **estado anterior**.
 
 ---
 
 ## Top 5 conclusões válidas hoje
 
-1. **`WorldLifecycle` continua hotspot real**, mas o principal overlap com `Gameplay` já foi reduzido no boundary do reset.
-2. **`ContentSwap` deixou de ser relevante como módulo canônico**; a capacidade técnica real migrou para `SceneComposition`.
-3. **`LevelFlow` melhorou arquiteturalmente** porque preservou semântica local e terceirizou execução técnica.
-4. **`SceneFlow` melhorou arquiteturalmente** porque passou a compartilhar o mesmo executor técnico de composição para o macro, sem perder ownership da transição.
-5. **As análises antigas precisam ser interpretadas como backlog/importado, não como fotografia atual.**
+1. **`WorldLifecycle` virou referência histórica**, e o reset hoje está dividido entre `WorldReset`, `SceneReset` e `ResetInterop`.
+2. **`ContentSwap` deixou de ser módulo ativo** e deve ser lido apenas como histórico.
+3. **`LevelFlow` permanece central** no restart semântico e no fluxo local.
+4. **`SceneFlow` permanece central** no fluxo macro e segue como hotspot estrutural.
+5. **As análises antigas precisam ser interpretadas como backlog/importado, não como fotografia literal do snapshot atual.**
 
 ---
 
 ## Estado por módulo (resumo)
 
-| Módulo / capability | Estado atual |
+| Referência nas análises | Leitura correta hoje |
 |---|---|
-| `Infrastructure/SimulationGate` | Consolidado (há resíduo de `SimulationGateTokens` em `Modules/Gates` a limpar) |
-| `Infrastructure/InputModes` | Consolidado com bridge em `SceneFlow/Interop` |
-| `Infrastructure/SceneComposition` | Capability canônica vigente (`SceneCompositionExecutor`) |
-| `Modules/LevelFlow` | Semântica local + snapshot + factories locais de request |
-| `Modules/SceneFlow` | Semântica macro + loading/fade/readiness + `set-active`; `load/unload` via `SceneComposition` |
-| `Modules/WorldLifecycle` | Reset estabilizado, ainda com dívida estrutural interna |
-| `Modules/ContentSwap` | Removido do código; relatório mantido só como histórico |
-
----
+| `WorldLifecycle` | referência histórica para a área hoje dividida em `WorldReset`, `SceneReset` e `ResetInterop` |
+| `ContentSwap` | módulo removido; relatório mantido só como histórico |
+| `SimulationGate` | no snapshot atual de módulos resta apenas `Modules/Gates/SimulationGateTokens.cs`; capability principal está fora deste recorte |
+| `LevelFlow` | módulo ativo, com semântica local, snapshot e integração com o reset atual |
+| `SceneFlow` | módulo ativo e hotspot estrutural principal do fluxo macro |
+| `GameLoop` | módulo ativo, ainda com relatório válido em boa parte, mas sem revisão profunda nesta rodada |
+| `Navigation` | módulo ativo, mantendo intent/catalog/service + bridges |
+| `PostGame` | módulo ativo, pequeno e estável |
+| `Gameplay` | módulo ativo; relatório continua útil, mas parte do overlap antigo com reset mudou de lugar |
 
 ## Leitura recomendada
 

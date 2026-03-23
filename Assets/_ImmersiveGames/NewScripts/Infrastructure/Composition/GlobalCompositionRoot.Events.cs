@@ -32,11 +32,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<SceneTransitionBeforeFadeOutEvent>.Clear();
             EventBus<SceneTransitionCompletedEvent>.Clear();
 
-            // WorldLifecycle (NewScripts): reset completion gate depende deste evento.
+            // WorldReset/ResetInterop (NewScripts): completion gate depende deste evento.
             EventBus<WorldResetCompletedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle).",
+                "[EventBus] EventBus inicializado (GameLoop + SceneFlow + LevelFlow + WorldReset).",
                 DebugUtility.Colors.Info);
         }
 

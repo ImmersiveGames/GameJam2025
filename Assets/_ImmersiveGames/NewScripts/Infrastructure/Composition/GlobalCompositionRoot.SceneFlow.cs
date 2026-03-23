@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var loaderAdapter = SceneFlowAdapterFactory.CreateLoaderAdapter();
             var fadeAdapter = SceneFlowAdapterFactory.CreateFadeAdapter(DependencyManager.Provider);
 
-            // Gate composto: (1) WorldLifecycle reset -> (2) LevelPrepare (macro gameplay) -> libera FadeOut.
+            // Gate composto: (1) WorldReset completion -> (2) LevelPrepare (macro gameplay) -> libera FadeOut.
             ISceneTransitionCompletionGate completionGate = null;
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) && existingGate != null)
             {
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     if (completionGate != null)
                     {
                         DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                            $"[SceneFlow] ISceneTransitionCompletionGate não é WorldResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldLifecycle (completion gate).");
+                            $"[SceneFlow] ISceneTransitionCompletionGate não é WorldResetCompletionGate (tipo='{completionGate.GetType().Name}'). Substituindo para cumprir o contrato SceneFlow/WorldReset (completion gate).");
                     }
 
                     innerGate = new WorldResetCompletionGate(timeoutMs: 20000);

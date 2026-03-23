@@ -11,11 +11,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static void RegisterLevelsServices()
+        private static void InstallLevelFlowServices()
         {
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
             {
-                throw new InvalidOperationException("IGameNavigationService obrigatorio ausente no DI global. Garanta RegisterGameNavigationService no pipeline antes de RegisterLevelsServices.");
+                throw new InvalidOperationException("IGameNavigationService obrigatorio ausente no DI global. Garanta RegisterGameNavigationService no pipeline antes de InstallLevelFlowServices.");
             }
 
             var bootstrapConfig = GetRequiredBootstrapConfig(out _);
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DependencyManager.Provider.RegisterGlobal(stagePresentationService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][LevelFlow] ILevelStagePresentationService registrado (LevelStagePresentationService).",
+                    "[OBS][LevelFlow] ILevelStagePresentationService registrado no DI global (LevelStagePresentationService).",
                     DebugUtility.Colors.Info);
             }
 
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 DependencyManager.Provider.RegisterGlobal(levelPostGameHookService);
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[OBS][LevelFlow] ILevelPostGameHookService registrado (LevelPostGameHookService).",
+                    "[OBS][LevelFlow] ILevelPostGameHookService registrado no DI global (LevelPostGameHookService).",
                     DebugUtility.Colors.Info);
             }
 

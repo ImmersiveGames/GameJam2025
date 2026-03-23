@@ -1,6 +1,6 @@
 ﻿# 📍 LOCALIZAÇÃO FINAL - TODAS AS ANÁLISES
 
-**Data:** 22 de março de 2026
+**Data:** 23 de março de 2026
 **Status:** ✅ Centralizado em `NewScripts/Analises/`
 
 ---
@@ -68,10 +68,10 @@ Análise individual de cada módulo.
 - **Status:** 🔴 Crítico
 
 ### 3. `WORLDLIFECYCLE_ANALYSIS_REPORT.md`
-- **Módulo:** WorldLifecycle (2,500 LOC)
-- **Redundância:** 18%
-- **Problemas:** 7 identificados + cruzamento
-- **Status:** 🔴 Crítico (WorldLifecycleOrchestrator = 990 LOC!)
+- **Escopo:** área histórica hoje dividida em `WorldReset`, `SceneReset` e `ResetInterop`
+- **Redundância:** histórica / referência arquitetural
+- **Problemas:** útil como mapa do hotspot original de reset
+- **Status:** 📚 Histórico
 
 ### 4. `SCENEFLOW_ANALYSIS_REPORT.md`
 - **Módulo:** SceneFlow (2,500 LOC)
@@ -91,12 +91,6 @@ Análise individual de cada módulo.
 - **Problemas:** 2 identificados
 - **Status:** ✅ Excelente
 
-### 7. `INPUTMODES_ANALYSIS_REPORT.md`
-- **Módulo/capability:** InputModes (Infrastructure)
-- **Redundância:** 10%
-- **Problemas:** 2 identificados
-- **Status:** ✅ Bom
-
 ### 8. `LEVELFLOW_ANALYSIS_REPORT.md`
 - **Módulo:** LevelFlow (1,500 LOC)
 - **Redundância:** 3%
@@ -110,10 +104,10 @@ Análise individual de cada módulo.
 - **Status:** ✅ Bom
 
 ### 10. `CONTENTSWAP_ANALYSIS_REPORT.md`
-- **Módulo:** ContentSwap (histórico / removido do trilho funcional atual)
-- **Redundância:** 5%
-- **Problemas:** 2 identificados
-- **Status:** ✅ Bom
+- **Módulo:** ContentSwap (histórico / removido)
+- **Redundância:** histórica
+- **Problemas:** úteis apenas como contexto de migração
+- **Status:** 📚 Histórico
 
 ---
 
@@ -312,7 +306,7 @@ Se está procurando algo específico:
 
 ---
 
-**Data:** 22 de março de 2026
+**Data:** 23 de março de 2026
 **Versão:** 1.0 - Final
 **Status:** ✅ PRONTO PARA USO
 

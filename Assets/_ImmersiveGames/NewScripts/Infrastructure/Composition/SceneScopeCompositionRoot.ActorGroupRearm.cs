@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // ----------------------------
             // ActorGroupRearm (grupos/targets)
             // ----------------------------
-            // Classificador de alvos can?nicos por grupo/ids para reset de gameplay.
+            // Classificador de alvos canônicos por grupo/ids para reset de gameplay.
             if (!provider.TryGetForScene<IActorGroupRearmTargetClassifier>(_sceneName, out var classifier) || classifier == null)
             {
                 classifier = new DefaultActorGroupRearmTargetClassifier();
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"IActorGroupRearmTargetClassifier registrado para a cena '{_sceneName}'.");
             }
 
-            // Orquestrador de reset de gameplay (por fases) acion?vel por participantes do WorldLifecycle.
+            // Orquestrador de reset de gameplay (por fases) acionável por participantes do reset.
             if (!provider.TryGetForScene<IActorGroupRearmOrchestrator>(_sceneName, out var gameplayReset) || gameplayReset == null)
             {
                 gameplayReset = new ActorGroupRearmOrchestrator(_sceneName);
@@ -37,14 +37,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"IActorGroupRearmOrchestrator registrado para a cena '{_sceneName}'.");
             }
 
-            // Ponte WorldLifecycle soft reset -> ActorGroupRearm
+            // Ponte de reset scoped -> ActorGroupRearm
             var playersResetParticipant = new PlayersActorGroupRearmWorldParticipant();
             provider.RegisterForScene<IActorGroupRearmWorldParticipant>(
                 _sceneName,
                 playersResetParticipant,
                 allowOverride: false);
             DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"IActorGroupRearmWorldBridge registrado para a cena '{_sceneName}'.");
+                $"IActorGroupRearmWorldParticipant registrado para a cena '{_sceneName}'.");
 
             RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
         }

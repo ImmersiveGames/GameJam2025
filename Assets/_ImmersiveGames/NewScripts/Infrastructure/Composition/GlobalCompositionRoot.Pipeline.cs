@@ -20,10 +20,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             Audio,
             GameLoop,
             SceneFlow,
-            WorldLifecycle,
+            WorldReset,
             Navigation,
             SceneComposition,
-            Levels
+            LevelFlow
         }
 
         private static CompositionInstallStage _compositionInstallStage;
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.SceneFlow;
             InstallCompositionModules();
 
-            _compositionInstallStage = CompositionInstallStage.WorldLifecycle;
+            _compositionInstallStage = CompositionInstallStage.WorldReset;
             InstallCompositionModules();
 
             _compositionInstallStage = CompositionInstallStage.Navigation;
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             _compositionInstallStage = CompositionInstallStage.SceneComposition;
             InstallCompositionModules();
 
-            _compositionInstallStage = CompositionInstallStage.Levels;
+            _compositionInstallStage = CompositionInstallStage.LevelFlow;
             InstallCompositionModules();
 
             RegisterExitToMenuCoordinator();
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 case CompositionInstallStage.SceneFlow:
                     InstallSceneFlowServices();
                     break;
-                case CompositionInstallStage.WorldLifecycle:
+                case CompositionInstallStage.WorldReset:
                     InstallWorldResetServices();
                     break;
                 case CompositionInstallStage.Navigation:
@@ -120,8 +120,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 case CompositionInstallStage.SceneComposition:
                     InstallSceneCompositionServices();
                     break;
-                case CompositionInstallStage.Levels:
-                    RegisterLevelsServices();
+                case CompositionInstallStage.LevelFlow:
+                    InstallLevelFlowServices();
                     break;
             }
         }

@@ -1,4 +1,4 @@
-> [!WARNING]
+﻿> [!WARNING]
 > **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
 >
 > **Uso correto:** tratar este documento como **hipótese de auditoria / backlog de verificação**.
@@ -16,14 +16,14 @@
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Módulo:** Gates (`Assets/_ImmersiveGames/NewScripts/Modules/Gates`)
+**Módulo/capability:** SimulationGate (no snapshot atual de `Modules`, resta apenas `SimulationGateTokens.cs`)
 **Status:** ✅ Análise Completa
 
 ---
 
 ## 📋 RESUMO EXECUTIVO
 
-**Tamanho:** ~300 LOC (muito pequeno, bem focado)
+**Tamanho:** recorte parcial no snapshot atual (apenas `SimulationGateTokens.cs` em `Modules/Gates`)
 **Status:** ✅ Excelente - Poucas redundâncias
 **Problemas:** 2 identificados
 **Redundância:** ~50 LOC (17% de escopo)
@@ -35,22 +35,18 @@
 
 ```
 Gates/
-├─ ISimulationGateService.cs (67 linhas)  ← Interface bem definida
-├─ SimulationGateService.cs (256 linhas)  ← Implementação principal
-├─ SimulationGateTokens.cs (small)        ← Constantes de tokens
-└─ Interop/
-   └─ GamePauseGateBridge.cs (284 linhas) ← Bridge para pause/resume
+└─ SimulationGateTokens.cs (31 linhas)
 
-TOTAL: ~607 linhas
+NOTA: a capability completa de SimulationGate não está presente neste recorte de `Modules`; este relatório preserva a análise histórica do capability, não apenas do arquivo remanescente.
 ```
 
 ---
 
 ## ✅ ANÁLISE
 
-### O que o módulo faz?
+### O que a capability faz?
 
-Gate é um sistema de **tokens para bloquear/desbloquear simulação**:
+SimulationGate é uma capability de **tokens para bloquear/desbloquear simulação**:
 - Suporta múltiplas aquisições do mesmo token (ref-count)
 - Thread-safe com locks
 - Publica evento quando estado muda (Open/Closed)

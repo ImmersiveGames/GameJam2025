@@ -4,7 +4,7 @@
 > - `SimulationGate` e `InputModes` hoje vivem em `Infrastructure`;
 > - `SceneComposition` virou a capability técnica canônica, reduzindo parte do overlap antigo entre `LevelFlow` e `SceneFlow`.
 >
-> **Ainda permanece válido:** `WorldLifecycle` continua hotspot estrutural e `GameLoop` segue sem revisão profunda nesta rodada.
+> **Ainda permanece válido:** a área historicamente chamada `WorldLifecycle` continua sendo a melhor referência para entender o hotspot de reset, embora o snapshot atual já a tenha dividido em `WorldReset`, `SceneReset` e `ResetInterop`.
 
 ---
 
@@ -23,7 +23,7 @@
 
 | Descoberta | Severidade | Impacto | Ação |
 |-----------|-----------|--------|------|
-| **WorldLifecycle × Gameplay Overlap** | 🔴 CRÍTICA | Possível race condition em spawn/reset | ADR Imediata |
+| **WorldLifecycle × Gameplay Overlap (histórico)** | 🔴 CRÍTICA | referência útil para entender a área hoje dividida em `WorldReset`/`SceneReset` | ADR / revisão contínua |
 | **18+ variações de TryResolve Pattern** | 🔴 CRÍTICA | Inconsistência, erro-prone | Consolidar / revisar por capability |
 | **40+ Event Binding Boilerplate** | 🔴 CRÍTICA | 150+ LOC duplicado | Criar helper / manter bridges finos |
 | **4 Classes > 450 LOC** | 🟡 CRÍTICA | Difícil manter/testar | Refactor Phase 2 |
@@ -34,7 +34,7 @@
 
 - **Total de linhas analisadas:** 15,273 LOC
 - **Código duplicado estimado:** 1,500-2,000 LOC (10-13%)
-- **Módulos com problemas críticos:** 3 (WorldLifecycle, GameLoop, Gameplay)
+- **Módulos/áreas com problemas críticos:** 3 referências principais (área histórica WorldLifecycle, GameLoop, Gameplay)
 - **Padrões duplicados:** 5 principais
 - **Sobreposição cross-module crítica:** 2 pares (WorldLifecycle↔Gameplay, possível SceneFlow↔Navigation)
 

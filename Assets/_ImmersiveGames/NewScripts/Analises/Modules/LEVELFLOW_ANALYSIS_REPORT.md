@@ -36,7 +36,7 @@
 
 ## 📋 RESUMO EXECUTIVO
 
-**Tamanho:** ~1500 LOC (médio)
+**Tamanho:** ~2524 LOC no snapshot atual (médio)
 **Status:** ✅ Bom - Bem estruturado
 **Problemas:** 3 identificados
 **Redundância:** ~50 LOC (3% de escopo)
@@ -72,7 +72,7 @@ LevelFlow/
 │  │
 │  └─ Contracts & Events
 │
-└─ Bem integrado com: Navigation, WorldLifecycle, GameLoop
+└─ Bem integrado com: Navigation, WorldReset/ResetInterop, GameLoop
 
 TOTAL: ~1500 linhas
 ```
@@ -152,7 +152,7 @@ public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) 
 
 **Impacto:** Ambiguidade de ownership (quem salva? quem carrega?)
 
-**Recomendação:** Considerar consolidação com GameRunStateService em refatoração futura
+**Recomendação:** revisar a coesão interna do snapshot local, sem mover ownership para `GameRunStateService`
 
 ---
 
@@ -192,13 +192,13 @@ GameplayObservabilityLog.LogLevelStarted(
 
 ---
 
-### Recomendação 3: Considerar Consolidação com GameRunStateService (FUTURO)
+### Recomendação 3: Revisar Coesão do Snapshot Local (FUTURO)
 
 **Quando:** Refatoração maior (semanas 6+)
 
-**Problema:** RestartContextService e GameRunStateService fazem coisas similares
+**Problema:** `RestartContextService`, `GameplayStartSnapshot` e as bridges de navegação merecem revisão conjunta para reduzir ambiguidade
 
-**Solução:** Consolidar contextos de run (snapshot + outcome)
+**Solução:** revisar shape e responsabilidades do snapshot sem tirar ownership de `LevelFlow`
 
 ---
 

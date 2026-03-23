@@ -1,8 +1,8 @@
 ﻿# 📊 ANÁLISES DE MÓDULOS - GameJam2025
 
-**Última atualização:** 22 de março de 2026
+**Última atualização:** 23 de março de 2026
 **Localização:** `NewScripts/Analises/`
-**Status:** ✅ Centralizado e Organizado
+**Status:** ✅ Centralizado e atualizado ao estado atual dos módulos
 
 ---
 
@@ -26,7 +26,6 @@ Analises/
     ├── SCENEFLOW_ANALYSIS_REPORT.md
     ├── NAVIGATION_ANALYSIS_REPORT.md
     ├── GATES_ANALYSIS_REPORT.md
-    ├── INPUTMODES_ANALYSIS_REPORT.md
     ├── LEVELFLOW_ANALYSIS_REPORT.md
     ├── POSTGAME_ANALYSIS_REPORT.md
     └── CONTENTSWAP_ANALYSIS_REPORT.md
@@ -125,9 +124,9 @@ Analises/
 
 ### Escopo
 
-- **Módulos analisados:** 11/11 (100%)
-- **Total LOC:** 15,273
-- **Redundância:** 1,500-2,000 LOC (10-13%)
+- **Módulos ativos no snapshot atual:** 11 (`Audio`, `GameLoop`, `Gameplay`, `Gates`, `LevelFlow`, `Navigation`, `PostGame`, `ResetInterop`, `SceneFlow`, `SceneReset`, `WorldReset`)
+- **Relatórios históricos ainda úteis:** `WORLDLIFECYCLE_ANALYSIS_REPORT.md` e `CONTENTSWAP_ANALYSIS_REPORT.md`
+- **Observação:** `WorldLifecycle` e `ContentSwap` devem ser lidos como contexto histórico, não como módulos vivos do snapshot atual.
 
 ### Problemas Críticos
 

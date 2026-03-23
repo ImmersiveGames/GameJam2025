@@ -1,4 +1,4 @@
-> [!NOTE]
+﻿> [!NOTE]
 > **Status atual confirmado:** `WorldLifecycle` continua dono do reset e o boundary externo já foi saneado o suficiente para o trilho local ser tratado como um problema interno de arquitetura.
 >
 > **Implementado desde a análise original:**
@@ -32,11 +32,11 @@
 
 ---
 
-# 📊 ANÁLISE DO MÓDULO WORLDLIFECYCLE - REDUNDÂNCIAS INTERNAS E CRUZAMENTO COM GAMELOOP
+# 📊 ANÁLISE DA ÁREA HISTÓRICA WORLDLIFECYCLE - REDUNDÂNCIAS INTERNAS E CRUZAMENTO COM GAMELOOP
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Módulos:** WorldLifecycle + GameLoop Comparison
+**Escopo histórico:** antiga área `WorldLifecycle` + comparação com `GameLoop`
 **Versão do Relatório:** 1.0
 **Status:** ✅ Análise Completa com Comparação Cross-Module
 
@@ -56,9 +56,9 @@
 
 ## 🎯 Resumo Executivo
 
-### Descoberta Crítica: **HOTSPOT INTERNO DO RESET LOCAL**
+### Descoberta Crítica: **HOTSPOT HISTÓRICO DO RESET**
 
-O módulo **WorldLifecycle** continua diferente do GameLoop em escopo, mas o problema principal hoje já não é o cruzamento externo; é o miolo interno do reset local:
+A antiga área `WorldLifecycle` continua sendo a melhor referência para entender o hotspot de reset, embora hoje o código já esteja repartido em `WorldReset`, `SceneReset` e `ResetInterop`:
 - **GameLoop:** Gerencia estados de gameplay (Boot → Playing → PostPlay)
 - **WorldLifecycle:** Gerencia reset/respawn do mundo (determinístico e sequencial)
 
@@ -72,7 +72,7 @@ O módulo **WorldLifecycle** continua diferente do GameLoop em escopo, mas o pro
 
 ---
 
-## 📁 ESTRUTURA DO WORLDLIFECYCLE
+## 📁 ESTRUTURA ORIGINAL ANALISADA (HOJE REPARTIDA)
 
 ```
 WorldLifecycle/

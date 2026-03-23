@@ -1,4 +1,4 @@
-> [!WARNING]
+﻿> [!WARNING]
 > **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
 >
 > **Uso correto:** tratar este documento como **hipótese de auditoria / backlog de verificação**.
@@ -18,7 +18,7 @@
 **Projeto:** GameJam2025
 **Módulo:** GameLoop (`Assets/_ImmersiveGames/NewScripts/Modules/GameLoop`)
 **Versão do Relatório:** 1.0
-**Status:** ✅ Análise Completa
+**Status:** ✅ Análise Completa (ainda útil no snapshot atual)
 
 ---
 

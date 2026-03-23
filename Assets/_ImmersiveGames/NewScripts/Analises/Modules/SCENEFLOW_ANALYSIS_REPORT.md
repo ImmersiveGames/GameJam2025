@@ -35,7 +35,7 @@
 
 ## 📋 RESUMO EXECUTIVO
 
-**Tamanho:** ~3000+ LOC (MUITO GRANDE)
+**Tamanho:** ~5688 LOC no snapshot atual (MUITO GRANDE)
 **Status:** ⚠️ Complexo - Múltiplas responsabilidades
 **Problemas:** 5+ identificados
 **Redundância:** ~200 LOC (7% de escopo)
@@ -46,9 +46,9 @@
 ## 🏗️ ESTRUTURA DO MÓDULO
 
 ```
-SceneFlow/ (GIGANTE!)
+SceneFlow/ (GIGANTE! - e ainda maior no snapshot atual)
 ├─ Runtime/ (10 arquivos)
-│  ├─ SceneTransitionService.cs (726 linhas!) ← CRÍTICO / ainda concentrado
+│  ├─ SceneTransitionService.cs (hotspot principal / ainda concentrado)
 │  ├─ SceneFlowSameFrameDedupe.cs (23 linhas) ← Helper
 │  ├─ SceneFlowSignatureCache.cs (61 linhas)
 │  ├─ SceneFlowAdapterFactory.cs
@@ -89,7 +89,7 @@ SceneFlow é o **coordinador central de transições de cena**:
 - Carrega/descarrega cenas
 - Aplica fade in/out
 - Gerencia gates de readiness
-- Coordena com WorldLifecycle, GameLoop, InputModes
+- Coordena com WorldReset/ResetInterop, GameLoop e Navigation
 - Publica eventos (Started, ScenesReady, Completed)
 
 ### Problema Principal
