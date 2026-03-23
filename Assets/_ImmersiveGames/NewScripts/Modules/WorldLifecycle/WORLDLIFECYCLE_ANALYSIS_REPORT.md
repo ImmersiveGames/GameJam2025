@@ -1,4 +1,4 @@
-﻿# 📊 ANÁLISE DO MÓDULO WORLDLIFECYCLE - REDUNDÂNCIAS INTERNAS E CRUZAMENTO COM GAMELOOP
+# 📊 ANÁLISE DO MÓDULO WORLDLIFECYCLE - REDUNDÂNCIAS INTERNAS E CRUZAMENTO COM GAMELOOP
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
@@ -38,12 +38,15 @@ O módulo **WorldLifecycle** é fundamentalmente **diferente** do GameLoop em es
 
 ---
 
+
+> **Atualização de estado (Fase 4.b / 4.c):** este relatório continua útil para identificar o `WorldLifecycle` como hotspot estrutural, mas alguns pontos do “shape” interno ficaram desatualizados. No estado atual do módulo, já existe o pipeline local explícito em `Runtime/SceneReset/*` (`SceneResetContext`, `SceneResetPipeline`, `ISceneResetPhase` e `Phases/*`), o arquivo `Bindings/WorldLifecycleSceneResetRunner.cs` já contém a classe `SceneResetRunner`, e `WorldLifecycleOrchestrator` deixou de ser o pipeline real: hoje ele funciona como **façade fina** sobre o pipeline `SceneReset`. Portanto, a leitura correta da fase 4.c é: renomear a superfície local remanescente (`WorldLifecycleController`, `WorldLifecycleOrchestrator`, `WorldLifecycleControllerLocator`, hooks) **sem** reutilizar o nome `SceneResetPipeline`, que já está em uso.
+
 ## 📁 ESTRUTURA DO WORLDLIFECYCLE
 
 ```
 WorldLifecycle/
 ├── Bindings/
-│   └── WorldLifecycleController.cs (458 linhas) ← Muito grande
+│   └── WorldLifecycleController.cs (arquivo legado de naming; classe ainda grande, mas o trilho local hoje ja usa `SceneResetRunner` + `Runtime/SceneReset/*`)
 ├── Hooks/
 │   ├── IWorldLifecycleHook.cs
 │   ├── WorldLifecycleHookBase.cs
@@ -56,8 +59,12 @@ WorldLifecycle/
 │   │   ├── IWorldResetCommands.cs (interface)
 │   │   ├── WorldResetRequestService.cs (86 linhas)
 │   │   ├── WorldResetCommands.cs (193 linhas)
-│   │   ├── WorldLifecycleOrchestrator.cs (990 linhas!) ← GIGANTE
-│   │   └── WorldLifecycleController.cs (458 linhas)
+│   │   ├── WorldLifecycleOrchestrator.cs (hoje atua como façade fina; o pipeline real esta em `Runtime/SceneReset/*`)
+│   │   ├── WorldLifecycleControllerLocator.cs
+│   │   ├── SceneReset/SceneResetContext.cs
+│   │   ├── SceneReset/SceneResetPipeline.cs
+│   │   ├── SceneReset/ISceneResetPhase.cs
+│   │   └── SceneReset/Phases/*
 │   ├── Events:
 │   │   ├── WorldLifecycleResetStartedEvent.cs
 │   │   ├── WorldLifecycleResetCompletedEvent.cs
@@ -71,7 +78,8 @@ WorldLifecycle/
 ├── WorldRearm/
 │   ├── Application/
 │   │   ├── WorldResetService.cs (122 linhas)
-│   │   └── WorldResetExecutor.cs
+│   │   ├── WorldResetExecutor.cs
+│   │   └── WorldResetOrchestrator.cs
 │   ├── Domain/
 │   │   ├── WorldResetRequest.cs
 │   │   ├── WorldResetOrigin.cs
@@ -97,11 +105,13 @@ WorldLifecycle/
 
 ## 🔴 REDUNDÂNCIAS INTERNAS NO WORLDLIFECYCLE
 
-### 1️⃣ ORCHESTRATOR GIGANTE (990 linhas)
+### 1️⃣ ORCHESTRATOR GIGANTE (estado histórico do relatório)
 
-**Localização:** `WorldLifecycleOrchestrator.cs`
+**Localização histórica:** `WorldLifecycleOrchestrator.cs`
 
-**Problema:**
+**Situação no estado atual:** este item mudou de forma relevante. O `WorldLifecycleOrchestrator` já não concentra o pipeline inteiro; hoje ele funciona como **façade fina** e o pipeline local real foi movido para `Runtime/SceneReset/*`. O hotspot estrutural remanescente continua sendo o miolo do reset local, mas agora distribuído entre `WorldLifecycleController`, `SceneResetRunner`, `SceneResetPipeline`, runners de hook e phases.
+
+**Leitura correta deste achado hoje:**
 
 ```csharp
 public sealed class WorldLifecycleOrchestrator

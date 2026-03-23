@@ -6,23 +6,23 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Utilitário centralizado para localizar <see cref="WorldLifecycleController"/>.
+    /// Utilitário centralizado para localizar <see cref="SceneResetController"/>.
     ///
     /// Porque existe:
     /// - Reduz duplicidade (driver do SceneFlow e serviço de request usavam lógica similar).
     /// - Padroniza o comportamento de fallback (ex.: cenário com 1 controller total).
     /// - Mantém a filtragem por cena carregada (evita controllers órfãos/descarregando).
     /// </summary>
-    internal static class WorldLifecycleControllerLocator
+    internal static class SceneResetControllerLocator
     {
-        public static IReadOnlyList<WorldLifecycleController> FindControllersForScene(string sceneName)
+        public static IReadOnlyList<SceneResetController> FindControllersForScene(string sceneName)
         {
             string target = (sceneName ?? string.Empty).Trim();
-            IReadOnlyList<WorldLifecycleController> all = FindAllControllers(includeInactive: true);
+            IReadOnlyList<SceneResetController> all = FindAllControllers(includeInactive: true);
 
             if (all.Count == 0)
             {
-                return Array.Empty<WorldLifecycleController>();
+                return Array.Empty<SceneResetController>();
             }
 
             if (target.Length == 0)
@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                 return all;
             }
 
-            List<WorldLifecycleController> result = null;
+            List<SceneResetController> result = null;
             foreach (var c in all)
             {
                 if (c == null)
@@ -50,21 +50,21 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     continue;
                 }
 
-                result ??= new List<WorldLifecycleController>(1);
+                result ??= new List<SceneResetController>(1);
                 result.Add(c);
             }
 
-            return result ?? (IReadOnlyList<WorldLifecycleController>)Array.Empty<WorldLifecycleController>();
+            return result ?? (IReadOnlyList<SceneResetController>)Array.Empty<SceneResetController>();
         }
 
-        public static WorldLifecycleController FindSingleForSceneOrFallback(string sceneName)
+        public static SceneResetController FindSingleForSceneOrFallback(string sceneName)
         {
             string target = (sceneName ?? string.Empty).Trim();
 
             // 1) tenta localizar por nome da cena.
             if (target.Length > 0)
             {
-                IReadOnlyList<WorldLifecycleController> list = FindControllersForScene(target);
+                IReadOnlyList<SceneResetController> list = FindControllersForScene(target);
                 if (list.Count == 1)
                 {
                     return list[0];
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             }
 
             // 2) fallback: se houver exatamente um controller válido em todas as cenas carregadas.
-            IReadOnlyList<WorldLifecycleController> all = FindAllControllers(includeInactive: true);
+            IReadOnlyList<SceneResetController> all = FindAllControllers(includeInactive: true);
             return all.Count == 1 ? all[0] : null;
         }
 
@@ -95,18 +95,18 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
             return (active.IsValid() ? active.name : string.Empty) ?? string.Empty;
         }
 
-        private static IReadOnlyList<WorldLifecycleController> FindAllControllers(bool includeInactive)
+        private static IReadOnlyList<SceneResetController> FindAllControllers(bool includeInactive)
         {
             // Unity 6/2022+: API recomendada.
             var inactive = includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude;
-            WorldLifecycleController[] all = UnityEngine.Object.FindObjectsByType<WorldLifecycleController>(inactive, FindObjectsSortMode.None);
+            SceneResetController[] all = UnityEngine.Object.FindObjectsByType<SceneResetController>(inactive, FindObjectsSortMode.None);
             if (all == null || all.Length == 0)
             {
-                return Array.Empty<WorldLifecycleController>();
+                return Array.Empty<SceneResetController>();
             }
 
             // Filtra por cena válida e carregada para reduzir falso-positivo durante unload.
-            List<WorldLifecycleController> valid = null;
+            List<SceneResetController> valid = null;
             foreach (var c in all)
             {
                 if (c == null)
@@ -120,11 +120,11 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime
                     continue;
                 }
 
-                valid ??= new List<WorldLifecycleController>(all.Length);
+                valid ??= new List<SceneResetController>(all.Length);
                 valid.Add(c);
             }
 
-            return valid ?? (IReadOnlyList<WorldLifecycleController>)Array.Empty<WorldLifecycleController>();
+            return valid ?? (IReadOnlyList<SceneResetController>)Array.Empty<SceneResetController>();
         }
     }
 }

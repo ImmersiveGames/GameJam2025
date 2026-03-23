@@ -7,7 +7,7 @@ Este diretório contém a implementação do **hard reset macro** do mundo e as 
 Pontos-chave:
 
 - O reset macro do mundo é coordenado por `WorldResetService` + `WorldResetOrchestrator`.
-- `WorldLifecycleController` permanece como owner de **fila/lifecycle do reset local da cena**; `WorldLifecycleSceneResetRunner` monta o trilho local; `WorldLifecycleOrchestrator` permanece como owner do pipeline determinístico `Despawn -> ScopedReset -> Spawn -> Hooks`.
+- `WorldLifecycleController` permanece como owner de **fila/lifecycle do reset local da cena**; o arquivo `WorldLifecycleSceneResetRunner.cs` hoje ja contem a classe `SceneResetRunner`, que monta o trilho local; `WorldLifecycleOrchestrator` atua como **façade fina** sobre o pipeline interno `Runtime/SceneReset/*` (`SceneResetContext`, `SceneResetPipeline`, fases e runners de hook).
 - `WorldResetExecutor` não executa spawn concreto; ele **aciona o trilho local** e valida as **pós-condições mínimas** do hard reset macro.
 - A integração com SceneFlow ocorre via **driver** (`WorldLifecycleSceneFlowResetDriver`), que dispara reset em `ScenesReady` (apenas em `profile=gameplay`) via `WorldResetService` e publica `WorldLifecycleResetCompletedEvent` em SKIP/fallback.
 - O módulo **não deve** inferir semântica de Gameplay por nome de classe ou nome de serviço.
@@ -31,8 +31,9 @@ Pontos-chave:
 ### Runtime / Execução local determinística
 
 - `WorldLifecycleController.cs` — MonoBehaviour de cena que enfileira resets, governa lifecycle do rail local e delega a execução concreta.
-- `WorldLifecycleSceneResetRunner.cs` — Runner interno que coleta serviços de spawn da cena e cria o orchestrator do trilho local.
-- `WorldLifecycleOrchestrator.cs` — Fluxo determinístico local (Gate → Hooks → Despawn → ScopedReset → Spawn → Hooks → Release).
+- `WorldLifecycleSceneResetRunner.cs` — Arquivo que hoje contém `SceneResetRunner`, responsável por coletar serviços de spawn da cena e montar o trilho local. **Na fase 4.c, a mudança correta e apenas de nome de arquivo:** `SceneResetRunner.cs`.
+- `WorldLifecycleOrchestrator.cs` — Façade fina que delega ao pipeline interno `SceneReset`. **O nome alvo correto na fase 4.c e `SceneResetFacade`**, porque `SceneResetPipeline` ja existe em `Runtime/SceneReset/`.
+- `Runtime/SceneReset/*` — Pipeline explícito do reset local (`SceneResetContext`, `SceneResetPipeline`, fases e runners de hook). Esses nomes ja estao corretos e nao entram na renomeacao da 4.c.
 - `WorldLifecycleControllerLocator.cs` — Resolução dos controllers ativos por cena.
 
 ### WorldRearm / Aplicação do reset macro
@@ -80,8 +81,8 @@ Os arquivos deste diretório estão distribuídos principalmente em:
 - ordem e determinismo do reset macro
 - validação/guards/gates do reset
 - queue/lifecycle do trilho local via `WorldLifecycleController`
-- bootstrap/assemblagem do trilho local via `WorldLifecycleSceneResetRunner`
-- execução do pipeline local via `WorldLifecycleOrchestrator`
+- bootstrap/assemblagem do trilho local via `SceneResetRunner`
+- execução do pipeline local via `WorldLifecycleOrchestrator` + `Runtime/SceneReset/*`
 - validação das pós-condições mínimas após o trilho local
 - publicação canônica de start/completion do reset
 
@@ -104,7 +105,12 @@ Os arquivos deste diretório estão distribuídos principalmente em:
 - **Não** mover lógica de reset para o driver do SceneFlow. O driver deve permanecer fino e best-effort.
 - `WorldResetService` + `WorldResetOrchestrator` são o ponto de verdade do hard reset macro.
 - `WorldLifecycleController` é o ponto de verdade para fila/lifecycle do reset local por cena.
-- `WorldLifecycleSceneResetRunner` monta dependências efêmeras do trilho local.
-- `WorldLifecycleOrchestrator` é o ponto de verdade para a ordem/pipeline do reset local determinístico por cena.
+- `SceneResetRunner` monta dependências efêmeras do trilho local.
+- `WorldLifecycleOrchestrator` é uma façade de compatibilidade; a ordem/pipeline do reset local agora vive em `Runtime/SceneReset/*`.
 - `WorldResetExecutor` deve permanecer fino: bridge entre trilho macro e trilho local + validação de pós-condição.
 - Sempre que alterar contratos de `reason`/`signature`, atualizar evidências e regras de matching.
+
+
+## Observação de naming (Fase 4.c)
+
+A renomeação desta fase atua apenas sobre a **superfície local** ainda com nomes `WorldLifecycle*`. O namespace/pipeline `Runtime/SceneReset/*` ja existe e deve ser preservado como esta.

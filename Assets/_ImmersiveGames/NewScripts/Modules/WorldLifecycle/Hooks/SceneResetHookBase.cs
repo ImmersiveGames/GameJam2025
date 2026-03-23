@@ -4,7 +4,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks
     /// <summary>
     /// Implementação base com no-op para facilitar adoção incremental.
     /// </summary>
-    public abstract class WorldLifecycleHookBase : UnityEngine.MonoBehaviour, IWorldLifecycleHook, IWorldLifecycleHookOrdered
+    public abstract class SceneResetHookBase : UnityEngine.MonoBehaviour, ISceneResetHook, ISceneResetHookOrdered
     {
         public virtual int Order => 0;
 

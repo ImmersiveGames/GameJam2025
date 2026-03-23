@@ -69,23 +69,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 allowOverride: false);
 
             // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
-            // Nunca criar o WorldLifecycleHookRegistry no controller/orchestrator.
-            WorldLifecycleHookRegistry hookRegistry;
-            if (provider.TryGetForScene<WorldLifecycleHookRegistry>(_sceneName, out var existingRegistry))
+            // Nunca criar o SceneResetHookRegistry no controller/orchestrator.
+            SceneResetHookRegistry hookRegistry;
+            if (provider.TryGetForScene<SceneResetHookRegistry>(_sceneName, out var existingRegistry))
             {
                 DebugUtility.LogError(typeof(SceneScopeCompositionRoot),
-                    $"WorldLifecycleHookRegistry já existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
+                    $"SceneResetHookRegistry já existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
                 hookRegistry = existingRegistry;
             }
             else
             {
-                hookRegistry = new WorldLifecycleHookRegistry();
+                hookRegistry = new SceneResetHookRegistry();
                 provider.RegisterForScene(
                     _sceneName,
                     hookRegistry,
                     allowOverride: false);
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
+                    $"SceneResetHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
             RegisterActorGroupRearmServices(provider, hookRegistry, worldRoot);
@@ -252,7 +252,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
 
         private void RegisterSceneLifecycleHooks(
-            WorldLifecycleHookRegistry hookRegistry,
+            SceneResetHookRegistry hookRegistry,
             Transform worldRoot)
         {
             _ = hookRegistry;

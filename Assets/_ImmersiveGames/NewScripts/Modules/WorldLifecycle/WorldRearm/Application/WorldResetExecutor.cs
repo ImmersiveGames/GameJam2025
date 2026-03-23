@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
 
         public async Task ExecuteAsync(
             WorldResetRequest request,
-            IReadOnlyList<WorldLifecycleController> controllers,
+            IReadOnlyList<SceneResetController> controllers,
             IWorldResetPolicy policy)
         {
             await ExecuteResetOnControllersAsync(controllers, request.Reason);
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
         }
 
         private static async Task ExecuteResetOnControllersAsync(
-            IReadOnlyList<WorldLifecycleController> controllers,
+            IReadOnlyList<SceneResetController> controllers,
             string reason)
         {
             if (controllers == null || controllers.Count == 0)
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                 return;
             }
 
-            var filtered = new List<WorldLifecycleController>(controllers.Count);
+            var filtered = new List<SceneResetController>(controllers.Count);
             for (int i = 0; i < controllers.Count; i++)
             {
                 var controller = controllers[i];

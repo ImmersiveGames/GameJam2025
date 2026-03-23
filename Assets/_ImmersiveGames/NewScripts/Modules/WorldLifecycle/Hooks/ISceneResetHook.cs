@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks
     /// Hooks opcionais para observar o ciclo de vida do reset do mundo.
     /// Implementação é opt-in e não altera o contrato IWorldSpawnService.
     /// </summary>
-    public interface IWorldLifecycleHook
+    public interface ISceneResetHook
     {
         Task OnBeforeDespawnAsync();
 

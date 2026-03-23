@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     {
         private void RegisterActorGroupRearmServices(
             IDependencyProvider provider,
-            WorldLifecycleHookRegistry hookRegistry,
+            SceneResetHookRegistry hookRegistry,
             Transform worldRoot)
         {
             // ----------------------------

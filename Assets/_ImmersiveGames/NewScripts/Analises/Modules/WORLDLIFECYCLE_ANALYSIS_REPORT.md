@@ -1,14 +1,20 @@
-﻿> [!NOTE]
-> **Status atual confirmado:** `WorldLifecycle` continua dono do reset, mas já não depende do `ContentSwap` para o fluxo local.
+> [!NOTE]
+> **Status atual confirmado:** `WorldLifecycle` continua dono do reset e o boundary externo já foi saneado o suficiente para o trilho local ser tratado como um problema interno de arquitetura.
 >
 > **Implementado desde a análise original:**
 > - boundary com `Gameplay` foi melhorado no reset.
-> - o executor pós-reset ficou mais claramente como validador de pós-condição.
+> - o executor pós-reset ficou claramente como validador de pós-condição.
 > - a composição técnica local/macro foi deslocada para `SceneComposition`, fora do `WorldLifecycle`.
+> - `ContentSwap` saiu do fluxo canônico.
+>
+> **Leitura correta hoje:**
+> - o próximo passo não é reabrir boundary; é limpar o **miolo interno** do reset.
+> - o naming do trilho local ainda está preso em `WorldLifecycle*`, mesmo quando o papel real já é de **scene reset local**.
 >
 > **O que permanece válido nesta análise:**
 > - `WorldLifecycle` ainda é hotspot estrutural.
-> - `WorldLifecycleOrchestrator` / `Controller` continuam pontos de concentração que merecem revisão futura.
+> - `WorldLifecycleOrchestrator` / `WorldLifecycleController` continuam pontos de concentração.
+> - a próxima fase deve separar `WorldReset*` (macro) de `SceneReset*` (local) no naming e na superfície interna.
 >
 ---
 
@@ -30,7 +36,7 @@
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Módulos:** WorldLifecycle + comparação com GameLoop (relatório histórico atualizado ao boundary atual)
+**Módulos:** WorldLifecycle + GameLoop Comparison
 **Versão do Relatório:** 1.0
 **Status:** ✅ Análise Completa com Comparação Cross-Module
 
@@ -50,9 +56,9 @@
 
 ## 🎯 Resumo Executivo
 
-### Descoberta Crítica: **SOBREPOSIÇÃO FUNCIONAL SIGNIFICATIVA**
+### Descoberta Crítica: **HOTSPOT INTERNO DO RESET LOCAL**
 
-O módulo **WorldLifecycle** é fundamentalmente **diferente** do GameLoop em escopo:
+O módulo **WorldLifecycle** continua diferente do GameLoop em escopo, mas o problema principal hoje já não é o cruzamento externo; é o miolo interno do reset local:
 - **GameLoop:** Gerencia estados de gameplay (Boot → Playing → PostPlay)
 - **WorldLifecycle:** Gerencia reset/respawn do mundo (determinístico e sequencial)
 
@@ -927,3 +933,30 @@ Playing state resumido
 **Relatório gerado:** 22 de março de 2026
 **Próximas revisões:** Após Fases 0-1 (consolidação compartilhada)
 **Status de urgência:** 🔴 ALTA para clarificação de responsabilidades (Fase 0)
+
+
+---
+
+## 🧭 Atualização de naming recomendada
+
+Para a próxima fase, a recomendação é separar o naming por responsabilidade:
+
+### Manter `WorldReset*`
+
+- `WorldResetService`
+- `WorldResetOrchestrator`
+- `WorldResetExecutor`
+- `IWorldResetCommands`
+- `WorldLifecycleSceneFlowResetDriver`
+
+### Migrar para `SceneReset*`
+
+- `WorldLifecycleController` -> `SceneResetController`
+- `WorldLifecycleSceneResetRunner` -> `SceneResetRunner`
+- `WorldLifecycleOrchestrator` -> `SceneResetPipeline`
+
+### Motivo
+
+- `WorldReset*` identifica corretamente o fluxo macro e a API publica.
+- `SceneReset*` identifica corretamente o pipeline local deterministico por cena.
+- essa separação reduz ruido conceitual e facilita futuras extrações internas por fase/hook.

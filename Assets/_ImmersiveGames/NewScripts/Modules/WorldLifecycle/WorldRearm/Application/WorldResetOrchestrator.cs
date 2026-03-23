@@ -50,12 +50,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
                 return HandleDecision("Validation", decision, request);
             }
 
-            IReadOnlyList<WorldLifecycleController> controllers = DiscoverControllers(request.TargetScene);
+            IReadOnlyList<SceneResetController> controllers = DiscoverControllers(request.TargetScene);
             if (controllers.Count == 0)
             {
                 string target = string.IsNullOrWhiteSpace(request.TargetScene) ? "<unknown>" : request.TargetScene;
                 string reason = $"{WorldResetReasons.FailedNoControllerPrefix}:{target}";
-                LogDegraded($"Nenhum WorldLifecycleController encontrado para reset. targetScene='{target}'.");
+                LogDegraded($"Nenhum SceneResetController encontrado para reset. targetScene='{target}'.");
                 PublishResetCompleted(request, reason);
                 return WorldResetResult.Failed;
             }
@@ -107,9 +107,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Applicati
             return ResetDecision.Proceed();
         }
 
-        private static IReadOnlyList<WorldLifecycleController> DiscoverControllers(string targetScene)
+        private static IReadOnlyList<SceneResetController> DiscoverControllers(string targetScene)
         {
-            return WorldLifecycleControllerLocator.FindControllersForScene(targetScene);
+            return SceneResetControllerLocator.FindControllersForScene(targetScene);
         }
 
         private WorldResetResult HandleDecision(string stage, ResetDecision decision, WorldResetRequest request)

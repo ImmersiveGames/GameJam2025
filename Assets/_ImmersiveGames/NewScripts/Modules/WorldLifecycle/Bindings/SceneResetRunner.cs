@@ -12,25 +12,24 @@ using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 {
     /// <summary>
-    /// Runner interno do trilho local de reset da cena.
-    /// Responsável por montar os serviços de spawn e instanciar o orchestrator,
-    /// mantendo o controller focado em fila/lifecycle e o orchestrator focado no pipeline determinístico.
+    /// Monta o trilho local de reset da cena.
+    /// Resolve serviços de spawn, cria a façade do reset de cena e mantém o controller livre de detalhes de pipeline.
     /// </summary>
-    internal sealed class WorldLifecycleSceneResetRunner
+    internal sealed class SceneResetRunner
     {
         private readonly ISimulationGateService _gateService;
         private readonly IWorldSpawnServiceRegistry _spawnRegistry;
         private readonly IActorRegistry _actorRegistry;
         private readonly IDependencyProvider _provider;
-        private readonly WorldLifecycleHookRegistry _hookRegistry;
+        private readonly SceneResetHookRegistry _hookRegistry;
         private readonly string _sceneName;
 
-        public WorldLifecycleSceneResetRunner(
+        public SceneResetRunner(
             ISimulationGateService gateService,
             IWorldSpawnServiceRegistry spawnRegistry,
             IActorRegistry actorRegistry,
             IDependencyProvider provider,
-            WorldLifecycleHookRegistry hookRegistry,
+            SceneResetHookRegistry hookRegistry,
             string sceneName)
         {
             _gateService = gateService;
@@ -43,20 +42,20 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 
         public Task ExecuteWorldResetAsync()
         {
-            WorldLifecycleOrchestrator orchestrator = CreateOrchestrator();
+            SceneResetFacade orchestrator = CreateOrchestrator();
             return orchestrator.ResetWorldAsync();
         }
 
         public Task ExecutePlayersResetAsync(string reason)
         {
-            WorldLifecycleOrchestrator orchestrator = CreateOrchestrator();
+            SceneResetFacade orchestrator = CreateOrchestrator();
             return orchestrator.ResetScopesAsync(new List<WorldResetScope> { WorldResetScope.Players }, reason);
         }
 
-        private WorldLifecycleOrchestrator CreateOrchestrator()
+        private SceneResetFacade CreateOrchestrator()
         {
             List<IWorldSpawnService> spawnServices = CollectSpawnServices();
-            return new WorldLifecycleOrchestrator(
+            return new SceneResetFacade(
                 _gateService,
                 spawnServices,
                 _actorRegistry,
@@ -71,12 +70,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 
             if (_spawnRegistry == null)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
+                DebugUtility.LogError(typeof(SceneResetController),
                     $"Nenhum IWorldSpawnServiceRegistry encontrado para a cena '{_sceneName}'. Lista ficará vazia.");
                 return spawnServices;
             }
 
-            foreach (var service in _spawnRegistry.Services)
+            foreach (IWorldSpawnService service in _spawnRegistry.Services)
             {
                 if (service != null)
                 {
@@ -84,17 +83,17 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 }
                 else
                 {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    DebugUtility.LogWarning(typeof(SceneResetController),
                         $"Serviço de spawn nulo detectado na cena '{_sceneName}'. Ignorado.");
                 }
             }
 
-            DebugUtility.Log(typeof(WorldLifecycleController),
+            DebugUtility.Log(typeof(SceneResetController),
                 $"Spawn services coletados para a cena '{_sceneName}': {spawnServices.Count} (registry total: {_spawnRegistry.Services.Count}).");
 
             if (_actorRegistry != null)
             {
-                DebugUtility.Log(typeof(WorldLifecycleController),
+                DebugUtility.Log(typeof(SceneResetController),
                     $"ActorRegistry count antes de orquestrar: {_actorRegistry.Count}");
             }
 

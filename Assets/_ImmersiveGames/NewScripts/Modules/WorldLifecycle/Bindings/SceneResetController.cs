@@ -11,9 +11,9 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 {
     [DisallowMultipleComponent]
-    public sealed class WorldLifecycleController : MonoBehaviour
+    public sealed class SceneResetController : MonoBehaviour
     {
-        // OWNER boundary: bootstrap/queue de reset local da cena via WorldLifecycleOrchestrator.
+        // OWNER boundary: bootstrap/queue de reset local da cena via SceneResetRunner + pipeline interno de SceneReset.
         // Nao publica eventos V1/V2 de gate/telemetria do trilho macro.
         [Header("Lifecycle")]
         [Tooltip("Quando true, o controller executa ResetWorldAsync automaticamente no Start(). " +
@@ -27,8 +27,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
 
-        // Guardrail: este controller apenas consome o WorldLifecycleHookRegistry criado no bootstrapper.
-        [Inject] private WorldLifecycleHookRegistry _hookRegistry;
+        // Guardrail: este controller apenas consome o SceneResetHookRegistry criado no bootstrapper.
+        [Inject] private SceneResetHookRegistry _hookRegistry;
 
         private bool _dependenciesInjected;
         private bool _destroyed;
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             {
                 if (verboseLogs)
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
+                    DebugUtility.Log(typeof(SceneResetController),
                         $"AutoInitializeOnStart desabilitado — aguardando acionamento externo (scene='{_sceneName}').");
                 }
                 return;
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             {
                 if (verboseLogs)
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleController),
+                    DebugUtility.Log(typeof(SceneResetController),
                         $"AutoInitializeOnStart suprimido: SceneTransition gate ativo. Aguardando driver (ScenesReady). scene='{_sceneName}'.");
                 }
                 return;
@@ -108,15 +108,15 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 {
                     if (verboseLogs)
                     {
-                        DebugUtility.Log(typeof(WorldLifecycleController),
-                            $"Limpando WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
+                        DebugUtility.Log(typeof(SceneResetController),
+                            $"Limpando SceneResetHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
                     }
                     _hookRegistry.Clear();
                 }
                 catch (Exception ex)
                 {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                        $"Falha ao limpar WorldLifecycleHookRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
+                    DebugUtility.LogWarning(typeof(SceneResetController),
+                        $"Falha ao limpar SceneResetHookRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
                 }
             }
 
@@ -127,14 +127,14 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 {
                     if (verboseLogs)
                     {
-                        DebugUtility.Log(typeof(WorldLifecycleController),
+                        DebugUtility.Log(typeof(SceneResetController),
                             $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
                     }
                     _spawnRegistry.Clear();
                 }
                 catch (Exception ex)
                 {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    DebugUtility.LogWarning(typeof(SceneResetController),
                         $"Falha ao limpar IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
                 }
             }
@@ -194,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             }
             if (position > ResetQueueBacklogWarningThreshold)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                DebugUtility.LogWarning(typeof(SceneResetController),
                     $"Reset queue backlog detectado (count={position}). Possível tempestade de resets. lastLabel='{label}', scene='{_sceneName}'.");
             }
 
@@ -205,12 +205,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             }
             if (position > 1)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                DebugUtility.LogWarning(typeof(SceneResetController),
                     $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
             }
             else if (verboseLogs)
             {
-                DebugUtility.LogVerbose(typeof(WorldLifecycleController),
+                DebugUtility.LogVerbose(typeof(SceneResetController),
                     $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
             }
 
@@ -238,7 +238,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 {
                     if (verboseLogs)
                     {
-                        DebugUtility.Log(typeof(WorldLifecycleController),
+                        DebugUtility.Log(typeof(SceneResetController),
                             $"Processando reset. label='{request.Label}', scene='{_sceneName}'.");
                     }
 
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
                 catch (Exception ex)
                 {
                     // Guardrail: Reset não deve quebrar o fluxo do caller (best-effort).
-                    DebugUtility.LogError(typeof(WorldLifecycleController),
+                    DebugUtility.LogError(typeof(SceneResetController),
                         $"Exception while processing reset queue item (label='{request.Label}', scene='{_sceneName}'): {ex}",
                         this);
                 }
@@ -283,7 +283,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             string startLog,
             string endLog,
             string exceptionLog,
-            Func<WorldLifecycleSceneResetRunner, Task> execute)
+            Func<SceneResetRunner, Task> execute)
         {
             try
             {
@@ -295,20 +295,20 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 
                 if (verboseLogs)
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleController), startLog);
+                    DebugUtility.Log(typeof(SceneResetController), startLog);
                 }
 
-                WorldLifecycleSceneResetRunner runner = CreateSceneResetRunner();
+                SceneResetRunner runner = CreateSceneResetRunner();
                 await execute(runner);
 
                 if (verboseLogs)
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleController), endLog);
+                    DebugUtility.Log(typeof(SceneResetController), endLog);
                 }
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
+                DebugUtility.LogError(typeof(SceneResetController),
                     $"{exceptionLog}{ex}",
                     this);
             }
@@ -326,34 +326,34 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 
             if (_hookRegistry == null)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"WorldLifecycleHookRegistry não encontrado para a cena '{_sceneName}'. Hooks via registry ficarão desativados.");
+                DebugUtility.LogWarning(typeof(SceneResetController),
+                    $"SceneResetHookRegistry não encontrado para a cena '{_sceneName}'. Hooks via registry ficarão desativados.");
             }
 
             if (_gateService == null)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                DebugUtility.LogWarning(typeof(SceneResetController),
                     $"ISimulationGateService não injetado para a cena '{_sceneName}'. Reset seguirá sem gate.");
             }
 
             if (_spawnRegistry == null)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
+                DebugUtility.LogError(typeof(SceneResetController),
                     $"IWorldSpawnServiceRegistry não encontrado para a cena '{_sceneName}'.");
             }
 
             if (_actorRegistry == null)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
+                DebugUtility.LogError(typeof(SceneResetController),
                     $"IActorRegistry não encontrado para a cena '{_sceneName}'.");
             }
         }
 
-        private WorldLifecycleSceneResetRunner CreateSceneResetRunner()
+        private SceneResetRunner CreateSceneResetRunner()
         {
             EnsureDependenciesInjected();
 
-            return new WorldLifecycleSceneResetRunner(
+            return new SceneResetRunner(
                 _gateService,
                 _spawnRegistry,
                 _actorRegistry,
@@ -368,7 +368,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
 
             if (_spawnRegistry == null)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
+                DebugUtility.LogError(typeof(SceneResetController),
                     $"Sem IWorldSpawnServiceRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
                 valid = false;
             }
@@ -377,7 +377,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Bindings
             {
                 return valid;
             }
-            DebugUtility.LogError(typeof(WorldLifecycleController),
+            DebugUtility.LogError(typeof(SceneResetController),
                 $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
 
             return false;

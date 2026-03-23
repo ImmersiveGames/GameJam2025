@@ -5,13 +5,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks
     /// <summary>
     /// Registry explícito de lifecycle hooks para o escopo de cena.
     /// </summary>
-    public sealed class WorldLifecycleHookRegistry : IDisposable
+    public sealed class SceneResetHookRegistry : IDisposable
     {
-        private readonly List<IWorldLifecycleHook> _hooks = new();
+        private readonly List<ISceneResetHook> _hooks = new();
 
-        public IReadOnlyList<IWorldLifecycleHook> Hooks => _hooks;
+        public IReadOnlyList<ISceneResetHook> Hooks => _hooks;
 
-        public void Register(IWorldLifecycleHook hook)
+        public void Register(ISceneResetHook hook)
         {
             if (hook == null)
             {
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks
             _hooks.Add(hook);
         }
 
-        public bool Unregister(IWorldLifecycleHook hook)
+        public bool Unregister(ISceneResetHook hook)
         {
             if (hook == null)
             {
