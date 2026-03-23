@@ -25,7 +25,7 @@ MonoBehaviour:
   - ruleId: infrastructure_root
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure
-    level: 2
+    level: 4
   - ruleId: modules_root
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules
@@ -45,4 +45,8 @@ MonoBehaviour:
   - ruleId: infra_audio
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules.Audio
+    level: 2
+  - ruleId: infra_modules_worldLifecycle
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.WorldLifecycle
     level: 4

@@ -1,7 +1,7 @@
 ﻿# ✅ CONCLUSÃO - ANÁLISES CENTRALIZADAS
 
-**Data:** 22 de março de 2026
-**Status:** ✅ TODAS AS ANÁLISES ORGANIZADAS E CENTRALIZADAS
+**Data:** 23 de março de 2026
+**Status:** ✅ ANÁLISES CENTRALIZADAS E ATUALIZADAS PARA O ESTADO ATUAL DO CÓDIGO
 
 ---
 
@@ -10,27 +10,30 @@
 ```
 Assets/_ImmersiveGames/NewScripts/Analises/
 │
-├── 📖 README.md                    ← COMECE AQUI! (Índice principal)
+├── 📖 README.md                    ← COMECE AQUI! (índice principal)
+├── 📖 LOCALIZACAO_ARQUIVOS.md      ← mapa rápido dos relatórios
 │
 ├── Consolidadas/
-│   ├── 📖 README_ANALISES.md                    (Sumário final em português)
-│   ├── 📖 EXECUTIVE_SUMMARY.md                  (Resumo executivo 30 seg)
-│   ├── 📖 MODULES_ANALYSIS_INDEX.md             (Índice de módulos - ORIGINAL)
-│   ├── 📖 MODULES_ANALYSIS_INDEX_UPDATED.md    (Índice atualizado com links)
-│   ├── 📖 CONSOLIDATED_DUPLICITY_ANALYSIS.md  (Análise cruzada detalhada)
-│   └── 📖 ANALYSIS_DOCUMENTS_MAP.md            (Mapa de navegação)
+│   ├── 📖 README_ANALISES.md
+│   ├── 📖 EXECUTIVE_SUMMARY.md
+│   ├── 📖 MODULES_ANALYSIS_INDEX.md
+│   ├── 📖 MODULES_ANALYSIS_INDEX_UPDATED.md
+│   ├── 📖 CONSOLIDATED_DUPLICITY_ANALYSIS.md
+│   └── 📖 ANALYSIS_DOCUMENTS_MAP.md
 │
-└── Modules/
-    ├── 📖 GAMEPLAY_ANALYSIS_REPORT.md           (NOVO! - Análise do Gameplay)
-    ├── 📖 GAMELOOP_ANALYSIS_REPORT.md
-    ├── 📖 WORLDLIFECYCLE_ANALYSIS_REPORT.md
-    ├── 📖 SCENEFLOW_ANALYSIS_REPORT.md
-    ├── 📖 NAVIGATION_ANALYSIS_REPORT.md
-    ├── 📖 GATES_ANALYSIS_REPORT.md
-    ├── 📖 INPUTMODES_ANALYSIS_REPORT.md
-    ├── 📖 LEVELFLOW_ANALYSIS_REPORT.md
-    ├── 📖 POSTGAME_ANALYSIS_REPORT.md
-    └── 📖 CONTENTSWAP_ANALYSIS_REPORT.md
+├── Modules/
+│   ├── 📖 GAMEPLAY_ANALYSIS_REPORT.md
+│   ├── 📖 GAMELOOP_ANALYSIS_REPORT.md
+│   ├── 📖 WORLDLIFECYCLE_ANALYSIS_REPORT.md
+│   ├── 📖 SCENEFLOW_ANALYSIS_REPORT.md
+│   ├── 📖 NAVIGATION_ANALYSIS_REPORT.md
+│   ├── 📖 LEVELFLOW_ANALYSIS_REPORT.md
+│   ├── 📖 POSTGAME_ANALYSIS_REPORT.md
+│   └── 📖 CONTENTSWAP_ANALYSIS_REPORT.md      (histórico / removido)
+│
+└── ../Infrastructure/
+    ├── SimulationGate/GATES_ANALYSIS_REPORT.md
+    └── InputModes/INPUTMODES_ANALYSIS_REPORT.md
 ```
 
 ---
@@ -42,21 +45,22 @@ Assets/_ImmersiveGames/NewScripts/Analises/
 - ✅ Criada pasta `NewScripts/Analises/`
 - ✅ Criadas subpastas `Consolidadas/` e `Modules/`
 - ✅ Copiados 5 arquivos consolidados para `Consolidadas/`
-- ✅ Copiados 9 arquivos de módulos para `Modules/`
-- ✅ Copiado novo arquivo GAMEPLAY_ANALYSIS_REPORT.md para `Modules/`
+- ✅ Mantidos 8 relatórios de módulos em `Modules/`
+- ✅ Mantidos 2 relatórios reclassificados em `Infrastructure/SimulationGate` e `Infrastructure/InputModes`
+- ✅ Mantido `CONTENTSWAP_ANALYSIS_REPORT.md` apenas como histórico do módulo removido
 
 ### 2. Organização de Links ✅
 
 - ✅ Criado `README.md` na raiz com índice principal
-- ✅ Criado `MODULES_ANALYSIS_INDEX_UPDATED.md` com links relativos
-- ✅ Todos os links usam caminhos relativos (portáveis)
+- ✅ Atualizado `MODULES_ANALYSIS_INDEX_UPDATED.md` para refletir `SceneComposition`, `ContentSwap` removido e a nova localização de Gates/InputModes
+- ✅ Corrigidos links relativos e localizações canônicas dos relatórios
 
 ### 3. Documentação Clara ✅
 
-- ✅ README principal com guias de leitura
-- ✅ Seções por cenário (Product Owner, Tech Lead, etc)
-- ✅ Referência rápida por tópico
-- ✅ Navigation maps completos
+- ✅ README principal ajustado ao estado atual do código
+- ✅ Índices consolidados atualizados para o runtime atual
+- ✅ Relatórios por módulo marcados como vigente / histórico / pendente conforme o estado atual
+- ✅ Mapa de navegação alinhado à localização real dos arquivos
 
 ---
 
@@ -75,22 +79,22 @@ Assets/_ImmersiveGames/NewScripts/Analises/
 
 **Total Consolidadas:** ~2,310 linhas
 
-### Modules/ (10 arquivos)
+### Relatórios por módulo (8 em `Analises/Modules` + 2 em `Infrastructure`)
 
 | Arquivo | Módulo | Status |
 |---------|--------|--------|
-| **GAMEPLAY_ANALYSIS_REPORT.md** | Gameplay | ✅ NOVO! |
-| **GAMELOOP_ANALYSIS_REPORT.md** | GameLoop | ✅ |
-| **WORLDLIFECYCLE_ANALYSIS_REPORT.md** | WorldLifecycle | ✅ |
-| **SCENEFLOW_ANALYSIS_REPORT.md** | SceneFlow | ✅ |
-| **NAVIGATION_ANALYSIS_REPORT.md** | Navigation | ✅ |
-| **GATES_ANALYSIS_REPORT.md** | Gates | ✅ |
-| **INPUTMODES_ANALYSIS_REPORT.md** | InputModes | ✅ |
-| **LEVELFLOW_ANALYSIS_REPORT.md** | LevelFlow | ✅ |
-| **POSTGAME_ANALYSIS_REPORT.md** | PostGame | ✅ |
-| **CONTENTSWAP_ANALYSIS_REPORT.md** | ContentSwap | ✅ |
+| **GAMEPLAY_ANALYSIS_REPORT.md** | Gameplay | ✅ Vigente |
+| **GAMELOOP_ANALYSIS_REPORT.md** | GameLoop | ✅ Vigente |
+| **WORLDLIFECYCLE_ANALYSIS_REPORT.md** | WorldLifecycle | ✅ Vigente |
+| **SCENEFLOW_ANALYSIS_REPORT.md** | SceneFlow | ✅ Vigente |
+| **NAVIGATION_ANALYSIS_REPORT.md** | Navigation | ✅ Vigente |
+| **LEVELFLOW_ANALYSIS_REPORT.md** | LevelFlow | ✅ Vigente |
+| **POSTGAME_ANALYSIS_REPORT.md** | PostGame | ✅ Vigente |
+| **CONTENTSWAP_ANALYSIS_REPORT.md** | ContentSwap | 🟡 Histórico |
+| **Infrastructure/SimulationGate/GATES_ANALYSIS_REPORT.md** | SimulationGate | ✅ Vigente |
+| **Infrastructure/InputModes/INPUTMODES_ANALYSIS_REPORT.md** | InputModes | ✅ Vigente |
 
-**Total Modules:** 10 módulos analisados
+**Total:** 10 relatórios ativos/históricos acompanhados
 
 ---
 
@@ -113,6 +117,17 @@ Assets/_ImmersiveGames/NewScripts/Analises/
 1. Abra: `Analises/README.md`
 2. Leia: `Consolidadas/ANALYSIS_DOCUMENTS_MAP.md`
 3. Navegue pelos documentos de interesse
+
+---
+
+
+## 📌 ESTADO ARQUITETURAL JÁ REFLETIDO NESTA ATUALIZAÇÃO
+
+- `ContentSwap` foi removido do código e permanece apenas como histórico nas análises.
+- `SceneComposition` é a capability técnica canônica para composição de cenas.
+- `LevelFlow` mantém a semântica local e delega a composição local ao executor técnico.
+- `SceneFlow` mantém loading/fade/readiness/`set-active` e delega `load/unload` macro ao executor técnico.
+- `Gates` e `InputModes` foram reclassificados para `Infrastructure`, embora ainda possa haver resíduos de snapshot em caminhos antigos.
 
 ---
 

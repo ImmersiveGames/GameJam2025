@@ -2,7 +2,7 @@
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Módulo:** Gates (`Assets/_ImmersiveGames/NewScripts/Modules/Gates`)
+**Capability:** SimulationGate (`Assets/_ImmersiveGames/NewScripts/Infrastructure/SimulationGate`)
 **Status:** ✅ Análise Completa
 
 ---
@@ -20,10 +20,10 @@
 ## 🏗️ ESTRUTURA DO MÓDULO
 
 ```
-Gates/
+Infrastructure/SimulationGate/
 ├─ ISimulationGateService.cs (67 linhas)  ← Interface bem definida
 ├─ SimulationGateService.cs (256 linhas)  ← Implementação principal
-├─ SimulationGateTokens.cs (small)        ← Constantes de tokens
+├─ SimulationGateTokens.cs (small)        ← Constantes de tokens canônicas
 └─ Interop/
    └─ GamePauseGateBridge.cs (284 linhas) ← Bridge para pause/resume
 
@@ -34,7 +34,7 @@ TOTAL: ~607 linhas
 
 ## ✅ ANÁLISE
 
-### O que o módulo faz?
+### O que a capability faz?
 
 Gate é um sistema de **tokens para bloquear/desbloquear simulação**:
 - Suporta múltiplas aquisições do mesmo token (ref-count)
@@ -53,6 +53,9 @@ Gate é um sistema de **tokens para bloquear/desbloquear simulação**:
 ---
 
 ## 🔴 PROBLEMAS IDENTIFICADOS
+
+> [!NOTE]
+> **Atualização de estado:** a capability já foi movida para `Infrastructure/SimulationGate`. Neste snapshot ainda existe um arquivo residual em `Modules/Gates/SimulationGateTokens.cs` que deve ser tratado como cleanup pendente, não como fonte de verdade.
 
 ### 1️⃣ GamePauseGateBridge - Dedupe Duplicado (🟡 MÉDIA)
 

@@ -1,7 +1,7 @@
 ﻿# 📋 ÍNDICE DE ANÁLISES DE MÓDULOS - GAMEjam2025
 
 **Data de Compilação:** 22 de março de 2026
-**Status:** ✅ Análises Completas para Todos os Módulos
+**Status:** ✅ Índice atualizado para o estado atual do código (com histórico preservado)
 
 ---
 
@@ -10,12 +10,12 @@
 | Módulo | Tamanho | Status | Redundância | Prioridade | Relatório |
 |--------|---------|--------|------------|-----------|-----------|
 | **Audio** | ~400 LOC | ✅ Bom | 5% | 🟢 Baixa | ✅ Analisado |
-| **ContentSwap** | ~800 LOC | ✅ Bom | 5% | 🟢 Baixa | ✅ Analisado |
+| **ContentSwap** | histórico | ❌ Removido | n/a | n/a | ✅ Relatório histórico |
 | **GameLoop** | ~2000 LOC | ⚠️ Crítico | 15% | 🔴 ALTA | ✅ GAMELOOP_ANALYSIS_REPORT.md |
-| **Gameplay** | ~2973 LOC | ⚠️ Médio | 8-12% | 🟡 MÉDIA | ✅ **GAMEPLAY_ANALYSIS_REPORT.md** (NOVO) |
-| **Gates** | ~600 LOC | ✅ Excelente | 2% | 🟢 Baixa | ✅ GATES_ANALYSIS_REPORT.md |
-| **InputModes** | ~400 LOC | ✅ Bom | 10% | 🟢 Baixa | ✅ INPUTMODES_ANALYSIS_REPORT.md |
-| **LevelFlow** | ~1500 LOC | ✅ Bom | 3% | 🟢 Baixa | ✅ LEVELFLOW_ANALYSIS_REPORT.md |
+| **Gameplay** | ~2973 LOC | ⚠️ Médio | 8-12% | 🟡 MÉDIA | ✅ GAMEPLAY_ANALYSIS_REPORT.md |
+| **SimulationGate** | ~600 LOC | ✅ Excelente | 2% | 🟢 Baixa | ✅ Infrastructure/SimulationGate/GATES_ANALYSIS_REPORT.md |
+| **InputModes** | ~400 LOC | ✅ Bom | 10% | 🟢 Baixa | ✅ Infrastructure/InputModes/INPUTMODES_ANALYSIS_REPORT.md |
+| **LevelFlow** | ~1500 LOC | ✅ Melhorado | 3% | 🟢 Baixa | ✅ LEVELFLOW_ANALYSIS_REPORT.md |
 | **Navigation** | ~550 LOC | ✅ Bom | 8% | 🟡 MÉDIA | ✅ Analisado |
 | **PostGame** | ~450 LOC | ✅ Bom | 5% | 🟢 Baixa | ✅ POSTGAME_ANALYSIS_REPORT.md |
 | **SceneFlow** | ~2500 LOC | ⚠️ Crítico | 12% | 🔴 ALTA | ✅ SCENEFLOW_ANALYSIS_REPORT.md |
@@ -91,28 +91,31 @@
 
 ### 6. LevelFlow (~1500 LOC, 3% redundância)
 
-**Problemas:**
+**Estado atual:**
 - 🟢 Bem estruturado, poucas redundâncias
-- 🟡 Possível sobreposição com LevelSwapLocalService
+- ✅ Mantém a semântica local e o snapshot
+- ✅ Já delega a composição técnica local para `ISceneCompositionExecutor`
 
 ---
 
 ### 7. InputModes (~400 LOC, 10% redundância)
 
-**Problemas:**
-- 🟡 Event binding boilerplate com SceneFlow
-- 🟡 Input mode switching pode ter padrão duplicado
+**Estado atual:**
+- ✅ Núcleo reclassificado para `Infrastructure/InputModes`
+- 🟡 `InputModeService` ainda concentra decisão de modo + descoberta de `PlayerInput`
+- 🟡 O bridge com `SceneFlow` foi corretamente deslocado para `Modules/SceneFlow/Interop`
 
 ---
 
 ## 🟢 MÓDULOS BEM FEITOS
 
-### 8. Gates (~600 LOC, 2% redundância) ✅
+### 8. SimulationGate (~600 LOC, 2% redundância) ✅
 
-- Pequeno, bem focado
+- Capability transversal em `Infrastructure/SimulationGate`
 - Interface clara
 - Thread-safe
 - Poucas redundâncias
+- Há resíduo de `SimulationGateTokens.cs` em `Modules/Gates` pendente de cleanup
 
 ---
 
@@ -123,10 +126,10 @@
 
 ---
 
-### 10. ContentSwap (~800 LOC, 5% redundância) ✅
+### 10. ContentSwap (histórico)
 
-- Bem focado
-- Bom tratamento de erros
+- Removido do código e do trilho funcional
+- Relatório mantido apenas como histórico da arquitetura anterior
 
 ---
 
@@ -140,7 +143,7 @@
 
 ### 1. TryResolve Pattern (🔴 CRÍTICO - 18+ variações)
 
-**Módulos afetados:** GameLoop, WorldLifecycle, Gameplay, Navigation, SceneFlow, ContentSwap
+**Módulos afetados:** GameLoop, WorldLifecycle, Gameplay, Navigation, SceneFlow
 
 **Padrão:**
 ```csharp
@@ -181,7 +184,7 @@ public void Dispose()
 
 ### 3. Interlocked/Mutex Pattern (🟡 MÉDIA - 5 variações)
 
-**Módulos afetados:** SceneFlow, Navigation, ContentSwap, Gameplay, IntroStage
+**Módulos afetados:** SceneFlow, Navigation, Gameplay, IntroStage
 
 **Inconsistência:** Alguns usam `Interlocked.CompareExchange`, outros usam `SemaphoreSlim`
 
@@ -201,7 +204,7 @@ public void Dispose()
 
 ### 5. Normalização de Strings (🟡 MÉDIA - 10+ variações)
 
-**Módulos afetados:** GameLoop, WorldLifecycle, Gameplay, ContentSwap
+**Módulos afetados:** GameLoop, WorldLifecycle, Gameplay
 
 **Padrão duplicado:** Normalizar null/whitespace → default value
 
@@ -412,16 +415,16 @@ TOTAL ESTIMADO          : -1500 LOC (-10% do total)
 | Módulo | Caminho | Status |
 |--------|---------|--------|
 | Audio | Mencionado como análise anterior | ✅ |
-| ContentSwap | CONTENTSWAP_ANALYSIS_REPORT.md (anexo) | ✅ |
-| GameLoop | Docs/Analises/Modules/GAMELOOP_ANALYSIS_REPORT.md | ✅ |
-| Gameplay | Modules/Gameplay/GAMEPLAY_ANALYSIS_REPORT.md | ✅ **NOVO** |
-| Gates | Modules/Gates/GATES_ANALYSIS_REPORT.md | ✅ |
-| InputModes | Modules/InputModes/INPUTMODES_ANALYSIS_REPORT.md | ✅ |
-| LevelFlow | Modules/LevelFlow/LEVELFLOW_ANALYSIS_REPORT.md | ✅ |
-| Navigation | Mencionado como análise anterior | ✅ |
-| PostGame | Modules/PostGame/POSTGAME_ANALYSIS_REPORT.md | ✅ |
-| SceneFlow | Modules/SceneFlow/SCENEFLOW_ANALYSIS_REPORT.md | ✅ |
-| WorldLifecycle | Docs/Analises/Modules/WORLDLIFECYCLE_ANALYSIS_REPORT.md | ✅ |
+| ContentSwap | Analises/Modules/CONTENTSWAP_ANALYSIS_REPORT.md | Histórico |
+| GameLoop | Analises/Modules/GAMELOOP_ANALYSIS_REPORT.md | ✅ |
+| Gameplay | Analises/Modules/GAMEPLAY_ANALYSIS_REPORT.md | ✅ |
+| SimulationGate | Infrastructure/SimulationGate/GATES_ANALYSIS_REPORT.md | ✅ |
+| InputModes | Infrastructure/InputModes/INPUTMODES_ANALYSIS_REPORT.md | ✅ |
+| LevelFlow | Analises/Modules/LEVELFLOW_ANALYSIS_REPORT.md | ✅ |
+| Navigation | Analises/Modules/NAVIGATION_ANALYSIS_REPORT.md | ✅ |
+| PostGame | Analises/Modules/POSTGAME_ANALYSIS_REPORT.md | ✅ |
+| SceneFlow | Analises/Modules/SCENEFLOW_ANALYSIS_REPORT.md | ✅ |
+| WorldLifecycle | Analises/Modules/WORLDLIFECYCLE_ANALYSIS_REPORT.md | ✅ |
 
 ---
 

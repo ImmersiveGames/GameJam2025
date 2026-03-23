@@ -1,3 +1,5 @@
-# Latest Audit Pointer
+﻿# LATEST
 
-- 2026-03-22 — `Fase-Remocao-Total-ContentSwap.md`
+- Baseline atual para leitura das análises: `output_novo.zip` / código atual.
+- Relatórios de análise atualizados nesta rodada: índices consolidados + módulos `ContentSwap`, `LevelFlow`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `InputModes`.
+- Use os relatórios em `NewScripts/Analises/` e `NewScripts/Infrastructure/*/*_ANALYSIS_REPORT.md` como estado vigente das análises.

@@ -1,3 +1,17 @@
+﻿> [!NOTE]
+> **Status atual confirmado:** `WorldLifecycle` continua dono do reset, mas já não depende do `ContentSwap` para o fluxo local.
+>
+> **Implementado desde a análise original:**
+> - boundary com `Gameplay` foi melhorado no reset.
+> - o executor pós-reset ficou mais claramente como validador de pós-condição.
+> - a composição técnica local/macro foi deslocada para `SceneComposition`, fora do `WorldLifecycle`.
+>
+> **O que permanece válido nesta análise:**
+> - `WorldLifecycle` ainda é hotspot estrutural.
+> - `WorldLifecycleOrchestrator` / `Controller` continuam pontos de concentração que merecem revisão futura.
+>
+---
+
 > [!WARNING]
 > **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
 >
@@ -16,7 +30,7 @@
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Módulos:** WorldLifecycle + GameLoop Comparison
+**Módulos:** WorldLifecycle + comparação com GameLoop (relatório histórico atualizado ao boundary atual)
 **Versão do Relatório:** 1.0
 **Status:** ✅ Análise Completa com Comparação Cross-Module
 

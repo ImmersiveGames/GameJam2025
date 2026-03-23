@@ -86,13 +86,13 @@ Análise individual de cada módulo.
 - **Status:** 🟡 Médio
 
 ### 6. `GATES_ANALYSIS_REPORT.md`
-- **Módulo:** Gates (600 LOC)
+- **Módulo/capability:** SimulationGate (Infrastructure)
 - **Redundância:** 2%
 - **Problemas:** 2 identificados
 - **Status:** ✅ Excelente
 
 ### 7. `INPUTMODES_ANALYSIS_REPORT.md`
-- **Módulo:** InputModes (400 LOC)
+- **Módulo/capability:** InputModes (Infrastructure)
 - **Redundância:** 10%
 - **Problemas:** 2 identificados
 - **Status:** ✅ Bom
@@ -110,7 +110,7 @@ Análise individual de cada módulo.
 - **Status:** ✅ Bom
 
 ### 10. `CONTENTSWAP_ANALYSIS_REPORT.md`
-- **Módulo:** ContentSwap (800 LOC)
+- **Módulo:** ContentSwap (histórico / removido do trilho funcional atual)
 - **Redundância:** 5%
 - **Problemas:** 2 identificados
 - **Status:** ✅ Bom

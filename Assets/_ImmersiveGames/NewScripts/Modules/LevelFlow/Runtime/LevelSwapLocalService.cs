@@ -84,13 +84,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             ct.ThrowIfCancellationRequested();
 
             SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(
-                new SceneCompositionRequest(
-                    SceneCompositionScope.Local,
-                    normalizedReason,
-                    levelSignature,
+                LevelSceneCompositionRequestFactory.CreateApplyRequest(
                     fromLevelRef,
-                    targetLevelRef),
+                    targetLevelRef,
+                    normalizedReason,
+                    levelSignature),
                 ct);
+
+            LevelAdditiveSceneRuntimeApplier.RecordAppliedLevel(targetLevelRef);
 
             PublishLevelSwapLocalApplied(targetLevelRef, macroRouteId, normalizedReason, nextSelectionVersion, levelSignature);
 

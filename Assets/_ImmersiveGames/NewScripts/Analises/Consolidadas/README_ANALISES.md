@@ -140,11 +140,11 @@
 
 ### 🟢 BOM (Deixar)
 
-- **Gates** (600 LOC) - 2% redundância
+- **SimulationGate** (600 LOC) - 2% redundância
 - **Audio** (400 LOC) - 5% redundância
-- **ContentSwap** (800 LOC) - 5% redundância
+- **ContentSwap** (histórico) - removido do código
 - **PostGame** (450 LOC) - 5% redundância
-- **InputModes** (400 LOC) - 10% redundância
+- **InputModes** (Infrastructure) - 10% redundância
 
 ---
 

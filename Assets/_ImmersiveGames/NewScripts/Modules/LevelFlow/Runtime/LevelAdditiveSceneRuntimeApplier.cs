@@ -47,6 +47,24 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
         }
 
+
+        public static void RecordAppliedLevel(LevelDefinitionAsset targetLevelRef)
+        {
+            if (targetLevelRef == null)
+            {
+                FailFast("RecordAppliedLevel target levelRef is null.");
+            }
+
+            targetLevelRef.ValidateOrFailFast("LevelAdditiveState/RecordApplied");
+            HashSet<int> targetBuildIndexes = BuildBuildIndexSetOrFail(targetLevelRef.AdditiveScenes, "RecordApplied");
+            UpdateActiveState(targetBuildIndexes, targetLevelRef);
+        }
+
+        public static void RecordCleared()
+        {
+            ClearActiveState();
+        }
+
         public static async Task<(int added, int removed)> ApplyAsync(
             LevelDefinitionAsset previousLevelRef,
             LevelDefinitionAsset targetLevelRef,

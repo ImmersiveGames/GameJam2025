@@ -7,9 +7,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static void InstallSceneCompositionServices()
         {
             RegisterIfMissing<ISceneCompositionExecutor>(
-                () => new LevelSceneCompositionExecutor(),
+                () => new SceneCompositionExecutor(),
                 alreadyRegisteredMessage: "[OBS][SceneComposition] ISceneCompositionExecutor ja registrado no DI global.",
-                registeredMessage: "[OBS][SceneComposition] ISceneCompositionExecutor registrado (LevelSceneCompositionExecutor).");
+                registeredMessage: "[OBS][SceneComposition] ISceneCompositionExecutor registrado (SceneCompositionExecutor).");
         }
     }
 }

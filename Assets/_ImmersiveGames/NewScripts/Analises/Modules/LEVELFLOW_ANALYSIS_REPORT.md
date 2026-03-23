@@ -1,3 +1,16 @@
+﻿> [!NOTE]
+> **Status atual confirmado:** `LevelFlow` continua dono da semântica local, do snapshot e da seleção de level, mas **não** executa mais a composição técnica diretamente.
+>
+> **Implementado desde a análise original:**
+> - `GameplayStartSnapshot` já carrega `LocalContentId`.
+> - `LevelFlow` passou a delegar a composição local para `ISceneCompositionExecutor` via `LevelSceneCompositionRequestFactory`.
+> - o executor técnico local já foi validado em runtime com `LocalCompositionApplied` / `LocalCompositionCleared`.
+>
+> **O que ainda não mudou:**
+> - `LevelFlow` continua módulo dono da semântica local e do restart semântico.
+>
+---
+
 > [!WARNING]
 > **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
 >
@@ -47,11 +60,12 @@ LevelFlow/
 │  │
 │  ├─ Context Services:
 │  │  ├─ RestartContextService.cs (salva gameplay snapshot)
-│  │  ├─ GameplayStartSnapshot.cs
+│  │  ├─ GameplayStartSnapshot.cs (`LocalContentId`)
 │  │  └─ LevelContextSignature.cs
 │  │
 │  ├─ Swap Service:
-│  │  └─ LevelSwapLocalService.cs (swap de level em-place)
+│  │  ├─ LevelSwapLocalService.cs (semântica local + reset)
+│  │  └─ LevelSceneCompositionRequestFactory.cs (tradução local -> plano técnico)
 │  │
 │  ├─ Post-Game:
 │  │  └─ PostLevelActionsService.cs

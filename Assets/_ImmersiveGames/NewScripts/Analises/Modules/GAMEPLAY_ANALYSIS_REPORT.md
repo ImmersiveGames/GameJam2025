@@ -1,4 +1,14 @@
-﻿# 📊 ANÁLISE DO MÓDULO GAMEPLAY - REDUNDÂNCIAS E OTIMIZAÇÕES
+﻿> [!NOTE]
+> **Status atual confirmado:** `Gameplay` continua dono da semântica de atores/spawn/rearm local.
+>
+> **Atualizado pelo estado atual do código:**
+> - o overlap mais perigoso com `WorldLifecycle` foi reduzido no boundary do reset;
+> - `ContentSwap` deixou de ser parte do trilho funcional;
+> - referências a `ContentSwap` neste relatório devem ser lidas como histórico, não como estado vigente.
+>
+---
+
+# 📊 ANÁLISE DO MÓDULO GAMEPLAY - REDUNDÂNCIAS E OTIMIZAÇÕES
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
@@ -31,7 +41,7 @@
 - **Redundância Estimada:** ~8-12% (~250-350 LOC)
 - **Cruzamento com outros módulos:** Crítico (especialmente com WorldLifecycle)
 
-### Descobertas Principais
+### Descobertas Principais (estado base da análise original)
 
 | Item | Descrição | Severidade |
 |------|-----------|-----------|

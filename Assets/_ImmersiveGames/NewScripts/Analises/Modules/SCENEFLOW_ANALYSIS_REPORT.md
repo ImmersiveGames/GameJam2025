@@ -1,3 +1,15 @@
+﻿> [!NOTE]
+> **Status atual confirmado:** `SceneFlow` continua dono da transição macro (loading, fade, readiness, sequencing e `set-active`).
+>
+> **Implementado desde a análise original:**
+> - o macro já delega `load/unload` para `ISceneCompositionExecutor` via `RouteSceneCompositionRequestFactory`.
+> - `set-active` permaneceu em `SceneFlow`, que é o ownership correto.
+> - o runtime já validou `MacroCompositionApplied` / `MacroCompositionCleared` sem regressão do trilho macro.
+>
+> **Leitura correta hoje:** o problema principal de `SceneFlow` não é mais “executor macro isolado”, e sim a complexidade interna remanescente do `SceneTransitionService`.
+>
+---
+
 > [!WARNING]
 > **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
 >
@@ -36,7 +48,7 @@
 ```
 SceneFlow/ (GIGANTE!)
 ├─ Runtime/ (10 arquivos)
-│  ├─ SceneTransitionService.cs (726 linhas!) ← CRÍTICO
+│  ├─ SceneTransitionService.cs (726 linhas!) ← CRÍTICO / ainda concentrado
 │  ├─ SceneFlowSameFrameDedupe.cs (23 linhas) ← Helper
 │  ├─ SceneFlowSignatureCache.cs (61 linhas)
 │  ├─ SceneFlowAdapterFactory.cs
@@ -47,7 +59,7 @@ SceneFlow/ (GIGANTE!)
 │  ├─ Bindings/
 │  └─ Adapters/
 │
-├─ Transition/ (726 linhas em TransitionService!)
+├─ Transition/ (serviço ainda grande, mas agora usando `RouteSceneCompositionRequestFactory` + `ISceneCompositionExecutor`)
 │  ├─ Runtime/
 │  ├─ Contracts/
 │  └─ Events/

@@ -301,8 +301,8 @@ SEMANA 4-5 (Phase 3)
 | Gameplay | GAMEPLAY_ANALYSIS_REPORT.md | Modules/Gameplay/ ← NOVO |
 | SceneFlow | SCENEFLOW_ANALYSIS_REPORT.md | Modules/SceneFlow/ |
 | Navigation | NAVIGATION_ANALYSIS_REPORT.md | Mencionado |
-| Gates | GATES_ANALYSIS_REPORT.md | Modules/Gates/ |
-| InputModes | INPUTMODES_ANALYSIS_REPORT.md | Modules/InputModes/ |
+| SimulationGate | GATES_ANALYSIS_REPORT.md | Infrastructure/SimulationGate/ |
+| InputModes | INPUTMODES_ANALYSIS_REPORT.md | Infrastructure/InputModes/ |
 | LevelFlow | LEVELFLOW_ANALYSIS_REPORT.md | Modules/LevelFlow/ |
 | PostGame | POSTGAME_ANALYSIS_REPORT.md | Modules/PostGame/ |
 | ContentSwap | CONTENTSWAP_ANALYSIS_REPORT.md | (anexo original) |
@@ -312,10 +312,10 @@ SEMANA 4-5 (Phase 3)
 
 | Documento | Propósito | Localização |
 |-----------|-----------|-----------|
-| MODULES_ANALYSIS_INDEX.md | Índice geral de todas as análises | Modules/ |
-| CONSOLIDATED_DUPLICITY_ANALYSIS.md | Análise cruzada de duplicidades | Modules/ |
-| EXECUTIVE_SUMMARY.md | Resumo executivo (30 seg) | Modules/ |
-| ANALYSIS_DOCUMENTS_MAP.md | Este arquivo (navegação) | Modules/ |
+| MODULES_ANALYSIS_INDEX.md | Índice geral de todas as análises | Consolidadas/ |
+| CONSOLIDATED_DUPLICITY_ANALYSIS.md | Análise cruzada de duplicidades | Consolidadas/ |
+| EXECUTIVE_SUMMARY.md | Resumo executivo (30 seg) | Consolidadas/ |
+| ANALYSIS_DOCUMENTS_MAP.md | Este arquivo (navegação) | Consolidadas/ |
 
 ---
 
@@ -327,7 +327,7 @@ SEMANA 4-5 (Phase 3)
 
 ### P: Qual é o maior problema?
 
-**R:** WorldLifecycle × Gameplay overlap (possível race condition)
+**R:** WorldLifecycle continua sendo o hotspot estrutural mais relevante; `ContentSwap` já não entra mais nessa conta porque foi removido.
 
 ### P: Quanto tempo leva para resolver?
 

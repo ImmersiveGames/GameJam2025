@@ -2,7 +2,7 @@
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Módulo:** InputModes (`Assets/_ImmersiveGames/NewScripts/Modules/InputModes`)
+**Capability:** InputModes (`Assets/_ImmersiveGames/NewScripts/Infrastructure/InputModes`)
 **Status:** ✅ Análise Completa
 
 ---
@@ -20,13 +20,16 @@
 ## 🏗️ ESTRUTURA DO MÓDULO
 
 ```
-InputModes/
+Infrastructure/InputModes/
 ├─ IInputModeService.cs (18 linhas)           ← Interface
 ├─ InputModeService.cs (196 linhas)           ← Implementação principal
 ├─ Runtime/
+│  ├─ InputModeCoordinator.cs
+│  ├─ InputModeRequestEvent.cs
 │  └─ InputModesDefaults.cs
-└─ Interop/
-   └─ SceneFlowInputModeBridge.cs (253 linhas) ← Bridge SceneFlow integration
+
+SceneFlow bridge relacionado:
+└─ Modules/SceneFlow/Interop/SceneFlowInputModeBridge.cs
 
 TOTAL: ~467 linhas
 ```
@@ -41,7 +44,7 @@ InputModes gerencia **alternância de action maps** (Player/UI):
 - SetGameplay() → ativa Player action map
 - SetFrontendMenu() → ativa UI action map
 - SetPauseOverlay() → alterna durante pausa
-- Bridge com SceneFlow para sincronizar com transições
+- Bridge com SceneFlow permanece, mas agora fora do núcleo da capability (`Modules/SceneFlow/Interop`)
 
 ### Qualidade
 
@@ -55,36 +58,15 @@ InputModes gerencia **alternância de action maps** (Player/UI):
 
 ## 🔴 PROBLEMAS IDENTIFICADOS
 
-### 1️⃣ Event Binding Boilerplate em SceneFlowInputModeBridge (🟡 MÉDIA)
+### 1️⃣ InputModeService ainda mistura decisão de modo com descoberta concreta de PlayerInput (🟡 MÉDIA)
 
-**Localização:** `Interop/SceneFlowInputModeBridge.cs` (linhas ~28-60)
+**Localização:** `InputModeService.cs`
 
-**Problema:**
+**Problema:** o serviço ainda resolve modo + localiza `PlayerInput` + troca action maps no mesmo lugar.
 
-```csharp
-private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
-private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
+**Impacto:** baixa complexidade hoje, mas ainda é um ponto de concentração da capability.
 
-public SceneFlowInputModeBridge()
-{
-    _startedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
-    _completedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
-    EventBus<SceneTransitionStartedEvent>.Register(_startedBinding);
-    EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
-}
-
-public void Dispose()
-{
-    EventBus<SceneTransitionStartedEvent>.Unregister(_startedBinding);
-    EventBus<SceneTransitionCompletedEvent>.Unregister(_completedBinding);
-}
-```
-
-**Problema:** Boilerplate de event binding espalhado em 8+ módulos
-
-**Impacto:** 20 LOC de padrão repetido
-
-**Solução:** Usar `ManagedEventBinding<T>` (proposto na análise cross-module)
+**Solução:** em revisão futura, separar provider/locator de `PlayerInput` do serviço de decisão de modo.
 
 ---
 
@@ -110,7 +92,7 @@ private void ApplyMode(InputMode mode, string reason)
 
 ---
 
-### 3️⃣ Dedupe Pattern em Bridge (🟡 BAIXA)
+### 3️⃣ Bridge de SceneFlow virou dependência externa legítima (🟢 OBSERVAÇÃO)
 
 **Localização:** `Interop/SceneFlowInputModeBridge.cs` (linhas ~62-78)
 
@@ -135,28 +117,14 @@ if (SceneFlowSameFrameDedupe.ShouldDedupe(
 
 ## 💡 RECOMENDAÇÕES
 
-### Recomendação 1: Usar ManagedEventBinding<T> (RÁPIDO)
+### Recomendação 1: Tratar o bridge com SceneFlow como concern externa (RÁPIDO)
 
-**Quando:** Fase 1
+**Quando:** somente se o bridge em `Modules/SceneFlow/Interop` voltar a inflar; não é bloqueador do núcleo atual
 
 ```csharp
-// Antes (28 linhas):
-private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
-private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
-
-public SceneFlowInputModeBridge()
-{
-    _startedBinding = new EventBinding<...>(OnTransitionStarted);
-    _completedBinding = new EventBinding<...>(OnTransitionCompleted);
-    EventBus<SceneTransitionStartedEvent>.Register(_startedBinding);
-    EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
-}
-
-public void Dispose()
-{
-    EventBus<SceneTransitionStartedEvent>.Unregister(_startedBinding);
-    EventBus<SceneTransitionCompletedEvent>.Unregister(_completedBinding);
-}
+// O bridge já está fora do núcleo de InputModes.
+// A recomendação aqui é apenas evitar que ele volte a contaminar
+// a capability principal ou a exigir mudanças no núcleo. 
 
 // Depois (6 linhas):
 private readonly ManagedEventBinding<SceneTransitionCompletedEvent> _completed;
@@ -183,7 +151,7 @@ public void Dispose()
 
 ### Recomendação 2: Usar GameplayReasonNormalizer
 
-**Quando:** Fase 1
+**Quando:** somente se o bridge em `Modules/SceneFlow/Interop` voltar a inflar; não é bloqueador do núcleo atual
 
 ```csharp
 // Antes:

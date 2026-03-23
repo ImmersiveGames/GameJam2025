@@ -190,11 +190,11 @@ Analises/
 | Módulo | Arquivo |
 |--------|---------|
 | Audio | Mencionado |
-| ContentSwap | Modules/CONTENTSWAP_ANALYSIS_REPORT.md |
+| ContentSwap | Modules/CONTENTSWAP_ANALYSIS_REPORT.md | Histórico de módulo removido |
 | GameLoop | Modules/GAMELOOP_ANALYSIS_REPORT.md |
-| **Gameplay** | Modules/GAMEPLAY_ANALYSIS_REPORT.md ← **NOVO!** |
-| Gates | Modules/GATES_ANALYSIS_REPORT.md |
-| InputModes | Modules/INPUTMODES_ANALYSIS_REPORT.md |
+| **Gameplay** | Modules/GAMEPLAY_ANALYSIS_REPORT.md |
+| SimulationGate | ../Infrastructure/SimulationGate/GATES_ANALYSIS_REPORT.md | capability em Infrastructure |
+| InputModes | ../Infrastructure/InputModes/INPUTMODES_ANALYSIS_REPORT.md | capability em Infrastructure |
 | LevelFlow | Modules/LEVELFLOW_ANALYSIS_REPORT.md |
 | Navigation | Modules/NAVIGATION_ANALYSIS_REPORT.md |
 | PostGame | Modules/POSTGAME_ANALYSIS_REPORT.md |
@@ -321,3 +321,8 @@ Todos os arquivos de análise estão agora **centralizados em `NewScripts/Analis
 **Confiança:** 95%
 
 
+
+
+## Estado atual recomendado
+
+Para leitura do estado vigente, priorize: o código do snapshot atual e os relatórios já atualizados neste pacote.

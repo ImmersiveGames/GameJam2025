@@ -8,7 +8,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneComposition
             string reason,
             string correlationId,
             int scenesAdded,
-            int scenesRemoved)
+            int scenesRemoved,
+            string activeScene)
         {
             Success = success;
             Scope = scope;
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneComposition
             CorrelationId = correlationId ?? string.Empty;
             ScenesAdded = scenesAdded;
             ScenesRemoved = scenesRemoved;
+            ActiveScene = activeScene ?? string.Empty;
         }
 
         public bool Success { get; }
@@ -24,5 +26,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneComposition
         public string CorrelationId { get; }
         public int ScenesAdded { get; }
         public int ScenesRemoved { get; }
+        public string ActiveScene { get; }
     }
 }

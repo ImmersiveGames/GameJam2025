@@ -1,8 +1,18 @@
-﻿# 📊 CONSOLIDATED ANALYSIS - MODULES REDUNDANCY & DUPLICATION REPORT
+﻿> [!NOTE]
+> **Atualização para o estado atual do código:** esta análise consolidada continua útil para padrões duplicados e hotspots estruturais, mas alguns pontos mudaram materialmente:
+> - `ContentSwap` foi removido do código e deve ser lido apenas como histórico;
+> - `SimulationGate` e `InputModes` hoje vivem em `Infrastructure`;
+> - `SceneComposition` virou a capability técnica canônica, reduzindo parte do overlap antigo entre `LevelFlow` e `SceneFlow`.
+>
+> **Ainda permanece válido:** `WorldLifecycle` continua hotspot estrutural e `GameLoop` segue sem revisão profunda nesta rodada.
+
+---
+
+# 📊 CONSOLIDATED ANALYSIS - MODULES REDUNDANCY & DUPLICATION REPORT
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Escopo:** Todos os 11 módulos
+**Escopo:** relatório histórico consolidado (atualizado ao estado atual do código)
 **Status:** ✅ Análise Completa com Cruzamento Crítico
 
 ---
@@ -14,8 +24,8 @@
 | Descoberta | Severidade | Impacto | Ação |
 |-----------|-----------|--------|------|
 | **WorldLifecycle × Gameplay Overlap** | 🔴 CRÍTICA | Possível race condition em spawn/reset | ADR Imediata |
-| **18+ variações de TryResolve Pattern** | 🔴 CRÍTICA | Inconsistência, erro-prone | Consolidar Phase 1 |
-| **40+ Event Binding Boilerplate** | 🔴 CRÍTICA | 150+ LOC duplicado | Criar helper |
+| **18+ variações de TryResolve Pattern** | 🔴 CRÍTICA | Inconsistência, erro-prone | Consolidar / revisar por capability |
+| **40+ Event Binding Boilerplate** | 🔴 CRÍTICA | 150+ LOC duplicado | Criar helper / manter bridges finos |
 | **4 Classes > 450 LOC** | 🟡 CRÍTICA | Difícil manter/testar | Refactor Phase 2 |
 | **Logging inconsistente** | 🟡 MÉDIA | 100+ LOC duplicado | Centralizar |
 | **Interlocked/Mutex Inconsistência** | 🟡 MÉDIA | Performance/thread-safety | Padronizar |
