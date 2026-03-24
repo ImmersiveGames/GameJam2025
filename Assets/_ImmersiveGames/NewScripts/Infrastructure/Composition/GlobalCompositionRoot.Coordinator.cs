@@ -1,6 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterGameLoopSceneFlowCoordinatorIfAvailable()
         {
-            if (_sceneFlowCoordinator != null)
+            if (_sceneFlowSyncCoordinator != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                     "[GameLoopSceneFlow] Coordinator ja esta registrado (static reference).",
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 requestedBy: "Boot/StartPlan",
                 reason: "Boot/StartPlan");
 
-            _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(sceneFlow, startPlan);
+            _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, startPlan);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, routeId='{bootStartRouteId}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",

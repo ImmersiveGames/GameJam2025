@@ -1,14 +1,14 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Services;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Run;
 using _ImmersiveGames.NewScripts.Modules.PostGame;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -44,37 +44,61 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterGameCommands()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IGameCommands>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IGameLoopCommands>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameCommands] IGameCommands ja registrado no DI global.",
+                    "[GameLoopCommands] IGameLoopCommands ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var runEndRequestService);
 
-            RegisterIfMissing<IGameCommands>(() => new GameCommands(runEndRequestService));
+            RegisterIfMissing<IGameLoopCommands>(() => new GameLoopCommands(runEndRequestService));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[GameCommands] GameCommands registrado no DI global.",
+                "[GameLoopCommands] GameLoopCommands registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameRunGameplayStateGuard(IGameLoopService gameLoopService)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameRunPlayingStateGuard>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                    "[GameLoop] IGameRunPlayingStateGuard ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (gameLoopService == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                    "[GameLoop] Nao foi possivel registrar IGameRunPlayingStateGuard: IGameLoopService indisponivel.");
+                return;
+            }
+
+            RegisterIfMissing<IGameRunPlayingStateGuard>(() => new GameRunPlayingStateGuard(gameLoopService));
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[GameLoop] GameRunPlayingStateGuard registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
         private static void RegisterGameRunStatusService(IGameLoopService gameLoopService)
         {
-            if (DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoop] IGameRunStateService ja registrado no DI global.",
+                    "[GameLoop] IGameRunResultSnapshotService ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            RegisterIfMissing<IGameRunStateService>(() => new GameRunStateService(gameLoopService));
+            RegisterIfMissing<IGameRunResultSnapshotService>(() => new GameRunResultSnapshotService());
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[GameLoop] GameRunStateService registrado no DI global.",
+                "[GameLoop] GameRunResultSnapshotService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -88,7 +112,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 return;
             }
 
-            RegisterIfMissing<IGameRunOutcomeService>(() => new GameRunOutcomeService(gameLoopService));
+            RegisterGameRunGameplayStateGuard(gameLoopService);
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunPlayingStateGuard>(out var gameplayStateGuard) || gameplayStateGuard == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
+                    "[GameLoop] Nao foi possivel registrar GameRunOutcomeService: IGameRunPlayingStateGuard nao disponivel.");
+                return;
+            }
+
+            RegisterIfMissing<IGameRunOutcomeService>(() => new GameRunOutcomeService(gameplayStateGuard));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[GameLoop] GameRunOutcomeService registrado no DI global.",
@@ -97,10 +130,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterGameRunOutcomeEventInputBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<GameRunOutcomeCommandBridge>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<GameRunOutcomeRequestBridge>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[GameLoop] GameRunOutcomeCommandBridge ja registrado no DI global.",
+                    "[GameLoop] GameRunOutcomeRequestBridge ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -108,14 +141,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) || outcomeService == null)
             {
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    "[GameLoop] Nao foi possivel registrar GameRunOutcomeCommandBridge: IGameRunOutcomeService nao disponivel.");
+                    "[GameLoop] Nao foi possivel registrar GameRunOutcomeRequestBridge: IGameRunOutcomeService nao disponivel.");
                 return;
             }
 
-            RegisterIfMissing(() => new GameRunOutcomeCommandBridge(outcomeService));
+            RegisterIfMissing(() => new GameRunOutcomeRequestBridge(outcomeService));
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[GameLoop] GameRunOutcomeCommandBridge registrado no DI global.",
+                "[GameLoop] GameRunOutcomeRequestBridge registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

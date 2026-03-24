@@ -4,8 +4,8 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Bindings.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             RegisterGameRunEndRequestService();
             RegisterGameCommands();
-            GameStartRequestEmitter.EnsureInstalled();
+            GameLoopStartRequestEmitter.EnsureInstalled();
 
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
 

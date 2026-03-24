@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 
@@ -41,8 +41,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 $"[OBS][LevelFlow] PostLevelActionRequested action='RestartLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            IGameCommands gameCommands = ResolveGameCommandsOrFail(normalizedReason);
-            gameCommands.RequestRestart(normalizedReason);
+            IGameLoopCommands gameLoopCommands = ResolveGameCommandsOrFail(normalizedReason);
+            gameLoopCommands.RequestRestart(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] RestartMacroRequested reason='{normalizedReason}' dispatched='GameResetRequestedEvent'.",
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Success);
         }
 
-        private static IGameCommands ResolveGameCommandsOrFail(string reason)
+        private static IGameLoopCommands ResolveGameCommandsOrFail(string reason)
         {
             if (DependencyManager.Provider == null)
             {
@@ -137,10 +137,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     $"[FATAL][H1][LevelFlow] RestartMacroRequested missing DependencyManager.Provider. reason='{reason}'.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameCommands>(out var gameCommands) || gameCommands == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopCommands>(out var gameCommands) || gameCommands == null)
             {
                 HardFailFastH1.Trigger(typeof(PostLevelActionsService),
-                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing IGameCommands. reason='{reason}'.");
+                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing IGameLoopCommands. reason='{reason}'.");
             }
 
             return gameCommands;

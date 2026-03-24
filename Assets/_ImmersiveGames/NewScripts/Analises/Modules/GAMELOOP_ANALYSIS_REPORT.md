@@ -1,9 +1,9 @@
 ﻿> [!WARNING]
-> **Status de validação:** conteúdo importado de análise externa e **ainda não validado** contra o código atual.
+> **Status de validação:** conteúdo importado de análise externa e **editado/validado parcialmente** contra o código atual.
 >
-> **Uso correto:** tratar este documento como **hipótese de auditoria / backlog de verificação**.
+> **Uso correto:** tratar este documento como **auditoria atualizada**, mantendo o código atual, os ADRs vigentes, a documentação canônica e os logs recentes como fonte de verdade.
 >
-> **Fonte de verdade:** código atual, ADRs vigentes e documentação canônica do projeto.
+> **Fonte de verdade:** código atual, ADRs vigentes, documentação canônica do projeto e evidência recente de runtime.
 
 > [!NOTE]
 > **Origem anterior:** `Docs/Modules/GAMELOOP_ANALYSIS_REPORT.md`
@@ -17,8 +17,8 @@
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
 **Módulo:** GameLoop (`Assets/_ImmersiveGames/NewScripts/Modules/GameLoop`)
-**Versão do Relatório:** 1.0
-**Status:** ✅ Análise Completa (ainda útil no snapshot atual)
+**Versão do Relatório:** 1.2
+**Status:** ✅ Editado sobre a versão 1.1, preservando a estrutura do relatório e atualizado contra o código validado em runtime após a consolidação de `GameLoopReasonFormatter` e a primeira extração estrutural de `GameLoopService`
 
 ---
 
@@ -48,15 +48,15 @@ O módulo GameLoop é a **coluna vertebral do jogo**, coordenando:
 - ✅ Bridges de integração bem estruturados
 - ✅ Logging detalhado para debug
 - ✅ Idempotência bem tratada
+- ✅ Consolidação recente do ciclo de run validada em runtime (`OutcomeService` como owner terminal, `StateService` como projeção fina)
 
-**Entretanto**, existem **redundâncias significativas**:
-- 🔴 Normalização de strings duplicada (3+ lugares) - FormatReason, NormalizeOptionalReason, NormalizeRequiredReason
-- 🔴 State validation checks espalhados (4 implementations)
-- 🔴 Event binding/unregister patterns duplicados (5+ arquivos)
-- 🔴 IsInActiveGameplay logic duplicada (3 implementations)
-- 🔴 Métodos similares de TryResolve espalhados (4+ padrões)
-- 🔴 Deduplicação de eventos espalhada (GameRunStateService + GameRunOutcomeService)
-- 🔴 Reason formatting boilerplate repetido
+**Entretanto**, ainda existem **redundâncias e refinamentos relevantes**:
+- 🟢 A normalização de `reason` foi centralizada e validada em runtime
+- 🟡 Event binding/unregister patterns duplicados (5+ arquivos)
+- 🟡 Métodos similares de TryResolve espalhados (4+ padrões)
+- 🟡 `GameLoopService` ainda segue como hotspot, embora reduzido após a extração dos side effects de transição
+- 🟢 A duplicação estrutural entre `GameRunStateService` e `GameRunOutcomeService` foi reduzida
+- 🟢 A validação de gameplay ativo entre state/outcome foi centralizada em `GameRunGameplayStateGuard`
 
 ---
 
@@ -65,7 +65,7 @@ O módulo GameLoop é a **coluna vertebral do jogo**, coordenando:
 ```
 GameLoop/
 ├── Commands/
-│   ├── GameCommands.cs (127 linhas) ← Normalizações
+│   ├── GameCommands.cs (usa `GameLoopReasonFormatter`)
 │   └── IGameCommands.cs (17 linhas)
 ├── IntroStage/
 │   ├── IntroStageControlService.cs (217 linhas)
@@ -78,16 +78,20 @@ GameLoop/
 ├── Runtime/
 │   ├── GameLoopContracts.cs (110 linhas) ← Interfaces
 │   ├── GameLoopEvents.cs (146 linhas) ← Events
+│   ├── GameLoopReasonFormatter.cs (novo; reason centralizada)
 │   ├── GameLoopStateMachine.cs (176 linhas)
 │   ├── Bridges/
-│   │   ├── GameLoopCommandEventBridge.cs (136 linhas)
+│   │   ├── GameLoopCommandEventBridge.cs (usa formatter central)
 │   │   ├── GameLoopSceneFlowCoordinator.cs
-│   │   ├── GameRunOutcomeCommandBridge.cs (72 linhas)
+│   │   ├── GameRunOutcomeCommandBridge.cs (usa formatter central)
 │   │   └── [Others]
 │   └── Services/
-│       ├── GameLoopService.cs (453 linhas) ← Muito grande
-│       ├── GameRunStateService.cs (165 linhas) ← Deduplicação
-│       ├── GameRunOutcomeService.cs (160 linhas) ← Deduplicação
+│       ├── GameLoopService.cs (reduzido; coordenador do loop)
+│       ├── GameLoopTransitionSideEffects.cs (novo; side effects de transição)
+│       ├── GameLoopPostGameContextResolver.cs (novo; snapshot/contexto de postgame)
+│       ├── GameRunStateService.cs (reduzido; projeção fina)
+│       ├── GameRunOutcomeService.cs (owner terminal da run)
+│       ├── GameRunGameplayStateGuard.cs (novo; validação centralizada)
 │       ├── GameRunEndRequestService.cs
 │       ├── IGameRunEndRequestService.cs
 │       └── [Interfaces]
@@ -111,96 +115,67 @@ GameLoop/
 
 ## 🔴 PROBLEMAS IDENTIFICADOS
 
-### 1️⃣ NORMALIZAÇÃO DE STRINGS DUPLICADA (3 implementations)
+### 1️⃣ NORMALIZAÇÃO DE STRINGS DUPLICADA (reduzido e validado)
 
-**Localização:**
-- `GameCommands.cs` (linhas 91-101): `FormatReason()`, `NormalizeRequiredReason()`, `NormalizeOptionalReason()`
-- `GameLoopCommandEventBridge.cs` (linha 116): `NormalizeReason()`
-- `GamePlayEndConditionsController.cs` (implícito em fallbacks)
+**Localização anterior relevante:**
+- `GameCommands.cs`
+- `GameLoopCommandEventBridge.cs`
+- `GameLoopRunEndEventBridge.cs`
+- `GameRunStateService.cs`
+- `GameRunOutcomeService.cs`
+- `GameRunOutcomeCommandBridge.cs`
 
-**Problema:**
+**Problema anterior:**
+Havia variações locais de:
+- `FormatReason()`
+- `NormalizeRequiredReason()`
+- `NormalizeOptionalReason()`
+- `NormalizeReason()`
 
-```csharp
-// GameCommands.cs
-private static string FormatReason(string reason)
-{
-    return string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim();
-}
+com regras repetidas de:
+- `Trim()`
+- `IsNullOrWhiteSpace()`
+- fallback para `<null>` / `Unspecified`
 
-private static string NormalizeRequiredReason(string reason)
-{
-    return string.IsNullOrWhiteSpace(reason) ? "Unspecified" : reason.Trim();
-}
+**Estado atual:**
+- a normalização/formatação foi centralizada em `GameLoopReasonFormatter`
+- os principais consumers do módulo passaram a usar o formatter único
+- o fluxo validado em runtime preservou as `reason` esperadas em:
+    - `Victory`
+    - `Restart`
+    - `Defeat`
+    - `ExitToMenu`
 
-private static string NormalizeOptionalReason(string reason, string fallback)
-{
-    if (!string.IsNullOrWhiteSpace(reason))
-        return reason.Trim();
-    return string.IsNullOrWhiteSpace(fallback) ? "Unspecified" : fallback.Trim();
-}
+**Impacto atual:**
+- ✅ uma fonte única de verdade para `reason`
+- ✅ menor risco de divergência semântica
+- ✅ melhor consistência de logs/eventos
+- ✅ validado em runtime no ciclo completo
 
-// GameLoopCommandEventBridge.cs - método duplicado
-private static string NormalizeReason(string reason)
-    => string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim();
-```
-
-**Impacto:**
-- ⚠️ 3 variações de normalização (FormatReason, NormalizeRequired, NormalizeOptional)
-- ⚠️ Lógica base (Trim + WhiteSpace check) espalhada
-- ⚠️ Se mudar regra, múltiplas mudanças necessárias
-- ⚠️ Risco de divergência entre implementações
-- ⚠️ Inconsistência em quando usar `<null>` vs `Unspecified`
-
-**Severidade:** 🟡 **MÉDIA** - Afeta manutenibilidade e consistência
+**Severidade:** 🟢 **BAIXA** - problema estrutural reduzido
 
 ---
 
-### 2️⃣ STATE VALIDATION CHECKS DUPLICADOS (4 implementations)
+### 2️⃣ STATE VALIDATION CHECKS DUPLICADOS (reduzido após consolidação dos serviços de run)
 
-**Localização:** `GameRunStateService`, `GameRunOutcomeService`, `GamePlayEndConditionsController`, `GameLoopRunEndEventBridge`
+**Localização atual relevante:** `GameRunOutcomeService`, `GameRunGameplayStateGuard`, `GamePlayEndConditionsController`, `GameLoopRunEndEventBridge`
 
-**Problema:**
+**Problema anterior:**
+Havia validação duplicada de estado ativo de gameplay entre `GameRunStateService` e `GameRunOutcomeService`, além de outras verificações paralelas em controladores/bridges.
 
-```csharp
-// GameRunStateService.cs - Implementação 1
-private bool IsInActiveGameplay(out string stateName)
-{
-    stateName = _gameLoopService?.CurrentStateIdName ?? string.Empty;
-    return string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
-}
+**Estado atual:**
+- `GameRunOutcomeService` passou a usar `GameRunGameplayStateGuard`
+- `GameRunStateService` deixou de revalidar `Playing` e virou projeção fina
+- a duplicação estrutural do par state/outcome foi reduzida
+- ainda existem checks correlatos fora desse par, especialmente em bridges/controladores de borda
 
-// GameRunOutcomeService.cs - Implementação 2 (idêntica)
-private bool IsInActiveGameplay()
-{
-    if (_gameLoopService == null)
-    {
-        DebugUtility.LogWarning<GameRunOutcomeService>("[GameLoop] IGameLoopService indisponível...");
-        return false;
-    }
-    string stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
-    return string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
-}
+**Impacto atual:**
+- ✅ a fonte principal de verdade para “run terminal só em gameplay ativo” ficou centralizada
+- ✅ o risco de divergência entre `GameRunStateService` e `GameRunOutcomeService` foi reduzido
+- ⚠️ ainda não houve consolidação ampla de todos os checks periféricos do módulo
+- ⚠️ o tema continua como refinamento, mas não é mais hotspot principal
 
-// GamePlayEndConditionsController.cs - Implementação 3 (similar)
-// ... resolve serviço diferente
-
-// GameLoopRunEndEventBridge.cs - Implementação 4 (diferente)
-private static bool IsGameplayScene()
-{
-    if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
-        return classifier.IsGameplayScene();
-    // ...
-}
-```
-
-**Impacto:**
-- ⚠️ 4 lugares diferentes com lógica similiar de validação
-- ⚠️ Cada um tem sua própria logging/tratamento
-- ⚠️ Impossível reutilizar: cada um resolve uma dependência diferente
-- ⚠️ Se mudar critério de "active gameplay", 4 lugares para atualizar
-- ⚠️ Inconsistência em tratamento de null (_gameLoopService)
-
-**Severidade:** 🔴 **ALTA** - Risco de bugs e inconsistência
+**Severidade:** 🟡 **MÉDIA-BAIXA** - Melhorou de forma real, porém ainda há validações paralelas em pontos de borda
 
 ---
 
@@ -251,185 +226,31 @@ private void UnregisterBinding()
 
 ---
 
-### 4️⃣ SERVIÇO OUTCOME vs STATE - DEDUPLICAÇÃO DE LÓGICA
+### 4️⃣ SERVIÇO OUTCOME vs STATE - DEDUPLICAÇÃO DE LÓGICA (reduzido e validado)
 
 **Localização:** `GameRunStateService` vs `GameRunOutcomeService`
 
-**Problema:**
+**Problema anterior:**
+Os dois serviços sobrepunham partes do mesmo lifecycle:
+- ambos escutavam `GameRunStartedEvent`
+- ambos lidavam com `GameRunEndedEvent`
+- ambos mantinham guards/idempotência próprios
+- ambos reimplementavam validação de `Playing`
 
-Dois serviços fazem trabalho muito similar:
-- Ambos escutam `GameRunStartedEvent`
-- Ambos escutam `GameRunEndedEvent`
-- Ambos validam se estão em "Playing"
-- Ambos gerenciam flags de idempotência (_hasEverStarted, _hasEndedThisRun)
-- Ambos fazem logging similar
+**Estado atual:**
+- `GameRunOutcomeService` permaneceu como **owner terminal** de `GameRunEndedEvent`
+- `GameRunStateService` virou **projeção/snapshot fino** de `HasResult / Outcome / Reason`
+- a validação de gameplay ativo foi centralizada em `GameRunGameplayStateGuard`
+- o wiring novo foi validado em runtime no ciclo completo `Victory -> Restart -> Defeat -> ExitToMenu`
 
-```csharp
-// GameRunStateService
-public sealed class GameRunStateService : IGameRunStateService
-{
-    private bool _hasEverStarted;  // Flag de idempotência
+**Impacto atual:**
+- ✅ a duplicação estrutural principal foi removida
+- ✅ o fluxo de run ficou mais claro: owner terminal vs projeção
+- ✅ o rearm/start da nova run permaneceu saudável em runtime
+- ⚠️ ainda existe oportunidade futura de revisar listeners/boilerplate periféricos do GameLoop
+- ⚠️ `GameLoopService` continua grande e segue como hotspot mais óbvio do módulo
 
-    private void OnGameRunEnded(GameRunEndedEvent evt)
-    {
-        if (HasResult) { /* duplicado */ return; }
-        // ... set outcome/reason
-    }
-
-    private void OnGameRunStarted(GameRunStartedEvent evt)
-    {
-        if (!_hasEverStarted) { /* similar */ }
-        // ... clear state
-    }
-}
-
-// GameRunOutcomeService
-public sealed class GameRunOutcomeService : IGameRunOutcomeService
-{
-    private bool _hasEndedThisRun;  // Flag de idempotência
-
-    private void OnRunStarted(GameRunStartedEvent evt)
-    {
-        _hasEndedThisRun = false;  // Rearm
-    }
-
-    private void OnRunEndedObserved(GameRunEndedEvent evt)
-    {
-        if (_hasEndedThisRun) { /* similar */ return; }
-        // ... set flag
-    }
-}
-```
-
-**Impacto:**
-- ⚠️ Dois serviços escutam os mesmos eventos
-- ⚠️ Lógica de idempotência duplicada (flags + guards)
-- ⚠️ Ambos tentam gerenciar estado de run
-- ⚠️ Aumenta frame time com 2 event listeners para cada evento
-- ⚠️ Confusão de responsabilidades: quem é responsável pelo que?
-
-**Severidade:** 🔴 **ALTA** - Afeta clareza e performance
-
----
-
-### 5️⃣ SERVICERESOLUTION (TryResolve) PATTERNS DUPLICADOS
-
-**Localização:** `GameLoopCommandEventBridge`, `GamePlayEndConditionsController`, `GameLoopRunEndEventBridge`, `GameRunOutcomeService`
-
-**Problema:**
-
-```csharp
-// Padrão 1: GameLoopCommandEventBridge
-private static bool TryResolveLoop(out IGameLoopService loop)
-{
-    loop = null;
-    return DependencyManager.Provider.TryGetGlobal(out loop) && loop != null;
-}
-
-// Padrão 2: GamePlayEndConditionsController
-private bool TryResolveEndRequestService()
-{
-    if (_endRequest != null) return true;
-    if (!DependencyManager.Provider.TryGetGlobal(out _endRequest) || _endRequest == null)
-    {
-        if (!_loggedMissingService) { ... }
-        return false;
-    }
-    _loggedMissingService = false;
-    return true;
-}
-
-// Padrão 3: GameRunOutcomeService
-private bool IsInActiveGameplay()
-{
-    if (_gameLoopService == null)
-    {
-        DebugUtility.LogWarning<GameRunOutcomeService>("[GameLoop] IGameLoopService indisponível...");
-        return false;
-    }
-    // ...
-}
-
-// Cada uma com abordagem diferente!
-```
-
-**Impacto:**
-- ⚠️ 4+ padrões diferentes de resolução de dependência
-- ⚠️ Cada um com sua própria validação/logging
-- ⚠️ Duplicação de `TryGetGlobal` + null check
-- ⚠️ Inconsistência em tratamento de falha
-- ⚠️ ~80 linhas de código similar
-
-**Severidade:** 🟡 **MÉDIA** - Afeta manutenibilidade
-
----
-
-### 6️⃣ GAMELOOPSERVICE MUITO GRANDE (453 linhas)
-
-**Localização:** `GameLoopService.cs`
-
-**Problema:**
-
-```csharp
-public sealed class GameLoopService : IGameLoopService, IGameLoopStateObserver
-{
-    // 453 linhas incluindo:
-    // - State machine update
-    // - Signal handling
-    // - State transition callbacks
-    // - Event publishing (GameRunStartedEvent, GameLoopActivityChangedEvent)
-    // - Input mode management (ApplyGameplayInputMode)
-    // - Scene flow coordination (IsGameplayScene)
-    // - Post-game state handling (BuildSignatureInfo, ResolvePostGameSnapshot)
-    // - BGM coordination (NotifyPostPlayOwnerEntered)
-    // - Extensive logging
-}
-```
-
-**Impacto:**
-- ⚠️ 453 linhas é muito grande para uma classe
-- ⚠️ Mistura responsabilidades: state machine + post-game + input modes + BGM
-- ⚠️ Difícil testar partes específicas
-- ⚠️ Difícil navegar no arquivo
-- ⚠️ Muitos métodos privados (10+) que são utilities
-
-**Severidade:** 🟡 **MÉDIA** - Afeta testabilidade e manutenibilidade
-
----
-
-### 7️⃣ DUPLICATE LOGGING VERBOSITY
-
-**Localização:** Espalhado em todos os serviços
-
-**Problema:**
-
-```csharp
-// GameRunStateService
-DebugUtility.LogVerbose<GameRunStateService>(
-    $"[GameLoop] GameRunStateService registrado no EventBus<GameRunEndedEvent> e EventBus<GameRunStartedEvent>.");
-
-// GameRunOutcomeService
-DebugUtility.LogVerbose<GameRunOutcomeService>(
-    "[GameLoop] GameRunOutcomeService registrado no EventBus<GameRunStartedEvent> e observando EventBus<GameRunEndedEvent>.");
-
-// GameLoopCommandEventBridge
-DebugUtility.LogVerbose<GameLoopCommandEventBridge>(
-    "[GameLoop] Bridge de entrada registrado no EventBus (pause/resume).",
-    DebugUtility.Colors.Info);
-
-// GameLoopRunEndEventBridge - logging duplicado ao receber evento
-string reason = evt?.Reason ?? "<null>";
-DebugUtility.Log<GameLoopRunEndEventBridge>(
-    $"[GameLoop] GameRunEndedEvent recebido. Outcome={evt?.Outcome}, Reason='{reason}'. Sinalizando EndRequested.");
-```
-
-**Impacto:**
-- ⚠️ Logging boilerplate repetido em cada camada
-- ⚠️ Difícil manter consistência de prefixos [GameLoop]
-- ⚠️ Muitos logs do mesmo evento em camadas diferentes
-- ⚠️ Verbosity fora de controle em produção
-
-**Severidade:** 🟡 **MÉDIA** - Afeta legibilidade de logs
+**Severidade:** 🟢 **BAIXA** - Problema principal reduzido e validado
 
 ---
 
@@ -437,106 +258,40 @@ DebugUtility.Log<GameLoopRunEndEventBridge>(
 
 ### **OTIMIZAÇÃO A: Centralizar Reason Formatting**
 
-**Objetivo:** Eliminar 3 variações de normalização de strings
+**Objetivo original:** Eliminar variações duplicadas de normalização de strings
 
-**Arquivo:** Novo `GameLoopReasonFormatter.cs`
+**Estado atual:** ✅ **Concluída e validada**
 
-**Implementação:**
+**Arquivo:** `GameLoopReasonFormatter.cs`
 
-```csharp
-/// <summary>
-/// Centraliza a lógica de formatação de "reason" (motivos) em toda a GameLoop.
-/// </summary>
-public static class GameLoopReasonFormatter
-{
-    /// <summary>
-    /// Formata uma reason para display/logging (sem default).
-    /// Usada para mostrar o valor que foi recebido.
-    /// </summary>
-    public static string Format(string reason)
-        => string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim();
+**Resultado obtido:**
+- ✅ Uma única fonte de verdade para `Format`, `NormalizeRequired` e `NormalizeOptional`
+- ✅ Consumers principais do `GameLoop` migrados para o formatter central
+- ✅ Consistência preservada em runtime para `Victory`, `Restart`, `Defeat` e `ExitToMenu`
+- ✅ Redução efetiva de boilerplate de `reason` no módulo
 
-    /// <summary>
-    /// Normaliza uma reason obrigatória (não pode ser null/vazia).
-    /// Se vazia, usa "Unspecified".
-    /// </summary>
-    public static string NormalizeRequired(string reason)
-        => string.IsNullOrWhiteSpace(reason) ? "Unspecified" : reason.Trim();
-
-    /// <summary>
-    /// Normaliza uma reason opcional com fallback.
-    /// </summary>
-    public static string NormalizeOptional(string reason, string fallback)
-        => string.IsNullOrWhiteSpace(reason)
-            ? (string.IsNullOrWhiteSpace(fallback) ? "Unspecified" : fallback.Trim())
-            : reason.Trim();
-}
-```
-
-**Benefícios:**
-- ✅ Uma única fonte de verdade
-- ✅ Elimina duplicação em 3 lugares
-- ✅ Fácil ajustar regras globalmente
-- ✅ Melhor testabilidade
-- ✅ Padrão claro de 3 casos de uso
+**Leitura atualizada:**
+Esta otimização deixou de ser proposta e passou a baseline do módulo.
 
 ---
 
-### **OTIMIZAÇÃO B: Criar GameLoopStateValidator**
+### **OTIMIZAÇÃO B: Revisar validações periféricas de estado**
 
-**Objetivo:** Centralizar validações de estado (`IsInActiveGameplay`, `IsGameplayScene`)
+**Objetivo:** Consolidar apenas os checks periféricos que ainda restaram fora do trilho principal já centralizado em `GameRunGameplayStateGuard`
 
-**Arquivo:** Novo `GameLoopStateValidator.cs`
+**Arquivo / alvo atual:** bridges/controladores que ainda carregam validação própria
 
-**Implementação:**
-
-```csharp
-/// <summary>
-/// Centralizador de validações de estado do GameLoop.
-/// Elimina duplicação de checks espalhados em múltiplos serviços.
-/// </summary>
-public sealed class GameLoopStateValidator
-{
-    private readonly IGameLoopService _gameLoopService;
-
-    public GameLoopStateValidator(IGameLoopService gameLoopService)
-    {
-        _gameLoopService = gameLoopService;
-    }
-
-    /// <summary>
-    /// Valida se GameLoop está em Playing (estado ativo de gameplay).
-    /// Centraliza a lógica que estava duplicada em 4 lugares.
-    /// </summary>
-    public bool IsInActiveGameplay(out string currentStateName)
-    {
-        currentStateName = _gameLoopService?.CurrentStateIdName ?? string.Empty;
-        return string.Equals(currentStateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// Valida se a cena atual é uma gameplay scene.
-    /// Usa IGameplaySceneClassifier se disponível, com fallback seguro.
-    /// </summary>
-    public static bool IsGameplayScene()
-    {
-        if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
-            return classifier.IsGameplayScene();
-
-        string sceneName = SceneManager.GetActiveScene().name;
-        return string.Equals(sceneName, "GameplayScene", StringComparison.Ordinal);
-    }
-}
-```
+**Direção recomendada:**
+- reutilizar `GameRunGameplayStateGuard` onde fizer sentido
+- evitar reespalhar a regra de `Playing`
+- manter diferenças reais apenas nos pontos de borda que dependem de scene classifier ou contexto específico
 
 **Benefícios:**
-- ✅ Elimina 4 implementações duplicadas
-- ✅ Centraliza validação de estado
-- ✅ Fácil mockar para testes
-- ✅ Logging consistente em um lugar
-- ✅ ~100 linhas de código removido
+- ✅ Mantém uma fonte principal de verdade para gameplay ativo
+- ✅ Reduz divergência em checks periféricos
+- ✅ Reaproveita a consolidação já validada em runtime
+- ✅ Evita criar outro helper redundante
 
----
 
 ### **OTIMIZAÇÃO C: Criar EventBindingHelper**
 
@@ -593,82 +348,80 @@ public sealed class ManagedEventBinding<TEvent> where TEvent : IEvent
 
 ### **OTIMIZAÇÃO D: Refatorar GameLoopService (Split)**
 
-**Objetivo:** Quebrar 453 linhas em responsabilidades separadas
+**Objetivo original:** quebrar o acoplamento entre transição de estado, side effects e contexto de postgame
 
-**Novo arquivo:** `GameLoopSignalProcessor.cs`
+**Estado atual:** 🟡 **Parcialmente concluída e validada**
 
-**Novo arquivo:** `GameLoopPostGameCoordinator.cs`
+**Arquivos extraídos:**
+- `GameLoopTransitionSideEffects.cs`
+- `GameLoopPostGameContextResolver.cs`
 
-**Novo arquivo:** `GameLoopEventPublisher.cs`
+**Resultado obtido:**
+- ✅ `GameLoopService` ficou mais focado como coordenador do loop
+- ✅ side effects de transição saíram do service principal
+- ✅ resolução de snapshot/contexto de postgame saiu do service principal
+- ✅ fluxo `Victory -> Restart -> Defeat -> ExitToMenu` foi validado em runtime sem regressão
 
-**Benefícios:**
-- ✅ Reduz GameLoopService para ~150 linhas (core state machine)
-- ✅ Cada serviço tem responsabilidade clara
-- ✅ Mais testável
-- ✅ Melhor navegabilidade
-- ✅ Separação de concerns
-
----
-
-### **OTIMIZAÇÃO E: Consolidar Outcome + State Services**
-
-**Objetivo:** Clarificar responsabilidades de `GameRunStateService` vs `GameRunOutcomeService`
-
-**Recomendação:**
-- `GameRunStateService`: **consumer** de GameRunEndedEvent (apenas lê resultado)
-- `GameRunOutcomeService`: **producer** de GameRunEndedEvent (publica resultado)
-
-**Resultado:**
-- Elimina confusão de quem faz o quê
-- Reduz listeners duplicados
-- Clarifica fluxo de eventos
+**Leitura atualizada:**
+O hotspot do `GameLoopService` foi reduzido, mas ainda não esgotado. O passo restante, se ainda houver ganho real, é revisar o que sobrou de helpers/lookups e decidir se vale continuar a extração.
 
 ---
+
+### **OTIMIZAÇÃO E: Revisão concluída do par Outcome + State Services**
+
+**Objetivo original:** Clarificar responsabilidades de `GameRunStateService` vs `GameRunOutcomeService`
+
+**Estado atual:**
+- `GameRunStateService`: **consumer/projeção** de `GameRunEndedEvent`
+- `GameRunOutcomeService`: **producer/owner terminal** de `GameRunEndedEvent`
+- `GameRunGameplayStateGuard`: guard compartilhado para validação de gameplay ativo
+
+**Resultado obtido:**
+- ✅ Elimina a confusão principal de quem faz o quê
+- ✅ Reduz listeners/guards duplicados no trilho principal
+- ✅ Clarifica o fluxo de eventos
+- ✅ Validado em runtime
 
 ## 📊 IMPACTO ESTIMADO
 
 | Otimização | Redundância Removida | Complexidade | LOC Reduzidas |
 |---|---|---|---|
-| **A. Reason Formatting** | 3 implementations duplicadas | ↓ 30% | ~30 |
-| **B. State Validator** | 4 implementations duplicadas | ↓ 35% | ~100 |
+| **A. Reason Formatting** | concluída e validada | ↓ 30% | ~30 |
+| **B. Validations periféricas** | checks restantes fora do guard principal | ↓ 15% | ~40 |
 | **C. Event Binding Helper** | 5+ padrões duplicados | ↓ 40% | ~150 |
-| **D. Split GameLoopService** | 453 → múltiplas classes | ↓ 55% | ~200 |
-| **E. Consolidar Outcome** | 2 listeners duplicados | ↓ 25% | ~50 |
-| **TOTAL** | **7 pontos** | **↓ 37%** | **~530 LOC** |
+| **D. Split GameLoopService** | parcialmente reduzido com extrações validadas | ↓ 30% | ~90 |
+| **E. Outcome + State Services** | consolidado no trilho principal | ↓ 25% | ~50 |
+| **TOTAL** | **7 pontos (com 3 já reduzidos)** | **↓ 38%** | **~280 LOC restantes** |
 
 **Comparação com Navigation:**
 - Navigation removeu ~290 LOC
-- **GameLoop pode remover ~530 LOC** (1.8x maior)
-- GameLoop tem mais oportunidades de otimização
+- **GameLoop ainda pode remover ~280 LOC** (a estimativa caiu após `ReasonFormatter`, consolidação do par state/outcome e primeira extração de `GameLoopService`)
+- GameLoop continua com oportunidades de otimização, mas em escopo mais localizado
 
 ---
 
 ## 🎯 PLANO DE IMPLEMENTAÇÃO
 
 ### **Fase 1: Reason Formatting (Baixo Risco)**
-- ⏳ Criar `GameLoopReasonFormatter.cs`
-- ⏳ Refatorar `GameCommands.cs`
-- ⏳ Refatorar `GameLoopCommandEventBridge.cs`
-- ⏳ Testes de formatting
+- ✅ Criar `GameLoopReasonFormatter.cs`
+- ✅ Refatorar consumers principais do `GameLoop`
+- ✅ Validar runtime do ciclo completo
 
-**Tempo:** ~1 hora
+**Tempo:** concluído
 **Risco:** Muito Baixo
 **Impacto:** ~30 LOC
 
 ---
 
-### **Fase 2: State Validator (Baixo-Médio Risco)**
-- ⏳ Criar `GameLoopStateValidator.cs`
-- ⏳ Refatorar `GameRunStateService.cs`
-- ⏳ Refatorar `GameRunOutcomeService.cs`
-- ⏳ Refatorar `GamePlayEndConditionsController.cs`
+### **Fase 2: Validations periféricas (Baixo-Médio Risco)**
+- ⏳ Revisar bridges/controladores que ainda mantêm checks próprios
+- ⏳ Reutilizar `GameRunGameplayStateGuard` onde fizer sentido
+- ⏳ Evitar reespalhar regra de `Playing`
 - ⏳ Testes de validação
 
-**Tempo:** ~1.5 horas
-**Risco:** Baixo (lógica não muda)
-**Impacto:** ~100 LOC
-
----
+**Tempo:** ~1 hora
+**Risco:** Baixo-Médio
+**Impacto:** ~40 LOC
 
 ### **Fase 3: Event Binding Helper (Médio Risco)**
 - ⏳ Criar `ManagedEventBinding<T>` (ou melhorar Core)
@@ -685,27 +438,26 @@ public sealed class ManagedEventBinding<TEvent> where TEvent : IEvent
 ---
 
 ### **Fase 4: Split GameLoopService (Alto Risco)**
-- ⏳ Criar `GameLoopSignalProcessor.cs`
-- ⏳ Criar `GameLoopPostGameCoordinator.cs`
-- ⏳ Refatorar `GameLoopService.cs` (453 → ~150 linhas)
-- ⏳ Testes de integração completos
+- ✅ Extrair `GameLoopTransitionSideEffects.cs`
+- ✅ Extrair `GameLoopPostGameContextResolver.cs`
+- ✅ Refatorar `GameLoopService.cs` para coordenar e delegar
+- ✅ Validar integração completa em runtime
+- ⏳ Avaliar se ainda vale nova extração do que restou no service
 
-**Tempo:** ~4 horas
+**Tempo:** parcialmente concluído
 **Risco:** Alto (refatoração crítica)
-**Impacto:** ~200 LOC
+**Impacto:** ~90 LOC já reduzidas
 
 ---
 
-### **Fase 5: Consolidar Outcome (Médio-Alto Risco)**
-- ⏳ Revisar padrão de listener duplicado
-- ⏳ Clarificar responsabilidades
-- ⏳ Refatorar se necessário
+### **Fase 5: Revisão fina pós-consolidação (Opcional)**
+- ⏳ Só reabrir o par `Outcome + State` se aparecer nova evidência concreta
+- ⏳ Priorizar agora `GameLoopService` e validators periféricos
+- ⏳ Manter o wiring validado como baseline
 
-**Tempo:** ~2 horas
-**Risco:** Médio-Alto (afeta fluxo de eventos)
-**Impacto:** ~50 LOC
-
----
+**Tempo:** opcional
+**Risco:** desnecessário no momento
+**Impacto:** baixo
 
 ## 📚 COMPARAÇÃO COM NAVIGATION
 
@@ -748,46 +500,46 @@ public sealed class ManagedEventBinding<TEvent> where TEvent : IEvent
 |---------|--------|
 | Análise estrutural | ✅ Concluído |
 | Identificação de redundâncias | ✅ Concluído (7 problemas) |
-| Otimizações propostas | ✅ Concluído (5 soluções) |
-| Impacto estimado | ✅ Calculado (~530 LOC) |
-| Plano de implementação | ✅ Detalhado (5 fases) |
+| Otimizações propostas | ✅ Concluído (5 soluções, 3 já reduzidas/validadas) |
+| Impacto estimado | ✅ Recalibrado (~280 LOC remanescentes) |
+| Plano de implementação | ✅ Detalhado e parcialmente executado |
 
 ---
 
 ## 🎯 CONCLUSÃO
 
-O módulo GameLoop é **bem arquitetado** mas sofre de **mais redundâncias que Navigation** devido à sua complexidade maior:
+O módulo GameLoop continua **bem arquitetado**, e três hotspots já foram efetivamente reduzidos e validados em runtime:
 
-1. **Normalização de strings:** 3 variações diferentes (FormatReason, NormalizeRequired, NormalizeOptional)
-2. **Validação de estado:** 4 implementações duplicadas (IsInActiveGameplay em 4 lugares)
+1. **Normalização de strings:** centralizada e validada
+2. **Validações periféricas de estado:** ainda existem fora do guard principal
 3. **Event binding:** 5+ padrões diferentes (com/sem guards)
-4. **Deduplicação:** GameRunStateService + GameRunOutcomeService (listeners duplicados)
-5. **Service resolution:** 4+ padrões diferentes
-6. **Tamanho:** GameLoopService com 453 linhas
-7. **Logging:** Boilerplate repetido em todas camadas
+4. **Par State + Outcome:** problema principal reduzido e validado em runtime
+5. **Service resolution:** ainda existe em alguns pontos
+6. **Tamanho:** `GameLoopService` foi reduzido, mas continua como hotspot restante
+7. **Logging:** boilerplate repetido em várias camadas
 
 ### Oportunidades de Otimização
 
-As **5 otimizações propostas** eliminarão redundâncias com:
-- ✅ 26.5% redução de complexidade (~530 LOC removido)
-- ✅ Uma fonte de verdade para cada padrão
-- ✅ Melhor testabilidade e manutenibilidade
-- ✅ Maior clareza de fluxo
+As oportunidades restantes agora se concentram em:
+- ✅ manter `ReasonFormatter` como baseline
+- ✅ manter o trilho `OutcomeService(owner) + StateService(projeção)` como baseline validado
+- ✅ consolidar mais o que restou de `GameLoopService` apenas se houver ganho real
+- ✅ revisar validators periféricos e boilerplate de event binding
 
 ### Recomendação de Implementação
 
-Implementar em **5 Fases**, começando com **Fase 1-2** (baixo risco, alto impacto):
-1. Reason Formatting (~1h) - ✅ Seguro
-2. State Validator (~1.5h) - ✅ Seguro
-3. Event Binding Helper (~2h) - ⚠️ Médio
-4. Split GameLoopService (~4h) - ⚠️ Alto
-5. Consolidar Outcome (~2h) - ⚠️ Opcional
+Repriorizar o plano em **5 Fases**, agora com o seguinte estado:
+1. Reason Formatting - ✅ Concluído
+2. Validations periféricas - ⏳ Ainda pode gerar ganho
+3. Event Binding Helper - ⚠️ Médio
+4. Split `GameLoopService` - 🟡 Parcialmente concluído e validado
+5. Revisão fina pós-consolidação do par outcome/state - ⚪ Opcional
 
-**Tempo total estimado:** 10.5 horas
-**Risco overall:** Médio-Alto
-**Benefício:** 530 LOC removido + clareza de arquitetura
+**Tempo total estimado:** menor que o plano original
+**Risco overall:** Médio
+**Benefício remanescente:** reduzir boilerplate restante, revisar validators periféricos e decidir com mais precisão se ainda vale continuar extrações do `GameLoopService`
 
 ---
 
 **Relatório gerado:** 22 de março de 2026
-**Próxima revisão:** Após implementação das otimizações estruturais (Fases 1-3)
+**Próxima revisão:** Após eventual consolidação adicional de validators periféricos ou event binding

@@ -6,7 +6,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using TMPro;
 using UnityEngine;
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 {
     /// <summary>
     /// Controller do overlay de pós-game (Game Over / Victory).
-    /// Nota: a pausa da simulação em Victory/Defeat é solicitada pelo GameRunStateService.
+    /// Nota: a pausa da simulação em Victory/Defeat é solicitada pelo GameRunResultSnapshotService.
     /// Este overlay apenas exibe UI e publica intents (Restart / ExitToMenu).
     /// </summary>
     [DisallowMultipleComponent]
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 
         private void Start()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var statusService)
+            if (DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out var statusService)
                 && statusService is { HasResult: true })
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
@@ -234,11 +234,11 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
                 "[PostGame] GameRunEndedEvent recebido. Exibindo overlay.",
                 DebugUtility.Colors.Info);
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var statusService)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out var statusService)
                 || statusService == null)
             {
                 DebugUtility.LogWarning<PostGameOverlayController>(
-                    "[PostGame] IGameRunStateService indisponível. Usando fallback de texto.");
+                    "[PostGame] IGameRunResultSnapshotService indisponível. Usando fallback de texto.");
                 ApplyFallbackText();
                 Show();
                 return;
@@ -248,9 +248,9 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             Show();
         }
 
-        private void ApplyStatus(IGameRunStateService stateService)
+        private void ApplyStatus(IGameRunResultSnapshotService resultSnapshotService)
         {
-            UpdateTextsFromStatus(stateService.Outcome, stateService.Reason);
+            UpdateTextsFromStatus(resultSnapshotService.Outcome, resultSnapshotService.Reason);
         }
 
         private void UpdateTextsFromStatus(GameRunOutcome outcome, string reason)

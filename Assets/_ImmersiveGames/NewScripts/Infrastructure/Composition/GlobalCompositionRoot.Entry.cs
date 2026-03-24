@@ -3,7 +3,7 @@
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas StateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (SimulationGate/WorldReset/SceneReset/DI/Câmera/StateBridge) para NewScripts.
- * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow
+ * - (Opção B) Registrado GameLoopSceneFlowSyncCoordinator para coordenar Start via SceneFlow
  *   (GameStartRequestedEvent -> Transition -> ScenesReady -> RequestStart/Ready).
  *
  * Ajustes (jan/2026):
@@ -23,7 +23,7 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Logging.Config;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime.Bridges;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         private static GameReadinessService _gameReadinessService;
 
         // Opção B: mantém referência viva do coordinator (evita GC / descarte prematuro).
-        private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
+        private static GameLoopSceneFlowSyncCoordinator _sceneFlowSyncCoordinator;
 
         // --------------------------------------------------------------------
         // Entry

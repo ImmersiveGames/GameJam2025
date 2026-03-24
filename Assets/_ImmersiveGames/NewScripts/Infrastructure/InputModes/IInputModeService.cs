@@ -1,7 +1,7 @@
 /*
  * VALIDACAO / CHECKLIST (UIGlobalScene)
- * - Criar PauseOverlayRoot desativado, adicionar PauseOverlayController e arrastar a referencia.
- * - Conectar botao Resume para PauseOverlayController.Resume().
+ * - Criar PauseOverlayRoot desativado, adicionar GamePauseOverlayController e arrastar a referencia.
+ * - Conectar botao Resume para GamePauseOverlayController.Resume().
  */
 namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
 {
