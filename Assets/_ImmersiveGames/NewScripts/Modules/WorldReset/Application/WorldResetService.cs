@@ -5,21 +5,25 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Guards;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Guards;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Validation;
+
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 {
     /// <summary>
-    /// Servico canonico do reset do WorldReset.
+    /// Serviço canônico do reset do WorldReset.
     /// Fonte de verdade para policy/guards/validation/orchestration.
     /// Ownership (Baseline 3.1):
     /// - OWNER do macro reset (world reset) no runtime.
-    /// - API canonica chamada por SceneFlow driver e comandos de macro reset.
-    /// - Encapsula construcao/execucao do WorldResetOrchestrator sem expor detalhes.
+    /// - API canônica chamada por SceneFlow driver e comandos de macro reset.
+    /// - Encapsula construção/execução do WorldResetOrchestrator sem expor detalhes.
     /// </summary>
     public sealed class WorldResetService : IWorldResetService
     {
@@ -36,6 +40,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 reason: reason ?? string.Empty,
                 targetScene: string.Empty,
                 origin: WorldResetOrigin.Manual,
+                macroRouteId: SceneRouteId.None,
+                levelSignature: LevelContextSignature.Empty,
                 sourceSignature: contextSignature ?? string.Empty);
 
             return await TriggerResetAsync(request);
@@ -43,8 +49,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
         public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
-            // WL-1.1: este metodo e o ponto de entrada canonico para world reset.
-            // Nao alterar fluxo/callsites nesta etapa.
+            // WL-1.1: este método é o ponto de entrada canônico para world reset.
+            // Não alterar fluxo/callsites nesta etapa.
             EnsureDependencies();
 
             string ctx = string.IsNullOrWhiteSpace(request.ContextSignature) ? string.Empty : request.ContextSignature;
@@ -55,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 if (!_inFlight.Add(ctx))
                 {
                     DebugUtility.LogWarning<WorldResetService>(
-                        $"[{ResetLogTags.Guarded}][DEGRADED_MODE] Reset ja em andamento para signature='{ctx}'. Ignorando duplicate.");
+                        $"[{ResetLogTags.Guarded}][DEGRADED_MODE] Reset já em andamento para signature='{ctx}'. Ignorando duplicate.");
                     return WorldResetResult.Failed;
                 }
             }
@@ -72,7 +78,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                     $"[WorldResetService] Falha durante TriggerResetAsync signature='{ctx}' reason='{rsn}' ex={ex}");
 
                 // Best-effort: ainda publica completed para evitar deadlock no SceneFlow gate.
-                WorldResetOrchestrator.PublishResetCompletedV1(ctx, rsn);
+                WorldResetOrchestrator.PublishResetCompletedEvent(
+                    request,
+                    WorldResetOutcome.FailedService,
+                    $"{WorldResetReasons.FailedServiceExceptionPrefix}:{ex.GetType().Name}");
                 return WorldResetResult.Failed;
             }
             finally
@@ -116,7 +125,3 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
         }
     }
 }
-
-
-
-

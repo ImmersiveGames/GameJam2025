@@ -1,0 +1,75 @@
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
+
+namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
+{
+    /// <summary>
+    /// Evento canônico publicado quando um WorldReset conclui.
+    /// Consumido por gate, loading, gameplay e observabilidade.
+    /// </summary>
+    public readonly struct WorldResetCompletedEvent : IEvent
+    {
+        public WorldResetCompletedEvent(
+            ResetKind kind,
+            SceneRouteId macroRouteId,
+            string reason,
+            string contextSignature,
+            LevelContextSignature levelSignature,
+            WorldResetOutcome outcome,
+            string detail,
+            WorldResetOrigin origin,
+            string sourceSignature = null)
+        {
+            Kind = kind;
+            MacroRouteId = macroRouteId;
+            Reason = Normalize(reason);
+            ContextSignature = Normalize(contextSignature);
+            LevelSignature = levelSignature;
+            Outcome = outcome;
+            Detail = Normalize(detail);
+            Origin = origin;
+            SourceSignature = Normalize(sourceSignature);
+        }
+
+        public WorldResetCompletedEvent(string contextSignature, string reason)
+            : this(
+                ResetKind.Macro,
+                SceneRouteId.None,
+                reason,
+                contextSignature,
+                LevelContextSignature.Empty,
+                WorldResetOutcome.Completed,
+                string.Empty,
+                WorldResetOrigin.Unknown,
+                contextSignature)
+        {
+        }
+
+        public ResetKind Kind { get; }
+        public SceneRouteId MacroRouteId { get; }
+        public string Reason { get; }
+        public string ContextSignature { get; }
+        public string SourceSignature { get; }
+        public LevelContextSignature LevelSignature { get; }
+        public WorldResetOutcome Outcome { get; }
+        public string Detail { get; }
+        public WorldResetOrigin Origin { get; }
+
+        public string MacroSignature => ContextSignature;
+        public bool HasContextSignature => !string.IsNullOrWhiteSpace(ContextSignature);
+        public bool HasLevelSignature => LevelSignature.IsValid;
+
+        public override string ToString()
+        {
+            return $"WorldResetCompletedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', LevelSignature='{LevelSignature}', Reason='{Reason}', Outcome='{Outcome}', Detail='{Detail}', Origin='{Origin}')";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+}

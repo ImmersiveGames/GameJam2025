@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
@@ -7,17 +6,20 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Application;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
+
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldResetCommands : IWorldResetCommands
     {
         // OWNER boundary:
-        // - V1: não publica nem controla o gate/correlacao do SceneFlow.
-        // - V2: publica apenas telemetria/observabilidade de commands de reset.
+        // - Commands de entrada pública para reset macro/level.
+        // - Macro reset delega ao serviço canônico, que publica o contrato de lifecycle.
+        // - Level reset publica diretamente o mesmo contrato canônico.
         public async Task ResetMacroAsync(SceneRouteId macroRouteId, string reason, string macroSignature, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
@@ -30,28 +32,21 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
             string normalizedReason = NormalizeReason(reason, "WorldReset/Macro");
             string normalizedMacroSignature = NormalizeSignature(macroSignature);
 
-            PublishRequested(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty);
+            DebugUtility.Log<WorldResetCommands>(
+                $"[OBS][WorldReset] ResetMacro command routeId='{macroRouteId}' macroSignature='{normalizedMacroSignature}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
 
-            try
-            {
-                IWorldResetService resetService = ResolveMacroResetServiceOrFail();
-                WorldResetResult resetResult = await resetService.TriggerResetAsync(normalizedMacroSignature, normalizedReason);
-                bool success = resetResult == WorldResetResult.Completed;
+            IWorldResetService resetService = ResolveMacroResetServiceOrFail();
+            var request = new WorldResetRequest(
+                contextSignature: normalizedMacroSignature,
+                reason: normalizedReason,
+                targetScene: string.Empty,
+                origin: WorldResetOrigin.Command,
+                macroRouteId: macroRouteId,
+                levelSignature: LevelContextSignature.Empty,
+                sourceSignature: normalizedMacroSignature);
 
-                string notes = resetResult switch
-                {
-                    WorldResetResult.SkippedValidation => "ValidationFailed: ContextSignatureEmpty",
-                    WorldResetResult.Failed => "ResetFailed",
-                    _ => string.Empty
-                };
-
-                PublishCompleted(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, success, notes);
-            }
-            catch (Exception ex)
-            {
-                PublishCompleted(ResetKind.Macro, macroRouteId, normalizedReason, normalizedMacroSignature, LevelContextSignature.Empty, false, ex.GetType().Name);
-                throw;
-            }
+            await resetService.TriggerResetAsync(request);
         }
 
         public Task ResetLevelAsync(LevelDefinitionAsset levelRef, string reason, LevelContextSignature levelSignature, CancellationToken ct)
@@ -84,17 +79,26 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
 
                 SceneRouteId macroRouteId = snapshot.MacroRouteId;
 
-                PublishRequested(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature);
+                PublishStarted(
+                    ResetKind.Level,
+                    macroRouteId,
+                    normalizedReason,
+                    string.Empty,
+                    levelSignature,
+                    WorldResetOrigin.Command,
+                    string.Empty);
 
-                try
-                {
-                    PublishCompleted(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, true, string.Empty);
-                }
-                catch (Exception ex)
-                {
-                    PublishCompleted(ResetKind.Level, macroRouteId, normalizedReason, string.Empty, levelSignature, false, ex.GetType().Name);
-                    throw;
-                }
+                PublishCompleted(
+                    ResetKind.Level,
+                    macroRouteId,
+                    normalizedReason,
+                    string.Empty,
+                    levelSignature,
+                    WorldResetOutcome.Completed,
+                    string.Empty,
+                    WorldResetOrigin.Command,
+                    string.Empty);
+
                 return Task.CompletedTask;
             }
             catch (Exception exception)
@@ -128,7 +132,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
                 FailFastConfig($"DependencyManager.Provider is null while resolving {label}.");
             }
 
-            Debug.Assert(DependencyManager.Provider != null, "DependencyManager.Provider != null");
             if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
             {
                 FailFastConfig($"Missing required global service: {label}.");
@@ -137,46 +140,56 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
             return service;
         }
 
-        private static void PublishRequested(
+        private static void PublishStarted(
             ResetKind kind,
             SceneRouteId macroRouteId,
             string reason,
-            string macroSignature,
-            LevelContextSignature levelSignature)
+            string contextSignature,
+            LevelContextSignature levelSignature,
+            WorldResetOrigin origin,
+            string sourceSignature)
         {
             DebugUtility.Log<WorldResetCommands>(
-                $"[OBS][WorldReset] ResetRequestedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}'.",
+                $"[OBS][WorldReset] ResetStarted kind='{kind}' routeId='{macroRouteId}' contextSignature='{contextSignature}' levelSignature='{levelSignature}' reason='{reason}' origin='{origin}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<WorldResetEvents>.Raise(new WorldResetEvents(
+            EventBus<WorldResetStartedEvent>.Raise(new WorldResetStartedEvent(
                 kind,
                 macroRouteId,
                 reason,
-                macroSignature,
-                levelSignature));
+                contextSignature,
+                levelSignature,
+                origin,
+                sourceSignature));
         }
 
         private static void PublishCompleted(
             ResetKind kind,
             SceneRouteId macroRouteId,
             string reason,
-            string macroSignature,
+            string contextSignature,
             LevelContextSignature levelSignature,
-            bool success,
-            string notes)
+            WorldResetOutcome outcome,
+            string detail,
+            WorldResetOrigin origin,
+            string sourceSignature)
         {
             DebugUtility.Log<WorldResetCommands>(
-                $"[OBS][WorldReset] ResetCompletedV2 kind='{kind}' macroRouteId='{macroRouteId}' macroSignature='{macroSignature}' levelSignature='{levelSignature}' reason='{reason}' success={success} notes='{notes}'.",
-                success ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+                $"[OBS][WorldReset] ResetCompleted kind='{kind}' routeId='{macroRouteId}' contextSignature='{contextSignature}' levelSignature='{levelSignature}' reason='{reason}' outcome='{outcome}' detail='{detail}' origin='{origin}'.",
+                outcome == WorldResetOutcome.Completed || outcome == WorldResetOutcome.SkippedByPolicy || outcome == WorldResetOutcome.SkippedValidation
+                    ? DebugUtility.Colors.Success
+                    : DebugUtility.Colors.Warning);
 
-            EventBus<ResetCompletedEvent>.Raise(new ResetCompletedEvent(
+            EventBus<WorldResetCompletedEvent>.Raise(new WorldResetCompletedEvent(
                 kind,
                 macroRouteId,
                 reason,
-                macroSignature,
+                contextSignature,
                 levelSignature,
-                success,
-                notes));
+                outcome,
+                detail,
+                origin,
+                sourceSignature));
         }
 
         private static string NormalizeReason(string reason, string fallback)

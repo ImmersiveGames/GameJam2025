@@ -5,8 +5,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
     /// </summary>
     public static class WorldResetTokens
     {
-        public const string WorldResetToken = "WorldLifecycle.WorldReset";
+        public const string WorldResetToken = "WorldReset.WorldReset";
     }
 }
-
-

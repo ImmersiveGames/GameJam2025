@@ -3,26 +3,30 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 {
-        /// <summary>
-    /// OWNER: gate V1 de correlacao do WorldResetCompletedEvent para liberar SceneFlow.
-    /// NAO E OWNER: execucao do reset em si (driver/service/orchestrator do WorldReset).
-    /// PUBLISH/CONSUME: consome WorldResetCompletedEvent; nao publica eventos.
+    /// <summary>
+    /// OWNER: gate de correlação do WorldResetCompletedEvent para liberar SceneFlow.
+    /// NÃO É OWNER: execução do reset em si (driver/service/orchestrator do WorldReset).
+    /// PUBLISH/CONSUME: consome WorldResetCompletedEvent; não publica eventos.
     /// Fases tocadas: Gate entre ScenesReady e BeforeFadeOut.
     /// </summary>
-[DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldResetCompletionGate : ISceneTransitionCompletionGate, IDisposable
     {
         private readonly EventBinding<WorldResetCompletedEvent> _binding;
-
-        private readonly Dictionary<string, TaskCompletionSource<string>> _pending = new(StringComparer.Ordinal);
-
-        private readonly Dictionary<string, string> _completedReasons = new(StringComparer.Ordinal);
-
+        private readonly Dictionary<string, TaskCompletionSource<WorldResetCompletedEvent>> _pending = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, WorldResetCompletedEvent> _completedEvents = new(StringComparer.Ordinal);
         private readonly int _timeoutMs;
+        private bool _disposed;
 
         private const int MaxCompletedCacheEntries = 128;
 
@@ -40,18 +44,32 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 
         public void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
             EventBus<WorldResetCompletedEvent>.Unregister(_binding);
 
             lock (_pending)
             {
-                // Cancela awaiters pendentes (defensivo).
-                foreach (KeyValuePair<string, TaskCompletionSource<string>> kv in _pending)
+                foreach (KeyValuePair<string, TaskCompletionSource<WorldResetCompletedEvent>> kv in _pending)
                 {
-                    kv.Value.TrySetCanceled();
+                    kv.Value.TrySetResult(new WorldResetCompletedEvent(
+                        kind: ResetKind.Macro,
+                        macroRouteId: SceneRouteId.None,
+                        reason: WorldResetReasons.GateDisposed,
+                        contextSignature: kv.Key,
+                        levelSignature: LevelContextSignature.Empty,
+                        outcome: WorldResetOutcome.Disposed,
+                        detail: WorldResetReasons.GateDisposed,
+                        origin: WorldResetOrigin.Unknown,
+                        sourceSignature: kv.Key));
                 }
 
                 _pending.Clear();
-                _completedReasons.Clear();
+                _completedEvents.Clear();
             }
         }
 
@@ -68,31 +86,31 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 
             lock (_pending)
             {
-                if (_completedReasons.ContainsKey(signature))
+                if (_completedEvents.TryGetValue(signature, out WorldResetCompletedEvent cachedEvent))
                 {
                     DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
-                        $"[SceneFlowGate] Já concluído (cached). signature='{signature}'.");
+                        $"[SceneFlowGate] Já concluído (cached). signature='{signature}', outcome='{cachedEvent.Outcome}', reason='{cachedEvent.Reason}', detail='{cachedEvent.Detail}'.");
                     return;
                 }
             }
 
-            TaskCompletionSource<string> tcs;
+            TaskCompletionSource<WorldResetCompletedEvent> tcs;
 
             lock (_pending)
             {
                 if (!_pending.TryGetValue(signature, out tcs))
                 {
-                    tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    tcs = new TaskCompletionSource<WorldResetCompletedEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
                     _pending[signature] = tcs;
                 }
             }
 
-            var completed = await Task.WhenAny(tcs.Task, Task.Delay(_timeoutMs));
-            if (completed != tcs.Task)
+            Task completed = await Task.WhenAny(tcs.Task, Task.Delay(_timeoutMs));
+            if (!ReferenceEquals(completed, tcs.Task))
             {
                 lock (_pending)
                 {
-                    if (_pending.TryGetValue(signature, out TaskCompletionSource<string> current) && ReferenceEquals(current, tcs))
+                    if (_pending.TryGetValue(signature, out TaskCompletionSource<WorldResetCompletedEvent> current) && ReferenceEquals(current, tcs))
                     {
                         _pending.Remove(signature);
                     }
@@ -103,36 +121,41 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                 return;
             }
 
-            string reason = await tcs.Task;
+            WorldResetCompletedEvent completionEvent = await tcs.Task;
 
             DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
-                $"[SceneFlowGate] Concluído. signature='{signature}', reason='{reason ?? "<null>"}'.");
+                $"[SceneFlowGate] Concluído. signature='{signature}', outcome='{completionEvent.Outcome}', reason='{completionEvent.Reason}', detail='{completionEvent.Detail}'.");
         }
 
         private void OnCompleted(WorldResetCompletedEvent evt)
         {
+            if (evt.Kind != ResetKind.Macro)
+            {
+                DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
+                    $"[SceneFlowGate] WorldResetCompletedEvent ignorado (non-macro). kind='{evt.Kind}', outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             string signature = evt.ContextSignature ?? string.Empty;
             string reason = evt.Reason;
 
             if (string.IsNullOrEmpty(signature))
             {
                 DebugUtility.LogWarning(typeof(WorldResetCompletionGate),
-                    $"[SceneFlowGate] WorldResetCompletedEvent recebido com ContextSignature vazia. reason='{reason ?? "<null>"}'.");
-
-                // Não faz cache nem tenta completar awaiters sem assinatura correlacionável.
+                    $"[SceneFlowGate] WorldResetCompletedEvent MACRO recebido com ContextSignature vazia. outcome='{evt.Outcome}', reason='{reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.");
                 return;
             }
 
-            TaskCompletionSource<string> tcs = null;
+            TaskCompletionSource<WorldResetCompletedEvent> tcs = null;
 
             lock (_pending)
             {
                 PruneCompletedCacheIfNeeded();
 
-                // Mantém o primeiro reason (estável p/ debug). Se preferir "último ganha", troque por _completedReasons[signature] = reason;
-                if (!_completedReasons.ContainsKey(signature))
+                if (!_completedEvents.ContainsKey(signature))
                 {
-                    _completedReasons.Add(signature, reason);
+                    _completedEvents.Add(signature, evt);
                 }
 
                 if (_pending.TryGetValue(signature, out tcs))
@@ -141,30 +164,23 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                 }
             }
 
-            if (tcs != null)
-            {
-                tcs.TrySetResult(reason);
-            }
+            tcs?.TrySetResult(evt);
 
             DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
-                $"[SceneFlowGate] WorldResetCompletedEvent recebido. signature='{signature}', reason='{reason ?? "<null>"}'.");
+                $"[SceneFlowGate] WorldResetCompletedEvent recebido. signature='{signature}', outcome='{evt.Outcome}', reason='{reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.");
         }
 
         private void PruneCompletedCacheIfNeeded()
         {
-            if (_completedReasons.Count <= MaxCompletedCacheEntries)
+            if (_completedEvents.Count <= MaxCompletedCacheEntries)
             {
                 return;
             }
 
-            _completedReasons.Clear();
+            _completedEvents.Clear();
 
             DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
-                $"[SceneFlowGate] Cache de completedReasons limpo (atingiu limite > {MaxCompletedCacheEntries}).");
+                $"[SceneFlowGate] Cache de completions limpo (atingiu limite > {MaxCompletedCacheEntries}).");
         }
     }
 }
-
-
-
-

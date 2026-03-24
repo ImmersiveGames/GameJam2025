@@ -10,10 +10,12 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
         public const string SkippedNonGameplayRoutePrefix = "Skipped_NonGameplayRoute";
         public const string FailedNoControllerPrefix = "Failed_NoController";
         public const string FailedNoResetService = "Failed_NoResetService";
+        public const string FailedExecutionPrefix = "Failed_Execution";
+        public const string FailedServiceExceptionPrefix = "Failed_ServiceException";
         public const string GuardDuplicatePrefix = "Guard_DuplicateScenesReady";
+        public const string GateDisposed = "Gate_Disposed";
 
         public const string ProductionTriggerPrefix = "ProductionTrigger/";
         public const string ManualProfile = "manual";
     }
 }
-
