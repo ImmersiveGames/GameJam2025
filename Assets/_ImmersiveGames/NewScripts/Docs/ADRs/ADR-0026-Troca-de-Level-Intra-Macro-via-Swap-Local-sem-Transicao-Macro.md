@@ -3,7 +3,7 @@
 ## Status atual (2026-03-06)
 - Status: **DONE**
 - Implementado no código:
-  - `LevelSwapLocalService` aplica unload/load local sem transição macro.
+  - `LevelSwapLocalService` aplica unload/load local sem transição macro, montando request técnico para `SceneComposition`.
   - Restart local (`Level2 -> Level2`) faz reload local (unload+load do mesmo set).
   - QA confirma `transitionStartedCount='0'` no swap local.
 - Evidência:
@@ -29,7 +29,7 @@
 
 - `lastlog:737` `StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.`
 - `lastlog:1145` `LevelDefaultSelected ... levelRef='Level1'`
-- `lastlog:1155` `ResetRequested kind='Level' ... contentId='level-ref:Level1'`
+- `lastlog:1155` `ResetRequested kind='Level' ... localContentId='level-content:Level1'` *(shape atual equivalente)*
 - `lastlog:2181` `LevelAdditiveClearSummary ...`
 - `lastlog:2185` `LevelCleared ...`
 - `lastlog:1211` `IntroStageStartRequested ... levelSignature='level:Level1|route:to-gameplay|reason:Menu/PlayButton'`

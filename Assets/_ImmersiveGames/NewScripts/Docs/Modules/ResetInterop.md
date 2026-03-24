@@ -1,52 +1,26 @@
 # ResetInterop
 
-## Papel
-`ResetInterop` é a superfície de integração e observabilidade entre o reset macro e outros módulos, principalmente `SceneFlow`.
+## Estado atual
 
-## Responsabilidades
-- bridge `SceneFlow -> WorldReset`
-- eventos públicos de início/fim do reset
-- gate de completion usado pela transição
-- tokens públicos do trilho de reset
+- `ResetInterop` concentra a ponte entre `SceneFlow` e o reset.
+- O modulo reune driver, eventos, completion gate e tokens da superficie publica de reset.
+- Os tipos de runtime ainda carregam parte do naming legado `WorldLifecycle*`, mas o papel arquitetural atual do modulo e de interop.
 
-## O que não pertence aqui
-- política macro de reset
-- validação macro
-- execução local do reset de cena
-- pipeline de `SceneReset`
+## Ownership
 
-## Relação com os outros módulos
-### `WorldReset`
-Dono do reset macro:
-- comandos
-- service
-- orchestrator
-- executor
-- policies/guards/validation
+- `WorldLifecycleSceneFlowResetDriver`: handoff entre `SceneFlow` e `WorldReset`.
+- `WorldLifecycleResetStartedEvent` / `WorldLifecycleResetCompletedEvent`: eventos publicos do reset.
+- `WorldLifecycleResetCompletionGate`: gate de completion usado no pipeline macro.
+- `WorldLifecycleTokens`: tokens publicos de reset.
 
-### `SceneReset`
-Dono do reset local:
-- controller
-- runner
-- façade
-- pipeline
-- phases
-- hooks locais
+## Regras praticas
 
-### `ResetInterop`
-Só interop/superfície:
-- driver com `SceneFlow`
-- eventos públicos
-- completion gate
-- tokens
+- `ResetInterop` nao e owner do reset macro nem do reset local.
+- O modulo existe para ponte, surface area e correlacao com `SceneFlow`.
+- Nao empurre policy macro para o driver; policy continua em `WorldReset`.
 
-## Naming alvo da superfície
-A superfície deve usar `WorldReset*` ou nome específico do bridge, e não mais `WorldLifecycle*`.
+## Leitura cruzada
 
-### Exemplos alvo
-- `SceneFlowWorldResetDriver`
-- `WorldResetStartedEvent`
-- `WorldResetCompletedEvent`
-- `WorldResetEvents`
-- `WorldResetCompletionGate`
-- `WorldResetTokens`
+- `Docs/Modules/WorldReset.md`
+- `Docs/Modules/SceneReset.md`
+- `Docs/Modules/SceneFlow.md`

@@ -6,7 +6,7 @@
 - Data (decisão): 2025-12-28
 - Última atualização: 2026-02-04
 - Tipo: Implementação
-- Escopo: `GameplayScene`, `SceneScopeCompositionRoot`, spawn pipeline (Player/Eater), WorldLifecycle
+- Escopo: `GameplayScene`, `SceneScopeCompositionRoot`, spawn pipeline (Player/Eater), WorldReset/SceneReset
 
 ## Contexto
 
@@ -110,7 +110,7 @@ Evidência canônica mostra:
 ## Fora de escopo
 
 - Integração com LevelFlow/SceneComposition (ver ADR-0017 e plano de SceneComposition).
-- Alterar contratos de SceneFlow ou WorldLifecycle.
+- Alterar contratos de SceneFlow, WorldReset ou SceneReset.
 
 ## Consequências
 
@@ -143,8 +143,8 @@ Evidência canônica mostra:
 
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/Definitions/WorldDefinition.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceFactory.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceRegistry.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneReset/Spawn/WorldSpawnServiceFactory.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneReset/Spawn/WorldSpawnServiceRegistry.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/PlayerSpawnService.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/EaterSpawnService.cs`
 

@@ -1,42 +1,46 @@
 ﻿# 📋 ÍNDICE DE ANÁLISES DE MÓDULOS - GAMEjam2025
 
-**Data de Compilação:** 23 de março de 2026
-**Status:** ✅ Índice atualizado para o estado atual dos módulos (com histórico preservado)
+**Data de Compilação:** 22 de março de 2026
+**Status:** ✅ Índice atualizado para o estado atual do código (com histórico preservado)
 
 ---
 
 ## 📊 Visão Geral das Análises
 
-| Referência nas análises | Escopo real hoje | Status | Observação |
-|--------|---------|--------|-----------|
-| **Audio** | módulo ativo | ✅ Bom | Sem relatório consolidado específico nesta pasta. |
-| **ContentSwap** | módulo removido | 📚 Histórico | Ler só como contexto de migração. |
-| **GameLoop** | módulo ativo | ⚠️ Crítico | Relatório ainda útil em boa parte. |
-| **Gameplay** | módulo ativo | ⚠️ Médio | Boundary com reset mudou; relatório segue útil com ressalvas. |
-| **SimulationGate** | capability parcialmente visível neste recorte | ⚠️ Parcial | Em `Modules`, resta apenas `SimulationGateTokens.cs`. |
-| **LevelFlow** | módulo ativo | ✅ Bom | Semântica local + snapshot continuam centrais. |
-| **Navigation** | módulo ativo | ✅ Bom | Service/catalog/bridges ativos. |
-| **PostGame** | módulo ativo | ✅ Bom | Pequeno e estável. |
-| **SceneFlow** | módulo ativo | ⚠️ Crítico | Hotspot estrutural principal do macro. |
-| **WorldLifecycle** | área histórica | 📚 Histórico | Hoje dividida em `WorldReset`, `SceneReset` e `ResetInterop`. |
-| **WorldReset / SceneReset / ResetInterop** | módulos ativos | ✅ Vigentes | Ainda sem relatórios próprios dedicados nesta pasta. |
+| Módulo | Tamanho | Status | Redundância | Prioridade | Relatório |
+|--------|---------|--------|------------|-----------|-----------|
+| **Audio** | ~400 LOC | ✅ Bom | 5% | 🟢 Baixa | ✅ Analisado |
+| **ContentSwap** | histórico | ❌ Removido | n/a | n/a | ✅ Relatório histórico |
+| **GameLoop** | ~2000 LOC | ⚠️ Crítico | 15% | 🔴 ALTA | ✅ GAMELOOP_ANALYSIS_REPORT.md |
+| **Gameplay** | ~2973 LOC | ⚠️ Médio | 8-12% | 🟡 MÉDIA | ✅ GAMEPLAY_ANALYSIS_REPORT.md |
+| **SimulationGate** | ~600 LOC | ✅ Excelente | 2% | 🟢 Baixa | ✅ Infrastructure/SimulationGate/GATES_ANALYSIS_REPORT.md |
+| **InputModes** | ~400 LOC | ✅ Bom | 10% | 🟢 Baixa | ✅ Infrastructure/InputModes/INPUTMODES_ANALYSIS_REPORT.md |
+| **LevelFlow** | ~1500 LOC | ✅ Melhorado | 3% | 🟢 Baixa | ✅ LEVELFLOW_ANALYSIS_REPORT.md |
+| **Navigation** | ~550 LOC | ✅ Bom | 8% | 🟡 MÉDIA | ✅ Analisado |
+| **PostGame** | ~450 LOC | ✅ Bom | 5% | 🟢 Baixa | ✅ POSTGAME_ANALYSIS_REPORT.md |
+| **SceneFlow** | ~2500 LOC | ⚠️ Crítico | 12% | 🔴 ALTA | ✅ SCENEFLOW_ANALYSIS_REPORT.md |
+| **WorldReset** | ~1350 LOC | ⚠️ Aberto | 10-15% | 🔴 ALTA | ✅ WORLDRESET_ANALYSIS_REPORT.md |
+| **SceneReset** | ~2210 LOC | ⚠️ Aberto | 12-18% | 🔴 ALTA | ✅ SCENERESET_ANALYSIS_REPORT.md |
+| **ResetInterop** | ~716 LOC | ⚠️ Aberto | 10-15% | 🟡 ALTA | ✅ RESETINTEROP_ANALYSIS_REPORT.md |
+| **WorldLifecycle (histórico)** | n/a | histórico | n/a | n/a | ✅ WORLDLIFECYCLE_ANALYSIS_REPORT.md |
 
-**Observação:** os números de LOC e prioridades abaixo continuam úteis como leitura histórica/importada, mas o snapshot atual já não possui `WorldLifecycle` e `ContentSwap` como módulos vivos.
+**Total de Linhas Analisadas:** ~15,273 LOC
+**Redundância Total Estimada:** ~1,500-2,000 LOC (10-13%)
+**Oportunidade de Otimização:** ~1,000+ LOC (após consolidação)
+
+---
 
 ## 🔴 MÓDULOS CRÍTICOS IDENTIFICADOS
 
-### 1. Área histórica de WorldLifecycle (~2500 LOC na análise original)
+### 1. WorldLifecycle (~2500 LOC, 18% redundância)
 
-**Leitura correta hoje:**
-- este hotspot foi repartido em `WorldReset`, `SceneReset` e `ResetInterop`;
-- os problemas de concentração e naming antigo continuam úteis como referência histórica;
-- não ler esta seção como fotografia literal do snapshot atual.
+**Problemas Críticos:**
+- 🔴 WorldLifecycleOrchestrator (990 LOC) - classe monolítica gigante
+- 🔴 Sobreposição funcional com GameLoop (ambos fazem reset/state machine)
+- 🔴 Sobreposição funcional com Gameplay (ambos gerenciam spawn/rearm)
+- 🟡 Event binding boilerplate (4+ eventos com pattern duplicado)
 
-**O que ainda permanece válido:**
-- havia concentração excessiva de responsabilidades no antigo miolo de reset;
-- parte dessa dívida migrou para `SceneFlow` e para a superfície de reset, não desapareceu por mágica.
-
-**Recomendação:** usar esta seção como contexto histórico para decisões futuras de reset, não como mapa atual de pastas/arquivos.
+**Recomendação:** Refactoring Fase 2 (separa 3 responsabilidades em 3 classes)
 
 ---
 
@@ -460,3 +464,10 @@ TOTAL ESTIMADO          : -1500 LOC (-10% do total)
 **Status:** ✅ Pronto para Implementação
 
 
+
+
+---
+
+## Nota de leitura atual
+
+A análise de `WorldLifecycle` foi desdobrada em três relatórios ativos: `WorldReset`, `SceneReset` e `ResetInterop`. O arquivo antigo passa a valer como base histórica da divisão.

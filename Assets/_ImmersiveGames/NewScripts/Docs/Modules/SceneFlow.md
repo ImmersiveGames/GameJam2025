@@ -17,7 +17,7 @@
 - `SceneRouteCatalogAsset` + `SceneRouteDefinitionAsset`: definicao de rota, `RouteKind`, target scene e reset policy.
 - `TransitionStyleAsset`: style estrutural da transicao.
 - `SceneFlowFadeAdapter`: aplicacao do style no fade.
-- `WorldLifecycleResetCompletionGate` e `MacroLevelPrepareCompletionGate`: gates do pipeline.
+- `WorldLifecycleResetCompletionGate` (em `ResetInterop`) e `MacroLevelPrepareCompletionGate`: gates do pipeline.
 - `ILoadingPresentationService` + `LoadingHudService`: apresentacao visual de loading.
 - `LoadingHudOrchestrator` + `LoadingProgressOrchestrator`: ponte entre pipeline e HUD, sem ownership da transicao.
 
@@ -28,7 +28,7 @@
 - Rota `Gameplay` exige reset macro e `LevelCollection` valida.
 - Rota `Frontend` nao pode exigir reset de mundo nem carregar `LevelCollection`.
 - A HUD de loading cobre `startup`, `menu -> gameplay`, `gameplay -> menu` e `restart macro`.
-- O loading entra como apresentacao; o pipeline continua em `SceneFlow + WorldLifecycle + LevelFlow`.
+- O loading entra como apresentacao; o pipeline continua em `SceneFlow + WorldReset + ResetInterop + LevelFlow`.
 
 ## Loading no SceneFlow atual
 
@@ -95,4 +95,6 @@ O resultado visivel na HUD:
 
 - `Docs/Modules/Navigation.md`
 - `Docs/Modules/LevelFlow.md`
-- `Docs/Modules/WorldLifecycle.md`
+- `Docs/Modules/WorldReset.md`
+- `Docs/Modules/SceneReset.md`
+- `Docs/Modules/ResetInterop.md`

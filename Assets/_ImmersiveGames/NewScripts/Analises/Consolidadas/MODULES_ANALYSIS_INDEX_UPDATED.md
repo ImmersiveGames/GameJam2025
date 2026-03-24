@@ -8,19 +8,25 @@
 
 ## Visão geral atual
 
-| Referência nas análises | Estado atual | Observação |
+| Módulo / capability | Estado atual | Observação |
 |---|---|---|
-| **Audio** | ✅ Vigente | Sem relatório consolidado específico nesta pasta. |
-| **ContentSwap** | ❌ Removido | Relatório mantido apenas como histórico. |
-| **GameLoop** | ⚠️ Vigente | Relatório continua útil; revisão profunda ainda pendente. |
-| **Gameplay** | ⚠️ Vigente | Boundary com reset mudou; relatório continua útil com ressalvas. |
-| **SimulationGate** | ⚠️ Parcial | No snapshot de módulos resta apenas `SimulationGateTokens.cs`; a capability completa não está neste recorte. |
-| **LevelFlow** | ✅ Vigente | Semântica local, snapshot e factories continuam centrais. |
-| **Navigation** | ✅ Vigente | Intent/catalog/service e bridges continuam ativos. |
-| **PostGame** | ✅ Vigente | Pequeno e estável. |
-| **SceneFlow** | ⚠️ Vigente | Continua hotspot estrutural do fluxo macro. |
-| **WorldLifecycle** | 📚 Histórico | Área hoje dividida em `WorldReset`, `SceneReset` e `ResetInterop`. |
-| **WorldReset / SceneReset / ResetInterop** | ✅ Vigentes | Ainda não possuem relatórios próprios nesta pasta consolidada. |
+| **Audio** | ✅ Vigente | Sem mudança estrutural relevante nesta rodada. |
+| **ContentSwap** | ❌ Removido | Código removido; relatório mantido apenas como histórico. |
+| **GameLoop** | ⚠️ Aberto | Ainda não revisitado em profundidade nesta rodada. |
+| **Gameplay** | ⚠️ Parcial | Boundary com reset melhorou; revisão estrutural maior pendente. |
+| **SimulationGate** | ✅ Consolidado | Capability em `Infrastructure`; há resíduo de `SimulationGateTokens` em `Modules/Gates`. |
+| **InputModes** | ✅ Consolidado | Núcleo em `Infrastructure`; bridge em `Modules/SceneFlow/Interop`. |
+| **LevelFlow** | ✅ Melhorado | Semântica local + snapshot + factory local; execução técnica via `SceneComposition`. |
+| **Navigation** | ✅ Estável | Continua owner de intenções e bridge de snapshot. |
+| **PostGame** | ✅ Estável | Sem mudança estrutural relevante nesta rodada. |
+| **SceneFlow** | ✅ Melhorado | Macro usa `SceneComposition` para `load/unload`; `set-active` segue em `SceneFlow`. |
+| **WorldReset** | ⚠️ Aberto | Hotspot macro atual: executor/orchestrator/commands ainda concentram responsabilidades. |
+| **SceneReset** | ⚠️ Aberto | Pipeline local correto, mas contexto e controller ainda estão pesados. |
+| **ResetInterop** | ⚠️ Aberto | Surface/bridge correta, mas driver e completion gate continuam grandes. |
+| **WorldLifecycle** | 🕘 Histórico | Relatório-base anterior à divisão em 3 módulos. |
+| **SceneComposition** | ✅ Canônico | Executor técnico único de composição de cenas. |
+
+---
 
 ## Leituras principais
 
@@ -39,3 +45,10 @@ Os relatórios por módulo abaixo **não foram reescritos integralmente**. Eles 
 | `../Modules/LEVELFLOW_ANALYSIS_REPORT.md` | Histórico + nota de atualização |
 | `../Modules/SCENEFLOW_ANALYSIS_REPORT.md` | Histórico + nota de atualização |
 | `../Modules/WORLDLIFECYCLE_ANALYSIS_REPORT.md` | Histórico + nota de atualização |
+
+
+### Desdobramento do antigo WorldLifecycle
+
+- `WorldReset` = macro
+- `SceneReset` = local
+- `ResetInterop` = bridge/superfície

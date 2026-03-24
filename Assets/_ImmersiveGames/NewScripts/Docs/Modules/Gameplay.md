@@ -22,4 +22,5 @@
 ## Leitura cruzada
 
 - `Docs/ADRs/ADR-0014-GameplayReset-Targets-Grupos.md`
-- `Docs/Modules/WorldLifecycle.md`
+- `Docs/Modules/SceneReset.md`
+- `Docs/Modules/WorldReset.md`

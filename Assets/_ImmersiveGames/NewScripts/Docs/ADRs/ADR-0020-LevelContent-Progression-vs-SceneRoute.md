@@ -4,7 +4,7 @@
 - **State:** Implemented
 - **Date:** 2026-02-19
 - **Owner:** Innocenti
-- **Tags:** LevelFlow, LevelCatalog, SceneComposition, SceneFlow, Navigation, WorldLifecycle
+- **Tags:** LevelFlow, LevelCatalog, SceneComposition, SceneFlow, Navigation, WorldReset, SceneReset, ResetInterop
 - **Scope:**
     - Runtime: `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/**`, `.../Modules/Navigation/**`, `.../Modules/SceneFlow/**`
     - Assets: `Assets/Resources/Navigation/LevelCatalog.asset`
@@ -58,7 +58,7 @@ Escolher **Option B**.
 - `LevelCatalog` define: `levelId` + `routeRef` (source of truth) + `contentId`/`contentRef` (identidade do conteúdo).
 - `StartGameplay(levelId)`:
     1) resolve o entry do catálogo;
-    2) publica/atualiza o snapshot (`RestartContext` / “GameplayStartSnapshot”) com `levelId/routeId/styleId/contentId`;
+    2) publica/atualiza o snapshot (`RestartContext` / `GameplayStartSnapshot`) com `levelRef/macroRouteId/localContentId`;
     3) despacha o intent canônico de gameplay para aplicar a rota.
 - `SceneComposition` local:
     - aplica a composição técnica local;
@@ -82,11 +82,11 @@ Escolher **Option B**.
 ## Observability and evidence
 ### Evidence 1 — Histórico: swap in-place atualizava snapshot de restart
 Arquivo de evidência:
-- `ADR-0020-Evidence-ContentSwap-2026-02-18.log`
+- `ADR-0020-Evidence-ContentSwap-2026-02-18.log` *(histórico de migração)*
 
 Âncoras esperadas:
 - Histórico de evidência anterior ao `SceneComposition`; manter apenas como referência de migração.
-- `[OBS][Navigation] RestartSnapshotContentUpdated ... contentId='content.2'`
+- Histórico: o update do snapshot era observado via `ContentSwap`; no trilho atual, o snapshot é atualizado por `LevelSelectedRestartSnapshotBridge` / `RestartContextService`.
 
 ### Evidence 2 — N→1 (A e B) com mesma rota e conteúdos diferentes
 Arquivo de evidência:
@@ -106,7 +106,7 @@ Interpretação:
 - **Aceitável** para N→1 quando a rota é idêntica; o conteúdo/snapshot muda independentemente da transição.
 
 ### Commands (auditoria rápida)
-- `rg -n "\[QA\]\[ContentSwap\]|\[OBS\]\[ContentSwap\]|RestartSnapshotContentUpdated" Assets/_ImmersiveGames/NewScripts/`
+- `rg -n "LevelSelectedEventConsumed|GameplayStartSnapshotUpdated|localContentId" Assets/_ImmersiveGames/NewScripts/`
 - `rg -n "\[QA\]\[LevelFlow\] NTo1 start|RouteResolvedVia=AssetRef|LevelSelected" Assets/_ImmersiveGames/NewScripts/`
 
 ## Follow-ups

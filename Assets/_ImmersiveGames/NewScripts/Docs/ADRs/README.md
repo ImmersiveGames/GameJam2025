@@ -40,3 +40,12 @@ Este diretorio mantem apenas ADRs vigentes para entender o desenho atual.
 - `ADR-0016-ContentSwap-WorldLifecycle.md`
   - mantido apenas como registro histórico;
   - não representa mais o trilho canônico.
+
+## Leitura de modulos para o estado atual
+
+A superficie atual de reset esta dividida em:
+- `Docs/Modules/WorldReset.md`
+- `Docs/Modules/SceneReset.md`
+- `Docs/Modules/ResetInterop.md`
+
+Use esses documentos quando um ADR antigo mencionar `WorldLifecycle` como area unica.

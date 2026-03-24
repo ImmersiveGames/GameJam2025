@@ -16,10 +16,11 @@ Leia nesta ordem:
 9. `Docs/Modules/GameLoop.md`
 10. `Docs/Modules/Gameplay.md`
 11. `Docs/Modules/WorldLifecycle.md`
-12. `Docs/ADRs/README.md`
-13. `Docs/Reports/Audits/LATEST.md`
-14. `Docs/Reports/Evidence/LATEST.md`
-15. `Docs/CHANGELOG.md`
+12. `Docs/Modules/InputModes.md`
+13. `Docs/ADRs/README.md`
+14. `Docs/Reports/Audits/LATEST.md`
+15. `Docs/Reports/Evidence/LATEST.md`
+16. `Docs/CHANGELOG.md`
 
 ## Guias de uso
 
@@ -56,6 +57,5 @@ Regra:
 - `Restart` nao passa por post hook.
 - O level atual pode expor apenas um hook opcional para complementar o `PostGame` global.
 - `ActorGroupRearm` e a nomenclatura canonica de rearm local de gameplay.
-- `InputModes`, `SimulationGate` e `SceneComposition` pertencem a `Infrastructure`, nao a `Modules`.
 - `Victory/Defeat` fazem parte do baseline atual por mock explicito e controlado.
 

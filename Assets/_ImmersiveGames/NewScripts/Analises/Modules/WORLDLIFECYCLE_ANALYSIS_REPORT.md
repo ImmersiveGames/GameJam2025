@@ -1,4 +1,4 @@
-﻿> [!NOTE]
+> [!NOTE]
 > **Status atual confirmado:** `WorldLifecycle` continua dono do reset e o boundary externo já foi saneado o suficiente para o trilho local ser tratado como um problema interno de arquitetura.
 >
 > **Implementado desde a análise original:**
@@ -32,15 +32,20 @@
 
 ---
 
-# 📊 ANÁLISE DA ÁREA HISTÓRICA WORLDLIFECYCLE - REDUNDÂNCIAS INTERNAS E CRUZAMENTO COM GAMELOOP
+# 📊 ANÁLISE DO MÓDULO WORLDLIFECYCLE - REDUNDÂNCIAS INTERNAS E CRUZAMENTO COM GAMELOOP
 
 **Data:** 22 de março de 2026
 **Projeto:** GameJam2025
-**Escopo histórico:** antiga área `WorldLifecycle` + comparação com `GameLoop`
+**Módulos:** WorldLifecycle + GameLoop Comparison
 **Versão do Relatório:** 1.0
 **Status:** ✅ Análise Completa com Comparação Cross-Module
 
 ---
+
+> **Status atual:** este relatório continua útil como **documento-base histórico**, mas o hotspot analisado aqui foi desdobrado nos módulos atuais `WorldReset`, `SceneReset` e `ResetInterop`. Para o estado atual, priorizar os relatórios:
+> - `WORLDRESET_ANALYSIS_REPORT.md`
+> - `SCENERESET_ANALYSIS_REPORT.md`
+> - `RESETINTEROP_ANALYSIS_REPORT.md`
 
 ## 📋 ÍNDICE
 
@@ -56,9 +61,9 @@
 
 ## 🎯 Resumo Executivo
 
-### Descoberta Crítica: **HOTSPOT HISTÓRICO DO RESET**
+### Descoberta Crítica: **HOTSPOT INTERNO DO RESET LOCAL**
 
-A antiga área `WorldLifecycle` continua sendo a melhor referência para entender o hotspot de reset, embora hoje o código já esteja repartido em `WorldReset`, `SceneReset` e `ResetInterop`:
+O módulo **WorldLifecycle** continua diferente do GameLoop em escopo, mas o problema principal hoje já não é o cruzamento externo; é o miolo interno do reset local:
 - **GameLoop:** Gerencia estados de gameplay (Boot → Playing → PostPlay)
 - **WorldLifecycle:** Gerencia reset/respawn do mundo (determinístico e sequencial)
 
@@ -72,7 +77,7 @@ A antiga área `WorldLifecycle` continua sendo a melhor referência para entende
 
 ---
 
-## 📁 ESTRUTURA ORIGINAL ANALISADA (HOJE REPARTIDA)
+## 📁 ESTRUTURA DO WORLDLIFECYCLE
 
 ```
 WorldLifecycle/

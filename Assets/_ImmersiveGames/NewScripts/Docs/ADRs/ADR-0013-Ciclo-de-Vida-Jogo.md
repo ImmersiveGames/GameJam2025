@@ -6,7 +6,7 @@
 - Data (decisão): 2025-12-24
 - Última atualização: 2026-03-11
 - Tipo: Implementação
-- Escopo: WorldLifecycle + SceneFlow + GameLoop (NewScripts)
+- Escopo: WorldReset + SceneReset + ResetInterop + SceneFlow + GameLoop (NewScripts)
 
 ### Status de implementação
 
@@ -15,10 +15,10 @@
 - Artefatos principais (produção):
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionEvents.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Application/WorldResetService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Application/WorldResetService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleSceneFlowResetDriver.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Runtime/WorldLifecycleResetCompletionGate.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/ResetInterop/Runtime/SceneFlowWorldResetDriver.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/ResetInterop/Runtime/WorldResetCompletionGate.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/IntroStage/Runtime/*`
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs`
@@ -29,7 +29,7 @@
 O projeto precisa de um **ciclo de vida de jogo** determinístico e auditável, que sirva como “contrato de produção” e também como base de QA (Baseline 2.x):
 
 - Transições controladas por **SceneFlow** (startup/frontend/gameplay).
-- Reset determinístico e pipeline de spawn via **WorldLifecycle**.
+- Reset determinístico via **WorldReset** e pipeline local de cena via **SceneReset**.
 - Entrada/saída de gameplay e estados do **GameLoop** (Intro → Playing → PostGame).
 - Política **Strict vs Release** (falhar cedo em Dev/QA; fallback apenas com degraded explícito em Release).
 - Observabilidade com âncoras canônicas e **reasons/contextSignature** consistentes.
@@ -73,7 +73,7 @@ Definir um ciclo de vida único, com fases e invariantes fixos:
 - `ScenesReady` ocorre **antes** de `SceneTransitionCompletedEvent` na mesma `signature`.
 - Envelope visual: ver ADR-0009 (fade) e ADR-0010 (loading HUD).
 
-**Invariantes de WorldLifecycle**
+**Invariantes de WorldReset / SceneReset**
 - `ResetWorld` é determinístico para o mesmo `reason/contextSignature`.
 - `ResetCompleted` é publicado exatamente uma vez por reset efetivo.
 - Spawns essenciais em gameplay após reset: **Player + Eater** (ActorRegistry=2).
@@ -98,7 +98,7 @@ Definir um ciclo de vida único, com fases e invariantes fixos:
 
 ### Trade-offs / riscos
 
-- **Mais acoplamento por contrato** entre SceneFlow e WorldLifecycle (exige disciplina em `reason/contextSignature`).
+- **Mais acoplamento por contrato** entre SceneFlow, ResetInterop e WorldReset (exige disciplina em `reason/contextSignature`).
 - **Mais verbosidade de logs** para manter âncoras estáveis.
 - Erros de ordering podem ser sutis; mitigação: invariantes + asserts/guards + evidência canônica.
 - Dependência de gates (`flow.scene_transition`, `sim.gameplay`) aumenta risco de deadlock se token não for liberado; mitigação: fail-fast em Strict e checks explícitos em Release.
@@ -118,7 +118,7 @@ Principais pontos (NewScripts):
 - **Fade**: ver ADR-0009 (`Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Fade/Runtime/*`)
 - **Loading HUD**: ver ADR-0010 (`Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/*`)
 - **Gatilho de ResetWorld em produção**: driver ligado ao `ScenesReady` (SceneFlow)
-- **WorldLifecycle reset pipeline**: `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/*`
+- **WorldReset / SceneReset reset pipeline**: `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/**` + `Assets/_ImmersiveGames/NewScripts/Modules/SceneReset/**`
 - **GameLoop Intro/Playing/PostGame**: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/*`
 
 ## Observabilidade
@@ -131,7 +131,7 @@ Principais pontos (NewScripts):
 - `ScenesReadyEvent` (mesma `signature`)
 - `[OBS][Fade] ...` (ADR-0009)
 - `LoadingHudEnsure/Show/Hide` (ADR-0010)
-- `ResetWorldStarted` / `ResetCompleted` (WorldLifecycle)
+- `WorldResetStarted` / `WorldResetCompleted` (ResetInterop / WorldReset)
 - `GameplaySimulationBlocked` / `GameplaySimulationUnblocked`
 - `GameLoop ENTER Playing`
 
@@ -142,7 +142,7 @@ Principais pontos (NewScripts):
 - [x] Invariantes descritos acima aparecem em logs canônicos (Baseline 2.x).
 - [x] Evidência datada com startup + gameplay e transições principais.
 - [x] `reason/contextSignature` presentes nas âncoras críticas (SceneFlow + ResetWorld).
-- [x] Implementação do pipeline de `ResetWorld` (WorldLifecycle).
+- [x] Implementação do pipeline de `ResetWorld` (WorldReset + SceneReset).
 - [x] Integração do gatilho `ScenesReady` → `ResetWorld` (SceneFlow driver).
 - [x] GameLoop (Intro/Playing/PostGame) com gates e sinais de observabilidade.
 
@@ -153,19 +153,21 @@ Principais pontos (NewScripts):
 - **Gameplay**
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/GameLoopStateMachine.cs`
   - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Application/WorldResetService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Application/WorldResetService.cs`
 - **Infrastructure**
   - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 
 ### Docs / evidências relacionadas
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/README.md`
+- `Assets/_ImmersiveGames/NewScripts/Docs/Modules/WorldReset.md`
+  - `Assets/_ImmersiveGames/NewScripts/Docs/Modules/SceneReset.md`
+  - `Assets/_ImmersiveGames/NewScripts/Docs/Modules/ResetInterop.md`
 - `Standards/Standards.md`
 
 ## Notas de implementação
 
 O pipeline está ativo em produção e segue a ordem: **SceneFlow → ScenesReady → ResetWorld → ResetCompleted → IntroStage → Playing**.
-Os pontos de integração canônicos são: `WorldLifecycleSceneFlowResetDriver` (gatilho de reset), `WorldLifecycleResetCompletionGate`
+Os pontos de integração canônicos são: `SceneFlowWorldResetDriver` (gatilho de reset), `WorldResetCompletionGate`
 (gate do SceneFlow), `SceneFlowInputModeBridge` (aplica input mode e dispara IntroStage) e `IntroStageCoordinator`
 (gate `sim.gameplay` e RequestStart após confirmação).
 

@@ -1,6 +1,6 @@
 ﻿# 📚 ANALYSIS DOCUMENTS MAP - Quick Reference
 
-**Última atualização:** 23 de março de 2026
+**Última atualização:** 22 de março de 2026
 
 ---
 
@@ -10,9 +10,9 @@
 
 | Você quer | Arquivo | Seção |
 |-----------|---------|-------|
-| **Entender o maior problema histórico** | CONSOLIDATED_DUPLICITY_ANALYSIS.md | "WorldLifecycle × Gameplay Overlap" |
+| **Entender o maior problema** | CONSOLIDATED_DUPLICITY_ANALYSIS.md | "WorldLifecycle × Gameplay Overlap" |
 | **Ver novo módulo (Gameplay)** | GAMEPLAY_ANALYSIS_REPORT.md | Qualquer seção |
-| **Comparar a visão histórica dos módulos** | MODULES_ANALYSIS_INDEX.md | Matriz de módulos |
+| **Comparar todos os 11 módulos** | MODULES_ANALYSIS_INDEX.md | Matriz de módulos |
 | **Plano de ação detalhado** | CONSOLIDATED_DUPLICITY_ANALYSIS.md | "Plano de Consolidação" |
 | **Resumo executivo (30 seg)** | EXECUTIVE_SUMMARY.md | Tudo |
 | **Padrões duplicados explicados** | CONSOLIDATED_DUPLICITY_ANALYSIS.md | Seções 2-6 |
@@ -24,27 +24,28 @@
 ## 📂 Estrutura de Arquivos Criados
 
 ```
-Analises/
-├─ Consolidadas/
-│  ├─ EXECUTIVE_SUMMARY.md
-│  ├─ MODULES_ANALYSIS_INDEX.md
-│  ├─ MODULES_ANALYSIS_INDEX_UPDATED.md
-│  ├─ CONSOLIDATED_DUPLICITY_ANALYSIS.md
-│  └─ ANALYSIS_DOCUMENTS_MAP.md
+Modules/
+├─ Gameplay/
+│  └─ GAMEPLAY_ANALYSIS_REPORT.md           ← Novo! Análise do Gameplay
 │
-└─ Modules/
-   ├─ GAMEPLAY_ANALYSIS_REPORT.md
-   ├─ GAMELOOP_ANALYSIS_REPORT.md
-   ├─ WORLDLIFECYCLE_ANALYSIS_REPORT.md      ← referência histórica da área hoje dividida
-   ├─ NAVIGATION_ANALYSIS_REPORT.md
-   ├─ SCENEFLOW_ANALYSIS_REPORT.md
-   ├─ GATES_ANALYSIS_REPORT.md
-   ├─ LEVELFLOW_ANALYSIS_REPORT.md
-   ├─ POSTGAME_ANALYSIS_REPORT.md
-   └─ CONTENTSWAP_ANALYSIS_REPORT.md         ← histórico de módulo removido
+├─ MODULES_ANALYSIS_INDEX.md                ← Novo! Índice geral
+├─ CONSOLIDATED_DUPLICITY_ANALYSIS.md       ← Novo! Análise cruzada
+├─ EXECUTIVE_SUMMARY.md                     ← Novo! Resumo executivo
+└─ ANALYSIS_DOCUMENTS_MAP.md                ← Este arquivo!
+
+Docs/Analises/Modules/                      (já existentes)
+├─ GAMELOOP_ANALYSIS_REPORT.md
+├─ WORLDLIFECYCLE_ANALYSIS_REPORT.md
+├─ NAVIGATION_ANALYSIS_REPORT.md
+├─ SCENEFLOW_ANALYSIS_REPORT.md
+├─ GATES_ANALYSIS_REPORT.md
+├─ INPUTMODES_ANALYSIS_REPORT.md
+├─ LEVELFLOW_ANALYSIS_REPORT.md
+├─ CONTENTSWAP_ANALYSIS_REPORT.md
+└─ POSTGAME_ANALYSIS_REPORT.md
 ```
 
-**Nota:** o snapshot atual de módulos contém `WorldReset`, `SceneReset` e `ResetInterop`, mas ainda não há relatórios dedicados para esses três nomes nesta pasta; a referência histórica correspondente continua concentrada em `WORLDLIFECYCLE_ANALYSIS_REPORT.md`.
+---
 
 ## 🎓 COMO LER OS DOCUMENTOS
 
@@ -121,7 +122,7 @@ Analises/
 
 ---
 
-### WorldLifecycle × Gameplay Overlap (CRÍTICO / histórico)
+### WorldLifecycle × Gameplay Overlap (CRÍTICO)
 
 **Ver:** CONSOLIDATED_DUPLICITY_ANALYSIS.md, Seção 1
 
@@ -355,8 +356,18 @@ SEMANA 4-5 (Phase 3)
 
 ---
 
-**Última atualização:** 23 de março de 2026
+**Última atualização:** 22 de março de 2026
 **Versão:** 1.0 - Mapa Completo
 **Status:** ✅ Pronto para Usar
 
 
+
+
+## Desdobramento do relatório histórico de WorldLifecycle
+
+| Relatório | Papel | Status |
+|---|---|---|
+| `Modules/WORLDRESET_ANALYSIS_REPORT.md` | análise atual do macro reset | ativo |
+| `Modules/SCENERESET_ANALYSIS_REPORT.md` | análise atual do reset local | ativo |
+| `Modules/RESETINTEROP_ANALYSIS_REPORT.md` | análise atual da superfície/bridge | ativo |
+| `Modules/WORLDLIFECYCLE_ANALYSIS_REPORT.md` | análise-base anterior à divisão | histórico |

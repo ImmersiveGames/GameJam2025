@@ -7,7 +7,7 @@
 
 - Estado: Implementado
 - Data (decisão): 2026-01-31
-- Última atualização: 2026-02-04
+- Última atualização: 2026-03-23
 - Tipo: Implementação
 - Escopo: NewScripts → Modules/Levels + Docs/Reports
 
@@ -69,16 +69,18 @@ Ver seção **Fora de escopo**.
 
 ### Runtime / Editor (código e assets)
 
-- **Assets/_ImmersiveGames/NewScripts/Modules/Levels**
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Catalogs/LevelCatalog.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Definitions/LevelDefinition.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Providers/ILevelCatalogProvider.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Providers/ILevelDefinitionProvider.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/Resolvers/LevelCatalogResolver.cs`
-- **Gameplay**
-  - Histórico: o executor técnico local anterior foi substituído por `Infrastructure/SceneComposition/**`.
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/LevelManager.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/LevelPlan.cs`
+- **Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow**
+  - `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Config/LevelDefinitionAsset.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Config/LevelCollectionAsset.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Runtime/GameplayStartSnapshot.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Runtime/RestartContextService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Runtime/LevelMacroPrepareService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Runtime/LevelSwapLocalService.cs`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/LevelFlow/Runtime/LevelSceneCompositionRequestFactory.cs`
+- **Infrastructure**
+  - `Assets/_ImmersiveGames/NewScripts/Infrastructure/SceneComposition/**`
+- **Histórico**
+  - `Assets/_ImmersiveGames/NewScripts/Modules/Levels/**` e `LevelManager/LevelPlan` permanecem apenas como referência histórica, fora do trilho canônico atual.
 
 ### Docs / evidências relacionadas
 
@@ -98,14 +100,14 @@ Ver seção **Fora de escopo**.
 - Observabilidade deve reutilizar strings existentes no contrato (não criar reasons novos).
 
 ### Etapa 0 — Artefatos entregues (concluída)
-- ScriptableObjects `LevelDefinition` e `LevelCatalog` com campos mínimos.
-- Providers: `ResourcesLevelCatalogProvider` + `LevelDefinitionProviderFromCatalog`.
-- Resolver: `ILevelCatalogResolver` + `LevelCatalogResolver`.
+- `LevelDefinitionAsset` e `LevelCollectionAsset` como fonte de verdade configurável.
+- `GameplayStartSnapshot` e `RestartContextService` para o snapshot semântico.
+- `LevelSceneCompositionRequestFactory` como ponte entre semântica de level e composição técnica local.
 
 ### Etapa 1 — concluída
-- DI: registro de providers/resolver + `ILevelManager` via `LevelManager` no `GlobalCompositionRoot`.
-- QA: `LevelDevContextMenu` e `LevelDevInstaller`.
-- Evidência: atualização de Docs/Reports/Evidence/LATEST.md e snapshot dedicado com QA de Level.
+- `LevelMacroPrepareService` e `LevelSwapLocalService` integrados ao trilho canônico atual.
+- `LevelSelectedRestartSnapshotBridge` atualiza o snapshot a partir da seleção de level.
+- Evidência: `Docs/Reports/Evidence/LATEST.md` e `Docs/Reports/Audits/LATEST.md`.
 
 ## Evidência
 
@@ -128,6 +130,6 @@ Ver seção **Fora de escopo**.
 - [Observability-Contract.md](../Standards/Standards.md#observability-contract)
 - LevelManager (historical): `../../Modules/Levels/LevelManager.cs` (removed/deprecated)
 - LevelPlan (historical): `../../Modules/Levels/LevelPlan.cs` (removed/deprecated)
-- Histórico: `ContentSwap` foi removido do trilho canônico; usar `Infrastructure/SceneComposition/**`.
+- Referência operacional atual: `../Modules/LevelFlow.md`, `../Modules/SceneFlow.md` e `../Modules/ResetInterop.md`.
 - [LATEST.md](../Reports/Evidence/LATEST.md)
 

@@ -8,7 +8,7 @@
   - `RestartNavigationBridge` não participa do runtime canônico atual.
   - `ResetMacroAsync(...)` permanece no domínio macro.
   - `ResetLevelAsync(...)` canônico recebe `LevelDefinitionAsset levelRef`.
-  - `WorldLifecycle V2` já não promove `levelId/contentId` como shape principal de telemetria.
+  - `WorldReset` + `ResetInterop` já não promovem `levelId/contentId` como shape principal de telemetria.
   - `Gameplay ActorGroupRearm` foi consolidado como soft reset local canônico por grupo de atores.
 - Evidência:
   - `Docs/Reports/Audits/LATEST.md`
@@ -25,8 +25,8 @@
 - `ResetMacroAsync(...)` permanece no domínio macro.
 - `ResetLevelAsync(...)` canônico recebe `LevelDefinitionAsset levelRef`.
 - `ResetLevelAsync(...)` não depende mais de `contentId` operacional; a identidade local vive no snapshot semântico (`LocalContentId`).
-- `WorldLifecycle V1` continua sendo gate/correlação do SceneFlow.
-- `WorldLifecycle V2` continua sendo telemetria/observabilidade.
+- `ResetInterop` continua sendo gate/correlação do `SceneFlow`.
+- `WorldReset` + `ResetInterop` continuam sendo a superfície canônica de telemetria/observabilidade do reset.
 - O reset local/gameplay passa por `ActorGroupRearm` canônico por grupo de atores, centrado em `ByActorKind`.
 
 ## Evidência (log)

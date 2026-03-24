@@ -9,11 +9,11 @@
 - Escopo:
   - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/*`
   - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/*`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Policies/*`
+  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/*`
 
 ## Contexto
 
-O fluxo de `ResetWorld` (WorldLifecycle) precisa executar um **reset local de gameplay** de forma:
+O fluxo de `ResetWorld` (WorldReset + SceneReset) precisa executar um **reset local de gameplay** de forma:
 
 - **determinística** (mesmas regras e ordem entre execuções)
 - **auditável** (fica claro quem foi rearmado e por que)
@@ -106,7 +106,7 @@ No `ActorGroupRearmOrchestrator`:
 
 ### Bridge do caso atual de produto
 
-O soft reset real de players continua ativo via WorldLifecycle:
+O soft reset real de players continua ativo via WorldReset/SceneReset:
 
 - `WorldResetScope.Players` -> `PlayersActorGroupRearmWorldParticipant` -> `ActorGroupRearmRequest.ByActorKind(ActorKind.Player)`
 
@@ -147,7 +147,7 @@ Quando editar o reset de gameplay, revisar tambem:
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/DefaultActorGroupRearmTargetClassifier.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/PlayersActorGroupRearmWorldParticipant.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Policies/ProductionWorldResetPolicy.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/ProductionWorldResetPolicy.cs`
 
 ## Implementacao (arquivos impactados)
 
@@ -161,7 +161,7 @@ Quando editar o reset de gameplay, revisar tambem:
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/PlayersActorGroupRearmWorldParticipant.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Infrastructure/Actors/Bindings/Player/PlayerActorAdapter.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Policies/IWorldResetPolicy.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Policies/ProductionWorldResetPolicy.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/ProductionWorldResetPolicy.cs`
 
 ### Docs
 
