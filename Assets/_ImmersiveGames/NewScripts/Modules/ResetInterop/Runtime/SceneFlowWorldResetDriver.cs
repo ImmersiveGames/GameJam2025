@@ -312,7 +312,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                 levelSignature: LevelContextSignature.Empty,
                 sourceSignature: signature ?? string.Empty);
 
-            WorldResetOrchestrator.PublishResetCompletedEvent(request, outcome, detail ?? string.Empty);
+            new WorldResetLifecyclePublisher().PublishCompleted(request, outcome, detail ?? string.Empty);
         }
 
         private static void LogObsResetRequested(

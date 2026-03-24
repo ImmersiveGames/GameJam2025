@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Guards;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Guards;
@@ -19,16 +18,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 {
     /// <summary>
     /// Serviço canônico do reset do WorldReset.
-    /// Fonte de verdade para policy/guards/validation/orchestration.
-    /// Ownership (Baseline 3.1):
-    /// - OWNER do macro reset (world reset) no runtime.
-    /// - API canônica chamada por SceneFlow driver e comandos de macro reset.
-    /// - Encapsula construção/execução do WorldResetOrchestrator sem expor detalhes.
+    /// Fonte de verdade para dedupe e delegação ao pipeline macro já composto.
     /// </summary>
     public sealed class WorldResetService : IWorldResetService
     {
         private readonly object _lock = new();
         private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
+        private readonly WorldResetLifecyclePublisher _lifecyclePublisher = new();
 
         private bool _dependenciesResolved;
         private WorldResetOrchestrator? _orchestrator;
@@ -49,8 +45,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
         public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
-            // WL-1.1: este método é o ponto de entrada canônico para world reset.
-            // Não alterar fluxo/callsites nesta etapa.
             EnsureDependencies();
 
             string ctx = string.IsNullOrWhiteSpace(request.ContextSignature) ? string.Empty : request.ContextSignature;
@@ -68,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
             try
             {
-                var orchestrator = _orchestrator
+                WorldResetOrchestrator orchestrator = _orchestrator
                     ?? throw new InvalidOperationException("WorldResetOrchestrator was not initialized.");
                 return await orchestrator.ExecuteAsync(request);
             }
@@ -77,8 +71,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 DebugUtility.LogError<WorldResetService>(
                     $"[WorldResetService] Falha durante TriggerResetAsync signature='{ctx}' reason='{rsn}' ex={ex}");
 
-                // Best-effort: ainda publica completed para evitar deadlock no SceneFlow gate.
-                WorldResetOrchestrator.PublishResetCompletedEvent(
+                _lifecyclePublisher.PublishCompleted(
                     request,
                     WorldResetOutcome.FailedService,
                     $"{WorldResetReasons.FailedServiceExceptionPrefix}:{ex.GetType().Name}");
@@ -100,10 +93,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 return;
             }
 
-            var provider = DependencyManager.Provider;
+            IDependencyProvider provider = DependencyManager.Provider;
 
-            provider.TryGetGlobal<IWorldResetPolicy>(out var policy);
-            provider.TryGetGlobal<ISimulationGateService>(out var gateService);
+            provider.TryGetGlobal<IWorldResetPolicy>(out IWorldResetPolicy policy);
+            provider.TryGetGlobal<ISimulationGateService>(out ISimulationGateService gateService);
 
             var guards = new List<IWorldResetGuard>(1)
             {
@@ -115,11 +108,17 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 new WorldResetSignatureValidator()
             };
 
+            WorldResetValidationPipeline validationPipeline = new WorldResetValidationPipeline(validators);
+            WorldResetExecutor executor = new WorldResetExecutor();
+            WorldResetPostResetValidator postResetValidator = new WorldResetPostResetValidator(provider);
+
             _orchestrator = new WorldResetOrchestrator(
                 policy,
                 guards,
-                new WorldResetValidationPipeline(validators),
-                new WorldResetExecutor(provider));
+                validationPipeline,
+                executor,
+                postResetValidator,
+                _lifecyclePublisher);
 
             _dependenciesResolved = true;
         }

@@ -1,10 +1,10 @@
 # 📊 ANÁLISE DO MÓDULO WORLDRESET - REDUNDÂNCIAS INTERNAS E FRONTEIRAS MACRO
 
-**Data:** 23 de março de 2026
+**Data:** 24 de março de 2026
 **Projeto:** GameJam2025
 **Módulo:** WorldReset
-**Versão do Relatório:** 1.0
-**Status:** ✅ Análise Inicial Derivada da antiga análise de WorldLifecycle, atualizada para a divisão atual
+**Versão do Relatório:** 1.2
+**Status:** ✅ Análise Atualizada para o estado real após a unificação do contrato de lifecycle + consolidação interna validada em compilação e runtime
 
 ---
 
@@ -23,24 +23,30 @@
 
 ## 🎯 Resumo Executivo
 
-### Descoberta Principal: **O HOTSPOT MACRO FICOU CLARO, MAS AINDA CONCENTRADO**
+### Descoberta Principal: **O TRILHO MACRO FOI CONSOLIDADO E O HOTSPOT FICOU MAIS NÍTIDO**
 
-Com a divisão atual, o antigo bloco `WorldLifecycle` deixou de ser uma mistura indistinta. O que sobrou em `WorldReset` é o **trilho macro**:
-- entrada pública de reset
-- validação e policy macro
-- coordenação do reset de mundo
-- ponte macro → execução local
+Com a consolidação recente, o `WorldReset` deixou de ter o principal ruído interno que ainda aparecia na análise anterior:
+- o contrato de lifecycle está unificado e centralizado
+- a publicação de lifecycle saiu de fluxo espalhado e passou a ter publisher próprio
+- o executor foi reduzido ao papel de handoff macro → local
+- a validação pós-reset virou peça separada
+- o namespace legado profundo de `Guards` foi removido
 
 **Estatísticas atuais:**
-- `WorldReset`: ~1350 linhas / 25 arquivos
-- Maior arquivo: `WorldResetExecutor.cs` (~263 linhas)
-- Segundo maior: `WorldResetOrchestrator.cs` (~208 linhas)
-- Ponto de superfície principal: `WorldResetCommands.cs` (~197 linhas)
+- `WorldReset`: ~1620 linhas / 32 arquivos
+- Maior arquivo: `WorldResetPostResetValidator.cs` (~222 linhas)
+- Segundo maior: `WorldResetOrchestrator.cs` (~191 linhas)
+- Superfície pública principal: `WorldResetCommands.cs` (~150 linhas)
+- `WorldResetExecutor.cs`: ~51 linhas
 
 **Leitura atual:**
-- o boundary com `Gameplay` ficou mais limpo do que no relatório antigo
-- a maior dívida agora não é mais “mistura com gameplay”, mas **coesão interna do trilho macro**
-- o módulo está melhor que o antigo `WorldLifecycle`, porém ainda com acúmulo de responsabilidades em poucos pontos
+- a unificação do contrato de lifecycle em `WorldReset/Contracts` está consolidada
+- o runtime compilou e rodou sem erro após a consolidação
+- o antigo hotspot em `Executor` caiu bastante
+- o hotspot atual do módulo ficou mais claramente em:
+    - `WorldResetOrchestrator`
+    - `WorldResetPostResetValidator`
+    - montagem local de dependências em `WorldResetService`
 
 ---
 
@@ -49,9 +55,15 @@ Com a divisão atual, o antigo bloco `WorldLifecycle` deixou de ser uma mistura 
 ```text
 WorldReset/
 ├── Application/
-│   ├── WorldResetExecutor.cs (~263)
-│   ├── WorldResetOrchestrator.cs (~208)
-│   └── WorldResetService.cs (~121)
+│   ├── WorldResetExecutor.cs (~51)
+│   ├── WorldResetLifecyclePublisher.cs (~58)
+│   ├── WorldResetOrchestrator.cs (~191)
+│   ├── WorldResetPostResetValidator.cs (~222)
+│   └── WorldResetService.cs (~126)
+├── Contracts/
+│   ├── WorldResetCompletedEvent.cs (~75)
+│   ├── WorldResetOutcome.cs (~17)
+│   └── WorldResetStartedEvent.cs (~67)
 ├── Domain/
 │   ├── ResetDecision.cs
 │   ├── ResetFeatureIds.cs
@@ -61,6 +73,9 @@ WorldReset/
 │   ├── WorldResetReasons.cs
 │   ├── WorldResetRequest.cs
 │   └── WorldResetScope.cs
+├── Guards/
+│   ├── IWorldResetGuard.cs
+│   └── SimulationGateWorldResetGuard.cs
 ├── Policies/
 │   ├── IRouteResetPolicy.cs
 │   ├── IWorldResetPolicy.cs
@@ -71,7 +86,7 @@ WorldReset/
 │   ├── IWorldResetRequestService.cs
 │   ├── IWorldResetService.cs
 │   ├── ResetKind.cs
-│   ├── WorldResetCommands.cs (~197)
+│   ├── WorldResetCommands.cs (~150)
 │   ├── WorldResetRequestService.cs (~85)
 │   └── WorldResetResult.cs
 └── Validation/
@@ -84,68 +99,99 @@ WorldReset/
 
 ## 🔴 Redundâncias Internas no WorldReset
 
-### 1️⃣ `WorldResetExecutor` concentra papéis demais
+### 1️⃣ `WorldResetExecutor` deixou de ser hotspot principal
 
-**Problema:**
-O executor ainda mistura:
-- handoff para o trilho local
-- validação de pós-condição
-- leitura de estado do reset local
-- observabilidade detalhada
+**Atualização:**
+O executor foi consolidado e hoje faz apenas:
+- filtragem/ordenação de controllers
+- handoff para `SceneResetController.ResetWorldAsync(...)`
+- coordenação do `Task.WhenAll(...)`
+
+**Leitura atual:**
+A antiga leitura de “executor misturando execução + validação + observabilidade” ficou superada.
 
 **Impacto:**
-- continua sendo o maior arquivo do módulo
-- fica difícil separar o que é “bridge macro → local” do que é “validação macro”
+- a responsabilidade ficou clara
+- o arquivo ficou pequeno e objetivo
+- não é mais um ponto prioritário de consolidação
 
-**Severidade:** 🔴 **ALTA**
+**Severidade:** 🟢 **BAIXA / RESOLVIDA NO ESSENCIAL**
 
 ---
 
-### 2️⃣ `WorldResetOrchestrator` ainda é um segundo centro de coordenação
+### 2️⃣ `WorldResetOrchestrator` continua sendo o centro mais pesado do pipeline macro
 
 **Problema:**
-O orquestrador macro está melhor separado do antigo `WorldLifecycle`, mas ainda concentra:
+O orquestrador ainda concentra:
 - ordem do pipeline macro
+- guards e validation
+- descoberta de controllers
 - chamada do executor
-- validação/policy no mesmo fluxo
+- chamada do pós-validador
+- decisão do `WorldResetOutcome`
+
+**Atualização importante:**
+Ele **não** publica mais lifecycle diretamente. Esse papel foi extraído para `WorldResetLifecyclePublisher`.
 
 **Impacto:**
-- o módulo tem dois centros pesados: `WorldResetOrchestrator` e `WorldResetExecutor`
-- a leitura do pipeline macro ainda não está totalmente explícita
-
-**Severidade:** 🟡 **ALTA**
-
----
-
-### 3️⃣ `WorldResetCommands` ainda carrega muita responsabilidade de superfície
-
-**Problema:**
-Mesmo como API pública, ele ainda tende a acumular:
-- normalização de reason/context
-- telemetria V2
-- conversão de intenção (`ResetKind`) para request macro
-
-**Impacto:**
-- a superfície pública do reset continua mais densa do que o ideal
-- qualquer mudança de observabilidade tende a cair aqui
+- a classe ficou mais coerente do que antes
+- mas ainda é o ponto mais denso do trilho macro
 
 **Severidade:** 🟡 **MÉDIA**
 
 ---
 
-### 4️⃣ Normalização/telemetria ainda espalhadas
+### 3️⃣ `WorldResetCommands` ficou mais fino e mais correto
 
-**Problema:**
-O padrão antigo de normalização/log continua aparecendo em:
-- `WorldResetCommands`
-- `WorldResetRequestService`
-- `WorldResetService`
+**Atualização:**
+`WorldResetCommands` já não é mais o hotspot sugerido no relatório anterior.
+
+Hoje ele concentra:
+- API pública de entrada
+- normalização de reason/signature
+- delegação do reset macro para o serviço canônico
+- trilho level mínimo
+
+**Leitura atual:**
+O problema de “telemetria V2 paralela” foi eliminado, e o `Commands` deixou de ser um centro de redundância forte.
 
 **Impacto:**
-- boilerplate repetido
-- risco de drift entre `reason`, `context`, `signature` e mensagens observáveis
+- a superfície pública está mais enxuta
+- ainda existe densidade razoável no trilho `ResetLevelAsync(...)`, mas em limite aceitável
 
-**Severidade:** 🟡 **MÉDIA**
+**Severidade:** 🟢 **BAIXA**
+
+---
+
+### 4️⃣ Lifecycle/normalização ficaram bem mais centralizados
+
+**Atualização:**
+A emissão do contrato canônico agora passa por `WorldResetLifecyclePublisher`.
+
+**Leitura atual:**
+A antiga leitura de lifecycle muito espalhado ficou parcialmente superada. O que ainda sobra como ponto de melhoria é:
+- montagem local das peças em `WorldResetService`
+- alguma normalização de entrada em `WorldResetCommands`
+
+**Impacto:**
+- boilerplate caiu
+- a semântica de `Started/Completed` ficou mais consistente
+- a duplicidade forte de publish/log já não é mais um problema principal
+
+**Severidade:** 🟢 **BAIXA**
+
+---
+
+### 5️⃣ O resíduo de naming legado em namespace interno foi removido
+
+**Atualização:**
+A referência a `WorldLifecycle.WorldRearm.Guards` foi corrigida.
+
+**Impacto:**
+- a leitura do módulo ficou mais limpa
+- o boundary conceitual deixou de carregar ruído histórico nessa profundidade
+
+**Severidade:** 🟢 **RESOLVIDA**
 
 ---
 
@@ -153,22 +199,24 @@ O padrão antigo de normalização/log continua aparecendo em:
 
 ### `WorldReset` × `SceneReset`
 
-Hoje a fronteira está mais saudável do que na análise antiga:
+A fronteira continua saudável e ficou mais explícita:
 - `WorldReset` = macro
 - `SceneReset` = execução local
 
-**A sobreposição crítica antiga caiu.**
-O que ainda existe é acoplamento natural de pipeline, não mais sobreposição conceitual grave.
+**Atualização importante:**
+Com o `Executor` enxuto, o handoff macro → local ficou mais legível e menos misturado com validação.
 
 ### `WorldReset` × `ResetInterop`
 
-`ResetInterop` hoje funciona como bridge/superfície:
-- driver com `SceneFlow`
-- eventos de reset
-- tokens/gate de conclusão
+A leitura correta continua:
+- `ResetInterop` = bridge com `SceneFlow` + gate de conclusão
+- `WorldReset` = owner do contrato canônico de lifecycle do reset
 
-**Leitura correta:**
-`WorldReset` não deveria absorver o que é bridge pública.
+**Atualização importante:**
+Depois da unificação e da correção do `WorldResetCompletionGate`, o cruzamento entre os módulos ficou coerente em runtime:
+- `ResetInterop` não voltou a ser owner do domínio
+- `WorldReset` continua como owner do contrato
+- o gate macro passou a ignorar corretamente eventos `Level`
 
 ---
 
@@ -178,45 +226,56 @@ O que ainda existe é acoplamento natural de pipeline, não mais sobreposição 
 |---|---|---|---|---|
 | Intenção macro de reset | ✅ | ❌ | ⚠️ | Correto em `WorldReset` |
 | Execução local do reset | ❌ | ✅ | ❌ | Correto em `SceneReset` |
-| Eventos/gate de conclusão | ❌ | ❌ | ✅ | Correto em `ResetInterop` |
+| Contrato lifecycle do reset | ✅ | ❌ | ❌ | Correto em `WorldReset` |
+| Gate/bridge de conclusão | ❌ | ❌ | ✅ | Correto em `ResetInterop` |
 | Validação/policy macro | ✅ | ❌ | ❌ | Correto em `WorldReset` |
-| Observabilidade de superfície | ⚠️ | ❌ | ✅ | Ainda um pouco espalhada |
+| Observabilidade de superfície | ⚠️ | ❌ | ⚠️ | Melhor do que antes, ainda não totalmente mínima |
 
 ---
 
 ## 🛠️ Recomendações de Consolidação
 
 ### Prioridade 1
-Separar com mais clareza:
-- **coordenação macro** (`WorldResetOrchestrator`)
-- **bridge macro → local + pós-condição** (`WorldResetExecutor`)
+Se quiser continuar refinando o módulo, o foco agora deve ser:
+- reduzir peso de coordenação em `WorldResetOrchestrator`
+- avaliar se a descoberta de controllers pode sair do orquestrador
+- revisar se a decisão de `Outcome` pode ficar mais explícita/isolada
 
 ### Prioridade 2
-Enxugar `WorldResetCommands` para deixar nele só:
-- API pública
-- conversão de intenção
-- delegação
+Reduzir `WorldResetService` para:
+- entrada pública canônica
+- dedupe/in-flight
+- delegação para pipeline já composto
+
+**Leitura atual:**
+Ele está melhor do que antes, mas ainda monta dependências locais em `EnsureDependencies()`.
 
 ### Prioridade 3
-Revisar normalização/telemetria repetidas dentro do módulo.
+Manter `WorldResetCommands` enxuto e evitar reengordar o trilho level.
+
+### Prioridade 4
+Não reabrir `ResetInterop` nem puxar execução local para `WorldReset`; a fronteira atual está correta.
 
 ---
 
 ## 📈 Impacto Total Estimado
 
-- Redundância/overlap interna: **10-15%**
-- Hotspots principais: `WorldResetExecutor`, `WorldResetOrchestrator`, `WorldResetCommands`
-- Complexidade atual: **moderada**, bem menor que no antigo `WorldLifecycle`, mas ainda acima do ideal
+- Redundância/overlap interna: **6-10%**
+- Hotspots principais: `WorldResetOrchestrator`, `WorldResetPostResetValidator`, `WorldResetService`
+- Hotspot secundário: `WorldResetCommands` (baixo)
+- Complexidade atual: **moderada-baixa**, claramente melhor do que no estado anterior e muito abaixo do antigo `WorldLifecycle`
 
 ---
 
 ## ✅ Conclusão
 
-A divisão atual resolveu o problema mais grave do relatório antigo: **misturar macro, local e bridge no mesmo módulo**.
+A consolidação recente resolveu os principais pontos que ainda sustentavam a análise anterior:
+- o contrato de lifecycle foi unificado
+- a publicação foi centralizada
+- o executor deixou de acumular validação e observabilidade
+- o naming legado profundo foi limpo
+- o runtime compilou e rodou sem erro após a mudança
 
-Hoje o `WorldReset` já tem papel claro, mas ainda precisa de um fechamento interno para:
-- reduzir concentração em `WorldResetExecutor`
-- deixar o pipeline macro mais explícito
-- enxugar a superfície pública
+Hoje o `WorldReset` já está com papel claro e com estrutura interna bem melhor. O que sobra agora é **refinamento arquitetural**, não mais correção estrutural urgente.
 
-**Resumo:** o módulo atual é válido e muito mais saudável que o antigo `WorldLifecycle`, mas ainda não está “fechado”.
+O próximo alvo, se a intenção for continuar na família de reset, passa a ser mais naturalmente o **`SceneReset`**, não porque `WorldReset` esteja ruim, mas porque o hotspot mais crítico do trilho macro já foi reduzido.

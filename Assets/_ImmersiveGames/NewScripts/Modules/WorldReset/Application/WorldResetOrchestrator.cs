@@ -1,15 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.WorldRearm.Guards;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Guards;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Validation;
@@ -18,26 +15,31 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 {
     /// <summary>
     /// Orquestra o pipeline de reset do WorldReset.
-    /// Guard -> Validate -> Discover -> Execute -> PublishCompleted.
+    /// Guard -> Validate -> Discover -> Execute -> PostValidate -> PublishCompleted.
     /// </summary>
     public sealed class WorldResetOrchestrator
     {
-        // OWNER boundary: pipeline macro reset (guards/validation/execute) e publicação do contrato canônico.
         private readonly IWorldResetPolicy _policy;
         private readonly IReadOnlyList<IWorldResetGuard> _guards;
         private readonly WorldResetValidationPipeline _validation;
         private readonly WorldResetExecutor _executor;
+        private readonly WorldResetPostResetValidator _postResetValidator;
+        private readonly WorldResetLifecyclePublisher _lifecyclePublisher;
 
         public WorldResetOrchestrator(
             IWorldResetPolicy policy,
             IReadOnlyList<IWorldResetGuard> guards,
             WorldResetValidationPipeline validation,
-            WorldResetExecutor executor)
+            WorldResetExecutor executor,
+            WorldResetPostResetValidator postResetValidator,
+            WorldResetLifecyclePublisher lifecyclePublisher)
         {
             _policy = policy;
             _guards = guards ?? Array.Empty<IWorldResetGuard>();
             _validation = validation ?? new WorldResetValidationPipeline(Array.Empty<IWorldResetValidator>());
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            _postResetValidator = postResetValidator ?? throw new ArgumentNullException(nameof(postResetValidator));
+            _lifecyclePublisher = lifecyclePublisher ?? throw new ArgumentNullException(nameof(lifecyclePublisher));
         }
 
         public async Task<WorldResetResult> ExecuteAsync(WorldResetRequest request)
@@ -60,11 +62,11 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 string target = string.IsNullOrWhiteSpace(request.TargetScene) ? "<unknown>" : request.TargetScene;
                 string detail = $"{WorldResetReasons.FailedNoControllerPrefix}:{target}";
                 LogDegraded($"Nenhum SceneResetController encontrado para reset. targetScene='{target}'.");
-                PublishResetCompletedEvent(request, WorldResetOutcome.FailedNoController, detail);
+                _lifecyclePublisher.PublishCompleted(request, WorldResetOutcome.FailedNoController, detail);
                 return WorldResetResult.Failed;
             }
 
-            PublishResetStartedEvent(request);
+            _lifecyclePublisher.PublishStarted(request);
 
             WorldResetResult result = WorldResetResult.Completed;
             WorldResetOutcome outcome = WorldResetOutcome.Completed;
@@ -72,7 +74,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
             try
             {
-                await _executor.ExecuteAsync(request, controllers, _policy);
+                await _executor.ExecuteAsync(controllers, request.Reason);
+                _postResetValidator.ValidateEssentialActors(request.TargetScene, _policy);
             }
             catch (Exception ex)
             {
@@ -84,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             }
             finally
             {
-                PublishResetCompletedEvent(request, outcome, detailMessage);
+                _lifecyclePublisher.PublishCompleted(request, outcome, detailMessage);
             }
 
             return result;
@@ -99,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
             for (int i = 0; i < _guards.Count; i++)
             {
-                var guard = _guards[i];
+                IWorldResetGuard guard = _guards[i];
                 if (guard == null)
                 {
                     continue;
@@ -145,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
             if (decision.ShouldPublishCompletion)
             {
-                PublishResetCompletedEvent(request, MapDecisionOutcome(stage, decision), decision.Detail);
+                _lifecyclePublisher.PublishCompleted(request, MapDecisionOutcome(stage, decision), decision.Detail);
             }
 
             if (string.Equals(stage, "Validation", StringComparison.Ordinal))
@@ -154,49 +157,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             }
 
             return WorldResetResult.Failed;
-        }
-
-        internal static void PublishResetStartedEvent(WorldResetRequest request)
-        {
-            DebugUtility.LogVerbose<WorldResetOrchestrator>(
-                $"[{ResetLogTags.Start}][OBS][WorldReset] ResetStarted kind='{ResolveKind(request)}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' levelSignature='{request.LevelSignature}' reason='{request.Reason}' origin='{request.Origin}'.",
-                DebugUtility.Colors.Info);
-
-            EventBus<WorldResetStartedEvent>.Raise(new WorldResetStartedEvent(
-                ResolveKind(request),
-                request.MacroRouteId,
-                request.Reason,
-                request.ContextSignature,
-                request.LevelSignature,
-                request.Origin,
-                request.SourceSignature));
-        }
-
-        internal static void PublishResetCompletedEvent(WorldResetRequest request, WorldResetOutcome outcome, string detail)
-        {
-            string completionDetail = string.IsNullOrWhiteSpace(detail) ? string.Empty : detail.Trim();
-
-            DebugUtility.LogVerbose<WorldResetOrchestrator>(
-                $"[{ResetLogTags.Completed}][OBS][WorldReset] ResetCompleted kind='{ResolveKind(request)}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' levelSignature='{request.LevelSignature}' reason='{request.Reason}' outcome='{outcome}' detail='{completionDetail}' origin='{request.Origin}'.",
-                outcome == WorldResetOutcome.Completed || outcome == WorldResetOutcome.SkippedByPolicy || outcome == WorldResetOutcome.SkippedValidation
-                    ? DebugUtility.Colors.Success
-                    : DebugUtility.Colors.Warning);
-
-            EventBus<WorldResetCompletedEvent>.Raise(new WorldResetCompletedEvent(
-                ResolveKind(request),
-                request.MacroRouteId,
-                request.Reason,
-                request.ContextSignature,
-                request.LevelSignature,
-                outcome,
-                completionDetail,
-                request.Origin,
-                request.SourceSignature));
-        }
-
-        private static ResetKind ResolveKind(WorldResetRequest request)
-        {
-            return request.LevelSignature.IsValid ? ResetKind.Level : ResetKind.Macro;
         }
 
         private static WorldResetOutcome MapDecisionOutcome(string stage, ResetDecision decision)
