@@ -4,7 +4,7 @@
 
 - Estado: Implementado
 - Data (decisão): 2025-12-24
-- Última atualização: 2026-03-11
+- Última atualização: 2026-03-24
 - Tipo: Implementação
 - Escopo: WorldReset + SceneReset + ResetInterop + SceneFlow + GameLoop (NewScripts)
 
@@ -13,16 +13,16 @@
 - Implementação concluída: 2026-01-31 (Baseline 2.2)
 - Dono: (preencher)
 - Artefatos principais (produção):
-  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionEvents.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Application/WorldResetService.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/ResetInterop/Runtime/SceneFlowWorldResetDriver.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/ResetInterop/Runtime/WorldResetCompletionGate.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/IntroStage/Runtime/*`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Bridges/GameLoopSceneFlowCoordinator.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/InputModes/Interop/SceneFlowInputModeBridge.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionEvents.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Application/WorldResetService.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/ResetInterop/Runtime/SceneFlowWorldResetDriver.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/ResetInterop/Runtime/WorldResetCompletionGate.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Core/GameLoopService.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/IntroStage/Runtime/*`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Flow/GameLoopSceneFlowSyncCoordinator.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/InputModes/Interop/SceneFlowInputModeBridge.cs`
 
 ## Contexto
 
@@ -63,8 +63,8 @@ Definir um ciclo de vida único, com fases e invariantes fixos:
 5) **PostGame**
 - Finalização por Victory/Defeat.
 - Ações principais:
-  - Restart (volta para gameplay com reset completo).
-  - ExitToMenu (volta para frontend; reset skip no frontend).
+    - Restart (volta para gameplay com reset completo).
+    - ExitToMenu (volta para frontend; reset skip no frontend).
 
 ### Invariantes (contrato)
 
@@ -119,7 +119,7 @@ Principais pontos (NewScripts):
 - **Loading HUD**: ver ADR-0010 (`Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Loading/Runtime/*`)
 - **Gatilho de ResetWorld em produção**: driver ligado ao `ScenesReady` (SceneFlow)
 - **WorldReset / SceneReset reset pipeline**: `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/**` + `Assets/_ImmersiveGames/NewScripts/Modules/SceneReset/**`
-- **GameLoop Intro/Playing/PostGame**: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/*`
+- **GameLoop Intro/Playing/PostGame**: `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Core/*` + `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Run/*` + `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Flow/*` + `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/IntroStage/*`
 
 ## Observabilidade
 
@@ -151,24 +151,25 @@ Principais pontos (NewScripts):
 ### Runtime / Editor (código e assets)
 
 - **Gameplay**
-  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/GameLoopStateMachine.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Runtime/Services/GameLoopService.cs`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Application/WorldResetService.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Core/GameLoopStateMachine.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/GameLoop/Core/GameLoopService.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Application/WorldResetService.cs`
 - **Infrastructure**
-  - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/SceneFlow/Transition/Runtime/SceneTransitionService.cs`
 
 ### Docs / evidências relacionadas
 
 - `Assets/_ImmersiveGames/NewScripts/Docs/Modules/WorldReset.md`
-  - `Assets/_ImmersiveGames/NewScripts/Docs/Modules/SceneReset.md`
-  - `Assets/_ImmersiveGames/NewScripts/Docs/Modules/ResetInterop.md`
+    - `Assets/_ImmersiveGames/NewScripts/Docs/Modules/SceneReset.md`
+    - `Assets/_ImmersiveGames/NewScripts/Docs/Modules/ResetInterop.md`
 - `Standards/Standards.md`
 
 ## Notas de implementação
 
 O pipeline está ativo em produção e segue a ordem: **SceneFlow → ScenesReady → ResetWorld → ResetCompleted → IntroStage → Playing**.
 Os pontos de integração canônicos são: `SceneFlowWorldResetDriver` (gatilho de reset), `WorldResetCompletionGate`
-(gate do SceneFlow), `SceneFlowInputModeBridge` (aplica input mode e dispara IntroStage) e `IntroStageCoordinator`
+(gate do SceneFlow), `SceneFlowInputModeBridge` (aplica input mode e dispara IntroStage), `GameLoopSceneFlowSyncCoordinator`
+(sincronização entre loop e SceneFlow), `GameLoopStateTransitionEffects` (efeitos de transição) e `IntroStageCoordinator`
 (gate `sim.gameplay` e RequestStart após confirmação).
 
 ## Evidência

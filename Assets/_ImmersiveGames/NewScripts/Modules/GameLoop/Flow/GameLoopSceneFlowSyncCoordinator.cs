@@ -9,12 +9,14 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
 {
     public sealed partial class GameLoopSceneFlowSyncCoordinator : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly SceneTransitionRequest _startPlan;
+        private readonly GameLoopEventSubscriptionSet _subscriptions = new();
 
         private bool _startInProgress;
         private bool _transitionCompleted;
@@ -40,10 +42,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
             _worldResetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnWorldResetCompleted);
 
-            EventBus<GameStartRequestedEvent>.Register(_startRequestedBinding);
-            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
-            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
-            EventBus<WorldResetCompletedEvent>.Register(_worldResetCompletedBinding);
+            _subscriptions.Register(_startRequestedBinding);
+            _subscriptions.Register(_transitionStartedBinding);
+            _subscriptions.Register(_transitionCompletedBinding);
+            _subscriptions.Register(_worldResetCompletedBinding);
 
             if (_startPlan == null)
             {
@@ -64,10 +66,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
             }
 
             _disposed = true;
-            EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
-            EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
-            EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
-            EventBus<WorldResetCompletedEvent>.Unregister(_worldResetCompletedBinding);
+            _subscriptions.Dispose();
         }
 
         private void OnStartRequestedCommon()
@@ -331,4 +330,3 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
         }
     }
 }
-

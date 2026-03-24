@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
 {
     /// <summary>
@@ -19,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunResultSnapshotService : IGameRunResultSnapshotService, IDisposable
     {
+        private readonly GameLoopEventSubscriptionSet _subscriptions = new();
         private readonly EventBinding<GameRunEndedEvent> _binding;
         private readonly EventBinding<GameRunStartedEvent> _startBinding;
         private bool _disposed;
@@ -32,8 +34,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
             _startBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
 
-            EventBus<GameRunEndedEvent>.Register(_binding);
-            EventBus<GameRunStartedEvent>.Register(_startBinding);
+            _subscriptions.Register(_binding);
+            _subscriptions.Register(_startBinding);
 
             DebugUtility.LogVerbose<GameRunResultSnapshotService>(
                 "[GameLoop] GameRunResultSnapshotService registrado no EventBus<GameRunEndedEvent> e EventBus<GameRunStartedEvent>.");
@@ -99,9 +101,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             }
 
             _disposed = true;
-
-            try { EventBus<GameRunEndedEvent>.Unregister(_binding); } catch { /* best-effort */ }
-            try { EventBus<GameRunStartedEvent>.Unregister(_startBinding); } catch { /* best-effort */ }
+            _subscriptions.Dispose();
         }
     }
 }

@@ -2,14 +2,16 @@
 
 ## Estado atual
 
-- `GameLoopService` e owner do estado da run.
-- `GameLoopSceneFlowCoordinator` sincroniza start plan e readiness com SceneFlow.
+- `GameLoopService` e coordenador do loop; o owner terminal da run e `GameRunOutcomeService`.
+- `GameLoopSceneFlowSyncCoordinator` sincroniza start plan e readiness com SceneFlow.
 - `IntroStage` e opcional por level.
 - `PostGame` e global.
 
 ## Ownership
 
-- `GameLoopService`: estados da run, ready, intro, playing, pause e post game.
+- `GameLoopService`: coordenacao do loop (ready, intro, playing, pause e post game).
+- `GameRunOutcomeService`: owner terminal do fim de run e publish de `GameRunEndedEvent`.
+- `GameRunResultSnapshotService`: projecao/snapshot do resultado atual da run.
 - `IntroStageCoordinator` + `LevelStageOrchestrator`: intro do level atual.
 - `PostGameOwnershipService`: input mode e gate do post global.
 - `PostGameResultService`: resultado formal do post global.

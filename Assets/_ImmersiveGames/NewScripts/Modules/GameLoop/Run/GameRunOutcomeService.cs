@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
 {
     /// <summary>
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
     public sealed class GameRunOutcomeService : IGameRunOutcomeService, IDisposable
     {
         private readonly IGameRunPlayingStateGuard _playingStateGuard;
+        private readonly GameLoopEventSubscriptionSet _subscriptions = new();
         private readonly EventBinding<GameRunStartedEvent> _runStartedBinding;
         private readonly EventBinding<GameRunEndedEvent> _runEndedObservedBinding;
 
@@ -31,8 +33,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnRunStarted);
             _runEndedObservedBinding = new EventBinding<GameRunEndedEvent>(OnRunEndedObserved);
 
-            EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
-            EventBus<GameRunEndedEvent>.Register(_runEndedObservedBinding);
+            _subscriptions.Register(_runStartedBinding);
+            _subscriptions.Register(_runEndedObservedBinding);
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
                 "[GameLoop] GameRunOutcomeService registrado no EventBus<GameRunStartedEvent> e observando EventBus<GameRunEndedEvent>.");
@@ -123,9 +125,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             }
 
             _disposed = true;
-
-            try { EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding); } catch { /* best-effort */ }
-            try { EventBus<GameRunEndedEvent>.Unregister(_runEndedObservedBinding); } catch { /* best-effort */ }
+            _subscriptions.Dispose();
         }
     }
 }

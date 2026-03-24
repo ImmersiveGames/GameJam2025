@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
 {
     /// <summary>
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
     /// </summary>
     public sealed class GameLoopInputCommandBridge : IDisposable
     {
+        private readonly GameLoopEventSubscriptionSet _subscriptions = new();
         private readonly EventBinding<GamePauseCommandEvent> _onPause;
         private readonly EventBinding<GameResumeRequestedEvent> _onResume;
 
@@ -30,8 +32,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
             _onPause = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _onResume = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
 
-            EventBus<GamePauseCommandEvent>.Register(_onPause);
-            EventBus<GameResumeRequestedEvent>.Register(_onResume);
+            _subscriptions.Register(_onPause);
+            _subscriptions.Register(_onResume);
 
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
                 "[GameLoop] Bridge de entrada registrado no EventBus (pause/resume).",
@@ -49,8 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
             }
 
             _disposed = true;
-            EventBus<GamePauseCommandEvent>.Unregister(_onPause);
-            EventBus<GameResumeRequestedEvent>.Unregister(_onResume);
+            _subscriptions.Dispose();
         }
 
         private static bool TryResolveLoop(out IGameLoopService loop)

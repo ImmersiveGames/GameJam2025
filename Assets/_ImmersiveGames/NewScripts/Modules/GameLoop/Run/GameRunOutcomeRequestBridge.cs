@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
 {
     /// <summary>
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
     public sealed class GameRunOutcomeRequestBridge : IDisposable
     {
         private readonly IGameRunOutcomeService _outcome;
+        private readonly GameLoopEventSubscriptionSet _subscriptions = new();
         private readonly EventBinding<GameRunEndRequestedEvent> _binding;
         private bool _disposed;
 
@@ -23,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             _outcome = outcome ?? throw new ArgumentNullException(nameof(outcome));
 
             _binding = new EventBinding<GameRunEndRequestedEvent>(OnEndRequested);
-            EventBus<GameRunEndRequestedEvent>.Register(_binding);
+            _subscriptions.Register(_binding);
 
             DebugUtility.LogVerbose<GameRunOutcomeRequestBridge>(
                 "GameRunOutcomeRequestBridge registered.");
@@ -61,8 +63,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             }
 
             _disposed = true;
-
-            try { EventBus<GameRunEndRequestedEvent>.Unregister(_binding); } catch { /* best-effort */ }
+            _subscriptions.Dispose();
 
             DebugUtility.LogVerbose<GameRunOutcomeRequestBridge>(
                 "GameRunOutcomeRequestBridge disposed.");
