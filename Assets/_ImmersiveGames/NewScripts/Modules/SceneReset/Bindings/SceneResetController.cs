@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -8,6 +7,7 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
 {
     [DisallowMultipleComponent]
@@ -32,19 +32,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
 
         private bool _dependenciesInjected;
         private bool _destroyed;
-
-        // Fila simples: garante execução sequencial de resets (World/Players/etc).
-        private readonly object _queueLock = new();
-        private readonly Queue<ResetRequest> _resetQueue = new();
-        private bool _processingQueue;
-
-        private const int ResetQueueBacklogWarningThreshold = 3;
-
         private string _sceneName = string.Empty;
+        private SceneResetRequestQueue _requestQueue;
+        private SceneResetRuntimeFactory _runtimeFactory;
 
         private void Awake()
         {
             _sceneName = gameObject.scene.name;
+            _requestQueue = new SceneResetRequestQueue(_sceneName, verboseLogs);
             // IMPORTANT: Do NOT inject here. Scene services may not be registered yet.
         }
 
@@ -66,8 +61,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
                 return;
             }
 
-            // Se a cena foi carregada via SceneFlow, o reset "production" deve ocorrer no driver (ScenesReady).
-            // Evita reset duplo (Start + ScenesReady) quando o GameReadinessService mantém o token ativo durante a transição.
+            // Se a cena foi carregada via SceneFlow, o reset production deve ocorrer no driver (ScenesReady).
             if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
             {
                 if (verboseLogs)
@@ -85,59 +79,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
         {
             if (_destroyed)
             {
-                // Idempotência: Unity pode chamar OnDestroy mais de uma vez em cenários de domínio/assemblies.
                 return;
             }
+
             _destroyed = true;
-
-            // Evita que awaits fiquem pendurados em unload/destruição do controller.
-            lock (_queueLock)
-            {
-                while (_resetQueue.Count > 0)
-                {
-                    var req = _resetQueue.Dequeue();
-                    req.TryCancel();
-                }
-                _processingQueue = false;
-            }
-
-            // Limpa hooks registrados para evitar vazamento de referências na cena.
-            if (_hookRegistry != null)
-            {
-                try
-                {
-                    if (verboseLogs)
-                    {
-                        DebugUtility.Log(typeof(SceneResetController),
-                            $"Limpando SceneResetHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
-                    }
-                    _hookRegistry.Clear();
-                }
-                catch (Exception ex)
-                {
-                    DebugUtility.LogWarning(typeof(SceneResetController),
-                        $"Falha ao limpar SceneResetHookRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
-                }
-            }
-
-            // Limpa serviços de spawn para evitar retenção de instâncias.
-            if (_spawnRegistry != null)
-            {
-                try
-                {
-                    if (verboseLogs)
-                    {
-                        DebugUtility.Log(typeof(SceneResetController),
-                            $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
-                    }
-                    _spawnRegistry.Clear();
-                }
-                catch (Exception ex)
-                {
-                    DebugUtility.LogWarning(typeof(SceneResetController),
-                        $"Falha ao limpar IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
-                }
-            }
+            _requestQueue?.CancelPending();
+            _runtimeFactory?.Cleanup(verboseLogs);
         }
 
         /// <summary>
@@ -169,99 +116,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
 
         private Task EnqueueReset(string label, Func<Task> runner)
         {
-            if (runner == null)
-            {
-                throw new ArgumentNullException(nameof(runner));
-            }
-
-            ResetRequest request;
-            int position;
-            bool willStartProcessing;
-
-            lock (_queueLock)
-            {
-                request = new ResetRequest(label, runner);
-
-                _resetQueue.Enqueue(request);
-                position = _resetQueue.Count;
-
-                willStartProcessing = !_processingQueue;
-                if (willStartProcessing)
-                {
-                    _processingQueue = true;
-                    _ = ProcessQueueAsync();
-                }
-            }
-            if (position > ResetQueueBacklogWarningThreshold)
-            {
-                DebugUtility.LogWarning(typeof(SceneResetController),
-                    $"Reset queue backlog detectado (count={position}). Possível tempestade de resets. lastLabel='{label}', scene='{_sceneName}'.");
-            }
-
-            bool queuedBehindActiveReset = !willStartProcessing;
-            if (!queuedBehindActiveReset)
-            {
-                return request.Task;
-            }
-            if (position > 1)
-            {
-                DebugUtility.LogWarning(typeof(SceneResetController),
-                    $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
-            }
-            else if (verboseLogs)
-            {
-                DebugUtility.LogVerbose(typeof(SceneResetController),
-                    $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
-            }
-
-            return request.Task;
-        }
-
-        private async Task ProcessQueueAsync()
-        {
-            while (true)
-            {
-                ResetRequest request;
-
-                lock (_queueLock)
-                {
-                    if (_resetQueue.Count == 0)
-                    {
-                        _processingQueue = false;
-                        return;
-                    }
-
-                    request = _resetQueue.Dequeue();
-                }
-
-                try
-                {
-                    if (verboseLogs)
-                    {
-                        DebugUtility.Log(typeof(SceneResetController),
-                            $"Processando reset. label='{request.Label}', scene='{_sceneName}'.");
-                    }
-
-                    await request.Runner();
-                }
-                catch (Exception ex)
-                {
-                    // Guardrail: Reset não deve quebrar o fluxo do caller (best-effort).
-                    DebugUtility.LogError(typeof(SceneResetController),
-                        $"Exception while processing reset queue item (label='{request.Label}', scene='{_sceneName}'): {ex}",
-                        this);
-                }
-                finally
-                {
-                    request.TryComplete();
-                }
-            }
+            return _requestQueue.Enqueue(label, runner);
         }
 
         private async Task RunWorldResetAsync(string reason)
         {
             await RunResetInternalAsync(
-                reason: reason,
                 startLog: $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.",
                 endLog: $"Reset concluído. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): ",
@@ -271,7 +131,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
         private async Task RunPlayersResetAsync(string reason)
         {
             await RunResetInternalAsync(
-                reason: reason,
                 startLog: $"Soft reset (Players) iniciado. reason='{reason}', scene='{_sceneName}'.",
                 endLog: $"Soft reset (Players) concluído. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): ",
@@ -279,7 +138,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
         }
 
         private async Task RunResetInternalAsync(
-            string reason,
             string startLog,
             string endLog,
             string exceptionLog,
@@ -298,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
                     DebugUtility.Log(typeof(SceneResetController), startLog);
                 }
 
-                SceneResetRunner runner = CreateSceneResetRunner();
+                SceneResetRunner runner = _runtimeFactory.CreateRunner();
                 await execute(runner);
 
                 if (verboseLogs)
@@ -323,94 +181,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
 
             DependencyManager.Provider.InjectDependencies(this);
             _dependenciesInjected = true;
-
-            if (_hookRegistry == null)
-            {
-                DebugUtility.LogWarning(typeof(SceneResetController),
-                    $"SceneResetHookRegistry não encontrado para a cena '{_sceneName}'. Hooks via registry ficarão desativados.");
-            }
-
-            if (_gateService == null)
-            {
-                DebugUtility.LogWarning(typeof(SceneResetController),
-                    $"ISimulationGateService não injetado para a cena '{_sceneName}'. Reset seguirá sem gate.");
-            }
-
-            if (_spawnRegistry == null)
-            {
-                DebugUtility.LogError(typeof(SceneResetController),
-                    $"IWorldSpawnServiceRegistry não encontrado para a cena '{_sceneName}'.");
-            }
-
-            if (_actorRegistry == null)
-            {
-                DebugUtility.LogError(typeof(SceneResetController),
-                    $"IActorRegistry não encontrado para a cena '{_sceneName}'.");
-            }
-        }
-
-        private SceneResetRunner CreateSceneResetRunner()
-        {
-            EnsureDependenciesInjected();
-
-            return new SceneResetRunner(
+            _runtimeFactory = new SceneResetRuntimeFactory(
+                _sceneName,
                 _gateService,
                 _spawnRegistry,
                 _actorRegistry,
-                provider: DependencyManager.Provider,
-                hookRegistry: _hookRegistry,
-                sceneName: _sceneName);
+                DependencyManager.Provider,
+                _hookRegistry);
+            _runtimeFactory.LogOptionalDependencies(verboseLogs);
         }
 
         private bool HasCriticalDependencies()
         {
-            bool valid = true;
-
-            if (_spawnRegistry == null)
-            {
-                DebugUtility.LogError(typeof(SceneResetController),
-                    $"Sem IWorldSpawnServiceRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
-                valid = false;
-            }
-
-            if (_actorRegistry != null)
-            {
-                return valid;
-            }
-            DebugUtility.LogError(typeof(SceneResetController),
-                $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
-
-            return false;
-        }
-
-        private readonly struct ResetRequest
-        {
-            private readonly TaskCompletionSource<bool> _tcs;
-
-            public ResetRequest(string label, Func<Task> runner)
-            {
-                Label = label ?? "<null>";
-                Runner = runner ?? throw new ArgumentNullException(nameof(runner));
-                _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            }
-
-            public string Label { get; }
-            public Func<Task> Runner { get; }
-            public Task Task => _tcs.Task;
-
-            public void TryComplete()
-            {
-                _tcs.TrySetResult(true);
-            }
-
-            public void TryCancel()
-            {
-                _tcs.TrySetCanceled();
-            }
+            return _runtimeFactory != null && _runtimeFactory.HasCriticalDependencies();
         }
     }
 }
-
-
-
-

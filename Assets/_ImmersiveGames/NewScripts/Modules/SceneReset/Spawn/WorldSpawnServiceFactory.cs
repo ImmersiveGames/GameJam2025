@@ -1,19 +1,21 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Eater;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
+
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
 {
     /// <summary>
     /// Factory explícita para criação de serviços de spawn baseados em definições.
-    /// Simplificada para evitar checagens repetidas por tipo.
+    /// Responsabilidade atual: compor dependências resolvidas, validar entry e instanciar o serviço concreto.
     /// </summary>
     public sealed class WorldSpawnServiceFactory
     {
+        private readonly WorldSpawnFactoryDependenciesResolver _dependenciesResolver = new();
+        private readonly WorldSpawnEntryValidator _entryValidator = new();
+
         // ReSharper disable CognitiveComplexity
         public IWorldSpawnService Create(
             WorldDefinition.SpawnEntry entry,
@@ -21,7 +23,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
             IActorRegistry actorRegistry,
             IWorldSpawnContext context)
         {
-            if (!TryPrepare(entry, provider, actorRegistry, context, out var uniqueIdFactory, out var stateService))
+            if (!_dependenciesResolver.TryResolve(entry, provider, actorRegistry, context, out WorldSpawnFactoryDependencies dependencies))
+            {
+                return null;
+            }
+
+            if (!_entryValidator.TryValidate(entry))
             {
                 return null;
             }
@@ -29,13 +36,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
             switch (entry.Kind)
             {
                 case WorldSpawnServiceKind.DummyActor:
-                    return CreateDummy(entry, uniqueIdFactory, actorRegistry, context);
+                    return CreateDummy(entry, dependencies);
 
                 case WorldSpawnServiceKind.Player:
-                    return CreatePlayer(entry, uniqueIdFactory, actorRegistry, context, stateService);
+                    return CreatePlayer(entry, dependencies);
 
                 case WorldSpawnServiceKind.Eater:
-                    return CreateEater(entry, uniqueIdFactory, actorRegistry, context, stateService);
+                    return CreateEater(entry, dependencies);
 
                 default:
                     DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
@@ -43,112 +50,45 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
                     return null;
             }
         }
-        // ReSharper, restore CognitiveComplexity
+        // ReSharper restore CognitiveComplexity
 
-        private bool TryPrepare(
+        private static IWorldSpawnService CreateDummy(
             WorldDefinition.SpawnEntry entry,
-            IDependencyProvider provider,
-            IActorRegistry actorRegistry,
-            IWorldSpawnContext context,
-            out IUniqueIdFactory uniqueIdFactory,
-            out IStateDependentService stateService)
+            WorldSpawnFactoryDependencies dependencies)
         {
-            uniqueIdFactory = null;
-            stateService = null;
-
-            if (entry == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "SpawnEntry nula ao criar serviço de spawn.");
-                return false;
-            }
-
-            if (provider == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "IDependencyProvider ausente ao criar serviço de spawn.");
-                return false;
-            }
-
-            if (context == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "IWorldSpawnContext ausente ao criar serviço de spawn.");
-                return false;
-            }
-
-            if (actorRegistry == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "IActorRegistry ausente ao criar serviço de spawn.");
-                return false;
-            }
-
-            provider.TryGetGlobal(out uniqueIdFactory);
-            if (uniqueIdFactory == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "IUniqueIdFactory global ausente. Serviço de spawn não será criado.");
-                return false;
-            }
-
-            // obter optional state service (usado por Player/Eater)
-            provider.TryGetGlobal(out stateService);
-
-            return true;
+            return new DummyActorSpawnService(
+                dependencies.UniqueIdFactory,
+                dependencies.ActorRegistry,
+                dependencies.Context,
+                entry.Prefab);
         }
 
-        private IWorldSpawnService CreateDummy(
+        private static IWorldSpawnService CreatePlayer(
             WorldDefinition.SpawnEntry entry,
-            IUniqueIdFactory uniqueIdFactory,
-            IActorRegistry actorRegistry,
-            IWorldSpawnContext context)
+            WorldSpawnFactoryDependencies dependencies)
         {
-            if (entry.Prefab == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "Prefab não configurado para DummyActorSpawnService.");
-                return null;
-            }
-
-            return new DummyActorSpawnService(uniqueIdFactory, actorRegistry, context, entry.Prefab);
+            return new PlayerSpawnService(
+                dependencies.UniqueIdFactory,
+                dependencies.ActorRegistry,
+                dependencies.Context,
+                entry.Prefab,
+                dependencies.StateService);
         }
 
-        private IWorldSpawnService CreatePlayer(
+        private static IWorldSpawnService CreateEater(
             WorldDefinition.SpawnEntry entry,
-            IUniqueIdFactory uniqueIdFactory,
-            IActorRegistry actorRegistry,
-            IWorldSpawnContext context,
-            IStateDependentService stateService)
+            WorldSpawnFactoryDependencies dependencies)
         {
-            if (entry.Prefab == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "Prefab não configurado para PlayerSpawnService.");
-                return null;
-            }
-
-            return new PlayerSpawnService(uniqueIdFactory, actorRegistry, context, entry.Prefab, stateService);
-        }
-
-        private IWorldSpawnService CreateEater(
-            WorldDefinition.SpawnEntry entry,
-            IUniqueIdFactory uniqueIdFactory,
-            IActorRegistry actorRegistry,
-            IWorldSpawnContext context,
-            IStateDependentService stateService)
-        {
-            var eaterPrefab = entry.Prefab != null ? entry.Prefab.GetComponent<EaterActor>() : null;
-            if (eaterPrefab == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                    "Prefab sem EaterActor. EaterSpawnService não será criado.");
-                return null;
-            }
-
-            return new EaterSpawnService(uniqueIdFactory, actorRegistry, context, eaterPrefab, stateService);
+            EaterActor eaterPrefab = entry.Prefab.GetComponent<EaterActor>();
+            return new EaterSpawnService(
+                dependencies.UniqueIdFactory,
+                dependencies.ActorRegistry,
+                dependencies.Context,
+                eaterPrefab,
+                dependencies.StateService);
         }
     }
+
     /// <summary>
     /// Tipos conhecidos de serviços de spawn do mundo.
     /// Mantido explícito para evitar reflection e facilitar expansão futura.
@@ -160,4 +100,3 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
         Eater = 2
     }
 }
-
