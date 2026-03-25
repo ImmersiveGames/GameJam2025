@@ -11,7 +11,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class LoadingProgressOrchestrator
+    public sealed class LoadingProgressOrchestrator : IDisposable
     {
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
@@ -24,6 +24,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private ILoadingPresentationService _presentationService;
         private ActiveLoadingProgress _active;
+        private bool _isRegistered;
+        private bool _disposed;
 
         public LoadingProgressOrchestrator()
         {
@@ -36,6 +38,21 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _resetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnResetCompleted);
             _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
 
+            EnsureRegistered();
+        }
+
+        public void EnsureRegistered()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(LoadingProgressOrchestrator));
+            }
+
+            if (_isRegistered)
+            {
+                return;
+            }
+
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
             EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_beforeFadeOutBinding);
@@ -44,6 +61,39 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             EventBus<WorldResetStartedEvent>.Register(_resetStartedBinding);
             EventBus<WorldResetCompletedEvent>.Register(_resetCompletedBinding);
             EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
+
+            _isRegistered = true;
+
+            DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
+                "[Loading] LoadingProgressOrchestrator registrado nos eventos de Scene Flow.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_isRegistered)
+            {
+                EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
+                EventBus<SceneTransitionScenesReadyEvent>.Unregister(_scenesReadyBinding);
+                EventBus<SceneTransitionBeforeFadeOutEvent>.Unregister(_beforeFadeOutBinding);
+                EventBus<SceneTransitionCompletedEvent>.Unregister(_completedBinding);
+                EventBus<SceneFlowRouteLoadingProgressEvent>.Unregister(_routeProgressBinding);
+                EventBus<WorldResetStartedEvent>.Unregister(_resetStartedBinding);
+                EventBus<WorldResetCompletedEvent>.Unregister(_resetCompletedBinding);
+                EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
+                _isRegistered = false;
+
+                DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
+                    "[Loading] LoadingProgressOrchestrator desregistrado dos eventos de Scene Flow.",
+                    DebugUtility.Colors.Info);
+            }
+
+            _disposed = true;
         }
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)

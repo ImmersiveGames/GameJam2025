@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 
@@ -7,6 +8,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
     public static class RouteSceneCompositionRequestFactory
     {
+        public static SceneCompositionRequest CreateMacroApplyRequest(
+            IReadOnlyList<string> scenesToLoad,
+            IReadOnlyList<string> scenesToUnload,
+            string reason,
+            string correlationId)
+        {
+            IReadOnlyList<string> normalizedLoad = NormalizeSceneListOrFail(scenesToLoad, "Load", correlationId, reason);
+            IReadOnlyList<string> normalizedUnload = NormalizeSceneListOrFail(scenesToUnload, "Unload", correlationId, reason);
+            return CreateRequest(normalizedLoad, normalizedUnload, reason, correlationId);
+        }
+
         public static SceneCompositionRequest CreateLoadRequest(string sceneName, string reason, string correlationId)
         {
             return CreateRequest(new[] { NormalizeSceneNameOrFail(sceneName, "Load", correlationId, reason) }, Array.Empty<string>(), reason, correlationId);
@@ -26,6 +38,19 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 scenesToLoad ?? Array.Empty<string>(),
                 scenesToUnload ?? Array.Empty<string>(),
                 activeScene: string.Empty);
+        }
+
+        private static IReadOnlyList<string> NormalizeSceneListOrFail(IReadOnlyList<string>? scenes, string phase, string correlationId, string reason)
+        {
+            if (scenes == null || scenes.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            return scenes
+                .Select(scene => NormalizeSceneNameOrFail(scene, phase, correlationId, reason))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
         }
 
         private static string NormalizeSceneNameOrFail(string sceneName, string phase, string correlationId, string reason)

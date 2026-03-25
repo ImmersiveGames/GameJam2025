@@ -1,9 +1,12 @@
-# SceneFlow
+﻿# SceneFlow
+
+## Precedencia canonica
+- Fonte de verdade operacional: `ADR-0030`, `ADR-0031`, `ADR-0032`, `ADR-0033`.
+- Em conflito, esta ordem prevalece sobre baseline historica (`ADR-0009..ADR-0027`, pasta `Obsolete/`).
 
 ## Estado atual
-
-- `SceneTransitionService` e o owner da timeline de transicao.
-- `startup` pertence ao bootstrap por `NewScriptsBootstrapConfigAsset.startupTransitionStyleRef`.
+- `SceneTransitionService` e owner da timeline macro de transicao.
+- `startup` pertence ao bootstrap via `BootstrapConfigAsset.startupTransitionStyleRef`.
 - `frontend` e `gameplay` pertencem a `SceneRouteKind`.
 - Navigation e transition operam em direct-ref + fail-fast.
 - `GameNavigationCatalogAsset` resolve `routeRef + transitionStyleRef`.
@@ -12,87 +15,46 @@
 - `LoadingHudScene` e a HUD canonica do macro flow.
 
 ## Ownership
-
-- `SceneTransitionService`: fases da transicao e timeline.
-- `SceneRouteCatalogAsset` + `SceneRouteDefinitionAsset`: definicao de rota, `RouteKind`, target scene e reset policy.
+- `SceneTransitionService`: fases da transicao, sequencing macro e eventos canonicos.
+- `SceneRouteCatalogAsset` + `SceneRouteDefinitionAsset`: definicao de rota, `RouteKind`, target scene e policy macro de reset.
 - `TransitionStyleAsset`: style estrutural da transicao.
 - `SceneFlowFadeAdapter`: aplicacao do style no fade.
-- `WorldLifecycleResetCompletionGate` (em `ResetInterop`) e `MacroLevelPrepareCompletionGate`: gates do pipeline.
+- `WorldResetCompletionGate` (em `ResetInterop`) + `MacroLevelPrepareCompletionGate`: gate composto entre `ScenesReady` e `BeforeFadeOut`.
 - `ILoadingPresentationService` + `LoadingHudService`: apresentacao visual de loading.
-- `LoadingHudOrchestrator` + `LoadingProgressOrchestrator`: ponte entre pipeline e HUD, sem ownership da transicao.
+- `LoadingHudOrchestrator` + `LoadingProgressOrchestrator`: ponte de apresentacao; nao sao owners da transicao.
 
 ## Regras praticas
-
 - Nao existe semantica de fluxo em style ou profile.
 - `startup` nao passa por navigation.
 - Rota `Gameplay` exige reset macro e `LevelCollection` valida.
 - Rota `Frontend` nao pode exigir reset de mundo nem carregar `LevelCollection`.
-- A HUD de loading cobre `startup`, `menu -> gameplay`, `gameplay -> menu` e `restart macro`.
-- O loading entra como apresentacao; o pipeline continua em `SceneFlow + WorldReset + ResetInterop + LevelFlow`.
+- Loading e Fade sao apresentacao; ownership do fluxo permanece em `SceneFlow`.
+- `set-active` permanece no trilho macro do `SceneFlow`.
+- `load/unload` tecnico deve convergir para executor tecnico (`SceneComposition`) sem mover ownership de timeline para fora de `SceneFlow`.
 
-## Loading no SceneFlow atual
+## Policy (strict vs degraded)
+- Falha estrutural obrigatoria (config invalida de rota/style/profile) e fail-fast.
+- Falha operacional de apresentacao (loading/fade) pode degradar com observabilidade explicita.
+- Nao ha fallback silencioso novo no trilho macro.
 
-### Owner do fluxo vs owner da apresentacao
+## Integracao com GameLoop e InputModes
+- `SceneFlowInputModeBridge` publica requests de input orientados por evento de transicao.
+- Ownership de estado do loop permanece no `GameLoop`.
+- Ownership de aplicacao de input permanece em `InputModes` (`InputModeCoordinator` + `IInputModeService`).
 
-- owner do fluxo:
-  - `SceneTransitionService`
-  - `WorldLifecycle`
-  - `LevelFlow`
-- owner da apresentacao:
-  - `ILoadingPresentationService`
-  - `LoadingHudService`
-  - `LoadingHudScene`
-
-Leitura pratica:
-- quem decide a transicao continua sendo o pipeline macro
-- quem desenha a HUD e o servico de loading
-
-### Papel de `ILoadingPresentationService`
-
-O contrato atual existe para:
-- garantir que a `LoadingHudScene` esteja pronta
-- mostrar e esconder a HUD
-- atualizar mensagem
-- aplicar `LoadingProgressSnapshot`
-
-Ele nao existe para:
-- decidir rota
-- decidir reset
-- decidir prepare de level
-
-### Ordem atual com fade e loading
-
-Com fade:
-1. a transicao macro comeca
-2. o fade cobre a tela
-3. a HUD de loading aparece
-4. o pipeline roda
-5. o progresso e atualizado
-6. a HUD fecha no fim real
-7. o fade revela
-
-Sem fade:
-1. a transicao macro comeca
-2. a HUD aparece no inicio
-3. o pipeline roda
-4. o progresso fecha em `100%`
-5. a HUD some no fim real
-
-### Como o progresso entra
-
-- progresso real:
-  - `SceneTransitionService` reporta progresso de load e unload de cena por `SceneFlowRouteLoadingProgressEvent`
-- progresso por marcos:
-  - `LoadingProgressOrchestrator` fecha reset, prepare, readiness e finalizacao com pesos atuais
-
-O resultado visivel na HUD:
-- barra
-- porcentagem
-- etapa atual
-- spinner
+## Ordem canonica resumida
+1. `SceneTransitionStarted`
+2. `FadeIn` (quando habilitado)
+3. abertura de loading
+4. composicao macro (`load/unload`) + `set-active`
+5. `ScenesReady`
+6. completion gate (`WorldResetCompletionGate` + `LevelPrepare/Clear`)
+7. `BeforeFadeOut`
+8. fechamento de loading no fim real
+9. `FadeOut` (quando habilitado)
+10. `SceneTransitionCompleted`
 
 ## Leitura cruzada
-
 - `Docs/Modules/Navigation.md`
 - `Docs/Modules/LevelFlow.md`
 - `Docs/Modules/WorldReset.md`

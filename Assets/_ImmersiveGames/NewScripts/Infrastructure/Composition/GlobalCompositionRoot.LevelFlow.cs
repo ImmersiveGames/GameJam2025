@@ -5,6 +5,8 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -142,6 +144,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     "[OBS][LevelFlow] ILevelMacroPrepareService registrado (LevelMacroPrepareService).",
                     DebugUtility.Colors.Info);
             }
+
+            RegisterLevelFlowCompletionGate();
         }
 
         private static void RegisterLevelStageOrchestrator()
@@ -150,6 +154,65 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 () => new LevelStageOrchestrator(),
                 "[LevelFlow] LevelStageOrchestrator ja registrado no DI global.",
                 "[LevelFlow] LevelStageOrchestrator registrado (SceneFlowCompleted + LevelSwapLocalApplied).");
+        }
+
+        private static void RegisterLevelFlowCompletionGate()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) || existingGate == null)
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][LevelFlow] ISceneTransitionCompletionGate obrigatorio ausente para composicao de LevelPrepare/Clear.");
+            }
+
+            if (existingGate is not MacroLevelPrepareCompletionGate macroGate)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][LevelFlow] ISceneTransitionCompletionGate invalido para composicao de LevelFlow (tipo='{existingGate.GetType().Name}').");
+            }
+
+            macroGate.ConfigureLevelFlowGate(new LevelFlowMacroPrepareCompletionGate());
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                "[OBS][LevelFlow] Gate de LevelPrepare/Clear acoplado ao completion gate macro do SceneFlow.",
+                DebugUtility.Colors.Info);
+        }
+
+        private sealed class LevelFlowMacroPrepareCompletionGate : ISceneTransitionCompletionGate
+        {
+            public async System.Threading.Tasks.Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
+            {
+                if (!context.RouteId.IsValid)
+                {
+                    return;
+                }
+
+                if (DependencyManager.Provider == null)
+                {
+                    FailFastConfig(context, "DependencyManager.Provider unavailable.");
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var prepareService) || prepareService == null)
+                {
+                    FailFastConfig(context, "ILevelMacroPrepareService missing.");
+                }
+
+                string reason = string.IsNullOrWhiteSpace(context.Reason)
+                    ? "SceneFlow/LevelPrepare"
+                    : context.Reason.Trim();
+                string signature = SceneTransitionSignature.Compute(context);
+
+                DebugUtility.Log<LevelFlowMacroPrepareCompletionGate>(
+                    $"[OBS][LevelFlow] MacroLoadingPhase='LevelPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+
+                await prepareService.PrepareOrClearAsync(context.RouteId, reason);
+            }
+
+            private static void FailFastConfig(SceneTransitionContext context, string detail)
+            {
+                HardFailFastH1.Trigger(typeof(LevelFlowMacroPrepareCompletionGate),
+                    $"[FATAL][H1][LevelFlow] Macro completion gate misconfigured: {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+            }
         }
     }
 }

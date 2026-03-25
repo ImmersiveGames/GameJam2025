@@ -454,71 +454,40 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             string signature = SceneTransitionSignature.Compute(context);
             LogLoadedScenesSnapshot("before_apply_route");
+
             IReadOnlyList<string> reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
-            IReadOnlyList<string> loadScenes = FilterScenesExcluding(context.ScenesToLoad, reloadScenes);
-            IReadOnlyList<string> unloadScenes = FilterScenesExcluding(context.ScenesToUnload, reloadScenes);
+            IReadOnlyList<string> loadScenes = NormalizeSceneList(context.ScenesToLoad);
+            IReadOnlyList<string> unloadScenes = BuildUnloadPlan(context, reloadScenes);
             LogRouteExecutionPlan(context, loadScenes, unloadScenes, reloadScenes);
-            int totalOperations = loadScenes.Count + unloadScenes.Count + (reloadScenes.Count * 2) + (string.IsNullOrWhiteSpace(context.TargetActiveScene) ? 0 : 1);
-            var counter = new OperationCounter();
 
             ReportRouteLoadingProgress(signature, 0f, "Preparing route scenes", context.Reason);
 
-            await LoadScenesAsync(loadScenes, signature, context.Reason, counter, totalOperations);
-            if (reloadScenes.Count > 0)
+            string currentActiveScene = _loaderAdapter.GetActiveSceneName();
+            if (!string.IsNullOrWhiteSpace(currentActiveScene) && ContainsScene(unloadScenes, currentActiveScene))
             {
-                await HandleReloadScenesAsync(context, reloadScenes, signature, counter, totalOperations);
+                string tempActive = ResolveTempActiveScene(unloadScenes);
+                if (!string.IsNullOrWhiteSpace(tempActive) && !string.Equals(tempActive, currentActiveScene, StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] ApplyRoute: definindo cena ativa temporaria '{tempActive}' para proteger unload.");
+                    await SetActiveSceneAsync(tempActive, signature, context.Reason);
+                }
             }
+
+            ISceneCompositionExecutor sceneCompositionExecutor = ResolveSceneCompositionExecutorOrFail(context, signature);
+
+            ReportRouteLoadingProgress(signature, 0.25f, "Applying route composition", context.Reason);
+            await sceneCompositionExecutor.ApplyAsync(
+                RouteSceneCompositionRequestFactory.CreateMacroApplyRequest(loadScenes, unloadScenes, context.Reason, signature));
+            ReportRouteLoadingProgress(signature, 0.7f, "Route composition applied", context.Reason);
+
             await SetActiveSceneAsync(context.TargetActiveScene, signature, context.Reason);
             if (!string.IsNullOrWhiteSpace(context.TargetActiveScene))
             {
-                counter.CompletedOperations++;
-                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Activating scene: {context.TargetActiveScene}", context.Reason);
+                ReportRouteLoadingProgress(signature, 0.9f, $"Activating scene: {context.TargetActiveScene}", context.Reason);
             }
-            await UnloadScenesAsync(unloadScenes, context.TargetActiveScene, signature, context.Reason, counter, totalOperations);
+
             ReportRouteLoadingProgress(signature, 1f, "Route scenes ready", context.Reason);
             LogLoadedScenesSnapshot("after_apply_route");
-        }
-
-        private async Task LoadScenesAsync(IReadOnlyList<string>? scenesToLoad, string signature, string reason, OperationCounter counter, int totalOperations, bool forceLoad = false)
-        {
-            if (scenesToLoad == null || scenesToLoad.Count == 0)
-            {
-                return;
-            }
-
-            bool useSceneComposition = TryResolveSceneCompositionExecutor(out var sceneCompositionExecutor) && sceneCompositionExecutor != null;
-
-            foreach (string sceneName in scenesToLoad)
-            {
-                if (!forceLoad && _loaderAdapter.IsSceneLoaded(sceneName))
-                {
-                    DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Cena '{sceneName}' ja esta carregada. Pulando load.");
-                    counter.CompletedOperations++;
-                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Scene already loaded: {sceneName}", reason);
-                    continue;
-                }
-
-                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Carregando cena '{sceneName}' (Additive)...");
-
-                if (useSceneComposition)
-                {
-                    await sceneCompositionExecutor!.ApplyAsync(
-                        RouteSceneCompositionRequestFactory.CreateLoadRequest(sceneName, reason, $"{signature}|load:{sceneName}"));
-                }
-                else
-                {
-                    await _loaderAdapter.LoadSceneAsync(
-                        sceneName,
-                        progress => ReportRouteLoadingProgress(
-                            signature,
-                            ComputeOperationProgress(counter.CompletedOperations, totalOperations, progress),
-                            $"Loading scene: {sceneName}",
-                            reason));
-                }
-
-                counter.CompletedOperations++;
-                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Loaded scene: {sceneName}", reason);
-            }
         }
 
         private async Task SetActiveSceneAsync(string targetActiveScene, string signature, string reason)
@@ -543,117 +512,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             }
         }
 
-        private async Task UnloadScenesAsync(IReadOnlyList<string>? scenesToUnload, string targetActiveScene, string signature, string reason, OperationCounter counter, int totalOperations)
+        private ISceneCompositionExecutor ResolveSceneCompositionExecutorOrFail(SceneTransitionContext context, string signature)
         {
-            if (scenesToUnload == null || scenesToUnload.Count == 0)
+            if (TryResolveSceneCompositionExecutor(out var executor) && executor != null)
             {
-                return;
+                return executor;
             }
 
-            bool useSceneComposition = TryResolveSceneCompositionExecutor(out var sceneCompositionExecutor) && sceneCompositionExecutor != null;
-
-            foreach (string sceneName in scenesToUnload)
-            {
-                Scene scene = SceneManager.GetSceneByName(sceneName);
-                bool exists = scene.IsValid();
-                bool isLoaded = exists && scene.isLoaded;
-                bool isActiveScene = exists && scene == SceneManager.GetActiveScene();
-                DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] UnloadCandidate scene='{sceneName}' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene} targetActiveScene='{targetActiveScene}'.", DebugUtility.Colors.Info);
-                if (string.Equals(sceneName, targetActiveScene, StringComparison.Ordinal))
-                {
-                    DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='target_active_scene' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.", DebugUtility.Colors.Info);
-                    counter.CompletedOperations++;
-                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Keeping active scene: {sceneName}", reason);
-                    continue;
-                }
-                if (!_loaderAdapter.IsSceneLoaded(sceneName))
-                {
-                    DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='already_unloaded' exists={exists} isLoaded={isLoaded} isActiveScene={isActiveScene}.", DebugUtility.Colors.Info);
-                    counter.CompletedOperations++;
-                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Scene already unloaded: {sceneName}", reason);
-                    continue;
-                }
-                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Descarregando cena '{sceneName}'...");
-
-                if (useSceneComposition)
-                {
-                    await sceneCompositionExecutor!.ApplyAsync(
-                        RouteSceneCompositionRequestFactory.CreateUnloadRequest(sceneName, reason, $"{signature}|unload:{sceneName}"));
-                }
-                else
-                {
-                    await _loaderAdapter.UnloadSceneAsync(
-                        sceneName,
-                        progress => ReportRouteLoadingProgress(
-                            signature,
-                            ComputeOperationProgress(counter.CompletedOperations, totalOperations, progress),
-                            $"Unloading scene: {sceneName}",
-                            reason));
-                }
-
-                counter.CompletedOperations++;
-                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Unloaded scene: {sceneName}", reason);
-            }
-        }
-
-        private async Task HandleReloadScenesAsync(SceneTransitionContext context, IReadOnlyList<string> reloadScenes, string signature, OperationCounter counter, int totalOperations)
-        {
-            string tempActive = ResolveTempActiveScene(reloadScenes);
-            if (!string.IsNullOrWhiteSpace(tempActive) && !string.Equals(tempActive, _loaderAdapter.GetActiveSceneName(), StringComparison.Ordinal))
-            {
-                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: definindo cena ativa temporaria '{tempActive}'.");
-                await SetActiveSceneAsync(tempActive, signature, context.Reason);
-            }
-            await UnloadScenesForReloadAsync(reloadScenes, signature, context.Reason, counter, totalOperations);
-            await LoadScenesAsync(reloadScenes, signature, context.Reason, counter, totalOperations, forceLoad: true);
-            DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload concluido. TargetActiveScene='{context.TargetActiveScene}'.");
-        }
-
-        private async Task UnloadScenesForReloadAsync(IReadOnlyList<string> reloadScenes, string signature, string reason, OperationCounter counter, int totalOperations)
-        {
-            bool useSceneComposition = TryResolveSceneCompositionExecutor(out var sceneCompositionExecutor) && sceneCompositionExecutor != null;
-
-            foreach (string sceneName in reloadScenes)
-            {
-                if (!_loaderAdapter.IsSceneLoaded(sceneName))
-                {
-                    DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: cena '{sceneName}' ja esta descarregada. Pulando unload.");
-                    counter.CompletedOperations++;
-                    ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Scene already reloaded clean: {sceneName}", reason);
-                    continue;
-                }
-                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Reload: descarregando cena '{sceneName}'...");
-
-                if (useSceneComposition)
-                {
-                    await sceneCompositionExecutor!.ApplyAsync(
-                        RouteSceneCompositionRequestFactory.CreateUnloadRequest(sceneName, reason, $"{signature}|reload-unload:{sceneName}"));
-                }
-                else
-                {
-                    await _loaderAdapter.UnloadSceneAsync(
-                        sceneName,
-                        progress => ReportRouteLoadingProgress(
-                            signature,
-                            ComputeOperationProgress(counter.CompletedOperations, totalOperations, progress),
-                            $"Reloading scene: {sceneName}",
-                            reason));
-                }
-
-                counter.CompletedOperations++;
-                ReportRouteLoadingProgress(signature, ComputeOperationProgress(counter.CompletedOperations, totalOperations), $"Reload unload completed: {sceneName}", reason);
-            }
-        }
-
-        private static float ComputeOperationProgress(int completedOperations, int totalOperations, float currentOperationProgress = 0f)
-        {
-            if (totalOperations <= 0)
-            {
-                return 1f;
-            }
-
-            float normalized = (completedOperations + Mathf.Clamp01(currentOperationProgress)) / totalOperations;
-            return Mathf.Clamp01(normalized);
+            HardFailFastH1.Trigger(typeof(SceneTransitionService),
+                $"[FATAL][H1][SceneFlow] ISceneCompositionExecutor missing for macro route apply. routeId='{context.RouteId}' signature='{signature}' reason='{context.Reason}'.");
+            return null!;
         }
 
         private static void ReportRouteLoadingProgress(string signature, float normalizedProgress, string stepLabel, string reason)
@@ -667,9 +535,80 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 new SceneFlowRouteLoadingProgressEvent(signature, normalizedProgress, stepLabel, reason));
         }
 
-        private sealed class OperationCounter
+        private static IReadOnlyList<string> NormalizeSceneList(IReadOnlyList<string>? scenes)
         {
-            public int CompletedOperations;
+            if (scenes == null || scenes.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var dedupe = new HashSet<string>(StringComparer.Ordinal);
+            var normalized = new List<string>(scenes.Count);
+            foreach (string sceneName in scenes)
+            {
+                if (string.IsNullOrWhiteSpace(sceneName))
+                {
+                    continue;
+                }
+
+                string trimmed = sceneName.Trim();
+                if (trimmed.Length == 0 || !dedupe.Add(trimmed))
+                {
+                    continue;
+                }
+
+                normalized.Add(trimmed);
+            }
+
+            return normalized;
+        }
+
+        private static bool ContainsScene(IReadOnlyList<string>? scenes, string sceneName)
+        {
+            if (scenes == null || scenes.Count == 0 || string.IsNullOrWhiteSpace(sceneName))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                if (string.Equals(scenes[i], sceneName, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static IReadOnlyList<string> BuildUnloadPlan(SceneTransitionContext context, IReadOnlyList<string> reloadScenes)
+        {
+            IReadOnlyList<string> normalizedUnload = NormalizeSceneList(context.ScenesToUnload);
+            if (normalizedUnload.Count == 0)
+            {
+                return normalizedUnload;
+            }
+
+            var reloadSet = new HashSet<string>(reloadScenes ?? Array.Empty<string>(), StringComparer.Ordinal);
+            string targetActive = string.IsNullOrWhiteSpace(context.TargetActiveScene) ? string.Empty : context.TargetActiveScene.Trim();
+
+            var plan = new List<string>(normalizedUnload.Count);
+            foreach (string sceneName in normalizedUnload)
+            {
+                bool isTargetActive = targetActive.Length > 0 && string.Equals(sceneName, targetActive, StringComparison.Ordinal);
+                bool isReload = reloadSet.Contains(sceneName);
+                if (isTargetActive && !isReload)
+                {
+                    DebugUtility.Log<SceneTransitionService>(
+                        $"[OBS][SceneFlow] SkipUnload scene='{sceneName}' reason='target_active_scene'.",
+                        DebugUtility.Colors.Info);
+                    continue;
+                }
+
+                plan.Add(sceneName);
+            }
+
+            return plan;
         }
 
         private static IReadOnlyList<string> GetReloadScenes(IReadOnlyList<string>? scenesToLoad, IReadOnlyList<string>? scenesToUnload)
@@ -699,47 +638,16 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             return reload;
         }
 
-        private static IReadOnlyList<string> FilterScenesExcluding(IReadOnlyList<string>? scenes, IReadOnlyList<string>? excludedScenes)
+        private string ResolveTempActiveScene(IReadOnlyList<string> scenesPlannedToUnload)
         {
-            if (scenes == null || scenes.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-            if (excludedScenes == null || excludedScenes.Count == 0)
-            {
-                return scenes;
-            }
-            var excludeSet = new HashSet<string>(excludedScenes, StringComparer.Ordinal);
-            var filtered = new List<string>();
-            foreach (string sceneName in scenes)
-            {
-                if (string.IsNullOrWhiteSpace(sceneName))
-                {
-                    continue;
-                }
-                string trimmed = sceneName.Trim();
-                if (trimmed.Length == 0)
-                {
-                    continue;
-                }
-                if (!excludeSet.Contains(trimmed))
-                {
-                    filtered.Add(trimmed);
-                }
-            }
-            return filtered;
-        }
-
-        private string ResolveTempActiveScene(IReadOnlyList<string> reloadScenes)
-        {
-            var reloadSet = new HashSet<string>(reloadScenes, StringComparer.Ordinal);
+            var unloadSet = new HashSet<string>(scenesPlannedToUnload ?? Array.Empty<string>(), StringComparer.Ordinal);
             const string uiGlobalSceneName = "UIGlobalScene";
-            if (_loaderAdapter.IsSceneLoaded(uiGlobalSceneName) && !reloadSet.Contains(uiGlobalSceneName))
+            if (_loaderAdapter.IsSceneLoaded(uiGlobalSceneName) && !unloadSet.Contains(uiGlobalSceneName))
             {
                 return uiGlobalSceneName;
             }
             string currentActive = _loaderAdapter.GetActiveSceneName();
-            if (!string.IsNullOrWhiteSpace(currentActive) && !reloadSet.Contains(currentActive))
+            if (!string.IsNullOrWhiteSpace(currentActive) && !unloadSet.Contains(currentActive))
             {
                 return currentActive;
             }
@@ -752,7 +660,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                     continue;
                 }
                 string name = scene.name;
-                if (!string.IsNullOrWhiteSpace(name) && !reloadSet.Contains(name))
+                if (!string.IsNullOrWhiteSpace(name) && !unloadSet.Contains(name))
                 {
                     return name;
                 }

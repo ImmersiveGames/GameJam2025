@@ -256,7 +256,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                         reason: "root_not_found",
                         detail: $"No root with {LoadingHudRootComponentName} was found in scene '{LoadingHudSceneName}'.",
                         signature: signature,
-                        allowStrictThrow: false);
+                        allowStrictThrow: true);
                 }
             }
             catch (Exception ex)
@@ -265,7 +265,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                     reason: "exception",
                     detail: $"Failed to ensure LoadingHudScene/root. ({ex.Message})",
                     signature: signature,
-                    allowStrictThrow: false);
+                    allowStrictThrow: true);
             }
             finally
             {
@@ -288,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                     reason: "load_op_null",
                     detail: $"LoadSceneAsync returned null for '{LoadingHudSceneName}'.",
                     signature: signature,
-                    allowStrictThrow: false);
+                    allowStrictThrow: true);
                 return false;
             }
 
@@ -356,7 +356,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                         reason: "multiple_loading_roots",
                         detail: $"Scene '{LoadingHudSceneName}' contains more than one loading root with {LoadingHudRootComponentName}.",
                         signature: signature,
-                        allowStrictThrow: false);
+                        allowStrictThrow: true);
                     return false;
                 }
 
@@ -371,7 +371,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                         reason: "root_invalid",
                         detail: ex.Message,
                         signature: signature,
-                        allowStrictThrow: false);
+                        allowStrictThrow: true);
                     return false;
                 }
 

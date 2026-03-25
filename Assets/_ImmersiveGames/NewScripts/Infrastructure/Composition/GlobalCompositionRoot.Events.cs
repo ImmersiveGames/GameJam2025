@@ -1,8 +1,10 @@
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -39,6 +41,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[EventBus] EventBus inicializado (GameLoop + SceneFlow + LevelFlow + WorldReset).",
                 DebugUtility.Colors.Info);
+
+            EnsureLoadingOrchestratorsRegisteredAfterEventBusReset();
+        }
+
+        private static void EnsureLoadingOrchestratorsRegisteredAfterEventBusReset()
+        {
+            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<LoadingHudOrchestrator>(out var hudOrchestrator) && hudOrchestrator != null)
+            {
+                hudOrchestrator.EnsureRegistered();
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<LoadingProgressOrchestrator>(out var progressOrchestrator) && progressOrchestrator != null)
+            {
+                progressOrchestrator.EnsureRegistered();
+            }
         }
 
     }

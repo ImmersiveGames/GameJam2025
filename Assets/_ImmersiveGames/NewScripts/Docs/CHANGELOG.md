@@ -1,5 +1,12 @@
 # Changelog - Docs
 
+## 2026-03-25 - sceneflow refoundation closeout
+- plano Plan-SceneFlow-Refoundation.md marcado como concluído (F0..F5)
+- SceneFlow mantido como owner da timeline macro; composição técnica removida do core macro
+- policy strict/degraded de Loading/Fade alinhada ao baseline canônico
+- sync de GameLoop removido do input bridge; LevelPrepare/Clear movido para LevelFlow
+- lifecycle dos orchestrators de loading tornado explícito e previsível
+
 ## 2026-03-13 - baseline v3 official freeze
 - promoveu oficialmente o Baseline V3 para `PASS` com freeze canonico em `Docs/Reports/Evidence/LATEST.md`
 - alinhou `README`, `Canon`, `LATEST`, `Plan-Continuous` e `CHANGELOG` para apontarem para o mesmo estado atual
@@ -130,5 +137,3 @@ All notable documentation changes to NewScripts are documented in this file.
 ## 2026-01-03
 - adicionou `Reports/Baseline-Audit-2026-01-03.md`
 - atualizou `README.md`, `WORLD_LIFECYCLE.md`, ADR-0014 e docs de QA para alinhamento do reset por `ActorKind`
-
-

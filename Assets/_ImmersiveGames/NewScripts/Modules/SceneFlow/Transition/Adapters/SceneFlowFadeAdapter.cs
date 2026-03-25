@@ -1,7 +1,9 @@
 #nullable enable
 using System;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 using UnityEngine;
@@ -135,11 +137,16 @@ public sealed class SceneFlowFadeAdapter : ISceneFlowFadeAdapter
 
         private static bool ShouldDegradeFadeInRuntime()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            return true;
-#else
+            if (DependencyManager.HasInstance &&
+                DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider) &&
+                runtimeModeProvider != null)
+            {
+                return !runtimeModeProvider.IsStrict;
+            }
+
+            // Comentario: sem RuntimeModeProvider resolvido, preferimos fail-fast para nao ocultar configuracao estrutural.
             return false;
-#endif
         }
 
     }

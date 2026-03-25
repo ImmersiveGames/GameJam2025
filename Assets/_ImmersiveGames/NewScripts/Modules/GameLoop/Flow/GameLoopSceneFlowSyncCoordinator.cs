@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
         private bool _transitionCompleted;
         private bool _worldResetCompleted;
         private bool _syncIssued;
+        private string _lastRuntimeSyncSignature = string.Empty;
 
         private string _expectedContextSignature;
 
@@ -181,6 +183,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
         {
             if (!ShouldHandleTransition(evt.context))
             {
+                TrySyncGameLoopFromTransitionCompleted(evt.context);
                 return;
             }
 
@@ -201,6 +204,88 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
                 DebugUtility.Colors.Info);
 
             TryIssueGameLoopSync();
+        }
+
+        private void TrySyncGameLoopFromTransitionCompleted(SceneTransitionContext context)
+        {
+            if (_startInProgress)
+            {
+                return;
+            }
+
+            if (context.RouteKind != SceneRouteKind.Gameplay &&
+                context.RouteKind != SceneRouteKind.Frontend)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+            {
+                DebugUtility.LogWarning(typeof(GameLoopSceneFlowSyncCoordinator),
+                    "[GameLoopSceneFlow] IGameLoopService indisponivel; runtime sync de SceneFlow/Completed ignorado.");
+                return;
+            }
+
+            string signature = SceneTransitionSignature.Compute(context);
+            string currentState = gameLoopService.CurrentStateIdName ?? string.Empty;
+            bool isBootState = string.Equals(currentState, nameof(GameLoopStateId.Boot), StringComparison.Ordinal);
+
+            if (!isBootState &&
+                !string.IsNullOrWhiteSpace(signature) &&
+                string.Equals(_lastRuntimeSyncSignature, signature, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                    $"[GameLoopSceneFlow] Runtime sync deduped. signature='{signature}' routeKind='{context.RouteKind}' state='{currentState}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (context.RouteKind == SceneRouteKind.Gameplay)
+            {
+                if (string.Equals(currentState, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                        "[GameLoopSceneFlow] Runtime sync: Gameplay completed com estado Paused -> RequestResume().",
+                        DebugUtility.Colors.Info);
+                    gameLoopService.RequestResume();
+                    _lastRuntimeSyncSignature = signature ?? string.Empty;
+                    return;
+                }
+
+                if (string.Equals(currentState, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                        "[GameLoopSceneFlow] Runtime sync: Gameplay completed com estado Playing -> no-op.",
+                        DebugUtility.Colors.Info);
+                    _lastRuntimeSyncSignature = signature ?? string.Empty;
+                    return;
+                }
+
+                if (isBootState)
+                {
+                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                        "[GameLoopSceneFlow] Runtime sync: Gameplay completed em Boot -> RequestReady().",
+                        DebugUtility.Colors.Info);
+                    gameLoopService.RequestReady();
+                    return;
+                }
+
+                _lastRuntimeSyncSignature = signature ?? string.Empty;
+                return;
+            }
+
+            if (string.Equals(currentState, nameof(GameLoopStateId.Playing), StringComparison.Ordinal) ||
+                string.Equals(currentState, nameof(GameLoopStateId.Paused), StringComparison.Ordinal) ||
+                string.Equals(currentState, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal) ||
+                string.Equals(currentState, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                    $"[GameLoopSceneFlow] Runtime sync: Frontend completed com estado '{currentState}' -> RequestReady().",
+                    DebugUtility.Colors.Info);
+                gameLoopService.RequestReady();
+            }
+
+            _lastRuntimeSyncSignature = signature ?? string.Empty;
         }
 
         private void OnWorldResetCompleted(WorldResetCompletedEvent evt)

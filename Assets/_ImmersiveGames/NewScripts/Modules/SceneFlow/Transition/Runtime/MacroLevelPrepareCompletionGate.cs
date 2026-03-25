@@ -1,64 +1,46 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 {
-        /// <summary>
-    /// OWNER: gate de LevelPrepare/Clear no fim da transicao macro (apos gate interno).
-    /// NAO E OWNER: resolucao de rota e aplicacao de load/unload de cenas.
-    /// PUBLISH/CONSUME: nao publica eventos; consome contexto e chama ILevelMacroPrepareService.
-    /// Fases tocadas: Gate entre ScenesReady e BeforeFadeOut (fase LevelPrepare).
+    /// <summary>
+    /// OWNER: composicao de gates no fim da transicao macro.
+    /// NAO E OWNER: policy de LevelPrepare/Clear (responsabilidade do boundary de LevelFlow).
+    /// PUBLISH/CONSUME: nao publica eventos; apenas encadeia gates.
+    /// Fases tocadas: Gate entre ScenesReady e BeforeFadeOut.
     /// </summary>
-[DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class MacroLevelPrepareCompletionGate : ISceneTransitionCompletionGate
     {
         private readonly ISceneTransitionCompletionGate _innerGate;
+        private ISceneTransitionCompletionGate _levelFlowGate;
 
         public MacroLevelPrepareCompletionGate(ISceneTransitionCompletionGate innerGate)
         {
             _innerGate = innerGate ?? throw new ArgumentNullException(nameof(innerGate));
         }
 
+        public void ConfigureLevelFlowGate(ISceneTransitionCompletionGate levelFlowGate)
+        {
+            _levelFlowGate = levelFlowGate ?? throw new ArgumentNullException(nameof(levelFlowGate));
+
+            DebugUtility.LogVerbose<MacroLevelPrepareCompletionGate>(
+                $"[SceneFlow] Gate de LevelFlow configurado ({levelFlowGate.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
             await _innerGate.AwaitBeforeFadeOutAsync(context);
 
-            if (!context.RouteId.IsValid)
+            if (_levelFlowGate == null)
             {
-                return;
+                HardFailFastH1.Trigger(typeof(MacroLevelPrepareCompletionGate),
+                    $"[FATAL][H1][SceneFlow] LevelFlow completion gate missing. routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
             }
 
-            if (DependencyManager.Provider == null)
-            {
-                string detail = "[SceneFlow] MacroLoadingPhase='LevelPrepare' blocked: DependencyManager.Provider unavailable.";
-                FailFastH1(detail, context);
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var prepareService) || prepareService == null)
-            {
-                string detail = $"[SceneFlow] MacroLoadingPhase='LevelPrepare' blocked: ILevelMacroPrepareService missing. routeId='{context.RouteId}'.";
-                FailFastH1(detail, context);
-            }
-
-            string reason = string.IsNullOrWhiteSpace(context.Reason)
-                ? "SceneFlow/LevelPrepare"
-                : context.Reason.Trim();
-            string signature = SceneTransitionSignature.Compute(context);
-
-            DebugUtility.Log<MacroLevelPrepareCompletionGate>(
-                $"[OBS][SceneFlow] MacroLoadingPhase='LevelPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
-                DebugUtility.Colors.Info);
-
-            await prepareService.PrepareOrClearAsync(context.RouteId, reason);
-        }
-
-        private static void FailFastH1(string detail, SceneTransitionContext context)
-        {
-            HardFailFastH1.Trigger(typeof(MacroLevelPrepareCompletionGate),
-                $"{detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+            await _levelFlowGate.AwaitBeforeFadeOutAsync(context);
         }
     }
 }

@@ -46,7 +46,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             var loaderAdapter = SceneFlowAdapterFactory.CreateLoaderAdapter();
             var fadeAdapter = SceneFlowAdapterFactory.CreateFadeAdapter(DependencyManager.Provider);
 
-            // Gate composto: (1) WorldReset completion -> (2) LevelPrepare (macro gameplay) -> libera FadeOut.
+            // Gate composto base: (1) WorldReset completion -> (2) extensoes de modulo -> libera FadeOut.
+            // A policy de LevelPrepare/Clear e acoplada pelo lado LevelFlow no proprio stage de LevelFlow.
             ISceneTransitionCompletionGate completionGate = null;
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) && existingGate != null)
             {
@@ -313,11 +314,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static bool ShouldDegradeFadeInRuntime()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            return true;
-#else
+            if (DependencyManager.HasInstance &&
+                DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider) &&
+                runtimeModeProvider != null)
+            {
+                return !runtimeModeProvider.IsStrict;
+            }
+
+            // Comentario: sem RuntimeModeProvider resolvido, preferimos fail-fast para nao mascarar falhas estruturais.
             return false;
-#endif
         }
 
         private static void RegisterSceneFlowLoadingIfAvailable()
@@ -327,6 +333,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // ainda assim injetamos nulls e deixamos o próprio serviço decidir como degradar.
             DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeMode);
             DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
+
+            if (runtimeMode == null)
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][Loading] IRuntimeModeProvider obrigatorio ausente no DI global.");
+            }
+
+            if (degradedReporter == null && runtimeMode.IsStrict)
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][Loading] IDegradedModeReporter obrigatorio ausente em modo strict.");
+            }
 
             if (!DependencyManager.Provider.TryGetGlobal<ILoadingPresentationService>(out var presentationService) || presentationService == null)
             {
