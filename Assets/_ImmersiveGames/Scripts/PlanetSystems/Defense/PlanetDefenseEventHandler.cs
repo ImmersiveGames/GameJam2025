@@ -95,7 +95,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         /// <summary>
-        /// Resolve o serviço registrado para a instância atual do planeta.
+        /// ResolvePlayerActor o serviço registrado para a instância atual do planeta.
         /// Se não encontrar, registra um novo serviço vinculado a este PlanetsMaster.
         /// </summary>
         private void TryResolveService()

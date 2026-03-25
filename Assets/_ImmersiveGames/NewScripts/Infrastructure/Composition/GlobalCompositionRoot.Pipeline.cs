@@ -6,7 +6,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.View;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Camera;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterSceneFlowInputModeBridge();
             RegisterLevelStageOrchestrator();
             RegisterStateDependentService();
-            RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
+            RegisterIfMissing<IGameplayCameraResolver>(() => new GameplayCameraResolver());
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();

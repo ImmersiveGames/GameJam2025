@@ -1,15 +1,15 @@
 /*
  * ChangeLog
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
- * - StateDependentService agora usa apenas StateDependentService (legacy removido).
+ * - GameplayStateGate agora usa apenas GameplayStateGate (legacy removido).
  * - Entrada de infraestrutura mínima (SimulationGate/WorldReset/SceneReset/DI/Câmera/StateBridge) para NewScripts.
  * - (Opção B) Registrado GameLoopSceneFlowSyncCoordinator para coordenar Start via SceneFlow
  *   (GameStartRequestedEvent -> Transition -> ScenesReady -> RequestStart/Ready).
  *
  * Ajustes (jan/2026):
  * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
- *   - Resolve IGameLoopService uma vez e injeta nos registradores de GameRunStatus/Outcome.
- *   - Resolve ISimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
+ *   - ResolvePlayerActor IGameLoopService uma vez e injeta nos registradores de GameRunStatus/Outcome.
+ *   - ResolvePlayerActor ISimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
  * - Removido registro duplicado de coordinators antigos de reset/scene flow (centralizado no wiring atual do SceneFlow).
  *
  * Nota (QA):

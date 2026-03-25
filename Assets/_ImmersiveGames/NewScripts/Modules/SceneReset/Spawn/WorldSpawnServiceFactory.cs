@@ -1,9 +1,9 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Eater;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Eater;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn.Definitions;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
 {
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
                 dependencies.ActorRegistry,
                 dependencies.Context,
                 entry.Prefab,
-                dependencies.StateService);
+                dependencies.GameplayStateService);
         }
 
         private static IWorldSpawnService CreateEater(
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
                 dependencies.ActorRegistry,
                 dependencies.Context,
                 eaterPrefab,
-                dependencies.StateService);
+                dependencies.GameplayStateService);
         }
     }
 

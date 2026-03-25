@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         Task ExitToMenuAsync(string reason = null);
 
         /// <summary>
-        /// Resolve a gameplay route principal a partir do catálogo core canônico.
+        /// ResolvePlayerActor a gameplay route principal a partir do catálogo core canônico.
         /// </summary>
         SceneRouteId ResolveGameplayRouteIdOrFail();
 

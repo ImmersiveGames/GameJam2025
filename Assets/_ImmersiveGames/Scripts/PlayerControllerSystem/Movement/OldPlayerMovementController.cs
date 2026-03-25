@@ -275,7 +275,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         public Task Reset_RestoreAsync(ResetContext ctx)
         {
-            // Resolve PlayerDomain se ainda n�o estiver dispon�vel
+            // ResolvePlayerActor PlayerDomain se ainda n�o estiver dispon�vel
             if (_playerDomain == null)
             {
                 DependencyManager.Provider.TryGetForScene(_sceneName, out _playerDomain);

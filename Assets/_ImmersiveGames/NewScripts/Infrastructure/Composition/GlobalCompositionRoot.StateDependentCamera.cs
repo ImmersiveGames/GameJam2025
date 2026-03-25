@@ -1,6 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -10,32 +10,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterStateDependentService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IStateDependentService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IGameplayStateGate>(out var existing) && existing != null)
             {
-                if (existing is StateDependentService)
+                if (existing is GameplayStateGate)
                 {
                     DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        "[StateDependent] StateDependentService já registrado no DI global.",
+                        "[StateDependent] GameplayStateGate já registrado no DI global.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                    $"[StateDependent] Serviço registrado ({existing.GetType().Name}) não usa gate; substituindo por StateDependentService.");
+                    $"[StateDependent] Serviço registrado ({existing.GetType().Name}) não usa gate; substituindo por GameplayStateGate.");
 
-                DependencyManager.Provider.RegisterGlobal<IStateDependentService>(
-                    new StateDependentService());
+                DependencyManager.Provider.RegisterGlobal<IGameplayStateGate>(
+                    new GameplayStateGate());
 
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    "[StateDependent] Registrado StateDependentService (gate-aware) como IStateDependentService.",
+                    "[StateDependent] Registrado GameplayStateGate (gate-aware) como IGameplayStateGate.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            RegisterIfMissing<IStateDependentService>(() => new StateDependentService());
+            RegisterIfMissing<IGameplayStateGate>(() => new GameplayStateGate());
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[StateDependent] Registrado StateDependentService (gate-aware) como IStateDependentService.",
+                "[StateDependent] Registrado GameplayStateGate (gate-aware) como IGameplayStateGate.",
                 DebugUtility.Colors.Info);
         }
 

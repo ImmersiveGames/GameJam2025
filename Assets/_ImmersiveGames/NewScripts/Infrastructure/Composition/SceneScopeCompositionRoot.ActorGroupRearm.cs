@@ -1,7 +1,8 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Strategy;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using UnityEngine;
 
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // Classificador de alvos canônicos por grupo/ids para reset de gameplay.
             if (!provider.TryGetForScene<IActorGroupRearmTargetClassifier>(_sceneName, out var classifier) || classifier == null)
             {
-                classifier = new DefaultActorGroupRearmTargetClassifier();
+                classifier = new ActorGroupRearmDefaultTargetClassifier();
                 provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
@@ -38,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             // Ponte de reset scoped -> ActorGroupRearm
-            var playersResetParticipant = new PlayersActorGroupRearmWorldParticipant();
+            var playersResetParticipant = new PlayerActorGroupRearmWorldParticipant();
             provider.RegisterForScene<IActorGroupRearmWorldParticipant>(
                 _sceneName,
                 playersResetParticipant,

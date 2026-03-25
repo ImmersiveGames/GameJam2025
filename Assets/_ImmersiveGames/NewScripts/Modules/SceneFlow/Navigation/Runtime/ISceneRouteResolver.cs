@@ -1,7 +1,7 @@
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
 {
     /// <summary>
-    /// Resolve SceneRouteId para SceneRouteDefinition.
+    /// ResolvePlayerActor SceneRouteId para SceneRouteDefinition.
     /// </summary>
     public interface ISceneRouteResolver
     {

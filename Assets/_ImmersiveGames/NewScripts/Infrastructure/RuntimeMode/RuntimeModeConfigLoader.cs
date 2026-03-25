@@ -4,7 +4,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 {
     /// <summary>
-    /// Resolve RuntimeModeConfig via DI global e fallback por Resources (path canônico).
+    /// ResolvePlayerActor RuntimeModeConfig via DI global e fallback por Resources (path canônico).
     /// Retorna null quando não houver configuração disponível.
     /// </summary>
     public static class RuntimeModeConfigLoader

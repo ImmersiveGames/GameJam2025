@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
 

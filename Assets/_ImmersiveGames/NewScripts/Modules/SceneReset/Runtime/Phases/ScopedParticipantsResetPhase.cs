@@ -5,7 +5,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases
 {
     internal sealed class ScopedParticipantsResetPhase : ISceneResetPhase

@@ -1,7 +1,7 @@
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 {
     /// <summary>
-    /// Resolve o modo de runtime baseado nas flags padrão do Unity.
+    /// ResolvePlayerActor o modo de runtime baseado nas flags padrão do Unity.
     /// - Strict: qualquer execução fora do Editor (inclui Player Build)
     /// - Strict: UNITY_EDITOR && DEVELOPMENT_BUILD
     /// - Release: UNITY_EDITOR sem DEVELOPMENT_BUILD

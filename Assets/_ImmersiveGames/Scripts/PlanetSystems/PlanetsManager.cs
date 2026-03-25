@@ -277,7 +277,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
 
         /// <summary>
-        /// Resolve o <see cref="PlanetsMaster"/> associado a um ator de planeta ativo.
+        /// ResolvePlayerActor o <see cref="PlanetsMaster"/> associado a um ator de planeta ativo.
         /// </summary>
         public bool TryGetPlanet(IActor planetActor, out PlanetsMaster planet)
         {

@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                 string.Equals(_lastBeforeFadeOutTransitionSignature, transitionSignature, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                    $"[Audio][BGM][Bridge] Resolve skipped: duplicate transition signature='{transitionSignature}' trigger='before_fade_out'.",
+                    $"[Audio][BGM][Bridge] ResolvePlayerActor skipped: duplicate transition signature='{transitionSignature}' trigger='before_fade_out'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
             if (!routeId.IsValid)
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                    $"[Audio][BGM][Bridge] Resolve skipped: invalid routeId. trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' reason='{NormalizeReason(reason)}'.",
+                    $"[Audio][BGM][Bridge] ResolvePlayerActor skipped: invalid routeId. trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' reason='{NormalizeReason(reason)}'.",
                     DebugUtility.Colors.Info);
                 return null;
             }
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
             if (!TryResolveEffectiveCue(routeId, levelRef, trigger, out AudioBgmCueAsset cue, out string source, out string sourceName))
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                    $"[Audio][BGM][Bridge] Resolve no-op: no cue mapped for routeId='{routeId}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' source='none' reason='{NormalizeReason(reason)}'.",
+                    $"[Audio][BGM][Bridge] ResolvePlayerActor no-op: no cue mapped for routeId='{routeId}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}' source='none' reason='{NormalizeReason(reason)}'.",
                     DebugUtility.Colors.Info);
                 return null;
             }
@@ -156,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
             if (_bgmService.ActiveCue == cue)
             {
                 DebugUtility.LogVerbose<NavigationLevelRouteBgmBridge>(
-                    $"[Audio][BGM][Bridge] Resolve no-op: cue already active. routeId='{routeId}' cue='{cue.name}' source='{source}' sourceName='{sourceName}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}'.",
+                    $"[Audio][BGM][Bridge] ResolvePlayerActor no-op: cue already active. routeId='{routeId}' cue='{cue.name}' source='{source}' sourceName='{sourceName}' trigger='{NormalizeTrigger(trigger)}' phase='{NormalizePhase(phase)}'.",
                     DebugUtility.Colors.Info);
                 return cue;
             }

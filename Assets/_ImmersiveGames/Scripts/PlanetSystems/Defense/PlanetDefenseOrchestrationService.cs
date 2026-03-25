@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Orquestrador focado em preparar contexto, pools e runner de waves.
-    /// Resolve alvo role para escolher a entrada (Entry) correta e o preset
+    /// ResolvePlayerActor alvo role para escolher a entrada (Entry) correta e o preset
     /// de wave associado, mantendo cache por planeta e delegando logs ao
     /// DebugUtility para acompanhamento no Editor. Não define comportamento
     /// de minions — apenas como e onde eles entram.

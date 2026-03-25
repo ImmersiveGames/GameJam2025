@@ -25,28 +25,28 @@ MonoBehaviour:
   - ruleId: infrastructure_root
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure
-    level: 4
+    level: 2
   - ruleId: modules_root
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules
-    level: 2
+    level: 4
   - ruleId: infra_composition
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure.Composition
     level: 4
   - ruleId: postgame_legacy_namespace
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.Gameplay.PostGame
     level: 2
-  - ruleId: modules_sceneflow_transition
+  - ruleId: modules_sceneflow
     enabled: 0
-    namespacePrefix: _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.SceneFlow
     level: 4
   - ruleId: infra_audio
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules.Audio
     level: 2
-  - ruleId: infra_modules_worldLifecycle
+  - ruleId: infra_modules_GameLoop
     enabled: 1
-    namespacePrefix: _ImmersiveGames.NewScripts.Modules.WorldLifecycle
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.GameLoop
     level: 4

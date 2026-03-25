@@ -2,16 +2,17 @@
 
 ## Estado atual
 
-- `ActorGroupRearm` e a nomenclatura canonica para rearm local de gameplay.
+- `ActorGroupRearm` continua sendo a nomenclatura canonica para rearm local de gameplay.
 - `WorldDefinition` e o runtime de spawn continuam owners do setup de mundo e atores.
 - O rearm de gameplay acontece no escopo da cena e nao reabre trilhos legados.
 
 ## Ownership
 
 - `WorldDefinition` + spawning runtime: setup e spawn de gameplay.
+- `GameplayStateGate`: gate canonico de acoes/gameplay por estado.
 - `ActorGroupRearmOrchestrator`: rearm canonico de grupos de atores.
-- `PlayersActorGroupRearmWorldParticipant`: ponte do reset de players para `ByActorKind(Player)`.
-- `CameraResolverService`: camera gameplay para consumers globais.
+- `PlayerActorGroupRearmWorldParticipant`: ponte do reset de players para `ByActorKind(Player)`.
+- `GameplayCameraResolver`: camera gameplay para consumers globais.
 
 ## Regras praticas
 

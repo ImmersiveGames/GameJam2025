@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
 {
     /// <summary>

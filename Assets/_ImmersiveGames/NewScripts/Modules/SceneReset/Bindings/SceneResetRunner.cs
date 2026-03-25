@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
 {
     /// <summary>
     /// Monta o trilho local de reset da cena.
-    /// Resolve serviços de spawn, cria a façade do reset de cena e mantém o controller livre de detalhes de pipeline.
+    /// ResolvePlayerActor serviços de spawn, cria a façade do reset de cena e mantém o controller livre de detalhes de pipeline.
     /// </summary>
     internal sealed class SceneResetRunner
     {

@@ -4,12 +4,12 @@
 
 - Estado: Implementado
 - Data (decisão): 2026-02-01
-- Última atualização: 2026-03-11
+- Última atualização: 2026-03-25
 - Tipo: Implementação
 - Escopo:
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/*`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/*`
-  - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/*`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Core/*`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Integration/*`
+    - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/*`
 
 ## Contexto
 
@@ -28,10 +28,10 @@ A versão anterior de `ActorGroupRearm` misturava um contrato geral (`ByActorKin
 A selecao de targets fica reduzida a dois contratos publicos e simetricos:
 
 1. `ByActorKind`
-   - caminho principal e canonico para grupos de atores
-   - depende do contrato canônico do ator (`IActorKindProvider`)
+    - caminho principal e canonico para grupos de atores
+    - depende do contrato canônico do ator (`IActorKindProvider`)
 2. `ActorIdSet`
-   - mantido como contrato canonico suportado para selecao tecnica/deterministica por ids
+    - mantido como contrato canonico suportado para selecao tecnica/deterministica por ids
 
 Foram removidos da superficie publica:
 
@@ -49,8 +49,8 @@ Os contratos ficam em `ActorGroupRearmContracts.cs`:
 
 - `ActorGroupRearmStep` (enum)
 - `ActorGroupRearmTarget` com apenas:
-  - `ByActorKind`
-  - `ActorIdSet`
+    - `ByActorKind`
+    - `ActorIdSet`
 - `ActorGroupRearmRequest` (target + reason + actorIds/kind)
 - `ActorGroupRearmContext` (contexto do reset)
 - `IActorGroupRearmable` / `IActorGroupRearmableSync`
@@ -79,8 +79,8 @@ No `ActorGroupRearmOrchestrator`:
 - `ByActorKind` com `ActorKind.Unknown` falha explicitamente
 - `ActorIdSet` sem ids falha explicitamente
 - target sem match:
-  - `Strict`: falha com `STRICT_VIOLATION`
-  - `Release`: degrada com log explicito
+    - `Strict`: falha com `STRICT_VIOLATION`
+    - `Release`: degrada com log explicito
 
 ### 4) Discovery
 
@@ -93,16 +93,16 @@ No `ActorGroupRearmOrchestrator`:
 
 ### Implementacao default (sem assets dedicados)
 
-- `DefaultActorGroupRearmTargetClassifier.cs`
-  - resolve somente `ByActorKind` e `ActorIdSet`
+- `ActorGroupRearmDefaultTargetClassifier.cs`
+    - resolve somente `ByActorKind` e `ActorIdSet`
 - `ActorKindMatching.cs`
-  - faz matching apenas por `IActorKindProvider`
+    - faz matching apenas por `IActorKindProvider`
 - `ActorGroupRearmOrchestrator.cs`
-  - valida request
-  - resolve atores por registry-first
-  - executa `Cleanup -> Restore -> Rebind`
-- `PlayersActorGroupRearmWorldParticipant.cs`
-  - ponte do `WorldResetScope.Players` para `ByActorKind(Player)`
+    - valida request
+    - resolve atores por registry-first
+    - executa `Cleanup -> Restore -> Rebind`
+- `PlayerActorGroupRearmWorldParticipant.cs`
+    - ponte do `WorldResetScope.Players` para `ByActorKind(Player)`
 
 ### Bridge do caso atual de produto
 
@@ -110,10 +110,10 @@ O soft reset real de players continua ativo via WorldReset/SceneReset:
 
 - `WorldResetScope.Players` -> `PlayersActorGroupRearmWorldParticipant` -> `ActorGroupRearmRequest.ByActorKind(ActorKind.Player)`
 
-### Contrato de ator no player adaptado
+### Contrato canônico do ator de player
 
-Para preservar o comportamento real do produto, `PlayerActorAdapter` passa a expor `IActorKindProvider` com `ActorKind.Player`.
-Isso elimina a necessidade de superficie especial para players e mantem o bridge funcionando mesmo quando o actor de player vier pelo adapter.
+Para preservar o comportamento real do produto, `PlayerActor` expõe `IActorKindProvider` com `ActorKind.Player`.
+Isso elimina a necessidade de superficie especial para players e mantem o bridge funcionando mesmo quando o ator de player vier pelo actor canônico.
 
 ## Remocoes explicitas
 
@@ -143,30 +143,27 @@ Removidos do codigo ativo:
 Quando editar o reset de gameplay, revisar tambem:
 
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.ActorGroupRearm.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmContracts.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/DefaultActorGroupRearmTargetClassifier.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/PlayersActorGroupRearmWorldParticipant.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Core/ActorGroupRearmContracts.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmDefaultTargetClassifier.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Core/ActorGroupRearmOrchestrator.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/PlayerActorGroupRearmWorldParticipant.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/ProductionWorldResetPolicy.cs`
 
 ## Implementacao (arquivos impactados)
 
 ### Runtime
 
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmContracts.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/DefaultActorGroupRearmTargetClassifier.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmOrchestrator.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorKindMatching.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/SceneScanActorGroupRearmDiscoveryStrategy.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/PlayersActorGroupRearmWorldParticipant.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Infrastructure/Actors/Bindings/Player/PlayerActorAdapter.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/WorldRearm/Policies/IWorldResetPolicy.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Core/ActorGroupRearmContracts.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Core/ActorGroupRearmDefaultTargetClassifier.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Core/ActorGroupRearmOrchestrator.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Core/ActorKindMatchRules.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Rearm/Strategy/ActorGroupRearmSceneScanDiscoveryStrategy.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/ActorGroupRearm/Interop/PlayerActorGroupRearmWorldParticipant.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Infrastructure/Actors/Bindings/Player/PlayerActor.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/IWorldResetPolicy.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/WorldReset/Policies/ProductionWorldResetPolicy.cs`
 
 ### Docs
 
 - `Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0014-GameplayReset-Targets-Grupos.md`
 - `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Audits/LATEST.md`
-
-
-

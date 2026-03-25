@@ -1,5 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime

@@ -122,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
                 return;
             }
 
-            // Resolve signature: usa contexto explícito quando houver; fallback para último contexto conhecido.
+            // ResolvePlayerActor signature: usa contexto explícito quando houver; fallback para último contexto conhecido.
             _activeContextSignature = ResolveContextSignature(contextSignature);
             string usedSignature = _activeContextSignature;
 

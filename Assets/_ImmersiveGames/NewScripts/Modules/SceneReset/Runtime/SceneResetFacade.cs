@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;

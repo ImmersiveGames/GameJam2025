@@ -69,7 +69,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         /// <summary>
-        /// Resolve role com cache para identifiers repetidos, usando o <see cref="DefenseTargetMode"/>.
+        /// ResolvePlayerActor role com cache para identifiers repetidos, usando o <see cref="DefenseTargetMode"/>.
         /// </summary>
         public DefenseRole ResolveTargetRole(string targetIdentifier, DefenseRole requestedRole)
         {

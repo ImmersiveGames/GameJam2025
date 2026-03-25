@@ -1,6 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Infrastructure.Actors.Bindings.Eater;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Eater;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn.Definitions;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
 {

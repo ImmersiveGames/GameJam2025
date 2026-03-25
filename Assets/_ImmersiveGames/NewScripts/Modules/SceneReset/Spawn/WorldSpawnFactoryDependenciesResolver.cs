@@ -1,14 +1,14 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions.States;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn.Definitions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
 {
     /// <summary>
-    /// Resolve e valida as dependências mínimas necessárias para criar serviços de spawn.
+    /// ResolvePlayerActor e valida as dependências mínimas necessárias para criar serviços de spawn.
     /// Mantém a semântica atual da factory: falha retorna false e o call site decide o tratamento.
     /// </summary>
     public sealed class WorldSpawnFactoryDependenciesResolver
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
             }
 
             // Serviço opcional: Player/Eater podem usar quando disponível.
-            provider.TryGetGlobal(out IStateDependentService stateService);
+            provider.TryGetGlobal(out IGameplayStateGate stateService);
 
             dependencies = new WorldSpawnFactoryDependencies(
                 uniqueIdFactory,
@@ -77,12 +77,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
-            IStateDependentService stateService)
+            IGameplayStateGate gameplayStateService)
         {
             UniqueIdFactory = uniqueIdFactory;
             ActorRegistry = actorRegistry;
             Context = context;
-            StateService = stateService;
+            GameplayStateService = gameplayStateService;
         }
 
         public IUniqueIdFactory UniqueIdFactory { get; }
@@ -91,6 +91,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
 
         public IWorldSpawnContext Context { get; }
 
-        public IStateDependentService StateService { get; }
+        public IGameplayStateGate GameplayStateService { get; }
     }
 }

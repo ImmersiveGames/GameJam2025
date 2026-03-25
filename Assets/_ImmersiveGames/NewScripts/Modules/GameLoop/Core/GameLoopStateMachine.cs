@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 {
     public sealed class GameLoopStateMachine
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         /// Importante:
         /// - Este método NÃO é gate-aware (não consulta SimulationGate/Readiness).
         /// - Não deve ser usado como autorização final de gameplay.
-        /// - A decisão final deve ocorrer em IStateDependentService (gate-aware).
+        /// - A decisão final deve ocorrer em IGameplayStateGate (gate-aware).
         /// </summary>
         public bool IsGameplayActionAllowedByLoopState(GameplayAction action)
             => Current == GameLoopStateId.Playing;

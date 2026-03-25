@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
     /// <summary>
     /// Orquestra readiness do jogo em resposta ao Scene Flow.
     /// Bloqueia simulação durante transições de cena usando ISimulationGateService
-    /// e emite snapshots de readiness via EventBus para consumidores (ex.: StateDependentService).
+    /// e emite snapshots de readiness via EventBus para consumidores (ex.: GameplayStateGate).
     ///
     /// Nota: baseline/QA pode não disparar Scene Flow; para isso existe SetGameplayReady(...) para sinalização manual.
     /// </summary>
