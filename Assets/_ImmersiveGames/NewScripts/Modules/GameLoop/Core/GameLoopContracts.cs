@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 {
     public enum GameLoopStateId
@@ -44,6 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         void RequestPause();
         void RequestResume();
         void RequestReady();
+        void RequestSceneFlowCompletionSync(SceneRouteKind routeKind);
         void RequestReset();
         void RequestRunEnd();
         void RequestIntroStageStart();

@@ -45,15 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return;
             }
 
-            var snapshot = new GameplayStartSnapshot(
-                evt.LevelRef,
-                evt.MacroRouteId,
-                evt.LocalContentId,
-                evt.Reason,
-                evt.SelectionVersion,
-                evt.LevelSignature);
-
-            restartContext.UpdateGameplayStartSnapshot(snapshot);
+            restartContext.RegisterGameplayStart(evt);
         }
     }
 }

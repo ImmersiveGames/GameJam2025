@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             string normalizedIntentId = NavigationIntentId.Normalize(routeId);
-            if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind coreKind))
+            if (GameNavigationIntents.TryMapToCoreKind(routeId, out GameNavigationIntentKind coreKind))
             {
                 entry = ResolveCoreOrFail(coreKind);
                 return entry.IsValid;
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             string normalizedIntentId = NavigationIntentId.Normalize(intentId);
-            if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind coreKind))
+            if (GameNavigationIntents.TryMapToCoreKind(intentId, out GameNavigationIntentKind coreKind))
             {
                 return ResolveCoreOrFail(coreKind);
             }
@@ -437,7 +437,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             intentId = typedIntentId.Value;
-            if (TryMapIntentIdToCoreKind(intentId, out _))
+            if (GameNavigationIntents.TryMapToCoreKind(intentId, out _))
             {
                 FailFastConfig($"[FATAL][Config] GameNavigationCatalog extras nao pode usar intent reservado. asset='{name}', intentId='{intentId}'.");
             }
@@ -628,7 +628,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private bool IsIntentMapped(string intentId)
         {
             string normalizedIntentId = NavigationIntentId.Normalize(intentId);
-            if (TryMapIntentIdToCoreKind(normalizedIntentId, out GameNavigationIntentKind kind))
+            if (GameNavigationIntents.TryMapToCoreKind(intentId, out GameNavigationIntentKind kind))
             {
                 CoreIntentSlot slot = GetCoreSlot(kind);
                 return slot.routeRef != null && slot.transitionStyleRef != null && slot.routeRef.RouteId.IsValid;
@@ -678,7 +678,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 }
 
                 string intentId = routeIntentId.Value;
-                if (TryMapIntentIdToCoreKind(intentId, out _))
+                if (GameNavigationIntents.TryMapToCoreKind(intentId, out _))
                 {
                     FailFastConfig($"[FATAL][Config] GameNavigationCatalog extras nao pode usar intent reservado. asset='{name}', index={i}, intentId='{intentId}'.");
                 }
@@ -694,9 +694,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 }
             }
         }
-
-        private static bool TryMapIntentIdToCoreKind(string intentId, out GameNavigationIntentKind kind)
-            => GameNavigationIntents.TryMapToCoreKind(NavigationIntentId.FromName(intentId), out kind);
 
         private static string GetIntentId(GameNavigationIntentKind kind)
         {

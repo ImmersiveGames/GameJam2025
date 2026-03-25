@@ -23,7 +23,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
         private bool _transitionCompleted;
         private bool _worldResetCompleted;
         private bool _syncIssued;
-        private string _lastRuntimeSyncSignature = string.Empty;
 
         private string _expectedContextSignature;
 
@@ -226,66 +225,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
                 return;
             }
 
-            string signature = SceneTransitionSignature.Compute(context);
-            string currentState = gameLoopService.CurrentStateIdName ?? string.Empty;
-            bool isBootState = string.Equals(currentState, nameof(GameLoopStateId.Boot), StringComparison.Ordinal);
+            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                $"[GameLoopSceneFlow] Runtime sync delegada ao GameLoop. routeKind='{context.RouteKind}'.",
+                DebugUtility.Colors.Info);
 
-            if (!isBootState &&
-                !string.IsNullOrWhiteSpace(signature) &&
-                string.Equals(_lastRuntimeSyncSignature, signature, StringComparison.Ordinal))
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[GameLoopSceneFlow] Runtime sync deduped. signature='{signature}' routeKind='{context.RouteKind}' state='{currentState}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (context.RouteKind == SceneRouteKind.Gameplay)
-            {
-                if (string.Equals(currentState, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        "[GameLoopSceneFlow] Runtime sync: Gameplay completed com estado Paused -> RequestResume().",
-                        DebugUtility.Colors.Info);
-                    gameLoopService.RequestResume();
-                    _lastRuntimeSyncSignature = signature ?? string.Empty;
-                    return;
-                }
-
-                if (string.Equals(currentState, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        "[GameLoopSceneFlow] Runtime sync: Gameplay completed com estado Playing -> no-op.",
-                        DebugUtility.Colors.Info);
-                    _lastRuntimeSyncSignature = signature ?? string.Empty;
-                    return;
-                }
-
-                if (isBootState)
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        "[GameLoopSceneFlow] Runtime sync: Gameplay completed em Boot -> RequestReady().",
-                        DebugUtility.Colors.Info);
-                    gameLoopService.RequestReady();
-                    return;
-                }
-
-                _lastRuntimeSyncSignature = signature ?? string.Empty;
-                return;
-            }
-
-            if (string.Equals(currentState, nameof(GameLoopStateId.Playing), StringComparison.Ordinal) ||
-                string.Equals(currentState, nameof(GameLoopStateId.Paused), StringComparison.Ordinal) ||
-                string.Equals(currentState, nameof(GameLoopStateId.IntroStage), StringComparison.Ordinal) ||
-                string.Equals(currentState, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal))
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[GameLoopSceneFlow] Runtime sync: Frontend completed com estado '{currentState}' -> RequestReady().",
-                    DebugUtility.Colors.Info);
-                gameLoopService.RequestReady();
-            }
-
-            _lastRuntimeSyncSignature = signature ?? string.Empty;
+            gameLoopService.RequestSceneFlowCompletionSync(context.RouteKind);
         }
 
         private void OnWorldResetCompleted(WorldResetCompletedEvent evt)

@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -22,8 +23,11 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
     /// </summary>
     public sealed class WorldResetService : IWorldResetService
     {
+        private const int RecentCompletionWindowMs = 750;
+
         private readonly object _lock = new();
         private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, long> _recentCompleted = new(StringComparer.Ordinal);
         private readonly WorldResetLifecyclePublisher _lifecyclePublisher = new();
 
         private bool _dependenciesResolved;
@@ -52,19 +56,30 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
             lock (_lock)
             {
+                if (IsRecentlyCompletedLocked(ctx))
+                {
+                    DebugUtility.LogVerbose<WorldResetService>(
+                        $"[{ResetLogTags.Skipped}] Reset duplicado ignorado (recent completed). signature='{ctx}' reason='{rsn}'.",
+                        DebugUtility.Colors.Info);
+                    return WorldResetResult.Completed;
+                }
+
                 if (!_inFlight.Add(ctx))
                 {
-                    DebugUtility.LogWarning<WorldResetService>(
-                        $"[{ResetLogTags.Guarded}][DEGRADED_MODE] Reset já em andamento para signature='{ctx}'. Ignorando duplicate.");
-                    return WorldResetResult.Failed;
+                    DebugUtility.LogVerbose<WorldResetService>(
+                        $"[{ResetLogTags.Guarded}][DEGRADED_MODE] Reset duplicado ignorado (in-flight). signature='{ctx}' reason='{rsn}'.",
+                        DebugUtility.Colors.Info);
+                    return WorldResetResult.Completed;
                 }
             }
 
+            WorldResetResult result = WorldResetResult.Failed;
             try
             {
                 WorldResetOrchestrator orchestrator = _orchestrator
                     ?? throw new InvalidOperationException("WorldResetOrchestrator was not initialized.");
-                return await orchestrator.ExecuteAsync(request);
+                result = await orchestrator.ExecuteAsync(request);
+                return result;
             }
             catch (Exception ex)
             {
@@ -82,8 +97,46 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 lock (_lock)
                 {
                     _inFlight.Remove(ctx);
+                    if (result != WorldResetResult.Failed && !string.IsNullOrWhiteSpace(ctx))
+                    {
+                        _recentCompleted[ctx] = Stopwatch.GetTimestamp();
+                        PruneRecentCompletedLocked();
+                    }
                 }
             }
+        }
+
+        private bool IsRecentlyCompletedLocked(string contextSignature)
+        {
+            if (string.IsNullOrWhiteSpace(contextSignature))
+            {
+                return false;
+            }
+
+            if (!_recentCompleted.TryGetValue(contextSignature, out long completedAt))
+            {
+                return false;
+            }
+
+            long elapsedTicks = Stopwatch.GetTimestamp() - completedAt;
+            double elapsedMs = elapsedTicks * 1000d / Stopwatch.Frequency;
+            if (elapsedMs < 0d || elapsedMs > RecentCompletionWindowMs)
+            {
+                _recentCompleted.Remove(contextSignature);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void PruneRecentCompletedLocked()
+        {
+            if (_recentCompleted.Count <= 128)
+            {
+                return;
+            }
+
+            _recentCompleted.Clear();
         }
 
         private void EnsureDependencies()

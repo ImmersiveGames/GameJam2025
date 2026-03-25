@@ -265,11 +265,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 return;
             }
 
-            if (string.Equals(gameLoop.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
-            {
-                return;
-            }
-
             DebugUtility.LogVerbose<IntroStageCoordinator>(
                 $"[IntroStageController] Solicitando RequestStart após término da IntroStageController. reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);

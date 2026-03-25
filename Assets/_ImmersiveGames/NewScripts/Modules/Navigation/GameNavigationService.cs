@@ -1,8 +1,12 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.PostGame;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
@@ -21,6 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private readonly IGameNavigationCatalog _catalog;
         private readonly IRestartContextService _restartContextService;
         private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
+        private readonly SemaphoreSlim _macroCommandGate = new SemaphoreSlim(1, 1);
 
         private SceneRouteId _lastGameplayRouteId;
         private string _lastNavigationIntentId = string.Empty;
@@ -86,6 +91,54 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             return NavigateAsync(GameNavigationIntentKind.Menu, reason);
         }
 
+        public async Task RestartMacroAsync(string reason = null)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "Restart/Unspecified" : reason.Trim();
+
+            await _macroCommandGate.WaitAsync();
+            try
+            {
+                ResolveMacroRestartDependenciesOrFail(normalizedReason, out var gameLoopService, out var levelFlowRuntimeService, out var restartContextService);
+
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[OBS][Navigation] MacroRestartDispatch reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
+
+                restartContextService.Clear(normalizedReason);
+                gameLoopService.RequestReset();
+                await levelFlowRuntimeService.StartGameplayDefaultAsync(normalizedReason, CancellationToken.None);
+            }
+            finally
+            {
+                _macroCommandGate.Release();
+            }
+        }
+
+        public async Task ExitToMenuMacroAsync(string reason = null)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "ExitToMenu/Unspecified" : reason.Trim();
+
+            await _macroCommandGate.WaitAsync();
+            try
+            {
+                ResolveMacroNavigationDependenciesOrFail(normalizedReason, out var loop);
+
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[OBS][Navigation] MacroExitToMenuDispatch reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
+
+                ReleasePauseGateIfPresent(normalizedReason);
+                MarkExitResultIfInPostGame(loop, normalizedReason);
+
+                loop.RequestReady();
+                await ExitToMenuAsync(normalizedReason);
+            }
+            finally
+            {
+                _macroCommandGate.Release();
+            }
+        }
+
         public SceneRouteId ResolveGameplayRouteIdOrFail()
         {
             if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
@@ -146,6 +199,65 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
                     $"[FATAL][H1][Navigation] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
+            }
+        }
+
+        private static void ResolveMacroRestartDependenciesOrFail(
+            string reason,
+            out IGameLoopService gameLoopService,
+            out ILevelFlowRuntimeService levelFlowRuntimeService,
+            out IRestartContextService restartContextService)
+        {
+            ResolveMacroNavigationDependenciesOrFail(reason, out gameLoopService);
+
+            if (!DependencyManager.Provider.TryGetGlobal(out levelFlowRuntimeService) || levelFlowRuntimeService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][Navigation] MacroRestart missing ILevelFlowRuntimeService. reason='{reason}'.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal(out restartContextService) || restartContextService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][Navigation] MacroRestart missing IRestartContextService. reason='{reason}'.");
+            }
+        }
+
+        private static void ResolveMacroNavigationDependenciesOrFail(string reason, out IGameLoopService gameLoopService)
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][Navigation] Macro navigation missing DependencyManager.Provider. reason='{reason}'.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal(out gameLoopService) || gameLoopService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][Navigation] Macro navigation missing IGameLoopService. reason='{reason}'.");
+            }
+        }
+
+        private static void ReleasePauseGateIfPresent(string reason)
+        {
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out var pauseBridge) &&
+                pauseBridge != null)
+            {
+                pauseBridge.ReleaseForExitToMenu(reason);
+            }
+        }
+
+        private static void MarkExitResultIfInPostGame(IGameLoopService loop, string reason)
+        {
+            if (loop == null || !string.Equals(loop.CurrentStateIdName, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<IPostGameResultService>(out var resultService) && resultService != null)
+            {
+                resultService.TrySetExit(reason);
             }
         }
 

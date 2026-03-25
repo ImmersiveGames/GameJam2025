@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
@@ -71,33 +72,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            string activeSceneName = SceneManager.GetActiveScene().name;
-            string levelSignature = string.IsNullOrWhiteSpace(levelSig)
-                ? $"level:{snapshot.LevelRef.name}|route:{snapshot.MacroRouteId}|reason:SceneFlow/Completed"
-                : levelSig;
-
             bool hasIntroStage = ResolveHasIntroStage();
-            if (!hasIntroStage)
-            {
-                DebugUtility.Log<LevelStageOrchestrator>(
-                    $"[OBS][IntroStageController] IntroStageSkipped source='SceneFlowCompleted' levelRef='{snapshot.LevelRef.name}' v='{snapshot.SelectionVersion}' reason='level_has_no_intro' levelSignature='{levelSignature}'.",
-                    DebugUtility.Colors.Info);
-                gameLoopService.RequestStart();
-                return;
-            }
-
-            DebugUtility.Log<LevelStageOrchestrator>(
-                $"[OBS][IntroStageController] IntroStageStartRequested source='SceneFlowCompleted' levelRef='{snapshot.LevelRef.name}' v='{snapshot.SelectionVersion}' reason='SceneFlow/Completed' levelSignature='{levelSignature}'.",
-                DebugUtility.Colors.Info);
-
-            gameLoopService.RequestIntroStageStart();
-            var context = new IntroStageContext(
-                contextSignature: levelSignature,
+            TryDispatchIntroStage(
+                source: "SceneFlowCompleted",
                 routeKind: evt.context.RouteKind,
-                targetScene: activeSceneName,
-                reason: "SceneFlow/Completed");
-
-            _ = coordinator.RunIntroStageAsync(context);
+                routeId: snapshot.MacroRouteId,
+                levelRef: snapshot.LevelRef,
+                selectionVersion: snapshot.SelectionVersion,
+                reason: "SceneFlow/Completed",
+                existingLevelSignature: levelSig,
+                hasIntroStage: hasIntroStage,
+                gameLoopService: gameLoopService,
+                coordinator: coordinator);
         }
 
         private void OnLevelSwapLocalApplied(LevelSwapLocalAppliedEvent evt)
@@ -125,33 +111,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(evt.Reason)
                 ? "LevelFlow/SwapLevelLocal"
                 : evt.Reason;
-            string activeSceneName = SceneManager.GetActiveScene().name;
-            string levelSignature = string.IsNullOrWhiteSpace(evt.LevelSignature)
-                ? $"level:{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}|route:{evt.MacroRouteId}|reason:{normalizedReason}"
-                : evt.LevelSignature;
-
             bool hasIntroStage = ResolveHasIntroStage();
-            if (!hasIntroStage)
-            {
-                DebugUtility.Log<LevelStageOrchestrator>(
-                    $"[OBS][IntroStageController] IntroStageSkipped source='LevelSwapLocal' levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' v='{evt.SelectionVersion}' reason='level_has_no_intro' levelSignature='{levelSignature}'.",
-                    DebugUtility.Colors.Info);
-                gameLoopService.RequestStart();
-                return;
-            }
-
-            DebugUtility.Log<LevelStageOrchestrator>(
-                $"[OBS][IntroStageController] IntroStageStartRequested source='LevelSwapLocal' levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' v='{evt.SelectionVersion}' reason='{normalizedReason}' levelSignature='{levelSignature}'.",
-                DebugUtility.Colors.Info);
-
-            gameLoopService.RequestIntroStageStart();
-            var context = new IntroStageContext(
-                contextSignature: levelSignature,
+            TryDispatchIntroStage(
+                source: "LevelSwapLocal",
                 routeKind: SceneRouteKind.Gameplay,
-                targetScene: activeSceneName,
-                reason: normalizedReason);
-
-            _ = coordinator.RunIntroStageAsync(context);
+                routeId: evt.MacroRouteId,
+                levelRef: evt.LevelRef,
+                selectionVersion: evt.SelectionVersion,
+                reason: normalizedReason,
+                existingLevelSignature: evt.LevelSignature,
+                hasIntroStage: hasIntroStage,
+                gameLoopService: gameLoopService,
+                coordinator: coordinator);
         }
 
         private bool AdvanceDedupe(int selectionVersion, string levelSig, string routeId)
@@ -255,6 +226,57 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", StringComparison.Ordinal);
+        }
+
+        private static string BuildLevelSignature(LevelDefinitionAsset levelRef, SceneRouteId routeId, string reason, string existingSignature)
+        {
+            if (!string.IsNullOrWhiteSpace(existingSignature))
+            {
+                return existingSignature.Trim();
+            }
+
+            string levelName = levelRef != null ? levelRef.name : "<none>";
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/Unspecified" : reason.Trim();
+            return $"level:{levelName}|route:{routeId}|reason:{normalizedReason}";
+        }
+
+        private void TryDispatchIntroStage(
+            string source,
+            SceneRouteKind routeKind,
+            SceneRouteId routeId,
+            LevelDefinitionAsset levelRef,
+            int selectionVersion,
+            string reason,
+            string existingLevelSignature,
+            bool hasIntroStage,
+            IGameLoopService gameLoopService,
+            IIntroStageCoordinator coordinator)
+        {
+            string levelSignature = BuildLevelSignature(levelRef, routeId, reason, existingLevelSignature);
+            string activeSceneName = SceneManager.GetActiveScene().name;
+            string levelName = levelRef != null ? levelRef.name : "<none>";
+
+            if (!hasIntroStage)
+            {
+                DebugUtility.Log<LevelStageOrchestrator>(
+                    $"[OBS][IntroStageController] IntroStageSkipped source='{source}' levelRef='{levelName}' v='{selectionVersion}' reason='level_has_no_intro' levelSignature='{levelSignature}'.",
+                    DebugUtility.Colors.Info);
+                gameLoopService.RequestStart();
+                return;
+            }
+
+            DebugUtility.Log<LevelStageOrchestrator>(
+                $"[OBS][IntroStageController] IntroStageStartRequested source='{source}' levelRef='{levelName}' v='{selectionVersion}' reason='{reason}' levelSignature='{levelSignature}'.",
+                DebugUtility.Colors.Info);
+
+            gameLoopService.RequestIntroStageStart();
+            var context = new IntroStageContext(
+                contextSignature: levelSignature,
+                routeKind: routeKind,
+                targetScene: activeSceneName,
+                reason: reason);
+
+            _ = coordinator.RunIntroStageAsync(context);
         }
     }
 

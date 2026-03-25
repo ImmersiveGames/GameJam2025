@@ -4,6 +4,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     {
         GameplayStartSnapshot Current { get; }
         GameplayStartSnapshot UpdateGameplayStartSnapshot(GameplayStartSnapshot snapshot);
+        GameplayStartSnapshot RegisterGameplayStart(LevelSelectedEvent evt);
         bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot);
         GameplayStartSnapshot RegisterGameplayStart(GameplayStartSnapshot snapshot);
         bool TryGetCurrent(out GameplayStartSnapshot snapshot);

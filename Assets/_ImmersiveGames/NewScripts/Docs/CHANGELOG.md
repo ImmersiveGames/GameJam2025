@@ -1,5 +1,11 @@
 # Changelog - Docs
 
+## 2026-03-25 - macro flow stack consolidation closeout
+- marcou `Plan-MacroFlow-Stack-Consolidation.md` como concluido com outcome final curto
+- consolidou `SceneFlow` como owner da timeline macro e `GameLoop` com completion sync mais concentrado
+- reforcou `ResetInterop` como ponte fina e `LevelFlow` como owner do contexto canonico de gameplay start/restart
+- registrou `Navigation` como owner mais claro do macro dispatch e bridges residuais mais finos/consistentes
+
 ## 2026-03-25 - sceneflow refoundation closeout
 - plano Plan-SceneFlow-Refoundation.md marcado como concluído (F0..F5)
 - SceneFlow mantido como owner da timeline macro; composição técnica removida do core macro

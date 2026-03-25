@@ -26,6 +26,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return UpdateGameplayStartSnapshot(snapshot);
         }
 
+        public GameplayStartSnapshot RegisterGameplayStart(LevelSelectedEvent evt)
+        {
+            return UpdateGameplayStartSnapshot(GameplayStartSnapshot.FromLevelSelectedEvent(evt));
+        }
+
         public GameplayStartSnapshot UpdateGameplayStartSnapshot(GameplayStartSnapshot snapshot)
         {
             lock (_sync)
@@ -77,9 +82,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 _lastGameplayStartSnapshot = _current;
                 _selectionVersionCounter = Math.Max(_selectionVersionCounter, next);
 
-                DebugUtility.Log<RestartContextService>(
-                    $"[OBS][Navigation] GameplayStartSnapshotUpdated levelRef='{(_current.HasLevelRef ? _current.LevelRef.name : "<none>")}' routeId='{_current.MacroRouteId}' contentId='{_current.LocalContentId}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
-                    DebugUtility.Colors.Info);
+                LogSnapshotUpdated(_current);
 
                 return _current;
             }
@@ -113,8 +116,20 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 lastSelectionVersion = _lastGameplayStartSnapshot.SelectionVersion;
             }
 
+            LogContextCleared(lastSelectionVersion, reason);
+        }
+
+        private static void LogSnapshotUpdated(GameplayStartSnapshot snapshot)
+        {
             DebugUtility.Log<RestartContextService>(
-                $"[OBS][Navigation] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
+                $"[OBS][LevelFlow] GameplayStartSnapshotUpdated levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' contentId='{snapshot.LocalContentId}' v='{snapshot.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(snapshot.Reason) ? "<none>" : snapshot.Reason)}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogContextCleared(int lastSelectionVersion, string reason)
+        {
+            DebugUtility.Log<RestartContextService>(
+                $"[OBS][LevelFlow] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
                 DebugUtility.Colors.Info);
         }
     }

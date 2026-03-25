@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -42,6 +43,55 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public void RequestPause() => _signals.MarkPause();
         public void RequestResume() => _signals.MarkResume();
         public void RequestReady() => _signals.MarkReady();
+        public void RequestSceneFlowCompletionSync(SceneRouteKind routeKind)
+        {
+            var currentState = _stateMachine?.Current ?? GameLoopStateId.Boot;
+
+            if (routeKind == SceneRouteKind.Gameplay)
+            {
+                if (currentState == GameLoopStateId.Boot)
+                {
+                    DebugUtility.LogVerbose<GameLoopService>(
+                        "[GameLoop] SceneFlow completion sync: gameplay em Boot -> RequestReady().",
+                        DebugUtility.Colors.Info);
+                    RequestReady();
+                    return;
+                }
+
+                if (currentState == GameLoopStateId.Paused)
+                {
+                    DebugUtility.LogVerbose<GameLoopService>(
+                        "[GameLoop] SceneFlow completion sync: gameplay em Paused -> RequestResume().",
+                        DebugUtility.Colors.Info);
+                    RequestResume();
+                    return;
+                }
+
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[GameLoop] SceneFlow completion sync: gameplay em '{currentState}' -> no-op.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (routeKind == SceneRouteKind.Frontend)
+            {
+                if (currentState is GameLoopStateId.Playing
+                    or GameLoopStateId.Paused
+                    or GameLoopStateId.IntroStage
+                    or GameLoopStateId.PostPlay)
+                {
+                    DebugUtility.LogVerbose<GameLoopService>(
+                        $"[GameLoop] SceneFlow completion sync: frontend em '{currentState}' -> RequestReady().",
+                        DebugUtility.Colors.Info);
+                    RequestReady();
+                    return;
+                }
+
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[GameLoop] SceneFlow completion sync: frontend em '{currentState}' -> no-op.",
+                    DebugUtility.Colors.Info);
+            }
+        }
         public void RequestReset() => _signals.MarkReset();
         public void RequestRunEnd() => _signals.MarkEnd();
         public void RequestIntroStageStart() => _signals.MarkIntroStageStart();

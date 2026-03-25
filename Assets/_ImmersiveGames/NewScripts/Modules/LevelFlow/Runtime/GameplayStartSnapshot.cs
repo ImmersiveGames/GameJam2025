@@ -5,6 +5,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     public readonly struct GameplayStartSnapshot
     {
+        public static GameplayStartSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
+        {
+            return new GameplayStartSnapshot(
+                evt.LevelRef,
+                evt.MacroRouteId,
+                evt.LocalContentId,
+                evt.Reason,
+                evt.SelectionVersion,
+                evt.LevelSignature);
+        }
+
         public GameplayStartSnapshot(
             LevelDefinitionAsset levelRef,
             SceneRouteId macroRouteId,

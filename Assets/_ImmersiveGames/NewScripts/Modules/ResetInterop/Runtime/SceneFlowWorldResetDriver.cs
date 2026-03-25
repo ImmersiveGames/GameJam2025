@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
@@ -37,14 +36,8 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
     public sealed class SceneFlowWorldResetDriver : IDisposable
     {
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
-        private readonly object _guardLock = new();
-        private readonly HashSet<string> _inFlightSignatures = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, int> _completedTicks = new(StringComparer.Ordinal);
+        private int _degradedFallbackCount;
         private bool _disposed;
-        private static int _degradedFallbackCount;
-
-        private const int DuplicateSignatureWindowMs = 750;
-        private const int CompletedCacheLimit = 128;
 
         public SceneFlowWorldResetDriver()
         {
@@ -121,48 +114,11 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                 $"[OBS][ResetInterop] ResetPolicy routeId='{routeId.Value}' requiresWorldReset={requiresWorldReset} signature='{signature}' reason='{decisionReason}' decisionSource='{decisionSource}'.",
                 DebugUtility.Colors.Info);
 
-            if (ShouldSkipDuplicate(signature, out string guardReason))
+            if (!requiresWorldReset)
             {
-                LogDuplicateGuard(signature, context.RouteKind, context.TransitionProfileName, targetScene, guardReason);
-                return;
-            }
-
-            MarkInFlight(signature);
-
-            try
-            {
-                if (!requiresWorldReset)
-                {
-                    string skippedReason = string.IsNullOrWhiteSpace(decisionReason)
-                        ? $"{WorldResetReasons.SkippedNonGameplayRoutePrefix}:routeKind={context.RouteKind};route={routeId};scene={targetScene}"
-                        : decisionReason;
-
-                    LogObsResetRequested(
-                        signature: signature,
-                        sourceSignature: signature,
-                        routeId: routeId.Value,
-                        routeKind: context.RouteKind,
-                        profileLabel: context.TransitionProfileName,
-                        target: targetScene,
-                        decisionSource: decisionSource,
-                        reason: skippedReason);
-
-                    DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
-                        $"[{ResetLogTags.Skipped}] [ResetSkip] [ResetInterop] ResetWorld SKIP. signature='{signature}', routeId='{routeId.Value}', routeKind='{context.RouteKind}', profileLabel='{context.TransitionProfileName}', targetScene='{targetScene}', decisionSource='{decisionSource}', reason='{skippedReason}'.",
-                        DebugUtility.Colors.Info);
-
-                    PublishResetCompleted(
-                        signature,
-                        skippedReason,
-                        routeId,
-                        context.RouteKind,
-                        context.TransitionProfileName,
-                        targetScene,
-                        decisionSource,
-                        WorldResetOutcome.SkippedByPolicy,
-                        string.Empty);
-                    return;
-                }
+                string skippedReason = string.IsNullOrWhiteSpace(decisionReason)
+                    ? $"{WorldResetReasons.SkippedNonGameplayRoutePrefix}:routeKind={context.RouteKind};route={routeId};scene={targetScene}"
+                    : decisionReason;
 
                 LogObsResetRequested(
                     signature: signature,
@@ -172,47 +128,69 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                     profileLabel: context.TransitionProfileName,
                     target: targetScene,
                     decisionSource: decisionSource,
-                    reason: decisionReason);
+                    reason: skippedReason);
 
-                bool shouldPublishCompletion = false;
-                string completionDetail = string.Empty;
-                WorldResetOutcome completionOutcome = WorldResetOutcome.Completed;
-                try
-                {
-                    var result = await ExecuteResetWhenRequiredAsync(
-                        signature,
-                        routeId,
-                        targetScene,
-                        decisionReason);
+                DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                    $"[{ResetLogTags.Skipped}] [ResetSkip] [ResetInterop] ResetWorld SKIP. signature='{signature}', routeId='{routeId.Value}', routeKind='{context.RouteKind}', profileLabel='{context.TransitionProfileName}', targetScene='{targetScene}', decisionSource='{decisionSource}', reason='{skippedReason}'.",
+                    DebugUtility.Colors.Info);
 
-                    shouldPublishCompletion = result.shouldPublishCompletion;
-                    completionOutcome = result.outcome;
-                    completionDetail = result.detail;
-                }
-                finally
-                {
-                    if (shouldPublishCompletion)
-                    {
-                        PublishResetCompleted(
-                            signature,
-                            decisionReason,
-                            routeId,
-                            context.RouteKind,
-                            context.TransitionProfileName,
-                            targetScene,
-                            decisionSource,
-                            completionOutcome,
-                            completionDetail);
-                    }
-                }
+                PublishResetCompleted(
+                    signature,
+                    skippedReason,
+                    routeId,
+                    context.RouteKind,
+                    context.TransitionProfileName,
+                    targetScene,
+                    decisionSource,
+                    WorldResetOutcome.SkippedByPolicy,
+                    string.Empty);
+                return;
+            }
+
+            LogObsResetRequested(
+                signature: signature,
+                sourceSignature: signature,
+                routeId: routeId.Value,
+                routeKind: context.RouteKind,
+                profileLabel: context.TransitionProfileName,
+                target: targetScene,
+                decisionSource: decisionSource,
+                reason: decisionReason);
+
+            bool shouldPublishCompletion = false;
+            string completionDetail = string.Empty;
+            WorldResetOutcome completionOutcome = WorldResetOutcome.Completed;
+            try
+            {
+                var result = await ExecuteResetWhenRequiredAsync(
+                    signature,
+                    routeId,
+                    targetScene,
+                    decisionReason);
+
+                shouldPublishCompletion = result.shouldPublishCompletion;
+                completionOutcome = result.outcome;
+                completionDetail = result.detail;
             }
             finally
             {
-                MarkCompleted(signature);
+                if (shouldPublishCompletion)
+                {
+                    PublishResetCompleted(
+                        signature,
+                        decisionReason,
+                        routeId,
+                        context.RouteKind,
+                        context.TransitionProfileName,
+                        targetScene,
+                        decisionSource,
+                        completionOutcome,
+                        completionDetail);
+                }
             }
         }
 
-        private static async Task<(bool shouldPublishCompletion, WorldResetOutcome outcome, string detail)> ExecuteResetWhenRequiredAsync(
+        private async Task<(bool shouldPublishCompletion, WorldResetOutcome outcome, string detail)> ExecuteResetWhenRequiredAsync(
             string signature,
             SceneRouteId routeId,
             string targetScene,
@@ -346,76 +324,6 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                 DebugUtility.Colors.Success);
         }
 
-        private bool ShouldSkipDuplicate(string signature, out string guardReason)
-        {
-            guardReason = string.Empty;
-
-            if (string.IsNullOrWhiteSpace(signature))
-            {
-                return false;
-            }
-
-            int now = Environment.TickCount;
-
-            lock (_guardLock)
-            {
-                if (_inFlightSignatures.Contains(signature))
-                {
-                    guardReason = $"{WorldResetReasons.GuardDuplicatePrefix}:in_flight";
-                    return true;
-                }
-
-                if (_completedTicks.TryGetValue(signature, out int lastTick))
-                {
-                    int dt = unchecked(now - lastTick);
-                    if (dt is >= 0 and <= DuplicateSignatureWindowMs)
-                    {
-                        guardReason = $"{WorldResetReasons.GuardDuplicatePrefix}:recent";
-                        return true;
-                    }
-
-                    if (dt > DuplicateSignatureWindowMs)
-                    {
-                        _completedTicks.Remove(signature);
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        private void MarkInFlight(string signature)
-        {
-            if (string.IsNullOrWhiteSpace(signature))
-            {
-                return;
-            }
-
-            lock (_guardLock)
-            {
-                _inFlightSignatures.Add(signature);
-            }
-        }
-
-        private void MarkCompleted(string signature)
-        {
-            if (string.IsNullOrWhiteSpace(signature))
-            {
-                return;
-            }
-
-            lock (_guardLock)
-            {
-                _inFlightSignatures.Remove(signature);
-                _completedTicks[signature] = Environment.TickCount;
-
-                if (_completedTicks.Count > CompletedCacheLimit)
-                {
-                    _completedTicks.Clear();
-                }
-            }
-        }
-
         private static bool IsDevelopmentEscapeHatch()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -425,10 +333,5 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
 #endif
         }
 
-        private static void LogDuplicateGuard(string signature, SceneRouteKind routeKind, string profileLabel, string target, string guardReason)
-        {
-            DebugUtility.LogWarning<SceneFlowWorldResetDriver>(
-                $"[{ResetLogTags.Guarded}][DEGRADED_MODE] [ResetInterop] ResetWorld guard: ScenesReady duplicado. signature='{signature}', routeKind='{routeKind}', profileLabel='{profileLabel}', targetScene='{target}', guard='{guardReason}'.");
-        }
     }
 }

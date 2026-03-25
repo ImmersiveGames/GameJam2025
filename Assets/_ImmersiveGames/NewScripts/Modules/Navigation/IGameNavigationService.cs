@@ -25,6 +25,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         Task ExitToMenuAsync(string reason = null);
 
         /// <summary>
+        /// Executa o restart macro canônico do fluxo de pós-jogo.
+        /// </summary>
+        Task RestartMacroAsync(string reason = null);
+
+        /// <summary>
+        /// Executa a saída macro para o menu com a ordem canônica de estado.
+        /// </summary>
+        Task ExitToMenuMacroAsync(string reason = null);
+
+        /// <summary>
         /// ResolvePlayerActor a gameplay route principal a partir do catálogo core canônico.
         /// </summary>
         SceneRouteId ResolveGameplayRouteIdOrFail();

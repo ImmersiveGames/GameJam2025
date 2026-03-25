@@ -26,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Interop
     {
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
+        private bool _disposed;
 
         // Dedupe por instancia para evitar supressao entre instancias apos restarts.
         private string _lastProcessedSignature = string.Empty;
@@ -46,6 +47,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Interop
 
         public void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
             EventBus<SceneTransitionStartedEvent>.Unregister(_startedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_completedBinding);
         }
@@ -91,30 +98,15 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Interop
 
             _lastProcessedSignature = dedupeKey;
 
-            if (evt.context.RouteKind == SceneRouteKind.Gameplay)
+            if (TryGetInputModeRequest(evt.context.RouteKind, out var requestKind, out var mode, out var map, out var reason))
             {
                 EventBus<InputModeRequestEvent>.Raise(
-                    new InputModeRequestEvent(InputModeRequestKind.Gameplay, "SceneFlow/Completed:Gameplay", "SceneFlow", signature));
+                    new InputModeRequestEvent(requestKind, reason, "SceneFlow", signature));
 
                 LogObsInputModeApplied(
-                    mode: "Gameplay",
-                    map: InputModesDefaults.PlayerActionMapName,
-                    reason: "SceneFlow/Completed:Gameplay",
-                    signature: signature,
-                    scene: activeScene,
-                    routeKind: evt.context.RouteKind);
-                return;
-            }
-
-            if (evt.context.RouteKind == SceneRouteKind.Frontend)
-            {
-                EventBus<InputModeRequestEvent>.Raise(
-                    new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "SceneFlow/Completed:Frontend", "SceneFlow", signature));
-
-                LogObsInputModeApplied(
-                    mode: "FrontendMenu",
-                    map: InputModesDefaults.MenuActionMapName,
-                    reason: "SceneFlow/Completed:Frontend",
+                    mode: mode,
+                    map: map,
+                    reason: reason,
                     signature: signature,
                     scene: activeScene,
                     routeKind: evt.context.RouteKind);
@@ -124,6 +116,36 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Interop
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
                 $"[InputMode] RouteKind nao reconhecido ('{evt.context.RouteKind}'); input mode nao alterado. targetScene='{evt.context.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static bool TryGetInputModeRequest(
+            SceneRouteKind routeKind,
+            out InputModeRequestKind requestKind,
+            out string mode,
+            out string map,
+            out string reason)
+        {
+            switch (routeKind)
+            {
+                case SceneRouteKind.Gameplay:
+                    requestKind = InputModeRequestKind.Gameplay;
+                    mode = "Gameplay";
+                    map = InputModesDefaults.PlayerActionMapName;
+                    reason = "SceneFlow/Completed:Gameplay";
+                    return true;
+                case SceneRouteKind.Frontend:
+                    requestKind = InputModeRequestKind.FrontendMenu;
+                    mode = "FrontendMenu";
+                    map = InputModesDefaults.MenuActionMapName;
+                    reason = "SceneFlow/Completed:Frontend";
+                    return true;
+                default:
+                    requestKind = default;
+                    mode = string.Empty;
+                    map = string.Empty;
+                    reason = string.Empty;
+                    return false;
+            }
         }
 
         private static void LogObsInputModeApplied(

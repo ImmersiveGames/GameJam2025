@@ -7,9 +7,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     {
         private static void InstallWorldResetServices()
         {
-            RegisterIfMissing(() => new SceneFlowWorldResetDriver());
             RegisterIfMissing(() => new WorldResetService());
             RegisterIfMissing<IWorldResetCommands>(() => new WorldResetCommands());
+            RegisterIfMissing(() => new SceneFlowWorldResetDriver());
 
             var gateService = ResolveSimulationGateServiceOrNull();
             RegisterIfMissing<IWorldResetRequestService>(() => new WorldResetRequestService(gateService));
