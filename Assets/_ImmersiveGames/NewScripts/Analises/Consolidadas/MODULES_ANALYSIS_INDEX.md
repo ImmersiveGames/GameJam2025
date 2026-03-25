@@ -471,3 +471,9 @@ TOTAL ESTIMADO          : -1500 LOC (-10% do total)
 ## Nota de leitura atual
 
 A análise de `WorldLifecycle` foi desdobrada em três relatórios ativos: `WorldReset`, `SceneReset` e `ResetInterop`. O arquivo antigo passa a valer como base histórica da divisão.
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- `SceneFlow`, `LevelFlow`, `Navigation`, `ResetInterop` e `GameLoop` agora devem ser lidos como boundaries estabilizados.
+- O indice continua util como mapa historico, mas nao como backlog de implementacao.

@@ -248,3 +248,9 @@ Evoluir o snapshot semântico:
 
 ### Fase 2.e
 Trazer o trilho macro para o mesmo executor técnico, sem tirar de `SceneFlow` o ownership de loading/fade.
+
+## Fechamento 2026-03-25
+
+- O corte seguro descrito aqui foi absorvido no fechamento do plano macro.
+- As consolidacoes de `LevelFlow` e do contexto semantico foram conclu�das sem reabrir o escopo de migracao.
+- Este documento segue como historico da trajetoria de migracao, nao como backlog ativo.

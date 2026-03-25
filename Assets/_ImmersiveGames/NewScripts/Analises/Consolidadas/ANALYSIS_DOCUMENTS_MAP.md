@@ -371,3 +371,9 @@ SEMANA 4-5 (Phase 3)
 | `Modules/SCENERESET_ANALYSIS_REPORT.md` | análise atual do reset local | ativo |
 | `Modules/RESETINTEROP_ANALYSIS_REPORT.md` | análise atual da superfície/bridge | ativo |
 | `Modules/WORLDLIFECYCLE_ANALYSIS_REPORT.md` | análise-base anterior à divisão | histórico |
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- A navegacao deste mapa continua util, mas as fases P1..P5 devem ser lidas como historico de consolidacao.
+- O estado atual do stack macro ficou absorvido nos relatórios e sumarios atualizados.

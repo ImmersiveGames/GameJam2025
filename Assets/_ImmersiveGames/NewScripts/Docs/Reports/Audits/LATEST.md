@@ -1,14 +1,12 @@
 # LATEST
 
 ## Fase vigente
-### 4.e — Cleanup de naming residual em `ResetInterop`
+### Macro Flow Stack Consolidation - closeout
 
 ## Entrega
-- tabela de renomeação para aplicar na IDE
-- docs canônicos da superfície:
-  - `Docs/Modules/ResetInterop.md`
-  - `Docs/Modules/WorldReset.md`
-  - `Docs/Modules/SceneReset.md`
+- plano `Plan-MacroFlow-Stack-Consolidation.md` concluido
+- outcome curto do stack macro registrado em plano e changelog
+- ponteiros canonicos e analises mantidos sem reabrir escopo
 
 ## Regra
-Nesta fase, o foco é **nome/superfície**, não comportamento.
+Nesta fase, o foco e fechamento documental do stack macro, nao reabertura de implementacao.

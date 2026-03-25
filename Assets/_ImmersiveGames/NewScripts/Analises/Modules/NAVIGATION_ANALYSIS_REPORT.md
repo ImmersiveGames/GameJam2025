@@ -461,3 +461,11 @@ As **3 otimizações propostas** eliminarão redundâncias com:
 **Relatório gerado:** 22 de março de 2026
 **Status de Acentuação e Codificação:** ✅ COMPLETO
 **Próxima Revisão:** Após implementação das otimizações estruturais (Fases 2-4)
+
+---
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- O mapping `intent <-> kind` ja foi centralizado e o macro dispatch foi concentrado no owner correto.
+- As recomendacoes originais deste relatorio permanecem como contexto historico; o backlog ativo agora e apenas de ajuste residual, se houver.

@@ -329,3 +329,9 @@ Todos os arquivos de análise estão agora **centralizados em `NewScripts/Analis
 ## Estado atual recomendado
 
 Para leitura do estado vigente, priorize: o código do snapshot atual e os relatórios já atualizados neste pacote.
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- Esta raiz de analises permanece organizada, mas o estado atual deve ser lido pelos textos com closeout.
+- Nao trate as fases antigas como backlog ativo do stack macro.

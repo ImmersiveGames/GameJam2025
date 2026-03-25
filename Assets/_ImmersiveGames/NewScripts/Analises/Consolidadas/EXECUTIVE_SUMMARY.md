@@ -68,3 +68,9 @@ O relatório antigo de `WorldLifecycle` agora deve ser lido como **base históri
 - `ResetInterop` — driver com `SceneFlow`, eventos públicos, completion gate e tokens
 
 Essa divisão substitui a leitura anterior de `WorldLifecycle` como módulo único.
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- O stack macro passou a ser a leitura principal; este sumario agora serve como historico consolidado.
+- Os itens P1..P5 ja foram absorvidos e nao devem ser relidos como pendencia ativa.

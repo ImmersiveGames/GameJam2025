@@ -83,3 +83,9 @@ Elas continuam úteis como histórico do que existia, mas não descrevem mais a 
 1. Manter este documento como ponte entre análise antiga e estado atual.
 2. Tratar relatórios antigos como **histórico/importado**.
 3. Atualizar ADRs/Docs canônicos por tema quando cada trilho estiver congelado.
+
+## Fechamento 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluído e absorveu os pontos residuais do stack macro.
+- `SceneFlow`, `LevelFlow`, `Navigation`, `ResetInterop` e `GameLoop` ficaram com boundaries mais claras do que o estado descrito aqui.
+- Este documento permanece como ponte histórica entre a análise importada e o estado final, sem gerar novo backlog.

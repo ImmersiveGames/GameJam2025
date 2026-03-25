@@ -198,3 +198,9 @@
 - Estrutura canônica remanescente está centrada em composition global + scene scope + módulos runtime (SceneFlow/Navigation/LevelFlow/WorldLifecycle/GameLoop/Gameplay/PostGame/InputModes/Gates).
 - Próximo alvo natural (Round 2): regenerar artefatos de projeto Unity com editor fechado e revalidar build clean para eliminar erros de `.csproj` desatualizado.
 
+
+## Fechamento 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi conclu�do e absorveu os pontos residuais do stack macro.
+- `SceneFlow`, `LevelFlow`, `Navigation`, `ResetInterop` e `GameLoop` ficaram com boundaries mais claras do que o estado descrito neste audit.
+- Este documento permanece como ponte hist�rica, sem gerar novo backlog.

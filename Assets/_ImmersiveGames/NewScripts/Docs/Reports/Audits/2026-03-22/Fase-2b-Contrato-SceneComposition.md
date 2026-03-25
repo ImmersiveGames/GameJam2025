@@ -258,3 +258,9 @@ A melhor direcao para o projeto e:
 - migrar primeiro o trilho local
 - deixar a semantica nos modulos donos
 - evitar transformar `ContentSwap` num novo monolito central
+
+## Fechamento 2026-03-25
+
+- A direcao desta fase foi absorvida pelo fechamento do plano macro e pelo trilho `SceneComposition` consolidado.
+- O que era pendencia de consolidacao macro agora deve ser lido como historico de caminho, nao como backlog ativo.
+- `SceneFlow`, `LevelFlow`, `Navigation`, `ResetInterop` e `GameLoop` ficaram estabilizados em boundaries mais claros do que o texto original descrevia.

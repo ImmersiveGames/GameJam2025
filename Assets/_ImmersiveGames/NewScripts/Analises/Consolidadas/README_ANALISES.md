@@ -414,3 +414,9 @@ Assets/_ImmersiveGames/NewScripts/Modules/
 **Confiança:** 95% (baseado em code review detalhado)
 
 
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- Use os relatórios abaixo como referencia historica e de contexto, nao como backlog ativo.
+- Para estado atual, o melhor ponto de partida continua sendo o codigo e os sumarios atualizados.

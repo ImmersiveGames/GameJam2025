@@ -1,4 +1,4 @@
-# Resumo — Consolidação Canônica pós-0027 (SceneFlow / LevelFlow)
+# Resumo - Consolidação Canônica pós-0027 (SceneFlow / LevelFlow)
 
 ## O que foi feito
 
@@ -41,3 +41,8 @@ Se o repositório principal já possuir ADRs `0030+`, renumere estes arquivos na
 - a ordem relativa;
 - o bloco canônico de 4 ADRs;
 - as referências de supersedência na `README.md`.
+
+## Fechamento macro
+
+- o plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluído depois desta consolidação canônica inicial.
+- o outcome final do stack macro ficou registrado no plano e no `CHANGELOG`, sem reabrir o escopo de ADRs.

@@ -286,3 +286,11 @@ if (SceneFlowSameFrameDedupe.ShouldDedupe(...)) return;
 **Próxima ação:** Incluir em Fases 1-1.5 (consolidação patterns)
 **Prioridade:** Média-Alta (múltiplos padrões a consolidar)
 **Refatoração Futura:** RECOMENDADA (módulo muito grande)
+
+---
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- As recomendacoes macro deste relatorio foram absorvidas no estado atual do codigo.
+- O que resta aqui e leitura historica e observabilidade de complexidade interna, nao backlog ativo do stack macro.

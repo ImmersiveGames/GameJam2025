@@ -236,3 +236,11 @@ GameplayObservabilityLog.LogLevelStarted(
 **Próxima ação:** Incluir em Fase 1 (consolidação patterns)
 **Prioridade:** Baixa (módulo bem feito)
 **Consolidação Futura:** Considerar com GameRunStateService
+
+---
+
+## Fechamento Macro 2026-03-25
+
+- O plano `Plan-MacroFlow-Stack-Consolidation.md` foi concluido.
+- O contexto canonico de gameplay start/restart foi consolidado em `LevelFlow` / `RestartContextService`.
+- As pendencias descritas neste relatorio devem ser lidas como historico de consolidacao, nao como backlog ativo.
