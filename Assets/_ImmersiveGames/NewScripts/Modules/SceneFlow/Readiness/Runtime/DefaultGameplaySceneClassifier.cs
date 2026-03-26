@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -6,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 {
 
     /// <summary>
-    /// Implementação padrão: marker explícito na cena ativa, com fallback por nome.
+    /// Implementação padrão: marker explícito na cena ativa, com fallback compatível por nome canonical.
     /// </summary>
     public sealed class DefaultGameplaySceneClassifier : IGameplaySceneClassifier
     {
@@ -25,7 +24,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
                 return true;
             }
 
-            return string.Equals(activeScene.name, FallbackGameplaySceneName, StringComparison.Ordinal);
+            // Fallback compatível: mantém a leitura canônica sem depender apenas do marker.
+            return string.Equals(activeScene.name, FallbackGameplaySceneName, System.StringComparison.Ordinal);
         }
 
         private static bool HasMarkerInScene(Scene scene)

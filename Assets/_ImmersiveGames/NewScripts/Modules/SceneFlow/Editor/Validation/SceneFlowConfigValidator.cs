@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
     {
         private const string NavigationCatalogPath = "Assets/Resources/Navigation/GameNavigationCatalog.asset";
         private const string SceneRouteCatalogPath = "Assets/Resources/SceneFlow/SceneRouteCatalog.asset";
-        private const string BootstrapConfigPath = "Assets/Resources/NewScriptsBootstrapConfig.asset";
+        private const string BootstrapConfigPath = "Assets/Resources/BootstrapConfig.asset";
         private const string ReportPath = "Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport.md";
 
         [MenuItem("ImmersiveGames/NewScripts/Tools/SceneFlow/Validate Config", priority = 1410)]
@@ -144,6 +144,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                 return;
             }
 
+            if (!HasLoadingHudSceneKeyConfigured(bootstrapConfig))
+            {
+                context.AddFatal("Bootstrap sem loadingHudSceneKey valido.");
+            }
+
             if (startupStyle.UseFade && !HasFadeSceneKeyConfigured(bootstrapConfig))
             {
                 context.AddWarn("startupTransitionStyleRef usa fade, mas bootstrapConfig.fadeSceneKey nao esta configurado.");
@@ -192,6 +197,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             SerializedObject serializedObject = new SerializedObject(bootstrapConfig);
             SerializedProperty fadeSceneKeyProp = serializedObject.FindProperty("fadeSceneKey");
             return fadeSceneKeyProp != null && fadeSceneKeyProp.objectReferenceValue != null;
+        }
+
+        private static bool HasLoadingHudSceneKeyConfigured(BootstrapConfigAsset bootstrapConfig)
+        {
+            SerializedObject serializedObject = new SerializedObject(bootstrapConfig);
+            SerializedProperty loadingHudSceneKeyProp = serializedObject.FindProperty("loadingHudSceneKey");
+            return loadingHudSceneKeyProp != null && loadingHudSceneKeyProp.objectReferenceValue != null;
         }
 
         private static string BuildReport(ValidationContext context)

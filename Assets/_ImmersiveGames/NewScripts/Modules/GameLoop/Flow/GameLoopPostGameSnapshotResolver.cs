@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
                 return classifier.IsGameplayScene();
             }
 
-            return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", System.StringComparison.Ordinal);
+            return false;
         }
 
         public SignatureInfo BuildSignatureInfo()

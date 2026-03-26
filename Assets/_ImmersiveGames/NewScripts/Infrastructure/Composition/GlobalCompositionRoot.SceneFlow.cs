@@ -331,6 +331,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             // ADR-0010: LoadingHudService depende da policy Strict/Release + reporter de degraded.
             // Mantemos best-effort: se por algum motivo os serviços não estiverem disponíveis,
             // ainda assim injetamos nulls e deixamos o próprio serviço decidir como degradar.
+            var bootstrap = GetRequiredBootstrapConfig(out _);
             DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeMode);
             DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
 
@@ -348,7 +349,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (!DependencyManager.Provider.TryGetGlobal<ILoadingPresentationService>(out var presentationService) || presentationService == null)
             {
-                var concreteService = new LoadingHudService(runtimeMode, degradedReporter);
+                var concreteService = new LoadingHudService(runtimeMode, degradedReporter, bootstrap.LoadingHudSceneKey);
                 DependencyManager.Provider.RegisterGlobal<ILoadingPresentationService>(concreteService);
                 DependencyManager.Provider.RegisterGlobal<ILoadingHudService>(concreteService);
             }

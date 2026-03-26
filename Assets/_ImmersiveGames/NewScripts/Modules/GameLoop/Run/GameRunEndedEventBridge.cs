@@ -90,8 +90,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
                 return classifier.IsGameplayScene();
             }
 
-            string sceneName = SceneManager.GetActiveScene().name;
-            return string.Equals(sceneName, "GameplayScene", System.StringComparison.Ordinal);
+            return false;
         }
     }
 }

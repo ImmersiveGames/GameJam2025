@@ -35,6 +35,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         /// </summary>
         [SerializeField] private SceneKeyAsset fadeSceneKey;
         /// <summary>
+        /// Chave canônica da cena de loading HUD.
+        /// </summary>
+        [SerializeField] private SceneKeyAsset loadingHudSceneKey;
+        /// <summary>
         /// Configuração de logging (níveis, canais, etc).
         /// </summary>
         [SerializeField] private LoggingConfigAsset loggingConfig;
@@ -51,6 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         public SceneRouteCatalogAsset SceneRouteCatalog => sceneRouteCatalog;
         public TransitionStyleAsset StartupTransitionStyleRef => startupTransitionStyleRef;
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
+        public SceneKeyAsset LoadingHudSceneKey => loadingHudSceneKey;
         public LoggingConfigAsset LoggingConfig => loggingConfig;
         public AudioDefaultsAsset AudioDefaults => audioDefaults;
         public EntityAudioSemanticMapAsset EntityAudioSemanticMap => entityAudioSemanticMap;
@@ -67,6 +72,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
             {
                 string message =
                     $"[FATAL][Config] BootstrapConfigAsset inválido: configure startupTransitionStyleRef com profileRef válido. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (loadingHudSceneKey == null || string.IsNullOrWhiteSpace(loadingHudSceneKey.SceneName))
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset inválido: configure loadingHudSceneKey com SceneName válido. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);

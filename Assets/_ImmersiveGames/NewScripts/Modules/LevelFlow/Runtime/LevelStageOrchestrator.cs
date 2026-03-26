@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -50,11 +49,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
-            if (!IsGameplayScene())
-            {
-                return;
-            }
-
             if (!TryResolveRestartContext(out var restartContextService) ||
                 !restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
@@ -94,11 +88,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             if (!TryResolveIntroStageDependencies(out var gameLoopService, out var coordinator))
-            {
-                return;
-            }
-
-            if (!IsGameplayScene())
             {
                 return;
             }
@@ -214,18 +203,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             return true;
-        }
-
-        private static bool IsGameplayScene()
-        {
-            if (DependencyManager.HasInstance
-                && DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier)
-                && classifier != null)
-            {
-                return classifier.IsGameplayScene();
-            }
-
-            return string.Equals(SceneManager.GetActiveScene().name, "GameplayScene", StringComparison.Ordinal);
         }
 
         private static string BuildLevelSignature(LevelDefinitionAsset levelRef, SceneRouteId routeId, string reason, string existingSignature)
