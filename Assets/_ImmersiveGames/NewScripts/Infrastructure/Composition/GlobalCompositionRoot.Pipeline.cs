@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
@@ -12,72 +14,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private enum CompositionInstallStage
-        {
-            RuntimePolicy,
-            Pooling,
-            Gates,
-            Audio,
-            GameLoop,
-            SceneFlow,
-            WorldReset,
-            Navigation,
-            SceneComposition,
-            LevelFlow
-        }
-
-        private static CompositionInstallStage _compositionInstallStage;
-
         // --------------------------------------------------------------------
-        // Main registration pipeline (order matters)
+        // Main registration pipeline (order is dependency-driven)
         // --------------------------------------------------------------------
 
         private static void RegisterEssentialServicesOnly()
         {
             PrimeEventSystems();
+            var bootstrapConfig = GetRequiredBootstrapConfig(out _);
 
-            _compositionInstallStage = CompositionInstallStage.RuntimePolicy;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.Pooling;
-            InstallCompositionModules();
-            RegisterInputModesFromRuntimeConfig();
-
-            _compositionInstallStage = CompositionInstallStage.Gates;
-            InstallCompositionModules();
+            ExecuteInstallerPipeline(bootstrapConfig);
 
             var gateService = ResolveSimulationGateServiceOrNull();
-
             RegisterPauseBridge(gateService);
 
-            _compositionInstallStage = CompositionInstallStage.Audio;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.GameLoop;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.SceneFlow;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.WorldReset;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.Navigation;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.SceneComposition;
-            InstallCompositionModules();
-
-            _compositionInstallStage = CompositionInstallStage.LevelFlow;
-            InstallCompositionModules();
-
-            RegisterExitToMenuCoordinator();
-            RegisterMacroRestartCoordinator();
-            RegisterLevelSelectedRestartSnapshotBridge();
-            RegisterNavigationLevelRouteBgmBridge();
-
-            RegisterSceneFlowInputModeBridge();
-            RegisterLevelStageOrchestrator();
             RegisterStateDependentService();
             RegisterIfMissing<IGameplayCameraResolver>(() => new GameplayCameraResolver());
 
@@ -85,78 +35,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterBaselineAsserter();
 #endif
 
+            ExecuteBootstrapPipeline(bootstrapConfig);
             InitializeReadinessGate(gateService);
-            RegisterGameLoopSceneFlowCoordinatorIfAvailable();
         }
 
-        private static void InstallCompositionModules()
+        private static void ExecuteInstallerPipeline(BootstrapConfigAsset bootstrapConfig)
         {
-            switch (_compositionInstallStage)
-            {
-                case CompositionInstallStage.RuntimePolicy:
-                    RegisterRuntimePolicyServices();
-                    break;
-                case CompositionInstallStage.Pooling:
-                    InstallPoolingServices();
-                    break;
-                case CompositionInstallStage.Gates:
-                    InstallGatesServices();
-                    break;
-                case CompositionInstallStage.Audio:
-                    InstallAudioServices();
-                    break;
-                case CompositionInstallStage.GameLoop:
-                    InstallGameLoopServices();
-                    break;
-                case CompositionInstallStage.SceneFlow:
-                    InstallSceneFlowServices();
-                    break;
-                case CompositionInstallStage.WorldReset:
-                    InstallWorldResetServices();
-                    break;
-                case CompositionInstallStage.Navigation:
-                    InstallNavigationServices();
-                    break;
-                case CompositionInstallStage.SceneComposition:
-                    InstallSceneCompositionServices();
-                    break;
-                case CompositionInstallStage.LevelFlow:
-                    InstallLevelFlowServices();
-                    break;
-            }
+            var steps = GetCompositionPipelineSteps();
+            CompositionPipelineExecutor.ExecuteInstallers(steps, bootstrapConfig);
+
+            RegisterInputModesFromRuntimeConfig();
+        }
+
+        private static void ExecuteBootstrapPipeline(BootstrapConfigAsset bootstrapConfig)
+        {
+            var steps = GetCompositionPipelineSteps();
+            CompositionPipelineExecutor.ExecuteBootstraps(steps, bootstrapConfig);
         }
 
         private static void InstallGatesServices()
         {
             RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
-        }
-
-        private static void InstallGameLoopServices()
-        {
-            RegisterGameLoop();
-            RegisterIntroStageCoordinator();
-            RegisterIntroStageControlService();
-            RegisterGameplaySceneClassifier();
-            RegisterIntroStagePolicyResolver();
-            RegisterDefaultIntroStageStep();
-
-            RegisterGameRunEndRequestService();
-            RegisterGameCommands();
-            GameLoopStartRequestEmitter.EnsureInstalled();
-
-            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
-
-            RegisterGameRunStatusService(gameLoopService);
-            RegisterGameRunOutcomeService(gameLoopService);
-            RegisterGameRunOutcomeEventInputBridge();
-            RegisterPostGameResultService();
-            RegisterPostPlayOwnershipService();
-        }
-
-        private static void InstallNavigationServices()
-        {
-            RegisterGameNavigationService();
         }
 
         private static void InstallPoolingServices()

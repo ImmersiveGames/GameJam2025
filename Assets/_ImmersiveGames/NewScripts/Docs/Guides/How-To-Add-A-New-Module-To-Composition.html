@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How To Add A New Module To Composition</title>
+  <style>
+    :root {
+      --bg:#eef2f0;
+      --panel:#ffffff;
+      --panel-strong:#f6faf8;
+      --line:#d3ddd8;
+      --text:#18201b;
+      --muted:#5c6b64;
+      --accent:#1f6b58;
+      --accent-soft:#def4eb;
+      --warn:#926600;
+      --warn-soft:#fff3cc;
+      --bad:#b42318;
+      --bad-soft:#ffe2dc;
+      --code:#162019;
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      font-family:"Segoe UI",Tahoma,sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,#e7eee9 0%,#f2f6f3 38%,#eef2f0 100%);
+      line-height:1.6;
+    }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code { background:#e5f1eb; padding:2px 6px; border-radius:6px; color:inherit; }
+    pre {
+      margin:0;
+      background:var(--code);
+      color:#f5fbf7;
+      border-radius:18px;
+      padding:16px;
+      overflow:auto;
+      border:1px solid #2f4139;
+    }
+    pre code,
+    pre code * {
+      background:transparent !important;
+      color:#f5fbf7 !important;
+      -webkit-text-fill-color:#f5fbf7 !important;
+      padding:0 !important;
+      border-radius:0 !important;
+      box-shadow:none !important;
+      border:0 !important;
+      text-shadow:none !important;
+      font-family:Consolas,"Courier New",monospace !important;
+      font-size:.95rem;
+      line-height:1.7;
+      white-space:pre-wrap;
+    }
+    .app {
+      max-width:1440px;
+      margin:0 auto;
+      padding:24px;
+      display:grid;
+      grid-template-columns:300px minmax(0,1fr);
+      gap:24px;
+    }
+    .sidebar {
+      position:sticky;
+      top:20px;
+      align-self:start;
+      background:rgba(255,255,255,.92);
+      backdrop-filter:blur(10px);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:22px;
+      box-shadow:0 14px 36px rgba(17,31,24,.08);
+    }
+    .sidebar h1 { margin:0 0 10px; font-size:1.4rem; }
+    .sidebar p { margin:0 0 18px; color:var(--muted); }
+    .nav-group { margin-top:16px; }
+    .nav-group h2 {
+      font-size:.88rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin:0 0 8px;
+    }
+    .nav-group a {
+      display:block;
+      padding:7px 10px;
+      border-radius:10px;
+      color:var(--text);
+    }
+    .nav-group a:hover { background:#edf5ef; text-decoration:none; }
+    .content { display:grid; gap:22px; }
+    .hero, .panel {
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:28px;
+      box-shadow:0 16px 38px rgba(17,31,24,.07);
+    }
+    .hero {
+      background:radial-gradient(circle at top right,#eefaf4 0%,#ffffff 45%,#f7fbf9 100%);
+    }
+    .eyebrow {
+      display:inline-block;
+      padding:7px 12px;
+      border-radius:999px;
+      background:var(--accent-soft);
+      color:var(--accent);
+      font-size:.82rem;
+      font-weight:700;
+      margin-bottom:12px;
+    }
+    .cards {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:14px;
+      margin-top:18px;
+    }
+    .card {
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px;
+      background:#f8fcf9;
+    }
+    .card strong { display:block; margin-bottom:6px; }
+    .grid-2 {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:16px;
+    }
+    .callout {
+      border-radius:18px;
+      padding:16px 18px;
+      border:1px solid var(--line);
+      background:var(--panel-strong);
+    }
+    .use { background:#e4f5ed; border-color:#b7e3cf; color:#185d4d; }
+    .warn { background:var(--warn-soft); border-color:#efd48a; color:var(--warn); }
+    .bad { background:var(--bad-soft); border-color:#f2b2aa; color:var(--bad); }
+    .mini-title {
+      font-size:.86rem;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:var(--muted);
+      margin:0 0 8px;
+    }
+    .section-nav {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:14px;
+    }
+    .section-nav a {
+      background:#e8f2eb;
+      padding:8px 12px;
+      border-radius:999px;
+    }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:18px; }
+    table { width:100%; border-collapse:collapse; min-width:760px; }
+    th, td { padding:12px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { background:#edf6f0; }
+    tr:last-child td { border-bottom:0; }
+    .check-list { margin:0; padding-left:18px; }
+    .check-list li { margin:8px 0; }
+    .step-list { margin:0; padding-left:18px; }
+    .step-list li { margin:8px 0; }
+    @media (max-width:1080px) {
+      .app { grid-template-columns:1fr; }
+      .sidebar { position:static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>How To Add A New Module To Composition</h1>
+      <p>Guia prático para incluir um módulo novo no pipeline modular em duas fases. O Markdown continua sendo a fonte canônica.</p>
+      <div class="nav-group">
+        <h2>Visão Geral</h2>
+        <a href="#purpose">Quando usar</a>
+        <a href="#installer-only">Installer only</a>
+        <a href="#installer-bootstrap">Installer + Bootstrap</a>
+      </div>
+      <div class="nav-group">
+        <h2>Estrutura</h2>
+        <a href="#files">Arquivos requeridos</a>
+        <a href="#responsibilities">Responsabilidades</a>
+        <a href="#dependencies">Dependências</a>
+        <a href="#root">Registro no root</a>
+      </div>
+      <div class="nav-group">
+        <h2>Fechamento</h2>
+        <a href="#failfast">Fail-fast</a>
+        <a href="#checklist">Checklist</a>
+        <a href="#mistakes">Erros comuns</a>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="hero" id="purpose">
+        <span class="eyebrow">Pipeline modular canônico</span>
+        <h2>Como adicionar um módulo sem quebrar o modelo</h2>
+        <p>O contrato atual em `NewScripts` separa duas fases globais: <strong>installers primeiro</strong> e <strong>bootstraps/composers depois</strong>. O módulo novo deve entrar nesse modelo por descriptor explícito, sem reflection, sem auto-discovery e sem wiring escondido no root.</p>
+        <div class="cards">
+          <article class="card"><strong>Installer</strong><span>registro pre-runtime apenas.</span></article>
+          <article class="card"><strong>Bootstrap</strong><span>composição runtime apenas, quando necessário.</span></article>
+          <article class="card"><strong>Descriptor</strong><span>declara módulo, dependências e entry points.</span></article>
+          <article class="card"><strong>Root</strong><span>agrega descriptors e executa o grafo.</span></article>
+        </div>
+        <div class="section-nav">
+          <a href="#installer-only">Installer only</a>
+          <a href="#installer-bootstrap">Installer + Bootstrap</a>
+          <a href="#files">Arquivos requeridos</a>
+        </div>
+      </section>
+
+      <section class="panel" id="installer-only">
+        <h2>Quando um módulo precisa só de installer</h2>
+        <p>Use apenas installer quando o módulo só precisa registrar serviços, contratos, bridges finos ou helpers pre-runtime. Não crie bootstrap artificial se não existir composição runtime real.</p>
+        <div class="grid-2">
+          <div class="callout use">
+            <div class="mini-title">Exemplo semelhante</div>
+            <div><code>WorldReset</code>: registra <code>WorldResetService</code>, <code>IWorldResetCommands</code>, <code>SceneFlowWorldResetDriver</code> e <code>IWorldResetRequestService</code>. Não há bootstrap separado.</div>
+          </div>
+          <div class="callout">
+            <div class="mini-title">Sinal de que basta installer</div>
+            <ul class="step-list">
+              <li>não existe wiring operacional posterior;</li>
+              <li>não há bridges/coordinators para ativar depois;</li>
+              <li>o módulo não depende de outros serviços runtime para completar o boot.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="installer-bootstrap">
+        <h2>Quando um módulo precisa de installer + bootstrap</h2>
+        <p>Use as duas fases quando o módulo precisa registrar primeiro e depois compor/ativar runtime operacional. O bootstrap deve usar apenas o DI já preenchido.</p>
+        <div class="cards">
+          <article class="card"><strong>GameLoop</strong><span>installer registra contratos e services; bootstrap conecta sync runtime.</span></article>
+          <article class="card"><strong>SceneFlow</strong><span>installer registra policies, resolvers e services; bootstrap monta o stack de transição.</span></article>
+          <article class="card"><strong>Navigation</strong><span>installer registra catálogo; bootstrap ativa coordinators e bridges.</span></article>
+          <article class="card"><strong>LevelFlow</strong><span>installer registra prereqs; bootstrap faz wiring dependente de runtime.</span></article>
+        </div>
+      </section>
+
+      <section class="panel" id="files">
+        <h2>Arquivos requeridos</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Arquivo</th><th>Quando existe</th><th>Responsabilidade</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>XxxInstaller</code></td><td>sempre</td><td>registro pre-runtime do módulo</td></tr>
+              <tr><td><code>XxxBootstrap</code></td><td>quando houver composição runtime real</td><td>ativação operacional posterior</td></tr>
+              <tr><td><code>XxxCompositionDescriptor</code></td><td>sempre</td><td>declara o módulo para o grafo global</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn" style="margin-top:16px;">
+          <div class="mini-title">Regra prática</div>
+          <div>Se o módulo não tiver uma fase runtime real para compor, não invente um bootstrap só para “fechar padrão”.</div>
+        </div>
+      </section>
+
+      <section class="panel" id="responsibilities">
+        <h2>Responsabilidades mínimas</h2>
+        <div class="grid-2">
+          <div class="callout">
+            <div class="mini-title">Installer faz</div>
+            <ul class="step-list">
+              <li>registra serviços, contratos, providers, factories e configs</li>
+              <li>valida pré-requisitos pre-runtime</li>
+              <li>não depende de bootstrap</li>
+              <li>não compõe runtime operacional</li>
+            </ul>
+          </div>
+          <div class="callout">
+            <div class="mini-title">Bootstrap faz</div>
+            <ul class="step-list">
+              <li>compoe runtime operacional</li>
+              <li>ativa bridges, coordinators e orchestrators</li>
+              <li>usa apenas serviços já registrados</li>
+              <li>não faz registro pre-runtime</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="dependencies">
+        <h2>Declarando dependências</h2>
+        <p>O descriptor deve declarar explicitamente as dependências por fase:</p>
+        <ul class="check-list">
+          <li><code>ModuleId</code></li>
+          <li><code>InstallerDependencies</code></li>
+          <li><code>BootstrapDependencies</code></li>
+          <li>referência ao installer</li>
+          <li>referência ao bootstrap, quando existir</li>
+        </ul>
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="callout use">
+            <div class="mini-title">Exemplo de descriptor</div>
+            <pre><code>public static class WorldResetCompositionDescriptor
+{
+    public static ICompositionModuleDescriptor Descriptor { get; } =
+        new CompositionModuleDescriptor(
+            moduleId: "WorldReset",
+            installerDependencies: Array.Empty&lt;string&gt;(),
+            bootstrapDependencies: Array.Empty&lt;string&gt;(),
+            installer: _ =&gt; WorldResetInstaller.Install(_),
+            bootstrap: null);
+}</code></pre>
+          </div>
+          <div class="callout use">
+            <div class="mini-title">Exemplo com duas fases</div>
+            <pre><code>public static class NavigationCompositionDescriptor
+{
+    public static ICompositionModuleDescriptor Descriptor { get; } =
+        new CompositionModuleDescriptor(
+            moduleId: "Navigation",
+            installerDependencies: Array.Empty&lt;string&gt;(),
+            bootstrapDependencies: new[] { "SceneFlow" },
+            installer: bootstrapConfig =&gt; NavigationInstaller.Install(bootstrapConfig),
+            bootstrap: bootstrapConfig =&gt; NavigationBootstrap.ComposeRuntime(bootstrapConfig));
+}</code></pre>
+          </div>
+        </div>
+        <div class="callout bad" style="margin-top:16px;">
+          <div class="mini-title">Regra obrigatória</div>
+          <div>Installer não depende de bootstrap. Bootstrap pode depender de bootstrap e de serviços já registrados.</div>
+        </div>
+      </section>
+
+      <section class="panel" id="root">
+        <h2>Registrando o módulo no root</h2>
+        <p>O root não deve conhecer wiring interno do módulo. Ele apenas agrega o descriptor no grafo global.</p>
+        <pre><code>steps.Add(CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor));</code></pre>
+        <div class="callout use" style="margin-top:16px;">
+          <div class="mini-title">O que muda</div>
+          <div>O root deixa de declarar serviços internos do módulo e passa a ser apenas agregador + executor do grafo + orquestrador das fases globais.</div>
+        </div>
+      </section>
+
+      <section class="panel" id="failfast">
+        <h2>Fail-fast</h2>
+        <p>O pipeline deve falhar cedo quando houver:</p>
+        <ul class="check-list">
+          <li>dependência ausente</li>
+          <li>dependência inválida</li>
+          <li>ID duplicado</li>
+          <li>ciclo</li>
+          <li>dependência declarada na fase errada</li>
+        </ul>
+        <div class="callout warn" style="margin-top:16px;">
+          <div class="mini-title">Motivo</div>
+          <div>O modelo modular só fica previsível quando a ordem é derivada de dependências explícitas e não de ordem manual espalhada.</div>
+        </div>
+      </section>
+
+      <section class="panel" id="checklist">
+        <h2>Checklist prático</h2>
+        <ul class="check-list">
+          <li>Criar <code>XxxInstaller</code></li>
+          <li>Criar <code>XxxCompositionDescriptor</code></li>
+          <li>Criar <code>XxxBootstrap</code> somente se houver runtime real</li>
+          <li>Declarar dependências explícitas por fase</li>
+          <li>Adicionar o descriptor ao grafo global</li>
+          <li>Confirmar que o installer não depende de bootstrap</li>
+          <li>Confirmar que o root não carrega wiring interno do módulo</li>
+        </ul>
+      </section>
+
+      <section class="panel" id="mistakes">
+        <h2>Erros comuns</h2>
+        <div class="cards">
+          <article class="card"><strong>Misturar fases</strong><span>colocar composição runtime dentro do installer.</span></article>
+          <article class="card"><strong>Root gordo</strong><span>manter wiring interno no GlobalCompositionRoot.</span></article>
+          <article class="card"><strong>Dependência errada</strong><span>depender de bootstrap na fase de installer.</span></article>
+          <article class="card"><strong>Bootstrap artificial</strong><span>criar bootstrap sem necessidade real.</span></article>
+          <article class="card"><strong>Prioridade manual</strong><span>usar número solto como source-of-truth de ordem.</span></article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Resumo final</h2>
+        <p>Para adicionar um módulo novo com segurança: descreva o módulo, registre primeiro, componha depois só se houver runtime real, e deixe o root apenas agregar o descriptor e executar o grafo.</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

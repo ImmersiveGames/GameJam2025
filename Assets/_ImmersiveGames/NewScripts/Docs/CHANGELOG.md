@@ -1,5 +1,10 @@
 # Changelog - Docs
 
+## 2026-03-26 - modular composition closeout
+- consolidou o ADR-0038 como decisão canônica final do pipeline modular em duas fases
+- registrou a validação prática em `GameLoop`, `SceneFlow`, `Navigation`, `LevelFlow` e `WorldReset`
+- adicionou o canon `Modular-Composition-Pipeline` e o guia `How-To-Add-A-New-Module-To-Composition`
+
 ## 2026-03-26 - baseline 3.5 closeout
 - fechou a Baseline 3.5 como ponto de estabilizacao arquitetural de `NewScripts`
 - consolidou o encerramento de `SceneFlow`, do stack macro e do stack de reset como base canonica para a proxima camada
