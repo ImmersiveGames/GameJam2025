@@ -6,27 +6,28 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Policies
 {
     public sealed partial class SceneRouteResetPolicy : IRouteResetPolicy
     {
-        private readonly ISceneRouteResolver _routeResolver;
-
         public SceneRouteResetPolicy(ISceneRouteResolver routeResolver = null)
         {
-            _routeResolver = routeResolver;
+            _ = routeResolver;
         }
 
         public RouteResetDecision Resolve(SceneRouteId routeId, SceneRouteDefinition? routeDefinition, SceneTransitionContext context)
         {
+            _ = context;
+
             if (!routeId.IsValid)
             {
                 HandleFatalConfig("routeId vazio/inválido para RouteResetPolicy.");
                 return default;
             }
 
-            if (!TryResolveDefinition(routeId, routeDefinition, out var resolvedDefinition))
+            if (routeDefinition == null)
             {
-                HandleFatalConfig($"routeId='{routeId.Value}' não foi resolvida no catálogo para RouteResetPolicy.");
+                HandleFatalConfig($"routeId='{routeId.Value}' sem SceneRouteDefinition resolvida para RouteResetPolicy.");
                 return default;
             }
 
+            SceneRouteDefinition resolvedDefinition = routeDefinition.Value;
             if (resolvedDefinition.RouteKind == SceneRouteKind.Unspecified)
             {
                 HandleFatalConfig($"routeId='{routeId.Value}' com RouteKind='{SceneRouteKind.Unspecified}' é inválido para RouteResetPolicy.");
@@ -37,19 +38,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Policies
                 shouldReset: resolvedDefinition.RequiresWorldReset,
                 decisionSource: $"routePolicy:{resolvedDefinition.RouteKind}",
                 reason: "RoutePolicy");
-        }
-
-        private bool TryResolveDefinition(SceneRouteId routeId, SceneRouteDefinition? routeDefinition, out SceneRouteDefinition resolved)
-        {
-            resolved = default;
-
-            if (routeDefinition is { } direct)
-            {
-                resolved = direct;
-                return true;
-            }
-
-            return _routeResolver != null && _routeResolver.TryResolve(routeId, out resolved);
         }
 
         private static void HandleFatalConfig(string detail)

@@ -9,6 +9,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 {
     /// <summary>
     /// Orquestra readiness do jogo em resposta ao Scene Flow.
+    /// Consome transições para refletir gate/readiness; não decide reset nem policy de rota.
     /// Bloqueia simulação durante transições de cena usando ISimulationGateService
     /// e emite snapshots de readiness via EventBus para consumidores (ex.: GameplayStateGate).
     ///
@@ -49,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
                 _gateService.GateChanged += OnGateChanged;
             }
 
-            DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado nos eventos de Scene Flow.");
+            DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado como consumidor de Scene Flow -> SimulationGate.");
 
             // Snapshot inicial (útil em bootstrap/QA). Publica apenas se houver mudança (primeira vez sempre publica).
             PublishSnapshot("bootstrap", force: false);
@@ -107,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             AcquireGate();
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context={evt.context}");
+                $"[Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. consumer='GameReadinessService' Context={evt.context}");
 
             PublishSnapshot("scene_transition_started", force: true);
         }
@@ -115,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
         private void OnSceneTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context={evt.context}");
+                $"[Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. consumer='GameReadinessService' Context={evt.context}");
 
             // Ainda não marca gameplayReady, apenas sinaliza fase intermediária.
             PublishSnapshot("scene_transition_scenes_ready", force: true);
@@ -134,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
                 : "NonGameplayReady";
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionCompleted → gate liberado e fase {readinessPhase} marcada. " +
+                $"[Readiness] SceneTransitionCompleted → gate liberado e fase {readinessPhase} marcada. consumer='GameReadinessService' " +
                 $"gameplayReady={_gameplayReady}. Context={evt.context}");
 
             PublishSnapshot(

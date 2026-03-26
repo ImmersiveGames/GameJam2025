@@ -13,6 +13,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
     /// - Readiness (GameplayReady) para liberar ações quando o mundo + fluxo estão prontos
     /// - GameLoop (opcional): usado quando expõe estados que indicam "jogável" vs "não jogável"
     ///
+    /// Boundary:
+    /// - Este gate consome readiness/gate e eventos de reset de run.
+    /// - Não decide policy de reset e não publica intenção de reset.
+    ///
     /// Ajuste importante:
     /// - Logs de "Move bloqueado/liberado" são emitidos SOMENTE quando a situação muda
     ///   E apenas após o primeiro consumo de CanExecuteAction(Move) (clean option).
@@ -152,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
             if (!_snapshot.TryConsumeReset(reason, frame))
             {
                 DebugUtility.LogVerbose<GameplayStateGate>(
-                    $"[OBS][GRS] StateDependent reset dedupe event='GameResetRequestedEvent' reason='{reason}' frame={frame} reasonCode='duplicate_same_frame'.",
+                    $"[OBS][GRS] StateDependent reset dedupe consumer='GameplayStateGate' event='GameResetRequestedEvent' reason='{reason}' frame={frame} reasonCode='duplicate_same_frame'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -167,10 +171,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
             int frame = Time.frameCount;
             if (!_snapshot.TryConsumePause(key, frame))
             {
-                DebugUtility.LogVerbose<GameplayStateGate>(
-                    $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='GameplayStateGate' key='{key}' frame='{frame}'",
-                    DebugUtility.Colors.Info);
-                return;
+            DebugUtility.LogVerbose<GameplayStateGate>(
+                $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='GameplayStateGate' key='{key}' frame='{frame}'",
+                DebugUtility.Colors.Info);
+            return;
             }
 
             DebugUtility.LogVerbose<GameplayStateGate>(

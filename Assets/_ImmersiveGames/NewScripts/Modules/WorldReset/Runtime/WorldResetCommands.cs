@@ -39,6 +39,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
 
             IWorldResetService resetService = ResolveMacroResetServiceOrFail();
             var request = new WorldResetRequest(
+                kind: ResetKind.Macro,
                 contextSignature: normalizedMacroSignature,
                 reason: normalizedReason,
                 targetScene: string.Empty,
@@ -80,6 +81,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
 
                 SceneRouteId macroRouteId = snapshot.MacroRouteId;
                 var request = new WorldResetRequest(
+                    kind: ResetKind.Level,
                     contextSignature: string.Empty,
                     reason: normalizedReason,
                     targetScene: string.Empty,

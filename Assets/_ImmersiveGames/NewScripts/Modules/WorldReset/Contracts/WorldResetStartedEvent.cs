@@ -19,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
             string contextSignature,
             LevelContextSignature levelSignature,
             WorldResetOrigin origin,
+            string targetScene,
             string sourceSignature = null)
         {
             Kind = kind;
@@ -26,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
             Reason = Normalize(reason);
             ContextSignature = Normalize(contextSignature);
             LevelSignature = levelSignature;
+            TargetScene = Normalize(targetScene);
             Origin = origin;
             SourceSignature = Normalize(sourceSignature);
         }
@@ -38,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
                 contextSignature,
                 LevelContextSignature.Empty,
                 WorldResetOrigin.Unknown,
+                string.Empty,
                 contextSignature)
         {
         }
@@ -48,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
         public string ContextSignature { get; }
         public string SourceSignature { get; }
         public LevelContextSignature LevelSignature { get; }
+        public string TargetScene { get; }
         public WorldResetOrigin Origin { get; }
 
         public string MacroSignature => ContextSignature;
@@ -56,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
 
         public override string ToString()
         {
-            return $"WorldResetStartedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', LevelSignature='{LevelSignature}', Reason='{Reason}', Origin='{Origin}')";
+            return $"WorldResetStartedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', LevelSignature='{LevelSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Origin='{Origin}')";
         }
 
         private static string Normalize(string value)

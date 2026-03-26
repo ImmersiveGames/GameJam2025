@@ -15,16 +15,17 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
         public void PublishStarted(WorldResetRequest request)
         {
             DebugUtility.LogVerbose<WorldResetLifecyclePublisher>(
-                $"[{ResetLogTags.Start}][OBS][WorldReset] ResetStarted kind='{ResolveKind(request)}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' levelSignature='{request.LevelSignature}' reason='{request.Reason}' origin='{request.Origin}'.",
+                $"[{ResetLogTags.Start}][OBS][WorldReset] ResetStarted kind='{request.Kind}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' targetScene='{request.TargetScene}' levelSignature='{request.LevelSignature}' reason='{request.Reason}' origin='{request.Origin}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<WorldResetStartedEvent>.Raise(new WorldResetStartedEvent(
-                ResolveKind(request),
+                request.Kind,
                 request.MacroRouteId,
                 request.Reason,
                 request.ContextSignature,
                 request.LevelSignature,
                 request.Origin,
+                request.TargetScene,
                 request.SourceSignature));
         }
 
@@ -33,13 +34,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             string completionDetail = string.IsNullOrWhiteSpace(detail) ? string.Empty : detail.Trim();
 
             DebugUtility.LogVerbose<WorldResetLifecyclePublisher>(
-                $"[{ResetLogTags.Completed}][OBS][WorldReset] ResetCompleted kind='{ResolveKind(request)}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' levelSignature='{request.LevelSignature}' reason='{request.Reason}' outcome='{outcome}' detail='{completionDetail}' origin='{request.Origin}'.",
+                $"[{ResetLogTags.Completed}][OBS][WorldReset] ResetCompleted kind='{request.Kind}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' targetScene='{request.TargetScene}' levelSignature='{request.LevelSignature}' reason='{request.Reason}' outcome='{outcome}' detail='{completionDetail}' origin='{request.Origin}'.",
                 outcome == WorldResetOutcome.Completed || outcome == WorldResetOutcome.SkippedByPolicy || outcome == WorldResetOutcome.SkippedValidation
                     ? DebugUtility.Colors.Success
                     : DebugUtility.Colors.Warning);
 
             EventBus<WorldResetCompletedEvent>.Raise(new WorldResetCompletedEvent(
-                ResolveKind(request),
+                request.Kind,
                 request.MacroRouteId,
                 request.Reason,
                 request.ContextSignature,
@@ -47,12 +48,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 outcome,
                 completionDetail,
                 request.Origin,
+                request.TargetScene,
                 request.SourceSignature));
-        }
-
-        private static ResetKind ResolveKind(WorldResetRequest request)
-        {
-            return request.LevelSignature.IsValid ? ResetKind.Level : ResetKind.Macro;
         }
     }
 }

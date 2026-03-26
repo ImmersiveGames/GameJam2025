@@ -65,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
                         outcome: WorldResetOutcome.Disposed,
                         detail: WorldResetReasons.GateDisposed,
                         origin: WorldResetOrigin.Unknown,
+                        targetScene: string.Empty,
                         sourceSignature: kv.Key));
                 }
 

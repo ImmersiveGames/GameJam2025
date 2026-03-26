@@ -40,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 
         public SceneRouteId RouteId => routeId;
         public SceneRouteKind RouteKind => routeKind;
+        public bool RequiresWorldReset => requiresWorldReset;
         public LevelCollectionAsset LevelCollection => levelCollection;
         public AudioBgmCueAsset BgmCue => bgmCue;
 
@@ -56,6 +57,11 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 DebugUtility.Colors.Info);
 
             return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset);
+        }
+
+        public void ValidateRoutePolicyOrFailFast()
+        {
+            EnsureValidRoutePolicy();
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

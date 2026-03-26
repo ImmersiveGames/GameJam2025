@@ -42,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
                     DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
+                    kind: ResetKind.Macro,
                     contextSignature: signature,
                     reason: reason,
                     targetScene: activeScene,
@@ -78,7 +79,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
 
     }
 }
-
 
 
 

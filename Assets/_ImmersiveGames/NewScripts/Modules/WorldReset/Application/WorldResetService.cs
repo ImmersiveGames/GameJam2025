@@ -5,15 +5,11 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Guards;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Validation;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 {
@@ -36,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
         public async Task<WorldResetResult> TriggerResetAsync(string? contextSignature, string? reason)
         {
             var request = new WorldResetRequest(
+                kind: ResetKind.Macro,
                 contextSignature: contextSignature ?? string.Empty,
                 reason: reason ?? string.Empty,
                 targetScene: string.Empty,
@@ -106,6 +103,11 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             }
         }
 
+        public void PublishResetCompleted(WorldResetRequest request, WorldResetOutcome outcome, string detail)
+        {
+            _lifecyclePublisher.PublishCompleted(request, outcome, detail);
+        }
+
         private bool IsRecentlyCompletedLocked(string contextSignature)
         {
             if (string.IsNullOrWhiteSpace(contextSignature))
@@ -147,31 +149,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             }
 
             IDependencyProvider provider = DependencyManager.Provider;
-
-            provider.TryGetGlobal<IWorldResetPolicy>(out IWorldResetPolicy policy);
-            provider.TryGetGlobal<ISimulationGateService>(out ISimulationGateService gateService);
-
-            var guards = new List<IWorldResetGuard>(1)
-            {
-                new SimulationGateWorldResetGuard(gateService)
-            };
-
-            var validators = new List<IWorldResetValidator>(1)
-            {
-                new WorldResetSignatureValidator()
-            };
-
-            WorldResetValidationPipeline validationPipeline = new WorldResetValidationPipeline(validators);
-            WorldResetExecutor executor = new WorldResetExecutor();
-            WorldResetPostResetValidator postResetValidator = new WorldResetPostResetValidator(provider);
-
-            _orchestrator = new WorldResetOrchestrator(
-                policy,
-                guards,
-                validationPipeline,
-                executor,
-                postResetValidator,
-                _lifecyclePublisher);
+            _orchestrator = WorldResetOrchestrator.CreateDefault(provider, _lifecyclePublisher);
 
             _dependenciesResolved = true;
         }

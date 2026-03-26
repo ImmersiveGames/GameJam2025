@@ -153,9 +153,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
                 FailFast($"RouteDefinitionAsset invalido em routeDefinitions[{index}] (routeId vazio). asset='{routeAsset.name}'.");
             }
 
+            routeAsset.ValidateRoutePolicyOrFailFast();
             routeDefinition = routeAsset.ToDefinition();
             EnsureActiveScenePolicy(routeId, routeDefinition.RouteKind, routeDefinition.TargetActiveScene, "assetRef");
-            EnsureResetPolicyConsistency(routeId, routeDefinition.RouteKind, routeDefinition.RequiresWorldReset, "assetRef");
         }
 
         private static void EnsureActiveScenePolicy(SceneRouteId routeId, SceneRouteKind routeKind, string activeScene, string source)
@@ -172,24 +172,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         {
             // Comentario: rotas de gameplay devem sempre definir cena ativa alvo.
             return routeKind == SceneRouteKind.Gameplay;
-        }
-
-        private static void EnsureResetPolicyConsistency(SceneRouteId routeId, SceneRouteKind routeKind, bool requiresWorldReset, string source)
-        {
-            if (routeKind == SceneRouteKind.Unspecified)
-            {
-                FailFast($"routeId='{routeId}' resolvida via {source} possui RouteKind='{SceneRouteKind.Unspecified}' (invalido para policy de reset).");
-            }
-
-            if (routeKind == SceneRouteKind.Gameplay && !requiresWorldReset)
-            {
-                FailFast($"routeId='{routeId}' resolvida via {source} exige requiresWorldReset=true para RouteKind='{SceneRouteKind.Gameplay}'.");
-            }
-
-            if (routeKind == SceneRouteKind.Frontend && requiresWorldReset)
-            {
-                FailFast($"routeId='{routeId}' resolvida via {source} exige requiresWorldReset=false para RouteKind='{SceneRouteKind.Frontend}'.");
-            }
         }
 
         private static void FailFast(string message)

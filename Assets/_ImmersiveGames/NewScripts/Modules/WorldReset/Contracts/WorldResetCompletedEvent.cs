@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
             WorldResetOutcome outcome,
             string detail,
             WorldResetOrigin origin,
+            string targetScene,
             string sourceSignature = null)
         {
             Kind = kind;
@@ -30,6 +31,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
             LevelSignature = levelSignature;
             Outcome = outcome;
             Detail = Normalize(detail);
+            TargetScene = Normalize(targetScene);
             Origin = origin;
             SourceSignature = Normalize(sourceSignature);
         }
@@ -44,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
                 WorldResetOutcome.Completed,
                 string.Empty,
                 WorldResetOrigin.Unknown,
+                string.Empty,
                 contextSignature)
         {
         }
@@ -56,6 +59,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
         public LevelContextSignature LevelSignature { get; }
         public WorldResetOutcome Outcome { get; }
         public string Detail { get; }
+        public string TargetScene { get; }
         public WorldResetOrigin Origin { get; }
 
         public string MacroSignature => ContextSignature;
@@ -64,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
 
         public override string ToString()
         {
-            return $"WorldResetCompletedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', LevelSignature='{LevelSignature}', Reason='{Reason}', Outcome='{Outcome}', Detail='{Detail}', Origin='{Origin}')";
+            return $"WorldResetCompletedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', LevelSignature='{LevelSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Outcome='{Outcome}', Detail='{Detail}', Origin='{Origin}')";
         }
 
         private static string Normalize(string value)

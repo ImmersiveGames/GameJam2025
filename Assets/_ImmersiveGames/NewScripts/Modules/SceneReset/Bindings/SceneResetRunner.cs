@@ -22,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
         private readonly IDependencyProvider _provider;
         private readonly SceneResetHookRegistry _hookRegistry;
         private readonly string _sceneName;
+        private readonly SceneResetPipeline _pipeline;
 
         public SceneResetRunner(
             ISimulationGateService gateService,
@@ -37,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
             _provider = provider;
             _hookRegistry = hookRegistry;
             _sceneName = sceneName ?? string.Empty;
+            _pipeline = SceneResetPipeline.CreateDefault();
         }
 
         public Task ExecuteWorldResetAsync()
@@ -60,7 +62,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
                 _actorRegistry,
                 provider: _provider,
                 sceneName: _sceneName,
-                hookRegistry: _hookRegistry);
+                hookRegistry: _hookRegistry,
+                pipeline: _pipeline);
         }
 
         private List<IWorldSpawnService> CollectSpawnServices()

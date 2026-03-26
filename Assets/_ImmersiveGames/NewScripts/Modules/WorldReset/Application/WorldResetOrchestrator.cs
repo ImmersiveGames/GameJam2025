@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
@@ -40,6 +42,41 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
             _postResetValidator = postResetValidator ?? throw new ArgumentNullException(nameof(postResetValidator));
             _lifecyclePublisher = lifecyclePublisher ?? throw new ArgumentNullException(nameof(lifecyclePublisher));
+        }
+
+        public static WorldResetOrchestrator CreateDefault(
+            IDependencyProvider provider,
+            WorldResetLifecyclePublisher lifecyclePublisher)
+        {
+            if (provider == null)
+            {
+                throw new InvalidOperationException("IDependencyProvider is required to build the WorldResetOrchestrator.");
+            }
+
+            provider.TryGetGlobal<IWorldResetPolicy>(out IWorldResetPolicy policy);
+            provider.TryGetGlobal<ISimulationGateService>(out ISimulationGateService gateService);
+
+            var guards = new List<IWorldResetGuard>(1)
+            {
+                new SimulationGateWorldResetGuard(gateService)
+            };
+
+            var validators = new List<IWorldResetValidator>(1)
+            {
+                new WorldResetSignatureValidator()
+            };
+
+            WorldResetValidationPipeline validationPipeline = new WorldResetValidationPipeline(validators);
+            WorldResetExecutor executor = new WorldResetExecutor();
+            WorldResetPostResetValidator postResetValidator = new WorldResetPostResetValidator(provider);
+
+            return new WorldResetOrchestrator(
+                policy,
+                guards,
+                validationPipeline,
+                executor,
+                postResetValidator,
+                lifecyclePublisher);
         }
 
         public async Task<WorldResetResult> ExecuteAsync(WorldResetRequest request)

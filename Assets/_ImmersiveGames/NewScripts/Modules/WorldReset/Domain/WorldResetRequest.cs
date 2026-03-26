@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
 {
@@ -11,12 +12,14 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
     public readonly struct WorldResetRequest
     {
         public WorldResetRequest(
+            ResetKind kind,
             string contextSignature,
             string reason,
             string targetScene,
             WorldResetOrigin origin,
             string sourceSignature = null)
             : this(
+                kind,
                 contextSignature,
                 reason,
                 targetScene,
@@ -28,6 +31,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
         }
 
         public WorldResetRequest(
+            ResetKind kind,
             string contextSignature,
             string reason,
             string targetScene,
@@ -36,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
             LevelContextSignature levelSignature,
             string sourceSignature = null)
         {
+            Kind = kind;
             ContextSignature = contextSignature ?? string.Empty;
             Reason = reason ?? string.Empty;
             TargetScene = targetScene ?? string.Empty;
@@ -46,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
             CreatedUtc = DateTime.UtcNow;
         }
 
+        public ResetKind Kind { get; }
         public string ContextSignature { get; }
         public string SourceSignature { get; }
         public string Reason { get; }
@@ -59,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
 
         public override string ToString()
         {
-            return $"WorldResetRequest(Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', LevelSignature='{LevelSignature}')";
+            return $"WorldResetRequest(Kind='{Kind}', Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', LevelSignature='{LevelSignature}')";
         }
     }
 }
