@@ -21,7 +21,7 @@ Este indice resume owners e contratos canonicos vigentes.
 | Loading macro | `LoadingHudScene` + `ILoadingPresentationService` + `LoadingHudService` | HUD canonica do macro flow; apresentacao de barra, porcentagem, etapa e spinner |
 | Level prepare/swap | `LevelMacroPrepareService` + `LevelSwapLocalService` | prepare macro e troca local de level |
 | IntroStage | `LevelFlowRuntimeService` + `LevelEnteredEvent` + `LevelIntroCompletedEvent` + `LevelStageOrchestrator` + `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver` | intro opcional por level, disparada pelo hook canonico pos-aplicacao do level e finalizada por handoff canonico |
-| PostGame | `GameLoopService` + `PostGameOwnershipService` + `PostGameResultService` | post global com `Victory`, `Defeat` e `Exit` |
+| PostGame / PostStage | `Modules/PostGame` | owner do stage pos-outcome; handoff final para `GameLoop` ocorre somente apos `PostStageCompletedEvent` |
 | Level post reaction | `ILevelPostGameHookService` | hook opcional do level, complementar ao post global |
 | Restart | `MacroRestartCoordinator` | restart segue direto por reset macro, sem post hook |
 | World reset | `WorldResetService` + `WorldLifecycleSceneFlowResetDriver` | reset macro orientado por rota |
@@ -35,6 +35,9 @@ Este indice resume owners e contratos canonicos vigentes.
 - Historico nao substitui contrato atual.
 - `LoadingHudScene` faz parte do estado atual oficial: apresentacao canonica do macro flow, sem ownership do pipeline.
 - `Victory/Defeat` pertencem ao baseline atual via mock explicito e controlado, sem canonizar regra final de gameplay.
+- `PostStage` e fluxo canonico implementado e validado em `Modules/PostGame`.
+- `PostGame` permanece global na implementacao atual, mas o ownership alvo do stage e `Modules/PostGame`.
+- O default operacional continua sendo sem PostStage; levels com presenter explicito executam stage real.
 - `IntroStage` e level-owned, opcional, disparada por hook canonico pos-level-applied (`LevelEnteredEvent`) e finalizada por `LevelIntroCompletedEvent`.
 - O presenter canonico da intro e resolvido por contrato, com escopo fornecido por `ILevelIntroStagePresenterScopeResolver`.
 

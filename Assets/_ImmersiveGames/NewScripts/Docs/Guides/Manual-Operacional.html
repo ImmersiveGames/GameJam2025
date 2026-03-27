@@ -328,7 +328,7 @@
           <div class="callout"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Ligar <code>hasPostGameReactionHook</code> no <code>LevelDefinitionAsset</code>.</li><li>Manter o owner do pos-run no fluxo global.</li><li>Usar esse contrato apenas para complementar <code>Victory</code>, <code>Defeat</code> ou <code>Exit</code>.</li></ol></div>
           <div class="callout use"><div class="mini-title">O que esperar</div><ul class="step-list"><li><code>PostGame</code> continua global.</li><li>O level atual pode complementar com feedback visual.</li><li><code>Restart</code> fica fora desse hook.</li></ul></div>
         </div>
-        <div class="callout bad" style="margin-top:16px;"><div class="mini-title">Evite isto</div><div>Tratar esse hook como <code>PostStage</code> por level. O contrato atual nao permite isso.</div></div>
+        <div class="callout bad" style="margin-top:16px;"><div class="mini-title">Evite isto</div><div>Tratar esse hook como owner do <code>PostStage</code>. O owner de <code>PostStage</code> e global em <code>Modules/PostGame</code>, nao por level.</div></div>
       </section>
 
       <section class="panel" id="rearm">

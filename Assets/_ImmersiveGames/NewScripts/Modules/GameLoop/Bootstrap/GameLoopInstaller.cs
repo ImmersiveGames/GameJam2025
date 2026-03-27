@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Run;
-using _ImmersiveGames.NewScripts.Modules.PostGame;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
@@ -15,8 +14,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
     /// Installer do GameLoop.
     ///
     /// Responsabilidade:
-    /// - registrar contratos e implementações do módulo no boot;
-    /// - não compor runtime nem ativar bridges/hosts.
+    /// - registrar contratos e implementaÃ§Ãµes do mÃ³dulo no boot;
+    /// - nÃ£o compor runtime nem ativar bridges/hosts.
     /// </summary>
     public static class GameLoopInstaller
     {
@@ -39,8 +38,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             RegisterIntroStageControlService();
             RegisterGameplaySceneClassifier();
             RegisterDefaultIntroStageStep();
-            RegisterPostGameResultService();
-            RegisterPostPlayOwnershipService();
 
             _installed = true;
 
@@ -151,22 +148,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 () => new ConfirmToStartIntroStageStep(),
                 "[IntroStageController] IIntroStageStep ja registrado no DI global.",
                 "[IntroStageController] ConfirmToStartIntroStageStep registrado no DI global.");
-        }
-
-        private static void RegisterPostGameResultService()
-        {
-            RegisterIfMissing<IPostGameResultService>(
-                () => new PostGameResultService(),
-                "[PostGame] IPostGameResultService ja registrado no DI global.",
-                "[PostGame] PostGameResultService registrado no DI global.");
-        }
-
-        private static void RegisterPostPlayOwnershipService()
-        {
-            RegisterIfMissing<IPostGameOwnershipService>(
-                () => new PostGameOwnershipService(),
-                "[PostPlay] IPostGameOwnershipService ja registrado no DI global.",
-                "[PostPlay] PostGameOwnershipService registrado no DI global.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

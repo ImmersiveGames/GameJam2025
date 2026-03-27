@@ -13,6 +13,13 @@
   - `IntroStage` opcional
   - hook opcional para complementar a resposta ao resultado global
 
+## PostStage em runtime
+
+- `LevelFlow` nao e owner do `PostStage`.
+- O papel de `LevelFlow` e fornecer contrato/conteudo da cena atual para o `PostStage` quando existir presenter explicito no level.
+- O hook opcional de nivel continua complementar, nao orquestrador.
+- O contrato completo fica definido em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
+
 ## Ownership
 
 - `LevelFlowRuntimeService`: start gameplay default e restart da ultima entrada valida.
@@ -23,14 +30,16 @@
 - `LevelStageOrchestrator`: trigger e dedupe de intro.
 - `ILevelStagePresentationService`: contrato do level atual para intro e hook opcional de post.
 - `ILevelPostGameHookService`: reacao opcional do level ao resultado global.
-- `ILevelIntroStagePresenterRegistry`: contrato atômico de adotar/validar o presenter de intro.
+- `ILevelIntroStagePresenterRegistry`: contrato atomico de adotar/validar o presenter de intro.
 - `ILevelIntroStagePresenterScopeResolver`: abstracao de escopo/candidatos validos de presenter do level atual.
+- No runtime validado de `PostStage`, o level continua apenas como provedor de contrato/conteudo/presenter, sem ownership da orquestracao.
 
 ## Regras praticas
 
 - Intro e level-owned, disparada pelo hook canonico `LevelEnteredEvent`.
 - Quando a intro conclui ou e pulada, `LevelIntroCompletedEvent` faz o handoff para o GameLoop seguir para `Playing`.
 - Se o level nao tiver intro, o fluxo segue sem erro e sem pendencia.
+- Se o level nao expuser presenter de `PostStage`, o fluxo faz skip automatico.
 - O hook opcional do level nao substitui o resultado global.
 - `Restart` nao passa por esse hook.
 - `NextLevel` e uma acao de progressao local, nao um post stage generico.
@@ -38,6 +47,7 @@
 
 ## Leitura cruzada
 
+- `Docs/Modules/PostGame.md`
 - `Docs/Modules/GameLoop.md`
 - `Docs/Modules/Navigation.md`
 - `Docs/Guides/Production-How-To-Use-Core-Modules.md`

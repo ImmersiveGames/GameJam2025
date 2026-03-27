@@ -1,25 +1,32 @@
+using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+using _ImmersiveGames.NewScripts.Modules.PostGame;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
 {
     /// <summary>
-    /// Bridge do fim de run: GameRunEndedEvent -> IGameLoopService.RequestRunEnd().
+    /// Bridge do fim de run: GameRunEndedEvent -> PostStage -> IGameLoopService.RequestRunEnd().
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunEndedEventBridge : MonoBehaviour
     {
         private EventBinding<GameRunEndedEvent> _binding;
+        private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private bool _registered;
+        private bool _postStagePending;
 
         private void Awake()
         {
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
+            _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
             RegisterBinding();
         }
 
@@ -46,6 +53,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             }
 
             EventBus<GameRunEndedEvent>.Register(_binding);
+            EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
             _registered = true;
         }
 
@@ -57,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             }
 
             EventBus<GameRunEndedEvent>.Unregister(_binding);
+            EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
             _registered = false;
         }
 
@@ -65,22 +74,73 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             if (!IsGameplayScene())
             {
                 DebugUtility.LogWarning<GameRunEndedEventBridge>(
-                    $"[OBS][PostGame] PostGameSkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
+                    $"[OBS][PostGame] PostStageSkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+            if (_postStagePending)
             {
-                DebugUtility.LogWarning<GameRunEndedEventBridge>(
-                    "[GameLoop] GameRunEndedEvent recebido mas IGameLoopService não foi encontrado no escopo global.");
+                DebugUtility.LogVerbose<GameRunEndedEventBridge>(
+                    "[OBS][PostGame] PostStageRunEndIgnored reason='already_pending'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
-            string reason = GameLoopReasonFormatter.Format(evt?.Reason);
-            DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[GameLoop] GameRunEndedEvent recebido. Outcome={evt?.Outcome}, Reason='{reason}'. Sinalizando EndRequested.");
+            _postStagePending = true;
+            _ = HandleGameRunEndedAsync(evt);
+        }
 
-            gameLoopService.RequestRunEnd();
+        private void OnGameRunStarted(GameRunStartedEvent evt)
+        {
+            _postStagePending = false;
+        }
+
+        private async Task HandleGameRunEndedAsync(GameRunEndedEvent evt)
+        {
+            try
+            {
+                await Task.Yield();
+
+                if (!DependencyManager.Provider.TryGetGlobal<IPostStageCoordinator>(out var postStageCoordinator) || postStageCoordinator == null)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][PostGame] GameRunEndedEvent recebido mas IPostStageCoordinator nao foi encontrado no escopo global.");
+                    return;
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameLoop] GameRunEndedEvent recebido mas IGameLoopService nao foi encontrado no escopo global.");
+                    return;
+                }
+
+                string reason = GameLoopReasonFormatter.Format(evt?.Reason);
+                string sceneName = SceneManager.GetActiveScene().name;
+                var context = new PostStageContext(
+                    signature: sceneName,
+                    sceneName: sceneName,
+                    frame: Time.frameCount,
+                    outcome: evt?.Outcome ?? GameRunOutcome.Unknown,
+                    reason: reason,
+                    isGameplayScene: IsGameplayScene());
+
+                DebugUtility.Log<GameRunEndedEventBridge>(
+                    $"[GameLoop] GameRunEndedEvent recebido. Outcome={evt?.Outcome}, Reason='{reason}'. Iniciando PostStage.");
+
+                await postStageCoordinator.RunAsync(context);
+
+                DebugUtility.Log<GameRunEndedEventBridge>(
+                    $"[OBS][PostGame] PostStageRunEndHandoff signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
+                    DebugUtility.Colors.Info);
+
+                gameLoopService.RequestRunEnd();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<GameRunEndedEventBridge>(
+                    $"[FATAL][PostGame] Falha inesperada ao executar PostStage. ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
         }
 
         private static bool IsGameplayScene()

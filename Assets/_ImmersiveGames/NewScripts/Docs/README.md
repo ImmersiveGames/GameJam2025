@@ -14,13 +14,14 @@ Leia nesta ordem:
 7. `Docs/Modules/Navigation.md`
 8. `Docs/Modules/LevelFlow.md`
 9. `Docs/Modules/GameLoop.md`
-10. `Docs/Modules/Gameplay.md`
-11. `Docs/Modules/WorldLifecycle.md`
-12. `Docs/Modules/InputModes.md`
-13. `Docs/ADRs/README.md`
-14. `Docs/Reports/Audits/LATEST.md`
-15. `Docs/Reports/Evidence/LATEST.md`
-16. `Docs/CHANGELOG.md`
+10. `Docs/Modules/PostGame.md`
+11. `Docs/Modules/Gameplay.md`
+12. `Docs/Modules/WorldLifecycle.md`
+13. `Docs/Modules/InputModes.md`
+14. `Docs/ADRs/README.md`
+15. `Docs/Reports/Audits/LATEST.md`
+16. `Docs/Reports/Evidence/LATEST.md`
+17. `Docs/CHANGELOG.md`
 
 ## Guias de uso
 
@@ -54,7 +55,10 @@ Regra:
 - `ILoadingPresentationService` e `LoadingHudService` cuidam apenas da apresentacao de loading.
 - `IntroStage` e level-owned, opcional, disparada pelo hook `LevelEnteredEvent` e finalizada por `LevelIntroCompletedEvent`.
 - O presenter canonico da intro e resolvido por `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver`.
-- `PostGame` e global, com resultados formais `Victory`, `Defeat` e `Exit`.
+- `PostGame` e global no runtime atual, com `PostStage` implementado e validado.
+- O contrato oficial de `PostStage` esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
+- Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.
+- Levels com presenter explicito executam `PostStage` real e validam GUI minima.
 - `Restart` nao passa por post hook.
 - O level atual pode expor apenas um hook opcional para complementar a resposta ao resultado.
 - `ActorGroupRearm` e a nomenclatura canonica de rearm local de gameplay.

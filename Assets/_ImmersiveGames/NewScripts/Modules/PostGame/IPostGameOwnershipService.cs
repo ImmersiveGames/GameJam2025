@@ -6,6 +6,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
     public interface IPostGameOwnershipService
     {
         bool IsOwnerEnabled { get; }
+        bool IsActive { get; }
         void OnPostGameEntered(PostGameOwnershipContext context);
         void OnPostGameExited(PostGameOwnershipExitContext context);
     }

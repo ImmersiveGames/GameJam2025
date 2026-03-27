@@ -29,6 +29,7 @@ Ele nao promove como API principal:
 | Trocar para um level especifico | `ILevelFlowRuntimeService.SwapLevelLocalAsync(levelRef, reason, ct)` | `Task` | `await levelFlow.SwapLevelLocalAsync(levelRef, "UI/SelectLevel", cancellationToken);` |
 | Rearm local de atores | `IActorGroupRearmOrchestrator.RequestResetAsync(request)` | `Task<bool>` | `await actorGroupRearm.RequestResetAsync(request);` |
 | Fechar ou pular intro atual | `IIntroStageControlService.CompleteIntroStage(reason)` | `void` | `introStageControl.CompleteIntroStage("Intro/ContinueButton");` |
+| Validar o PostStage da cena atual | `IPostStageControlService.TryComplete(reason)` / `TrySkip(reason)` | `bool` | `postStageControl.TryComplete("PostStage/ContinueButton");` |
 | Atualizar a HUD de loading | `ILoadingPresentationService.SetProgress(signature, snapshot)` | `void` | `loadingPresentation.SetProgress(signature, snapshot);` |
 
 ## Como pensar o fluxo atual
@@ -41,8 +42,8 @@ Ele nao promove como API principal:
 - `LoadingHudScene` e a HUD canonica de loading do macro flow.
 - `ILoadingPresentationService` cuida apenas da apresentacao de loading.
 - `IntroStage` e level-owned e opcional.
-- `PostGame` e global.
-- O level atual pode apenas complementar o `PostGame` global com um hook opcional.
+- `PostGame` e global, com `PostStage` validado antes do handoff final.
+- O level atual pode complementar o `PostGame` global com um hook opcional e, se expuser presenter de `PostStage`, validara a GUI da cena atual.
 - `Restart` nao passa por esse hook.
 - `ActorGroupRearm` e o trilho canonico de rearm local.
 
@@ -168,6 +169,17 @@ Use quando uma UI ou system precisa concluir ou pular a intro atual.
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime;
 
 introStageControl.CompleteIntroStage("Intro/ContinueButton");
+```
+
+### `IPostStageControlService`
+
+Use quando a cena atual expuser presenter valido de `PostStage` e voce quiser concluir ou pular essa fase.
+
+```csharp
+using _ImmersiveGames.NewScripts.Modules.PostGame;
+
+postStageControl.TryComplete("PostStage/ContinueButton");
+postStageControl.TrySkip("PostStage/SkipButton");
 ```
 
 ### `ILoadingPresentationService`
@@ -590,9 +602,10 @@ Nada diretamente para o hook. O `PostGame` global continua sendo dono da entrada
 - `Victory`, `Defeat` e `Exit` continuam globais
 - o level atual pode complementar esse fluxo com reacao visual
 - `Restart` segue direto para reset/restart e nao passa por esse hook
+- o contrato de `PostStage` e global em `Modules/PostGame`, nao por level
 
 ### Erro comum
-Tratar esse hook como um `PostStage` por level. Hoje isso nao existe no contrato atual.
+Tratar esse hook como owner do `PostStage`. O contrato de `PostStage` e global em `Modules/PostGame`; este hook continua apenas complementar.
 
 ## Receita: fazer um ator participar do `ActorGroupRearm`
 
@@ -869,6 +882,7 @@ Erro comum:
 O que fazer:
 - use a flag `hasPostGameReactionHook` apenas para complementar `Victory`, `Defeat` ou `Exit`
 - mantenha `Restart` fora desse fluxo
+- trate `PostStage` como fluxo global em `Modules/PostGame`, com presenter opcional por cena
 
 ### Rearm
 Erro comum:

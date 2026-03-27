@@ -60,6 +60,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         private IDisposable _gateHandle;
 
         public bool IsOwnerEnabled => true;
+        public bool IsActive => _isActive;
 
         public void OnPostGameEntered(PostGameOwnershipContext context)
         {
@@ -71,6 +72,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             _isActive = true;
             ApplyPostGameInputMode(context);
             AcquireGate();
+            EventBus<PostGameEnteredEvent>.Raise(new PostGameEnteredEvent(context));
 
             if (context.Result == PostGameResult.Victory || context.Result == PostGameResult.Defeat)
             {
@@ -88,6 +90,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             _isActive = false;
             ReleaseGate(context.Reason);
             ApplyExitInputMode(context);
+            EventBus<PostGameExitedEvent>.Raise(new PostGameExitedEvent(context));
 
             if (context.Result == PostGameResult.Exit)
             {
