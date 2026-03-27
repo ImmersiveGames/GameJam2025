@@ -85,11 +85,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
 
             if (evt != null && evt.IsPaused)
             {
-                loop.RequestPause();
+                loop.RequestPause(evt.Reason);
             }
             else
             {
-                loop.RequestResume();
+                loop.RequestResume(evt?.Reason);
             }
         }
 
@@ -116,17 +116,17 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
                 return;
             }
 
-            loop.RequestResume();
+            loop.RequestResume(evt?.Reason);
         }
 
         private static string BuildPauseKey(GamePauseCommandEvent evt)
         {
-            string reason = GameLoopReasonFormatter.Format(null);
+            string reason = GameLoopReasonFormatter.Format(evt?.Reason);
             bool isPaused = evt is { IsPaused: true };
             return $"pause|isPaused={isPaused}|reason={reason}";
         }
 
         private static string BuildResumeKey(GameResumeRequestedEvent evt)
-            => $"resume|reason={GameLoopReasonFormatter.Format(null)}";
+            => $"resume|reason={GameLoopReasonFormatter.Format(evt?.Reason)}";
     }
 }

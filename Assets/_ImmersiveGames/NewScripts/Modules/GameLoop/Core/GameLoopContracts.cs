@@ -37,8 +37,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         void Initialize();
         void Tick(float dt);
         void RequestStart();
-        void RequestPause();
-        void RequestResume();
+        void RequestPause(string reason = null);
+        void RequestResume(string reason = null);
         void RequestReady();
         void RequestSceneFlowCompletionSync(SceneRouteKind routeKind);
         void RequestReset();

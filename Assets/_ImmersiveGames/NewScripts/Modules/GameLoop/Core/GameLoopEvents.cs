@@ -12,8 +12,32 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
     /// </summary>
     public sealed class GamePauseCommandEvent : IEvent
     {
-        public GamePauseCommandEvent(bool isPaused) => IsPaused = isPaused;
+        public GamePauseCommandEvent(bool isPaused, string reason = null)
+        {
+            IsPaused = isPaused;
+            Reason = reason;
+        }
+
         public bool IsPaused { get; }
+        public string Reason { get; }
+    }
+
+    /// <summary>
+    /// Hook precoce para preparar sistemas quando a pausa vai entrar.
+    /// </summary>
+    public sealed class PauseWillEnterEvent : IEvent
+    {
+        public PauseWillEnterEvent(string reason = null) => Reason = reason;
+        public string Reason { get; }
+    }
+
+    /// <summary>
+    /// Hook precoce para preparar sistemas quando a pausa vai sair.
+    /// </summary>
+    public sealed class PauseWillExitEvent : IEvent
+    {
+        public PauseWillExitEvent(string reason = null) => Reason = reason;
+        public string Reason { get; }
     }
 
     /// <summary>
@@ -112,7 +136,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public GameLoopStateId StateId { get; }
     }
 
-    public sealed class GameResumeRequestedEvent : IEvent { }
+    public sealed class GameResumeRequestedEvent : IEvent
+    {
+        public GameResumeRequestedEvent(string reason = null) => Reason = reason;
+        public string Reason { get; }
+    }
     /// <summary>
     /// REQUEST (intencao): "quero sair do gameplay e voltar ao frontend/menu".
     /// </summary>

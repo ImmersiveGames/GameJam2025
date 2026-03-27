@@ -17,6 +17,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         private bool _runStartedEmittedThisRun;
         private GameLoopStateId _lastStateId = GameLoopStateId.Boot;
         private readonly GameLoopStateTransitionEffects _stateTransitionEffects;
+        private string _pendingPauseWillEnterReason;
+        private string _pendingPauseWillExitReason;
 
         public GameLoopService()
         {
@@ -40,8 +42,29 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             _signals.MarkStart();
         }
 
-        public void RequestPause() => _signals.MarkPause();
-        public void RequestResume() => _signals.MarkResume();
+        public void RequestPause(string reason = null)
+        {
+            if (_stateMachine == null || _stateMachine.Current != GameLoopStateId.Playing)
+            {
+                _pendingPauseWillEnterReason = null;
+                return;
+            }
+
+            _pendingPauseWillEnterReason = reason;
+            _signals.MarkPause();
+        }
+
+        public void RequestResume(string reason = null)
+        {
+            if (_stateMachine == null || _stateMachine.Current != GameLoopStateId.Paused)
+            {
+                _pendingPauseWillExitReason = null;
+                return;
+            }
+
+            _pendingPauseWillExitReason = reason;
+            _signals.MarkResume();
+        }
         public void RequestReady() => _signals.MarkReady();
 
         public void RequestSceneFlowCompletionSync(SceneRouteKind routeKind)
@@ -64,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                     DebugUtility.LogVerbose<GameLoopService>(
                         "[GameLoop] SceneFlow completion sync: gameplay em Paused -> RequestResume().",
                         DebugUtility.Colors.Info);
-                    RequestResume();
+                    RequestResume("GameLoop/SceneFlowCompletionSync/GameplayPaused");
                     return;
                 }
 
@@ -126,6 +149,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
             _stateMachine = null;
             CurrentStateIdName = string.Empty;
+            _pendingPauseWillEnterReason = null;
+            _pendingPauseWillExitReason = null;
 
             _runStartedEmittedThisRun = false;
 
@@ -145,8 +170,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             _lastStateId = stateId;
         }
 
-        public void OnStateExited(GameLoopStateId stateId) =>
+        public void OnStateExited(GameLoopStateId stateId)
+        {
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {GetLogStateName(stateId)}");
+            PublishPauseWillChangeIfNeeded(stateId);
+        }
 
         public void OnGameActivityChanged(bool isActive)
         {
@@ -257,6 +285,32 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                     $"[Pause] PauseStateChangedEvent raised isPaused='false' previous='{previousState}' next='{nextState}'.",
                     DebugUtility.Colors.Info);
                 EventBus<PauseStateChangedEvent>.Raise(new PauseStateChangedEvent(false));
+            }
+        }
+
+        private void PublishPauseWillChangeIfNeeded(GameLoopStateId previousState)
+        {
+            if (previousState == GameLoopStateId.Playing && !string.IsNullOrWhiteSpace(_pendingPauseWillEnterReason))
+            {
+                string reason = _pendingPauseWillEnterReason;
+                _pendingPauseWillEnterReason = null;
+
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[Pause] PauseWillEnterEvent raised reason='{GameLoopReasonFormatter.Format(reason)}' previous='{previousState}' phase='before_final_state_change'.",
+                    DebugUtility.Colors.Info);
+                EventBus<PauseWillEnterEvent>.Raise(new PauseWillEnterEvent(reason));
+                return;
+            }
+
+            if (previousState == GameLoopStateId.Paused && !string.IsNullOrWhiteSpace(_pendingPauseWillExitReason))
+            {
+                string reason = _pendingPauseWillExitReason;
+                _pendingPauseWillExitReason = null;
+
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[Pause] PauseWillExitEvent raised reason='{GameLoopReasonFormatter.Format(reason)}' previous='{previousState}' phase='before_final_state_change'.",
+                    DebugUtility.Colors.Info);
+                EventBus<PauseWillExitEvent>.Raise(new PauseWillExitEvent(reason));
             }
         }
 

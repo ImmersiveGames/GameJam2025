@@ -13,8 +13,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
 
     /*
      * Auditoria (GameLoopCommands)
-     * - GamePauseCommandEvent(bool isPaused) -> EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true/false)).
-     * - GameResumeRequestedEvent() -> EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent()).
+     * - GamePauseCommandEvent(bool isPaused, string reason) -> EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true/false, reason)).
+     * - GameResumeRequestedEvent(string reason) -> EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent(reason)).
      * - GameRunEndRequestedEvent(GameRunOutcome outcome, string reason) -> IGameRunEndRequestService.RequestRunEnd(...)
      *   (publica EventBus<GameRunEndRequestedEvent> dentro do serviço).
      * - GameRunEndedEvent(GameRunOutcome outcome, string reason) -> publicado pelo GameRunOutcomeService via EventBus<GameRunEndedEvent>.
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
             DebugUtility.Log(typeof(GameLoopCommands),
                 $"[GameLoopCommands] RequestPause reason='{GameLoopReasonFormatter.Format(reason)}'");
 
-            EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
+            EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true, reason));
         }
 
         public void RequestResume(string reason = null)
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
             DebugUtility.Log(typeof(GameLoopCommands),
                 $"[GameLoopCommands] RequestResume reason='{GameLoopReasonFormatter.Format(reason)}'");
 
-            EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
+            EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent(reason));
         }
 
         public void RequestVictory(string reason)

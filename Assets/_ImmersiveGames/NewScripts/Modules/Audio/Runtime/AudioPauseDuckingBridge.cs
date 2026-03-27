@@ -11,9 +11,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
     public sealed class AudioPauseDuckingBridge : MonoBehaviour, IDisposable
     {
         private const string RuntimeObjectName = "NewScripts_AudioPauseDuckingBridge";
+        private const string ReasonPauseWillEnter = "PauseWillEnterEvent";
+        private const string ReasonPauseWillExit = "PauseWillExitEvent";
         private const string ReasonPauseStateChanged = "PauseStateChangedEvent";
         private const string ReasonMissingBgmService = "missing_IAudioBgmService";
 
+        private EventBinding<PauseWillEnterEvent> _pauseWillEnterBinding;
+        private EventBinding<PauseWillExitEvent> _pauseWillExitBinding;
         private EventBinding<PauseStateChangedEvent> _pauseStateBinding;
         private IAudioBgmService _bgmService;
         private bool _pauseDuckingApplied;
@@ -36,6 +40,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         private void Awake()
         {
+            _pauseWillEnterBinding ??= new EventBinding<PauseWillEnterEvent>(OnPauseWillEnter);
+            _pauseWillExitBinding ??= new EventBinding<PauseWillExitEvent>(OnPauseWillExit);
             _pauseStateBinding ??= new EventBinding<PauseStateChangedEvent>(OnPauseStateChanged);
             TryRegisterBindings();
         }
@@ -56,6 +62,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
             if (_bindingsRegistered)
             {
+                EventBus<PauseWillEnterEvent>.Unregister(_pauseWillEnterBinding);
+                EventBus<PauseWillExitEvent>.Unregister(_pauseWillExitBinding);
                 EventBus<PauseStateChangedEvent>.Unregister(_pauseStateBinding);
                 _bindingsRegistered = false;
             }
@@ -72,17 +80,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
             try
             {
+                EventBus<PauseWillEnterEvent>.Register(_pauseWillEnterBinding);
+                EventBus<PauseWillExitEvent>.Register(_pauseWillExitBinding);
                 EventBus<PauseStateChangedEvent>.Register(_pauseStateBinding);
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
-                    "[Audio][BOOT] AudioPauseDuckingBridge registrado no hook PauseStateChangedEvent.",
+                    "[Audio][BOOT] AudioPauseDuckingBridge registrado nos hooks PauseWillEnterEvent/PauseWillExitEvent/PauseStateChangedEvent.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<AudioPauseDuckingBridge>(
-                    $"[Audio][BOOT] Falha ao registrar bridge de ducking no PauseStateChangedEvent ({ex.GetType().Name}).");
+                    $"[Audio][BOOT] Falha ao registrar bridge de ducking nos hooks de pause ({ex.GetType().Name}).");
             }
         }
 
@@ -95,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
             if (evt.IsPaused)
             {
-                ApplyDucking();
+                ApplyDucking(ReasonPauseStateChanged);
             }
             else
             {
@@ -103,7 +113,35 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
         }
 
-        private void ApplyDucking()
+        private void OnPauseWillEnter(PauseWillEnterEvent evt)
+        {
+            if (evt == null)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                $"[Audio][PauseDuck] PauseAudioDuckingRequestedEarly reason='{SafeReason(evt.Reason)}'.",
+                DebugUtility.Colors.Info);
+
+            ApplyDucking(ReasonPauseWillEnter);
+        }
+
+        private void OnPauseWillExit(PauseWillExitEvent evt)
+        {
+            if (evt == null)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                $"[Audio][PauseDuck] PauseAudioDuckingReleaseRequestedEarly reason='{SafeReason(evt.Reason)}'.",
+                DebugUtility.Colors.Info);
+
+            ReleaseDucking(ReasonPauseWillExit);
+        }
+
+        private void ApplyDucking(string reason)
         {
             if (_pauseDuckingApplied)
             {
@@ -116,11 +154,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return;
             }
 
-            _bgmService.SetPauseDucking(true, ReasonPauseStateChanged);
+            _bgmService.SetPauseDucking(true, reason);
             _pauseDuckingApplied = true;
 
             DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
-                "[Audio][PauseDuck] PauseAudioDuckingApplied.",
+                $"[Audio][PauseDuck] PauseAudioDuckingApplied reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -139,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             _pauseDuckingApplied = false;
 
             DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
-                "[Audio][PauseDuck] PauseAudioDuckingReleased.",
+                $"[Audio][PauseDuck] PauseAudioDuckingReleased reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -175,6 +213,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             _warnedMissingBgmService = true;
             DebugUtility.LogWarning<AudioPauseDuckingBridge>(
                 $"[Audio][PauseDuck] ducking skipped: IAudioBgmService unavailable. reason='{ReasonMissingBgmService}'.");
+        }
+
+        private static string SafeReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? "unspecified" : reason;
         }
     }
 }

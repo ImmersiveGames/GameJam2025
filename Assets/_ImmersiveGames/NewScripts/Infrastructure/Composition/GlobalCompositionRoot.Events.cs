@@ -20,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<GameStartRequestedEvent>.Clear();
             EventBus<GamePauseCommandEvent>.Clear();
             EventBus<GameResumeRequestedEvent>.Clear();
+            EventBus<PauseWillEnterEvent>.Clear();
+            EventBus<PauseWillExitEvent>.Clear();
             EventBus<PauseStateChangedEvent>.Clear();
             EventBus<GameExitToMenuRequestedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
