@@ -1,26 +1,25 @@
-# WorldLifecycle
+# WorldLifecycle (historico)
 
 ## Estado atual
 
-- `WorldResetService` e owner do macro reset.
-- `WorldLifecycleSceneFlowResetDriver` faz o handoff entre `SceneFlow` e `WorldLifecycle`.
-- O reset macro segue a semantica atual:
-  - `startup` no bootstrap
-  - `frontend/gameplay` em `RouteKind`
+`WorldLifecycle` nao e mais o modulo ativo de reset.
 
-## Ownership
+A divisao atual e:
 
-- `WorldResetService` + `WorldResetOrchestrator`: pipeline de macro reset.
-- `WorldLifecycleSceneFlowResetDriver`: decisao e disparo do reset a partir do SceneFlow.
-- `WorldLifecycleController`/`WorldLifecycleOrchestrator`: reset local no escopo de cena.
+- `WorldReset` para o fluxo macro
+- `SceneReset` para o fluxo local em cena
+- `ResetInterop` para a ponte/superficie publica de reset
 
-## Regras praticas
+Este documento permanece apenas como ponte historica para leitura de materiais antigos, analises e ADRs que ainda usem o nome `WorldLifecycle`.
 
-- O reset global continua separado do rearm local de gameplay.
-- Labels de style/profile podem aparecer em logs, mas nao definem comportamento do reset.
-- O pipeline de reset nao depende de catalogs nominais antigos.
+## Leitura correta hoje
+
+- use `Docs/Modules/WorldReset.md` para o reset macro
+- use `Docs/Modules/SceneReset.md` para o reset local
+- use `Docs/Modules/ResetInterop.md` para a ponte com `SceneFlow`
 
 ## Leitura cruzada
 
-- `Docs/Modules/SceneFlow.md`
-- `Docs/Modules/Gameplay.md`
+- `Docs/Modules/WorldReset.md`
+- `Docs/Modules/SceneReset.md`
+- `Docs/Modules/ResetInterop.md`

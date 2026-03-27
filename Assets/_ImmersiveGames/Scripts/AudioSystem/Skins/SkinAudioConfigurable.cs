@@ -28,7 +28,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Skins
         protected override void ConfigureSkin(ISkinConfig skinConfig)
         {
             if (skinConfig == null)
+            {
                 return;
+            }
 
             if (skinConfig is not ISkinAudioConfig audioConfig)
             {

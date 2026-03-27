@@ -7,13 +7,19 @@ namespace _ImmersiveGames.Scripts.Utils
         public static Bounds GetBounds(GameObject objeto)
         {
             var bounds = GetRenderBounds(objeto);
-            if (bounds.extents.x != 0) return bounds;
+            if (bounds.extents.x != 0)
+            {
+                return bounds;
+            }
 
             bounds = new Bounds(objeto.transform.position, Vector3.zero);
             foreach (Transform child in objeto.transform)
             {
                 // Verifica se o filho tem o componente IgnoreBoundsFlag
-                if (child.GetComponent<IgnoreBoundsFlag>() != null) continue;
+                if (child.GetComponent<IgnoreBoundsFlag>() != null)
+                {
+                    continue;
+                }
                 var childRender = child.GetComponent<Renderer>();
                 bounds.Encapsulate(childRender ? childRender.bounds : GetBounds(child.gameObject));
             }

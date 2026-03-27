@@ -46,7 +46,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
 
         public float ApplyRandomPitch(float basePitch, float variation)
         {
-            if (variation <= 0f) return basePitch;
+            if (variation <= 0f)
+            {
+                return basePitch;
+            }
             return basePitch * Random.Range(1f - variation, 1f + variation);
         }
 

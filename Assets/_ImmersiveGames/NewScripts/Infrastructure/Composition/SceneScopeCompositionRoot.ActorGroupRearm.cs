@@ -1,8 +1,9 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.ActorGroupRearm.Interop;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Strategy;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -11,23 +12,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     {
         private void RegisterActorGroupRearmServices(
             IDependencyProvider provider,
-            WorldLifecycleHookRegistry hookRegistry,
+            SceneResetHookRegistry hookRegistry,
             Transform worldRoot)
         {
             // ----------------------------
             // ActorGroupRearm (grupos/targets)
             // ----------------------------
-            // Classificador de alvos can�nicos por grupo/ids para reset de gameplay.
+            // Classificador de alvos canônicos por grupo/ids para reset de gameplay.
             if (!provider.TryGetForScene<IActorGroupRearmTargetClassifier>(_sceneName, out var classifier) || classifier == null)
             {
-                classifier = new DefaultActorGroupRearmTargetClassifier();
+                classifier = new ActorGroupRearmDefaultTargetClassifier();
                 provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
 
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
                     $"IActorGroupRearmTargetClassifier registrado para a cena '{_sceneName}'.");
             }
 
-            // Orquestrador de reset de gameplay (por fases) acion�vel por participantes do WorldLifecycle.
+            // Orquestrador de reset de gameplay (por fases) acionável por participantes do reset.
             if (!provider.TryGetForScene<IActorGroupRearmOrchestrator>(_sceneName, out var gameplayReset) || gameplayReset == null)
             {
                 gameplayReset = new ActorGroupRearmOrchestrator(_sceneName);
@@ -37,14 +38,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"IActorGroupRearmOrchestrator registrado para a cena '{_sceneName}'.");
             }
 
-            // Ponte WorldLifecycle soft reset -> ActorGroupRearm
-            var playersResetParticipant = new PlayersActorGroupRearmWorldParticipant();
+            // Ponte de reset scoped -> ActorGroupRearm
+            var playersResetParticipant = new PlayerActorGroupRearmWorldParticipant();
             provider.RegisterForScene<IActorGroupRearmWorldParticipant>(
                 _sceneName,
                 playersResetParticipant,
                 allowOverride: false);
             DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"IActorGroupRearmWorldBridge registrado para a cena '{_sceneName}'.");
+                $"IActorGroupRearmWorldParticipant registrado para a cena '{_sceneName}'.");
 
             RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
         }

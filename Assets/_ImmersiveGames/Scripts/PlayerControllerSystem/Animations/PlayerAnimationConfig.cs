@@ -1,9 +1,9 @@
-﻿using _ImmersiveGames.Scripts.AnimationSystems.Config;
+using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Animation/Player Animation Config")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/Animation/Player Animation Config")]
     public class PlayerAnimationConfig : AnimationConfig
     {
         [Header("Player Specific Animations")]

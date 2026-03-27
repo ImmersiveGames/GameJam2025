@@ -15,7 +15,9 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
         private void Awake()
         {
             if (overlay == null)
+            {
                 overlay = GetComponentInChildren<TerminalOverlayController>(true);
+            }
 
             SnapshotState("Awake");
         }
@@ -26,7 +28,9 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
             var currentType = state?.GetType();
 
             if (currentType == _lastStateType)
+            {
                 return;
+            }
 
             _lastStateType = currentType;
             ApplyOverlayForState(state);
@@ -35,7 +39,9 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
         private void ApplyOverlayForState(object state)
         {
             if (overlay == null)
+            {
                 return;
+            }
 
             // Terminal states => mostra overlay.
             if (state is OldVictoryState)

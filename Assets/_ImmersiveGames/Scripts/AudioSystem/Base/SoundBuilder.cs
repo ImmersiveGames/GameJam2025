@@ -20,8 +20,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
         private bool _useSpatial = true;
         private float _volumeMultiplier = 1f;
         private float _volumeOverride = -1f;
-        private float _fadeInSeconds = 0f;
-        private bool _loop = false;
+        private float _fadeInSeconds;
+        private bool _loop;
 
         private SoundBuilder(SoundData sound, IAudioSfxService sfxService)
         {

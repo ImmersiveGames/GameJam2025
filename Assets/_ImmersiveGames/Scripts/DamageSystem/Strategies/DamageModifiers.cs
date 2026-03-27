@@ -46,7 +46,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
             EnsureCache();
 
             if (_cache.TryGetValue(type, out multiplier))
+            {
                 return true;
+            }
 
             multiplier = 1f;
             return false;
@@ -60,7 +62,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
             for (int i = 0; i < entries.Count; i++)
             {
                 if (entries[i].type != type)
+                {
                     continue;
+                }
 
                 entries[i] = new Entry { type = type, multiplier = multiplier };
                 MarkCacheDirty();
@@ -74,12 +78,16 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         public bool RemoveModifier(DamageType type)
         {
             if (entries == null)
+            {
                 return false;
+            }
 
             for (int i = 0; i < entries.Count; i++)
             {
                 if (entries[i].type != type)
+                {
                     continue;
+                }
 
                 entries.RemoveAt(i);
                 MarkCacheDirty();
@@ -92,7 +100,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         private void EnsureCache()
         {
             if (!_isCacheDirty)
+            {
                 return;
+            }
 
             entries ??= new List<Entry>();
             _cache.Clear();

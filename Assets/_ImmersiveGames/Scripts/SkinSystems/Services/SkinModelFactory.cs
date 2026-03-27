@@ -7,7 +7,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
     {
         public GameObject Instantiate(GameObject prefab, Transform parent, IActor spawner, ISkinConfig config)
         {
-            if (prefab == null || parent == null) return null;
+            if (prefab == null || parent == null)
+            {
+                return null;
+            }
 
             var instance = Object.Instantiate(prefab, parent);
             instance.name = $"{config.ConfigName}_{config.ModelType}";

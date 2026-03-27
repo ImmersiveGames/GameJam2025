@@ -84,14 +84,25 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
             EventBus<RuntimeAttributeEventHub.ActorRegisteredEvent>.Register(_actorRegisteredBinding);
 
             if (autoTestOnReady)
+            {
                 StartCoroutine(DelayedTestRoutine());
+            }
         }
 
         private void OnDestroy()
         {
-            if (_resourceUpdateBinding != null) EventBus<RuntimeAttributeUpdateEvent>.Unregister(_resourceUpdateBinding);
-            if (_canvasBindRequestBinding != null) EventBus<RuntimeAttributeEventHub.CanvasBindRequest>.Unregister(_canvasBindRequestBinding);
-            if (_actorRegisteredBinding != null) EventBus<RuntimeAttributeEventHub.ActorRegisteredEvent>.Unregister(_actorRegisteredBinding);
+            if (_resourceUpdateBinding != null)
+            {
+                EventBus<RuntimeAttributeUpdateEvent>.Unregister(_resourceUpdateBinding);
+            }
+            if (_canvasBindRequestBinding != null)
+            {
+                EventBus<RuntimeAttributeEventHub.CanvasBindRequest>.Unregister(_canvasBindRequestBinding);
+            }
+            if (_actorRegisteredBinding != null)
+            {
+                EventBus<RuntimeAttributeEventHub.ActorRegisteredEvent>.Unregister(_actorRegisteredBinding);
+            }
         }
 
         [ContextMenu(TestsMenuRoot + "Run Test Routine")]
@@ -215,10 +226,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
             if (_runtimeAttributeContext != null)
             {
-                foreach (var pair in _runtimeAttributeContext.GetAll())
+                foreach (KeyValuePair<RuntimeAttributeType, IRuntimeAttributeValue> pair in _runtimeAttributeContext.GetAll())
                 {
-                    var value = pair.Value.GetCurrentValue();
-                    var max = pair.Value.GetMaxValue();
+                    float value = pair.Value.GetCurrentValue();
+                    float max = pair.Value.GetMaxValue();
                     sb.AppendLine($"  {pair.Key}: {value:F1}/{max:F1} ({(value / (max > 0 ? max : 1)):P1})");
                 }
             }
@@ -247,7 +258,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(ResourcesMenuRoot + "Recover Selected Resource")]
         public void RecoverSelectedResource()
         {
-            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out var current, out var max))
+            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out float current, out float max))
             {
                 return;
             }
@@ -266,7 +277,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(ResourcesMenuRoot + "Deplete Selected Resource")]
         public void DepleteSelectedResource()
         {
-            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out var current, out _))
+            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out float current, out _))
             {
                 return;
             }
@@ -283,7 +294,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(ResourcesMenuRoot + "Restock Selected Resource")]
         public void RestockSelectedResource()
         {
-            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out var current, out var max))
+            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out float current, out float max))
             {
                 return;
             }
@@ -301,7 +312,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(ResourcesMenuRoot + "Revive Selected Resource")]
         public void ReviveSelectedResource()
         {
-            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out var current, out var max))
+            if (!TryGetResourceMetrics(damageRuntimeAttributeType, out float current, out float max))
             {
                 return;
             }
@@ -349,7 +360,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
             }
 
             float before = resource.GetCurrentValue();
-            var attackerId = _actor?.ActorId ?? gameObject.name;
+            string attackerId = _actor?.ActorId ?? gameObject.name;
             var ctx = new DamageContext(attackerId, receiver.GetReceiverId(), amount, resolvedResource);
 
             receiver.ReceiveDamage(ctx);
@@ -370,7 +381,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
         private bool TryResolveDamageReceiver(RuntimeAttributeType requestedRuntimeAttribute, out IDamageReceiver receiver, out RuntimeAttributeType resolvedRuntimeAttribute)
         {
-            var receivers = GetComponents<IDamageReceiver>();
+            IDamageReceiver[] receivers = GetComponents<IDamageReceiver>();
             if (receivers == null || receivers.Length == 0)
             {
                 DebugUtility.LogError<EntityDebugUtility>("❌ Nenhum IDamageReceiver encontrado no ator para executar o pipeline de dano.");
@@ -462,7 +473,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
         private void OnResourceUpdateEvent(RuntimeAttributeUpdateEvent evt)
         {
-            if (evt.ActorId != _actor.ActorId) return;
+            if (evt.ActorId != _actor.ActorId)
+            {
+                return;
+            }
             _resourceUpdateEventsSeen++;
 
             if (verboseEvents)
@@ -473,7 +487,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
         private void OnCanvasBindRequest(RuntimeAttributeEventHub.CanvasBindRequest req)
         {
-            if (req.actorId != _actor.ActorId) return;
+            if (req.actorId != _actor.ActorId)
+            {
+                return;
+            }
             _canvasBindRequestsSeen++;
 
             if (verboseEvents)
@@ -484,9 +501,15 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
         private void OnActorRegistered(RuntimeAttributeEventHub.ActorRegisteredEvent evt)
         {
-            if (evt.actorId != _actor.ActorId) return;
+            if (evt.actorId != _actor.ActorId)
+            {
+                return;
+            }
             _actorRegisteredEventSeen = true;
-            if (verboseEvents) DebugUtility.LogVerbose<EntityDebugUtility>($"➕ ActorRegistered observed for {evt.actorId}");
+            if (verboseEvents)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>($"➕ ActorRegistered observed for {evt.actorId}");
+            }
         }
 
         private void ReportSummary()
@@ -507,7 +530,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
             }
 
             if (!suspicious)
+            {
                 sb.AppendLine("✅ Heuristic: No suspicious forced-bind pattern detected.");
+            }
 
             sb.AppendLine("=== END SUMMARY ===");
             DebugUtility.LogVerbose<EntityDebugUtility>(sb.ToString());
@@ -574,7 +599,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
         private void LogInjectableBridgeStatus(RuntimeAttributeController component)
         {
-            var actorId = component.GetObjectId();
+            string actorId = component.GetObjectId();
             var service = component.GetResourceSystem();
 
             DebugUtility.LogVerbose<EntityDebugUtility>($"🔧 ENTITY BRIDGE STATUS: {actorId}");
@@ -640,10 +665,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
                 sb.AppendLine($"   Canvas Target: {canvasTarget}");
 
                 if (instanceConfig?.hasAutoFlow ?? false)
+                {
                     sb.AppendLine($"   AutoFlow: ✅ (Rate: {instanceConfig.autoFlowConfig.tickInterval})");
+                }
 
                 if (instanceConfig?.thresholdConfig != null)
+                {
                     sb.AppendLine($"   Thresholds: ✅ ({instanceConfig.thresholdConfig?.thresholds.Length ?? 0} thresholds)");
+                }
             }
 
             DebugUtility.LogVerbose<EntityDebugUtility>(sb.ToString());
@@ -652,7 +681,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(BridgesMenuRoot + "Resource Component Status")]
         public void DebugResourceBridgeStatus()
         {
-            var bridges = GetComponents<RuntimeAttributeBridgeBase>();
+            RuntimeAttributeBridgeBase[] bridges = GetComponents<RuntimeAttributeBridgeBase>();
             if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Nenhum RuntimeAttributeBridgeBase encontrado para depurar.");
@@ -692,7 +721,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(BridgesMenuRoot + "Active Links")]
         public void DebugActiveLinks()
         {
-            var bridges = GetComponents<RuntimeAttributeLinkBridge>();
+            RuntimeAttributeLinkBridge[] bridges = GetComponents<RuntimeAttributeLinkBridge>();
             if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
@@ -701,8 +730,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
             foreach (var bridge in bridges)
             {
-                var actorId = bridge.Actor?.ActorId;
-                var resourceLinks = bridge.GetAllLinks();
+                string actorId = bridge.Actor?.ActorId;
+                RuntimeAttributeLinkConfig[] resourceLinks = bridge.GetAllLinks();
                 if (resourceLinks == null || actorId == null)
                 {
                     DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
@@ -712,7 +741,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
                 DebugUtility.LogWarning<EntityDebugUtility>($"🔗 Active runtimeAttribute links for {actorId}:");
                 foreach (var linkConfig in resourceLinks)
                 {
-                    if (linkConfig == null) continue;
+                    if (linkConfig == null)
+                    {
+                        continue;
+                    }
                     bool isActive = bridge.HasLink(linkConfig.sourceRuntimeAttribute);
                     DebugUtility.LogWarning<EntityDebugUtility>($"  {linkConfig.sourceRuntimeAttribute} -> {linkConfig.targetRuntimeAttribute}: {(isActive ? "✅ ACTIVE" : "❌ INACTIVE")}");
                 }
@@ -722,7 +754,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(BridgesMenuRoot + "Force Re-register Links")]
         public void ForceReregisterLinks()
         {
-            var bridges = GetComponents<RuntimeAttributeLinkBridge>();
+            RuntimeAttributeLinkBridge[] bridges = GetComponents<RuntimeAttributeLinkBridge>();
             if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
@@ -737,14 +769,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
             foreach (var bridge in bridges)
             {
-                var actorId = bridge.Actor?.ActorId;
+                string actorId = bridge.Actor?.ActorId;
                 if (actorId == null)
                 {
                     DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
                     continue;
                 }
 
-                var resourceLinks = bridge.GetAllLinks();
+                RuntimeAttributeLinkConfig[] resourceLinks = bridge.GetAllLinks();
                 linkService.UnregisterAllLinks(actorId);
 
                 foreach (var linkConfig in resourceLinks)
@@ -762,7 +794,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(BridgesMenuRoot + "Resume AutoFlow")]
         public void ResumeAutoFlow()
         {
-            var bridges = GetComponents<RuntimeAttributeAutoFlowBridge>();
+            RuntimeAttributeAutoFlowBridge[] bridges = GetComponents<RuntimeAttributeAutoFlowBridge>();
             if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Nenhum RuntimeAttributeAutoFlowBridge encontrado para retomar.");
@@ -783,7 +815,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(BridgesMenuRoot + "Pause AutoFlow")]
         public void PauseAutoFlow()
         {
-            var bridges = GetComponents<RuntimeAttributeAutoFlowBridge>();
+            RuntimeAttributeAutoFlowBridge[] bridges = GetComponents<RuntimeAttributeAutoFlowBridge>();
             if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Nenhum RuntimeAttributeAutoFlowBridge encontrado para pausar.");
@@ -804,7 +836,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(BridgesMenuRoot + "Threshold Status")]
         public void DebugThresholdStatus()
         {
-            var bridges = GetComponents<RuntimeAttributeThresholdBridge>();
+            RuntimeAttributeThresholdBridge[] bridges = GetComponents<RuntimeAttributeThresholdBridge>();
             if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("RuntimeAttributeContext não disponível ou não inicializado");
@@ -838,7 +870,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         [ContextMenu(BridgesMenuRoot + "AutoFlow Status")]
         public void DebugAutoFlowStatus()
         {
-            var bridges = GetComponents<RuntimeAttributeAutoFlowBridge>();
+            RuntimeAttributeAutoFlowBridge[] bridges = GetComponents<RuntimeAttributeAutoFlowBridge>();
             if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("RuntimeAttributeContext não disponível ou não inicializado");
@@ -887,7 +919,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         private int CountAutoFlowResources(RuntimeAttributeContext runtimeAttributeContext)
         {
             int count = 0;
-            if (runtimeAttributeContext == null) return count;
+            if (runtimeAttributeContext == null)
+            {
+                return count;
+            }
 
             foreach (var (resourceType, _) in runtimeAttributeContext.GetAll())
             {
@@ -918,10 +953,16 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
         private bool EnsureResourceSystem()
         {
-            if (_runtimeAttributeContext != null) return true;
+            if (_runtimeAttributeContext != null)
+            {
+                return true;
+            }
 
             _runtimeAttributeContext = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
-            if (_runtimeAttributeContext != null) return true;
+            if (_runtimeAttributeContext != null)
+            {
+                return true;
+            }
 
             DebugUtility.LogError<EntityDebugUtility>("❌ RuntimeAttributeContext is null - cannot continue the requested operation.");
             return false;

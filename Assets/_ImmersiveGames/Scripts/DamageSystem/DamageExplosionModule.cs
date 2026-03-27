@@ -33,7 +33,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             if (!HasConfiguration)
             {
-                if (_missingConfigLogged) return;
+                if (_missingConfigLogged)
+                {
+                    return;
+                }
                 DebugUtility.LogVerbose<DamageExplosionModule>(
                     "Pool de explosão não configurado. Nenhuma explosão será reproduzida.");
                 _missingConfigLogged = true;

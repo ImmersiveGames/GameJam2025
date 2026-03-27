@@ -3,56 +3,56 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 {
     /// <summary>
-    /// Perfil de transiÁ„o de cena.
+    /// Perfil de transi√ß√£o de cena.
     /// Centraliza valores de:
     /// - uso de fade;
     /// - tempos de fade;
     /// - curvas de easing do fade;
-    /// - tempo mÌnimo de HUD;
+    /// - tempo m√≠nimo de HUD;
     /// - tempos de fade da HUD;
-    /// - textos padr„o para HUD.
+    /// - textos padr√£o para HUD.
     /// </summary>
     [CreateAssetMenu(
         fileName = "OldSceneTransitionProfile",
-        menuName = "ImmersiveGames/Scene Management/Scene OldTransition Profile")]
+        menuName = "ImmersiveGames/Legacy/SceneManagement/Scene OldTransition Profile")]
     public class OldSceneTransitionProfile : ScriptableObject
     {
         [Header("Fade de Tela")]
-        [Tooltip("Se verdadeiro, a transiÁ„o usar· fade de tela (FadeIn/FadeOut).")]
+        [Tooltip("Se verdadeiro, a transi√ß√£o usar√° fade de tela (FadeIn/FadeOut).")]
         [SerializeField] private bool useFade = true;
 
-        [Tooltip("DuraÁ„o do FadeIn (em segundos, tempo n„o escalonado).")]
+        [Tooltip("Dura√ß√£o do FadeIn (em segundos, tempo n√£o escalonado).")]
         [SerializeField] private float fadeInDuration = 0.35f;
 
-        [Tooltip("DuraÁ„o do FadeOut (em segundos, tempo n„o escalonado).")]
+        [Tooltip("Dura√ß√£o do FadeOut (em segundos, tempo n√£o escalonado).")]
         [SerializeField] private float fadeOutDuration = 0.35f;
 
-        [Tooltip("Curva de easing usada no FadeIn (0->1). Se nula ou vazia, ser· usado lerp linear.")]
+        [Tooltip("Curva de easing usada no FadeIn (0->1). Se nula ou vazia, ser√° usado lerp linear.")]
         [SerializeField] private AnimationCurve fadeInCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-        [Tooltip("Curva de easing usada no FadeOut (1->0). Se nula ou vazia, ser· usado lerp linear.")]
+        [Tooltip("Curva de easing usada no FadeOut (1->0). Se nula ou vazia, ser√° usado lerp linear.")]
         [SerializeField] private AnimationCurve fadeOutCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
         [Header("HUD de Loading")]
-        [Tooltip("Tempo mÌnimo (em segundos, tempo n„o escalonado) que o HUD deve permanecer visÌvel.")]
+        [Tooltip("Tempo m√≠nimo (em segundos, tempo n√£o escalonado) que o HUD deve permanecer vis√≠vel.")]
         [SerializeField] private float minHudVisibleSeconds = 0.5f;
 
-        [Tooltip("DuraÁ„o do fade de entrada da HUD (em segundos, tempo n„o escalonado). 0 ou negativo usa um default interno da view.")]
+        [Tooltip("Dura√ß√£o do fade de entrada da HUD (em segundos, tempo n√£o escalonado). 0 ou negativo usa um default interno da view.")]
         [SerializeField] private float hudFadeInDuration = 0.35f;
 
-        [Tooltip("DuraÁ„o do fade de saÌda da HUD (em segundos, tempo n„o escalonado). 0 ou negativo usa um default interno da view.")]
+        [Tooltip("Dura√ß√£o do fade de sa√≠da da HUD (em segundos, tempo n√£o escalonado). 0 ou negativo usa um default interno da view.")]
         [SerializeField] private float hudFadeOutDuration = 0.35f;
 
-        [Tooltip("TÌtulo padr„o do HUD de loading.")]
+        [Tooltip("T√≠tulo padr√£o do HUD de loading.")]
         [SerializeField] private string loadingTitle = "Carregando";
 
-        [Tooltip("Template da descriÁ„o ao iniciar. Use {Scenes} para listar cenas.")]
+        [Tooltip("Template da descri√ß√£o ao iniciar. Use {Scenes} para listar cenas.")]
         [SerializeField] private string loadingDescriptionTemplate = "Carregando: {Scenes}";
 
-        [Tooltip("TÌtulo exibido ao finalizar o carregamento.")]
+        [Tooltip("T√≠tulo exibido ao finalizar o carregamento.")]
         [SerializeField] private string finishingTitle = "";
 
-        [Tooltip("DescriÁ„o ao marcar cenas como prontas.")]
+        [Tooltip("Descri√ß√£o ao marcar cenas como prontas.")]
         [SerializeField] private string finishingDescription = "Finalizando carregamento...";
 
         public bool UseFade => useFade;
@@ -76,11 +76,26 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (fadeInDuration < 0f) fadeInDuration = 0f;
-            if (fadeOutDuration < 0f) fadeOutDuration = 0f;
-            if (minHudVisibleSeconds < 0f) minHudVisibleSeconds = 0f;
-            if (hudFadeInDuration < 0f) hudFadeInDuration = 0f;
-            if (hudFadeOutDuration < 0f) hudFadeOutDuration = 0f;
+            if (fadeInDuration < 0f)
+            {
+                fadeInDuration = 0f;
+            }
+            if (fadeOutDuration < 0f)
+            {
+                fadeOutDuration = 0f;
+            }
+            if (minHudVisibleSeconds < 0f)
+            {
+                minHudVisibleSeconds = 0f;
+            }
+            if (hudFadeInDuration < 0f)
+            {
+                hudFadeInDuration = 0f;
+            }
+            if (hudFadeOutDuration < 0f)
+            {
+                hudFadeOutDuration = 0f;
+            }
         }
 #endif
     }

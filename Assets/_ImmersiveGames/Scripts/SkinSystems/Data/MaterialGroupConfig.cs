@@ -1,7 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
 {
-    [CreateAssetMenu(fileName = "MaterialGroupConfig", menuName = "ImmersiveGames/Skin/MaterialGroupConfig", order = 4)]
+    [CreateAssetMenu(fileName = "MaterialGroupConfig", menuName = "ImmersiveGames/Legacy/Skin/MaterialGroupConfig", order = 4)]
     public class MaterialGroupConfig : ScriptableObject
     {
         [Header("Group Settings")]
@@ -21,8 +21,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         public Material GetRandomMaterial()
         {
             if (availableMaterials == null || availableMaterials.Length == 0)
+            {
                 return null;
-            
+            }
+
             return availableMaterials[Random.Range(0, availableMaterials.Length)];
         }
 
@@ -32,8 +34,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         public Material GetMaterialByIndex(int index)
         {
             if (availableMaterials == null || availableMaterials.Length == 0)
+            {
                 return null;
-            
+            }
+
             return availableMaterials[Mathf.Clamp(index, 0, availableMaterials.Length - 1)];
         }
 

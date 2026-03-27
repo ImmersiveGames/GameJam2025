@@ -85,11 +85,17 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
         private void PlayAllParticles()
         {
-            if (particleSystems == null) return;
+            if (particleSystems == null)
+            {
+                return;
+            }
 
             foreach (var ps in particleSystems)
             {
-                if (ps == null) continue;
+                if (ps == null)
+                {
+                    continue;
+                }
                 ps.Clear(true);
                 ps.Play(true);
             }
@@ -97,11 +103,17 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
         private void StopAllParticles()
         {
-            if (particleSystems == null) return;
+            if (particleSystems == null)
+            {
+                return;
+            }
 
             foreach (var ps in particleSystems)
             {
-                if (ps == null) continue;
+                if (ps == null)
+                {
+                    continue;
+                }
                 ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             }
         }

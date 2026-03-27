@@ -132,10 +132,14 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private void OnStartRequested(OldGameStartRequestedEvent _)
         {
             if (Time.frameCount == _lastStartRequestFrame)
+            {
                 return;
+            }
 
             if (!IsCurrentState<OldMenuState>())
+            {
                 return;
+            }
 
             _lastStartRequestFrame = Time.frameCount;
 
@@ -146,10 +150,14 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private void OnPauseRequested(GamePauseRequestedEvent _)
         {
             if (Time.frameCount == _lastPauseRequestFrame)
+            {
                 return;
+            }
 
             if (!IsCurrentState<OldPlayingState>())
+            {
                 return;
+            }
 
             _lastPauseRequestFrame = Time.frameCount;
 
@@ -160,10 +168,14 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private void OnResumeRequested(OldGameResumeRequestedEvent _)
         {
             if (Time.frameCount == _lastResumeRequestFrame)
+            {
                 return;
+            }
 
             if (!IsCurrentState<OldPausedState>())
+            {
                 return;
+            }
 
             _lastResumeRequestFrame = Time.frameCount;
 
@@ -180,7 +192,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private void OnReturnToMenuRequested(GameReturnToMenuRequestedEvent _)
         {
             if (Time.frameCount == _lastReturnToMenuRequestFrame)
+            {
                 return;
+            }
 
             _lastReturnToMenuRequestFrame = Time.frameCount;
 
@@ -229,7 +243,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private DebugManager ResolveDebugManager()
         {
             if (_debugManager != null)
+            {
                 return _debugManager;
+            }
 
             if (TryGetComponent(out DebugManager localManager))
             {

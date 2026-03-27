@@ -94,15 +94,20 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         // Manipula��o de eventos (filtro por myDetectionType aqui)
         protected virtual void OnDetectionEnterEvent(DetectionEnterEvent enterEvent)
         {
-            if (!ReferenceEquals(enterEvent.Detectable, this) || enterEvent.DetectionType != myDetectionType) return;
+            if (!ReferenceEquals(enterEvent.Detectable, this) || enterEvent.DetectionType != myDetectionType)
+            {
+                return;
+            }
 
             // Criar chave �nica para este evento
             string eventKey = $"ENTER_{enterEvent.Detector.GetHashCode()}_{enterEvent.DetectionType.GetHashCode()}";
             
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
+            {
                 return;
-            
+            }
+
             _processedEvents[eventKey] = Time.frameCount;
 
             DebugUtility.LogVerbose<AbstractDetectable>($"EVENTO ENTRADA [Frame {Time.frameCount}]: Detectado por {GetName(enterEvent.Detector)} em {gameObject.name}");
@@ -115,15 +120,20 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         protected virtual void OnDetectionExitEvent(DetectionExitEvent exitEvent)
         {
-            if (!ReferenceEquals(exitEvent.Detectable, this) || exitEvent.DetectionType != myDetectionType) return;
+            if (!ReferenceEquals(exitEvent.Detectable, this) || exitEvent.DetectionType != myDetectionType)
+            {
+                return;
+            }
 
             // Criar chave �nica para este evento
             string eventKey = $"EXIT_{exitEvent.Detector.GetHashCode()}_{exitEvent.DetectionType.GetHashCode()}";
             
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
+            {
                 return;
-            
+            }
+
             _processedEvents[eventKey] = Time.frameCount;
 
             DebugUtility.LogVerbose<AbstractDetectable>($"EVENTO SA�DA [Frame {Time.frameCount}]: Perdeu detec��o por {GetName(exitEvent.Detector)} em {gameObject.name}");
@@ -141,7 +151,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
                                           .Select(kvp => kvp.Key).ToList();
             
             foreach (string key in oldEvents)
+            {
                 _processedEvents.Remove(key);
+            }
         }
 
         protected static string GetName(IDetector detector)

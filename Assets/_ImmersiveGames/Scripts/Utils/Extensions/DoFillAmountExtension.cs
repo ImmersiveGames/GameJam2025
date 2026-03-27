@@ -15,7 +15,9 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         public static Tweener DoFillAmount(this Image target, float endValue, float duration)
         {
             if (target == null)
+            {
                 throw new System.ArgumentNullException(nameof(target));
+            }
 
             // Cria o tween manualmente, interpolando de target.fillAmount até endValue
             float startValue = target.fillAmount;
@@ -23,7 +25,9 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             {
                 startValue = x;
                 if (target != null)
+                {
                     target.fillAmount = x;
+                }
             }, endValue, duration);
 
             tween.SetTarget(target);
@@ -43,14 +47,18 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         public static Tweener DoColor(this Image target, Color endValue, float duration)
         {
             if (target == null)
+            {
                 throw new System.ArgumentNullException(nameof(target));
+            }
 
             Color startValue = target.color;
             Tweener tween = DOTween.To(() => startValue, x =>
             {
                 startValue = x;
                 if (target != null)
+                {
                     target.color = x;
+                }
             }, endValue, duration);
 
             tween.SetTarget(target);

@@ -3,23 +3,36 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 {
     /// <summary>
-    /// Serviço global que controla o término da IntroStageController via comando explícito.
+    /// Servico global que controla o termino da IntroStage via comando explicito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageControlService : IIntroStageControlService
     {
-        private readonly object _sync = new();
+        private enum IntroStageExecutionState
+        {
+            Idle,
+            Beginning,
+            WaitingConfirm,
+            Completed,
+            Skipped,
+            Superseded,
+            Cancelled
+        }
 
+        private readonly object _sync = new();
         private TaskCompletionSource<IntroStageCompletionResult> _completionSource =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
-
         private bool _isActive;
         private IntroStageContext _activeContext;
+        private IntroStageExecutionState _state = IntroStageExecutionState.Idle;
 
         public bool IsIntroStageActive
         {
@@ -34,18 +47,35 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 
         public void BeginIntroStage(IntroStageContext context)
         {
+            TaskCompletionSource<IntroStageCompletionResult>? previousSource = null;
+            bool hadActiveContext;
+
             lock (_sync)
             {
+                hadActiveContext = _isActive;
+                if (hadActiveContext)
+                {
+                    previousSource = _completionSource;
+                    _state = IntroStageExecutionState.Superseded;
+                }
+
                 if (_isActive)
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        "[IntroStageController] BeginIntroStage chamado enquanto outra IntroStageController ainda está ativa. Reiniciando gate de conclusão.");
+                        "[IntroStageController] BeginIntroStage chamado enquanto outra IntroStage ainda esta ativa. Rearmando para o novo contexto.");
                 }
 
                 _isActive = true;
                 _activeContext = context;
+                _state = IntroStageExecutionState.Beginning;
                 _completionSource = new TaskCompletionSource<IntroStageCompletionResult>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
+                _state = IntroStageExecutionState.WaitingConfirm;
+            }
+
+            if (hadActiveContext && previousSource != null && !previousSource.Task.IsCompleted)
+            {
+                previousSource.TrySetResult(new IntroStageCompletionResult("superseded", wasSkipped: true));
             }
         }
 
@@ -75,6 +105,22 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
             FinishIntroStage(reason, wasSkipped: true);
         }
 
+        public void MarkSessionClosed()
+        {
+            lock (_sync)
+            {
+                if (!_isActive)
+                {
+                    return;
+                }
+
+                if (_state == IntroStageExecutionState.WaitingConfirm)
+                {
+                    _state = IntroStageExecutionState.Cancelled;
+                }
+            }
+        }
+
         private void FinishIntroStage(string reason, bool wasSkipped)
         {
             try
@@ -83,26 +129,26 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 IntroStageContext context = default;
                 bool wasActive;
                 bool alreadyCompleted;
+                IntroStageExecutionState previousState;
 
                 lock (_sync)
                 {
                     source = _completionSource;
                     wasActive = _isActive;
                     alreadyCompleted = source.Task.IsCompleted;
+                    previousState = _state;
 
-                    // Só captura contexto quando de fato estava ativo.
                     if (_isActive)
                     {
                         context = _activeContext;
                         _isActive = false;
+                        _state = wasSkipped ? IntroStageExecutionState.Skipped : IntroStageExecutionState.Completed;
                     }
                 }
 
                 string normalizedReason = NormalizeValue(reason);
                 string actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
                 string gameLoopState = NormalizeValue(ResolveGameLoopStateName());
-
-                // Contexto de log extraído defensivamente (com fallback e log de erro se falhar).
                 var logContext = BuildSafeLogContext(context);
                 string signature = logContext.Signature;
                 string routeKind = logContext.RouteKind;
@@ -112,35 +158,40 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 {
                     string ignoreReason = alreadyCompleted ? "already_completed" : "not_active";
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' " +
-                        $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' " +
-                        $"ignoreReason='{ignoreReason}' state='{gameLoopState}' isActive=false " +
-                        $"signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
+                        $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' ignoreReason='{ignoreReason}' state='{gameLoopState}' executionState='{previousState}' isActive=false signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 DebugUtility.Log<IntroStageControlService>(
-                    $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' " +
-                    $"skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' " +
-                    $"state='{gameLoopState}' isActive=true signature='{signature}' " +
-                    $"routeKind='{routeKind}' target='{targetScene}'.",
+                    $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' state='{gameLoopState}' executionState='{_state}' isActive=true signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' " +
-                        $"routeKind='{routeKind}' target='{targetScene}'.");
+                        $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.");
                 }
 
                 source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
+
+                if (context.IsValid)
+                {
+                    DebugUtility.Log<IntroStageControlService>(
+                        $"[OBS][IntroStageController] LevelIntroCompletedPublished source='IntroStageControlService' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
+                        DebugUtility.Colors.Info);
+
+                    EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(
+                        context.Session,
+                        "IntroStageControlService",
+                        wasSkipped,
+                        normalizedReason));
+                }
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<IntroStageControlService>(
-                    $"[OBS][IntroStageController] FinishIntroStage FAILED ex='{ex.GetType().Name}: {ex.Message}'. " +
-                    "Isto indica bug de logging/estado (context/profile/etc). Verifique stacktrace no Console.");
+                    $"[OBS][IntroStageController] FinishIntroStage FAILED ex='{ex.GetType().Name}: {ex.Message}'.");
                 throw;
             }
         }
@@ -211,6 +262,3 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
         }
     }
 }
-
-
-

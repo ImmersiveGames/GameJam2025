@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseMinionBehaviorProfileSo minionProfile);
 
         /// <summary>
-        /// Resolve dinamicamente o <see cref="DefenseRole"/> desejado para o alvo atual,
+        /// ResolvePlayerActor dinamicamente o <see cref="DefenseRole"/> desejado para o alvo atual,
         /// permitindo que cada estratégia aplique mapeamentos ou fallbacks sem que os
         /// chamadores precisem conhecer configurações extras (ex.: DefenseRoleConfig).
         /// </summary>

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition

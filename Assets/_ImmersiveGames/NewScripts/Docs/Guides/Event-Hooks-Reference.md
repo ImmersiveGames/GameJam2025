@@ -43,9 +43,15 @@ private void OnRunEnded(GameRunEndedEvent evt)
 | saber que a troca de rota terminou | `SceneTransitionCompletedEvent` | `SceneTransitionService` | UI e systems que dependem da rota ja aplicada |
 | saber que o reset completo terminou | `WorldLifecycleResetCompletedEvent` | `WorldResetOrchestrator` | systems que precisam do mundo pronto |
 | saber que a run comecou | `GameRunStartedEvent` | `GameLoopService` | ligar comportamento de gameplay ativo |
-| saber que a run terminou | `GameRunEndedEvent` | `GameRunOutcomeService` | reagir a `Victory` ou `Defeat` |
+| saber que a run terminou | `GameRunEndedEvent` | `GameRunOutcomeService` | iniciar o `PostStage` antes do handoff final |
 | saber que um level entrou no fluxo | `LevelSelectedEvent` | `LevelMacroPrepareService` e `LevelSwapLocalService` | UI e systems ligados ao level atual |
 | saber que a troca local terminou | `LevelSwapLocalAppliedEvent` | `LevelSwapLocalService` | atualizar HUD e cameras apos swap |
+| saber que o level ja foi aplicado e esta ativo | `LevelEnteredEvent` | `LevelMacroPrepareService` e `LevelSwapLocalService` | seams level-owned, incluindo IntroStage |
+| saber que a intro do level terminou | `LevelIntroCompletedEvent` | `IntroStageControlService` e `LevelStageOrchestrator` | handoff level->gameplay apos intro |
+| saber que o PostStage foi pedido | `PostStageStartRequestedEvent` | `PostStageCoordinator` | iniciar fase de validacao pos-outcome |
+| saber que o PostStage foi assumido | `PostStageStartedEvent` | `PostStageCoordinator` | mostrar presenter opcional da cena atual |
+| saber que o PostStage terminou | `PostStageCompletedEvent` | `PostStageCoordinator` | liberar o handoff final para `GameLoop.RequestRunEnd()` |
+| saber que o `PostGame` entrou | `PostGameEnteredEvent` | `PostGameOwnershipService` | abrir overlay e aplicar ownership do pos-game |
 | observar pedido de fim de run | `GameRunEndRequestedEvent` | `GameRunEndRequestService` | auditoria, telemetria e bridges |
 | observar restart macro | `GameResetRequestedEvent` | `GameCommands` | ouvir intencao de restart |
 | observar saida para menu | `GameExitToMenuRequestedEvent` | `GameCommands` | ouvir intencao de exit |
@@ -256,8 +262,21 @@ Quando nao usar:
 - quando voce quer observar apenas o pedido de fim de run; nesse caso use `GameRunEndRequestedEvent`
 
 Observacao:
-- este e o hook principal para `Victory` e `Defeat`
+- este e o hook principal para `Victory` e `Defeat` no runtime atual
+- o `PostStage` ja esta implementado e interpoe um stage antes do handoff final
 - `Exit` continua dentro do `PostGame` global, sem evento operacional dedicated promoted
+
+## Hooks oficiais de PostStage
+
+Estes hooks ja estao implementados e sao a base oficial do fluxo de pos-outcome.
+
+| Hook | Papel |
+|---|---|
+| `PostStageStartRequestedEvent` | requisita a entrada no stage de pos-outcome |
+| `PostStageStartedEvent` | confirma que o stage foi assumido |
+| `PostStageCompletedEvent` | fecha o stage e libera o handoff final para `GameLoop.RequestRunEnd()` |
+| `PostGameEnteredEvent` | sinaliza a entrada formal em `PostGame` apos o handoff final |
+| `PostGameExitedEvent` | sinaliza a saida formal de `PostGame` |
 
 ### `LevelSelectedEvent`
 
@@ -362,6 +381,112 @@ Quando usar:
 
 Quando nao usar:
 - quando o seu objetivo e saber qual level foi escolhido durante prepare; nesse caso `LevelSelectedEvent` basta
+
+### `LevelEnteredEvent`
+
+Quem publica:
+- `LevelMacroPrepareService`
+- `LevelSwapLocalService`
+
+Quando dispara:
+- depois que o level foi efetivamente aplicado e registrado como ativo
+
+Para que serve no mundo real:
+- disparar seams level-owned
+- iniciar IntroStage do level atual
+- reagir ao level ja pronto sem depender do GameLoop
+
+Campos uteis:
+- `evt.Session`
+- `evt.Source`
+
+Mini exemplo real:
+
+```csharp
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+
+private EventBinding<LevelEnteredEvent> _binding;
+
+private void OnEnable()
+{
+    _binding = new EventBinding<LevelEnteredEvent>(OnLevelEntered);
+    EventBus<LevelEnteredEvent>.Register(_binding);
+}
+
+private void OnDisable()
+{
+    EventBus<LevelEnteredEvent>.Unregister(_binding);
+}
+
+private void OnLevelEntered(LevelEnteredEvent evt)
+{
+    if (!evt.Session.HasIntroStage)
+    {
+        return;
+    }
+}
+```
+
+Quando usar:
+- quando o seu system precisa reagir ao level ja aplicado e ativo
+
+Quando nao usar:
+- quando voce precisa apenas da selecao de level; nesse caso prefira `LevelSelectedEvent`
+
+### `LevelIntroCompletedEvent`
+
+Quem publica:
+- `IntroStageControlService`
+- `LevelStageOrchestrator`
+
+Quando dispara:
+- quando a intro conclui ou e pulada de forma canonica
+
+Para que serve no mundo real:
+- liberar o handoff do level para gameplay
+- permitir que o `GameLoop` saia de `Ready` e entre em `Playing`
+- registrar o fim do trecho de intro sem reintroduzir o GameLoop como owner dela
+
+Campos uteis:
+- `evt.Session`
+- `evt.Source`
+- `evt.WasSkipped`
+- `evt.Reason`
+
+Mini exemplo real:
+
+```csharp
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+
+private EventBinding<LevelIntroCompletedEvent> _binding;
+
+private void OnEnable()
+{
+    _binding = new EventBinding<LevelIntroCompletedEvent>(OnLevelIntroCompleted);
+    EventBus<LevelIntroCompletedEvent>.Register(_binding);
+}
+
+private void OnDisable()
+{
+    EventBus<LevelIntroCompletedEvent>.Unregister(_binding);
+}
+
+private void OnLevelIntroCompleted(LevelIntroCompletedEvent evt)
+{
+    if (evt.WasSkipped)
+    {
+        return;
+    }
+}
+```
+
+Quando usar:
+- quando o seu system precisa saber que a intro realmente terminou
+
+Quando nao usar:
+- quando voce precisa apenas do level aplicado; nesse caso prefira `LevelEnteredEvent`
 
 ### `GameRunEndRequestedEvent`
 

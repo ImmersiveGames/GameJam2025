@@ -43,7 +43,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             for (int i = 0; i < Data.InitialPoolSize; i++)
             {
                 var poolable = CreatePoolable(i, Vector3.zero, null);
-                if (poolable != null) _pool.Enqueue(poolable);
+                if (poolable != null)
+                {
+                    _pool.Enqueue(poolable);
+                }
             }
 
             IsInitialized = _pool.Count > 0;
@@ -51,11 +54,17 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public IPoolable GetObject(Vector3 position, IActor spawner = null, Vector3? direction = null, bool activateImmediately = true)
         {
-            if (!ValidatePool()) return null;
+            if (!ValidatePool())
+            {
+                return null;
+            }
             WarnIfMultipleGetsSameFrame();
 
             var poolable = RetrieveOrCreate(position, spawner);
-            if (poolable == null) return null;
+            if (poolable == null)
+            {
+                return null;
+            }
 
             if (activateImmediately)
             {
@@ -67,7 +76,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public List<IPoolable> GetMultipleObjects(int count, Vector3 position, IActor spawner = null, Vector3? direction = null, bool activateImmediately = true)
         {
-            if (!ValidatePool()) return new();
+            if (!ValidatePool())
+            {
+                return new();
+            }
 
             var result = new List<IPoolable>();
             int maxCount = Data.CanExpand ? count : Mathf.Min(count, _pool.Count);
@@ -75,7 +87,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             for (int i = 0; i < maxCount; i++)
             {
                 var poolable = RetrieveOrCreate(position, spawner);
-                if (poolable == null) break;
+                if (poolable == null)
+                {
+                    break;
+                }
 
                 if (activateImmediately)
                 {
@@ -85,30 +100,44 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 result.Add(poolable);
             }
 
-            if (result.Count > 0) _hasWarnedExhausted = false;
+            if (result.Count > 0)
+            {
+                _hasWarnedExhausted = false;
+            }
             return result;
         }
 
         public void ActivateObject(IPoolable poolable, Vector3 position, Vector3? direction = null, IActor spawner = null)
         {
-            if (poolable == null || _activeObjects.Contains(poolable)) return;
+            if (poolable == null || _activeObjects.Contains(poolable))
+            {
+                return;
+            }
 
             ActivatePoolable(poolable, position, direction, spawner);
         }
 
         public void ReturnObject(IPoolable poolable)
         {
-            if (poolable == null || !_activeObjects.Contains(poolable)) return;
+            if (poolable == null || !_activeObjects.Contains(poolable))
+            {
+                return;
+            }
 
             _activeObjects.Remove(poolable);
             if (poolable.GetGameObject().activeSelf)
+            {
                 poolable.Deactivate();
+            }
 
             poolable.GetGameObject().transform.SetParent(transform);
             _pool.Enqueue(poolable);
             OnObjectReturned.Invoke(poolable);
 
-            if (Data.ReconfigureOnReturn) ReconfigureObject(poolable);
+            if (Data.ReconfigureOnReturn)
+            {
+                ReconfigureObject(poolable);
+            }
 
             _hasWarnedExhausted = false;
         }
@@ -124,16 +153,25 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             for (int i = 0; i < additionalCount; i++)
             {
                 var poolable = CreatePoolable(_activeObjects.Count + _pool.Count, Vector3.zero, null);
-                if (poolable != null) _pool.Enqueue(poolable);
+                if (poolable != null)
+                {
+                    _pool.Enqueue(poolable);
+                }
             }
         }
 
         public void ClearPool()
         {
-            foreach (var obj in _activeObjects) DestroyObject(obj);
+            foreach (var obj in _activeObjects)
+            {
+                DestroyObject(obj);
+            }
             _activeObjects.Clear();
 
-            foreach (var obj in _pool) DestroyObject(obj);
+            foreach (var obj in _pool)
+            {
+                DestroyObject(obj);
+            }
             _pool.Clear();
 
             IsInitialized = false;
@@ -141,7 +179,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         private IPoolable RetrieveOrCreate(Vector3 position, IActor spawner)
         {
-            if (_pool.Count > 0) return PreparePoolable(_pool.Dequeue());
+            if (_pool.Count > 0)
+            {
+                return PreparePoolable(_pool.Dequeue());
+            }
 
             if (Data.CanExpand)
             {
@@ -189,7 +230,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         private IPoolable PreparePoolable(IPoolable poolable)
         {
-            if (poolable == null) return null;
+            if (poolable == null)
+            {
+                return null;
+            }
             poolable.PoolableReset();
             return poolable;
         }
@@ -209,10 +253,15 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         private void DestroyObject(IPoolable poolable)
         {
-            if (poolable == null) return;
+            if (poolable == null)
+            {
+                return;
+            }
             LifetimeManager.Instance?.Unregister(poolable);
             if (poolable.GetGameObject() != null)
+            {
                 Destroy(poolable.GetGameObject());
+            }
         }
 
         private PoolableObjectData GetConfigForIndex(int index)
@@ -224,7 +273,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         private bool ValidatePool()
         {
-            if (IsInitialized && Data) return true;
+            if (IsInitialized && Data)
+            {
+                return true;
+            }
             DebugUtility.LogWarning<ObjectPool>($"Pool '{name}' not initialized or missing data.", this);
             return false;
         }

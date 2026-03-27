@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pooling Quick Access</title>
+  <style>
+    :root {
+      --bg:#f4f0e8;
+      --panel:#fffdf8;
+      --line:#d9cfbe;
+      --text:#211a13;
+      --muted:#6d6458;
+      --accent:#1f6f8b;
+      --accent-soft:#dff1f8;
+      --ok:#186a3b;
+      --warn:#8a6300;
+      --bad:#a1261e;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      font-family:"Segoe UI",Tahoma,sans-serif;
+      background:linear-gradient(180deg,#efe6da 0%, #f6f2ea 40%, #f4f0e8 100%);
+      color:var(--text);
+      line-height:1.55;
+    }
+    .wrap { max-width:1080px; margin:0 auto; padding:24px; }
+    .panel {
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:20px;
+      margin-bottom:16px;
+      box-shadow:0 10px 26px rgba(30,22,14,.07);
+    }
+    h1,h2,h3 { margin:0 0 10px; }
+    p { margin:0 0 10px; }
+    code { background:#f0e6d7; padding:2px 6px; border-radius:6px; }
+    ul,ol { margin:8px 0; padding-left:20px; }
+    .tag {
+      display:inline-block;
+      background:var(--accent-soft);
+      color:var(--accent);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:.86rem;
+      font-weight:600;
+      margin-bottom:10px;
+    }
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:12px;
+    }
+    .card {
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fff9f0;
+    }
+    .ok { color:var(--ok); }
+    .warn { color:var(--warn); }
+    .bad { color:var(--bad); }
+    .small { color:var(--muted); font-size:.92rem; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="panel">
+      <span class="tag">Quick Access</span>
+      <h1>Pooling Canonico - Uso Rapido</h1>
+      <p>Referencia curta para configurar e operar pooling em feature/cena sem bootstrap global por lista.</p>
+      <p class="small">Fonte tecnica completa: <code>Docs/Guides/Pooling-How-To.md</code>.</p>
+    </section>
+
+    <section class="panel">
+      <h2>O que e</h2>
+      <ul>
+        <li>Infra compartilhada em <code>Infrastructure/Pooling/**</code>.</li>
+        <li>Identidade estrutural por <code>PoolDefinitionAsset</code>.</li>
+        <li>Ownership global no <code>GlobalCompositionRoot</code> (registro de <code>IPoolService</code>).</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Quando usar</h2>
+      <ul>
+        <li>Objetos de alta rotacao com rent/return repetido.</li>
+        <li>Quando quiser reduzir churn de instantiate/destroy.</li>
+        <li>Quando precisar de auto-return controlado por asset.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Passos rapidos</h2>
+      <ol>
+        <li>Criar/configurar <code>PoolDefinitionAsset</code> (prefab, initialSize, canExpand, maxSize, autoReturnSeconds, poolLabel, prewarm).</li>
+        <li>No consumer, usar a base reutilizavel de dependencias de pool (<code>PoolConsumerBehaviourBase</code>, namespace <code>Infrastructure.Pooling.Interop</code>).</li>
+        <li>Configurar lista explicita de pools no consumer.</li>
+        <li>Deixar a base aplicar automaticamente:
+          <ul>
+            <li><code>EnsureRegistered</code> para todos</li>
+            <li><code>Prewarm</code> apenas para assets com <code>prewarm=true</code></li>
+          </ul>
+        </li>
+        <li>Usar <code>Rent</code> / <code>Return</code> no fluxo da feature.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Checklist curto</h2>
+      <div class="grid">
+        <div class="card"><strong>Config</strong><br>Asset com prefab e limites validos.</div>
+        <div class="card"><strong>Consumer</strong><br>Lista explicita de pools (sem scan).</div>
+        <div class="card"><strong>Prewarm</strong><br><code>prewarm=true</code> so quando necessario.</div>
+        <div class="card"><strong>Runtime</strong><br>Rent/Return sempre pelo <code>IPoolService</code>.</div>
+        <div class="card"><strong>QA</strong><br>Validar via <code>PoolingQaContextMenuDriver</code>.</div>
+        <div class="card"><strong>Guardrails</strong><br>Sem boot list global, sem <code>Resources.Load</code>.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>QA rapido</h2>
+      <p>Componente canonicamente usado hoje: <code>PoolingQaContextMenuDriver</code>.</p>
+      <ul>
+        <li><code>QA/Ensure Pool</code></li>
+        <li><code>QA/Prewarm</code></li>
+        <li><code>QA/Rent One</code></li>
+        <li><code>QA/Return Last</code></li>
+        <li><code>QA/Rent Past Max (Expect Fail)</code></li>
+        <li><code>QA/Run AutoReturn Scenario</code></li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Pitfalls comuns</h2>
+      <ul>
+        <li class="bad">Nao usar string como chave estrutural de pool.</li>
+        <li class="bad">Nao colocar regra de dominio dentro do pooling.</li>
+        <li class="warn">Nao marcar <code>prewarm=true</code> sem necessidade real de aquecimento.</li>
+        <li class="warn">Nao ignorar limite maximo em cenarios de burst.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Auto-return (resumo)</h2>
+      <ul>
+        <li><code>autoReturnSeconds <= 0</code>: desativado.</li>
+        <li><code>autoReturnSeconds > 0</code>: retorno automatico por instancia rented.</li>
+        <li>Return manual e cleanup cancelam timers corretamente.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Arquivos principais</h2>
+      <ul>
+        <li><code>Infrastructure/Pooling/Config/PoolDefinitionAsset.cs</code></li>
+        <li><code>Infrastructure/Pooling/Contracts/IPoolService.cs</code></li>
+        <li><code>Infrastructure/Pooling/Runtime/PoolService.cs</code></li>
+        <li><code>Infrastructure/Pooling/Runtime/GameObjectPool.cs</code></li>
+        <li><code>Infrastructure/Pooling/QA/PoolingQaContextMenuDriver.cs</code></li>
+        <li><code>Docs/Guides/Pooling-How-To.md</code> (referencia completa)</li>
+      </ul>
+      <p class="small">Estado oficial de rollout/auditoria: <code>Docs/Reports/Audits/2026-03-20/ADR-0029-Pooling-Rollout-Tracker.md</code>.</p>
+    </section>
+  </div>
+</body>
+</html>

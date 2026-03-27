@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Controllers;
@@ -56,7 +57,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected virtual void Initialize()
         {
-            if (_isSinkinInitialized) return;
+            if (_isSinkinInitialized)
+            {
+                return;
+            }
 
             _actorSkinController = GetComponentInParent<ActorSkinController>();
             _ownerActor = GetComponentInParent<IActor>();
@@ -73,8 +77,14 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected virtual void RegisterWithSkinController()
         {
-            if (!_isSinkinInitialized || _actorSkinController == null) return;
-            if (_isRegistered) return;
+            if (!_isSinkinInitialized || _actorSkinController == null)
+            {
+                return;
+            }
+            if (_isRegistered)
+            {
+                return;
+            }
 
             _actorSkinController.OnSkinApplied += OnActorSkinAppliedHandler;
             _actorSkinController.OnSkinCollectionApplied += OnActorSkinCollectionAppliedHandler;
@@ -97,7 +107,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected virtual void RegisterGlobalEvents()
         {
-            if (!useGlobalEvents || _ownerActor == null) return;
+            if (!useGlobalEvents || _ownerActor == null)
+            {
+                return;
+            }
 
             // Evita recriar bindings se j� existirem
             _skinUpdateBinding ??= new EventBinding<SkinEvents>(OnGlobalSkinUpdate);

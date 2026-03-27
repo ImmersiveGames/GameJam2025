@@ -80,7 +80,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
             if (!removed)
             {
-                DebugUtility.LogVerbose<OldSimulationGateService>($"[Gate] Release token='{token}' ignorado (token não estava ativo).");
+                DebugUtility.LogVerbose<OldSimulationGateService>($"[Gate] Release token='{token}' ignorado (token nï¿½o estava ativo).");
                 return;
             }
 
@@ -134,7 +134,10 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
             public void Dispose()
             {
-                if (_disposed) return;
+                if (_disposed)
+                {
+                    return;
+                }
                 _disposed = true;
 
                 if (_shouldRelease)

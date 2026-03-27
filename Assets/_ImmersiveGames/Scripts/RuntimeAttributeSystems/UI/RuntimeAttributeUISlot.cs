@@ -44,12 +44,18 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 
         private void Awake()
         {
-            if (rootPanel == null) rootPanel = gameObject;
+            if (rootPanel == null)
+            {
+                rootPanel = gameObject;
+            }
         }
 
         private IFillAnimationStrategy CreateStrategyFromProfile(FillAnimationProfile profile)
         {
-            if (profile == null) return new InstantFillAnimationStrategy();
+            if (profile == null)
+            {
+                return new InstantFillAnimationStrategy();
+            }
 
             return profile.animationType switch
             {
@@ -73,7 +79,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
             _fillStrategy.Initialize(fillImage, pendingFillImage, animationProfile, this);
 
             if (InstanceConfig?.runtimeAttributeDefinition != null && iconImage != null)
+            {
                 iconImage.sprite = InstanceConfig.runtimeAttributeDefinition.icon;
+            }
 
             gameObject.name = $"{actorId}_{type}";
 
@@ -84,19 +92,26 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 
         private void ApplyBaseStyleImmediate()
         {
-            if (_currentStyle == null) return;
+            if (_currentStyle == null)
+            {
+                return;
+            }
 
             DebugUtility.LogVerbose<RuntimeAttributeUISlot>($"?? Applying base style: {_currentStyle.name}");
 
             if (fillImage != null)
+            {
                 fillImage.fillAmount = _currentFill;
+            }
 
             if (pendingFillImage != null)
             {
                 pendingFillImage.fillAmount = _currentFill;
 
                 if (_currentStyle.pendingColor != default)
+                {
                     pendingFillImage.color = _currentStyle.pendingColor;
+                }
             }
 
             ApplyStyleColors(_currentFill);
@@ -104,7 +119,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 
         public void Configure(IRuntimeAttributeValue data)
         {
-            if (data == null) return;
+            if (data == null)
+            {
+                return;
+            }
 
             float newValue = data.GetPercentage();
 
@@ -131,7 +149,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
             }
 
             if (valueText != null)
+            {
                 valueText.text = _currentText;
+            }
 
             ApplyStyleColors(_currentFill);
 
@@ -170,7 +190,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 
         public void SetVisible(bool visible)
         {
-            if (rootPanel != null) rootPanel.SetActive(visible);
+            if (rootPanel != null)
+            {
+                rootPanel.SetActive(visible);
+            }
         }
 
         [ContextMenu("Force Visual Update")]
@@ -193,9 +216,18 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 
         private void ClearAllTween()
         {
-            if (FillImage != null) FillImage.DOKill();
-            if (PendingFillImage != null) PendingFillImage.DOKill();
-            if (ValueText != null) ValueText.transform.DOKill();
+            if (FillImage != null)
+            {
+                FillImage.DOKill();
+            }
+            if (PendingFillImage != null)
+            {
+                PendingFillImage.DOKill();
+            }
+            if (ValueText != null)
+            {
+                ValueText.transform.DOKill();
+            }
             _colorTween?.Kill();
             _colorTween = null;
         }
@@ -203,7 +235,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
         private void ApplyStyleColors(float targetFill)
         {
             if (_currentStyle == null)
+            {
                 return;
+            }
 
             if (FillImage != null && _currentStyle != null && _currentStyle.HasFillGradient())
             {
@@ -238,7 +272,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
         {
             const float defaultDuration = 0.2f;
             if (animationProfile == null)
+            {
                 return defaultDuration;
+            }
 
             return Mathf.Max(0f, animationProfile.colorTransitionDuration);
         }
@@ -250,7 +286,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
         {
             const Ease defaultEase = Ease.OutQuad;
             if (animationProfile == null)
+            {
                 return defaultEase;
+            }
 
             return animationProfile.colorTransitionEase;
         }

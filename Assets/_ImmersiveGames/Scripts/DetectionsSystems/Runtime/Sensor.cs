@@ -51,7 +51,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             }
 
             _timer += deltaTime;
-            if (_timer < Config.MaxFrequency) return;
+            if (_timer < Config.MaxFrequency)
+            {
+                return;
+            }
 
             DetectObjects();
             ProcessDetections(_currentDetections);
@@ -94,9 +97,18 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 var collider = _results[i];
                 var detectable = GetDetectableFromCollider(collider);
 
-                if (detectable == null) continue;
-                if (IsSelfOrChild(detectable, _detector)) continue;
-                if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(collider.transform.position)) continue;
+                if (detectable == null)
+                {
+                    continue;
+                }
+                if (IsSelfOrChild(detectable, _detector))
+                {
+                    continue;
+                }
+                if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(collider.transform.position))
+                {
+                    continue;
+                }
 
                 if (!_currentDetections.Contains(detectable))
                 {
@@ -115,12 +127,24 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
             foreach (var detectable in detectables)
             {
-                if (ShouldSkipDetectable(detectable)) continue;
-                if (!TryGetDetectableMono(detectable, out var detectableMono)) continue;
-                if (!IsMonoEligible(detectableMono)) continue;
+                if (ShouldSkipDetectable(detectable))
+                {
+                    continue;
+                }
+                if (!TryGetDetectableMono(detectable, out var detectableMono))
+                {
+                    continue;
+                }
+                if (!IsMonoEligible(detectableMono))
+                {
+                    continue;
+                }
 
                 var targetPosition = GetDetectablePosition(detectable, detectableMono);
-                if (!IsWithinDetectionVolume(targetPosition)) continue;
+                if (!IsWithinDetectionVolume(targetPosition))
+                {
+                    continue;
+                }
 
                 _currentDetections.Add(detectable);
             }
@@ -128,9 +152,18 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private bool ShouldSkipDetectable(IDetectable detectable)
         {
-            if (detectable == null) return true;
-            if (_currentDetections.Contains(detectable)) return true;
-            if (IsSelfOrChild(detectable, _detector)) return true;
+            if (detectable == null)
+            {
+                return true;
+            }
+            if (_currentDetections.Contains(detectable))
+            {
+                return true;
+            }
+            if (IsSelfOrChild(detectable, _detector))
+            {
+                return true;
+            }
             return false;
         }
 
@@ -142,15 +175,27 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private bool IsMonoEligible(MonoBehaviour detectableMono)
         {
-            if (!detectableMono.isActiveAndEnabled || !detectableMono.gameObject.activeInHierarchy) return false;
-            if (!MatchesLayer(detectableMono.gameObject.layer)) return false;
+            if (!detectableMono.isActiveAndEnabled || !detectableMono.gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+            if (!MatchesLayer(detectableMono.gameObject.layer))
+            {
+                return false;
+            }
             return true;
         }
 
         private bool IsWithinDetectionVolume(Vector3 targetPosition)
         {
-            if (!IsWithinRadius(targetPosition)) return false;
-            if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(targetPosition)) return false;
+            if (!IsWithinRadius(targetPosition))
+            {
+                return false;
+            }
+            if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(targetPosition))
+            {
+                return false;
+            }
             return true;
         }
 
@@ -164,7 +209,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private IDetectable GetDetectableFromCollider(Collider collider)
         {
-            if (collider == null) return null;
+            if (collider == null)
+            {
+                return null;
+            }
 
             // Utiliza a hierarquia completa porque os colliders residem em filhos dos detectables.
             return collider.GetComponentInParent<IDetectable>();
@@ -233,8 +281,14 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             for (int i = _detected.Count - 1; i >= 0; i--)
             {
                 var detectable = _detected[i];
-                if (current.Contains(detectable)) continue;
-                if (AlreadyProcessedThisFrame(_exitEventFrameCache, detectable, currentFrame)) continue;
+                if (current.Contains(detectable))
+                {
+                    continue;
+                }
+                if (AlreadyProcessedThisFrame(_exitEventFrameCache, detectable, currentFrame))
+                {
+                    continue;
+                }
 
                 _detected.RemoveAt(i);
                 _exitEventFrameCache[detectable] = currentFrame;
@@ -290,7 +344,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             }
 
             foreach (var key in _cleanupBuffer)
+            {
                 _enterEventFrameCache.Remove(key);
+            }
 
             _cleanupBuffer.Clear();
 
@@ -303,7 +359,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             }
 
             foreach (var key in _cleanupBuffer)
+            {
                 _exitEventFrameCache.Remove(key);
+            }
         }
 
         private string GetName(object obj)
@@ -321,7 +379,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public Vector3[] GetConeEdgeDirections()
         {
-            if (Config.DetectionMode != SensorDetectionMode.Conical) return Array.Empty<Vector3>();
+            if (Config.DetectionMode != SensorDetectionMode.Conical)
+            {
+                return Array.Empty<Vector3>();
+            }
 
             var coneWorldDirection = GetConeWorldDirection();
             float halfAngle = Config.ConeAngle / 2f;
@@ -333,7 +394,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public Vector3[] GetConeArcPoints(int segments = 16)
         {
-            if (Config.DetectionMode != SensorDetectionMode.Conical) return Array.Empty<Vector3>();
+            if (Config.DetectionMode != SensorDetectionMode.Conical)
+            {
+                return Array.Empty<Vector3>();
+            }
 
             var coneWorldDirection = GetConeWorldDirection();
             float segmentAngle = Config.ConeAngle / segments;

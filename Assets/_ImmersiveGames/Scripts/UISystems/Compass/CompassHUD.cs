@@ -110,27 +110,37 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         private void UpdateCompass()
         {
             if (settings == null || compassRectTransform == null || iconPrefab == null || visualDatabase == null)
+            {
                 return;
+            }
 
             if (!CompassRuntimeService.TryGet(out var service) || service.PlayerTransform == null)
+            {
                 return;
+            }
 
-            var trackables = service.Trackables;
-            if (trackables == null) return;
+            IReadOnlyList<ICompassTrackable> trackables = service.Trackables;
+            if (trackables == null)
+            {
+                return;
+            }
 
             SynchronizeIcons(trackables);
 
             float halfAngle = settings.compassHalfAngleDegrees * 0.5f;
             float halfWidth = compassRectTransform.rect.width * 0.5f;
             bool clampAtEdges = settings.clampIconsAtEdges;
-            var (minDistance, maxDistance) = GetDistanceLimits();
+            (float minDistance, float maxDistance) = GetDistanceLimits();
 
             var playerPos = service.PlayerTransform.position;
             var forward = service.PlayerTransform.forward;
             forward.y = 0f;
-            if (forward.sqrMagnitude > 0.01f) forward.Normalize();
+            if (forward.sqrMagnitude > 0.01f)
+            {
+                forward.Normalize();
+            }
 
-            foreach (var pair in _iconsByTarget)
+            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
             {
                 var target = pair.Key;
                 var icon = pair.Value;
@@ -171,7 +181,9 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
                 }
 
                 if (clampAtEdges && Mathf.Abs(angle) > halfAngle)
+                {
                     angle = Mathf.Clamp(angle, -halfAngle, halfAngle);
+                }
 
                 icon.gameObject.SetActive(true);
                 SetIconPosition(icon, angle, halfAngle, halfWidth);
@@ -187,7 +199,9 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
             foreach (var trackable in trackables)
             {
                 if (trackable == null || !trackable.IsActive || trackable.Transform == null)
+                {
                     continue;
+                }
 
                 _activeTrackablesCache.Add(trackable);
 
@@ -197,10 +211,12 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
                 }
             }
 
-            foreach (var pair in _iconsByTarget)
+            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
             {
                 if (!_activeTrackablesCache.Contains(pair.Key))
+                {
                     _removalBuffer.Add(pair.Key);
+                }
             }
 
             foreach (var toRemove in _removalBuffer)
@@ -256,7 +272,10 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
 
         private static void SetIconPosition(CompassIcon icon, float angle, float halfAngle, float halfWidth)
         {
-            if (icon.rectTransform == null) return;
+            if (icon.rectTransform == null)
+            {
+                return;
+            }
 
             float normalized = Mathf.Approximately(halfAngle, 0f) ? 0f : angle / halfAngle;
             float x = normalized * halfWidth;
@@ -267,12 +286,17 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
 
         public void ForEachIcon(Action<ICompassTrackable, CompassIcon> action)
         {
-            if (action == null || _iconsByTarget == null) return;
+            if (action == null || _iconsByTarget == null)
+            {
+                return;
+            }
 
-            foreach (var pair in _iconsByTarget)
+            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
             {
                 if (pair.Key != null && pair.Value != null)
+                {
                     action(pair.Key, pair.Value);
+                }
             }
         }
 

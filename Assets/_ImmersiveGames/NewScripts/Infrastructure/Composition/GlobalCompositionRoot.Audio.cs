@@ -1,0 +1,186 @@
+﻿using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
+using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using UnityEngine;
+
+namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+{
+    public static partial class GlobalCompositionRoot
+    {
+        private static void InstallAudioServices()
+        {
+            RegisterAudioDefaults();
+            RegisterAudioSettings();
+            RegisterAudioRoutingResolver();
+            RegisterAudioListenerHost();
+            RegisterAudioBgmService();
+            RegisterAudioPauseDuckingBridge();
+            RegisterGlobalAudioService();
+            RegisterEntityAudioService();
+
+            DebugUtility.LogVerbose(
+                typeof(GlobalCompositionRoot),
+                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime + Pause Ducking Bridge + Global SFX Runtime + Entity Semantic Runtime).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterAudioDefaults()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(
+                    typeof(GlobalCompositionRoot),
+                    "[Audio][BOOT] AudioDefaultsAsset already registered in DI.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bootstrap = GetRequiredBootstrapConfig(out string via);
+            var defaults = bootstrap.AudioDefaults;
+
+            if (defaults == null)
+            {
+                ReportAudioDegraded(
+                    reason: "missing_audio_defaults_asset",
+                    detail: $"BootstrapConfigAsset '{bootstrap.name}' resolved via '{via}' has null AudioDefaults.");
+
+                defaults = ScriptableObject.CreateInstance<AudioDefaultsAsset>();
+                defaults.name = "AudioDefaults_RuntimeFallback";
+
+                DebugUtility.LogWarning(
+                    typeof(GlobalCompositionRoot),
+                    "[Audio][BOOT][DEGRADED] AudioDefaultsAsset missing; using runtime fallback defaults.");
+            }
+
+            DependencyManager.Provider.RegisterGlobal(defaults, allowOverride: false);
+
+            DebugUtility.LogVerbose(
+                typeof(GlobalCompositionRoot),
+                $"[Audio][BOOT] AudioDefaultsAsset registered. source='{via}' asset='{defaults.name}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterAudioSettings()
+        {
+            RegisterIfMissing<IAudioSettingsService>(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
+
+                    return new AudioSettingsService(
+                        masterVolume: defaults != null ? defaults.MasterVolume : 1f,
+                        bgmVolume: defaults != null ? defaults.BgmVolume : 1f,
+                        sfxVolume: defaults != null ? defaults.SfxVolume : 1f,
+                        bgmCategoryMultiplier: defaults != null ? defaults.BgmCategoryMultiplier : 1f,
+                        sfxCategoryMultiplier: defaults != null ? defaults.SfxCategoryMultiplier : 1f);
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IAudioSettingsService already registered.",
+                registeredMessage: "[Audio][BOOT] IAudioSettingsService registered from AudioDefaultsAsset.");
+        }
+
+        private static void RegisterAudioRoutingResolver()
+        {
+            RegisterIfMissing<IAudioRoutingResolver>(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
+                    return new AudioRoutingResolver(defaults);
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IAudioRoutingResolver already registered.",
+                registeredMessage: "[Audio][BOOT] IAudioRoutingResolver registered.");
+        }
+
+        private static void RegisterAudioBgmService()
+        {
+            RegisterIfMissing(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
+                    DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var settings);
+                    DependencyManager.Provider.TryGetGlobal<IAudioRoutingResolver>(out var routing);
+
+                    return AudioBgmService.Create(defaults, settings, routing);
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IAudioBgmService already registered.",
+                registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
+        }
+
+        private static void RegisterAudioPauseDuckingBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<AudioPauseDuckingBridge>(out _))
+            {
+                return;
+            }
+
+            var bridge = AudioPauseDuckingBridge.EnsureCreated();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(
+                typeof(GlobalCompositionRoot),
+                "[Audio][BOOT] AudioPauseDuckingBridge registered (PauseStateChangedEvent -> IAudioBgmService.SetPauseDucking).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGlobalAudioService()
+        {
+            RegisterIfMissing(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults);
+                    DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var settings);
+                    DependencyManager.Provider.TryGetGlobal<IAudioRoutingResolver>(out var routing);
+
+                    return AudioGlobalSfxService.Create(defaults, settings, routing);
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IGlobalAudioService already registered.",
+                registeredMessage: "[Audio][BOOT] IGlobalAudioService registered (F4/F5 direct + pooled SFX runtime).");
+        }
+
+        private static void RegisterEntityAudioService()
+        {
+            RegisterIfMissing<IEntityAudioService>(
+                factory: () =>
+                {
+                    DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out var globalAudio);
+                    var bootstrap = GetRequiredBootstrapConfig(out string via);
+                    var semanticMap = bootstrap != null ? bootstrap.EntityAudioSemanticMap : null;
+
+                    var service = new AudioEntitySemanticService(globalAudio, semanticMap);
+
+                    DebugUtility.LogVerbose(
+                        typeof(GlobalCompositionRoot),
+                        $"[Audio][BOOT] IEntityAudioService semantic map source='{via}' map='{(semanticMap != null ? semanticMap.name : "null")}'.",
+                        DebugUtility.Colors.Info);
+
+                    return service;
+                },
+                alreadyRegisteredMessage: "[Audio][BOOT] IEntityAudioService already registered.",
+                registeredMessage: "[Audio][BOOT] IEntityAudioService registered (F6 semantic standalone runtime).");
+        }
+
+        private static void RegisterAudioListenerHost()
+        {
+            AudioListenerRuntimeHost.EnsureCreated();
+
+            DebugUtility.LogVerbose(
+                typeof(GlobalCompositionRoot),
+                "[Audio][BOOT] Canonical AudioListener runtime host ensured.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void ReportAudioDegraded(string reason, string detail)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var reporter) && reporter != null)
+            {
+                reporter.Report(
+                    feature: "Audio",
+                    reason: reason,
+                    detail: detail,
+                    signature: "GlobalCompositionRoot.Audio",
+                    profile: "Bootstrap");
+            }
+        }
+    }
+}

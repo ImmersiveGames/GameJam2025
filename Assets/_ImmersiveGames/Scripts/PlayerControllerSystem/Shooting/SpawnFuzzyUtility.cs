@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         {
             if (_useSeed && _seededRandom != null)
             {
-                var t = (float)_seededRandom.NextDouble();
+                float t = (float)_seededRandom.NextDouble();
                 return min + (max - min) * t;
             }
 
@@ -51,21 +51,25 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             float distance = 0f)
         {
             if (direction.sqrMagnitude < Mathf.Epsilon)
+            {
                 direction = Vector3.forward;
+            }
 
             direction = direction.normalized;
 
             if (fuzzyPercent > 0f)
             {
-                var radius = Mathf.Max(0f, distance) * fuzzyPercent;
+                float radius = Mathf.Max(0f, distance) * fuzzyPercent;
 
-                var angle = RandRange(0f, 360f) * Mathf.Deg2Rad;
-                var r = RandRange(0f, radius);
+                float angle = RandRange(0f, 360f) * Mathf.Deg2Rad;
+                float r = RandRange(0f, radius);
                 var circle = new Vector2(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r);
 
                 var right = Vector3.Cross(direction, Vector3.up).normalized;
                 if (right.sqrMagnitude < 0.0001f)
+                {
                     right = Vector3.right;
+                }
 
                 var up = Vector3.Cross(direction, right).normalized;
 

@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
 {
     /// <summary>
-    /// Fonte canonica em codigo para os intents core e aliases oficiais de navigation.
+    /// Fonte canônica em código para os intents core e aliases oficiais de navigation.
     /// </summary>
     public static class GameNavigationIntents
     {
@@ -68,8 +68,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         }
 
         public static bool TryMapToCoreKind(NavigationIntentId intentId, out GameNavigationIntentKind kind)
+            => TryMapToCoreKind(intentId.Value, out kind);
+
+        public static bool TryMapToCoreKind(string intentId, out GameNavigationIntentKind kind)
         {
-            string normalized = NavigationIntentId.Normalize(intentId.Value);
+            string normalized = NavigationIntentId.Normalize(intentId);
             if (string.Equals(normalized, Menu.Value, StringComparison.OrdinalIgnoreCase))
             {
                 kind = GameNavigationIntentKind.Menu;

@@ -35,10 +35,16 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         protected void AcquireGate(string token)
         {
             var gate = Gate;
-            if (gate == null) return;
+            if (gate == null)
+            {
+                return;
+            }
 
             // Idempotente: evita "double acquire" no mesmo token (que leva a logs duplicados)
-            if (gate.IsTokenActive(token)) return;
+            if (gate.IsTokenActive(token))
+            {
+                return;
+            }
 
             gate.Acquire(token);
         }
@@ -46,10 +52,16 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         protected void ReleaseGate(string token)
         {
             var gate = Gate;
-            if (gate == null) return;
+            if (gate == null)
+            {
+                return;
+            }
 
             // Idempotente: evita spam de "Release ignorado (token n�o estava ativo)"
-            if (!gate.IsTokenActive(token)) return;
+            if (!gate.IsTokenActive(token))
+            {
+                return;
+            }
 
             gate.Release(token);
         }

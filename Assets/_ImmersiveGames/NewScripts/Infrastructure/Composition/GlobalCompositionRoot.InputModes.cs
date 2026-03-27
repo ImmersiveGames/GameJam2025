@@ -2,8 +2,8 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.InputModes;
-using _ImmersiveGames.NewScripts.Modules.InputModes.Interop;
+using _ImmersiveGames.NewScripts.Infrastructure.InputModes;
+using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -107,25 +107,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void RegisterInputModeCoordinator()
         {
-            RegisterIfMissing(
-                () => new InputModeCoordinator(),
-                "[InputMode] InputModeCoordinator ja registrado no DI global.",
-                "[InputMode] InputModeCoordinator registrado no DI global.");
-        }
-
-        private static void RegisterInputModeSceneFlowBridge()
-        {
-            // O trilho runtime de request/coordinator so pode existir quando o servico canonico ja estiver registrado.
             if (!ShouldRegisterInputModeRuntimeRail())
             {
                 return;
             }
 
-            RegisterInputModeCoordinator();
             RegisterIfMissing(
-                () => new SceneFlowInputModeBridge(),
-                "[InputMode] SceneFlowInputModeBridge ja registrado no DI global.",
-                "[InputMode] SceneFlowInputModeBridge registrado no DI global.");
+                () => new InputModeCoordinator(),
+                "[InputMode] InputModeCoordinator ja registrado no DI global.",
+                "[InputMode] InputModeCoordinator registrado no DI global.");
         }
 
         private static bool ShouldRegisterInputModeRuntimeRail()
@@ -161,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             _inputModeRuntimeRailSkippedLogged = true;
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][InputMode] InputModeCoordinator/Bridge skipped reason='input_modes_disabled_or_not_registered'.",
+                "[OBS][InputMode] InputMode runtime rail skipped reason='input_modes_disabled_or_not_registered'.",
                 DebugUtility.Colors.Info);
         }
     }

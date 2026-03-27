@@ -32,7 +32,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 ApplyGroupedMaterials();
             }
             
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Initialized with {materialSlots.Length} slots");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Initialized with {materialSlots.Length} slots");
+            }
         }
         #endregion
 
@@ -40,22 +43,34 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected override void ConfigureSkin(ISkinConfig skinConfig)
         {
-            if (!applyOnSkinChange) return;
-            
+            if (!applyOnSkinChange)
+            {
+                return;
+            }
+
             ApplyGroupedMaterials();
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Configured from skin");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Configured from skin");
+            }
         }
 
         protected override void ApplyDynamicModifications()
         {
             ApplyGroupedMaterials();
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied dynamic modifications");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied dynamic modifications");
+            }
         }
 
         protected override void OnSkinInstancesCreated(ModelType modelType, List<GameObject> instances)
         {
-            if (modelType != targetModelType) return;
-            
+            if (modelType != targetModelType)
+            {
+                return;
+            }
+
             if (randomizeOnNewInstances)
             {
                 ApplyGroupedMaterials();
@@ -70,7 +85,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             foreach (var slot in materialSlots)
             {
-                if (slot == null || !slot.IsValid) continue;
+                if (slot == null || !slot.IsValid)
+                {
+                    continue;
+                }
 
                 slot.Initialize();
 
@@ -95,7 +113,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [ContextMenu("Apply Grouped Materials")]
         public void ApplyGroupedMaterials()
         {
-            if (_groupedSlots == null) InitializeGroups();
+            if (_groupedSlots == null)
+            {
+                InitializeGroups();
+            }
 
             // CADA SLOT SORTEIA SEU PR�PRIO MATERIAL ALEAT�RIO
             foreach (var slot in materialSlots)
@@ -106,7 +127,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 }
             }
             
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied random materials to {materialSlots.Length} slots");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied random materials to {materialSlots.Length} slots");
+            }
         }
 
         /// <summary>
@@ -114,14 +138,20 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         private void ApplyMaterialToGroup(MaterialGroupConfig group, Material material)
         {
-            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) return;
+            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot))
+            {
+                return;
+            }
 
             foreach (var slot in groupedSlot.Where(slot => slot != null && slot.CanApply()))
             {
                 slot.ApplyMaterial(material);
             }
 
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied specific material '{material.name}' to group '{group.GroupName}'");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied specific material '{material.name}' to group '{group.GroupName}'");
+            }
         }
 
         /// <summary>
@@ -129,7 +159,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         private void RandomizeGroup(MaterialGroupConfig group)
         {
-            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) return;
+            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot))
+            {
+                return;
+            }
 
             foreach (var slot in groupedSlot.Where(slot => slot != null && slot.CanApply()))
             {
@@ -153,7 +186,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [ContextMenu("Randomize All Groups")]
         public void RandomizeAllGroups()
         {
-            if (_groupedSlots == null) return;
+            if (_groupedSlots == null)
+            {
+                return;
+            }
 
             foreach (var group in _groupedSlots.Keys)
             {
@@ -177,7 +213,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         public void ApplyMaterialProgression(int materialIndex)
         {
-            if (_groupedSlots == null) return;
+            if (_groupedSlots == null)
+            {
+                return;
+            }
 
             foreach (KeyValuePair<MaterialGroupConfig, List<MaterialSlot>> group in _groupedSlots)
             {
@@ -188,7 +227,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 }
             }
 
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied material progression index {materialIndex}");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied material progression index {materialIndex}");
+            }
         }
 
         /// <summary>
@@ -205,7 +247,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 }
             }
 
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Reset all materials to original");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Reset all materials to original");
+            }
         }
 
         /// <summary>
@@ -213,14 +258,20 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         public void ResetGroup(MaterialGroupConfig group)
         {
-            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) return;
+            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot))
+            {
+                return;
+            }
 
             foreach (var slot in groupedSlot.Where(slot => slot != null))
             {
                 slot.ResetToOriginal();
             }
 
-            if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Reset group '{group.GroupName}' to original");
+            if (showDebugLogs)
+            {
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Reset group '{group.GroupName}' to original");
+            }
         }
         #endregion
 
@@ -230,7 +281,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         private MaterialGroupConfig[] GetUniqueGroups()
         {
-            if (_groupedSlots == null) InitializeGroups();
+            if (_groupedSlots == null)
+            {
+                InitializeGroups();
+            }
             return _groupedSlots?.Keys.ToArray() ?? Array.Empty<MaterialGroupConfig>();
         }
 
@@ -239,9 +293,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         private MaterialSlot[] GetSlotsForGroup(MaterialGroupConfig group)
         {
-            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) 
+            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot))
+            {
                 return Array.Empty<MaterialSlot>();
-            
+            }
+
             return groupedSlot.ToArray();
         }
 

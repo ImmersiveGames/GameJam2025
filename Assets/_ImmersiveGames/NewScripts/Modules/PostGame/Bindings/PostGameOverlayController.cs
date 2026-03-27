@@ -4,20 +4,19 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.Gates;
-using _ImmersiveGames.NewScripts.Modules.InputModes;
+using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.PostGame;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
+namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 {
     /// <summary>
     /// Controller do overlay de pós-game (Game Over / Victory).
-    /// Nota: a pausa da simulação em Victory/Defeat é solicitada pelo GameRunStateService.
+    /// Nota: a pausa da simulação em Victory/Defeat é solicitada pelo GameRunResultSnapshotService.
     /// Este overlay apenas exibe UI e publica intents (Restart / ExitToMenu).
     /// </summary>
     [DisallowMultipleComponent]
@@ -44,7 +43,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         [Inject] private IPostLevelActionsService _postLevelActionsService;
 
         private bool _dependenciesInjected;
-        private EventBinding<GameRunEndedEvent> _runEndedBinding;
+        private EventBinding<PostGameEnteredEvent> _postGameEnteredBinding;
+        private EventBinding<PostGameExitedEvent> _postGameExitedBinding;
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private bool _registered;
         private IDisposable _postGameGateHandle;
@@ -59,7 +59,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 rootCanvasGroup = GetComponent<CanvasGroup>();
             }
 
-            _runEndedBinding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
+            _postGameEnteredBinding = new EventBinding<PostGameEnteredEvent>(OnPostGameEntered);
+            _postGameExitedBinding = new EventBinding<PostGameExitedEvent>(OnPostGameExited);
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
 
             RegisterBindings();
@@ -70,11 +71,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void Start()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var statusService)
-                && statusService is { HasResult: true })
+            EnsureDependenciesInjected();
+
+            if (ShouldShowOverlayOnStart(out var statusService))
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
-                    "[PostGame] Resultado pré-existente detectado na inicialização. Atualizando overlay.",
+                    "[PostGame] Resultado pré-existente detectado na inicialização. Exibindo overlay após PostGame ativo.",
                     DebugUtility.Colors.Info);
                 ApplyStatus(statusService);
                 Show();
@@ -178,12 +180,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 return;
             }
 
-            EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
+            EventBus<PostGameEnteredEvent>.Register(_postGameEnteredBinding);
+            EventBus<PostGameExitedEvent>.Register(_postGameExitedBinding);
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
             _registered = true;
 
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] Bindings de GameRunEnded/GameRunStarted registrados.",
+                "[PostGame] Bindings de PostGameEntered/PostGameExited/GameRunStarted registrados.",
                 DebugUtility.Colors.Info);
         }
 
@@ -194,12 +197,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 return;
             }
 
-            EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
+            EventBus<PostGameEnteredEvent>.Unregister(_postGameEnteredBinding);
+            EventBus<PostGameExitedEvent>.Unregister(_postGameExitedBinding);
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
             _registered = false;
 
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] Bindings de GameRunEnded/GameRunStarted removidos.",
+                "[PostGame] Bindings de PostGameEntered/PostGameExited/GameRunStarted removidos.",
                 DebugUtility.Colors.Info);
         }
 
@@ -217,12 +221,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             }
         }
 
-        private void OnGameRunEnded(GameRunEndedEvent evt)
+        private void OnPostGameEntered(PostGameEnteredEvent evt)
         {
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
-                    "[PostGame] GameRunEndedEvent ignorado (ação já solicitada).",
+                    "[PostGame] PostGameEnteredEvent ignorado (ação já solicitada).",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -233,14 +237,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             }
 
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] GameRunEndedEvent recebido. Exibindo overlay.",
+                "[PostGame] PostGameEnteredEvent recebido. Exibindo overlay.",
                 DebugUtility.Colors.Info);
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunStateService>(out var statusService)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out var statusService)
                 || statusService == null)
             {
                 DebugUtility.LogWarning<PostGameOverlayController>(
-                    "[PostGame] IGameRunStateService indisponível. Usando fallback de texto.");
+                    "[PostGame] IGameRunResultSnapshotService indisponível. Usando fallback de texto.");
                 ApplyFallbackText();
                 Show();
                 return;
@@ -250,9 +254,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             Show();
         }
 
-        private void ApplyStatus(IGameRunStateService stateService)
+        private void OnPostGameExited(PostGameExitedEvent evt)
         {
-            UpdateTextsFromStatus(stateService.Outcome, stateService.Reason);
+            DebugUtility.LogVerbose<PostGameOverlayController>(
+                "[PostGame] PostGameExitedEvent recebido. Ocultando overlay.",
+                DebugUtility.Colors.Info);
+
+            _actionRequested = false;
+            HideImmediate();
+        }
+
+        private void ApplyStatus(IGameRunResultSnapshotService resultSnapshotService)
+        {
+            UpdateTextsFromStatus(resultSnapshotService.Outcome, resultSnapshotService.Reason);
         }
 
         private void UpdateTextsFromStatus(GameRunOutcome outcome, string reason)
@@ -366,6 +380,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(InputModeRequestKind.Gameplay, reason, "PostGameOverlay"));
         }
+
+        private bool ShouldShowOverlayOnStart(out IGameRunResultSnapshotService statusService)
+        {
+            statusService = null;
+
+            if (_postGameOwnership == null || !_postGameOwnership.IsActive)
+            {
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out statusService) || statusService == null)
+            {
+                return false;
+            }
+
+            return statusService.HasResult;
+        }
+
         private bool ShouldOverlayManageOwnership()
         {
             return _postGameOwnership == null || !_postGameOwnership.IsOwnerEnabled;

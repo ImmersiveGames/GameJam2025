@@ -1,28 +1,12 @@
-# Latest Audit
+# LATEST
 
-Fechamento operacional vigente do Baseline V3:
-- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-BLOCKERS-FIX.md`
-- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-OUTCOME-MOCK-FIX.md`
-- `Docs/Reports/Audits/2026-03-13/BASELINE-V3-CLOSEOUT.md`
-- `Docs/Reports/Baseline/2026-03-13/Baseline-V3-Freeze.md`
+## Fase vigente
+### Macro Flow Stack Consolidation - closeout
 
-## Estado vigente
+## Entrega
+- plano `Plan-MacroFlow-Stack-Consolidation.md` concluido
+- outcome curto do stack macro registrado em plano e changelog
+- ponteiros canonicos e analises mantidos sem reabrir escopo
 
-- O Baseline V3 atual esta fechado em `PASS`.
-- A superficie documental principal aponta para o estado atual consolidado, sem reabrir historico como contrato vigente.
-- O smoke/runtime validado para esta promocao cobre:
-  - `startup`
-  - `menu`
-  - `play`
-  - `gameplay`
-  - `intro`
-  - `playing`
-  - `pause/resume`
-  - `victory`
-  - `postgame`
-  - `restart`
-  - `defeat`
-  - `exit to menu`
-
-Use este arquivo como ponte curta para os relatorios finais da rodada.
-
+## Regra
+Nesta fase, o foco e fechamento documental do stack macro, nao reabertura de implementacao.

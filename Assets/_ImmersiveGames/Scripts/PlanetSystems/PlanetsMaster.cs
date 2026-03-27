@@ -126,7 +126,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             // Detectables (detecção por sensores)
-            var detectables = GetComponentsInChildren<AbstractDetectable>(true);
+            AbstractDetectable[] detectables = GetComponentsInChildren<AbstractDetectable>(true);
             if (detectables == null || detectables.Length == 0)
             {
                 DebugUtility.LogWarning<PlanetsMaster>(

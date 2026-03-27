@@ -30,7 +30,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void OnEnable()
         {
             if (_actor == null)
+            {
                 return;
+            }
 
             _shouldRetryInStart = !TryRegisterNow();
         }
@@ -38,7 +40,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void Start()
         {
             if (_actor == null || _registered || !_shouldRetryInStart)
+            {
                 return;
+            }
 
             _shouldRetryInStart = false;
             TryRegisterNow();
@@ -47,14 +51,18 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private bool TryRegisterNow()
         {
             if (_registered || _actor == null)
+            {
                 return true;
+            }
 
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
+            {
                 return false;
+            }
 
-            var sceneName = gameObject.scene.name;
+            string sceneName = gameObject.scene.name;
 
-            if (!DependencyManager.Provider.TryGetForScene<IEaterDomain>(sceneName, out _eaterDomain) || _eaterDomain == null)
+            if (!DependencyManager.Provider.TryGetForScene(sceneName, out _eaterDomain) || _eaterDomain == null)
             {
                 DebugUtility.LogWarning<EaterAutoRegistrar>(
                     $"IEaterDomain n�o encontrado para a cena '{sceneName}'. " +
@@ -71,7 +79,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void OnDisable()
         {
             if (!_registered || _eaterDomain == null || _actor == null)
+            {
                 return;
+            }
 
             _eaterDomain.UnregisterEater(_actor);
             _registered = false;

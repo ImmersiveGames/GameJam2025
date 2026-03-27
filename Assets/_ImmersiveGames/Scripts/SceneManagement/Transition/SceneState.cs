@@ -70,7 +70,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
             // Se for o mesmo frame e o snapshot � igual, n�o loga novamente.
             if (_lastLoggedFrame == frame && _lastLoggedKey == key)
+            {
                 return;
+            }
 
             _lastLoggedFrame = frame;
             _lastLoggedKey = key;

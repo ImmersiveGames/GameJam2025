@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -14,8 +14,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
     public static class SceneFlowConfigValidator
     {
         private const string NavigationCatalogPath = "Assets/Resources/Navigation/GameNavigationCatalog.asset";
-        private const string SceneRouteCatalogPath = "Assets/Resources/SceneFlow/SceneRouteCatalog.asset";
-        private const string BootstrapConfigPath = "Assets/Resources/NewScriptsBootstrapConfig.asset";
+        private const string BootstrapConfigPath = "Assets/Resources/BootstrapConfig.asset";
         private const string ReportPath = "Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Config-ValidationReport.md";
 
         [MenuItem("ImmersiveGames/NewScripts/Tools/SceneFlow/Validate Config", priority = 1410)]
@@ -24,11 +23,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             ValidationContext context = new ValidationContext();
             LoadedAssets assets = LoadAssets(context);
 
+            HashSet<string> knownRouteIds = ValidateSceneRouteDefinitions(context);
             ValidateMandatoryCoreIntents(context);
-            ValidateGameNavigationCoreSlots(context, assets.NavigationCatalog);
-            ValidateSceneRouteCatalogConsistency(context, assets.SceneRouteCatalog, assets.NavigationCatalog);
-            ValidateStartupTransition(context, assets.BootstrapConfig);
-            ValidateAllTransitionStyleAssets(context, assets.BootstrapConfig);
+            if (assets.NavigationCatalog != null)
+            {
+                ValidateGameNavigationCoreSlots(context, assets.NavigationCatalog, knownRouteIds);
+            }
+
+            if (assets.BootstrapConfig != null)
+            {
+                ValidateBootstrapConfig(context, assets.BootstrapConfig);
+                ValidateAllTransitionStyleAssets(context, assets.BootstrapConfig);
+            }
 
             string reportContent = BuildReport(context);
             WriteReport(reportContent);
@@ -45,9 +51,72 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             return new LoadedAssets
             {
                 NavigationCatalog = LoadRequiredAssetAtPath<GameNavigationCatalogAsset>(NavigationCatalogPath, context),
-                SceneRouteCatalog = LoadRequiredAssetAtPath<SceneRouteCatalogAsset>(SceneRouteCatalogPath, context),
-                BootstrapConfig = LoadRequiredAssetAtPath<NewScriptsBootstrapConfigAsset>(BootstrapConfigPath, context)
+                BootstrapConfig = LoadRequiredAssetAtPath<BootstrapConfigAsset>(BootstrapConfigPath, context)
             };
+        }
+
+        private static HashSet<string> ValidateSceneRouteDefinitions(ValidationContext context)
+        {
+            HashSet<string> seenRouteIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string[] guids = AssetDatabase.FindAssets("t:SceneRouteDefinitionAsset");
+
+            if (guids.Length == 0)
+            {
+                context.AddFatal("Nenhum SceneRouteDefinitionAsset encontrado.");
+                return seenRouteIds;
+            }
+
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                SceneRouteDefinitionAsset asset = AssetDatabase.LoadAssetAtPath<SceneRouteDefinitionAsset>(path);
+                context.AssetStatuses.Add(new AssetStatus(path, asset != null));
+
+                if (asset == null)
+                {
+                    continue;
+                }
+
+                if (!asset.RouteId.IsValid)
+                {
+                    context.AddFatal($"SceneRouteDefinitionAsset invalida sem RouteId. asset='{asset.name}', path='{path}'.");
+                    context.RouteDefinitions.Add(new RouteDefinitionRecord
+                    {
+                        AssetName = asset.name,
+                        RouteId = "<invalid>",
+                        RouteKind = asset.RouteKind.ToString(),
+                        Status = "FATAL"
+                    });
+                    continue;
+                }
+
+                bool routeValid = true;
+                if (!seenRouteIds.Add(asset.RouteId.Value))
+                {
+                    context.AddFatal($"RouteId duplicado entre SceneRouteDefinitionAsset: '{asset.RouteId.Value}'.");
+                    routeValid = false;
+                }
+
+                try
+                {
+                    asset.ValidateRoutePolicyOrFailFast();
+                }
+                catch (Exception ex)
+                {
+                    context.AddFatal($"SceneRouteDefinitionAsset invalida. asset='{asset.name}', routeId='{asset.RouteId}', detail='{ex.Message}'.");
+                    routeValid = false;
+                }
+
+                context.RouteDefinitions.Add(new RouteDefinitionRecord
+                {
+                    AssetName = asset.name,
+                    RouteId = asset.RouteId.Value,
+                    RouteKind = asset.RouteKind.ToString(),
+                    Status = routeValid ? "OK" : "FATAL"
+                });
+            }
+
+            return seenRouteIds;
         }
 
         private static T LoadRequiredAssetAtPath<T>(string path, ValidationContext context) where T : UnityEngine.Object
@@ -74,19 +143,31 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
         }
 
-        private static void ValidateGameNavigationCoreSlots(ValidationContext context, GameNavigationCatalogAsset navigationCatalog)
+        private static void ValidateGameNavigationCoreSlots(
+            ValidationContext context,
+            GameNavigationCatalogAsset navigationCatalog,
+            HashSet<string> knownRouteIds)
         {
-            ValidateCoreSlot(context, navigationCatalog, "menuSlot", "menu");
-            ValidateCoreSlot(context, navigationCatalog, "gameplaySlot", "gameplay");
+            ValidateCoreSlot(context, navigationCatalog, "menuSlot", "menu", knownRouteIds);
+            ValidateCoreSlot(context, navigationCatalog, "gameplaySlot", "gameplay", knownRouteIds);
         }
 
-        private static void ValidateCoreSlot(ValidationContext context, GameNavigationCatalogAsset navigationCatalog, string slotPropertyName, string slotLabel)
+        private static void ValidateCoreSlot(
+            ValidationContext context,
+            GameNavigationCatalogAsset navigationCatalog,
+            string slotPropertyName,
+            string slotLabel,
+            HashSet<string> knownRouteIds)
         {
             SerializedObject serializedObject = new SerializedObject(navigationCatalog);
             SerializedProperty slotProp = serializedObject.FindProperty(slotPropertyName);
             SceneRouteDefinitionAsset routeRef = slotProp?.FindPropertyRelative("routeRef")?.objectReferenceValue as SceneRouteDefinitionAsset;
             TransitionStyleAsset styleRef = slotProp?.FindPropertyRelative("transitionStyleRef")?.objectReferenceValue as TransitionStyleAsset;
-            bool ok = routeRef != null && routeRef.RouteId.IsValid && styleRef != null && styleRef.Profile != null;
+
+            bool hasRoute = routeRef != null && routeRef.RouteId.IsValid && knownRouteIds.Contains(routeRef.RouteId.Value);
+            bool hasStyle = styleRef != null && styleRef.Profile != null;
+            bool ok = hasRoute && hasStyle;
+
             context.CoreSlots.Add(new CoreSlotRecord
             {
                 Slot = slotLabel,
@@ -102,40 +183,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             }
         }
 
-        private static void ValidateSceneRouteCatalogConsistency(ValidationContext context, SceneRouteCatalogAsset sceneRouteCatalog, GameNavigationCatalogAsset navigationCatalog)
+        private static void ValidateBootstrapConfig(ValidationContext context, BootstrapConfigAsset bootstrapConfig)
         {
-            Dictionary<string, int> seenRouteIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            SerializedObject serializedObject = new SerializedObject(sceneRouteCatalog);
-            SerializedProperty routeDefinitions = serializedObject.FindProperty("routeDefinitions");
-            for (int i = 0; i < routeDefinitions.arraySize; i++)
+            if (bootstrapConfig.NavigationCatalog == null)
             {
-                SceneRouteDefinitionAsset routeAsset = routeDefinitions.GetArrayElementAtIndex(i).objectReferenceValue as SceneRouteDefinitionAsset;
-                if (routeAsset == null) continue;
-                if (seenRouteIds.ContainsKey(routeAsset.RouteId.Value))
-                {
-                    context.AddFatal($"RouteId duplicado no SceneRouteCatalogAsset: '{routeAsset.RouteId.Value}'.");
-                }
-                else
-                {
-                    seenRouteIds.Add(routeAsset.RouteId.Value, i);
-                }
+                context.AddFatal("Bootstrap sem navigationCatalog valido.");
             }
 
-            EnsureCoreRouteExists(context, sceneRouteCatalog, navigationCatalog, "menuSlot", GameNavigationIntents.Menu.Value);
-            EnsureCoreRouteExists(context, sceneRouteCatalog, navigationCatalog, "gameplaySlot", GameNavigationIntents.Gameplay.Value);
+            ValidateStartupTransition(context, bootstrapConfig);
         }
 
-        private static void EnsureCoreRouteExists(ValidationContext context, SceneRouteCatalogAsset sceneRouteCatalog, GameNavigationCatalogAsset navigationCatalog, string slotPropertyName, string intentId)
-        {
-            SerializedObject serializedObject = new SerializedObject(navigationCatalog);
-            SceneRouteDefinitionAsset routeRef = serializedObject.FindProperty(slotPropertyName)?.FindPropertyRelative("routeRef")?.objectReferenceValue as SceneRouteDefinitionAsset;
-            if (routeRef == null || !sceneRouteCatalog.TryGet(routeRef.RouteId, out _))
-            {
-                context.AddFatal($"SceneRouteCatalogAsset nao possui rota para intent '{intentId}'.");
-            }
-        }
-
-        private static void ValidateStartupTransition(ValidationContext context, NewScriptsBootstrapConfigAsset bootstrapConfig)
+        private static void ValidateStartupTransition(ValidationContext context, BootstrapConfigAsset bootstrapConfig)
         {
             TransitionStyleAsset startupStyle = bootstrapConfig.StartupTransitionStyleRef;
             if (startupStyle == null || startupStyle.Profile == null)
@@ -144,13 +202,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                 return;
             }
 
-            if (startupStyle.UseFade && !HasFadeSceneKeyConfigured(bootstrapConfig))
+            if (bootstrapConfig.LoadingHudSceneKey == null || string.IsNullOrWhiteSpace(bootstrapConfig.LoadingHudSceneKey.SceneName))
+            {
+                context.AddFatal("Bootstrap sem loadingHudSceneKey valido.");
+            }
+
+            if (startupStyle.UseFade && (bootstrapConfig.FadeSceneKey == null || string.IsNullOrWhiteSpace(bootstrapConfig.FadeSceneKey.SceneName)))
             {
                 context.AddWarn("startupTransitionStyleRef usa fade, mas bootstrapConfig.fadeSceneKey nao esta configurado.");
             }
         }
 
-        private static void ValidateAllTransitionStyleAssets(ValidationContext context, NewScriptsBootstrapConfigAsset bootstrapConfig)
+        private static void ValidateAllTransitionStyleAssets(ValidationContext context, BootstrapConfigAsset bootstrapConfig)
         {
             string[] guids = AssetDatabase.FindAssets("t:TransitionStyleAsset");
             if (guids.Length == 0)
@@ -172,7 +235,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                     hasFatal = true;
                 }
 
-                if (styleAsset.UseFade && !HasFadeSceneKeyConfigured(bootstrapConfig))
+                if (styleAsset.UseFade && (bootstrapConfig.FadeSceneKey == null || string.IsNullOrWhiteSpace(bootstrapConfig.FadeSceneKey.SceneName)))
                 {
                     context.AddWarn($"TransitionStyleAsset '{styleAsset.name}' usa fade, mas bootstrapConfig.fadeSceneKey nao esta configurado.");
                 }
@@ -185,13 +248,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
                     Status = hasFatal ? "FATAL" : "OK"
                 });
             }
-        }
-
-        private static bool HasFadeSceneKeyConfigured(NewScriptsBootstrapConfigAsset bootstrapConfig)
-        {
-            SerializedObject serializedObject = new SerializedObject(bootstrapConfig);
-            SerializedProperty fadeSceneKeyProp = serializedObject.FindProperty("fadeSceneKey");
-            return fadeSceneKeyProp != null && fadeSceneKeyProp.objectReferenceValue != null;
         }
 
         private static string BuildReport(ValidationContext context)
@@ -210,6 +266,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             {
                 sb.AppendLine($"| `{status.Path}` | {(status.Exists ? "OK" : "NOT FOUND")} |");
             }
+
+            sb.AppendLine();
+            sb.AppendLine("## Scene route definitions");
+            sb.AppendLine();
+            sb.AppendLine("| asset | routeId | routeKind | status |");
+            sb.AppendLine("|---|---|---|---|");
+            foreach (RouteDefinitionRecord record in context.RouteDefinitions)
+            {
+                sb.AppendLine($"| `{record.AssetName}` | `{record.RouteId}` | `{record.RouteKind}` | {record.Status} |");
+            }
+
             sb.AppendLine();
             sb.AppendLine("## Core mandatory intents");
             sb.AppendLine();
@@ -219,6 +286,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             {
                 sb.AppendLine($"| `{record.IntentId}` | {record.Status} |");
             }
+
             sb.AppendLine();
             sb.AppendLine("## Core slots");
             sb.AppendLine();
@@ -228,6 +296,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             {
                 sb.AppendLine($"| `{record.Slot}` | `{record.RouteId}` | `{record.StyleRef}` | `{record.ProfileRef}` | {record.Status} |");
             }
+
             sb.AppendLine();
             sb.AppendLine("## Transition styles");
             sb.AppendLine();
@@ -237,6 +306,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             {
                 sb.AppendLine($"| `{record.StyleAsset}` | `{record.UseFade}` | `{record.ProfileRef}` | {record.Status} |");
             }
+
             sb.AppendLine();
             sb.AppendLine("### FATAL");
             if (context.Fatals.Count == 0) sb.AppendLine("- None"); else foreach (string fatal in context.Fatals) sb.AppendLine($"- {fatal}");
@@ -263,6 +333,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         private sealed class ValidationContext
         {
             public readonly List<AssetStatus> AssetStatuses = new List<AssetStatus>();
+            public readonly List<RouteDefinitionRecord> RouteDefinitions = new List<RouteDefinitionRecord>();
             public readonly List<CoreIntentRecord> CoreMandatoryIntents = new List<CoreIntentRecord>();
             public readonly List<CoreSlotRecord> CoreSlots = new List<CoreSlotRecord>();
             public readonly List<StyleValidationRecord> Styles = new List<StyleValidationRecord>();
@@ -276,8 +347,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
         private sealed class LoadedAssets
         {
             public GameNavigationCatalogAsset NavigationCatalog;
-            public SceneRouteCatalogAsset SceneRouteCatalog;
-            public NewScriptsBootstrapConfigAsset BootstrapConfig;
+            public BootstrapConfigAsset BootstrapConfig;
         }
 
         private readonly struct AssetStatus
@@ -285,6 +355,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Validation
             public AssetStatus(string path, bool exists) { Path = path; Exists = exists; }
             public string Path { get; }
             public bool Exists { get; }
+        }
+
+        private sealed class RouteDefinitionRecord
+        {
+            public string AssetName;
+            public string RouteId;
+            public string RouteKind;
+            public string Status;
         }
 
         private sealed class CoreIntentRecord { public string IntentId; public string Status; }

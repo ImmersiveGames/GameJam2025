@@ -22,7 +22,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Components
         {
             Data = data;
             if (_audioSource == null || !_audioSource)
+            {
                 _audioSource = gameObject.GetOrAdd<AudioSource>();
+            }
 
             ApplySoundData(data);
         }
@@ -55,7 +57,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Components
         public void Play()
         {
             if (Data == null || _audioSource == null || !_audioSource)
+            {
                 return;
+            }
 
             if (_playingCoroutine != null)
             {
@@ -92,7 +96,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Components
         private IEnumerator PlayAndFadeRoutine(float targetMultiplier, float duration)
         {
             if (_audioSource == null || !_audioSource)
+            {
                 yield break;
+            }
 
             SetVolumeMultiplier(0f);
             _audioSource.Play();
@@ -101,7 +107,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Components
             while (elapsed < duration)
             {
                 if (_audioSource == null || !_audioSource)
+                {
                     yield break;
+                }
 
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
@@ -158,25 +166,33 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Components
         public void WithRandomPitch(float min = -0.05f, float max = 0.05f)
         {
             if (_audioSource != null && _audioSource)
+            {
                 _audioSource.pitch = Random.Range(1f + min, 1f + max);
+            }
         }
 
         public void SetSpatialBlend(float spatialBlend)
         {
             if (_audioSource != null && _audioSource)
+            {
                 _audioSource.spatialBlend = spatialBlend;
+            }
         }
 
         public void SetMaxDistance(float maxDistance)
         {
             if (_audioSource != null && _audioSource)
+            {
                 _audioSource.maxDistance = maxDistance;
+            }
         }
 
         public void SetMixerGroup(AudioMixerGroup group)
         {
             if (_audioSource != null && _audioSource)
+            {
                 _audioSource.outputAudioMixerGroup = group;
+            }
         }
 
         public void SetVolumeMultiplier(float multiplier)
@@ -191,7 +207,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Components
 
         private void ApplySoundData(SoundData data)
         {
-            if (_audioSource == null || !_audioSource || data == null) return;
+            if (_audioSource == null || !_audioSource || data == null)
+            {
+                return;
+            }
 
             _audioSource.clip = data.clip;
             _audioSource.outputAudioMixerGroup = data.mixerGroup;

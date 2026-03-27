@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
@@ -15,44 +14,63 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly ILevelFlowRuntimeService _levelFlowRuntimeService;
         private readonly ILevelSwapLocalService _levelSwapLocalService;
         private readonly IRestartContextService _restartContextService;
-        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
         private readonly IGameNavigationService _navigationService;
 
         public PostLevelActionsService(
             ILevelFlowRuntimeService levelFlowRuntimeService,
             ILevelSwapLocalService levelSwapLocalService,
             IRestartContextService restartContextService,
-            SceneRouteCatalogAsset sceneRouteCatalog,
             IGameNavigationService navigationService)
         {
             _levelFlowRuntimeService = levelFlowRuntimeService ?? throw new ArgumentNullException(nameof(levelFlowRuntimeService));
             _levelSwapLocalService = levelSwapLocalService ?? throw new ArgumentNullException(nameof(levelSwapLocalService));
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
-            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
         }
 
         public Task RestartLevelAsync(string reason = null, CancellationToken ct = default)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostGame/Restart" : reason.Trim();
+            return RestartFromFirstLevelAsync(reason, ct);
+        }
+
+        public Task RestartFromFirstLevelAsync(string reason = null, CancellationToken ct = default)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartFromFirstLevel" : reason.Trim();
             _ = ct;
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionRequested action='RestartLevel' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] PostLevelActionRequested action='RestartFromFirstLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            IGameCommands gameCommands = ResolveGameCommandsOrFail(normalizedReason);
-            gameCommands.RequestRestart(normalizedReason);
+            IGameLoopCommands gameLoopCommands = ResolveGameCommandsOrFail(normalizedReason);
+            gameLoopCommands.RequestRestart(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] RestartMacroRequested reason='{normalizedReason}' dispatched='GameResetRequestedEvent'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='RestartLevel' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] PostLevelActionApplied action='RestartFromFirstLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
 
             return Task.CompletedTask;
+        }
+
+        public async Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/ResetCurrentLevel" : reason.Trim();
+
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] PostLevelActionRequested action='ResetCurrentLevel' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            ct.ThrowIfCancellationRequested();
+
+            await _levelFlowRuntimeService.ResetCurrentLevelAsync(normalizedReason, ct);
+
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] PostLevelActionApplied action='ResetCurrentLevel' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
         }
 
         public async Task NextLevelAsync(string reason = null, CancellationToken ct = default)
@@ -66,16 +84,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
                 !snapshot.HasLevelRef ||
-                !_sceneRouteCatalog.TryGetAsset(snapshot.MacroRouteId, out var routeAsset) ||
-                routeAsset == null ||
-                routeAsset.LevelCollection == null)
+                snapshot.MacroRouteRef == null ||
+                snapshot.MacroRouteRef.LevelCollection == null)
             {
                 DebugUtility.LogWarning<PostLevelActionsService>(
                     $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_snapshot_or_collection'.");
                 return;
             }
 
-            var collection = routeAsset.LevelCollection;
+            if (snapshot.MacroRouteRef.RouteId != snapshot.MacroRouteId)
+            {
+                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel routeRef mismatch. routeId='{snapshot.MacroRouteId}' routeRefRouteId='{snapshot.MacroRouteRef.RouteId}'.");
+            }
+
+            var collection = snapshot.MacroRouteRef.LevelCollection;
             if (!collection.TryValidateRuntime(out string collectionError))
             {
                 HardFailFastH1.Trigger(typeof(PostLevelActionsService),
@@ -129,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Success);
         }
 
-        private static IGameCommands ResolveGameCommandsOrFail(string reason)
+        private static IGameLoopCommands ResolveGameCommandsOrFail(string reason)
         {
             if (DependencyManager.Provider == null)
             {
@@ -137,10 +160,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     $"[FATAL][H1][LevelFlow] RestartMacroRequested missing DependencyManager.Provider. reason='{reason}'.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameCommands>(out var gameCommands) || gameCommands == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopCommands>(out var gameCommands) || gameCommands == null)
             {
                 HardFailFastH1.Trigger(typeof(PostLevelActionsService),
-                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing IGameCommands. reason='{reason}'.");
+                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing IGameLoopCommands. reason='{reason}'.");
             }
 
             return gameCommands;

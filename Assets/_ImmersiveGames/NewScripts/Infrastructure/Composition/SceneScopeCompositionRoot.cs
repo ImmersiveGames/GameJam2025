@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Runtime.Spawning.Definitions;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn.Definitions;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Hooks;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Spawn;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -69,23 +69,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 allowOverride: false);
 
             // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
-            // Nunca criar o WorldLifecycleHookRegistry no controller/orchestrator.
-            WorldLifecycleHookRegistry hookRegistry;
-            if (provider.TryGetForScene<WorldLifecycleHookRegistry>(_sceneName, out var existingRegistry))
+            // Nunca criar o SceneResetHookRegistry no controller/orchestrator.
+            SceneResetHookRegistry hookRegistry;
+            if (provider.TryGetForScene<SceneResetHookRegistry>(_sceneName, out var existingRegistry))
             {
                 DebugUtility.LogError(typeof(SceneScopeCompositionRoot),
-                    $"WorldLifecycleHookRegistry já existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
+                    $"SceneResetHookRegistry já existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
                 hookRegistry = existingRegistry;
             }
             else
             {
-                hookRegistry = new WorldLifecycleHookRegistry();
+                hookRegistry = new SceneResetHookRegistry();
                 provider.RegisterForScene(
                     _sceneName,
                     hookRegistry,
                     allowOverride: false);
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
+                    $"SceneResetHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
             RegisterActorGroupRearmServices(provider, hookRegistry, worldRoot);
@@ -252,12 +252,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
 
         private void RegisterSceneLifecycleHooks(
-            WorldLifecycleHookRegistry hookRegistry,
+            SceneResetHookRegistry hookRegistry,
             Transform worldRoot)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            RegisterSceneLifecycleHooksDevQa(hookRegistry, worldRoot);
-#endif
+            _ = hookRegistry;
+            _ = worldRoot;
         }
 
         private static string BuildTransformPath(Transform transform)

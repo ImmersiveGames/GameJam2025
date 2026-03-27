@@ -28,7 +28,10 @@ namespace _ImmersiveGames.Scripts.UISystems.DirectIndicator
 
         private void Update()
         {
-            if (_player == null || _indicatorTarget == null || _mainCamera == null) return;
+            if (_player == null || _indicatorTarget == null || _mainCamera == null)
+            {
+                return;
+            }
 
             var screenPos = _mainCamera.WorldToScreenPoint(_indicatorTarget.position);
 

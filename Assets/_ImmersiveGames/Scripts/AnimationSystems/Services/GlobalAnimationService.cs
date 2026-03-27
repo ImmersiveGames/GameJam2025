@@ -11,7 +11,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
         public void RegisterController(IActorAnimationController controller)
         {
             if (!_controllers.Contains(controller))
+            {
                 _controllers.Add(controller);
+            }
         }
 
         public void UnregisterController(IActorAnimationController controller)
@@ -22,7 +24,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
         public void PlayAllIdle()
         {
             foreach (var ctrl in _controllers)
+            {
                 ctrl.PlayIdle();
+            }
         }
 
         public void Initialize()

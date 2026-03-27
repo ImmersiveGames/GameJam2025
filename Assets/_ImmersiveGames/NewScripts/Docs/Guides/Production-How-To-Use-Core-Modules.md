@@ -29,6 +29,7 @@ Ele nao promove como API principal:
 | Trocar para um level especifico | `ILevelFlowRuntimeService.SwapLevelLocalAsync(levelRef, reason, ct)` | `Task` | `await levelFlow.SwapLevelLocalAsync(levelRef, "UI/SelectLevel", cancellationToken);` |
 | Rearm local de atores | `IActorGroupRearmOrchestrator.RequestResetAsync(request)` | `Task<bool>` | `await actorGroupRearm.RequestResetAsync(request);` |
 | Fechar ou pular intro atual | `IIntroStageControlService.CompleteIntroStage(reason)` | `void` | `introStageControl.CompleteIntroStage("Intro/ContinueButton");` |
+| Validar o PostStage da cena atual | `IPostStageControlService.TryComplete(reason)` / `TrySkip(reason)` | `bool` | `postStageControl.TryComplete("PostStage/ContinueButton");` |
 | Atualizar a HUD de loading | `ILoadingPresentationService.SetProgress(signature, snapshot)` | `void` | `loadingPresentation.SetProgress(signature, snapshot);` |
 
 ## Como pensar o fluxo atual
@@ -41,8 +42,8 @@ Ele nao promove como API principal:
 - `LoadingHudScene` e a HUD canonica de loading do macro flow.
 - `ILoadingPresentationService` cuida apenas da apresentacao de loading.
 - `IntroStage` e level-owned e opcional.
-- `PostGame` e global.
-- O level atual pode apenas complementar o `PostGame` global com um hook opcional.
+- `PostGame` e global, com `PostStage` validado antes do handoff final.
+- O level atual pode complementar o `PostGame` global com um hook opcional e, se expuser presenter de `PostStage`, validara a GUI da cena atual.
 - `Restart` nao passa por esse hook.
 - `ActorGroupRearm` e o trilho canonico de rearm local.
 
@@ -168,6 +169,17 @@ Use quando uma UI ou system precisa concluir ou pular a intro atual.
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime;
 
 introStageControl.CompleteIntroStage("Intro/ContinueButton");
+```
+
+### `IPostStageControlService`
+
+Use quando a cena atual expuser presenter valido de `PostStage` e voce quiser concluir ou pular essa fase.
+
+```csharp
+using _ImmersiveGames.NewScripts.Modules.PostGame;
+
+postStageControl.TryComplete("PostStage/ContinueButton");
+postStageControl.TrySkip("PostStage/SkipButton");
 ```
 
 ### `ILoadingPresentationService`
@@ -380,7 +392,7 @@ Tratar o loading como dono do fluxo ou esperar progresso puramente temporal. Hoj
 ## Receita: criar uma rota nova do zero
 
 ### O que precisa existir
-- um `SceneRouteCatalogAsset`
+- um `SceneRouteDefinitionAsset`
 - `SceneKeyAsset` para as cenas que a rota vai carregar ou descarregar
 - se a rota for gameplay, uma `LevelCollectionAsset`
 
@@ -390,7 +402,7 @@ Tratar o loading como dono do fluxo ou esperar progresso puramente temporal. Hoj
 3. Preencha `scenesToLoadKeys`, `scenesToUnloadKeys` e `targetActiveSceneKey`.
 4. Escolha `routeKind`.
 5. Se `routeKind == Gameplay`, marque `requiresWorldReset=true` e aponte `levelCollection`.
-6. Adicione esse route asset em `SceneRouteCatalogAsset.routeDefinitions`.
+6. Referencie a rota diretamente por `routeRef` no catálogo fino de navigation.
 
 ### O que chamar
 Voce nao chama a rota diretamente no asset. Em runtime, use `IGameNavigationService` ou `ILevelFlowRuntimeService`.
@@ -408,8 +420,9 @@ public async Task OpenKnownGameplayRouteAsync(IGameNavigationService navigation)
 ```
 
 ### O que esperar
-- a rota fica resolvivel pelo catalogo
-- `SceneRouteCatalogAsset` valida policy de gameplay/frontend
+- a rota fica canônica no `SceneRouteDefinitionAsset`
+- `GameNavigationCatalogAsset` aponta para `routeRef`
+- `SceneFlow` consome rota já resolvida
 - rotas invalidas falham cedo
 
 ### Erro comum
@@ -546,7 +559,7 @@ Colocar o mesmo `LevelDefinitionAsset` duas vezes. Hoje a colecao falha na valid
 ### O que configurar
 1. No `LevelDefinitionAsset`, ligue `hasIntroStage`.
 2. Garanta que o level esteja dentro da `LevelCollectionAsset` da rota de gameplay.
-3. Se voce estiver em build de desenvolvimento, pode usar o mock atual de intro para validar o fluxo.
+3. Se voce estiver em build de desenvolvimento, pode usar o mock atual de intro ou qualquer presenter que implemente `ILevelIntroStagePresenter` no conteudo do level.
 
 ### O que chamar
 ```csharp
@@ -562,9 +575,11 @@ public async Task StartGameplayAsync(ILevelFlowRuntimeService levelFlow, Cancell
 
 ### O que esperar
 - `LevelMacroPrepareService` seleciona o level
-- `LevelStageOrchestrator` consulta o contrato atual do level
+- `LevelEnteredEvent` dispara a intro depois do level aplicado
+- `LevelIntroCompletedEvent` libera o handoff para `Playing`
 - se `hasIntroStage=true`, a intro roda antes do gameplay
 - se `hasIntroStage=false`, o fluxo segue sem erro
+- o host adota o presenter canonico do level por contrato, nao por tipo concreto
 
 ### Erro comum
 Esperar que a intro seja global ou por rota. Hoje ela e level-owned e opcional por `LevelDefinitionAsset`.
@@ -587,9 +602,10 @@ Nada diretamente para o hook. O `PostGame` global continua sendo dono da entrada
 - `Victory`, `Defeat` e `Exit` continuam globais
 - o level atual pode complementar esse fluxo com reacao visual
 - `Restart` segue direto para reset/restart e nao passa por esse hook
+- o contrato de `PostStage` e global em `Modules/PostGame`, nao por level
 
 ### Erro comum
-Tratar esse hook como um `PostStage` por level. Hoje isso nao existe no contrato atual.
+Tratar esse hook como owner do `PostStage`. O contrato de `PostStage` e global em `Modules/PostGame`; este hook continua apenas complementar.
 
 ## Receita: fazer um ator participar do `ActorGroupRearm`
 
@@ -657,7 +673,7 @@ Usar `ActorIdSet` por padrao quando `ByActorKind` ja resolveria o caso.
 ### O que precisa existir
 - bootstrap valido
 - `GameNavigationCatalogAsset`
-- `SceneRouteCatalogAsset`
+- `SceneRouteDefinitionAsset`
 - rota de gameplay com `levelCollection`
 
 ### O que configurar
@@ -866,6 +882,7 @@ Erro comum:
 O que fazer:
 - use a flag `hasPostGameReactionHook` apenas para complementar `Victory`, `Defeat` ou `Exit`
 - mantenha `Restart` fora desse fluxo
+- trate `PostStage` como fluxo global em `Modules/PostGame`, com presenter opcional por cena
 
 ### Rearm
 Erro comum:
@@ -877,7 +894,8 @@ O que fazer:
 
 ## Checklist de producao
 
-- bootstrap com `navigationCatalog`, `sceneRouteCatalog`, `startupTransitionStyleRef` e `fadeSceneKey`
+- bootstrap com `navigationCatalog`, `startupTransitionStyleRef` e `fadeSceneKey`
+- `SceneRouteDefinitionAsset` valido para a rota de gameplay
 - `GameNavigationCatalogAsset` com slots core validos
 - rota `Gameplay` com `levelCollection`
 - `TransitionStyleAsset` com `profileRef`

@@ -13,7 +13,10 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         public static bool TryGetComponentInParent<T>(this Component component, out T result) where T : Component
         {
             result = null;
-            if (component == null) return false;
+            if (component == null)
+            {
+                return false;
+            }
 
             // Tenta no Actor atual
             if (component.TryGetComponent(out result))
@@ -46,17 +49,29 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         public static bool TryGetComponentInChildren<T>(this Component component, out T result, bool includeInactive = false) where T : Component
         {
             result = null;
-            if (component == null) return false;
+            if (component == null)
+            {
+                return false;
+            }
 
             // Tenta no Actor atual
-            if (component.TryGetComponent(out result))return true;
+            if (component.TryGetComponent(out result))
+            {
+                return true;
+            }
 
             // Busca nos filhos
             foreach (Transform child in component.transform)
             {
-                if (!includeInactive && !child.gameObject.activeInHierarchy) continue;
+                if (!includeInactive && !child.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
 
-                if (child.TryGetComponent(out result))return true;
+                if (child.TryGetComponent(out result))
+                {
+                    return true;
+                }
 
                 // Busca recursivamente nos filhos dos filhos
                 if (child.TryGetComponentInChildren(out result, includeInactive))

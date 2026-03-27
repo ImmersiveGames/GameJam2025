@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -26,18 +26,27 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return UpdateGameplayStartSnapshot(snapshot);
         }
 
+        public GameplayStartSnapshot RegisterGameplayStart(LevelSelectedEvent evt)
+        {
+            return UpdateGameplayStartSnapshot(GameplayStartSnapshot.FromLevelSelectedEvent(evt));
+        }
+
         public GameplayStartSnapshot UpdateGameplayStartSnapshot(GameplayStartSnapshot snapshot)
         {
             lock (_sync)
             {
-                if (!snapshot.HasLevelRef || !snapshot.MacroRouteId.IsValid)
+                if (!snapshot.HasLevelRef || !snapshot.MacroRouteId.IsValid || snapshot.MacroRouteRef == null)
                 {
-                    string invalidReason = !snapshot.HasLevelRef && !snapshot.MacroRouteId.IsValid
-                        ? "missing-levelRef-and-invalid-routeId"
-                        : (!snapshot.HasLevelRef ? "missing-levelRef" : "invalid-routeId");
+                    string invalidReason = !snapshot.HasLevelRef && !snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef == null
+                        ? "missing-levelRef-and-invalid-routeId-and-routeRef"
+                        : (!snapshot.HasLevelRef && snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef != null
+                            ? "missing-levelRef"
+                            : (!snapshot.MacroRouteId.IsValid && snapshot.HasLevelRef && snapshot.MacroRouteRef != null
+                                ? "invalid-routeId"
+                                : "missing-routeRef"));
 
                     DebugUtility.Log<RestartContextService>(
-                        $"[WARN][LevelFlow] Ignored invalid GameplayStartSnapshot. levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' routeId='{snapshot.MacroRouteId}' reason='{invalidReason}'.",
+                        $"[WARN][LevelFlow] Ignored invalid GameplayStartSnapshot. levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' routeId='{snapshot.MacroRouteId}' routeRef='{(snapshot.MacroRouteRef != null ? snapshot.MacroRouteRef.name : "<null>")}' reason='{invalidReason}'.",
                         DebugUtility.Colors.Warning);
 
                     return _current;
@@ -59,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     if (incoming == _selectionVersionCounter)
                     {
                         DebugUtility.Log<RestartContextService>(
-                            $"[OBS][LevelFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}'",
+                            $"[OBS][LevelFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' localContentId='{snapshot.LocalContentId}'",
                             DebugUtility.Colors.Info);
                     }
 
@@ -69,6 +78,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 _current = new GameplayStartSnapshot(
                     snapshot.LevelRef,
                     snapshot.MacroRouteId,
+                    snapshot.MacroRouteRef,
+                    snapshot.LocalContentId,
                     snapshot.Reason,
                     next,
                     snapshot.LevelSignature);
@@ -76,9 +87,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 _lastGameplayStartSnapshot = _current;
                 _selectionVersionCounter = Math.Max(_selectionVersionCounter, next);
 
-                DebugUtility.Log<RestartContextService>(
-                    $"[OBS][Navigation] GameplayStartSnapshotUpdated levelRef='{(_current.HasLevelRef ? _current.LevelRef.name : "<none>")}' routeId='{_current.MacroRouteId}' v='{_current.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(_current.Reason) ? "<none>" : _current.Reason)}'.",
-                    DebugUtility.Colors.Info);
+                LogSnapshotUpdated(_current);
 
                 return _current;
             }
@@ -112,12 +121,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 lastSelectionVersion = _lastGameplayStartSnapshot.SelectionVersion;
             }
 
+            LogContextCleared(lastSelectionVersion, reason);
+        }
+
+        private static void LogSnapshotUpdated(GameplayStartSnapshot snapshot)
+        {
             DebugUtility.Log<RestartContextService>(
-                $"[OBS][Navigation] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
+                $"[OBS][LevelFlow] GameplayStartSnapshotUpdated levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' contentId='{snapshot.LocalContentId}' v='{snapshot.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(snapshot.Reason) ? "<none>" : snapshot.Reason)}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogContextCleared(int lastSelectionVersion, string reason)
+        {
+            DebugUtility.Log<RestartContextService>(
+                $"[OBS][LevelFlow] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
                 DebugUtility.Colors.Info);
         }
     }
 }
-
-
-

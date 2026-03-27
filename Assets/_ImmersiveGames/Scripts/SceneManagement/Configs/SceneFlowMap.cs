@@ -7,52 +7,52 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 {
     /// <summary>
-    /// Mapa lÛgico de grupos de cena.
+    /// Mapa l√≥gico de grupos de cena.
     /// 
     /// Objetivos:
     /// - Centralizar quais SceneGroupProfile representam:
-    ///   - Menu padr„o;
-    ///   - Gameplay padr„o;
+    ///   - Menu padr√£o;
+    ///   - Gameplay padr√£o;
     ///   - Grupo inicial do jogo;
     ///   - Outros grupos nomeados (Boss_01, Cutscene_Intro, Hub, etc.).
-    /// - Permitir que o cÛdigo de alto nÌvel peÁa transiÁıes usando chaves lÛgicas
+    /// - Permitir que o c√≥digo de alto n√≠vel pe√ßa transi√ß√µes usando chaves l√≥gicas
     ///   em vez de nomes de cenas ou enums fixos.
     /// 
-    /// N„o conhece OldSceneTransitionService, GameManager, etc.
-    /// … puramente dado.
+    /// N√£o conhece OldSceneTransitionService, GameManager, etc.
+    /// √â puramente dado.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneFlowMap",
-        menuName = "ImmersiveGames/Scene Flow/Scene Flow Map",
+        menuName = "ImmersiveGames/Legacy/SceneManagement/Scene Flow Map",
         order = 2)]
    [DebugLevel(DebugLevel.Verbose)] 
     public class SceneFlowMap : ScriptableObject
     {
-        [Header("Grupos Padr„o")]
-        [Tooltip("Grupo inicial ao abrir o jogo (opcional). Se n„o definido, o bootstrap decide.")]
+        [Header("Grupos Padr√£o")]
+        [Tooltip("Grupo inicial ao abrir o jogo (opcional). Se n√£o definido, o bootstrap decide.")]
         [SerializeField] private SceneGroupProfile initialGroup;
 
-        [Tooltip("Grupo lÛgico padr„o do Menu. Usado por fluxos como ReturnToMenu, etc.")]
+        [Tooltip("Grupo l√≥gico padr√£o do Menu. Usado por fluxos como ReturnToMenu, etc.")]
         [SerializeField] private SceneGroupProfile menuGroup;
 
-        [Tooltip("Grupo lÛgico padr„o de Gameplay. Usado por fluxos como StartGameplay / ResetGame.")]
+        [Tooltip("Grupo l√≥gico padr√£o de Gameplay. Usado por fluxos como StartGameplay / ResetGame.")]
         [SerializeField] private SceneGroupProfile gameplayGroup;
 
-        [Header("Grupos Nomeados (Extensıes)")]
-        [Tooltip("Mapa genÈrico de chave lÛgica ? SceneGroupProfile.")]
+        [Header("Grupos Nomeados (Extens√µes)")]
+        [Tooltip("Mapa gen√©rico de chave l√≥gica ? SceneGroupProfile.")]
         [SerializeField] private List<NamedGroupEntry> namedGroups = new List<NamedGroupEntry>();
 
         /// <summary>
-        /// Entrada (linha) do mapa: key lÛgica ? grupo.
+        /// Entrada (linha) do mapa: key l√≥gica ? grupo.
         /// Ex.: key = 'Boss_01', group = Boss01GroupProfile.
         /// </summary>
         [Serializable]
         public class NamedGroupEntry
         {
-            [Tooltip("Chave lÛgica ˙nica (ex.: 'Boss_01', 'Cutscene_Intro', 'HubPlanet').")]
+            [Tooltip("Chave l√≥gica √∫nica (ex.: 'Boss_01', 'Cutscene_Intro', 'HubPlanet').")]
             public string key;
 
-            [Tooltip("Grupo de cena associado a esta chave lÛgica.")]
+            [Tooltip("Grupo de cena associado a esta chave l√≥gica.")]
             public SceneGroupProfile group;
         }
 
@@ -63,20 +63,22 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
         public IReadOnlyList<NamedGroupEntry> NamedGroups => namedGroups;
 
         /// <summary>
-        /// ObtÈm um grupo por chave lÛgica.
-        /// Retorna null se n„o encontrar.
+        /// Obt√©m um grupo por chave l√≥gica.
+        /// Retorna null se n√£o encontrar.
         /// </summary>
         public SceneGroupProfile GetGroupByKey(string key)
         {
             if (string.IsNullOrWhiteSpace(key) || namedGroups == null)
+            {
                 return null;
+            }
 
             return (from entry in namedGroups where entry != null && string.Equals(entry.key, key, StringComparison.Ordinal) select entry.@group).FirstOrDefault();
 
         }
 
         /// <summary>
-        /// Tenta obter um grupo por chave lÛgica.
+        /// Tenta obter um grupo por chave l√≥gica.
         /// </summary>
         public bool TryGetGroupByKey(string key, out SceneGroupProfile group)
         {
@@ -95,7 +97,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
             {
                 DebugUtility.LogWarning<SceneFlowMap>(
                     $"Chave duplicada '{entry.key}' detectada em '{name}'. " +
-                    "Chaves devem ser ˙nicas (ajuste manualmente no inspector).");
+                    "Chaves devem ser √∫nicas (ajuste manualmente no inspector).");
             }
         }
 #endif

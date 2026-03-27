@@ -24,12 +24,17 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
             _damageDealer = GetComponent<DamageDealer>();
 
             if (_rb == null)
+            {
                 DebugUtility.LogError<BulletPoolable>($"No Rigidbody on {name}", this);
+            }
         }
 
         protected override void OnActivated(Vector3 pos, Vector3? direction, IActor spawner)
         {
-            if (_rb == null || _data == null) return;
+            if (_rb == null || _data == null)
+            {
+                return;
+            }
 
             // Usa a direção fornecida, ou Vector3.zero se não houver direção
             var dir = direction ?? Vector3.zero;
@@ -47,7 +52,10 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
 
         protected override void OnReset()
         {
-            if (_rb == null) return;
+            if (_rb == null)
+            {
+                return;
+            }
             _rb.linearVelocity = Vector3.zero;
             _rb.angularVelocity = Vector3.zero;
         }
@@ -77,8 +85,14 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
 
         private void HandleTrigger(Collider other)
         {
-            if (other == null) return;
-            if (!IsLayerValid(other.gameObject.layer)) return;
+            if (other == null)
+            {
+                return;
+            }
+            if (!IsLayerValid(other.gameObject.layer))
+            {
+                return;
+            }
 
             var closestPoint = other.ClosestPoint(transform.position);
             Vector3? hitNormal = null;
@@ -95,8 +109,14 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
 
         private void HandleCollision(Collision collision)
         {
-            if (collision == null) return;
-            if (!IsLayerValid(collision.gameObject.layer)) return;
+            if (collision == null)
+            {
+                return;
+            }
+            if (!IsLayerValid(collision.gameObject.layer))
+            {
+                return;
+            }
 
             Vector3? hitPoint = null;
             Vector3? hitNormal = null;
@@ -114,7 +134,10 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
 
         private void TryDealDamage(GameObject target, Vector3? hitPoint, Vector3? hitNormal)
         {
-            if (_damageDealer == null || target == null) return;
+            if (_damageDealer == null || target == null)
+            {
+                return;
+            }
             _damageDealer.TryDealDamage(target, hitPoint, hitNormal);
         }
 

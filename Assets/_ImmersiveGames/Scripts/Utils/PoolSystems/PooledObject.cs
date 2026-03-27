@@ -37,7 +37,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             transform.rotation = Quaternion.identity;
             gameObject.SetActive(true);
 
-            if (spawner != null) Spawner = spawner;
+            if (spawner != null)
+            {
+                Spawner = spawner;
+            }
 
             if (_currentLifetime > 0 && !_isRegisteredInLifetimeManager)
             {
@@ -50,7 +53,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public virtual void Deactivate()
         {
-            if (!gameObject.activeSelf) return;
+            if (!gameObject.activeSelf)
+            {
+                return;
+            }
             gameObject.SetActive(false);
 
             if (_isRegisteredInLifetimeManager)

@@ -78,7 +78,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
             }
 
             // Tenta resolver o PlayerDomain (por cena) cedo. Se n�o existir ainda, o Reset_Rebind tenta novamente.
-            DependencyManager.Provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
+            DependencyManager.Provider.TryGetForScene(_sceneName, out _playerDomain);
         }
 
         private void Start()
@@ -106,7 +106,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private void FixedUpdate()
         {
             if (_actor != null && (!_actor.IsActive || !_stateService.CanExecuteAction(OldActionType.Move)))
+            {
                 return;
+            }
 
             PerformMovement();
             PerformLook();
@@ -119,10 +121,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private void BindInput()
         {
             if (_actions == null)
+            {
                 _actions = new PlayerInputActions();
+            }
 
             if (_inputBound)
+            {
                 return;
+            }
 
             _actions.Player.Enable();
 
@@ -138,7 +144,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private void UnbindInput()
         {
             if (!_inputBound || _actions == null)
+            {
                 return;
+            }
 
             _actions.Player.Move.performed -= OnMovePerformed;
             _actions.Player.Move.canceled -= OnMoveCanceled;
@@ -166,7 +174,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private void BindCameraEvents()
         {
             if (_cameraBound)
+            {
                 return;
+            }
 
             if (_cameraResolver != null)
             {
@@ -178,10 +188,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private void UnbindCameraEvents()
         {
             if (!_cameraBound)
+            {
                 return;
+            }
 
             if (_cameraResolver != null)
+            {
                 _cameraResolver.OnDefaultCameraChanged -= SetCamera;
+            }
 
             _cameraBound = false;
         }
@@ -193,7 +207,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         private void SetCamera(Camera cam)
         {
-            if (cam == null) return;
+            if (cam == null)
+            {
+                return;
+            }
             _camera = cam;
         }
 
@@ -210,13 +227,17 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private void PerformLook()
         {
             if (_lookInput == Vector2.zero || _camera == null)
+            {
                 return;
+            }
 
             var ray = _camera.ScreenPointToRay(_lookInput);
             var plane = new Plane(Vector3.up, Vector3.zero);
 
             if (!plane.Raycast(ray, out float dist))
+            {
                 return;
+            }
 
             Vector3 point = ray.GetPoint(dist);
             Vector3 dir = (point - transform.position).normalized;
@@ -254,9 +275,11 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         public Task Reset_RestoreAsync(ResetContext ctx)
         {
-            // Resolve PlayerDomain se ainda n�o estiver dispon�vel
+            // ResolvePlayerActor PlayerDomain se ainda n�o estiver dispon�vel
             if (_playerDomain == null)
-                DependencyManager.Provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
+            {
+                DependencyManager.Provider.TryGetForScene(_sceneName, out _playerDomain);
+            }
 
             // Volta o player para o ponto de partida (spawn pose registrado no dom�nio)
             if (_actor != null && _playerDomain != null && !string.IsNullOrWhiteSpace(_actor.ActorId))

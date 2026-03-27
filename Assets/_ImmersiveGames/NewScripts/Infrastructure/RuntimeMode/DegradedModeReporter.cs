@@ -178,17 +178,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
             _lastSummaryTime = now;
 
             int total = _droppedKeyReports;
-            foreach (var kv in _entries)
+            foreach (KeyValuePair<string, Entry> kv in _entries)
             {
                 total += kv.Value.count;
             }
 
             // Top 5 por count (sem LINQ).
             const int topN = 5;
-            var topCounts = new int[topN];
-            var topLabels = new string[topN];
+            int[] topCounts = new int[topN];
+            string[] topLabels = new string[topN];
 
-            foreach (var kv in _entries)
+            foreach (KeyValuePair<string, Entry> kv in _entries)
             {
                 var e = kv.Value;
                 int c = e.count;

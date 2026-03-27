@@ -125,13 +125,19 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         private void BindAction()
         {
             if (_actionBound)
+            {
                 return;
+            }
 
             if (_interactAction == null)
+            {
                 ResolveAction();
+            }
 
             if (_interactAction == null)
+            {
                 return;
+            }
 
             _interactAction.performed += OnInteractPerformed;
             _actionBound = true;
@@ -140,10 +146,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         private void UnbindAction()
         {
             if (!_actionBound)
+            {
                 return;
+            }
 
             if (_interactAction != null)
+            {
                 _interactAction.performed -= OnInteractPerformed;
+            }
 
             _actionBound = false;
         }
@@ -155,10 +165,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         private void OnInteractPerformed(InputAction.CallbackContext obj)
         {
             if (_actor != null && !_actor.IsActive)
+            {
                 return;
+            }
 
             if (_stateService != null && !_stateService.CanExecuteAction(OldActionType.Interact))
+            {
                 return;
+            }
 
             _interactService.TryInteractWithPlanet(
                 transform,
@@ -191,7 +205,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         {
             // Seguran�a: re-injeta depend�ncias se necess�rio e garante bind.
             if (_stateService == null)
+            {
                 DependencyManager.Provider.InjectDependencies(this);
+            }
 
             ResolveAction();
             UnbindAction();
@@ -206,7 +222,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 
         private void OnDrawGizmosSelected()
         {
-            if (!debugRay) return;
+            if (!debugRay)
+            {
+                return;
+            }
 
             Gizmos.color = debugRayColor;
             var origin = transform.position + transform.TransformDirection(raycastOffset);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
@@ -106,7 +107,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void RegisterWithDependencyManager()
         {
-            if (_ownerActor == null || string.IsNullOrEmpty(_ownerActor.ActorId)) return;
+            if (_ownerActor == null || string.IsNullOrEmpty(_ownerActor.ActorId))
+            {
+                return;
+            }
 
             _objectId = _ownerActor.ActorId;
 
@@ -140,7 +144,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void RegisterGlobalEventListeners()
         {
-            if (!enableGlobalEvents || _globalEventsRegistered) return;
+            if (!enableGlobalEvents || _globalEventsRegistered)
+            {
+                return;
+            }
 
             _skinUpdateBinding ??= new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinCollectionUpdateBinding ??= new EventBinding<SkinCollectionUpdateEvent>(OnGlobalSkinCollectionUpdate);
@@ -155,7 +162,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void UnregisterGlobalEventListeners()
         {
-            if (!_globalEventsRegistered || _ownerActor == null) return;
+            if (!_globalEventsRegistered || _ownerActor == null)
+            {
+                return;
+            }
 
             if (_skinUpdateBinding != null)
             {
@@ -185,7 +195,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void Initialize()
         {
-            if (IsInitialized) return;
+            if (IsInitialized)
+            {
+                return;
+            }
 
             if (_skinOwner?.ModelTransform == null)
             {
@@ -207,7 +220,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         public void ApplySkin(ISkinConfig config)
         {
-            if (!ValidateInitialization()) return;
+            if (!ValidateInitialization())
+            {
+                return;
+            }
 
             if (config == null)
             {
@@ -224,7 +240,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void ApplySkinCollection(SkinCollectionData newCollection)
         {
-            if (!ValidateInitialization()) return;
+            if (!ValidateInitialization())
+            {
+                return;
+            }
 
             if (newCollection == null)
             {
@@ -283,7 +302,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
         {
             OnSkinApplied?.Invoke(config);
 
-            if (!enableGlobalEvents) return;
+            if (!enableGlobalEvents)
+            {
+                return;
+            }
 
             var skinEvent = new SkinEvents(config, _ownerActor);
             EventBus<SkinEvents>.Raise(skinEvent);
@@ -298,7 +320,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
         {
             OnSkinCollectionApplied?.Invoke(collection);
 
-            if (!enableGlobalEvents) return;
+            if (!enableGlobalEvents)
+            {
+                return;
+            }
 
             var collectionEvent = new SkinCollectionUpdateEvent(collection, _ownerActor);
             EventBus<SkinCollectionUpdateEvent>.Raise(collectionEvent);
@@ -312,11 +337,17 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
         private void NotifySkinInstancesCreated(ModelType modelType, IReadOnlyList<GameObject> createdInstances)
         {
             List<GameObject> instances = ConvertInstances(createdInstances);
-            if (instances.Count == 0) return;
+            if (instances.Count == 0)
+            {
+                return;
+            }
 
             OnSkinInstancesCreated?.Invoke(modelType, instances);
 
-            if (!enableGlobalEvents) return;
+            if (!enableGlobalEvents)
+            {
+                return;
+            }
 
             var instancesEvent = new SkinInstancesCreatedEvent(modelType, instances.ToArray(), _ownerActor);
             EventBus<SkinInstancesCreatedEvent>.Raise(instancesEvent);
@@ -382,7 +413,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
                 if (instance != null)
                 {
                     var component = instance.GetComponentInChildren<T>();
-                    if (component != null) return component;
+                    if (component != null)
+                    {
+                        return component;
+                    }
                 }
             }
 

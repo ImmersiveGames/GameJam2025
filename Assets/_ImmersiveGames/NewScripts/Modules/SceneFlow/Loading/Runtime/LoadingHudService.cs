@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using UnityEngine;
@@ -14,12 +15,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
     public sealed class LoadingHudService : ILoadingHudService, ILoadingPresentationService
     {
         private const string FeatureName = "loadinghud";
-        private const string LoadingHudSceneName = "LoadingHudScene";
         private const string LoadingHudRootComponentName = nameof(LoadingHudController);
         private const int DefaultResolveFrames = 60;
 
         private readonly IRuntimeModeProvider _runtime;
         private readonly IDegradedModeReporter _degraded;
+        private readonly SceneKeyAsset _loadingHudSceneKey;
+        private readonly string _loadingHudSceneName;
         private readonly SemaphoreSlim _ensureGate = new(1, 1);
 
         private LoadingHudController _controller;
@@ -28,10 +30,17 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         private int _lastEnsureLogFrame = -1;
         private LoadingProgressSnapshot _lastProgressSnapshot = new(0f, "Loading...");
 
-        public LoadingHudService(IRuntimeModeProvider runtimeModeProvider, IDegradedModeReporter degradedModeReporter)
+        public LoadingHudService(
+            IRuntimeModeProvider runtimeModeProvider,
+            IDegradedModeReporter degradedModeReporter,
+            SceneKeyAsset loadingHudSceneKey)
         {
             _runtime = runtimeModeProvider;
             _degraded = degradedModeReporter;
+            _loadingHudSceneKey = loadingHudSceneKey;
+            _loadingHudSceneName = loadingHudSceneKey != null && !string.IsNullOrWhiteSpace(loadingHudSceneKey.SceneName)
+                ? loadingHudSceneKey.SceneName.Trim()
+                : string.Empty;
         }
 
         public Task EnsureReadyAsync(string signature)
@@ -64,12 +73,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                     DebugUtility.Colors.Info);
             }
 
-            if (!Application.CanStreamedLevelBeLoaded(LoadingHudSceneName))
+            if (string.IsNullOrWhiteSpace(_loadingHudSceneName))
+            {
+                _disabled = true;
+                FailStrict(
+                    reason: "scene_key_missing",
+                    detail: $"Loading HUD scene key is missing or invalid. keyAsset='{SafeSceneKeyName(_loadingHudSceneKey)}'.",
+                    signature: signature);
+
+                return Task.CompletedTask;
+            }
+
+            if (!Application.CanStreamedLevelBeLoaded(_loadingHudSceneName))
             {
                 _disabled = true;
                 FailStrict(
                     reason: "scene_not_in_build",
-                    detail: $"Scene '{LoadingHudSceneName}' is not in Build Settings.",
+                    detail: $"Scene '{_loadingHudSceneName}' is not in Build Settings.",
                     signature: signature);
 
                 return Task.CompletedTask;
@@ -254,18 +274,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                 {
                     FailOrDegrade(
                         reason: "root_not_found",
-                        detail: $"No root with {LoadingHudRootComponentName} was found in scene '{LoadingHudSceneName}'.",
+                        detail: $"No root with {LoadingHudRootComponentName} was found in scene '{_loadingHudSceneName}'.",
                         signature: signature,
-                        allowStrictThrow: false);
+                        allowStrictThrow: true);
                 }
             }
             catch (Exception ex)
             {
                 FailOrDegrade(
                     reason: "exception",
-                    detail: $"Failed to ensure LoadingHudScene/root. ({ex.Message})",
+                    detail: $"Failed to ensure loading HUD scene/root. ({ex.Message})",
                     signature: signature,
-                    allowStrictThrow: false);
+                    allowStrictThrow: true);
             }
             finally
             {
@@ -275,20 +295,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private async Task<bool> EnsureSceneLoadedIfNeededAsync(string signature)
         {
-            var scene = SceneManager.GetSceneByName(LoadingHudSceneName);
+            var scene = SceneManager.GetSceneByName(_loadingHudSceneName);
             if (scene.IsValid() && scene.isLoaded)
             {
                 return true;
             }
 
-            var loadOp = SceneManager.LoadSceneAsync(LoadingHudSceneName, LoadSceneMode.Additive);
+            var loadOp = SceneManager.LoadSceneAsync(_loadingHudSceneName, LoadSceneMode.Additive);
             if (loadOp == null)
             {
                 FailOrDegrade(
                     reason: "load_op_null",
-                    detail: $"LoadSceneAsync returned null for '{LoadingHudSceneName}'.",
+                    detail: $"LoadSceneAsync returned null for '{_loadingHudSceneName}'.",
                     signature: signature,
-                    allowStrictThrow: false);
+                    allowStrictThrow: true);
                 return false;
             }
 
@@ -327,13 +347,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 
         private bool TryResolveController(string signature)
         {
-            var scene = SceneManager.GetSceneByName(LoadingHudSceneName);
+            var scene = SceneManager.GetSceneByName(_loadingHudSceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 return false;
             }
 
-            var roots = scene.GetRootGameObjects();
+            GameObject[] roots = scene.GetRootGameObjects();
             LoadingHudController resolved = null;
 
             for (int i = 0; i < roots.Length; i++)
@@ -354,9 +374,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                 {
                     FailOrDegrade(
                         reason: "multiple_loading_roots",
-                        detail: $"Scene '{LoadingHudSceneName}' contains more than one loading root with {LoadingHudRootComponentName}.",
+                        detail: $"Scene '{_loadingHudSceneName}' contains more than one loading root with {LoadingHudRootComponentName}.",
                         signature: signature,
-                        allowStrictThrow: false);
+                        allowStrictThrow: true);
                     return false;
                 }
 
@@ -371,7 +391,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                         reason: "root_invalid",
                         detail: ex.Message,
                         signature: signature,
-                        allowStrictThrow: false);
+                        allowStrictThrow: true);
                     return false;
                 }
 
@@ -385,6 +405,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         private static bool IsControllerValid(LoadingHudController controller)
         {
             return controller != null;
+        }
+
+        private static string SafeSceneKeyName(SceneKeyAsset sceneKey)
+        {
+            return sceneKey != null && !string.IsNullOrWhiteSpace(sceneKey.name)
+                ? sceneKey.name.Trim()
+                : "<missing>";
         }
 
         private void FailOrDegrade(

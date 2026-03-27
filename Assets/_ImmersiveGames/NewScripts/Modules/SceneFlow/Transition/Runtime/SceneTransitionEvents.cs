@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -15,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public bool UseFade { get; }
         public SceneRouteId RouteId { get; }
         public SceneRouteKind RouteKind { get; }
+        public SceneRouteDefinitionAsset RouteRef { get; }
         public TransitionStyleAsset TransitionStyle { get; }
         public string StyleLabel => TransitionStyle != null ? TransitionStyle.StyleLabel : string.Empty;
         public string Reason { get; }
@@ -35,6 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             TransitionStyleAsset transitionStyle,
             string reason,
             SceneTransitionProfile transitionProfile,
+            SceneRouteDefinitionAsset routeRef = null,
             bool requiresWorldReset = false,
             string resetDecisionSource = null,
             string resetDecisionReason = null,
@@ -47,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             RouteId = routeId;
             RouteKind = routeKind;
             TransitionStyle = transitionStyle;
+            RouteRef = routeRef;
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             TransitionProfile = transitionProfile;
             RequiresWorldReset = requiresWorldReset;
@@ -69,6 +72,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 TransitionStyle,
                 Reason,
                 TransitionProfile,
+                RouteRef,
                 requiresWorldReset,
                 decisionSource,
                 decisionReason,

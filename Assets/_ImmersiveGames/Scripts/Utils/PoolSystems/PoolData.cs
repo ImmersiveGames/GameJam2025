@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [CreateAssetMenu(fileName = "PoolData", menuName = "ImmersiveGames/PoolSystem/PoolData")]
+    [CreateAssetMenu(fileName = "PoolData", menuName = "ImmersiveGames/Legacy/PoolSystem/PoolData")]
     public class PoolData : ScriptableObject
     {
         [SerializeField] private string objectName;
@@ -87,16 +87,16 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (string.IsNullOrEmpty(objectName))
             {
-                DebugUtility.LogWarning<PoolData>($"ObjectName n�o configurado em {name}.", this);
+                DebugUtility.LogWarning<PoolData>($"ObjectName nï¿½o configurado em {name}.", this);
             }
             if (initialPoolSize < 0)
             {
-                DebugUtility.LogWarning<PoolData>($"InitialPoolSize n�o pode ser negativo em {name}. Definindo como 0.", this);
+                DebugUtility.LogWarning<PoolData>($"InitialPoolSize nï¿½o pode ser negativo em {name}. Definindo como 0.", this);
                 initialPoolSize = 0;
             }
             if (objectConfigs == null || objectConfigs.Length == 0)
             {
-                DebugUtility.LogWarning<PoolData>($"ObjectConfigs n�o configurado em {name}. Pelo menos uma configura��o � necess�ria.", this);
+                DebugUtility.LogWarning<PoolData>($"ObjectConfigs nï¿½o configurado em {name}. Pelo menos uma configuraï¿½ï¿½o ï¿½ necessï¿½ria.", this);
             }
         }
 #endif

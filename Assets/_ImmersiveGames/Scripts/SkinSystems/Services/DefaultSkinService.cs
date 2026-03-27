@@ -45,7 +45,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
 
         public void Initialize(SkinCollectionData collection, Transform parent, IActor owner)
         {
-            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
 
             _ownerActor = owner;
             _skinContainerService.CreateAllContainers(parent);
@@ -61,11 +64,14 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
             ClearAllInstances();
 
             var createdInstances = new Dictionary<ModelType, IReadOnlyList<GameObject>>();
-            if (collection == null) return createdInstances;
+            if (collection == null)
+            {
+                return createdInstances;
+            }
 
             foreach (var config in collection.GetAllConfigs())
             {
-                var instances = ApplyConfig(config, owner);
+                IReadOnlyList<GameObject> instances = ApplyConfig(config, owner);
                 if (instances.Count > 0)
                 {
                     createdInstances[config.ModelType] = instances;
@@ -77,14 +83,20 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
 
         public IReadOnlyList<GameObject> ApplyConfig(ISkinConfig config, IActor owner)
         {
-            if (config == null) return Array.Empty<GameObject>();
+            if (config == null)
+            {
+                return Array.Empty<GameObject>();
+            }
 
             var container = _skinContainerService.GetContainer(config.ModelType);
-            if (container == null) return Array.Empty<GameObject>();
+            if (container == null)
+            {
+                return Array.Empty<GameObject>();
+            }
 
             ClearInstancesOfType(config.ModelType);
 
-            var prefabs = config.GetSelectedPrefabs();
+            List<GameObject> prefabs = config.GetSelectedPrefabs();
             if (prefabs == null || prefabs.Count == 0)
             {
                 return Array.Empty<GameObject>();
@@ -107,21 +119,24 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
 
         public IReadOnlyList<GameObject> GetInstancesOfType(ModelType type)
         {
-            return _instances.TryGetValue(type, out var instanceList)
+            return _instances.TryGetValue(type, out List<GameObject> instanceList)
                 ? instanceList
                 : Array.Empty<GameObject>();
         }
 
         public bool HasInstancesOfType(ModelType type)
         {
-            return _instances.TryGetValue(type, out var instanceList) && instanceList.Count > 0;
+            return _instances.TryGetValue(type, out List<GameObject> instanceList) && instanceList.Count > 0;
         }
 
         public Transform GetContainer(ModelType type) => _skinContainerService.GetContainer(type);
 
         private void RunPostProcessors(IEnumerable<GameObject> instances, ISkinConfig config, IActor owner)
         {
-            if (_postProcessors.Count == 0) return;
+            if (_postProcessors.Count == 0)
+            {
+                return;
+            }
 
             foreach (var instance in instances)
             {
@@ -144,7 +159,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
 
         private void ClearInstancesOfType(ModelType type)
         {
-            if (!_instances.TryGetValue(type, out var instances)) return;
+            if (!_instances.TryGetValue(type, out List<GameObject> instances))
+            {
+                return;
+            }
 
             foreach (var instance in instances.Where(instance => instance != null))
             {

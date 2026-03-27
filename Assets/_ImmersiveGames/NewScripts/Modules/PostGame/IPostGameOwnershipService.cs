@@ -1,4 +1,4 @@
-﻿namespace _ImmersiveGames.NewScripts.Modules.PostGame
+namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
     /// <summary>
     /// Owner do input/gate do PostGame, evitando duplicidade com overlays.
@@ -6,6 +6,7 @@
     public interface IPostGameOwnershipService
     {
         bool IsOwnerEnabled { get; }
+        bool IsActive { get; }
         void OnPostGameEntered(PostGameOwnershipContext context);
         void OnPostGameExited(PostGameOwnershipExitContext context);
     }

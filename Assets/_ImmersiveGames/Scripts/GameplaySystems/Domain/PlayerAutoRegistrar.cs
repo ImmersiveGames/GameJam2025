@@ -30,7 +30,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void OnEnable()
         {
             if (_actor == null)
+            {
                 return;
+            }
 
             _registered = false;
             _waitingForActorId = false;
@@ -41,11 +43,15 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void Update()
         {
             if (_actor == null || _registered == true || _waitingForActorId == false)
+            {
                 return;
+            }
 
             // Continua tentando at� o ActorId existir.
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
+            {
                 return;
+            }
 
             // ActorId ficou pronto � tenta registrar.
             TryRegisterNow();
@@ -54,7 +60,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void TryRegisterOrStartWaiting()
         {
             if (_registered || _actor == null)
+            {
                 return;
+            }
 
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
             {
@@ -69,11 +77,13 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void TryRegisterNow()
         {
             if (_registered || _actor == null)
+            {
                 return;
+            }
 
-            var sceneName = gameObject.scene.name;
+            string sceneName = gameObject.scene.name;
 
-            if (!DependencyManager.Provider.TryGetForScene<IPlayerDomain>(sceneName, out _playerDomain) || _playerDomain == null)
+            if (!DependencyManager.Provider.TryGetForScene(sceneName, out _playerDomain) || _playerDomain == null)
             {
                 DebugUtility.LogWarning<PlayerAutoRegistrar>(
                     $"IPlayerDomain n�o encontrado para a cena '{sceneName}'. " +
@@ -91,7 +101,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void OnDisable()
         {
             if (!_registered || _playerDomain == null || _actor == null)
+            {
                 return;
+            }
 
             _playerDomain.UnregisterPlayer(_actor);
             _registered = false;

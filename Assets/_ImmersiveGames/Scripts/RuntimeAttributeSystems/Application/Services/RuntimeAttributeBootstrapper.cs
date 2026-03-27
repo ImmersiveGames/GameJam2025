@@ -34,7 +34,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         /// </summary>
         public void RegisterForInjection(IInjectableComponent component)
         {
-            if (component == null) return;
+            if (component == null)
+            {
+                return;
+            }
 
             string objectId = component.GetObjectId();
             if (string.IsNullOrEmpty(objectId))
@@ -53,7 +56,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         private void TryInjectComponent(IInjectableComponent component)
         {
             string objectId = component.GetObjectId();
-            if (string.IsNullOrEmpty(objectId)) return;
+            if (string.IsNullOrEmpty(objectId))
+            {
+                return;
+            }
 
             try
             {
@@ -94,7 +100,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             yield return new WaitForSeconds(wait);
 
             if (!_pendingComponents.ContainsKey(objectId))
+            {
                 yield break;
+            }
 
             try
             {

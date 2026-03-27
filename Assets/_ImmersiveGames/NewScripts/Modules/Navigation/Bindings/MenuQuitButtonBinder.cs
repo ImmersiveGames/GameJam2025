@@ -1,11 +1,11 @@
-﻿using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 {
     /// <summary>
     /// Binder (produção) para o botão "Quit" do Frontend.
     /// - OnClick() deve ser ligado no Inspector.
-    /// - Sem coroutines.
+    /// - Sem corrotinas.
     ///
     /// Em build: Application.Quit().
     /// No Editor: encerra Play Mode.

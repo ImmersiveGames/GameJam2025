@@ -115,7 +115,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         private void RegisterAsGlobalServiceIfRequested()
         {
-            if (!registerAsGlobalService) return;
+            if (!registerAsGlobalService)
+            {
+                return;
+            }
 
             try
             {
@@ -151,14 +154,20 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         private void RegisterToControllerEvents()
         {
-            if (skinController == null) return;
+            if (skinController == null)
+            {
+                return;
+            }
 
             skinController.OnSkinInstancesCreated += HandleSkinInstancesCreated;
         }
 
         private void UnregisterFromControllerEvents()
         {
-            if (skinController == null) return;
+            if (skinController == null)
+            {
+                return;
+            }
 
             skinController.OnSkinInstancesCreated -= HandleSkinInstancesCreated;
         }
@@ -173,7 +182,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             }
 
             // Guarda inst�ncias para depura��o/recalculo posterior
-            if (!_instancesByType.TryGetValue(type, out var storedList))
+            if (!_instancesByType.TryGetValue(type, out List<GameObject> storedList))
             {
                 storedList = new List<GameObject>();
                 _instancesByType[type] = storedList;
@@ -202,20 +211,30 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
         private void TryComputeInitialStateFromActorRoot()
         {
             if (!computeInitialStateFromActorRoot)
+            {
                 return;
+            }
 
             if (_initialStateComputedFromRoot)
+            {
                 return;
+            }
 
             if (_states.Count > 0)
+            {
                 return; // J� temos estados via sistema de skin
+            }
 
             if (skinController == null || skinController.OwnerActor == null)
+            {
                 return;
+            }
 
             GameObject root = skinController.OwnerActor.Transform.gameObject;
             if (root == null)
+            {
                 return;
+            }
 
             var instances = new List<GameObject> { root };
             var bounds = CalculateWorldBoundsForInstances(instances);
@@ -244,14 +263,19 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
             foreach (var instance in instances)
             {
-                if (instance == null) continue;
+                if (instance == null)
+                {
+                    continue;
+                }
 
                 // Usa CalculateRealLength para lidar com objetos compostos e IgnoreBoundsFlag
                 var instanceBounds = CalculateRealLength.GetBounds(instance);
 
                 // Se o bounds retornado for zerado, ignoramos
                 if (instanceBounds.size == Vector3.zero)
+                {
                     continue;
+                }
 
                 if (!hasBounds)
                 {
@@ -291,7 +315,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         private void RecalculateState(ModelType type)
         {
-            if (!_instancesByType.TryGetValue(type, out var instances) || instances == null || instances.Count == 0)
+            if (!_instancesByType.TryGetValue(type, out List<GameObject> instances) || instances == null || instances.Count == 0)
             {
                 _states[type] = SkinRuntimeState.Empty(type);
                 return;
@@ -329,7 +353,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
                 return;
             }
 
-            foreach (var kvp in _states)
+            foreach (KeyValuePair<ModelType, SkinRuntimeState> kvp in _states)
             {
                 var state = kvp.Value;
                 DebugUtility.LogVerbose<SkinRuntimeStateTracker>(

@@ -35,7 +35,9 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         private void OnValidate()
         {
             if (compassHUD == null)
+            {
                 compassHUD = GetComponent<CompassHUD>();
+            }
         }
 
         private void OnEnable()
@@ -67,7 +69,9 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         private void UpdateIconHighlights()
         {
             if (compassHUD == null || _markedPlanet == null && !tintMarkedIcon && markedScaleMultiplier <= 1f)
+            {
                 return;
+            }
 
             compassHUD.ForEachIcon((target, icon) =>
             {

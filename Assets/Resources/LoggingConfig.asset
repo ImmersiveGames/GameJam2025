@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6935924c1f1494e9b6c0fcc546001b1, type: 3}
+  m_Name: LoggingConfig
+  m_EditorClassIdentifier: 
+  globalEnabled: 1
+  verboseEnabled: 1
+  fallbacksEnabled: 1
+  repeatedVerboseEnabled: 1
+  defaultLevel: 3
+  rules:
+  - ruleId: core_root
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Core
+    level: 3
+  - ruleId: infrastructure_root
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure
+    level: 2
+  - ruleId: modules_root
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules
+    level: 4
+  - ruleId: infra_composition
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure.Composition
+    level: 4
+  - ruleId: postgame_legacy_namespace
+    enabled: 0
+    namespacePrefix: _ImmersiveGames.NewScripts.Gameplay.PostGame
+    level: 2
+  - ruleId: modules_sceneflow
+    enabled: 0
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.SceneFlow
+    level: 4
+  - ruleId: infra_audio
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.Audio
+    level: 2
+  - ruleId: infra_modules_GameLoop
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.GameLoop
+    level: 4

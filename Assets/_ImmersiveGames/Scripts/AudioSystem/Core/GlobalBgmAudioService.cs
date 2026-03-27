@@ -45,7 +45,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         private void Initialize()
         {
-            if (IsInitialized) return;
+            if (IsInitialized)
+            {
+                return;
+            }
 
             // DI: obter math (AudioSystemBootstrap garante registro)
             if (DependencyManager.Provider != null)
@@ -83,10 +86,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         public void PlayBGM(SoundData bgmData, bool loop = true, float fadeInDuration = 0f)
         {
-            if (!IsInitialized || bgmData == null || bgmData.clip == null) return;
-            if (!EnsureBgmAudioSource()) return;
+            if (!IsInitialized || bgmData == null || bgmData.clip == null)
+            {
+                return;
+            }
+            if (!EnsureBgmAudioSource())
+            {
+                return;
+            }
 
-            if (_bgmFadeCoroutine != null) StopCoroutine(_bgmFadeCoroutine);
+            if (_bgmFadeCoroutine != null)
+            {
+                StopCoroutine(_bgmFadeCoroutine);
+            }
 
             ApplyBgmData(bgmData, loop);
 
@@ -113,14 +125,24 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         public void StopBGM(float fadeOutDuration = 0f)
         {
-            if (!IsSourceValid(bgmAudioSource) || !bgmAudioSource.isPlaying) return;
+            if (!IsSourceValid(bgmAudioSource) || !bgmAudioSource.isPlaying)
+            {
+                return;
+            }
 
-            if (_bgmFadeCoroutine != null) StopCoroutine(_bgmFadeCoroutine);
+            if (_bgmFadeCoroutine != null)
+            {
+                StopCoroutine(_bgmFadeCoroutine);
+            }
 
             if (fadeOutDuration > 0f)
+            {
                 _bgmFadeCoroutine = StartCoroutine(FadeVolume(bgmAudioSource, bgmAudioSource.volume, 0f, fadeOutDuration, true));
+            }
             else
+            {
                 bgmAudioSource.Stop();
+            }
 
             _currentBgm = null;
             DebugUtility.LogVerbose<GlobalBgmAudioService>(
@@ -129,7 +151,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         }
         public void StopBGMImmediate()
         {
-            if (!IsSourceValid(bgmAudioSource)) return;
+            if (!IsSourceValid(bgmAudioSource))
+            {
+                return;
+            }
 
             bgmAudioSource.Stop();
             DebugUtility.LogVerbose<GlobalBgmAudioService>(
@@ -139,39 +164,72 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         public void PauseBGM()
         {
-            if (!IsSourceValid(bgmAudioSource)) return;
+            if (!IsSourceValid(bgmAudioSource))
+            {
+                return;
+            }
 
-            if (bgmAudioSource.isPlaying) bgmAudioSource.Pause();
+            if (bgmAudioSource.isPlaying)
+            {
+                bgmAudioSource.Pause();
+            }
         }
         public void ResumeBGM()
         {
-            if (!IsSourceValid(bgmAudioSource)) return;
+            if (!IsSourceValid(bgmAudioSource))
+            {
+                return;
+            }
 
-            if (!bgmAudioSource.isPlaying && _currentBgm != null) bgmAudioSource.Play();
+            if (!bgmAudioSource.isPlaying && _currentBgm != null)
+            {
+                bgmAudioSource.Play();
+            }
         }
 
         public void SetBGMVolume(float volume)
         {
-            if (audioMixer != null) audioMixer.SetFloat(bgmParameter, _math?.ToDecibels(volume) ?? 20f * Mathf.Log10(Mathf.Max(volume, 0.0001f)));
-            else if (IsSourceValid(bgmAudioSource)) bgmAudioSource.volume = Mathf.Clamp01(volume);
+            if (audioMixer != null)
+            {
+                audioMixer.SetFloat(bgmParameter, _math?.ToDecibels(volume) ?? 20f * Mathf.Log10(Mathf.Max(volume, 0.0001f)));
+            }
+            else if (IsSourceValid(bgmAudioSource))
+            {
+                bgmAudioSource.volume = Mathf.Clamp01(volume);
+            }
         }
 
         public void CrossfadeBGM(SoundData newBgmData, float fadeDuration = 2f)
         {
-            if (newBgmData == null || newBgmData.clip == null) return;
-            if (!EnsureBgmAudioSource()) return;
-            if (_bgmFadeCoroutine != null) StopCoroutine(_bgmFadeCoroutine);
+            if (newBgmData == null || newBgmData.clip == null)
+            {
+                return;
+            }
+            if (!EnsureBgmAudioSource())
+            {
+                return;
+            }
+            if (_bgmFadeCoroutine != null)
+            {
+                StopCoroutine(_bgmFadeCoroutine);
+            }
             _bgmFadeCoroutine = StartCoroutine(CrossfadeRoutine(newBgmData, fadeDuration));
         }
 
         private IEnumerator CrossfadeRoutine(SoundData newBgmData, float duration)
         {
-            if (!IsSourceValid(bgmAudioSource)) yield break;
+            if (!IsSourceValid(bgmAudioSource))
+            {
+                yield break;
+            }
 
             float half = duration * 0.5f;
             float old = bgmAudioSource.volume;
             yield return StartCoroutine(FadeVolume(bgmAudioSource, old, 0f, half));
-            if (!IsSourceValid(bgmAudioSource)) yield break;
+            if (!IsSourceValid(bgmAudioSource))
+            {
+                yield break;
+            }
 
             ApplyBgmData(newBgmData, true);
             bgmAudioSource.volume = 0f;
@@ -184,13 +242,17 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private IEnumerator FadeVolume(AudioSource src, float from, float to, float duration, bool stopAfter = false)
         {
             if (src == null || !src)
+            {
                 yield break;
+            }
 
             float t = 0f;
             while (t < duration)
             {
                 if (src == null || !src)
+                {
                     yield break;
+                }
 
                 t += Time.deltaTime;
                 src.volume = Mathf.Lerp(from, to, t / duration);
@@ -198,17 +260,24 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
             }
 
             if (src == null || !src)
+            {
                 yield break;
+            }
 
             src.volume = to;
             if (stopAfter && to <= 0f)
+            {
                 src.Stop();
+            }
         }
 
 
         private void ApplyBgmData(SoundData data, bool loop)
         {
-            if (!IsSourceValid(bgmAudioSource)) return;
+            if (!IsSourceValid(bgmAudioSource))
+            {
+                return;
+            }
 
             bgmAudioSource.clip = data.clip;
             bgmAudioSource.outputAudioMixerGroup = data.mixerGroup ?? bgmMixerGroup;
@@ -226,7 +295,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         /// </summary>
         public void PlaySound(SoundData soundData, AudioContext context, AudioConfig config = null)
         {
-            if (!IsInitialized || soundData == null || soundData.clip == null) return;
+            if (!IsInitialized || soundData == null || soundData.clip == null)
+            {
+                return;
+            }
 
             // obter math e settings via DI (se não já injetados)
             if (_math == null && DependencyManager.Provider != null)
@@ -269,7 +341,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         private AudioServiceSettings ResolveSettings()
         {
-            if (_resolvedSettings != null) return _resolvedSettings;
+            if (_resolvedSettings != null)
+            {
+                return _resolvedSettings;
+            }
 
             if (DependencyManager.Provider != null && DependencyManager.Provider.TryGetGlobal(out AudioServiceSettings settingsFromDi))
             {
@@ -285,13 +360,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 
         private bool EnsureBgmAudioSource()
         {
-            if (IsSourceValid(bgmAudioSource)) return true;
+            if (IsSourceValid(bgmAudioSource))
+            {
+                return true;
+            }
 
             bgmAudioSource = gameObject.GetComponent<AudioSource>();
             if (!IsSourceValid(bgmAudioSource))
             {
                 bgmAudioSource = gameObject.AddComponent<AudioSource>();
-                if (!IsSourceValid(bgmAudioSource)) return false;
+                if (!IsSourceValid(bgmAudioSource))
+                {
+                    return false;
+                }
             }
 
             bgmAudioSource.playOnAwake = false;

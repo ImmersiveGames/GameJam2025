@@ -58,7 +58,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 DebugUtility.Colors.CrucialInfo);
 
             // Se já existirem Canvas Binders na cena, registrar automaticamente.
-            var existingBinders = UnityEngine.Object.FindObjectsByType<RuntimeAttributeActorCanvas>(
+            RuntimeAttributeActorCanvas[] existingBinders = UnityEngine.Object.FindObjectsByType<RuntimeAttributeActorCanvas>(
                 UnityEngine.FindObjectsInactive.Include,
                 UnityEngine.FindObjectsSortMode.None
             );
@@ -78,7 +78,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void RegisterActor(RuntimeAttributeContext service)
         {
-            if (service == null) return;
+            if (service == null)
+            {
+                return;
+            }
 
             if (!_actors.TryAdd(service.EntityId, service))
             {
@@ -100,7 +103,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         private void CreateInitialSlotsForActor(RuntimeAttributeContext actorSvc)
         {
-            if (actorSvc == null) return;
+            if (actorSvc == null)
+            {
+                return;
+            }
 
             foreach (var (resourceType, resourceValue) in actorSvc.GetAll())
             {
@@ -129,7 +135,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         private void CacheInitialSlotCreation(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data, string targetCanvasId)
         {
-            if (!_pendingFirstUpdates.TryGetValue(targetCanvasId, out var canvasEvents))
+            if (!_pendingFirstUpdates.TryGetValue(targetCanvasId, out Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent> canvasEvents))
             {
                 canvasEvents = new Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent>();
                 _pendingFirstUpdates[targetCanvasId] = canvasEvents;
@@ -155,7 +161,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void RegisterCanvas(IAttributeCanvasBinder attributeCanvas)
         {
-            if (attributeCanvas == null) return;
+            if (attributeCanvas == null)
+            {
+                return;
+            }
 
             if (!_canvases.TryAdd(attributeCanvas.CanvasId, attributeCanvas))
             {
@@ -175,7 +184,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             var cacheKey = (evt.ActorId, ResourceType: evt.RuntimeAttributeType);
             string targetCanvasId = _canvasIdCache.GetValueOrDefault(cacheKey) ?? ResolveTargetCanvasId(null, evt.ActorId, evt.RuntimeAttributeType);
 
-            if (string.IsNullOrEmpty(targetCanvasId)) return;
+            if (string.IsNullOrEmpty(targetCanvasId))
+            {
+                return;
+            }
 
             if (IsCanvasReady(targetCanvasId))
             {
@@ -189,7 +201,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         private void CachePendingFirstUpdate(RuntimeAttributeUpdateEvent evt, string targetCanvasId)
         {
-            if (!_pendingFirstUpdates.TryGetValue(targetCanvasId, out var canvasUpdates))
+            if (!_pendingFirstUpdates.TryGetValue(targetCanvasId, out Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent> canvasUpdates))
             {
                 canvasUpdates = new Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent>();
                 _pendingFirstUpdates[targetCanvasId] = canvasUpdates;
@@ -222,8 +234,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void ProcessPendingFirstUpdatesForCanvas(string canvasId)
         {
-            if (!_pendingFirstUpdates.TryGetValue(canvasId, out var actorEvents))
+            if (!_pendingFirstUpdates.TryGetValue(canvasId, out Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent> actorEvents))
+            {
                 return;
+            }
 
             DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"🔄 Processing {actorEvents.Count} pending updates for attributeCanvas '{canvasId}'");
 
@@ -261,7 +275,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             var cacheKey = (actorId, resourceType: runtimeAttributeType);
 
             if (_canvasIdCache.TryGetValue(cacheKey, out string cachedCanvasId))
+            {
                 return cachedCanvasId;
+            }
 
             string resolved = config == null ?
                 MainUICanvasId :
@@ -273,16 +289,21 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         public void UnregisterActor(string actorId)
         {
-            if (!_actors.TryGetValue(actorId, out var svc)) return;
+            if (!_actors.TryGetValue(actorId, out var svc))
+            {
+                return;
+            }
 
             svc.ResourceUpdated -= OnResourceUpdated;
             _actors.Remove(actorId);
 
             var keysToRemove = _canvasIdCache.Keys.Where(k => k.actorId == actorId).ToList();
             foreach (var key in keysToRemove)
+            {
                 _canvasIdCache.Remove(key);
+            }
 
-            foreach (var (canvasId, canvasUpdates) in _pendingFirstUpdates.ToList())
+            foreach ((string canvasId, Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent> canvasUpdates) in _pendingFirstUpdates.ToList())
             {
                 var actorKeysToRemove = canvasUpdates.Keys.Where(key => key.actorId == actorId).ToList();
                 foreach (var key in actorKeysToRemove)

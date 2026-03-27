@@ -30,12 +30,16 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void OnEnable()
         {
             if (_actor == null)
+            {
                 return;
+            }
 
             TryResolveRegistry();
 
             if (_registry == null)
+            {
                 return;
+            }
 
             // Se o ActorId ainda n?o est? pronto, adia para Start.
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
@@ -51,12 +55,16 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void Start()
         {
             if (_actor == null || _registered == true || _pendingRegister == false)
+            {
                 return;
+            }
 
             TryResolveRegistry();
 
             if (_registry == null)
+            {
                 return;
+            }
 
             if (string.IsNullOrWhiteSpace(_actor.ActorId))
             {
@@ -74,7 +82,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void OnDisable()
         {
             if (!_registered || _registry == null || _actor == null)
+            {
                 return;
+            }
 
             _registry.Unregister(_actor);
             _registered = false;
@@ -83,11 +93,13 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         private void TryResolveRegistry()
         {
             if (_registry != null)
+            {
                 return;
+            }
 
-            var sceneName = gameObject.scene.name;
+            string sceneName = gameObject.scene.name;
 
-            if (!DependencyManager.Provider.TryGetForScene<IOldActorRegistry>(sceneName, out _registry) || _registry == null)
+            if (!DependencyManager.Provider.TryGetForScene(sceneName, out _registry) || _registry == null)
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
                     $"IOldActorRegistry n?o encontrado para a cena '{sceneName}'. " +

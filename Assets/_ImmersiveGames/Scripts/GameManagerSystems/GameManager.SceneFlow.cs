@@ -71,19 +71,27 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             var provider = DependencyManager.Provider;
 
             if (_sceneLoader == null && provider.TryGetGlobal(out ISceneLoader loader))
+            {
                 _sceneLoader = loader;
+            }
 
             if (_sceneTransitionPlanner == null && provider.TryGetGlobal(out ISceneTransitionPlanner planner))
+            {
                 _sceneTransitionPlanner = planner;
+            }
 
             if (_sceneTransitionService == null && provider.TryGetGlobal(out IOldSceneTransitionService service))
+            {
                 _sceneTransitionService = service;
+            }
         }
 
         private SceneGroupProfile GetGameplayGroup()
         {
             if (sceneFlowMap != null && sceneFlowMap.GameplayGroup != null)
+            {
                 return sceneFlowMap.GameplayGroup;
+            }
 
             DebugUtility.LogWarning<GameManager>(
                 "[SceneFlow] SceneFlowMap ou GameplayGroup n�o configurados.");
@@ -93,7 +101,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private SceneGroupProfile GetMenuGroup()
         {
             if (sceneFlowMap != null && sceneFlowMap.MenuGroup != null)
+            {
                 return sceneFlowMap.MenuGroup;
+            }
 
             DebugUtility.LogWarning<GameManager>(
                 "[SceneFlow] SceneFlowMap ou MenuGroup n�o configurados.");
@@ -113,24 +123,32 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             // - e a cena ativa � Menu (ou o grupo j� est� carregado)
             var current = OldGameManagerStateMachine.Instance.CurrentState;
             if (current is not OldMenuState)
+            {
                 return false;
+            }
 
             var menuGroup = GetMenuGroup();
             if (menuGroup == null)
+            {
                 return true; // se n�o h� config, ao menos n�o reentra no OldMenuState.
+            }
 
             SceneState state = SceneState.Capture();
 
             // Se todas as cenas do grupo j� est�o carregadas, consideramos "ready".
             if (menuGroup.SceneNames != null)
             {
-                foreach (var s in menuGroup.SceneNames)
+                foreach (string s in menuGroup.SceneNames)
                 {
                     if (string.IsNullOrWhiteSpace(s))
+                    {
                         continue;
+                    }
 
                     if (!state.LoadedScenes.Contains(s))
+                    {
                         return false;
+                    }
                 }
             }
 
@@ -138,7 +156,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             if (!string.IsNullOrWhiteSpace(menuGroup.ActiveSceneName))
             {
                 if (state.ActiveSceneName != menuGroup.ActiveSceneName)
+                {
                     return false;
+                }
             }
 
             return true;
@@ -296,7 +316,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
                 // S� rebuild se n�o for OldMenuState (reduz churn e token spam)
                 if (!(OldGameManagerStateMachine.Instance.CurrentState is OldMenuState))
+                {
                     OldGameManagerStateMachine.Instance.Rebuild(this);
+                }
 
                 var targetGroup = GetMenuGroup();
                 if (targetGroup == null)
@@ -357,7 +379,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
                 // S� rebuild se n�o for OldMenuState (reduz churn e token spam)
                 if (!(OldGameManagerStateMachine.Instance.CurrentState is OldMenuState))
+                {
                     OldGameManagerStateMachine.Instance.Rebuild(this);
+                }
 
                 var targetGroup = GetGameplayGroup();
                 if (targetGroup == null)

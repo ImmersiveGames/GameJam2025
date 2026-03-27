@@ -42,15 +42,22 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies
             _targetValue = value;
 
             if (_main != null)
+            {
                 _main.fillAmount = value;
+            }
 
             if (_residual != null)
+            {
                 _residual.fillAmount = value;
+            }
         }
 
         public void AnimateTo(float target)
         {
-            if (_main == null) return;
+            if (_main == null)
+            {
+                return;
+            }
 
             _targetValue = Mathf.Clamp01(target);
             _mainTween?.Kill();
@@ -71,7 +78,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies
 
         private void TryAnimateResidual()
         {
-            if (_residual == null) return;
+            if (_residual == null)
+            {
+                return;
+            }
 
             // Cancela se já tiver uma animação em andamento
             _residualTween?.Kill();
@@ -89,7 +99,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies
                 {
                     // Garante sincronização final
                     if (_residual != null)
+                    {
                         _residual.fillAmount = _targetValue;
+                    }
                 });
         }
 

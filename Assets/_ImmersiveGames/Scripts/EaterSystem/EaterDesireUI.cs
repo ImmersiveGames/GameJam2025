@@ -284,23 +284,27 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 SetIconVisibility(true);
 
                 if (_currentInfo.Resource != null)
+                {
                     DebugUtility.LogWarning(
                         _currentInfo.HasResource
                             ? $"Ícone específico para {_currentInfo.Resource.Value} indisponível. Utilizando fallback."
                             : "Ícone de desejo indisponível. Utilizando fallback.",
                         context: this,
                         instance: this);
+                }
             }
             else
             {
                 SetIconVisibility(false);
                 if (_currentInfo.Resource != null)
+                {
                     DebugUtility.LogWarning(
                         _currentInfo.HasResource
                             ? $"Ícone específico para {_currentInfo.Resource.Value} não encontrado e nenhum fallback foi configurado."
                             : "Ícone de desejo não encontrado e nenhum fallback foi configurado.",
                         context: this,
                         instance: this);
+                }
             }
         }
 

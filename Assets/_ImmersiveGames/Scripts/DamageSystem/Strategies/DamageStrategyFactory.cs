@@ -38,7 +38,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         public static IDamageStrategy Create(DamageStrategySelection selection)
         {
             if (selection == null)
+            {
                 return new BasicDamageStrategy();
+            }
 
             selection.EnsureInitialized();
 
@@ -66,10 +68,14 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         public static IDamageStrategy CreatePipeline(IReadOnlyList<DamageStrategySelection> selections)
         {
             if (selections == null || selections.Count == 0)
+            {
                 return new BasicDamageStrategy();
+            }
 
             if (selections.Count == 1)
+            {
                 return Create(selections[0]);
+            }
 
             var strategies = new List<IDamageStrategy>(selections.Count);
             strategies.AddRange(from selection in selections where selection != null select Create(selection) into strategy where strategy != null select strategy);

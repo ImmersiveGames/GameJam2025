@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
@@ -48,19 +49,25 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         private void Start()
         {
             if (showDebugLogs)
+            {
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Started listening with {thresholdConfigs.Length} configs on {gameObject.name}. Expected ActorId: {_expectedActorId}");
+            }
 
             for (int i = 0; i < thresholdConfigs.Length; i++)
             {
                 var config = thresholdConfigs[i];
                 int eventCount = config.onThresholdCrossed.GetPersistentEventCount();
                 if (showDebugLogs)
+                {
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Config {i} on {gameObject.name}: Type={config.runtimeAttributeType}, Threshold={config.threshold}, Direction={config.direction}, Persistent Events={eventCount}");
+                }
 
                 for (int j = 0; j < eventCount; j++)
                 {
                     if (showDebugLogs)
+                    {
                         DebugUtility.LogVerbose<ResourceThresholdListener>($"Config {i} Event {j}: Target={config.onThresholdCrossed.GetPersistentTarget(j)?.GetType().Name}, Method={config.onThresholdCrossed.GetPersistentMethodName(j)}");
+                    }
                 }
             }
         }
@@ -75,34 +82,44 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             {
                 EventBus<RuntimeAttributeThresholdEvent>.Register(_thresholdBinding);
                 if (showDebugLogs)
+                {
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Registered globally on EventBus (sem ActorId) em {gameObject.name}");
+                }
                 return;
             }
 
             _registrationScope = _expectedActorId;
             FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_registrationScope,_thresholdBinding);
             if (showDebugLogs)
+            {
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Registered on FilteredEventBus para ActorId {_expectedActorId} em {gameObject.name}");
+            }
         }
 
         private void UnregisterThresholdListener()
         {
             if (_thresholdBinding == null)
+            {
                 return;
+            }
 
             if (_registrationScope != null)
             {
                 FilteredEventBus<RuntimeAttributeThresholdEvent>.Unregister(_thresholdBinding, _registrationScope);
                 _registrationScope = null;
                 if (showDebugLogs)
+                {
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Unregistered from FilteredEventBus em {gameObject.name}");
+                }
                 _thresholdBinding = null;
                 return;
             }
 
             EventBus<RuntimeAttributeThresholdEvent>.Unregister(_thresholdBinding);
             if (showDebugLogs)
+            {
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Unregistered from EventBus on {gameObject.name}");
+            }
             _thresholdBinding = null;
         }
 
@@ -111,18 +128,24 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             if (!string.IsNullOrEmpty(_expectedActorId) && evt.ActorId != _expectedActorId)
             {
                 if (showDebugLogs)
+                {
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Event ignored on {gameObject.name}: ActorId {evt.ActorId} != expected {_expectedActorId}");
+                }
                 return;
             }
 
             if (showDebugLogs)
+            {
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Received event on {gameObject.name}: Actor={evt.ActorId}, Type={evt.RuntimeAttributeType}, Threshold={evt.Threshold}, Percentage={evt.CurrentPercentage:P0}, Ascending={evt.IsAscending}");
+            }
 
             bool anyMatch = false;
             foreach (var config in thresholdConfigs)
             {
                 if (showDebugLogs)
+                {
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Checking config on {gameObject.name}: Type={config.runtimeAttributeType}, Threshold={config.threshold}, Direction={config.direction}");
+                }
 
                 if (evt.RuntimeAttributeType == config.runtimeAttributeType &&
                     Mathf.Approximately(evt.Threshold, config.threshold) &&
@@ -130,7 +153,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 {
                     anyMatch = true;
                     if (showDebugLogs)
+                    {
                         DebugUtility.LogVerbose<ResourceThresholdListener>($"Match found on {gameObject.name} - Invoking UnityEvent for threshold {evt.Threshold} (Persistent Events: {config.onThresholdCrossed.GetPersistentEventCount()})");
+                    }
                     config.onThresholdCrossed?.Invoke(evt.Threshold, evt.CurrentPercentage, evt.IsAscending);
                 }
                 else if (showDebugLogs)
@@ -140,7 +165,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             }
 
             if (showDebugLogs && !anyMatch)
+            {
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"No matching configs found on {gameObject.name} for event");
+            }
         }
 
         private bool ShouldInvoke(TriggerDirection dir, bool isAscending)

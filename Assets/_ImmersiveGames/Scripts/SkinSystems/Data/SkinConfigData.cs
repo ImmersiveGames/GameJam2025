@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         bool GetActiveState();
     }
 
-    [CreateAssetMenu(fileName = "SkinConfigData", menuName = "ImmersiveGames/Skin/SkinConfigData", order = 1)]
+    [CreateAssetMenu(fileName = "SkinConfigData", menuName = "ImmersiveGames/Legacy/Skin/SkinConfigData", order = 1)]
     public class SkinConfigData : ScriptableObject, ISkinConfig
     {
         [Header("Identity")]

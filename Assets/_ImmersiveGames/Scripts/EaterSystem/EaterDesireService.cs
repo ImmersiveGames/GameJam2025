@@ -477,7 +477,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             foreach (var candidate in _candidateBuffer)
             {
                 roll -= candidate.Weight;
-                if (!(roll <= 0f)) continue;
+                if (!(roll <= 0f))
+                {
+                    continue;
+                }
                 desire = candidate.Resource;
                 available = candidate.IsAvailable;
                 availableCount = candidate.AvailableCount;
@@ -503,13 +506,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return _availabilityBuffer;
             }
 
-            var map = manager.GetPlanetResourcesMap();
+            IReadOnlyDictionary<IPlanetActor, PlanetResources> map = manager.GetPlanetResourcesMap();
             if (map == null || map.Count == 0)
             {
                 return _availabilityBuffer;
             }
 
-            foreach (var pair in map)
+            foreach (KeyValuePair<IPlanetActor, PlanetResources> pair in map)
             {
                 var resourceType = pair.Value;
                 if (_availabilityBuffer.TryGetValue(resourceType, out int count))

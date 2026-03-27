@@ -3,27 +3,29 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class LoadingProgressOrchestrator
+    public sealed class LoadingProgressOrchestrator : IDisposable
     {
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
         private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _beforeFadeOutBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _completedBinding;
         private readonly EventBinding<SceneFlowRouteLoadingProgressEvent> _routeProgressBinding;
-        private readonly EventBinding<WorldLifecycleResetStartedEvent> _resetStartedBinding;
-        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _resetCompletedBinding;
+        private readonly EventBinding<WorldResetStartedEvent> _resetStartedBinding;
+        private readonly EventBinding<WorldResetCompletedEvent> _resetCompletedBinding;
         private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
 
         private ILoadingPresentationService _presentationService;
         private ActiveLoadingProgress _active;
+        private bool _isRegistered;
+        private bool _disposed;
 
         public LoadingProgressOrchestrator()
         {
@@ -32,18 +34,66 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             _beforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnBeforeFadeOut);
             _completedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnCompleted);
             _routeProgressBinding = new EventBinding<SceneFlowRouteLoadingProgressEvent>(OnRouteProgress);
-            _resetStartedBinding = new EventBinding<WorldLifecycleResetStartedEvent>(OnResetStarted);
-            _resetCompletedBinding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnResetCompleted);
+            _resetStartedBinding = new EventBinding<WorldResetStartedEvent>(OnResetStarted);
+            _resetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnResetCompleted);
             _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
+
+            EnsureRegistered();
+        }
+
+        public void EnsureRegistered()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(LoadingProgressOrchestrator));
+            }
+
+            if (_isRegistered)
+            {
+                return;
+            }
 
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
             EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_beforeFadeOutBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_completedBinding);
             EventBus<SceneFlowRouteLoadingProgressEvent>.Register(_routeProgressBinding);
-            EventBus<WorldLifecycleResetStartedEvent>.Register(_resetStartedBinding);
-            EventBus<WorldLifecycleResetCompletedEvent>.Register(_resetCompletedBinding);
+            EventBus<WorldResetStartedEvent>.Register(_resetStartedBinding);
+            EventBus<WorldResetCompletedEvent>.Register(_resetCompletedBinding);
             EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
+
+            _isRegistered = true;
+
+            DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
+                "[Loading] LoadingProgressOrchestrator registrado nos eventos de Scene Flow.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_isRegistered)
+            {
+                EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
+                EventBus<SceneTransitionScenesReadyEvent>.Unregister(_scenesReadyBinding);
+                EventBus<SceneTransitionBeforeFadeOutEvent>.Unregister(_beforeFadeOutBinding);
+                EventBus<SceneTransitionCompletedEvent>.Unregister(_completedBinding);
+                EventBus<SceneFlowRouteLoadingProgressEvent>.Unregister(_routeProgressBinding);
+                EventBus<WorldResetStartedEvent>.Unregister(_resetStartedBinding);
+                EventBus<WorldResetCompletedEvent>.Unregister(_resetCompletedBinding);
+                EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
+                _isRegistered = false;
+
+                DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
+                    "[Loading] LoadingProgressOrchestrator desregistrado dos eventos de Scene Flow.",
+                    DebugUtility.Colors.Info);
+            }
+
+            _disposed = true;
         }
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
@@ -95,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             PublishCurrent();
         }
 
-        private void OnResetStarted(WorldLifecycleResetStartedEvent evt)
+        private void OnResetStarted(WorldResetStartedEvent evt)
         {
             if (!HasActiveSignature(evt.ContextSignature))
             {
@@ -107,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             PublishCurrent();
         }
 
-        private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
+        private void OnResetCompleted(WorldResetCompletedEvent evt)
         {
             if (!HasActiveSignature(evt.ContextSignature))
             {

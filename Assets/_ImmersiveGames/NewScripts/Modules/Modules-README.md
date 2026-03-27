@@ -43,11 +43,8 @@ Modules/<Feature>/
 - `WorldLifecycle/`: rearm/reset do mundo, integração com SceneFlow, spawn pipeline.
 - `GameLoop/`: loop de jogo, IntroStage, Pause, comandos.
 - `Gameplay/`: atores, ações, spawning, view, rearm de run.
-- `Levels/`: catálogo/definições, sessão, aplicação via ContentSwap.
-- `ContentSwap/`: troca de conteúdo (in-place) + contratos/eventos.
+- `LevelFlow/`: catálogo/definições, sessão, snapshot semântico e orquestração local.
 - `Navigation/`: navegação Menu↔Gameplay + binders de UI.
-- `Gates/`: simulation gates e bridges.
-- `InputModes/`: input/control modes + bridge com SceneFlow.
 - `PostGame/`: overlay + ownership do pós-jogo.
 
 ## Checklist de fechamento do módulo
@@ -56,3 +53,7 @@ Modules/<Feature>/
 - [ ] `I*.cs` sem tipos auxiliares “soltos”.
 - [ ] Bridges/Adapters/Drivers explícitos (`Interop/` ou sufixos).
 - [ ] Nomes refletem conteúdo (sem pastas “misteriosas”).
+
+## Nota de fronteira
+- `SimulationGate` e `InputModes` migraram para `Infrastructure/` e não pertencem mais à superfície de `Modules/`.
+- `SceneComposition` também vive em `Infrastructure/` como capability técnica compartilhada.

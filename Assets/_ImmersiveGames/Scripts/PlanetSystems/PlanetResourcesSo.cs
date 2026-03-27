@@ -1,7 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [CreateAssetMenu(fileName = "PlanetResourcesData",menuName = "ImmersiveGames/PlanetResources")]
+    [CreateAssetMenu(fileName = "PlanetResourcesData",menuName = "ImmersiveGames/Legacy/PlanetSystems/PlanetResources")]
     public class PlanetResourcesSo : ScriptableObject
     {
         [SerializeField] private PlanetResources resourceType;

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -22,6 +22,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public string TransitionProfileName => TransitionProfile != null ? NormalizeLabel(TransitionProfile.name) : string.Empty;
         public string ContextSignature { get; }
         public string RequestedBy { get; }
+        public SceneRouteDefinitionAsset? ResolvedRouteRef { get; }
+        public SceneRouteDefinition? ResolvedRouteDefinition { get; }
 
         public bool HasInlineSceneData =>
             (ScenesToLoad != null && ScenesToLoad.Count > 0) ||
@@ -36,7 +38,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             bool useFade = true,
             string? contextSignature = null,
             string? requestedBy = null,
-            string? reason = null)
+            string? reason = null,
+            SceneRouteDefinitionAsset? resolvedRouteRef = null)
             : this(
                 scenesToLoad,
                 scenesToUnload,
@@ -48,7 +51,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 useFade,
                 contextSignature,
                 requestedBy,
-                reason)
+                reason,
+                resolvedRouteRef,
+                null)
         {
         }
 
@@ -60,7 +65,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             bool useFade = true,
             string? contextSignature = null,
             string? requestedBy = null,
-            string? reason = null)
+            string? reason = null,
+            SceneRouteDefinitionAsset? resolvedRouteRef = null)
             : this(
                 Array.Empty<string>(),
                 Array.Empty<string>(),
@@ -72,7 +78,37 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 useFade,
                 contextSignature,
                 requestedBy,
-                reason)
+                reason,
+                resolvedRouteRef,
+                null)
+        {
+        }
+
+        public SceneTransitionRequest(
+            SceneRouteDefinition resolvedRouteDefinition,
+            SceneRouteId routeId,
+            TransitionStyleAsset? transitionStyle,
+            SceneTransitionPayload payload,
+            SceneTransitionProfile? transitionProfile,
+            bool useFade = true,
+            string? contextSignature = null,
+            string? requestedBy = null,
+            string? reason = null,
+            SceneRouteDefinitionAsset? resolvedRouteRef = null)
+            : this(
+                resolvedRouteDefinition.ScenesToLoad,
+                resolvedRouteDefinition.ScenesToUnload,
+                resolvedRouteDefinition.TargetActiveScene,
+                routeId,
+                transitionStyle,
+                payload,
+                transitionProfile,
+                useFade,
+                contextSignature,
+                requestedBy,
+                reason,
+                resolvedRouteRef,
+                resolvedRouteDefinition)
         {
         }
 
@@ -87,7 +123,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             bool useFade,
             string? contextSignature,
             string? requestedBy,
-            string? reason)
+            string? reason,
+            SceneRouteDefinitionAsset? resolvedRouteRef,
+            SceneRouteDefinition? resolvedRouteDefinition)
         {
             ScenesToLoad = scenesToLoad ?? Array.Empty<string>();
             ScenesToUnload = scenesToUnload ?? Array.Empty<string>();
@@ -100,6 +138,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
             RequestedBy = NormalizeLabel(requestedBy);
             Reason = NormalizeLabel(reason);
+            ResolvedRouteRef = resolvedRouteRef;
+            ResolvedRouteDefinition = resolvedRouteDefinition;
         }
 
         private static string NormalizeLabel(string? value)

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -15,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
     /// <summary>
     /// OWNER: definicao de uma rota (cenas/policy) e validacoes de consistencia.
     /// NAO E OWNER: aplicacao de load/unload/fade no runtime.
-    /// PUBLISH/CONSUME: sem EventBus; convertido para SceneRouteDefinition pelo catalogo.
+    /// PUBLISH/CONSUME: sem EventBus; convertido para SceneRouteDefinition diretamente pelo consumidor.
     /// Fases tocadas: RouteExecutionPlan (dados de rota resolvidos antes do ApplyRoute).
     /// </summary>
     public sealed partial class SceneRouteDefinitionAsset : ScriptableObject
@@ -33,17 +35,22 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
         [SerializeField] private bool requiresWorldReset;
         [SerializeField] private LevelCollectionAsset levelCollection;
 
+        [Header("Audio (Optional)")]
+        [SerializeField] private AudioBgmCueAsset bgmCue;
+
         public SceneRouteId RouteId => routeId;
         public SceneRouteKind RouteKind => routeKind;
+        public bool RequiresWorldReset => requiresWorldReset;
         public LevelCollectionAsset LevelCollection => levelCollection;
+        public AudioBgmCueAsset BgmCue => bgmCue;
 
         public SceneRouteDefinition ToDefinition()
         {
             EnsureValidRoutePolicy();
 
-            var load = ResolveKeys(scenesToLoadKeys, nameof(scenesToLoadKeys));
-            var unload = ResolveKeys(scenesToUnloadKeys, nameof(scenesToUnloadKeys));
-            var active = ResolveSingleKey(targetActiveSceneKey, nameof(targetActiveSceneKey));
+            string[] load = ResolveKeys(scenesToLoadKeys, nameof(scenesToLoadKeys));
+            string[] unload = ResolveKeys(scenesToUnloadKeys, nameof(scenesToUnloadKeys));
+            string active = ResolveSingleKey(targetActiveSceneKey, nameof(targetActiveSceneKey));
 
             DebugUtility.Log(typeof(SceneRouteDefinitionAsset),
                 $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{nameof(scenesToUnloadKeys)}' scenes=[{FormatSceneDetails(unload)}].",
@@ -52,12 +59,30 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
             return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset);
         }
 
+        public void ValidateRoutePolicyOrFailFast()
+        {
+            EnsureValidRoutePolicy();
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnValidate()
         {
             ValidateRoutePolicyEditorOnly();
         }
 #endif
+
+        private void ValidateRoutePolicyEditorOnly()
+        {
+            string validationError = GetRoutePolicyValidationError();
+            if (string.IsNullOrWhiteSpace(validationError))
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(
+                typeof(SceneRouteDefinitionAsset),
+                $"[Config][Editor] routeId='{routeId}' invalida. detail='{validationError}'");
+        }
 
         private void EnsureValidRoutePolicy()
         {
@@ -196,6 +221,33 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
 #else
             return -1;
 #endif
+        }
+
+        private static int ResolveBuildIndexEditorOnly(string sceneName)
+        {
+#if UNITY_EDITOR
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return -1;
+            }
+
+            EditorBuildSettingsScene[] scenes = UnityEditor.EditorBuildSettings.scenes;
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                var scene = scenes[i];
+                if (scene == null || string.IsNullOrWhiteSpace(scene.path))
+                {
+                    continue;
+                }
+
+                string name = System.IO.Path.GetFileNameWithoutExtension(scene.path);
+                if (string.Equals(name, sceneName, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+#endif
+            return -1;
         }
 
         private static string ResolveSingleKey(SceneKeyAsset key, string fieldName)

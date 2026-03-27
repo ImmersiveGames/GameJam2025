@@ -10,7 +10,7 @@
 ## Evidências canônicas (atualizado em 2026-02-18)
 
 - `Docs/Reports/Evidence/LATEST.md`
-- `Docs/Reports/lastlog.log`
+- `Docs/Reports/Evidence/LATEST.md`
 - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 
@@ -143,3 +143,4 @@ Para alinhar o boot ao plano `StringsToDirectRefs v1`, esta ADR registra as segu
 - `NewScriptsBootstrapConfigAsset` é resolvido por **referência direta** dentro de `RuntimeModeConfig` (`NewScriptsBootstrapConfig`).
 - Não existe caminho obrigatório via **provider/manifest em cena** para resolver bootstrap config.
 - O entrypoint global do `GlobalCompositionRoot` é único e determinístico em `BeforeSceneLoad`.
+

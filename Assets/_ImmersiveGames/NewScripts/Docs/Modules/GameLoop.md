@@ -2,15 +2,27 @@
 
 ## Estado atual
 
-- `GameLoopService` e owner do estado da run.
-- `GameLoopSceneFlowCoordinator` sincroniza start plan e readiness com SceneFlow.
-- `IntroStage` e opcional por level.
-- `PostGame` e global.
+- `GameLoopService` e coordenador do loop; o owner terminal da run e `GameRunOutcomeService`.
+- `GameLoopSceneFlowSyncCoordinator` sincroniza start plan e readiness com SceneFlow.
+- `IntroStage` e opcional por level, mas nao e gate canonico do GameLoop.
+- `PostGame` e global no runtime atual.
+
+## PostStage em runtime
+
+- O owner do `PostStage` e `Modules/PostGame`.
+- `GameLoop` nao e owner do post-outcome; ele consome apenas o handoff final apos `PostStageCompletedEvent`.
+- `RequestRunEnd()` continua como comando de entrada para `PostPlay/PostGame`, mas nao define o stage.
+- O `GameLoop` nao conhece presenter, UI ou contrato de cena do `PostStage`.
+- O contrato oficial esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
 
 ## Ownership
 
-- `GameLoopService`: estados da run, ready, intro, playing, pause e post game.
-- `IntroStageCoordinator` + `LevelStageOrchestrator`: intro do level atual.
+- `GameLoopService`: coordenacao do loop (ready, playing, pause e post game) e reflexo de atividade.
+- `GameRunOutcomeService`: owner terminal do fim de run e publish de `GameRunEndedEvent`.
+- `GameRunResultSnapshotService`: projecao/snapshot do resultado atual da run.
+- `IntroStageCoordinator`: executor da IntroStage do level atual.
+- `LevelStageOrchestrator`: trigger level-owned da intro via `LevelEnteredEvent`.
+- `LevelIntroCompletedEvent`: handoff nivel->loop para sair de `Ready` e entrar em `Playing`.
 - `PostGameOwnershipService`: input mode e gate do post global.
 - `PostGameResultService`: resultado formal do post global.
 
@@ -20,9 +32,16 @@
 - `Victory` e `Defeat` entram pelo fim de run.
 - `Exit` e formalizado na saida para menu a partir de `PostPlay`.
 - `Restart` segue direto por reset macro e nao entra no post hook do level.
+- O `PostStage` acontece antes de `PostPlay` e o overlay de `PostGame` entra apenas depois de `PostGameEnteredEvent`.
+- Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.
+- Presenter explicito da cena/conteudo executa GUI minima com `Continue` e `Skip` one-shot.
+- `IntroStage` nao depende de `Ready`/`IntroStage` do GameLoop para existir; o GameLoop apenas reflete o estado alto nivel depois.
+- Quando `LevelIntroCompletedEvent` chega, o GameLoop faz apenas o handoff para `Playing`.
+- O timing e ownership da intro ficam em `LevelFlow`; o GameLoop so consome o handoff final.
 
 ## Leitura cruzada
 
+- `Docs/Modules/PostGame.md`
 - `Docs/Modules/LevelFlow.md`
 - `Docs/Modules/Navigation.md`
 - `Docs/Guides/Event-Hooks-Reference.md`

@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
         private readonly SemaphoreSlim _ensureGate = new(1, 1);
         private readonly string _fadeSceneName;
 
-        private FadeController _controller;
+        private FadeController? _controller;
         private bool _isPermanentlyUnavailable;
         private string _permanentFailureDetail = string.Empty;
 
@@ -72,8 +73,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 
             await EnsureControllerAsync();
 
-            _controller.Configure(_config);
-            await _controller.FadeInAsync(contextSignature);
+            var controller = _controller ?? throw new InvalidOperationException("FadeController is unavailable after EnsureControllerAsync.");
+            controller.Configure(_config);
+            await controller.FadeInAsync(contextSignature);
         }
 
         public async Task FadeOutAsync(string? contextSignature = null)
@@ -85,8 +87,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
 
             await EnsureControllerAsync();
 
-            _controller.Configure(_config);
-            await _controller.FadeOutAsync(contextSignature);
+            var controller = _controller ?? throw new InvalidOperationException("FadeController is unavailable after EnsureControllerAsync.");
+            controller.Configure(_config);
+            await controller.FadeOutAsync(contextSignature);
         }
 
         private bool IsNoOpFadeIn()
@@ -153,6 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
                         AbortAsFatal(
                             reason: "load_scene_async_null",
                             detail: $"LoadSceneAsync returned null for '{_fadeSceneName}'. Check Build Settings.");
+                        throw new InvalidOperationException("Unreachable after AbortAsFatal.");
                     }
 
                     while (!loadOp.isDone)
@@ -190,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
             }
         }
 
-        private static FadeController FindControllerInScene(Scene scene)
+        private static FadeController? FindControllerInScene(Scene scene)
         {
             // Comentário: evita FindAnyObjectByType (custo + risco de pegar controller errado fora da FadeScene).
             try

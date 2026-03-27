@@ -119,7 +119,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 planetMaster ??= detectableComponent.GetComponentInParent<PlanetsMaster>();
             }
 
-            if (planetMaster != null || detectable?.Owner is not Component ownerComponent) return planetMaster != null;
+            if (planetMaster != null || detectable?.Owner is not Component ownerComponent)
+            {
+                return planetMaster != null;
+            }
             ownerComponent.TryGetComponent(out planetMaster);
             planetMaster ??= ownerComponent.GetComponentInParent<PlanetsMaster>();
 

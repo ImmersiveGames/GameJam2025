@@ -202,7 +202,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            var radii = _orbitArranger.ArrangePlanetsInOrbits(_spawnedPlanetMasters);
+            List<float> radii = _orbitArranger.ArrangePlanetsInOrbits(_spawnedPlanetMasters);
             _calculatedOrbitRadii.AddRange(radii);
         }
 
@@ -277,7 +277,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
 
         /// <summary>
-        /// Resolve o <see cref="PlanetsMaster"/> associado a um ator de planeta ativo.
+        /// ResolvePlayerActor o <see cref="PlanetsMaster"/> associado a um ator de planeta ativo.
         /// </summary>
         public bool TryGetPlanet(IActor planetActor, out PlanetsMaster planet)
         {

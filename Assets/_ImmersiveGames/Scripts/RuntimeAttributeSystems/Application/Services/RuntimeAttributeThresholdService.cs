@@ -1,7 +1,7 @@
 
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
@@ -34,11 +34,17 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
         private void OnUpdate(RuntimeAttributeUpdateEvent evt)
         {
-            if (!_thresholds.ContainsKey(evt.RuntimeAttributeType)) return;
+            if (!_thresholds.ContainsKey(evt.RuntimeAttributeType))
+            {
+                return;
+            }
 
             float newPct = evt.NewValue?.GetPercentage() ?? 0f;
             float oldPct = _last.GetValueOrDefault(evt.RuntimeAttributeType, 0f);
-            if (Mathf.Abs(newPct - oldPct) < Eps) return;
+            if (Mathf.Abs(newPct - oldPct) < Eps)
+            {
+                return;
+            }
 
             foreach (float thr in _thresholds[evt.RuntimeAttributeType])
             {

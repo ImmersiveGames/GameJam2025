@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -19,8 +19,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
     /// Fases tocadas: TransitionStarted, FadeIn completed, ScenesReady, BeforeFadeOut, TransitionCompleted.
     /// </summary>
 [DebugLevel(DebugLevel.Verbose)]
-    public sealed class LoadingHudOrchestrator
+    public sealed class LoadingHudOrchestrator : IDisposable
     {
+        private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
+        private readonly EventBinding<SceneTransitionFadeInCompletedEvent> _transitionFadeInCompletedBinding;
+        private readonly EventBinding<SceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
+        private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _transitionBeforeFadeOutBinding;
+        private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
 
         private ILoadingHudService _hudService;
         private ILoadingPresentationService _presentationService;
@@ -33,23 +38,67 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         private bool _hudVisible;
         private string _visibleSignature;
         private string _visibleStep;
+        private bool _isRegistered;
+        private bool _disposed;
 
         public LoadingHudOrchestrator()
         {
-            var transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
-            var transitionFadeInCompletedBinding = new EventBinding<SceneTransitionFadeInCompletedEvent>(OnTransitionFadeInCompleted);
-            var transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnTransitionScenesReady);
-            var transitionBeforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnTransitionBeforeFadeOut);
-            var transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
+            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
+            _transitionFadeInCompletedBinding = new EventBinding<SceneTransitionFadeInCompletedEvent>(OnTransitionFadeInCompleted);
+            _transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnTransitionScenesReady);
+            _transitionBeforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnTransitionBeforeFadeOut);
+            _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
 
-            EventBus<SceneTransitionStartedEvent>.Register(transitionStartedBinding);
-            EventBus<SceneTransitionFadeInCompletedEvent>.Register(transitionFadeInCompletedBinding);
-            EventBus<SceneTransitionScenesReadyEvent>.Register(transitionScenesReadyBinding);
-            EventBus<SceneTransitionBeforeFadeOutEvent>.Register(transitionBeforeFadeOutBinding);
-            EventBus<SceneTransitionCompletedEvent>.Register(transitionCompletedBinding);
+            EnsureRegistered();
+        }
+
+        public void EnsureRegistered()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(LoadingHudOrchestrator));
+            }
+
+            if (_isRegistered)
+            {
+                return;
+            }
+
+            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+            EventBus<SceneTransitionFadeInCompletedEvent>.Register(_transitionFadeInCompletedBinding);
+            EventBus<SceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
+            EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_transitionBeforeFadeOutBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+
+            _isRegistered = true;
 
             DebugUtility.LogVerbose<LoadingHudOrchestrator>(
-                "[Loading] LoadingHudOrchestrator registrado nos eventos de Scene Flow.");
+                "[Loading] LoadingHudOrchestrator registrado nos eventos de Scene Flow.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_isRegistered)
+            {
+                EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
+                EventBus<SceneTransitionFadeInCompletedEvent>.Unregister(_transitionFadeInCompletedBinding);
+                EventBus<SceneTransitionScenesReadyEvent>.Unregister(_transitionScenesReadyBinding);
+                EventBus<SceneTransitionBeforeFadeOutEvent>.Unregister(_transitionBeforeFadeOutBinding);
+                EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
+                _isRegistered = false;
+
+                DebugUtility.LogVerbose<LoadingHudOrchestrator>(
+                    "[Loading] LoadingHudOrchestrator desregistrado dos eventos de Scene Flow.",
+                    DebugUtility.Colors.Info);
+            }
+
+            _disposed = true;
         }
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)

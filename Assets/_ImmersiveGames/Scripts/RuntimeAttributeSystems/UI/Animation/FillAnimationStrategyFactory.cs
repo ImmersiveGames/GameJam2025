@@ -9,7 +9,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Animation
         public static IFillAnimationStrategy CreateStrategy(FillAnimationProfile profile)
         {
             if (profile == null)
+            {
                 return new InstantFillAnimationStrategy();
+            }
 
             return profile.animationType switch
             {

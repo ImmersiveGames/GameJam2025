@@ -1,36 +1,63 @@
 # ADRs
 
-Este diretorio mantem apenas ADRs vigentes para entender o desenho atual.
+Este diretorio mantem os ADRs ativos do projeto e sua ordem de precedencia.
 
-## Cadeia operacional atual
+## Regra de precedencia
 
-| ADR | Foco atual |
+Quando dois ADRs falarem da mesma superficie, vale a regra:
+
+1. o ADR de numero maior prevalece sobre o menor no trecho em que houver conflito;
+2. o ADR menor continua valendo apenas no que nao foi sobrescrito;
+3. quando existir um ADR canonico de consolidacao, ele passa a ser a leitura operacional primaria;
+4. ADRs movidos para `Obsolete/` permanecem apenas como historico.
+
+## Baseline canônica atual - eixo SceneFlow / LevelFlow
+
+A partir desta reorganizacao, o eixo SceneFlow/LevelFlow deve ser lido principalmente por estes ADRs:
+
+| ADR | Papel canonico atual |
 |---|---|
-| `ADR-0007-InputModes.md` | ownership de InputModes |
-| `ADR-0008-RuntimeModeConfig.md` | politica de runtime/degraded |
-| `ADR-0009-FadeSceneFlow.md` | fade + SceneFlow |
-| `ADR-0010-LoadingHud-SceneFlow.md` | loading HUD no pipeline |
-| `ADR-0011-WorldDefinition-MultiActor-GameplayScene.md` | world definition de gameplay |
-| `ADR-0013-Ciclo-de-Vida-Jogo.md` | ciclo de vida da run |
-| `ADR-0014-GameplayReset-Targets-Grupos.md` | ActorGroupRearm |
-| `ADR-0016-ContentSwap-WorldLifecycle.md` | content swap in-place |
-| `ADR-0017-LevelManager-Config-Catalog.md` | configuracao de level e catalogos de level |
-| `ADR-0018-Fade-TransitionStyle-SoftFail.md` | resiliencia do fade/style |
-| `ADR-0019-Navigation-IntentCatalog.md` | navigation asset unico e direct-ref |
-| `ADR-0022-Assinaturas-e-Dedupe-por-Dominio-MacroRoute-vs-Level.md` | identidade de level por `LevelSignature` |
-| `ADR-0023-Dois-Niveis-de-Reset-MacroReset-vs-LevelReset.md` | macro reset vs level reset |
-| `ADR-0024-LevelCatalog-por-MacroRoute-e-Contrato-de-Selecao-de-Level-Ativo.md` | selecao do level ativo |
-| `ADR-0025-Pipeline-de-Loading-Macro-inclui-Etapa-de-Level-antes-do-FadeOut.md` | etapa de level no loading macro |
-| `ADR-0026-Troca-de-Level-Intra-Macro-via-Swap-Local-sem-Transicao-Macro.md` | swap local intra-macro |
-| `ADR-0027-IntroStage-e-PostLevel-como-Responsabilidade-do-Level.md` | intro level-owned e post global |
+| `ADR-0030` | fronteiras modulares canonicas entre `Navigation`, `SceneFlow`, `SceneRoute`, `LevelFlow`, `WorldReset/ResetInterop`, `Loading` e `Fade` |
+| `ADR-0031` | pipeline macro canonico de transicao |
+| `ADR-0032` | semantica canonica de route, level, reset e dedupe |
+| `ADR-0033` | politica canonica de resiliencia de fade e loading |
 
-## ADR vigente, mas fora da superficie operacional principal
+Para IntroStage, a leitura operacional principal e `ADR-0027`. Para hooks oficiais, use `ADR-0037`. Para o fluxo implementado de PostStage, use `ADR-0012`.
 
-- `ADR-0020-LevelContent-Progression-vs-SceneRoute.md`
-  - permanece como referencia de direcao futura;
-  - nao sobrescreve a documentacao operacional atual.
+## Leitura minima recomendada para entender o modulo
 
-## Regras de uso
+1. `ADR-0030`
+2. `ADR-0031`
+3. `ADR-0032`
+4. `ADR-0033`
+5. `ADR-0012`
+6. `ADR-0027`
+7. `ADR-0037`
 
-- Leia ADRs como explicacao do desenho atual, nao como guia de integracao do dia a dia.
-- Quando houver conflito entre historico e docs oficiais, prevalece a cadeia oficial em `Docs/README.md` sustentada pelo runtime atual.
+Com isso, nao e mais necessario usar a baseline `ADR-0009` a `ADR-0026` como leitura primaria do stack; para IntroStage, leia `ADR-0027`.
+
+## Historico consolidado
+
+Os ADRs da baseline incremental anterior do eixo SceneFlow/LevelFlow foram movidos para:
+
+- `Obsolete/SceneFlow-Baseline/`
+
+Eles mantem numeracao e conteudo historico, mas nao devem mais ser usados como contrato operacional primario.
+
+## ADRs ativos fora do eixo consolidado
+
+Continuam ativos, sem alteracao de papel nesta reorganizacao:
+
+- `ADR-0002`
+- `ADR-0007`
+- `ADR-0008`
+- `ADR-0011`
+- `ADR-0012`
+- `ADR-0013`
+- `ADR-0014`
+- `ADR-0028`
+- `ADR-0029`
+
+## Observacao
+
+Se o repositorio principal ja possuir ADRs acima de `0029` fora deste pacote, renumere os novos ADRs na integracao preservando a ordem relativa e a cadeia de supersedencia.

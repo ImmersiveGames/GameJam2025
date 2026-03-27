@@ -1,44 +1,36 @@
 #nullable enable
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 {
     /// <summary>
-    /// Contexto minimo para execucao da IntroStageController antes da revelacao da cena.
-    /// RouteKind e a semantica canonica; labels de profile nao sao mais carregadas no payload.
+    /// Contexto minimo para execucao da IntroStage antes da revelacao da cena.
+    /// O contrato canonico de level vem de LevelFlow; este contexto apenas o transporta ate o executor.
     /// </summary>
     public readonly struct IntroStageContext
     {
+        public LevelIntroStageSession Session { get; }
         public string ContextSignature { get; }
         public SceneRouteKind RouteKind { get; }
         public string TargetScene { get; }
         public string Reason { get; }
+        public bool HasIntroStage => Session.HasIntroStage;
+        public bool IsValid => Session.IsValid;
 
         public IntroStageContext(
-            string? contextSignature,
-            SceneRouteKind routeKind,
+            LevelIntroStageSession session,
             string? targetScene,
             string? reason)
         {
-            ContextSignature = contextSignature ?? string.Empty;
-            RouteKind = routeKind;
+            Session = session;
+            ContextSignature = session.LevelSignature;
+            RouteKind = session.MacroRouteRef != null ? session.MacroRouteRef.RouteKind : SceneRouteKind.Unspecified;
             TargetScene = targetScene ?? string.Empty;
             Reason = reason ?? string.Empty;
         }
-    }
-
-    public enum IntroStagePolicy
-    {
-        Disabled,
-        Manual,
-        AutoComplete
-    }
-
-    public interface IIntroStagePolicyResolver
-    {
-        IntroStagePolicy Resolve(SceneRouteKind routeKind, string reason);
     }
 
     public interface IIntroStageStep
@@ -59,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
         Task<IntroStageCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken);
         void CompleteIntroStage(string reason);
         void SkipIntroStage(string reason);
+        void MarkSessionClosed();
     }
 
     public readonly struct IntroStageCompletionResult

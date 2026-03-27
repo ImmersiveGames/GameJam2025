@@ -31,7 +31,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies
             _residualTween?.Kill();
 
             if (_main != null)
+            {
                 _targetValue = _main.fillAmount;
+            }
         }
 
         public void SetInstant(float value)
@@ -42,15 +44,22 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies
             _targetValue = value;
 
             if (_main != null)
+            {
                 _main.fillAmount = value;
+            }
 
             if (_residual != null)
+            {
                 _residual.fillAmount = value;
+            }
         }
 
         public void AnimateTo(float target)
         {
-            if (_main == null) return;
+            if (_main == null)
+            {
+                return;
+            }
 
             _targetValue = Mathf.Clamp01(target);
             _mainTween?.Kill();

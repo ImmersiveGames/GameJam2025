@@ -2,7 +2,7 @@ using DG.Tweening;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Animation
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/UI/Fill Animation Profile")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/UI/Fill Animation Profile")]
     public class FillAnimationProfile : ScriptableObject
     {
         public FillAnimationType animationType = FillAnimationType.BasicReactive;

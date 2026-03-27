@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine.SceneManagement;
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
     /// </summary>
 public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
     {
-        public async Task LoadSceneAsync(string sceneName, System.Action<float> onProgress = null)
+        public async Task LoadSceneAsync(string sceneName, System.Action<float>? onProgress = null)
         {
             var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             if (op == null)
@@ -36,7 +36,7 @@ public sealed class SceneManagerLoaderAdapter : ISceneFlowLoaderAdapter
             onProgress?.Invoke(1f);
         }
 
-        public async Task UnloadSceneAsync(string sceneName, System.Action<float> onProgress = null)
+        public async Task UnloadSceneAsync(string sceneName, System.Action<float>? onProgress = null)
         {
             var scene = SceneManager.GetSceneByName(sceneName);
             bool exists = scene.IsValid();

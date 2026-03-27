@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Configs
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneGroupProfile",
-        menuName = "ImmersiveGames/Scene Flow/Scene Group Profile",
+        menuName = "ImmersiveGames/Legacy/SceneManagement/Scene Group Profile",
         order = 0)]
     public class SceneGroupProfile : ScriptableObject
     {
@@ -84,7 +84,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
             for (int i = sceneNames.Count - 1; i >= 0; i--)
             {
                 if (string.IsNullOrWhiteSpace(sceneNames[i]))
+                {
                     sceneNames.RemoveAt(i);
+                }
             }
 
             // Warning se não houver nenhuma cena configurada.

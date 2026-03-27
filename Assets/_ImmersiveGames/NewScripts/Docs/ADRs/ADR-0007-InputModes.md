@@ -11,7 +11,7 @@
 ## Evidências canônicas (atualizado em 2026-02-18)
 
 - `Docs/Reports/Evidence/LATEST.md`
-- `Docs/Reports/lastlog.log`
+- `Docs/Reports/Evidence/LATEST.md`
 - `Docs/Reports/SceneFlow-Config-ValidationReport-DataCleanup-v1.md`
 - `Docs/Reports/Audits/2026-02-18/Audit-SceneFlow-RouteResetPolicy.md`
 
@@ -73,3 +73,4 @@ do InputModes e seus nomes de action map padrão, mantendo fallback seguro quand
 4) Se RuntimeModeConfig.inputModes.enableInputModes=false, validar:
    - DEGRADED_MODE feature='InputModes' reason='disabled_by_config'
    - IInputModeService não registrado no DI global.
+

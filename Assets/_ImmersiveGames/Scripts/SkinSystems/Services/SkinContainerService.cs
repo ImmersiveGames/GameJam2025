@@ -20,7 +20,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
 
         private Transform CreateOrReuseContainer(ModelType type, Transform parent)
         {
-            if (parent == null) return null;
+            if (parent == null)
+            {
+                return null;
+            }
 
             string name = type.ToString();
             var container = parent.Find(name);
@@ -45,7 +48,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
 
         private void ClearContainer(ModelType type)
         {
-            if (!_containers.TryGetValue(type, out var container) || container == null) return;
+            if (!_containers.TryGetValue(type, out var container) || container == null)
+            {
+                return;
+            }
             for (int i = container.childCount - 1; i >= 0; i--)
             {
                 Object.Destroy(container.GetChild(i).gameObject);

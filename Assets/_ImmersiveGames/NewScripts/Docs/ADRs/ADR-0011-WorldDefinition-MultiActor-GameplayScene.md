@@ -4,9 +4,9 @@
 
 - Estado: Implementado
 - Data (decisão): 2025-12-28
-- Última atualização: 2026-02-04
+- Última atualização: 2026-03-25
 - Tipo: Implementação
-- Escopo: `GameplayScene`, `SceneScopeCompositionRoot`, spawn pipeline (Player/Eater), WorldLifecycle
+- Escopo: `GameplayScene`, `SceneScopeCompositionRoot`, spawn pipeline (Player/Eater), WorldReset/SceneReset
 
 ## Contexto
 
@@ -52,14 +52,14 @@ A integração acontece no `SceneScopeCompositionRoot` (nome atual observado em 
 ### Regra de contrato
 
 - **Cenas de gameplay (ex.: GameplayScene)**
-  - `WorldDefinition` **deve** existir.
-  - `WorldDefinition.SpawnEntries` **deve** conter pelo menos 1 entrada válida.
-  - Em **Strict**: violações são tratadas como *blocker* (log de erro/assert + falha detectável no smoke).
-  - Em **Release**: violações continuam sendo erro, mas a estratégia pode ser “fail-fast com fallback controlado” apenas se não corromper estado (preferir manter o contrato, não mascarar).
+    - `WorldDefinition` **deve** existir.
+    - `WorldDefinition.SpawnEntries` **deve** conter pelo menos 1 entrada válida.
+    - Em **Strict**: violações são tratadas como *blocker* (log de erro/assert + falha detectável no smoke).
+    - Em **Release**: violações continuam sendo erro, mas a estratégia pode ser “fail-fast com fallback controlado” apenas se não corromper estado (preferir manter o contrato, não mascarar).
 
 - **Cenas de frontend/menus (ex.: MenuScene)**
-  - `WorldDefinition` **não é exigida**.
-  - Em **Strict**: a ausência é permitida **desde que** a cena seja classificada como não-gameplay (ver *classifier* abaixo).
+    - `WorldDefinition` **não é exigida**.
+    - Em **Strict**: a ausência é permitida **desde que** a cena seja classificada como não-gameplay (ver *classifier* abaixo).
 
 ### Classificação (classifier)
 
@@ -72,7 +72,7 @@ Evidência canônica mostra:
 
 ## Evidência
 
-- **Última evidência (log bruto):** `Docs/Reports/lastlog.log`
+- **Última evidência (log bruto):** `Docs/Reports/Evidence/LATEST.md`
 
 ### Log canônico (Baseline 2.2)
 
@@ -109,8 +109,8 @@ Evidência canônica mostra:
 
 ## Fora de escopo
 
-- Integração com LevelManager/ContentSwap (ver ADR-0016/0017).
-- Alterar contratos de SceneFlow ou WorldLifecycle.
+- Integração com LevelFlow/SceneComposition (ver ADR-0017 e plano de SceneComposition).
+- Alterar contratos de SceneFlow, WorldReset ou SceneReset.
 
 ## Consequências
 
@@ -128,22 +128,23 @@ Evidência canônica mostra:
 ## Alternativas consideradas
 
 1. **Hardcode de spawns em código**
-   - Rejeitada: baixa auditabilidade e alto risco de divergência com content.
+    - Rejeitada: baixa auditabilidade e alto risco de divergência com content.
 
 2. **Um único “WorldDefinition global” para todas as cenas**
-   - Rejeitada: menus/frontend não devem pagar custo nem sofrer contrato de gameplay.
+    - Rejeitada: menus/frontend não devem pagar custo nem sofrer contrato de gameplay.
 
 ## Ações futuras
 
 - Garantir que o **classifier** de “cena de gameplay” seja a fonte canônica da exigência de `WorldDefinition`.
 - Se necessário, adicionar uma checagem explícita no `SceneScopeCompositionRoot`:
-  - `if (isGameplayScene && worldDefinition == null) -> error/assert`.
+    - `if (isGameplayScene && worldDefinition == null) -> error/assert`.
 
 ## Implementação (arquivos impactados)
 
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/SceneScopeCompositionRoot.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/Definitions/WorldDefinition.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceFactory.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/WorldLifecycle/Spawn/WorldSpawnServiceRegistry.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/PlayerSpawnService.cs`
-- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Runtime/Spawning/EaterSpawnService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawn/Definitions/WorldDefinition.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneReset/Spawn/WorldSpawnServiceFactory.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/SceneReset/Spawn/WorldSpawnServiceRegistry.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawn/PlayerSpawnService.cs`
+- `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawn/EaterSpawnService.cs`
+

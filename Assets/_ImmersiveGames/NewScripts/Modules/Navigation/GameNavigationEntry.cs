@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.Navigation
@@ -10,6 +10,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
     public readonly struct GameNavigationEntry
     {
         public SceneRouteId RouteId { get; }
+        public SceneRouteDefinitionAsset RouteRef { get; }
         public TransitionStyleAsset StyleRef { get; }
         public SceneTransitionPayload Payload { get; }
         public string StyleLabel => StyleRef != null ? StyleRef.StyleLabel : string.Empty;
@@ -17,9 +18,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public GameNavigationEntry(
             SceneRouteId routeId,
             TransitionStyleAsset styleRef,
-            SceneTransitionPayload payload)
+            SceneTransitionPayload payload,
+            SceneRouteDefinitionAsset routeRef = null)
         {
             RouteId = routeId;
+            RouteRef = routeRef;
             StyleRef = styleRef;
             Payload = payload ?? SceneTransitionPayload.Empty;
         }

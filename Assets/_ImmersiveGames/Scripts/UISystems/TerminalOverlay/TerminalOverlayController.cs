@@ -42,16 +42,34 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
             canvasGroup.ignoreParentGroups = true;
             SetVisible(false);
 
-            if (restartButton != null) restartButton.onClick.AddListener(OnRestartClicked);
-            if (menuButton != null) menuButton.onClick.AddListener(OnMenuClicked);
-            if (closeButton != null) closeButton.onClick.AddListener(Hide);
+            if (restartButton != null)
+            {
+                restartButton.onClick.AddListener(OnRestartClicked);
+            }
+            if (menuButton != null)
+            {
+                menuButton.onClick.AddListener(OnMenuClicked);
+            }
+            if (closeButton != null)
+            {
+                closeButton.onClick.AddListener(Hide);
+            }
         }
 
         private void OnDestroy()
         {
-            if (restartButton != null) restartButton.onClick.RemoveListener(OnRestartClicked);
-            if (menuButton != null) menuButton.onClick.RemoveListener(OnMenuClicked);
-            if (closeButton != null) closeButton.onClick.RemoveListener(Hide);
+            if (restartButton != null)
+            {
+                restartButton.onClick.RemoveListener(OnRestartClicked);
+            }
+            if (menuButton != null)
+            {
+                menuButton.onClick.RemoveListener(OnMenuClicked);
+            }
+            if (closeButton != null)
+            {
+                closeButton.onClick.RemoveListener(Hide);
+            }
         }
 
         public void ShowVictory(string reason = null) => ShowInternal("VICTORY", reason);
@@ -59,10 +77,15 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 
         public void Hide()
         {
-            if (!IsVisible) return;
+            if (!IsVisible)
+            {
+                return;
+            }
 
             if (animator != null && !string.IsNullOrWhiteSpace(triggerHide))
+            {
                 animator.SetTrigger(triggerHide);
+            }
 
             SetVisible(false);
             DebugUtility.LogVerbose<TerminalOverlayController>("[TerminalOverlay] Hide()");
@@ -70,13 +93,24 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 
         private void ShowInternal(string title, string reason)
         {
-            if (canvasGroup == null) return;
+            if (canvasGroup == null)
+            {
+                return;
+            }
 
-            if (titleText != null) titleText.text = title;
-            if (reasonText != null) reasonText.text = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason;
+            if (titleText != null)
+            {
+                titleText.text = title;
+            }
+            if (reasonText != null)
+            {
+                reasonText.text = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason;
+            }
 
             if (animator != null && !string.IsNullOrWhiteSpace(triggerShow))
+            {
                 animator.SetTrigger(triggerShow);
+            }
 
             SetVisible(true);
             DebugUtility.LogVerbose<TerminalOverlayController>(
@@ -87,7 +121,10 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
         {
             IsVisible = visible;
 
-            if (canvasGroup == null) return;
+            if (canvasGroup == null)
+            {
+                return;
+            }
 
             canvasGroup.alpha = visible ? 1f : 0f;
             canvasGroup.interactable = visible;

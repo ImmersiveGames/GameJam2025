@@ -51,10 +51,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         protected void OnDestroy()
         {
             if (_bindRequestBinding != null)
+            {
                 EventBus<RuntimeAttributeEventHub.CanvasBindRequest>.Unregister(_bindRequestBinding);
+            }
 
             if (_canvasRegisteredBinding != null)
+            {
                 EventBus<RuntimeAttributeEventHub.CanvasRegisteredEvent>.Unregister(_canvasRegisteredBinding);
+            }
 
             _canvasRegistry.Clear();
         }
@@ -64,7 +68,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         /// </summary>
         public void RegisterCanvas(IAttributeCanvasBinder attributeCanvas)
         {
-            if (attributeCanvas == null || string.IsNullOrEmpty(attributeCanvas.CanvasId)) return;
+            if (attributeCanvas == null || string.IsNullOrEmpty(attributeCanvas.CanvasId))
+            {
+                return;
+            }
 
             if (!_canvasRegistry.TryAdd(attributeCanvas.CanvasId, attributeCanvas))
             {
@@ -85,7 +92,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         /// </summary>
         public void UnregisterCanvas(string canvasId)
         {
-            if (string.IsNullOrEmpty(canvasId)) return;
+            if (string.IsNullOrEmpty(canvasId))
+            {
+                return;
+            }
 
             if (_canvasRegistry.Remove(canvasId))
             {
@@ -101,7 +111,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         /// </summary>
         public void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data, string targetCanvasId)
         {
-            if (string.IsNullOrEmpty(targetCanvasId) || string.IsNullOrEmpty(actorId)) return;
+            if (string.IsNullOrEmpty(targetCanvasId) || string.IsNullOrEmpty(actorId))
+            {
+                return;
+            }
 
             var request = new RuntimeAttributeEventHub.CanvasBindRequest(actorId, runtimeAttributeType, data, targetCanvasId);
 
@@ -144,11 +157,16 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         /// </summary>
         private void OnCanvasRegisteredHandler(RuntimeAttributeEventHub.CanvasRegisteredEvent evt)
         {
-            if (!_canvasRegistry.TryGetValue(evt.canvasId, out _)) return;
+            if (!_canvasRegistry.TryGetValue(evt.canvasId, out _))
+            {
+                return;
+            }
 
             IReadOnlyDictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeEventHub.CanvasBindRequest> pendingRequests = RuntimeAttributeEventHub.GetPendingForCanvas(evt.canvasId);
             foreach (var req in pendingRequests.Values.ToList())
+            {
                 TryExecuteBind(req);
+            }
         }
     }
 }

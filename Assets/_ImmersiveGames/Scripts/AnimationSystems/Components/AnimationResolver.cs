@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
@@ -171,7 +172,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_actorSkinController != null)
             {
-                var animators = _actorSkinController.GetComponentsFromSkinInstances<Animator>(ModelType.ModelRoot);
+                List<Animator> animators = _actorSkinController.GetComponentsFromSkinInstances<Animator>(ModelType.ModelRoot);
                 if (animators.Count > 0)
                 {
                     return animators[0];

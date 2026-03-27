@@ -1,13 +1,13 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.CompassSystems
 {
     /// <summary>
-    /// Serviço de runtime da bússola registrado via DependencyManager (escopo global).
-    /// Evita uso de classe estática pura, mas mantém um fallback seguro para cenas
-    /// que ainda não inicializaram o pipeline de injeção. Mantém player e trackables.
+    /// ServiÃ§o de runtime da bÃºssola registrado via DependencyManager (escopo global).
+    /// Evita uso de classe estÃ¡tica pura, mas mantÃ©m um fallback seguro para cenas
+    /// que ainda nÃ£o inicializaram o pipeline de injeÃ§Ã£o. MantÃ©m player e trackables.
     /// </summary>
     public sealed class CompassRuntimeService : MonoBehaviour, ICompassRuntimeService
     {
@@ -15,12 +15,12 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         private readonly List<ICompassTrackable> _trackables = new();
 
         /// <summary>
-        /// Transform do jogador utilizado como referência de direção na bússola.
+        /// Transform do jogador utilizado como referÃªncia de direÃ§Ã£o na bÃºssola.
         /// </summary>
         public Transform PlayerTransform { get; private set; }
 
         /// <summary>
-        /// Lista somente leitura de alvos rastreáveis registrados (ordem de registro).
+        /// Lista somente leitura de alvos rastreÃ¡veis registrados (ordem de registro).
         /// </summary>
         public IReadOnlyList<ICompassTrackable> Trackables => _trackables;
 
@@ -29,9 +29,8 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         {
 #if NEWSCRIPTS_MODE
             DebugUtility.Log(typeof(CompassRuntimeService), "NEWSCRIPTS_MODE ativo: CompassRuntimeService ignorado.");
-            return;
-#endif
-            // Garante que exista uma instância viva antes das cenas serem carregadas.
+            #else
+            // Garante que exista uma instÃ¢ncia viva antes das cenas serem carregadas.
             if (_instance != null)
             {
                 return;
@@ -40,6 +39,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
             var runtimeRoot = new GameObject("CompassRuntimeService");
             DontDestroyOnLoad(runtimeRoot);
             runtimeRoot.AddComponent<CompassRuntimeService>();
+#endif
         }
 
         private void Awake()
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
             if (DependencyManager.Provider == null)
             {
                 DebugUtility.LogWarning<CompassRuntimeService>(
-                    "DependencyManager.Provider indisponível; serviço ficará acessível apenas via fallback estático.",
+                    "DependencyManager.Provider indisponÃ­vel; serviÃ§o ficarÃ¡ acessÃ­vel apenas via fallback estÃ¡tico.",
                     this);
                 return;
             }
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         }
 
         /// <summary>
-        /// Tenta recuperar o serviço a partir do DependencyManager ou da instância ativa.
+        /// Tenta recuperar o serviÃ§o a partir do DependencyManager ou da instÃ¢ncia ativa.
         /// </summary>
         public static bool TryGet(out ICompassRuntimeService service)
         {
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         }
 
         /// <summary>
-        /// Remove a referência do jogador se corresponder ao transform informado.
+        /// Remove a referÃªncia do jogador se corresponder ao transform informado.
         /// </summary>
         /// <param name="playerTransform">Transform associado ao jogador a ser removido.</param>
         public void ClearPlayer(Transform playerTransform)
@@ -109,9 +109,9 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         }
 
         /// <summary>
-        /// Registra um alvo rastreável na bússola.
+        /// Registra um alvo rastreÃ¡vel na bÃºssola.
         /// </summary>
-        /// <param name="target">Instância do alvo.</param>
+        /// <param name="target">InstÃ¢ncia do alvo.</param>
         public void RegisterTarget(ICompassTrackable target)
         {
             if (target == null)
@@ -129,14 +129,14 @@ namespace _ImmersiveGames.Scripts.CompassSystems
             _trackables.Add(target);
 
             DebugUtility.LogVerbose<CompassRuntimeService>(
-                $"🎯 Trackable registrado na bússola: {target.Transform?.name ?? target.ToString()}",
+                $"ðŸŽ¯ Trackable registrado na bÃºssola: {target.Transform?.name ?? target.ToString()}",
                 DebugUtility.Colors.Success);
         }
 
         /// <summary>
-        /// Remove um alvo rastreável previamente registrado.
+        /// Remove um alvo rastreÃ¡vel previamente registrado.
         /// </summary>
-        /// <param name="target">Instância do alvo.</param>
+        /// <param name="target">InstÃ¢ncia do alvo.</param>
         public void UnregisterTarget(ICompassTrackable target)
         {
             if (target == null)
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
             if (_trackables.Remove(target))
             {
                 DebugUtility.LogVerbose<CompassRuntimeService>(
-                    $"🧭 Trackable removido da bússola: {target.Transform?.name ?? target.ToString()}",
+                    $"ðŸ§­ Trackable removido da bÃºssola: {target.Transform?.name ?? target.ToString()}",
                     DebugUtility.Colors.Error);
             }
 
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         }
 
         /// <summary>
-        /// Remove entradas nulas que possam ter ficado na lista após destruição de objetos Unity.
+        /// Remove entradas nulas que possam ter ficado na lista apÃ³s destruiÃ§Ã£o de objetos Unity.
         /// </summary>
         private void RemoveNullEntries()
         {

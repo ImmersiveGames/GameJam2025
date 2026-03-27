@@ -109,7 +109,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.UI
         private void SyncSlidersFromSettings()
         {
             if (_audioSettings == null)
+            {
                 return;
+            }
 
             if (bgmSlider != null)
             {

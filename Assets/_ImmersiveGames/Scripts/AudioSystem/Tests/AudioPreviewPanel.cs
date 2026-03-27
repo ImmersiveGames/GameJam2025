@@ -85,7 +85,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void OnGUI()
         {
-            if (!panelVisible) return;
+            if (!panelVisible)
+            {
+                return;
+            }
 
             const float width = 420f;
             const float height = 200f;
@@ -235,7 +238,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         private void StopBgm()
         {
             if (_bgmAudioService == null)
+            {
                 return;
+            }
 
             _bgmAudioService.StopBGM(bgmFadeOut);
 
