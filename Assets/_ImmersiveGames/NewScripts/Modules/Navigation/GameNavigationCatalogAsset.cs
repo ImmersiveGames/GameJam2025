@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 $"[OBS][SceneFlow] RouteResolvedVia=AssetRef owner='{name}', intentId='{intentId}', routeId='{routeRefId}', asset='{slot.routeRef.name}'.",
                 DebugUtility.Colors.Info);
 
-            return new GameNavigationEntry(routeRefId, slot.transitionStyleRef, SceneTransitionPayload.Empty);
+            return new GameNavigationEntry(routeRefId, slot.transitionStyleRef, SceneTransitionPayload.Empty, slot.routeRef);
         }
 
         public bool TryResolveBgmCueByRoute(SceneRouteId routeId, out AudioBgmCueAsset cue, out string owner)
@@ -401,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 return false;
             }
 
-            entry = new GameNavigationEntry(routeRefId, slot.transitionStyleRef, SceneTransitionPayload.Empty);
+            entry = new GameNavigationEntry(routeRefId, slot.transitionStyleRef, SceneTransitionPayload.Empty, slot.routeRef);
             return true;
         }
 
@@ -453,7 +453,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
                 FailFastConfig($"[FATAL][Config] GameNavigationCatalog extra sem transitionStyleRef obrigatorio. asset='{name}', intentId='{intentId}'.");
             }
 
-            entry = new GameNavigationEntry(resolvedRouteId, route.transitionStyleRef, SceneTransitionPayload.Empty);
+            entry = new GameNavigationEntry(resolvedRouteId, route.transitionStyleRef, SceneTransitionPayload.Empty, route.routeRef);
             return true;
         }
 

@@ -35,14 +35,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             lock (_sync)
             {
-                if (!snapshot.HasLevelRef || !snapshot.MacroRouteId.IsValid)
+                if (!snapshot.HasLevelRef || !snapshot.MacroRouteId.IsValid || snapshot.MacroRouteRef == null)
                 {
-                    string invalidReason = !snapshot.HasLevelRef && !snapshot.MacroRouteId.IsValid
-                        ? "missing-levelRef-and-invalid-routeId"
-                        : (!snapshot.HasLevelRef ? "missing-levelRef" : "invalid-routeId");
+                    string invalidReason = !snapshot.HasLevelRef && !snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef == null
+                        ? "missing-levelRef-and-invalid-routeId-and-routeRef"
+                        : (!snapshot.HasLevelRef && snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef != null
+                            ? "missing-levelRef"
+                            : (!snapshot.MacroRouteId.IsValid && snapshot.HasLevelRef && snapshot.MacroRouteRef != null
+                                ? "invalid-routeId"
+                                : "missing-routeRef"));
 
                     DebugUtility.Log<RestartContextService>(
-                        $"[WARN][LevelFlow] Ignored invalid GameplayStartSnapshot. levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' routeId='{snapshot.MacroRouteId}' reason='{invalidReason}'.",
+                        $"[WARN][LevelFlow] Ignored invalid GameplayStartSnapshot. levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' routeId='{snapshot.MacroRouteId}' routeRef='{(snapshot.MacroRouteRef != null ? snapshot.MacroRouteRef.name : "<null>")}' reason='{invalidReason}'.",
                         DebugUtility.Colors.Warning);
 
                     return _current;
@@ -74,6 +78,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 _current = new GameplayStartSnapshot(
                     snapshot.LevelRef,
                     snapshot.MacroRouteId,
+                    snapshot.MacroRouteRef,
                     snapshot.LocalContentId,
                     snapshot.Reason,
                     next,

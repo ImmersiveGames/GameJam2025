@@ -24,7 +24,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameNavigationCatalog _catalog;
         private readonly IRestartContextService _restartContextService;
-        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
         private readonly SemaphoreSlim _macroCommandGate = new SemaphoreSlim(1, 1);
 
         private SceneRouteId _lastGameplayRouteId;
@@ -34,15 +33,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         public GameNavigationService(
             ISceneTransitionService sceneFlow,
             IGameNavigationCatalog catalog,
-            ISceneRouteResolver sceneRouteResolver,
-            IRestartContextService restartContextService = null,
-            SceneRouteCatalogAsset sceneRouteCatalog = null)
+            IRestartContextService restartContextService = null)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
-            _ = sceneRouteResolver ?? throw new ArgumentNullException(nameof(sceneRouteResolver));
             _restartContextService = restartContextService;
-            _sceneRouteCatalog = sceneRouteCatalog;
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
                 $"[Navigation] GameNavigationService inicializado. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
@@ -141,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
 
         public SceneRouteId ResolveGameplayRouteIdOrFail()
         {
-            if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
+            if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid || gameplayEntry.RouteRef == null)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
                     $"[FATAL][H1][Navigation] Missing gameplay intent entry while resolving canonical gameplay route. intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
@@ -165,13 +160,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             }
 
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "Navigation/StartGameplayRoute" : reason.Trim();
-            ValidateGameplayRouteCollectionOrFail(routeId, normalizedReason);
+            ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
                 "[OBS][Navigation] StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.",
                 DebugUtility.Colors.Info);
 
-            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty);
+            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty, gameplayEntry.RouteRef);
             TransitionStyleDefinition definition = ResolveStyle(routeEntry);
 
             DebugUtility.Log(typeof(GameNavigationService),
@@ -181,21 +176,29 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             await ExecuteEntryAsync(GetCoreIntentId(GameNavigationIntentKind.Gameplay), routeEntry, normalizedReason);
         }
 
-        private void ValidateGameplayRouteCollectionOrFail(SceneRouteId routeId, string reason)
+        private void ValidateGameplayRouteOrFail(SceneRouteId routeId, GameNavigationEntry gameplayEntry, string reason)
         {
-            if (_sceneRouteCatalog == null)
+            if (gameplayEntry.RouteRef == null)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] Gameplay route validation requires SceneRouteCatalogAsset. routeId='{routeId}' reason='{reason}'.");
+                    $"[FATAL][H1][Navigation] Gameplay route validation requires direct routeRef. routeId='{routeId}' reason='{reason}'.");
             }
 
-            if (!_sceneRouteCatalog.TryGetAsset(routeId, out SceneRouteDefinitionAsset routeAsset) || routeAsset == null)
+            if (gameplayEntry.RouteRef.RouteId != routeId)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] RouteAsset missing from SceneRouteCatalogAsset. routeId='{routeId}' reason='{reason}'.");
+                    $"[FATAL][H1][Navigation] Gameplay routeId mismatch against direct routeRef. routeId='{routeId}' routeRefRouteId='{gameplayEntry.RouteRef.RouteId}' reason='{reason}'.");
             }
 
-            if (routeAsset.RouteKind == SceneRouteKind.Gameplay && (routeAsset.LevelCollection == null || routeAsset.LevelCollection.Levels == null || routeAsset.LevelCollection.Levels.Count == 0))
+            if (gameplayEntry.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][Navigation] Gameplay routeRef with invalid RouteKind. routeId='{routeId}' routeKind='{gameplayEntry.RouteRef.RouteKind}' reason='{reason}'.");
+            }
+
+            if (gameplayEntry.RouteRef.LevelCollection == null ||
+                gameplayEntry.RouteRef.LevelCollection.Levels == null ||
+                gameplayEntry.RouteRef.LevelCollection.Levels.Count == 0)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
                     $"[FATAL][H1][Navigation] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
@@ -324,17 +327,25 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
         private async Task ExecuteEntryAsync(string intentId, GameNavigationEntry entry, string reason)
         {
             TransitionStyleDefinition definition = ResolveStyle(entry);
+            if (entry.RouteRef == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config] Navegacao sem routeRef direto. routeId='{entry.RouteId}'.");
+            }
+
+            SceneRouteDefinition routeDefinition = entry.RouteRef.ToDefinition();
             _lastNavigationIntentId = intentId ?? string.Empty;
             _lastGameplayRouteId = entry.RouteId;
 
             var request = new SceneTransitionRequest(
+                routeDefinition,
                 entry.RouteId,
                 entry.StyleRef,
                 entry.Payload ?? SceneTransitionPayload.Empty,
                 definition.Profile,
                 useFade: definition.UseFade,
                 requestedBy: reason,
-                reason: reason);
+                reason: reason,
+                resolvedRouteRef: entry.RouteRef);
 
             string signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
             DebugUtility.Log(typeof(GameNavigationService),

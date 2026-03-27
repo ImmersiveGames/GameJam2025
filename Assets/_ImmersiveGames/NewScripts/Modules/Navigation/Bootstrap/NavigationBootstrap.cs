@@ -60,11 +60,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Navigation] ISceneTransitionService ausente no DI global antes da composicao runtime.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var routeResolver) || routeResolver == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] ISceneRouteResolver ausente no DI global antes da composicao runtime.");
-            }
-
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationCatalog>(out var catalog) || catalog == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][Navigation] IGameNavigationCatalog ausente no DI global antes da composicao runtime.");
@@ -75,23 +70,15 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Navigation] IRestartContextService ausente no DI global antes da composicao runtime.");
             }
 
-            var sceneRouteCatalogAsset = bootstrapConfig.SceneRouteCatalog;
-            if (sceneRouteCatalogAsset == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] Missing required BootstrapConfigAsset.sceneRouteCatalog for runtime composition.");
-            }
-
             var service = new GameNavigationService(
                 sceneFlow,
                 catalog,
-                routeResolver,
-                restartContextService,
-                sceneRouteCatalogAsset);
+                restartContextService);
 
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                $"[Navigation] GameNavigationService composto no runtime (Catalog={catalog.GetType().Name}, RouteResolver={routeResolver.GetType().Name}, RestartContext={restartContextService.GetType().Name}, SceneRouteCatalog={sceneRouteCatalogAsset.name}).",
+                $"[Navigation] GameNavigationService composto no runtime (Catalog={catalog.GetType().Name}, RestartContext={restartContextService.GetType().Name}).",
                 DebugUtility.Colors.Info);
         }
 
@@ -132,11 +119,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
             }
 
             var navigationCatalog = bootstrapConfig.NavigationCatalog as GameNavigationCatalogAsset;
-            var sceneRouteCatalog = bootstrapConfig.SceneRouteCatalog;
-            if (navigationCatalog == null || sceneRouteCatalog == null)
+            if (navigationCatalog == null)
             {
                 DebugUtility.LogWarning(typeof(NavigationBootstrap),
-                    "[Audio][BGM][Bridge] Skipped registration: NavigationCatalog or SceneRouteCatalog missing in bootstrap.");
+                    "[Audio][BGM][Bridge] Skipped registration: NavigationCatalog missing in bootstrap.");
                 return;
             }
 
@@ -146,7 +132,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
                 () => new NavigationLevelRouteBgmBridge(
                     bgmService,
                     navigationCatalog,
-                    sceneRouteCatalog,
                     restartContext),
                 typeof(NavigationLevelRouteBgmBridge),
                 "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge already registered in global DI.",

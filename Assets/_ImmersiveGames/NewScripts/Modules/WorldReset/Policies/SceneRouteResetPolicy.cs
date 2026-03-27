@@ -6,11 +6,6 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Policies
 {
     public sealed partial class SceneRouteResetPolicy : IRouteResetPolicy
     {
-        public SceneRouteResetPolicy(ISceneRouteResolver routeResolver = null)
-        {
-            _ = routeResolver;
-        }
-
         public RouteResetDecision Resolve(SceneRouteId routeId, SceneRouteDefinition? routeDefinition, SceneTransitionContext context)
         {
             _ = context;

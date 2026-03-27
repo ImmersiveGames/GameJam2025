@@ -380,7 +380,7 @@ Tratar o loading como dono do fluxo ou esperar progresso puramente temporal. Hoj
 ## Receita: criar uma rota nova do zero
 
 ### O que precisa existir
-- um `SceneRouteCatalogAsset`
+- um `SceneRouteDefinitionAsset`
 - `SceneKeyAsset` para as cenas que a rota vai carregar ou descarregar
 - se a rota for gameplay, uma `LevelCollectionAsset`
 
@@ -390,7 +390,7 @@ Tratar o loading como dono do fluxo ou esperar progresso puramente temporal. Hoj
 3. Preencha `scenesToLoadKeys`, `scenesToUnloadKeys` e `targetActiveSceneKey`.
 4. Escolha `routeKind`.
 5. Se `routeKind == Gameplay`, marque `requiresWorldReset=true` e aponte `levelCollection`.
-6. Adicione esse route asset em `SceneRouteCatalogAsset.routeDefinitions`.
+6. Referencie a rota diretamente por `routeRef` no catálogo fino de navigation.
 
 ### O que chamar
 Voce nao chama a rota diretamente no asset. Em runtime, use `IGameNavigationService` ou `ILevelFlowRuntimeService`.
@@ -408,8 +408,9 @@ public async Task OpenKnownGameplayRouteAsync(IGameNavigationService navigation)
 ```
 
 ### O que esperar
-- a rota fica resolvivel pelo catalogo
-- `SceneRouteCatalogAsset` valida policy de gameplay/frontend
+- a rota fica canônica no `SceneRouteDefinitionAsset`
+- `GameNavigationCatalogAsset` aponta para `routeRef`
+- `SceneFlow` consome rota já resolvida
 - rotas invalidas falham cedo
 
 ### Erro comum
@@ -657,7 +658,7 @@ Usar `ActorIdSet` por padrao quando `ByActorKind` ja resolveria o caso.
 ### O que precisa existir
 - bootstrap valido
 - `GameNavigationCatalogAsset`
-- `SceneRouteCatalogAsset`
+- `SceneRouteDefinitionAsset`
 - rota de gameplay com `levelCollection`
 
 ### O que configurar
@@ -877,7 +878,8 @@ O que fazer:
 
 ## Checklist de producao
 
-- bootstrap com `navigationCatalog`, `sceneRouteCatalog`, `startupTransitionStyleRef` e `fadeSceneKey`
+- bootstrap com `navigationCatalog`, `startupTransitionStyleRef` e `fadeSceneKey`
+- `SceneRouteDefinitionAsset` valido para a rota de gameplay
 - `GameNavigationCatalogAsset` com slots core validos
 - rota `Gameplay` com `levelCollection`
 - `TransitionStyleAsset` com `profileRef`

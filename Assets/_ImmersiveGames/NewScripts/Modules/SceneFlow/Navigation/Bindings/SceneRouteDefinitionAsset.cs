@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
     /// <summary>
     /// OWNER: definicao de uma rota (cenas/policy) e validacoes de consistencia.
     /// NAO E OWNER: aplicacao de load/unload/fade no runtime.
-    /// PUBLISH/CONSUME: sem EventBus; convertido para SceneRouteDefinition pelo catalogo.
+    /// PUBLISH/CONSUME: sem EventBus; convertido para SceneRouteDefinition diretamente pelo consumidor.
     /// Fases tocadas: RouteExecutionPlan (dados de rota resolvidos antes do ApplyRoute).
     /// </summary>
     public sealed partial class SceneRouteDefinitionAsset : ScriptableObject

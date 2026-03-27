@@ -19,20 +19,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly IWorldResetCommands _worldResetCommands;
         private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
         private readonly ISimulationGateService _simulationGateService;
-        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
 
         public LevelSwapLocalService(
             IRestartContextService restartContextService,
             IWorldResetCommands worldResetCommands,
             ISceneCompositionExecutor sceneCompositionExecutor,
-            ISimulationGateService simulationGateService = null,
-            SceneRouteCatalogAsset sceneRouteCatalog = null)
+            ISimulationGateService simulationGateService = null)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _worldResetCommands = worldResetCommands ?? throw new ArgumentNullException(nameof(worldResetCommands));
             _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
             _simulationGateService = simulationGateService;
-            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
         }
 
         public async Task SwapLocalAsync(LevelDefinitionAsset targetLevelRef, string reason = null, CancellationToken ct = default)
@@ -48,13 +45,19 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot currentSnapshot) ||
                 !currentSnapshot.IsValid ||
                 !currentSnapshot.MacroRouteId.IsValid ||
-                !currentSnapshot.HasLevelRef)
+                !currentSnapshot.HasLevelRef ||
+                currentSnapshot.MacroRouteRef == null)
             {
                 FailFast(SceneRouteId.None, SceneRouteKind.Unspecified, ComputeSignature(SceneRouteId.None, SceneRouteKind.Unspecified, normalizedReason), normalizedReason, "Missing runtime gameplay snapshot.");
             }
 
             SceneRouteId macroRouteId = currentSnapshot.MacroRouteId;
-            SceneRouteDefinitionAsset routeAsset = ResolveRouteAssetOrFail(macroRouteId, normalizedReason);
+            SceneRouteDefinitionAsset routeAsset = currentSnapshot.MacroRouteRef;
+            if (routeAsset.RouteId != macroRouteId)
+            {
+                FailFast(macroRouteId, routeAsset.RouteKind, ComputeSignature(macroRouteId, routeAsset.RouteKind, normalizedReason), normalizedReason, $"RouteRef mismatch routeRefRouteId='{routeAsset.RouteId}'.");
+            }
+
             SceneRouteKind routeKind = routeAsset.RouteKind;
             string swapSignature = ComputeSignature(macroRouteId, routeKind, normalizedReason);
             LevelCollectionAsset levelCollection = ResolveLevelCollectionOrFail(routeAsset, macroRouteId, swapSignature, normalizedReason);
@@ -77,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             using IDisposable gateHandle = AcquireSwapGate();
 
-            PublishLevelSelected(targetLevelRef, macroRouteId, localContentId, normalizedReason, nextSelectionVersion, levelSignature);
+            PublishLevelSelected(targetLevelRef, macroRouteId, routeAsset, localContentId, normalizedReason, nextSelectionVersion, levelSignature);
 
             ct.ThrowIfCancellationRequested();
             await _worldResetCommands.ResetLevelAsync(targetLevelRef, normalizedReason, new LevelContextSignature(levelSignature), ct);
@@ -98,23 +101,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             DebugUtility.Log<LevelSwapLocalService>(
                 $"[OBS][LevelFlow] LevelSwapLocalApplied fromLevelRef='{(fromLevelRef != null ? fromLevelRef.name : "<none>")}' toLevelRef='{targetLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' contentId='{localContentId}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} v='{nextSelectionVersion}' signature='{swapSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
-        }
-
-        private SceneRouteDefinitionAsset ResolveRouteAssetOrFail(SceneRouteId macroRouteId, string reason)
-        {
-            string signature = ComputeSignature(macroRouteId, SceneRouteKind.Unspecified, reason);
-
-            if (_sceneRouteCatalog == null)
-            {
-                FailFast(macroRouteId, SceneRouteKind.Unspecified, signature, reason, "BootstrapConfig.SceneRouteCatalog is null.");
-            }
-
-            if (!_sceneRouteCatalog.TryGetAsset(macroRouteId, out SceneRouteDefinitionAsset routeAsset) || routeAsset == null)
-            {
-                FailFast(macroRouteId, SceneRouteKind.Unspecified, signature, reason, "RouteAsset missing from SceneRouteCatalogAsset.");
-            }
-
-            return routeAsset;
         }
 
         private LevelCollectionAsset ResolveLevelCollectionOrFail(SceneRouteDefinitionAsset routeAsset, SceneRouteId macroRouteId, string signature, string reason)
@@ -152,10 +138,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private static string NormalizeSwapReason(string reason)
             => string.IsNullOrWhiteSpace(reason) ? "LevelFlow/SwapLevelLocal" : reason.Trim();
 
-        private static void PublishLevelSelected(LevelDefinitionAsset levelRef, SceneRouteId macroRouteId, string localContentId, string reason, int selectionVersion, string levelSignature)
+        private static void PublishLevelSelected(LevelDefinitionAsset levelRef, SceneRouteId macroRouteId, SceneRouteDefinitionAsset routeRef, string localContentId, string reason, int selectionVersion, string levelSignature)
         {
             EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
                 macroRouteId,
+                routeRef,
                 levelRef,
                 selectionVersion,
                 localContentId,

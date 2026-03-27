@@ -758,8 +758,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static bool ShouldSuppressRepeatedCallWarning(Type type, string message)
         {
             string typeName = type?.Name ?? string.Empty;
-            if (!string.Equals(typeName, "GameNavigationCatalogAsset", StringComparison.Ordinal) &&
-                !string.Equals(typeName, "SceneRouteCatalogAsset", StringComparison.Ordinal))
+            if (!string.Equals(typeName, "GameNavigationCatalogAsset", StringComparison.Ordinal))
             {
                 return false;
             }
@@ -769,10 +768,9 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
                 return false;
             }
 
-            // Suprime apenas spam de observabilidade idempotente de catalogo.
+            // Suprime apenas spam de observabilidade idempotente do catalogo de navegacao.
             return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
-                message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
-                message.Contains("[OBS][Config] SceneRouteCatalogBuild", StringComparison.Ordinal);
+                message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal);
         }
         #endregion
     }

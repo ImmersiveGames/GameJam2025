@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -10,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return new GameplayStartSnapshot(
                 evt.LevelRef,
                 evt.MacroRouteId,
+                evt.MacroRouteRef,
                 evt.LocalContentId,
                 evt.Reason,
                 evt.SelectionVersion,
@@ -19,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public GameplayStartSnapshot(
             LevelDefinitionAsset levelRef,
             SceneRouteId macroRouteId,
+            SceneRouteDefinitionAsset macroRouteRef,
             string localContentId,
             string reason,
             int selectionVersion,
@@ -26,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             LevelRef = levelRef;
             MacroRouteId = macroRouteId;
+            MacroRouteRef = macroRouteRef;
             LocalContentId = ResolveLocalContentId(levelRef, localContentId);
             Reason = Sanitize(reason);
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
@@ -42,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public LevelDefinitionAsset LevelRef { get; }
         public SceneRouteId MacroRouteId { get; }
+        public SceneRouteDefinitionAsset MacroRouteRef { get; }
         public string LocalContentId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
@@ -49,11 +54,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public bool HasLevelRef => LevelRef != null;
         public bool HasLocalContentId => !string.IsNullOrWhiteSpace(LocalContentId);
-        public bool IsValid => MacroRouteId.IsValid;
+        public bool IsValid => MacroRouteId.IsValid && MacroRouteRef != null;
 
         public static GameplayStartSnapshot Empty => new(
             null,
             SceneRouteId.None,
+            null,
             string.Empty,
             string.Empty,
             0,

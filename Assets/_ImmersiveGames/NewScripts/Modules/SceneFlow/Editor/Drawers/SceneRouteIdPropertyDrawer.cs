@@ -8,8 +8,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
 {
     /// <summary>
-    /// Coleta SceneRouteId a partir das fontes canonicas atuais:
-    /// SceneRouteDefinitionAsset + referencias diretas do SceneRouteCatalogAsset.routeDefinitions.
+    /// Collects SceneRouteId values from the canonical SceneRouteDefinitionAsset sources.
     /// </summary>
     internal sealed class SceneRouteIdSourceProvider : ISceneFlowIdSourceProvider<SceneRouteId>
     {
@@ -19,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
             var duplicates = new HashSet<string>();
 
             CollectFromRouteDefinitionAssets(allValues, duplicates);
-            CollectFromRouteCatalogAssets(allValues, duplicates);
 
             return SceneFlowIdSourceUtility.BuildResult(allValues, duplicates);
         }
@@ -37,38 +35,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.IdSources
                 }
 
                 SceneFlowIdSourceUtility.AddAndTrackDuplicate(allValues, duplicates, asset.RouteId.Value);
-            }
-        }
-
-        private static void CollectFromRouteCatalogAssets(HashSet<string> allValues, HashSet<string> duplicates)
-        {
-            string[] guids = AssetDatabase.FindAssets("t:SceneRouteCatalogAsset");
-            for (int i = 0; i < guids.Length; i++)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                SceneRouteCatalogAsset catalog = AssetDatabase.LoadAssetAtPath<SceneRouteCatalogAsset>(path);
-                if (catalog == null)
-                {
-                    continue;
-                }
-
-                SerializedObject serializedObject = new SerializedObject(catalog);
-                SerializedProperty definitions = serializedObject.FindProperty("routeDefinitions");
-                if (definitions == null || !definitions.isArray)
-                {
-                    continue;
-                }
-
-                for (int j = 0; j < definitions.arraySize; j++)
-                {
-                    SerializedProperty element = definitions.GetArrayElementAtIndex(j);
-                    if (element.objectReferenceValue is not SceneRouteDefinitionAsset routeAsset)
-                    {
-                        continue;
-                    }
-
-                    SceneFlowIdSourceUtility.AddAndTrackDuplicate(allValues, duplicates, routeAsset.RouteId.Value);
-                }
             }
         }
     }
@@ -256,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Editor.Drawers
                 {
                     _snapshot = new SourceSnapshot(
                         EmptyValues,
-                        $"Failed to load SceneRouteId options. Check SceneRouteCatalog/Route assets. ({exception.GetType().Name})");
+                        $"Failed to load SceneRouteId options. Check SceneRouteDefinition assets. ({exception.GetType().Name})");
                 }
 
                 _isDirty = false;

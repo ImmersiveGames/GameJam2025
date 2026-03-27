@@ -19,21 +19,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly IRestartContextService _restartContextService;
         private readonly IWorldResetCommands _worldResetCommands;
         private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
-        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
 
         public LevelMacroPrepareService(
             IRestartContextService restartContextService,
             IWorldResetCommands worldResetCommands,
-            ISceneCompositionExecutor sceneCompositionExecutor,
-            SceneRouteCatalogAsset sceneRouteCatalog = null)
+            ISceneCompositionExecutor sceneCompositionExecutor)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _worldResetCommands = worldResetCommands ?? throw new ArgumentNullException(nameof(worldResetCommands));
             _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
-            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
         }
 
-        public async Task PrepareOrClearAsync(SceneRouteId macroRouteId, string reason, CancellationToken ct = default)
+        public async Task PrepareOrClearAsync(SceneRouteId macroRouteId, SceneRouteDefinitionAsset routeRef, string reason, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -43,13 +40,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 FailFastConfig(macroRouteId, SceneRouteKind.Unspecified, ComputeSignature(macroRouteId, SceneRouteKind.Unspecified, normalizedReason), normalizedReason, "Macro route id is invalid.");
             }
 
-            SceneRouteDefinitionAsset routeAsset = ResolveRouteAssetOrFail(macroRouteId, normalizedReason);
-            SceneRouteKind routeKind = routeAsset.RouteKind;
+            if (routeRef == null)
+            {
+                FailFastConfig(macroRouteId, SceneRouteKind.Unspecified, ComputeSignature(macroRouteId, SceneRouteKind.Unspecified, normalizedReason), normalizedReason, "Macro route ref is null.");
+            }
+
+            if (routeRef.RouteId != macroRouteId)
+            {
+                FailFastConfig(macroRouteId, routeRef.RouteKind, ComputeSignature(macroRouteId, routeRef.RouteKind, normalizedReason), normalizedReason, $"Macro route ref mismatch. routeRefRouteId='{routeRef.RouteId}'.");
+            }
+
+            SceneRouteKind routeKind = routeRef.RouteKind;
             string prepareSignature = ComputeSignature(macroRouteId, routeKind, normalizedReason);
 
-            if (routeAsset.LevelCollection != null && routeKind == SceneRouteKind.Gameplay)
+            if (routeRef.LevelCollection != null && routeKind == SceneRouteKind.Gameplay)
             {
-                await PrepareGameplayAsync(routeAsset, macroRouteId, routeKind, prepareSignature, normalizedReason, ct);
+                await PrepareGameplayAsync(routeRef, macroRouteId, routeKind, prepareSignature, normalizedReason, ct);
                 return;
             }
 
@@ -57,14 +63,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
 
         private async Task PrepareGameplayAsync(
-            SceneRouteDefinitionAsset routeAsset,
+            SceneRouteDefinitionAsset routeRef,
             SceneRouteId macroRouteId,
             SceneRouteKind routeKind,
             string prepareSignature,
             string normalizedReason,
             CancellationToken ct)
         {
-            LevelCollectionAsset levelCollection = ResolveLevelCollectionOrFail(routeAsset, macroRouteId, prepareSignature, normalizedReason);
+            LevelCollectionAsset levelCollection = ResolveLevelCollectionOrFail(routeRef, macroRouteId, prepareSignature, normalizedReason);
 
             GameplayStartSnapshot currentSnapshot = GameplayStartSnapshot.Empty;
             bool hasCurrentSnapshot = _restartContextService.TryGetCurrent(out currentSnapshot) && currentSnapshot.IsValid && currentSnapshot.HasLevelRef;
@@ -118,6 +124,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
                 macroRouteId,
+                routeRef,
                 selectedLevelRef,
                 selectionVersion,
                 localContentId,
@@ -228,23 +235,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             return defaultLevel;
-        }
-
-        private SceneRouteDefinitionAsset ResolveRouteAssetOrFail(SceneRouteId macroRouteId, string reason)
-        {
-            string signature = ComputeSignature(macroRouteId, SceneRouteKind.Unspecified, reason);
-
-            if (_sceneRouteCatalog == null)
-            {
-                FailFastConfig(macroRouteId, SceneRouteKind.Unspecified, signature, reason, "BootstrapConfig.SceneRouteCatalog is null.");
-            }
-
-            if (!_sceneRouteCatalog.TryGetAsset(macroRouteId, out SceneRouteDefinitionAsset routeAsset) || routeAsset == null)
-            {
-                FailFastConfig(macroRouteId, SceneRouteKind.Unspecified, signature, reason, "RouteAsset missing from SceneRouteCatalogAsset.");
-            }
-
-            return routeAsset;
         }
 
         private LevelCollectionAsset ResolveLevelCollectionOrFail(

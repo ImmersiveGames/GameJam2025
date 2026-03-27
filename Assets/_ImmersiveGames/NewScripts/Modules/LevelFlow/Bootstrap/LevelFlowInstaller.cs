@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
@@ -45,17 +44,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
 
         private static void RegisterLevelFlowPrerequisites(BootstrapConfigAsset bootstrapConfig)
         {
-            var sceneRouteCatalogAsset = bootstrapConfig.SceneRouteCatalog;
-            if (sceneRouteCatalogAsset == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelFlow] Missing required BootstrapConfigAsset.sceneRouteCatalog.");
-            }
-
             var restartContextService = ResolveOrRegisterRestartContextService();
             RegisterLevelStagePresentationService(restartContextService);
             RegisterLevelPostGameHookService();
-            RegisterLevelSwapLocalService(restartContextService, sceneRouteCatalogAsset);
-            RegisterLevelMacroPrepareService(restartContextService, sceneRouteCatalogAsset);
+            RegisterLevelSwapLocalService(restartContextService);
+            RegisterLevelMacroPrepareService(restartContextService);
         }
 
         private static IRestartContextService ResolveOrRegisterRestartContextService()
@@ -110,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLevelSwapLocalService(IRestartContextService restartContextService, SceneRouteCatalogAsset sceneRouteCatalogAsset)
+        private static void RegisterLevelSwapLocalService(IRestartContextService restartContextService)
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelSwapLocalService>(out var existing) && existing != null)
             {
@@ -135,8 +128,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
                 restartContextService,
                 worldResetCommands,
                 sceneCompositionExecutor,
-                simulationGateService,
-                sceneRouteCatalogAsset);
+                simulationGateService);
 
             DependencyManager.Provider.RegisterGlobal(service);
 
@@ -145,7 +137,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLevelMacroPrepareService(IRestartContextService restartContextService, SceneRouteCatalogAsset sceneRouteCatalogAsset)
+        private static void RegisterLevelMacroPrepareService(IRestartContextService restartContextService)
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var existing) && existing != null)
             {
@@ -167,8 +159,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
             var service = new LevelMacroPrepareService(
                 restartContextService,
                 worldResetCommands,
-                sceneCompositionExecutor,
-                sceneRouteCatalogAsset);
+                sceneCompositionExecutor);
 
             DependencyManager.Provider.RegisterGlobal<ILevelMacroPrepareService>(service);
 

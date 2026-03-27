@@ -65,7 +65,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
             var fadeAdapter = SceneFlowAdapterFactory.CreateFadeAdapter(DependencyManager.Provider);
             var completionGate = ResolveOrComposeCompletionGate();
             var navigationPolicy = ResolveRequired<INavigationPolicy>();
-            var routeResolver = ResolveRequired<ISceneRouteResolver>();
             var routeGuard = ResolveRequired<IRouteGuard>();
             var routeResetPolicy = ResolveRequired<IRouteResetPolicy>();
 
@@ -74,14 +73,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
                 fadeAdapter,
                 completionGate,
                 navigationPolicy,
-                routeResolver,
                 routeGuard,
                 routeResetPolicy);
 
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
 
             DebugUtility.LogVerbose(typeof(SceneFlowBootstrap),
-                $"[SceneFlow] SceneTransitionService composto no runtime (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}, Policy={navigationPolicy.GetType().Name}, RouteResolver={routeResolver.GetType().Name}, RouteGuard={routeGuard.GetType().Name}, RouteResetPolicy={routeResetPolicy.GetType().Name}).",
+                $"[SceneFlow] SceneTransitionService composto no runtime (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}, Policy={navigationPolicy.GetType().Name}, RouteGuard={routeGuard.GetType().Name}, RouteResetPolicy={routeResetPolicy.GetType().Name}).",
                 DebugUtility.Colors.Info);
         }
 

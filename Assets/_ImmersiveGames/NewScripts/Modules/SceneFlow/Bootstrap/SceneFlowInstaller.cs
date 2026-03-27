@@ -5,9 +5,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Adapters;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
@@ -19,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
     /// Installer do SceneFlow.
     ///
     /// Responsabilidade:
-    /// - registrar contratos, servicos, policies, guards, resolvers e configs do modulo;
+    /// - registrar contratos, servicos, policies, guards e configs do modulo;
     /// - nao compor runtime nem ativar bridges/event handlers.
     /// </summary>
     public static class SceneFlowInstaller
@@ -38,7 +35,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][SceneFlow] BootstrapConfigAsset obrigatorio ausente para instalar o SceneFlow.");
             }
 
-            RegisterSceneRouteCatalog(bootstrapConfig);
             RegisterFadeService(bootstrapConfig);
             RegisterSceneFlowSignatureCache();
             RegisterNavigationPolicy();
@@ -51,40 +47,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
             DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
                 "[SceneFlow] Module installer concluido.",
                 DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterSceneRouteCatalog(BootstrapConfigAsset bootstrapConfig)
-        {
-            var provider = DependencyManager.Provider;
-            var bootstrapRouteCatalog = bootstrapConfig.SceneRouteCatalog;
-            if (bootstrapRouteCatalog == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SceneFlow] Missing required BootstrapConfigAsset.sceneRouteCatalog.");
-            }
-
-            if (!provider.TryGetGlobal<ISceneRouteCatalog>(out var routeCatalog) || routeCatalog == null)
-            {
-                routeCatalog = bootstrapRouteCatalog;
-                provider.RegisterGlobal(routeCatalog);
-
-                DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
-                    $"[OBS][Config] CatalogResolvedVia=BootstrapConfig field=sceneRouteCatalog asset={bootstrapRouteCatalog.name}",
-                    DebugUtility.Colors.Info);
-            }
-            else if (!ReferenceEquals(routeCatalog, bootstrapRouteCatalog))
-            {
-                string diAssetName = routeCatalog is UnityEngine.Object diObject ? diObject.name : routeCatalog.GetType().Name;
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][SceneFlow] SceneRouteCatalog mismatch: DI has {diAssetName} but BootstrapConfig has {bootstrapRouteCatalog.name}.");
-            }
-
-            ValidateSceneFlowRouteCatalogRequired(routeCatalog);
-
-            if (!provider.TryGetGlobal<ISceneRouteResolver>(out var routeResolver) || routeResolver == null)
-            {
-                routeResolver = new SceneRouteCatalogResolver(routeCatalog);
-                provider.RegisterGlobal(routeResolver);
-            }
         }
 
         private static void RegisterFadeService(BootstrapConfigAsset bootstrapConfig)
@@ -139,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
         private static void RegisterRouteResetPolicy()
         {
             RegisterIfMissing<IRouteResetPolicy>(
-                () => new SceneRouteResetPolicy(ResolveRequiredRouteResolver()),
+                () => new SceneRouteResetPolicy(),
                 "[SceneFlow] IRouteResetPolicy ja registrado no DI global.",
                 "[SceneFlow] IRouteResetPolicy registrado no DI global (SceneRouteResetPolicy).");
         }
@@ -245,17 +207,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
             return false;
         }
 
-        private static ISceneRouteResolver ResolveRequiredRouteResolver()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISceneRouteResolver>(out var existingResolver) && existingResolver != null)
-            {
-                return existingResolver;
-            }
-
-            throw new InvalidOperationException(
-                "[FATAL][Config][SceneFlow] ISceneRouteResolver obrigatorio ausente no DI global. Garanta o registro do catalogo de rotas antes do instalador SceneFlow.");
-        }
-
         private static string ResolveFadeSceneName(BootstrapConfigAsset bootstrap, out string failureReason)
         {
             var fadeSceneKey = bootstrap.FadeSceneKey;
@@ -298,18 +249,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
             }
 
             return true;
-        }
-
-        private static void ValidateSceneFlowRouteCatalogRequired(ISceneRouteCatalog routeCatalog)
-        {
-            if (routeCatalog == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SceneFlow] SceneRouteCatalogAsset obrigatorio ausente. Configure BootstrapConfigAsset.sceneRouteCatalog.");
-            }
-
-            DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
-                "[OBS][SceneFlow] SceneRouteCatalog validado e registrado como dependencia obrigatoria.",
-                DebugUtility.Colors.Info);
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

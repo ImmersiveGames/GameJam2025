@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
@@ -112,18 +113,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
 
             var levelSwapLocalService = ResolveRequiredLevelSwapLocalService();
             var restartContextService = ResolveRequiredRestartContextService();
-            var sceneRouteCatalog = bootstrapConfig.SceneRouteCatalog;
-            if (sceneRouteCatalog == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelFlow] Missing required BootstrapConfigAsset.sceneRouteCatalog for runtime composition.");
-            }
 
             var navigationService = ResolveRequiredNavigationService();
             var postLevelActions = new PostLevelActionsService(
                 levelFlowRuntime,
                 levelSwapLocalService,
                 restartContextService,
-                sceneRouteCatalog,
                 navigationService);
 
             DependencyManager.Provider.RegisterGlobal(postLevelActions);
@@ -219,7 +214,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
                     $"[OBS][LevelFlow] MacroLoadingPhase='LevelPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
-                await prepareService.PrepareOrClearAsync(context.RouteId, reason);
+                if (context.RouteRef == null)
+                {
+                    FailFastConfig(context, "SceneTransitionContext sem RouteRef canonica.");
+                }
+
+                await prepareService.PrepareOrClearAsync(context.RouteId, context.RouteRef, reason);
             }
 
             private static void FailFastConfig(SceneTransitionContext context, string detail)

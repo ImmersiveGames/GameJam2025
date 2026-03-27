@@ -22,7 +22,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
         private readonly ISceneTransitionCompletionGate _completionGate;
         private readonly INavigationPolicy _navigationPolicy;
-        private readonly ISceneRouteResolver? _routeResolver;
         private readonly IRouteGuard _routeGuard;
         private readonly IRouteResetPolicy? _routeResetPolicy;
 
@@ -39,7 +38,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             ISceneFlowFadeAdapter? fadeAdapter,
             ISceneTransitionCompletionGate? completionGate = null,
             INavigationPolicy? navigationPolicy = null,
-            ISceneRouteResolver? routeResolver = null,
             IRouteGuard? routeGuard = null,
             IRouteResetPolicy? routeResetPolicy = null)
         {
@@ -47,7 +45,6 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
             _fadeAdapter = fadeAdapter ?? new NoFadeAdapter();
             _completionGate = completionGate ?? new NoOpTransitionCompletionGate();
             _navigationPolicy = navigationPolicy ?? new AllowAllNavigationPolicy();
-            _routeResolver = routeResolver;
             _routeGuard = routeGuard ?? new AllowAllRouteGuard();
             _routeResetPolicy = routeResetPolicy;
         }
@@ -265,42 +262,34 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 return request;
             }
 
-            if (_routeResolver == null)
+            if (request.ResolvedRouteDefinition.HasValue)
             {
-                FailFastTransitionRequest(request, $"ISceneRouteResolver indisponivel para routeId='{request.RouteId}'.");
+                if (request.ResolvedRouteRef == null)
+                {
+                    FailFastTransitionRequest(request, $"SceneTransitionRequest sem routeRef canonica. routeId='{request.RouteId}'.");
+                }
+
+                if (request.ResolvedRouteRef.RouteId != request.RouteId)
+                {
+                    FailFastTransitionRequest(request, $"SceneTransitionRequest routeRef mismatch. routeId='{request.RouteId}' routeRefRouteId='{request.ResolvedRouteRef.RouteId}'.");
+                }
+
+                routeDefinition = request.ResolvedRouteDefinition.Value;
+
+                if (string.IsNullOrWhiteSpace(routeDefinition.Value.TargetActiveScene))
+                {
+                    FailFastTransitionRequest(request, $"routeId='{request.RouteId}' com TargetActiveScene vazio.");
+                }
+
+                DebugUtility.Log<SceneTransitionService>(
+                    $"[OBS][SceneFlow] RouteResolvedVia=DirectDefinition routeId='{request.RouteId}' source='SceneTransitionRequest.ResolvedRouteDefinition'.",
+                    DebugUtility.Colors.Info);
+
                 return request;
             }
 
-            if (!_routeResolver.TryResolve(request.RouteId, out var resolvedRoute))
-            {
-                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' nao encontrado no catalogo de rotas.");
-                return request;
-            }
-
-            DebugUtility.Log<SceneTransitionService>(
-                $"[OBS][SceneFlow] RouteResolvedVia=RouteId routeId='{request.RouteId}' source='ISceneRouteResolver'.",
-                DebugUtility.Colors.Info);
-
-            routeDefinition = resolvedRoute;
-
-            if (string.IsNullOrWhiteSpace(resolvedRoute.TargetActiveScene))
-            {
-                FailFastTransitionRequest(request, $"routeId='{request.RouteId}' com TargetActiveScene vazio.");
-                return request;
-            }
-
-            return new SceneTransitionRequest(
-                resolvedRoute.ScenesToLoad,
-                resolvedRoute.ScenesToUnload,
-                resolvedRoute.TargetActiveScene,
-                request.RouteId,
-                request.TransitionStyle,
-                request.Payload,
-                request.TransitionProfile,
-                request.UseFade,
-                request.ContextSignature,
-                request.RequestedBy,
-                request.Reason);
+            FailFastTransitionRequest(request, $"SceneTransitionRequest sem route definition resolvida. routeId='{request.RouteId}'.");
+            return request;
         }
 
         private bool ShouldDedupeSameFrame(string signature)

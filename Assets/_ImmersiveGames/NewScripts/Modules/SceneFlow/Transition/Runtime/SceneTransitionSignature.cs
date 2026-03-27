@@ -38,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 transitionStyle: request.TransitionStyle,
                 reason: request.Reason,
                 transitionProfile: request.TransitionProfile,
+                routeRef: request.ResolvedRouteRef,
                 contextSignature: request.ContextSignature);
         }
 

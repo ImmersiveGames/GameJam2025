@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 
@@ -19,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
     {
         private readonly IAudioBgmService _bgmService;
         private readonly GameNavigationCatalogAsset _navigationCatalog;
-        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
         private readonly IRestartContextService _restartContextService;
 
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
@@ -33,12 +31,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
         public NavigationLevelRouteBgmBridge(
             IAudioBgmService bgmService,
             GameNavigationCatalogAsset navigationCatalog,
-            SceneRouteCatalogAsset sceneRouteCatalog,
             IRestartContextService restartContextService)
         {
             _bgmService = bgmService ?? throw new ArgumentNullException(nameof(bgmService));
             _navigationCatalog = navigationCatalog ?? throw new ArgumentNullException(nameof(navigationCatalog));
-            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
             _restartContextService = restartContextService;
 
             _startedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
@@ -198,16 +194,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Runtime
                 cue = intentCue;
                 source = "navigation";
                 sourceName = intentOwner;
-                return true;
-            }
-
-            if (_sceneRouteCatalog.TryGetAsset(routeId, out SceneRouteDefinitionAsset routeAsset) &&
-                routeAsset != null &&
-                routeAsset.BgmCue != null)
-            {
-                cue = routeAsset.BgmCue;
-                source = "route";
-                sourceName = routeAsset.name;
                 return true;
             }
 

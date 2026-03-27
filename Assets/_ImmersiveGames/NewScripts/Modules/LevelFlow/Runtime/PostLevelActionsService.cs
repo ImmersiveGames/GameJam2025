@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
@@ -15,20 +14,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         private readonly ILevelFlowRuntimeService _levelFlowRuntimeService;
         private readonly ILevelSwapLocalService _levelSwapLocalService;
         private readonly IRestartContextService _restartContextService;
-        private readonly SceneRouteCatalogAsset _sceneRouteCatalog;
         private readonly IGameNavigationService _navigationService;
 
         public PostLevelActionsService(
             ILevelFlowRuntimeService levelFlowRuntimeService,
             ILevelSwapLocalService levelSwapLocalService,
             IRestartContextService restartContextService,
-            SceneRouteCatalogAsset sceneRouteCatalog,
             IGameNavigationService navigationService)
         {
             _levelFlowRuntimeService = levelFlowRuntimeService ?? throw new ArgumentNullException(nameof(levelFlowRuntimeService));
             _levelSwapLocalService = levelSwapLocalService ?? throw new ArgumentNullException(nameof(levelSwapLocalService));
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
-            _sceneRouteCatalog = sceneRouteCatalog ?? throw new ArgumentNullException(nameof(sceneRouteCatalog));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
         }
 
@@ -66,16 +62,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
                 !snapshot.HasLevelRef ||
-                !_sceneRouteCatalog.TryGetAsset(snapshot.MacroRouteId, out var routeAsset) ||
-                routeAsset == null ||
-                routeAsset.LevelCollection == null)
+                snapshot.MacroRouteRef == null ||
+                snapshot.MacroRouteRef.LevelCollection == null)
             {
                 DebugUtility.LogWarning<PostLevelActionsService>(
                     $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_snapshot_or_collection'.");
                 return;
             }
 
-            var collection = routeAsset.LevelCollection;
+            if (snapshot.MacroRouteRef.RouteId != snapshot.MacroRouteId)
+            {
+                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
+                    $"[FATAL][H1][LevelFlow] PostLevel NextLevel routeRef mismatch. routeId='{snapshot.MacroRouteId}' routeRefRouteId='{snapshot.MacroRouteRef.RouteId}'.");
+            }
+
+            var collection = snapshot.MacroRouteRef.LevelCollection;
             if (!collection.TryValidateRuntime(out string collectionError))
             {
                 HardFailFastH1.Trigger(typeof(PostLevelActionsService),

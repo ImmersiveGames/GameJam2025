@@ -255,7 +255,7 @@
             <tbody>
               <tr><td><code>NewScriptsBootstrapConfigAsset</code></td><td><code>Assets/Resources/NewScriptsBootstrapConfig.asset</code></td><td>bootstrap, catalogs principais e startup transition</td></tr>
               <tr><td><code>GameNavigationCatalogAsset</code></td><td><code>Assets/Resources/Navigation/GameNavigationCatalog.asset</code></td><td>navigation canonica por <code>routeRef + transitionStyleRef</code></td></tr>
-              <tr><td><code>SceneRouteCatalogAsset</code></td><td><code>Assets/Resources/SceneFlow/SceneRouteCatalog.asset</code></td><td>catalogo das rotas reais</td></tr>
+              <tr><td><code>SceneRouteDefinitionAsset</code></td><td><code>Assets/Resources/SceneFlow/*.asset</code></td><td>definicao canonica da rota</td></tr>
               <tr><td><code>TransitionStyleAsset</code></td><td><code>Assets/Resources/SceneFlow/Styles/*.asset</code></td><td>style estrutural por <code>profileRef + useFade</code></td></tr>
               <tr><td><code>LevelCollectionAsset</code></td><td><code>Assets/Resources/SceneFlow/LevelCollectionAsset.asset</code></td><td>ordem dos levels da rota de gameplay</td></tr>
               <tr><td><code>LevelDefinitionAsset</code></td><td><code>asset de conteudo referenciado pela LevelCollection</code></td><td>additive scenes, intro opcional e post hook opcional</td></tr>
@@ -267,8 +267,8 @@
       <section class="panel" id="rota">
         <h2>Receita: criar uma rota nova do zero</h2>
         <div class="grid-2">
-          <div class="callout"><div class="mini-title">O que precisa existir</div><ul class="step-list"><li><code>SceneRouteCatalogAsset</code></li><li><code>SceneKeyAsset</code> das cenas da rota</li><li><code>LevelCollectionAsset</code> se a rota for <code>Gameplay</code></li></ul></div>
-          <div class="callout use"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Criar <code>SceneRouteDefinitionAsset</code>.</li><li>Preencher <code>routeId</code>, cenas e <code>targetActiveSceneKey</code>.</li><li>Escolher <code>routeKind</code>.</li><li>Se for gameplay, usar <code>requiresWorldReset=true</code> e apontar <code>levelCollection</code>.</li><li>Adicionar a rota no <code>SceneRouteCatalogAsset</code>.</li></ol></div>
+          <div class="callout"><div class="mini-title">O que precisa existir</div><ul class="step-list"><li><code>SceneRouteDefinitionAsset</code></li><li><code>SceneKeyAsset</code> das cenas da rota</li><li><code>LevelCollectionAsset</code> se a rota for <code>Gameplay</code></li></ul></div>
+          <div class="callout use"><div class="mini-title">O que configurar</div><ol class="step-list"><li>Criar <code>SceneRouteDefinitionAsset</code>.</li><li>Preencher <code>routeId</code>, cenas e <code>targetActiveSceneKey</code>.</li><li>Escolher <code>routeKind</code>.</li><li>Se for gameplay, usar <code>requiresWorldReset=true</code> e apontar <code>levelCollection</code>.</li><li>Referenciar a rota por <code>routeRef</code> no catálogo fino de navigation.</li></ol></div>
         </div>
         <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Configurar rota <code>Frontend</code> com <code>levelCollection</code> ou rota <code>Gameplay</code> sem <code>requiresWorldReset=true</code>.</div></div>
       </section>

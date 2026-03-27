@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -8,6 +9,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     {
         public LevelSelectedEvent(
             SceneRouteId macroRouteId,
+            SceneRouteDefinitionAsset macroRouteRef,
             LevelDefinitionAsset levelRef,
             int selectionVersion,
             string localContentId,
@@ -15,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string levelSignature)
         {
             MacroRouteId = macroRouteId;
+            MacroRouteRef = macroRouteRef;
             LevelRef = levelRef;
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
             LocalContentId = LevelFlowContentDefaults.Normalize(localContentId, levelRef);
@@ -23,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         }
 
         public SceneRouteId MacroRouteId { get; }
+        public SceneRouteDefinitionAsset MacroRouteRef { get; }
         public LevelDefinitionAsset LevelRef { get; }
         public int SelectionVersion { get; }
         public string LocalContentId { get; }
