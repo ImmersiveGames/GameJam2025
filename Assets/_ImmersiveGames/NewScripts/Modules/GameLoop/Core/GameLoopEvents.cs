@@ -2,8 +2,8 @@ using _ImmersiveGames.NewScripts.Core.Events;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 {
     /// <summary>
-    /// REQUEST (intenção): "quero iniciar a simulação".
-    /// O start definitivo é o COMMAND executado pelo Coordinator via IGameLoopService.RequestStart() quando ready.
+    /// REQUEST (intencao): "quero iniciar a simulacao".
+    /// O start definitivo e o COMMAND executado pelo Coordinator via IGameLoopService.RequestStart() quando ready.
     /// </summary>
     public sealed class GameStartRequestedEvent : IEvent { }
 
@@ -27,11 +27,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
     }
 
     /// <summary>
-    /// Evento de alto nível para solicitar o encerramento da run.
+    /// Evento de alto nivel para solicitar o encerramento da run.
     ///
-    /// Este evento é a "entrada" recomendada em produção para vitória/derrota.
-    /// Diferentes condições podem dispará-lo (timer, morte do player, objetivos, sequência de eventos etc.)
-    /// sem amarrar a lógica de encerramento a um único sistema.
+    /// Este evento e a "entrada" recomendada em producao para vitoria/derrota.
+    /// Diferentes condicoes podem dispara-lo (timer, morte do player, objetivos, sequencia de eventos etc.)
+    /// sem amarrar a logica de encerramento a um unico sistema.
     /// </summary>
     public sealed class GameRunEndRequestedEvent : IEvent
     {
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
     }
 
     /// <summary>
-    /// Representa o fim da run atual do jogo, para orquestrar pós-gameplay.
+    /// Representa o fim da run atual do jogo, para orquestrar pos-gameplay.
     /// </summary>
     public sealed class GameRunEndedEvent : IEvent
     {
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         }
 
         /// <summary>
-        /// Resultado da run (vitória/derrota).
+        /// Resultado da run (vitoria/derrota).
         /// </summary>
         public GameRunOutcome Outcome { get; }
 
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
     }
 
     /// <summary>
-    /// Evento de telemetria para mudanças de atividade do GameLoop.
+    /// Evento de telemetria para mudancas de atividade do GameLoop.
     /// Permite que outros sistemas (UI, QA, etc.) observem quando o loop entra/sai de estados ativos.
     /// </summary>
     public sealed class GameLoopActivityChangedEvent : IEvent
@@ -80,29 +80,13 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         }
 
         /// <summary>
-        /// Estado atual do GameLoop após a mudança.
+        /// Estado atual do GameLoop apos a mudanca.
         /// </summary>
         public GameLoopStateId CurrentStateId { get; }
 
         /// <summary>
-        /// Indica se o jogo está em um estado considerado "ativo" (ex.: Playing).
+        /// Indica se o jogo esta em um estado considerado "ativo" (ex.: Playing).
         /// </summary>
-        public bool IsActive { get; }
-    }
-
-    /// <summary>
-    /// Representa o início de uma nova run do jogo.
-    /// É emitido quando o GameLoop entra em um estado de gameplay ativo (Playing).
-    /// </summary>
-    public sealed class GameLoopStateEnteredEvent : IEvent
-    {
-        public GameLoopStateEnteredEvent(GameLoopStateId stateId, bool isActive)
-        {
-            StateId = stateId;
-            IsActive = isActive;
-        }
-
-        public GameLoopStateId StateId { get; }
         public bool IsActive { get; }
     }
 
@@ -114,14 +98,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         }
 
         /// <summary>
-        /// Estado atual do GameLoop no momento em que a run é iniciada.
+        /// Estado atual do GameLoop no momento em que a run e iniciada.
         /// </summary>
         public GameLoopStateId StateId { get; }
     }
 
     public sealed class GameResumeRequestedEvent : IEvent { }
     /// <summary>
-    /// REQUEST (intenção): "quero sair do gameplay e voltar ao frontend/menu".
+    /// REQUEST (intencao): "quero sair do gameplay e voltar ao frontend/menu".
     /// </summary>
     public sealed class GameExitToMenuRequestedEvent : IEvent
     {
@@ -133,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public string Reason { get; }
     }
     /// <summary>
-    /// REQUEST (intenção): "reiniciar a run" (Restart).
+    /// REQUEST (intencao): "reiniciar a run" (Restart).
     /// </summary>
     public sealed class GameResetRequestedEvent : IEvent
     {

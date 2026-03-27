@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using UnityEngine.SceneManagement;
 
@@ -26,13 +25,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                     "[FATAL][H1][GameLoop] Invalid intro context received by executor.");
             }
 
-            IGameLoopService gameLoop = ResolveGameLoopOrFail();
             IIntroStageControlService controlService = ResolveIntroStageControlServiceOrFail();
             string signature = NormalizeSignature(context.ContextSignature);
             string routeLabel = FormatRouteKind(context.RouteKind);
             string targetScene = NormalizeValue(context.TargetScene);
             string reason = NormalizeReason(context.Reason);
-            IDisposable gateLease = null;
+            IDisposable? gateLease = null;
 
             if (!TryEnterContext(signature))
             {
@@ -48,8 +46,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 if (!context.HasIntroStage)
                 {
                     LogSkipped("session_no_intro", context, SceneManager.GetActiveScene().name);
-                    gameLoop.RequestIntroStageComplete();
-                    RequestStartIfNeeded(gameLoop, "session_no_intro");
                     return;
                 }
 
@@ -57,7 +53,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 var step = ResolveStepOrFail();
 
                 controlService.BeginIntroStage(context);
-                gameLoop.RequestIntroStageStart();
 
                 DebugUtility.Log<IntroStageCoordinator>(
                     "[IntroStageController] IntroStage active: gameplay simulation blocked; waiting for canonical confirmation.",
@@ -93,14 +88,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                     string skipReason = NormalizeValue(completion.Reason);
                     LogSkipped(skipReason, context, SceneManager.GetActiveScene().name);
                     LogCompletion(signature, targetScene, routeLabel, IntroStageRunResult.Skipped);
-                    gameLoop.RequestIntroStageComplete();
-                    RequestStartIfNeeded(gameLoop, $"IntroStageController/Skipped/{skipReason}");
                     return;
                 }
 
                 LogCompletion(signature, targetScene, routeLabel, IntroStageRunResult.Completed);
-                gameLoop.RequestIntroStageComplete();
-                RequestStartIfNeeded(gameLoop, "IntroStageController/UIConfirm");
             }
             catch (Exception ex)
             {
@@ -110,8 +101,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 controlService.SkipIntroStage("IntroStageController/ErrorFallback");
 
                 LogCompletion(signature, targetScene, routeLabel, IntroStageRunResult.Failed);
-                gameLoop.RequestIntroStageComplete();
-                RequestStartIfNeeded(gameLoop, "IntroStageController/ErrorFallback");
             }
             finally
             {
@@ -129,19 +118,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             }
         }
 
-        private static IGameLoopService ResolveGameLoopOrFail()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var loop) && loop != null)
-            {
-                return loop;
-            }
-
-            HardFailFastH1.Trigger(typeof(IntroStageCoordinator),
-                "[FATAL][H1][GameLoop] IGameLoopService obrigatorio ausente para executar IntroStage.");
-
-            return null;
-        }
-
         private static IIntroStageControlService ResolveIntroStageControlServiceOrFail()
         {
             if (DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service) && service != null)
@@ -152,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             HardFailFastH1.Trigger(typeof(IntroStageCoordinator),
                 "[FATAL][H1][GameLoop] IIntroStageControlService obrigatorio ausente para executar IntroStage.");
 
-            return null;
+            throw new InvalidOperationException("IIntroStageControlService is required.");
         }
 
         private static IIntroStageStep ResolveStepOrFail()
@@ -165,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             HardFailFastH1.Trigger(typeof(IntroStageCoordinator),
                 "[FATAL][H1][GameLoop] IIntroStageStep obrigatorio ausente.");
 
-            return null;
+            throw new InvalidOperationException("IIntroStageStep is required.");
         }
 
         private static IDisposable AcquireSimulationGateOrFail(
@@ -180,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                     $"[FATAL][H1][GameLoop] ISimulationGateService obrigatorio ausente para bloquear IntroStage. signature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.");
             }
 
-            IDisposable lease = gateService.Acquire(SimulationGateTokens.GameplaySimulation);
+            IDisposable lease = gateService!.Acquire(SimulationGateTokens.GameplaySimulation);
 
             DebugUtility.Log<IntroStageCoordinator>(
                 $"[OBS][IntroStageController] GameplaySimulationBlocked token='{SimulationGateTokens.GameplaySimulation}' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.",
@@ -242,15 +218,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 
                 controlService.SkipIntroStage("step_failed");
             }
-        }
-
-        private static void RequestStartIfNeeded(IGameLoopService gameLoop, string reason)
-        {
-            DebugUtility.LogVerbose<IntroStageCoordinator>(
-                $"[IntroStageController] Solicitando RequestStart após término da IntroStage. reason='{NormalizeReason(reason)}'.",
-                DebugUtility.Colors.Info);
-
-            gameLoop.RequestStart();
         }
 
         private static bool IsSupersededCompletion(IntroStageCompletionResult completion)

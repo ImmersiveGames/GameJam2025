@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 {
@@ -8,6 +9,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
     public sealed class GameLoopService : IGameLoopService, IGameLoopStateObserver
     {
         private readonly MutableGameLoopSignals _signals = new();
+        private readonly EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
         private GameLoopStateMachine _stateMachine;
         private bool _initialized;
 
@@ -18,18 +20,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public GameLoopService()
         {
             _stateTransitionEffects = new GameLoopStateTransitionEffects(new GameLoopPostGameSnapshotResolver());
+            _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(OnLevelIntroCompleted);
+            EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
         }
 
         public string CurrentStateIdName { get; private set; } = string.Empty;
+
         public void RequestStart()
         {
-            if (_signals.IntroStageRequested && !_signals.IntroStageCompleted)
-            {
-                DebugUtility.LogVerbose<GameLoopService>(
-                    $"[GameLoop] RequestStart ignored (intro stage pending). state={_stateMachine?.Current}.");
-                return;
-            }
-
             if (_stateMachine is { IsGameActive: true })
             {
                 DebugUtility.LogVerbose<GameLoopService>(
@@ -43,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public void RequestPause() => _signals.MarkPause();
         public void RequestResume() => _signals.MarkResume();
         public void RequestReady() => _signals.MarkReady();
-        public void RequestRearm() => _signals.MarkRearm();
+
         public void RequestSceneFlowCompletionSync(SceneRouteKind routeKind)
         {
             var currentState = _stateMachine?.Current ?? GameLoopStateId.Boot;
@@ -78,7 +76,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             {
                 if (currentState is GameLoopStateId.Playing
                     or GameLoopStateId.Paused
-                    or GameLoopStateId.IntroStage
                     or GameLoopStateId.PostPlay)
                 {
                     DebugUtility.LogVerbose<GameLoopService>(
@@ -93,10 +90,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                     DebugUtility.Colors.Info);
             }
         }
+
         public void RequestReset() => _signals.MarkReset();
         public void RequestRunEnd() => _signals.MarkEnd();
-        public void RequestIntroStageStart() => _signals.MarkIntroStageStart();
-        public void RequestIntroStageComplete() => _signals.MarkIntroStageComplete();
 
         public void Initialize()
         {
@@ -125,13 +121,13 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public void Dispose()
         {
             _initialized = false;
+            EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
             _stateMachine = null;
             CurrentStateIdName = string.Empty;
 
             _runStartedEmittedThisRun = false;
 
             _signals.ClearStartPending();
-            _signals.ClearIntroStageFlags();
             _signals.ResetTransientSignals();
         }
 
@@ -140,9 +136,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             var previousState = _lastStateId;
             HandlePostPlayExitIfNeeded(previousState, stateId);
             UpdateCurrentState(stateId, isActive, previousState);
-            EventBus<GameLoopStateEnteredEvent>.Raise(new GameLoopStateEnteredEvent(stateId, isActive));
             UpdateRunStartedFlag(stateId);
-            SyncIntroStageFlags(stateId);
             HandlePostPlayEnterIfNeeded(stateId);
             HandlePlayingEnteredIfNeeded(stateId);
             _lastStateId = stateId;
@@ -163,6 +157,25 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 
             EventBus<GameLoopActivityChangedEvent>.Raise(
                 new GameLoopActivityChangedEvent(currentState, isActive));
+        }
+
+        private void OnLevelIntroCompleted(LevelIntroCompletedEvent evt)
+        {
+            if (!evt.Session.IsValid)
+            {
+                return;
+            }
+
+            if (_stateMachine is { IsGameActive: true })
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<GameLoopService>(
+                $"[GameLoop] LevelIntroCompleted received source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state={CurrentStateIdName}.",
+                DebugUtility.Colors.Info);
+
+            RequestStart();
         }
 
         private void HandlePostPlayExitIfNeeded(GameLoopStateId previousState, GameLoopStateId nextState)
@@ -192,29 +205,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         {
             if (stateId == GameLoopStateId.Boot ||
                 stateId == GameLoopStateId.Ready ||
-                stateId == GameLoopStateId.IntroStage ||
                 stateId == GameLoopStateId.PostPlay)
             {
                 _runStartedEmittedThisRun = false;
-            }
-        }
-
-        private void SyncIntroStageFlags(GameLoopStateId stateId)
-        {
-            if (stateId == GameLoopStateId.IntroStage)
-            {
-                _signals.ClearIntroStagePending();
-                return;
-            }
-
-            if (stateId == GameLoopStateId.Boot ||
-                stateId == GameLoopStateId.Ready ||
-                stateId == GameLoopStateId.PostPlay)
-            {
-                if (!_signals.IntroStageRequested)
-                {
-                    _signals.ClearIntroStageFlags();
-                }
             }
         }
 
@@ -234,7 +227,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             }
 
             _signals.ClearStartPending();
-            _signals.ClearIntroStageFlags();
 
             _stateTransitionEffects.ApplyGameplayInputMode();
 
@@ -288,11 +280,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             public bool PauseRequested { get; private set; }
             public bool ResumeRequested { get; private set; }
             public bool ReadyRequested { get; private set; }
-            public bool RearmRequested { get; private set; }
             public bool ResetRequested { get; private set; }
             public bool EndRequested { get; private set; }
-            public bool IntroStageRequested { get; private set; }
-            public bool IntroStageCompleted { get; private set; }
 
             bool IGameLoopSignals.EndRequested
             {
@@ -304,25 +293,15 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             public void MarkPause() => PauseRequested = true;
             public void MarkResume() => ResumeRequested = true;
             public void MarkReady() => ReadyRequested = true;
-            public void MarkRearm() => RearmRequested = true;
             public void MarkReset() => ResetRequested = true;
             public void MarkEnd() => EndRequested = true;
             public void ClearStartPending() => StartRequested = false;
-            public void MarkIntroStageStart() => IntroStageRequested = true;
-            public void MarkIntroStageComplete() => IntroStageCompleted = true;
-            public void ClearIntroStagePending() => IntroStageRequested = false;
-            public void ClearIntroStageFlags()
-            {
-                IntroStageRequested = false;
-                IntroStageCompleted = false;
-            }
 
             public void ResetTransientSignals()
             {
                 PauseRequested = false;
                 ResumeRequested = false;
                 ReadyRequested = false;
-                RearmRequested = false;
                 ResetRequested = false;
                 EndRequested = false;
             }

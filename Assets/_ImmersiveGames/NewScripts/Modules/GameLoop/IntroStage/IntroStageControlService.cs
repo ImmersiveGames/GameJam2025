@@ -3,8 +3,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
 {
@@ -172,6 +174,19 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 }
 
                 source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
+
+                if (context.IsValid)
+                {
+                    DebugUtility.Log<IntroStageControlService>(
+                        $"[OBS][IntroStageController] LevelIntroCompletedPublished source='IntroStageControlService' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
+                        DebugUtility.Colors.Info);
+
+                    EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(
+                        context.Session,
+                        "IntroStageControlService",
+                        wasSkipped,
+                        normalizedReason));
+                }
             }
             catch (Exception ex)
             {

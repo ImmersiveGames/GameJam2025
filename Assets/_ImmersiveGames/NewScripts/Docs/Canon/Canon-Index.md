@@ -20,7 +20,7 @@ Este indice resume owners e contratos canonicos vigentes.
 | SceneFlow runtime | `SceneTransitionService` | timeline de transicao, fases e gates |
 | Loading macro | `LoadingHudScene` + `ILoadingPresentationService` + `LoadingHudService` | HUD canonica do macro flow; apresentacao de barra, porcentagem, etapa e spinner |
 | Level prepare/swap | `LevelMacroPrepareService` + `LevelSwapLocalService` | prepare macro e troca local de level |
-| IntroStage | `LevelStageOrchestrator` + `ILevelStagePresentationService` | intro opcional por level, orquestrada globalmente |
+| IntroStage | `LevelFlowRuntimeService` + `LevelEnteredEvent` + `LevelIntroCompletedEvent` + `LevelStageOrchestrator` + `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver` | intro opcional por level, disparada pelo hook canonico pos-aplicacao do level e finalizada por handoff canonico |
 | PostGame | `GameLoopService` + `PostGameOwnershipService` + `PostGameResultService` | post global com `Victory`, `Defeat` e `Exit` |
 | Level post reaction | `ILevelPostGameHookService` | hook opcional do level, complementar ao post global |
 | Restart | `MacroRestartCoordinator` | restart segue direto por reset macro, sem post hook |
@@ -35,6 +35,8 @@ Este indice resume owners e contratos canonicos vigentes.
 - Historico nao substitui contrato atual.
 - `LoadingHudScene` faz parte do estado atual oficial: apresentacao canonica do macro flow, sem ownership do pipeline.
 - `Victory/Defeat` pertencem ao baseline atual via mock explicito e controlado, sem canonizar regra final de gameplay.
+- `IntroStage` e level-owned, opcional, disparada por hook canonico pos-level-applied (`LevelEnteredEvent`) e finalizada por `LevelIntroCompletedEvent`.
+- O presenter canonico da intro e resolvido por contrato, com escopo fornecido por `ILevelIntroStagePresenterScopeResolver`.
 
 ## Cadeia oficial
 
@@ -54,4 +56,3 @@ Este indice resume owners e contratos canonicos vigentes.
 14. `Docs/Reports/Audits/LATEST.md`
 15. `Docs/Reports/Evidence/LATEST.md`
 16. `Docs/CHANGELOG.md`
-

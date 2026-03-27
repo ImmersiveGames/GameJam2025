@@ -46,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
         {
             var restartContextService = ResolveOrRegisterRestartContextService();
             RegisterLevelIntroStageSessionService();
+            RegisterLevelIntroStagePresenterScopeResolver();
             RegisterLevelIntroStagePresenterRegistry();
             RegisterLevelStagePresentationService();
             RegisterLevelPostGameHookService();
@@ -117,6 +118,21 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
 
             DebugUtility.LogVerbose(typeof(LevelFlowInstaller),
                 "[OBS][LevelFlow] ILevelIntroStagePresenterRegistry registrado no DI global (LevelIntroStagePresenterHost).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLevelIntroStagePresenterScopeResolver()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ILevelIntroStagePresenterScopeResolver>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new LevelIntroStagePresenterScopeResolver();
+            DependencyManager.Provider.RegisterGlobal<ILevelIntroStagePresenterScopeResolver>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelFlowInstaller),
+                "[OBS][LevelFlow] ILevelIntroStagePresenterScopeResolver registrado no DI global (LevelIntroStagePresenterScopeResolver).",
                 DebugUtility.Colors.Info);
         }
 

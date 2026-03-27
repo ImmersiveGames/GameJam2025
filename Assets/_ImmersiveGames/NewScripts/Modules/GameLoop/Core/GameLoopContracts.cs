@@ -1,15 +1,12 @@
 using System;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 {
     public enum GameLoopStateId
     {
         Boot,
         Ready,
-        /// <summary>
-        /// Fase opcional antes do gameplay jogável (IntroStageController/PostReveal).
-        /// </summary>
-        IntroStage,
         Playing,
         Paused,
         /// <summary>
@@ -24,11 +21,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         bool PauseRequested { get; }
         bool ResumeRequested { get; }
         bool ReadyRequested { get; }
-        bool RearmRequested { get; }
         bool ResetRequested { get; }
         bool EndRequested { get; set; }
-        bool IntroStageRequested { get; }
-        bool IntroStageCompleted { get; }
     }
 
     public interface IGameLoopStateObserver
@@ -46,15 +40,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         void RequestPause();
         void RequestResume();
         void RequestReady();
-        void RequestRearm();
         void RequestSceneFlowCompletionSync(SceneRouteKind routeKind);
         void RequestReset();
         void RequestRunEnd();
-        void RequestIntroStageStart();
-        void RequestIntroStageComplete();
         string CurrentStateIdName { get; }
     }
-
 
     /// <summary>
     /// Policy compartilhada para validar se o GameLoop está em gameplay ativo.

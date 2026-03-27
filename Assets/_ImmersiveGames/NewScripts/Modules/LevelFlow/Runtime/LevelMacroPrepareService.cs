@@ -171,6 +171,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
+            DebugUtility.Log<LevelMacroPrepareService>(
+                $"[OBS][LevelFlow] LevelEntered source='LevelPrepare' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
+                DebugUtility.Colors.Info);
+
             EventBus<LevelEnteredEvent>.Raise(new LevelEnteredEvent(
                 new LevelIntroStageSession(
                     selectedLevelRef,
@@ -183,10 +187,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     selectedLevelRef.IntroPresenterPrefab,
                     selectedLevelRef.HasIntroStage ? LevelIntroStageDisposition.HasIntro : LevelIntroStageDisposition.NoIntro),
                 "LevelPrepare"));
-
-            DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelEntered source='LevelPrepare' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
-                DebugUtility.Colors.Info);
         }
 
         private async Task ClearActiveLevelAsync(

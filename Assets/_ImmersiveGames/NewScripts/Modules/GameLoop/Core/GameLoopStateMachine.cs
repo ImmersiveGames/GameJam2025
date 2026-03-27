@@ -22,33 +22,27 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 
         public void Update()
         {
-            // Executa no máximo uma transição por tick.
-            // StartRequested pode permanecer true até o fim do Tick; evitar encadear Boot -> Ready -> Playing no mesmo frame.
+            // Executa no maximo uma transicao por tick.
+            // StartRequested pode permanecer true ate o fim do Tick; evitar encadear Boot -> Ready -> Playing no mesmo frame.
             TryTransitionOnce();
         }
 
         private bool TryTransitionOnce()
         {
-            // Reset tem prioridade máxima (determinístico).
-            // Importante (contrato): Reset/Reinício volta ao Boot para reiniciar a run por etapas.
+            // Reset tem prioridade maxima (deterministico).
+            // Importante (contrato): Reset/Reinicio volta ao Boot para reiniciar a run por etapas.
             if (_signals.ResetRequested)
             {
                 return TransitionTo(GameLoopStateId.Boot);
             }
 
-            if (_signals.RearmRequested && Current == GameLoopStateId.Playing)
-            {
-                return TransitionTo(GameLoopStateId.Ready);
-            }
-
-            // ReadyRequested tem prioridade alta APENAS em estados não-ativos.
-            // Evita capturar reset/restart durante transições em gameplay.
+            // ReadyRequested tem prioridade alta APENAS em estados nao-ativos.
+            // Evita capturar reset/restart durante transicoes em gameplay.
             if (_signals.ReadyRequested)
             {
                 if (Current is GameLoopStateId.Boot
                     or GameLoopStateId.Paused
-                    or GameLoopStateId.PostPlay
-                    or GameLoopStateId.IntroStage)
+                    or GameLoopStateId.PostPlay)
                 {
                     return TransitionTo(GameLoopStateId.Ready);
                 }
@@ -66,18 +60,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                     break;
 
                 case GameLoopStateId.Ready:
-                    if (_signals.IntroStageRequested)
-                    {
-                        next = GameLoopStateId.IntroStage;
-                    }
-                    else if (_signals.StartRequested)
-                    {
-                        next = GameLoopStateId.Playing;
-                    }
-                    break;
-
-                case GameLoopStateId.IntroStage:
-                    if (_signals.StartRequested && _signals.IntroStageCompleted)
+                    if (_signals.StartRequested)
                     {
                         next = GameLoopStateId.Playing;
                     }
@@ -102,8 +85,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                     break;
 
                 case GameLoopStateId.PostPlay:
-                    // Mantém PostPlay como estado pós-run.
-                    // Permite um caminho simples “Play Again” sem exigir Reset duro.
+                    // Mantem PostPlay como estado pos-run.
+                    // Permite um caminho simples "Play Again" sem exigir Reset duro.
                     if (_signals.StartRequested)
                     {
                         next = GameLoopStateId.Ready;
@@ -136,9 +119,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         /// Capability map por estado macro do GameLoop.
         ///
         /// Importante:
-        /// - Este método NÃO é gate-aware (não consulta SimulationGate/Readiness).
-        /// - Não deve ser usado como autorização final de gameplay.
-        /// - A decisão final deve ocorrer em IGameplayStateGate (gate-aware).
+        /// - Este metodo NAO e gate-aware (nao consulta SimulationGate/Readiness).
+        /// - Nao deve ser usado como autorizacao final de gameplay.
+        /// - A decisao final deve ocorrer em IGameplayStateGate (gate-aware).
         /// </summary>
         public bool IsGameplayActionAllowedByLoopState(GameplayAction action)
             => Current == GameLoopStateId.Playing;
@@ -147,7 +130,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         {
             GameLoopStateId.Boot => true,
             GameLoopStateId.Ready => true,
-            GameLoopStateId.IntroStage => true,
             GameLoopStateId.Paused => true,
             GameLoopStateId.PostPlay => true,
             _ => false
@@ -157,7 +139,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         {
             GameLoopStateId.Boot => true,
             GameLoopStateId.Ready => true,
-            GameLoopStateId.IntroStage => true,
             GameLoopStateId.Paused => true,
             GameLoopStateId.PostPlay => true,
             _ => false
@@ -177,4 +158,3 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         private void NotifyExit(GameLoopStateId id) => _observer?.OnStateExited(id);
     }
 }
-

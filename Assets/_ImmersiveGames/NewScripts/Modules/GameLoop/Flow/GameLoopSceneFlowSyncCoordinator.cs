@@ -351,7 +351,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
             gameLoop.Initialize();
 
             DebugUtility.LogVerbose<GameLoopSceneFlowSyncCoordinator>(
-                $"[GameLoopSceneFlow] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReady() no GameLoop (start via pipeline/IntroStageController).",
+                $"[GameLoopSceneFlow] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReady() no GameLoop.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestReady();

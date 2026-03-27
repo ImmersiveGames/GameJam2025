@@ -1,3 +1,4 @@
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,9 +41,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                 activeScene: string.Empty);
         }
 
-        private static IReadOnlyList<string> NormalizeSceneListOrFail(IReadOnlyList<string>? scenes, string phase, string correlationId, string reason)
+        private static IReadOnlyList<string> NormalizeSceneListOrFail(IReadOnlyList<string> scenes, string phase, string correlationId, string reason)
         {
-            if (scenes == null || scenes.Count == 0)
+            if (scenes.Count == 0)
             {
                 return Array.Empty<string>();
             }

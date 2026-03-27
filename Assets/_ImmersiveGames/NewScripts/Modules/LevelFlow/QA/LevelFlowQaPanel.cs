@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.QA
                 return;
             }
 
-            LevelFlowQaPanel existingPanel = UnityEngine.Object.FindObjectOfType<LevelFlowQaPanel>();
+            LevelFlowQaPanel existingPanel = UnityEngine.Object.FindFirstObjectByType<LevelFlowQaPanel>();
             if (existingPanel != null)
             {
                 DontDestroyOnLoad(existingPanel.gameObject);

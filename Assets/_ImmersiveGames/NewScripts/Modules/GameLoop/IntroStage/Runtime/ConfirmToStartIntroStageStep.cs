@@ -18,12 +18,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         {
             _ = context;
 
-            var controlService = ResolveIntroStageControlService();
-            if (controlService == null)
-            {
-                HardFailFastH1.Trigger(typeof(ConfirmToStartIntroStageStep),
-                    "[FATAL][H1][GameLoop] IIntroStageControlService indisponivel. IntroStage nao pode aguardar confirmacao.");
-            }
+            IIntroStageControlService controlService = ResolveIntroStageControlService();
 
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
                 $"[OBS][IntroStageController] Waiting for canonical level presenter confirmation. scene='{SceneManager.GetActiveScene().name}'.",
@@ -32,11 +27,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             await controlService.WaitForCompletionAsync(cancellationToken);
         }
 
-        private static IIntroStageControlService? ResolveIntroStageControlService()
+        private static IIntroStageControlService ResolveIntroStageControlService()
         {
-            return DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service)
-                ? service
-                : null;
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var service) && service != null)
+            {
+                return service;
+            }
+
+            throw new System.InvalidOperationException("IIntroStageControlService is required.");
         }
     }
 }

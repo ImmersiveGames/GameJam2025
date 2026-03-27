@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: Level2
   m_EditorClassIdentifier: 
   additiveScenes:
-  - sceneAsset: {fileID: 102900000, guid: 8909e7e8399536a44976a552663e97d1, type: 3}
-    buildIndex: 8
+  - buildIndex: 8
     sceneName: SceneTest2
-  hasIntroStage: 1
-  hasPostLevelStage: 1
+  hasIntroStage: 0
+  introPresenterPrefab: {fileID: 0}
+  hasPostGameReactionHook: 0
   allowLocalCurtainIn: 1
   allowLocalCurtainOut: 1
+  bgmCue: {fileID: 0}

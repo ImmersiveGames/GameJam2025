@@ -37,6 +37,8 @@ Os seguintes pontos sao tratados como contracts oficiais para extensao externa o
 - `SceneTransitionCompletedEvent`
 - `LevelSelectedEvent`
 - `LevelSwapLocalAppliedEvent`
+- `LevelEnteredEvent`
+- `LevelIntroCompletedEvent`
 - `ISceneResetHook`
 - `IActorLifecycleHook`
 
@@ -73,6 +75,8 @@ Os seguintes sinais sao internos ou tecnicos e nao devem ser promovidos como API
 - `SceneTransitionCompletedEvent`: use para integracoes que dependem da rota final ja aplicada.
 - `LevelSelectedEvent`: use para capturar selecao de level e contexto atual do fluxo.
 - `LevelSwapLocalAppliedEvent`: use para reagir ao fim efetivo do swap local.
+- `LevelEnteredEvent`: use como hook oficial pos-aplicacao do level para seams level-owned, incluindo IntroStage.
+- `LevelIntroCompletedEvent`: use como handoff oficial para o fluxo level->gameplay apos a intro concluir ou ser pulada.
 - `ISceneResetHook`: use para extensao local do lifecycle de reset de cena.
 - `IActorLifecycleHook`: use para extensao local do lifecycle de atores durante reset.
 

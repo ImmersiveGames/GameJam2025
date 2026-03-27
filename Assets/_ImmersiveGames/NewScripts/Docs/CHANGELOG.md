@@ -1,3 +1,9 @@
+# 2026-03-27 - intro stage canonical consolidation
+- consolidou `ADR-0027` como contrato principal do fluxo de IntroStage/LevelFlow
+- removeu duplicacao documental sobre gate de intro e topologia de presenter
+- alinhou hooks oficiais, LevelFlow e GameLoop ao par `LevelEnteredEvent` / `LevelIntroCompletedEvent`
+- apontou o presenter host para `ILevelIntroStagePresenter` com escopo resolvido por abstracao do LevelFlow
+
 # Changelog - Docs
 
 ## 2026-03-26 - modular composition closeout

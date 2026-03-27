@@ -1,7 +1,6 @@
 #nullable enable
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
 using UnityEngine;
 
@@ -16,10 +15,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         [SerializeField] private float panelWidth = 360f;
         [SerializeField] private float panelHeight = 220f;
 
-        private ILevelStagePresentationService _stagePresentationService;
-        private IIntroStageControlService _controlService;
-        private IGameLoopService _gameLoopService;
-        private ILevelIntroStagePresenterRegistry _presenterRegistry;
+        private ILevelStagePresentationService? _stagePresentationService;
+        private IIntroStageControlService? _controlService;
+        private ILevelIntroStagePresenterRegistry? _presenterRegistry;
         private string _presenterSignature = string.Empty;
         private bool _isRegistered;
 
@@ -28,12 +26,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public void BindToSession(string sessionSignature)
         {
-            if (_presenterRegistry != null && _isRegistered)
-            {
-                _presenterRegistry.Unregister(this);
-                _isRegistered = false;
-            }
-
             _presenterSignature = Normalize(sessionSignature);
             ResolveDependencies();
             TryRegister();
@@ -66,6 +58,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return;
             }
 
+            if (_controlService is not IIntroStageControlService controlService)
+            {
+                return;
+            }
+
             Rect rect = BuildPanelRect();
             GUILayout.BeginArea(rect, GUI.skin.box);
             GUILayout.Label("Level Intro");
@@ -80,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             GUI.enabled = model.CanContinue;
             if (GUILayout.Button("Continue", GUILayout.Height(34f)))
             {
-                _controlService.CompleteIntroStage("LevelIntro/ContinueButton");
+                controlService.CompleteIntroStage("LevelIntro/ContinueButton");
             }
 
             GUI.enabled = previous;
@@ -107,14 +104,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 TryRegister();
             }
 
-            if (_stagePresentationService == null ||
-                _controlService == null ||
-                _gameLoopService == null)
+            if (_stagePresentationService is not ILevelStagePresentationService stagePresentationService ||
+                _controlService is not IIntroStageControlService controlService ||
+                _presenterRegistry is not ILevelIntroStagePresenterRegistry presenterRegistry)
             {
                 return false;
             }
 
-            if (!_stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
+            if (!stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
                 !contract.IsValid ||
                 !contract.HasIntroStage ||
                 contract.LevelRef == null)
@@ -122,15 +119,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 return false;
             }
 
-            if (!_controlService.IsIntroStageActive)
+            if (!controlService.IsIntroStageActive)
             {
                 return false;
             }
 
-            string stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
-            if (!string.Equals(stateName, nameof(GameLoopStateId.IntroStage), System.StringComparison.Ordinal))
+            if (_isRegistered &&
+                string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal) &&
+                presenterRegistry.TryGetCurrentPresenter(out ILevelIntroStagePresenter currentPresenter) &&
+                ReferenceEquals(currentPresenter, this))
             {
-                return false;
+                model = new IntroViewModel(
+                    contract.LevelRef.name,
+                    contract.LocalContentId,
+                    contract.LevelSignature,
+                    true);
+                return true;
             }
 
             if (!string.IsNullOrWhiteSpace(_presenterSignature) &&
@@ -164,11 +168,6 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DependencyManager.Provider.TryGetGlobal(out _controlService);
             }
 
-            if (_gameLoopService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _gameLoopService);
-            }
-
             if (_presenterRegistry == null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _presenterRegistry);
@@ -177,22 +176,43 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         private void TryRegister()
         {
-            if (_presenterRegistry == null)
+            if (_presenterRegistry is not ILevelIntroStagePresenterRegistry presenterRegistry)
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
                     "[FATAL][H1][LevelFlow] ILevelIntroStagePresenterRegistry ausente. O presenter do level nao pode se registrar.");
+                return;
             }
 
-            if (_stagePresentationService == null ||
-                !_stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
+            if (_stagePresentationService is not ILevelStagePresentationService stagePresentationService ||
+                !stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
                 !contract.IsValid ||
                 !contract.HasIntroStage)
             {
                 return;
             }
 
+            if (presenterRegistry.TryGetCurrentPresenter(out ILevelIntroStagePresenter currentPresenter) &&
+                ReferenceEquals(currentPresenter, this) &&
+                string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal))
+            {
+                _isRegistered = true;
+                return;
+            }
+
+            if (_isRegistered &&
+                string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (_isRegistered)
+            {
+                presenterRegistry.Unregister(this);
+                _isRegistered = false;
+            }
+
             _presenterSignature = contract.LevelSignature;
-            _presenterRegistry.Register(this, _presenterSignature);
+            presenterRegistry.Register(this, _presenterSignature);
             _isRegistered = true;
 
             DebugUtility.Log<LevelIntroStageMockPresenter>(

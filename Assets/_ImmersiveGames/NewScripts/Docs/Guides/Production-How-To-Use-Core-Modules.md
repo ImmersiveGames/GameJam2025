@@ -547,7 +547,7 @@ Colocar o mesmo `LevelDefinitionAsset` duas vezes. Hoje a colecao falha na valid
 ### O que configurar
 1. No `LevelDefinitionAsset`, ligue `hasIntroStage`.
 2. Garanta que o level esteja dentro da `LevelCollectionAsset` da rota de gameplay.
-3. Se voce estiver em build de desenvolvimento, pode usar o mock atual de intro para validar o fluxo.
+3. Se voce estiver em build de desenvolvimento, pode usar o mock atual de intro ou qualquer presenter que implemente `ILevelIntroStagePresenter` no conteudo do level.
 
 ### O que chamar
 ```csharp
@@ -563,9 +563,11 @@ public async Task StartGameplayAsync(ILevelFlowRuntimeService levelFlow, Cancell
 
 ### O que esperar
 - `LevelMacroPrepareService` seleciona o level
-- `LevelStageOrchestrator` consulta o contrato atual do level
+- `LevelEnteredEvent` dispara a intro depois do level aplicado
+- `LevelIntroCompletedEvent` libera o handoff para `Playing`
 - se `hasIntroStage=true`, a intro roda antes do gameplay
 - se `hasIntroStage=false`, o fluxo segue sem erro
+- o host adota o presenter canonico do level por contrato, nao por tipo concreto
 
 ### Erro comum
 Esperar que a intro seja global ou por rota. Hoje ela e level-owned e opcional por `LevelDefinitionAsset`.

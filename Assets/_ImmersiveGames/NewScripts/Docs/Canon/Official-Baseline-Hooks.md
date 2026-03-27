@@ -11,6 +11,8 @@ Este documento define o conjunto oficial de hooks para integrações externas e 
 - `SceneTransitionCompletedEvent`: use quando a rota alvo já estiver totalmente aplicada; não use para marcos intermediários de loading.
 - `LevelSelectedEvent`: use quando um level for selecionado para o fluxo atual; não use como prova de que o swap já foi comprometido.
 - `LevelSwapLocalAppliedEvent`: use quando o swap local de level for de fato aplicado; não use para seleção ou roteamento macro.
+- `LevelEnteredEvent`: use como hook canônico pós-aplicação do level para seams level-owned, incluindo IntroStage; não use antes do level estar ativo.
+- `LevelIntroCompletedEvent`: use como handoff canônico de fim da intro para liberar o fluxo level->gameplay; não use como substituto de `LevelEnteredEvent`.
 - `ISceneResetHook`: use para extensões locais do lifecycle de reset de cena; não use como hook global de módulo.
 - `IActorLifecycleHook`: use para lifecycle local de actor durante reset; não use para lógica de gameplay fora de reset.
 

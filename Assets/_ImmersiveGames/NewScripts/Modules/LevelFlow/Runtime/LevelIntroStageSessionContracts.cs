@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -25,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string reason,
             int selectionVersion,
             string levelSignature,
-            GameObject presenterPrefab,
+            GameObject? presenterPrefab,
             LevelIntroStageDisposition disposition)
         {
             LevelRef = levelRef;
@@ -46,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public string Reason { get; }
         public int SelectionVersion { get; }
         public string LevelSignature { get; }
-        public GameObject PresenterPrefab { get; }
+        public GameObject? PresenterPrefab { get; }
         public LevelIntroStageDisposition Disposition { get; }
 
         public bool HasIntroStage => Disposition == LevelIntroStageDisposition.HasIntro;
@@ -69,6 +70,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public string Source { get; }
     }
 
+    public readonly struct LevelIntroCompletedEvent : IEvent
+    {
+        public LevelIntroCompletedEvent(LevelIntroStageSession session, string source, bool wasSkipped, string reason)
+        {
+            Session = session;
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+            WasSkipped = wasSkipped;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+        }
+
+        public LevelIntroStageSession Session { get; }
+        public string Source { get; }
+        public bool WasSkipped { get; }
+        public string Reason { get; }
+    }
+
     public interface ILevelIntroStageSessionService
     {
         bool TryGetCurrentSession(out LevelIntroStageSession session);
@@ -77,9 +94,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
     public interface ILevelIntroStagePresenterRegistry
     {
         bool TryGetCurrentPresenter(out ILevelIntroStagePresenter presenter);
-        bool TryEnsureCurrentPresenter(LevelIntroStageSession session, string source);
+        bool TryEnsureCurrentPresenter(LevelIntroStageSession session, string source, out ILevelIntroStagePresenter presenter);
         void Register(ILevelIntroStagePresenter presenter, string sessionSignature);
         void Unregister(ILevelIntroStagePresenter presenter);
+    }
+
+    public interface ILevelIntroStagePresenterScopeResolver
+    {
+        bool TryResolvePresenters(LevelIntroStageSession session, out IReadOnlyList<ILevelIntroStagePresenter> presenters);
     }
 
     public interface ILevelIntroStagePresenter
@@ -128,30 +150,33 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         private void OnLevelSelected(LevelSelectedEvent evt)
         {
-            string levelName = evt.LevelRef != null ? evt.LevelRef.name : "<none>";
+            LevelDefinitionAsset levelRef = evt.LevelRef;
+            SceneRouteDefinitionAsset macroRouteRef = evt.MacroRouteRef;
+            string levelName = levelRef != null ? levelRef.name : "<none>";
 
-            if (evt.LevelRef == null)
+            if (levelRef == null)
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStageSessionService),
                     "[FATAL][H1][LevelFlow] LevelSelectedEvent sem levelRef ao materializar intro session.");
             }
 
-            if (evt.MacroRouteRef == null)
+            if (macroRouteRef == null)
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStageSessionService),
                     $"[FATAL][H1][LevelFlow] LevelSelectedEvent sem macroRouteRef ao materializar intro session. levelRef='{levelName}' routeId='{evt.MacroRouteId}'.");
             }
 
+            bool hasIntro = levelRef != null && levelRef.HasIntroStage;
             var session = new LevelIntroStageSession(
-                evt.LevelRef,
+                levelRef!,
                 evt.MacroRouteId,
-                evt.MacroRouteRef,
+                macroRouteRef!,
                 evt.LocalContentId,
                 evt.Reason,
                 evt.SelectionVersion,
                 evt.LevelSignature,
-                evt.LevelRef != null ? evt.LevelRef.IntroPresenterPrefab : null,
-                evt.LevelRef.HasIntroStage ? LevelIntroStageDisposition.HasIntro : LevelIntroStageDisposition.NoIntro);
+                levelRef != null ? levelRef.IntroPresenterPrefab : null,
+                hasIntro ? LevelIntroStageDisposition.HasIntro : LevelIntroStageDisposition.NoIntro);
 
             lock (_sync)
             {

@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
@@ -264,19 +265,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
 
             if (request.ResolvedRouteDefinition.HasValue)
             {
-                if (request.ResolvedRouteRef == null)
+                SceneRouteDefinition resolvedRouteDefinition = request.ResolvedRouteDefinition.GetValueOrDefault();
+                SceneRouteDefinitionAsset resolvedRouteRef = request.ResolvedRouteRef
+                    ?? throw new InvalidOperationException($"SceneTransitionRequest sem routeRef canonica. routeId='{request.RouteId}'.");
+
+                if (resolvedRouteRef.RouteId != request.RouteId)
                 {
-                    FailFastTransitionRequest(request, $"SceneTransitionRequest sem routeRef canonica. routeId='{request.RouteId}'.");
+                    FailFastTransitionRequest(request, $"SceneTransitionRequest routeRef mismatch. routeId='{request.RouteId}' routeRefRouteId='{resolvedRouteRef.RouteId}'.");
                 }
 
-                if (request.ResolvedRouteRef.RouteId != request.RouteId)
-                {
-                    FailFastTransitionRequest(request, $"SceneTransitionRequest routeRef mismatch. routeId='{request.RouteId}' routeRefRouteId='{request.ResolvedRouteRef.RouteId}'.");
-                }
+                routeDefinition = resolvedRouteDefinition;
 
-                routeDefinition = request.ResolvedRouteDefinition.Value;
-
-                if (string.IsNullOrWhiteSpace(routeDefinition.Value.TargetActiveScene))
+                if (string.IsNullOrWhiteSpace(resolvedRouteDefinition.TargetActiveScene))
                 {
                     FailFastTransitionRequest(request, $"routeId='{request.RouteId}' com TargetActiveScene vazio.");
                 }

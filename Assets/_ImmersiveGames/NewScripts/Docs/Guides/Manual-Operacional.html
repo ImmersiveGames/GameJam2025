@@ -316,7 +316,7 @@
         <h2>Receita: adicionar uma <code>IntroStage</code> ao level</h2>
         <div class="grid-2">
           <div class="callout"><div class="mini-title">O que configurar</div><ol class="step-list"><li>No <code>LevelDefinitionAsset</code>, ligar <code>hasIntroStage</code>.</li><li>Garantir que o level esta na <code>LevelCollectionAsset</code> da rota atual.</li><li>Usar o mock atual apenas para testes de desenvolvimento.</li></ol></div>
-          <div class="callout use"><div class="mini-title">O que esperar</div><ul class="step-list"><li><code>LevelStageOrchestrator</code> continua owner da orquestracao.</li><li>Se houver intro, ela roda antes do gameplay.</li><li>Se nao houver intro, o fluxo segue sem erro.</li></ul></div>
+          <div class="callout use"><div class="mini-title">O que esperar</div><ul class="step-list"><li><code>LevelEnteredEvent</code> dispara a intro depois do level aplicado.</li><li><code>LevelIntroCompletedEvent</code> libera o handoff para <code>Playing</code>.</li><li>Se nao houver intro, o fluxo segue sem erro.</li></ul></div>
         </div>
         <pre><code>await levelFlow.StartGameplayDefaultAsync("Menu/PlayButton", cancellationToken);</code></pre>
         <div class="callout warn" style="margin-top:16px;"><div class="mini-title">Erro comum</div><div>Esperar intro global ou por rota. Hoje ela e level-owned e opcional por <code>LevelDefinitionAsset</code>.</div></div>

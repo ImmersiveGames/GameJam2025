@@ -57,6 +57,9 @@ As fronteiras canônicas do stack passam a ser:
 - intro opcional level-owned;
 - preparo/clear local correlacionado à route atual.
 
+O hook canônico pós-aplicação/ativo do level é `LevelEnteredEvent`; ele nasce depois do level aplicado e ativo e é o seam oficial para disparar IntroStage level-owned.
+`GameLoop` não decide o timing da intro nem funciona como gate canônico dela; no máximo reflete o estado alto nível depois.
+
 ### 5) `WorldReset` / `ResetInterop` continuam no eixo macro de reset
 
 - `WorldReset` executa o reset de mundo;

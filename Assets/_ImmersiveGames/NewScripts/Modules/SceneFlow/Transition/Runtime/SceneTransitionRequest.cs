@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         public string TransitionProfileName => TransitionProfile != null ? NormalizeLabel(TransitionProfile.name) : string.Empty;
         public string ContextSignature { get; }
         public string RequestedBy { get; }
-        public SceneRouteDefinitionAsset ResolvedRouteRef { get; }
+        public SceneRouteDefinitionAsset? ResolvedRouteRef { get; }
         public SceneRouteDefinition? ResolvedRouteDefinition { get; }
 
         public bool HasInlineSceneData =>

@@ -52,10 +52,10 @@ Regra:
 - `SceneTransitionProfile` e asset leaf visual.
 - `LoadingHudScene` e a HUD canonica de loading do macro flow.
 - `ILoadingPresentationService` e `LoadingHudService` cuidam apenas da apresentacao de loading.
-- `IntroStage` e level-owned e opcional.
+- `IntroStage` e level-owned, opcional, disparada pelo hook `LevelEnteredEvent` e finalizada por `LevelIntroCompletedEvent`.
+- O presenter canonico da intro e resolvido por `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver`.
 - `PostGame` e global, com resultados formais `Victory`, `Defeat` e `Exit`.
 - `Restart` nao passa por post hook.
-- O level atual pode expor apenas um hook opcional para complementar o `PostGame` global.
+- O level atual pode expor apenas um hook opcional para complementar a resposta ao resultado.
 - `ActorGroupRearm` e a nomenclatura canonica de rearm local de gameplay.
 - `Victory/Defeat` fazem parte do baseline atual por mock explicito e controlado.
-

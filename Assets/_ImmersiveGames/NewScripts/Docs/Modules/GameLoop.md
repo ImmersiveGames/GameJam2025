@@ -4,15 +4,17 @@
 
 - `GameLoopService` e coordenador do loop; o owner terminal da run e `GameRunOutcomeService`.
 - `GameLoopSceneFlowSyncCoordinator` sincroniza start plan e readiness com SceneFlow.
-- `IntroStage` e opcional por level.
+- `IntroStage` e opcional por level, mas nao e gate canonico do GameLoop.
 - `PostGame` e global.
 
 ## Ownership
 
-- `GameLoopService`: coordenacao do loop (ready, intro, playing, pause e post game).
+- `GameLoopService`: coordenacao do loop (ready, playing, pause e post game) e reflexo de atividade.
 - `GameRunOutcomeService`: owner terminal do fim de run e publish de `GameRunEndedEvent`.
 - `GameRunResultSnapshotService`: projecao/snapshot do resultado atual da run.
-- `IntroStageCoordinator` + `LevelStageOrchestrator`: intro do level atual.
+- `IntroStageCoordinator`: executor da IntroStage do level atual.
+- `LevelStageOrchestrator`: trigger level-owned da intro via `LevelEnteredEvent`.
+- `LevelIntroCompletedEvent`: handoff nivel->loop para sair de `Ready` e entrar em `Playing`.
 - `PostGameOwnershipService`: input mode e gate do post global.
 - `PostGameResultService`: resultado formal do post global.
 
@@ -22,6 +24,9 @@
 - `Victory` e `Defeat` entram pelo fim de run.
 - `Exit` e formalizado na saida para menu a partir de `PostPlay`.
 - `Restart` segue direto por reset macro e nao entra no post hook do level.
+- `IntroStage` nao depende de `Ready`/`IntroStage` do GameLoop para existir; o GameLoop apenas reflete o estado alto nivel depois.
+- Quando `LevelIntroCompletedEvent` chega, o GameLoop faz apenas o handoff para `Playing`.
+- O timing e ownership da intro ficam em `LevelFlow`; o GameLoop so consome o handoff final.
 
 ## Leitura cruzada
 

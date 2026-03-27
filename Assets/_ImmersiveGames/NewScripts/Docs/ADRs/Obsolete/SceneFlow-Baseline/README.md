@@ -1,19 +1,20 @@
 # Obsolete / SceneFlow-Baseline
 
-Esta pasta preserva os ADRs históricos do eixo `SceneFlow / LevelFlow` anteriores à consolidação canônica.
+Esta pasta preserva os ADRs historicos do eixo `SceneFlow / LevelFlow` anteriores a consolidacao canonica.
 
 ## Regra
 
-- Estes ADRs **não** são mais a leitura primária para entendimento do módulo.
-- Eles foram mantidos apenas por rastreabilidade histórica.
-- Em caso de conflito, prevalecem os ADRs canônicos:
+- Estes ADRs nao sao mais a leitura primaria para entendimento do modulo.
+- Eles foram mantidos apenas por rastreabilidade historica.
+- Em caso de conflito, prevalecem os ADRs canonicos:
   - `ADR-0030`
   - `ADR-0031`
   - `ADR-0032`
   - `ADR-0033`
+- Para IntroStage/LevelFlow, consulte `ADR-0027` como contrato operacional e `ADR-0037` como lista oficial de hooks.
 
 ## Quando consultar esta pasta
 
-- para entender a evolução histórica;
-- para localizar o racional original de uma decisão refinada depois;
-- para mapear supersedência durante merge/documentação.
+- para entender a evolucao historica;
+- para localizar o racional original de uma decisao refinada depois;
+- para mapear supersedencia durante merge/documentacao.
