@@ -43,6 +43,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public void RequestPause() => _signals.MarkPause();
         public void RequestResume() => _signals.MarkResume();
         public void RequestReady() => _signals.MarkReady();
+        public void RequestRearm() => _signals.MarkRearm();
         public void RequestSceneFlowCompletionSync(SceneRouteKind routeKind)
         {
             var currentState = _stateMachine?.Current ?? GameLoopStateId.Boot;
@@ -139,6 +140,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             var previousState = _lastStateId;
             HandlePostPlayExitIfNeeded(previousState, stateId);
             UpdateCurrentState(stateId, isActive, previousState);
+            EventBus<GameLoopStateEnteredEvent>.Raise(new GameLoopStateEnteredEvent(stateId, isActive));
             UpdateRunStartedFlag(stateId);
             SyncIntroStageFlags(stateId);
             HandlePostPlayEnterIfNeeded(stateId);
@@ -286,6 +288,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             public bool PauseRequested { get; private set; }
             public bool ResumeRequested { get; private set; }
             public bool ReadyRequested { get; private set; }
+            public bool RearmRequested { get; private set; }
             public bool ResetRequested { get; private set; }
             public bool EndRequested { get; private set; }
             public bool IntroStageRequested { get; private set; }
@@ -301,6 +304,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             public void MarkPause() => PauseRequested = true;
             public void MarkResume() => ResumeRequested = true;
             public void MarkReady() => ReadyRequested = true;
+            public void MarkRearm() => RearmRequested = true;
             public void MarkReset() => ResetRequested = true;
             public void MarkEnd() => EndRequested = true;
             public void ClearStartPending() => StartRequested = false;
@@ -318,6 +322,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                 PauseRequested = false;
                 ResumeRequested = false;
                 ReadyRequested = false;
+                RearmRequested = false;
                 ResetRequested = false;
                 EndRequested = false;
             }

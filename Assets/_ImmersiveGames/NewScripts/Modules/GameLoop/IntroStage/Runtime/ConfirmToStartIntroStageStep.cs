@@ -1,124 +1,35 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
-using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
 {
     /// <summary>
-    /// Passo minimo de IntroStageController com confirmacao via input.
+    /// Passo minimo da IntroStage que apenas aguarda a confirmacao canonica do presenter de level.
     /// </summary>
     public sealed class ConfirmToStartIntroStageStep : IIntroStageStep
     {
-        private const string UiMapName = "UI";
-        private const string SubmitActionName = "Submit";
-        private const string CancelActionName = "Cancel";
-
-        public ConfirmToStartIntroStageStep() { }
-
         public bool HasContent => true;
 
         public async Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
         {
-            string activeScene = NormalizeValue(SceneManager.GetActiveScene().name);
-            string routeKind = context.RouteKind.ToString();
-            string signature = NormalizeSignature(context.ContextSignature);
-
-            ApplyUiInputMode(signature, activeScene, routeKind);
+            _ = context;
 
             var controlService = ResolveIntroStageControlService();
             if (controlService == null)
             {
-                DebugUtility.LogWarning<ConfirmToStartIntroStageStep>(
-                    "[IntroStageController] IIntroStageControlService indisponivel. ConfirmToStart nao podera concluir a IntroStageController.");
-                return;
+                HardFailFastH1.Trigger(typeof(ConfirmToStartIntroStageStep),
+                    "[FATAL][H1][GameLoop] IIntroStageControlService indisponivel. IntroStage nao pode aguardar confirmacao.");
             }
 
-            var actions = new List<InputAction>();
-
-            void CompleteFromInput(InputAction.CallbackContext _)
-                => controlService.CompleteIntroStage("IntroStageController/UIConfirm");
-
-            TryBindUiActions(actions, CompleteFromInput);
-
-            try
-            {
-                await controlService.WaitForCompletionAsync(cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                for (int i = 0; i < actions.Count; i++)
-                {
-                    actions[i].performed -= CompleteFromInput;
-                }
-            }
-        }
-
-        private static void ApplyUiInputMode(string signature, string sceneName, string routeKind)
-        {
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
-                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='IntroStageController' reason='IntroStageController/ConfirmToStart' signature='{signature}' scene='{sceneName}' routeKind='{routeKind}' (delegated).",
+                $"[OBS][IntroStageController] Waiting for canonical level presenter confirmation. scene='{SceneManager.GetActiveScene().name}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<InputModeRequestEvent>.Raise(
-                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "IntroStageController/ConfirmToStart", "IntroStage", signature));
-        }
-
-        private static void TryBindUiActions(List<InputAction> actions, Action<InputAction.CallbackContext> handler)
-        {
-            PlayerInput[]? inputs = UnityEngine.Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
-            if (inputs == null || inputs.Length == 0)
-            {
-                return;
-            }
-
-            for (int i = 0; i < inputs.Length; i++)
-            {
-                var pi = inputs[i];
-                if (pi == null || !pi.enabled || !pi.gameObject.activeInHierarchy)
-                {
-                    continue;
-                }
-
-                var asset = pi.actions;
-                if (asset == null)
-                {
-                    continue;
-                }
-
-                var map = asset.FindActionMap(UiMapName, false);
-                if (map == null)
-                {
-                    continue;
-                }
-
-                BindActionIfPresent(map, SubmitActionName, actions, handler);
-                BindActionIfPresent(map, CancelActionName, actions, handler);
-            }
-        }
-
-        private static void BindActionIfPresent(
-            InputActionMap map,
-            string actionName,
-            List<InputAction> actions,
-            Action<InputAction.CallbackContext> handler)
-        {
-            var action = map.FindAction(actionName, false);
-            if (action == null)
-            {
-                return;
-            }
-
-            action.performed += handler;
-            actions.Add(action);
+            await controlService.WaitForCompletionAsync(cancellationToken);
         }
 
         private static IIntroStageControlService? ResolveIntroStageControlService()
@@ -127,13 +38,5 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 ? service
                 : null;
         }
-
-        private static string NormalizeSignature(string signature)
-            => string.IsNullOrWhiteSpace(signature) ? "<none>" : signature.Trim();
-
-        private static string NormalizeValue(string value)
-            => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
     }
 }
-
-

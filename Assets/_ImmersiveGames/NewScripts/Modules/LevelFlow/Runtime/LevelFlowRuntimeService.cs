@@ -59,6 +59,29 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             await _levelSwapLocalService.SwapLocalAsync(levelRef, reason, ct);
         }
 
+        public async Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/ResetCurrentLevel" : reason.Trim();
+            GameplayStartSnapshot snapshot = default;
+
+            if (_restartContextService == null ||
+                !_restartContextService.TryGetCurrent(out snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.HasLevelRef)
+            {
+                HardFailFastH1.Trigger(typeof(LevelFlowRuntimeService),
+                    $"[FATAL][H1][LevelFlow] ResetCurrentLevelAsync requires a valid current gameplay snapshot. reason='{normalizedReason}'.");
+            }
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][LevelFlow] ResetCurrentLevelRequested levelRef='{snapshot.LevelRef.name}' routeId='{snapshot.MacroRouteId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                DebugUtility.Colors.Info);
+
+            await SwapLevelLocalAsync(snapshot.LevelRef, normalizedReason, ct);
+        }
+
         public async Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();

@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         bool PauseRequested { get; }
         bool ResumeRequested { get; }
         bool ReadyRequested { get; }
+        bool RearmRequested { get; }
         bool ResetRequested { get; }
         bool EndRequested { get; set; }
         bool IntroStageRequested { get; }
@@ -45,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         void RequestPause();
         void RequestResume();
         void RequestReady();
+        void RequestRearm();
         void RequestSceneFlowCompletionSync(SceneRouteKind routeKind);
         void RequestReset();
         void RequestRunEnd();

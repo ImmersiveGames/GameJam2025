@@ -101,6 +101,23 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             DebugUtility.Log<LevelSwapLocalService>(
                 $"[OBS][LevelFlow] LevelSwapLocalApplied fromLevelRef='{(fromLevelRef != null ? fromLevelRef.name : "<none>")}' toLevelRef='{targetLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' contentId='{localContentId}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} v='{nextSelectionVersion}' signature='{swapSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
+
+            EventBus<LevelEnteredEvent>.Raise(new LevelEnteredEvent(
+                new LevelIntroStageSession(
+                    targetLevelRef,
+                    macroRouteId,
+                    routeAsset,
+                    localContentId,
+                    normalizedReason,
+                    nextSelectionVersion,
+                    levelSignature,
+                    targetLevelRef.IntroPresenterPrefab,
+                    targetLevelRef.HasIntroStage ? LevelIntroStageDisposition.HasIntro : LevelIntroStageDisposition.NoIntro),
+                "LevelSwapLocal"));
+
+            DebugUtility.Log<LevelSwapLocalService>(
+                $"[OBS][LevelFlow] LevelEntered source='LevelSwapLocal' levelRef='{targetLevelRef.name}' contentId='{localContentId}' v='{nextSelectionVersion}' signature='{levelSignature}'.",
+                DebugUtility.Colors.Info);
         }
 
         private LevelCollectionAsset ResolveLevelCollectionOrFail(SceneRouteDefinitionAsset routeAsset, SceneRouteId macroRouteId, string signature, string reason)

@@ -16,7 +16,8 @@ MonoBehaviour:
   - buildIndex: 7
     sceneName: SceneTest
   hasIntroStage: 1
-  hasPostGameReactionHook: 1
+  introPresenterPrefab: {fileID: 0}
+  hasPostGameReactionHook: 0
   allowLocalCurtainIn: 1
   allowLocalCurtainOut: 1
   bgmCue: {fileID: 0}

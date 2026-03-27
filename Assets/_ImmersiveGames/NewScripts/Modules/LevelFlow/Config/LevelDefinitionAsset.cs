@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
 
         [Header("Level Flags")]
         [SerializeField] private bool hasIntroStage = true;
+        [SerializeField] private GameObject introPresenterPrefab;
         [FormerlySerializedAs("hasPostLevelStage")]
         [SerializeField] private bool hasPostGameReactionHook = true;
         [SerializeField] private bool allowLocalCurtainIn = true;
@@ -26,6 +27,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Config
 
         public IReadOnlyList<SceneBuildIndexRef> AdditiveScenes => additiveScenes;
         public bool HasIntroStage => hasIntroStage;
+        public GameObject IntroPresenterPrefab => introPresenterPrefab;
+        public bool HasIntroPresenterPrefab => introPresenterPrefab != null;
         public bool HasPostGameReactionHook => hasPostGameReactionHook;
         public bool HasPostLevelStage => hasPostGameReactionHook;
         public bool AllowLocalCurtainIn => allowLocalCurtainIn;

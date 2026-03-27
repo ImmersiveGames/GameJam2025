@@ -8,12 +8,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             LevelDefinitionAsset levelRef,
             string levelSignature,
             int selectionVersion,
+            string localContentId,
             bool hasIntroStage,
             bool hasPostGameReactionHook)
         {
             LevelRef = levelRef;
             LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
+            LocalContentId = string.IsNullOrWhiteSpace(localContentId) ? string.Empty : localContentId.Trim();
             HasIntroStage = hasIntroStage;
             HasPostGameReactionHook = hasPostGameReactionHook;
         }
@@ -21,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public LevelDefinitionAsset LevelRef { get; }
         public string LevelSignature { get; }
         public int SelectionVersion { get; }
+        public string LocalContentId { get; }
         public bool HasIntroStage { get; }
         public bool HasPostGameReactionHook { get; }
 

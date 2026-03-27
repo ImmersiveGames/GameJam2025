@@ -94,6 +94,18 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
     /// Representa o início de uma nova run do jogo.
     /// É emitido quando o GameLoop entra em um estado de gameplay ativo (Playing).
     /// </summary>
+    public sealed class GameLoopStateEnteredEvent : IEvent
+    {
+        public GameLoopStateEnteredEvent(GameLoopStateId stateId, bool isActive)
+        {
+            StateId = stateId;
+            IsActive = isActive;
+        }
+
+        public GameLoopStateId StateId { get; }
+        public bool IsActive { get; }
+    }
+
     public sealed class GameRunStartedEvent : IEvent
     {
         public GameRunStartedEvent(GameLoopStateId stateId)

@@ -36,6 +36,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                 return TransitionTo(GameLoopStateId.Boot);
             }
 
+            if (_signals.RearmRequested && Current == GameLoopStateId.Playing)
+            {
+                return TransitionTo(GameLoopStateId.Ready);
+            }
+
             // ReadyRequested tem prioridade alta APENAS em estados não-ativos.
             // Evita capturar reset/restart durante transições em gameplay.
             if (_signals.ReadyRequested)

@@ -40,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
             EnsureLevelFlowCompletionGate();
             EnsureLevelFlowRuntimeService();
             EnsurePostLevelActionsService(bootstrapConfig);
+            EnsureLevelIntroStagePresenterHost();
             EnsureLevelStageOrchestrator();
 
             _runtimeComposed = true;
@@ -164,7 +165,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
                 () => new LevelStageOrchestrator(),
                 typeof(LevelStageOrchestrator),
                 "[LevelFlow] LevelStageOrchestrator ja registrado no DI global.",
-                "[LevelFlow] LevelStageOrchestrator registrado (SceneFlowCompleted + LevelSwapLocalApplied).");
+                "[LevelFlow] LevelStageOrchestrator registrado (LevelEntered hook).");
+        }
+
+        private static void EnsureLevelIntroStagePresenterHost()
+        {
+            RegisterIfMissing(
+                () => new LevelIntroStagePresenterHost(),
+                typeof(LevelIntroStagePresenterHost),
+                "[LevelFlow] LevelIntroStagePresenterHost ja registrado no DI global.",
+                "[LevelFlow] LevelIntroStagePresenterHost registrado.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, Type contextType, string alreadyRegisteredMessage, string registeredMessage)

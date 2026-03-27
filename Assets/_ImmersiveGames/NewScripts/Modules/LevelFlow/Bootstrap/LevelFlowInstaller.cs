@@ -45,7 +45,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
         private static void RegisterLevelFlowPrerequisites(BootstrapConfigAsset bootstrapConfig)
         {
             var restartContextService = ResolveOrRegisterRestartContextService();
-            RegisterLevelStagePresentationService(restartContextService);
+            RegisterLevelIntroStageSessionService();
+            RegisterLevelIntroStagePresenterRegistry();
+            RegisterLevelStagePresentationService();
             RegisterLevelPostGameHookService();
             RegisterLevelSwapLocalService(restartContextService);
             RegisterLevelMacroPrepareService(restartContextService);
@@ -68,18 +70,53 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
             return service;
         }
 
-        private static void RegisterLevelStagePresentationService(IRestartContextService restartContextService)
+        private static void RegisterLevelIntroStageSessionService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ILevelIntroStageSessionService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new LevelIntroStageSessionService();
+            DependencyManager.Provider.RegisterGlobal<ILevelIntroStageSessionService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelFlowInstaller),
+                "[OBS][LevelFlow] ILevelIntroStageSessionService registrado no DI global (LevelIntroStageSessionService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLevelStagePresentationService()
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var existing) && existing != null)
             {
                 return;
             }
 
-            var service = new LevelStagePresentationService(restartContextService);
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelIntroStageSessionService>(out var sessionService) || sessionService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelFlow] ILevelIntroStageSessionService obrigatorio ausente ao registrar ILevelStagePresentationService.");
+            }
+
+            var service = new LevelStagePresentationService(sessionService);
             DependencyManager.Provider.RegisterGlobal(service);
 
             DebugUtility.LogVerbose(typeof(LevelFlowInstaller),
                 "[OBS][LevelFlow] ILevelStagePresentationService registrado no DI global (LevelStagePresentationService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLevelIntroStagePresenterRegistry()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ILevelIntroStagePresenterRegistry>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new LevelIntroStagePresenterHost();
+            DependencyManager.Provider.RegisterGlobal<ILevelIntroStagePresenterRegistry>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelFlowInstaller),
+                "[OBS][LevelFlow] ILevelIntroStagePresenterRegistry registrado no DI global (LevelIntroStagePresenterHost).",
                 DebugUtility.Colors.Info);
         }
 

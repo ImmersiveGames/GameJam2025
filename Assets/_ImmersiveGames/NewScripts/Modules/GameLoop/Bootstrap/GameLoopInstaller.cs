@@ -37,7 +37,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             RegisterGameLoopCommands();
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
-            RegisterIntroStagePolicyResolver();
             RegisterGameplaySceneClassifier();
             RegisterDefaultIntroStageStep();
             RegisterPostGameResultService();
@@ -136,14 +135,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 () => new IntroStageControlService(),
                 "[IntroStageController] IIntroStageControlService ja registrado no DI global.",
                 "[IntroStageController] IntroStageControlService registrado no DI global.");
-        }
-
-        private static void RegisterIntroStagePolicyResolver()
-        {
-            RegisterIfMissing<IIntroStagePolicyResolver>(
-                () => new DefaultIntroStagePolicyResolver(),
-                "[IntroStageController] IIntroStagePolicyResolver ja registrado no DI global.",
-                "[IntroStageController] DefaultIntroStagePolicyResolver registrado no DI global.");
         }
 
         private static void RegisterGameplaySceneClassifier()

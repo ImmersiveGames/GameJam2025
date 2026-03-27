@@ -30,11 +30,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public Task RestartLevelAsync(string reason = null, CancellationToken ct = default)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostGame/Restart" : reason.Trim();
+            return RestartFromFirstLevelAsync(reason, ct);
+        }
+
+        public Task RestartFromFirstLevelAsync(string reason = null, CancellationToken ct = default)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartFromFirstLevel" : reason.Trim();
             _ = ct;
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionRequested action='RestartLevel' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] PostLevelActionRequested action='RestartFromFirstLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             IGameLoopCommands gameLoopCommands = ResolveGameCommandsOrFail(normalizedReason);
@@ -45,10 +50,27 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='RestartLevel' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] PostLevelActionApplied action='RestartFromFirstLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
 
             return Task.CompletedTask;
+        }
+
+        public async Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/ResetCurrentLevel" : reason.Trim();
+
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] PostLevelActionRequested action='ResetCurrentLevel' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            ct.ThrowIfCancellationRequested();
+
+            await _levelFlowRuntimeService.ResetCurrentLevelAsync(normalizedReason, ct);
+
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] PostLevelActionApplied action='ResetCurrentLevel' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
         }
 
         public async Task NextLevelAsync(string reason = null, CancellationToken ct = default)

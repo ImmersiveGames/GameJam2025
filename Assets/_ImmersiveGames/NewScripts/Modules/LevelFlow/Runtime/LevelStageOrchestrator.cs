@@ -2,149 +2,104 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     public sealed class LevelStageOrchestrator : IDisposable
     {
-        private readonly EventBinding<SceneTransitionCompletedEvent> _sceneTransitionCompletedBinding;
-        private readonly EventBinding<LevelSwapLocalAppliedEvent> _levelSwapLocalAppliedBinding;
+        private readonly EventBinding<LevelEnteredEvent> _levelEnteredBinding;
+        private readonly EventBinding<GameLoopStateEnteredEvent> _gameLoopStateEnteredBinding;
 
         private int _lastProcessedSelectionVersion = -1;
-        private string _lastProcessedLevelSignature = string.Empty;
+        private LevelIntroStageSession _pendingSession;
+        private string _pendingSource = string.Empty;
+        private bool _hasPendingIntro;
 
         public LevelStageOrchestrator()
         {
-            DefaultLevelIntroOverlayPresenter.EnsureInstalled();
-
-            _sceneTransitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
-            _levelSwapLocalAppliedBinding = new EventBinding<LevelSwapLocalAppliedEvent>(OnLevelSwapLocalApplied);
-
-            EventBus<SceneTransitionCompletedEvent>.Register(_sceneTransitionCompletedBinding);
-            EventBus<LevelSwapLocalAppliedEvent>.Register(_levelSwapLocalAppliedBinding);
+            _levelEnteredBinding = new EventBinding<LevelEnteredEvent>(OnLevelEntered);
+            _gameLoopStateEnteredBinding = new EventBinding<GameLoopStateEnteredEvent>(OnGameLoopStateEntered);
+            EventBus<LevelEnteredEvent>.Register(_levelEnteredBinding);
+            EventBus<GameLoopStateEnteredEvent>.Register(_gameLoopStateEnteredBinding);
         }
 
         public void Dispose()
         {
-            EventBus<SceneTransitionCompletedEvent>.Unregister(_sceneTransitionCompletedBinding);
-            EventBus<LevelSwapLocalAppliedEvent>.Unregister(_levelSwapLocalAppliedBinding);
+            EventBus<LevelEnteredEvent>.Unregister(_levelEnteredBinding);
+            EventBus<GameLoopStateEnteredEvent>.Unregister(_gameLoopStateEnteredBinding);
         }
 
-        private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
+        private void OnLevelEntered(LevelEnteredEvent evt)
         {
-            if (evt.context.RouteKind != SceneRouteKind.Gameplay)
+            if (!evt.Session.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(LevelStageOrchestrator),
+                    "[FATAL][H1][LevelFlow] Invalid LevelEnteredEvent received.");
+            }
+
+            if (!TryAdvanceDedupe(evt.Session.SelectionVersion, evt.Session.LevelSignature, evt.Source))
             {
                 return;
             }
 
-            if (!TryResolveIntroStageDependencies(out var gameLoopService, out var coordinator))
+            if (!TryResolvePresenterRegistry(out var presenterRegistry))
             {
                 return;
             }
 
-            if (!TryResolveRestartContext(out var restartContextService) ||
-                !restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
-                !snapshot.IsValid ||
-                !snapshot.HasLevelRef)
+            bool presenterReady = presenterRegistry.TryEnsureCurrentPresenter(evt.Session, evt.Source);
+            if (evt.Session.HasIntroStage && !presenterReady)
             {
-                DebugUtility.LogVerbose<LevelStageOrchestrator>(
-                    "[LevelFlow] IntroStage via SceneFlowCompleted ignored: canonical snapshot unavailable/invalid.",
-                    DebugUtility.Colors.Info);
+                HardFailFastH1.Trigger(typeof(LevelStageOrchestrator),
+                    $"[FATAL][H1][LevelFlow] Intro session requires a canonical level presenter but none is registered. source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' signature='{evt.Session.LevelSignature}'.");
+            }
+
+            if (!evt.Session.HasIntroStage)
+            {
+                ClearPendingIntro();
                 return;
             }
 
-            string levelSig = snapshot.LevelSignature;
-            if (!AdvanceDedupe(snapshot.SelectionVersion, levelSig, snapshot.MacroRouteId.ToString()))
+            _pendingSession = evt.Session;
+            _pendingSource = evt.Source;
+            _hasPendingIntro = true;
+
+            if (IsPlaying())
             {
-                return;
+                RequestIntroRearm();
             }
 
-            bool hasIntroStage = ResolveHasIntroStage();
-            TryDispatchIntroStage(
-                source: "SceneFlowCompleted",
-                routeKind: evt.context.RouteKind,
-                routeId: snapshot.MacroRouteId,
-                levelRef: snapshot.LevelRef,
-                selectionVersion: snapshot.SelectionVersion,
-                reason: "SceneFlow/Completed",
-                existingLevelSignature: levelSig,
-                hasIntroStage: hasIntroStage,
-                gameLoopService: gameLoopService,
-                coordinator: coordinator);
+            if (IsReady())
+            {
+                TryDispatchPendingIntro("level_entered_ready");
+            }
         }
 
-        private void OnLevelSwapLocalApplied(LevelSwapLocalAppliedEvent evt)
+        private void OnGameLoopStateEntered(GameLoopStateEnteredEvent evt)
         {
-            if (evt.SelectionVersion <= _lastProcessedSelectionVersion)
+            if (!_hasPendingIntro || evt.StateId != GameLoopStateId.Ready)
             {
                 return;
             }
 
-            if (!TryResolveIntroStageDependencies(out var gameLoopService, out var coordinator))
-            {
-                return;
-            }
-
-            _lastProcessedSelectionVersion = evt.SelectionVersion;
-            _lastProcessedLevelSignature = string.IsNullOrWhiteSpace(evt.LevelSignature)
-                ? string.Empty
-                : evt.LevelSignature;
-
-            string normalizedReason = string.IsNullOrWhiteSpace(evt.Reason)
-                ? "LevelFlow/SwapLevelLocal"
-                : evt.Reason;
-            bool hasIntroStage = ResolveHasIntroStage();
-            TryDispatchIntroStage(
-                source: "LevelSwapLocal",
-                routeKind: SceneRouteKind.Gameplay,
-                routeId: evt.MacroRouteId,
-                levelRef: evt.LevelRef,
-                selectionVersion: evt.SelectionVersion,
-                reason: normalizedReason,
-                existingLevelSignature: evt.LevelSignature,
-                hasIntroStage: hasIntroStage,
-                gameLoopService: gameLoopService,
-                coordinator: coordinator);
+            TryDispatchPendingIntro(evt.IsActive ? "game_loop_ready_active" : "game_loop_ready");
         }
 
-        private bool AdvanceDedupe(int selectionVersion, string levelSig, string routeId)
+        private bool TryAdvanceDedupe(int selectionVersion, string levelSignature, string source)
         {
-            if (!string.IsNullOrWhiteSpace(levelSig))
-            {
-                if (string.Equals(levelSig, _lastProcessedLevelSignature, StringComparison.Ordinal))
-                {
-                    DebugUtility.LogVerbose<LevelStageOrchestrator>(
-                        $"[LevelFlow] IntroStage via SceneFlowCompleted skipped reason='dedupe_level_signature' levelSignature='{levelSig}' routeId='{routeId}'.",
-                        DebugUtility.Colors.Info);
-                    return false;
-                }
-
-                _lastProcessedLevelSignature = levelSig;
-                _lastProcessedSelectionVersion = selectionVersion;
-                return true;
-            }
-
             if (selectionVersion < _lastProcessedSelectionVersion)
             {
-                int previousVersion = _lastProcessedSelectionVersion;
-                int nextVersion = selectionVersion;
                 _lastProcessedSelectionVersion = -1;
-                _lastProcessedLevelSignature = string.Empty;
-
-                DebugUtility.Log<LevelStageOrchestrator>(
-                    $"[OBS][LevelFlow] LevelStageDedupeReset reason='selection_version_rewind' prev='{previousVersion}' next='{nextVersion}' routeId='{routeId}'.",
-                    DebugUtility.Colors.Info);
             }
 
             if (selectionVersion <= _lastProcessedSelectionVersion)
             {
+                DebugUtility.LogVerbose<LevelStageOrchestrator>(
+                    $"[LevelFlow] IntroStage skipped reason='dedupe_selection_version' selectionVersion='{selectionVersion}' source='{source}' levelSignature='{Normalize(levelSignature)}'.",
+                    DebugUtility.Colors.Info);
                 return false;
             }
 
@@ -152,248 +107,106 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             return true;
         }
 
-        private static bool TryResolveIntroStageDependencies(out IGameLoopService gameLoopService, out IIntroStageCoordinator coordinator)
+        private static string Normalize(string value)
+            => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+
+        private static bool TryResolvePresenterRegistry(out ILevelIntroStagePresenterRegistry presenterRegistry)
         {
-            gameLoopService = null;
-            coordinator = null;
+            presenterRegistry = null;
 
-            if (!DependencyManager.HasInstance)
+            if (!DependencyManager.Provider.TryGetGlobal<ILevelIntroStagePresenterRegistry>(out presenterRegistry) ||
+                presenterRegistry == null)
             {
-                return false;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal(out gameLoopService) || gameLoopService == null)
-            {
-                DebugUtility.LogWarning<LevelStageOrchestrator>(
-                    "[LevelFlow] IGameLoopService unavailable; IntroStage will not start.");
-                return false;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal(out coordinator) || coordinator == null)
-            {
-                DebugUtility.LogWarning<LevelStageOrchestrator>(
-                    "[LevelFlow] IIntroStageCoordinator unavailable; IntroStage will not start.");
+                HardFailFastH1.Trigger(typeof(LevelStageOrchestrator),
+                    "[FATAL][H1][LevelFlow] Missing ILevelIntroStagePresenterRegistry for level entry.");
                 return false;
             }
 
             return true;
         }
 
-        private static bool TryResolveRestartContext(out IRestartContextService restartContextService)
+        private bool IsPlaying()
         {
-            restartContextService = null;
-
-            if (!DependencyManager.HasInstance)
-            {
-                return false;
-            }
-
-            return DependencyManager.Provider.TryGetGlobal(out restartContextService)
-                   && restartContextService != null;
+            return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) &&
+                   gameLoopService != null &&
+                   string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
         }
 
-        private static bool ResolveHasIntroStage()
+        private bool IsReady()
         {
-            if (DependencyManager.HasInstance &&
-                DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var presentationService) &&
-                presentationService != null &&
-                presentationService.TryGetCurrentContract(out LevelStagePresentationContract contract))
-            {
-                return contract.HasIntroStage;
-            }
-
-            return true;
+            return DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) &&
+                   gameLoopService != null &&
+                   string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Ready), StringComparison.Ordinal);
         }
 
-        private static string BuildLevelSignature(LevelDefinitionAsset levelRef, SceneRouteId routeId, string reason, string existingSignature)
+        private void RequestIntroRearm()
         {
-            if (!string.IsNullOrWhiteSpace(existingSignature))
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
             {
-                return existingSignature.Trim();
+                HardFailFastH1.Trigger(typeof(LevelStageOrchestrator),
+                    $"[FATAL][H1][LevelFlow] Missing IGameLoopService for intro rearm. levelSignature='{_pendingSession.LevelSignature}'.");
             }
 
-            string levelName = levelRef != null ? levelRef.name : "<none>";
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/Unspecified" : reason.Trim();
-            return $"level:{levelName}|route:{routeId}|reason:{normalizedReason}";
+            gameLoopService.RequestRearm();
+            DebugUtility.Log<LevelStageOrchestrator>(
+                $"[OBS][IntroStageController] IntroStageRearmRequested source='{_pendingSource}' levelRef='{_pendingSession.LevelRef.name}' v='{_pendingSession.SelectionVersion}' reason='{Normalize(_pendingSession.Reason)}' levelSignature='{_pendingSession.LevelSignature}'.",
+                DebugUtility.Colors.Info);
         }
 
-        private void TryDispatchIntroStage(
-            string source,
-            SceneRouteKind routeKind,
-            SceneRouteId routeId,
-            LevelDefinitionAsset levelRef,
-            int selectionVersion,
-            string reason,
-            string existingLevelSignature,
-            bool hasIntroStage,
-            IGameLoopService gameLoopService,
-            IIntroStageCoordinator coordinator)
+        private void TryDispatchPendingIntro(string trigger)
         {
-            string levelSignature = BuildLevelSignature(levelRef, routeId, reason, existingLevelSignature);
-            string activeSceneName = SceneManager.GetActiveScene().name;
-            string levelName = levelRef != null ? levelRef.name : "<none>";
+            _ = trigger;
 
-            if (!hasIntroStage)
+            if (!_hasPendingIntro)
             {
-                DebugUtility.Log<LevelStageOrchestrator>(
-                    $"[OBS][IntroStageController] IntroStageSkipped source='{source}' levelRef='{levelName}' v='{selectionVersion}' reason='level_has_no_intro' levelSignature='{levelSignature}'.",
-                    DebugUtility.Colors.Info);
-                gameLoopService.RequestStart();
                 return;
             }
 
+            LevelIntroStageSession session = _pendingSession;
+            string source = _pendingSource;
+            ClearPendingIntro();
+            DispatchIntroStage(source, session, Normalize(session.Reason), isLocalSwap: string.Equals(source, "LevelSwapLocal", StringComparison.Ordinal));
+        }
+
+        private void ClearPendingIntro()
+        {
+            _pendingSession = default;
+            _pendingSource = string.Empty;
+            _hasPendingIntro = false;
+        }
+
+        private void DispatchIntroStage(
+            string source,
+            LevelIntroStageSession session,
+            string reason,
+            bool isLocalSwap)
+        {
+            if (isLocalSwap)
+            {
+                DebugUtility.LogVerbose<LevelStageOrchestrator>(
+                    $"[OBS][IntroStageController] IntroStageLocalSwapDispatch source='{source}' levelRef='{session.LevelRef.name}' v='{session.SelectionVersion}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
+                    DebugUtility.Colors.Info);
+            }
+
+            string activeSceneName = SceneManager.GetActiveScene().name;
+            string levelName = session.LevelRef != null ? session.LevelRef.name : "<none>";
+
             DebugUtility.Log<LevelStageOrchestrator>(
-                $"[OBS][IntroStageController] IntroStageStartRequested source='{source}' levelRef='{levelName}' v='{selectionVersion}' reason='{reason}' levelSignature='{levelSignature}'.",
+                $"[OBS][IntroStageController] IntroStageStartRequested source='{source}' levelRef='{levelName}' v='{session.SelectionVersion}' disposition='{session.Disposition}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
                 DebugUtility.Colors.Info);
 
-            gameLoopService.RequestIntroStageStart();
             var context = new IntroStageContext(
-                contextSignature: levelSignature,
-                routeKind: routeKind,
+                session: session,
                 targetScene: activeSceneName,
                 reason: reason);
 
+            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var coordinator) || coordinator == null)
+            {
+                HardFailFastH1.Trigger(typeof(LevelStageOrchestrator),
+                    $"[FATAL][H1][LevelFlow] Missing IIntroStageCoordinator for intro dispatch. source='{source}' levelSignature='{session.LevelSignature}'.");
+            }
+
             _ = coordinator.RunIntroStageAsync(context);
-        }
-    }
-
-    [DisallowMultipleComponent]
-    public sealed class DefaultLevelIntroOverlayPresenter : MonoBehaviour
-    {
-        private const string RootName = "__DefaultLevelIntroOverlayPresenter";
-        private static bool _installed;
-
-        private readonly Rect _panelRect = new(16f, 16f, 380f, 180f);
-
-        private IGameLoopService _gameLoopService;
-        private IIntroStageControlService _introStageControlService;
-        private ILevelStagePresentationService _levelStagePresentationService;
-
-        public static void EnsureInstalled()
-        {
-            if (_installed)
-            {
-                return;
-            }
-
-            var existing = GameObject.Find(RootName);
-            if (existing != null)
-            {
-                if (existing.GetComponent<DefaultLevelIntroOverlayPresenter>() == null)
-                {
-                    throw new InvalidOperationException(
-                        $"[FATAL][LevelFlow] Root '{RootName}' existe sem DefaultLevelIntroOverlayPresenter.");
-                }
-
-                _installed = true;
-                return;
-            }
-
-            var root = new GameObject(RootName);
-            DontDestroyOnLoad(root);
-            root.AddComponent<DefaultLevelIntroOverlayPresenter>();
-            _installed = true;
-        }
-
-        private void OnGUI()
-        {
-            if (!TryBuildViewModel(out var model))
-            {
-                return;
-            }
-
-            GUILayout.BeginArea(_panelRect, GUI.skin.box);
-            GUILayout.Label("Level Intro Active");
-            GUILayout.Label($"Level: {model.LevelName}");
-            GUILayout.Label($"State: {model.StateName}");
-            GUILayout.Label($"Signature: {model.LevelSignature}");
-
-            if (GUILayout.Button("Start Gameplay"))
-            {
-                model.ControlService.CompleteIntroStage("LevelIntro/ConfirmButton");
-            }
-
-            GUILayout.EndArea();
-        }
-
-        private bool TryBuildViewModel(out IntroOverlayViewModel model)
-        {
-            model = default;
-            ResolveDependencies();
-
-            if (_gameLoopService == null ||
-                _introStageControlService == null ||
-                _levelStagePresentationService == null)
-            {
-                return false;
-            }
-
-            if (!_levelStagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
-                !contract.IsValid ||
-                !contract.HasIntroStage)
-            {
-                return false;
-            }
-
-            bool stateIsIntro = string.Equals(
-                _gameLoopService.CurrentStateIdName,
-                nameof(GameLoopStateId.IntroStage),
-                StringComparison.Ordinal);
-
-            if (!stateIsIntro || !_introStageControlService.IsIntroStageActive)
-            {
-                return false;
-            }
-
-            model = new IntroOverlayViewModel(
-                _introStageControlService,
-                _gameLoopService.CurrentStateIdName,
-                contract.LevelRef != null ? contract.LevelRef.name : "<none>",
-                string.IsNullOrWhiteSpace(contract.LevelSignature) ? "<none>" : contract.LevelSignature.Trim());
-            return true;
-        }
-
-        private void ResolveDependencies()
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                return;
-            }
-
-            if (_gameLoopService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _gameLoopService);
-            }
-
-            if (_introStageControlService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _introStageControlService);
-            }
-
-            if (_levelStagePresentationService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _levelStagePresentationService);
-            }
-        }
-
-        private readonly struct IntroOverlayViewModel
-        {
-            public IntroOverlayViewModel(
-                IIntroStageControlService controlService,
-                string stateName,
-                string levelName,
-                string levelSignature)
-            {
-                ControlService = controlService;
-                StateName = string.IsNullOrWhiteSpace(stateName) ? "<none>" : stateName.Trim();
-                LevelName = string.IsNullOrWhiteSpace(levelName) ? "<none>" : levelName.Trim();
-                LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? "<none>" : levelSignature.Trim();
-            }
-
-            public IIntroStageControlService ControlService { get; }
-            public string StateName { get; }
-            public string LevelName { get; }
-            public string LevelSignature { get; }
         }
     }
 }
