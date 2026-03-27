@@ -39,6 +39,7 @@ Os seguintes pontos sao tratados como contracts oficiais para extensao externa o
 - `LevelSwapLocalAppliedEvent`
 - `LevelEnteredEvent`
 - `LevelIntroCompletedEvent`
+- `PauseStateChangedEvent`
 - `ISceneResetHook`
 - `IActorLifecycleHook`
 
@@ -77,6 +78,7 @@ Os seguintes sinais sao internos ou tecnicos e nao devem ser promovidos como API
 - `LevelSwapLocalAppliedEvent`: use para reagir ao fim efetivo do swap local.
 - `LevelEnteredEvent`: use como hook oficial pos-aplicacao do level para seams level-owned, incluindo IntroStage.
 - `LevelIntroCompletedEvent`: use como handoff oficial para o fluxo level->gameplay apos a intro concluir ou ser pulada.
+- `PauseStateChangedEvent`: use para reagir a entrada/saida de pause sem depender de wiring interno do GameLoop ou do overlay.
 - `ISceneResetHook`: use para extensao local do lifecycle de reset de cena.
 - `IActorLifecycleHook`: use para extensao local do lifecycle de atores durante reset.
 
@@ -97,6 +99,9 @@ Os seguintes sinais sao internos ou tecnicos e nao devem ser promovidos como API
 - `GameStartRequestedEvent`
 - `GamePauseCommandEvent`
 - `GameResumeRequestedEvent`
+
+## Nota de Pause
+`GamePauseCommandEvent` e `GameResumeRequestedEvent` continuam internos e podem permanecer como detalhes de implementacao do trilho atual. O contrato publico de pause passa a ser representado por `PauseStateChangedEvent` e pelas interfaces `IPauseCommands` / `IPauseStateService` descritas no ADR de Pause.
 
 ## Internal Components
 - `SceneFlowInputModeBridge`

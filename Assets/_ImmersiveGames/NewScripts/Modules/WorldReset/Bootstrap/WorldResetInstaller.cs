@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap
 
             _installed = true;
 
-            DebugUtility.LogVerbose(typeof(WorldResetInstaller),
+            DebugUtility.Log(typeof(WorldResetInstaller),
                 "[WorldReset] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }

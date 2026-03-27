@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
 
             _installed = true;
 
-            DebugUtility.LogVerbose(typeof(NavigationInstaller),
+            DebugUtility.Log(typeof(NavigationInstaller),
                 "[Navigation] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }

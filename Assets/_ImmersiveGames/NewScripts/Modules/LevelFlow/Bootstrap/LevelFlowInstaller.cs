@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
 
             _installed = true;
 
-            DebugUtility.LogVerbose(typeof(LevelFlowInstaller),
+            DebugUtility.Log(typeof(LevelFlowInstaller),
                 "[LevelFlow] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }

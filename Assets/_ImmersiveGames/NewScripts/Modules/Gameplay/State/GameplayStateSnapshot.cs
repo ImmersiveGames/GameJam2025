@@ -28,11 +28,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
 
         private int _lastResetFrame = -1;
         private string _lastResetReason = string.Empty;
-        private int _lastPauseFrame = -1;
-        private string _lastPauseKey = string.Empty;
-        private int _lastResumeFrame = -1;
-        private string _lastResumeKey = string.Empty;
-
         public bool IsGameplayReadyOrUnknown => !_hasReadinessSnapshot || _gameplayReady;
 
         public void SetState(StateDependentServiceState next)
@@ -55,30 +50,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
 
             _lastResetFrame = frame;
             _lastResetReason = reason;
-            return true;
-        }
-
-        public bool TryConsumePause(string key, int frame)
-        {
-            if (_lastPauseFrame == frame && string.Equals(_lastPauseKey, key, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            _lastPauseFrame = frame;
-            _lastPauseKey = key;
-            return true;
-        }
-
-        public bool TryConsumeResume(string key, int frame)
-        {
-            if (_lastResumeFrame == frame && string.Equals(_lastResumeKey, key, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            _lastResumeFrame = frame;
-            _lastResumeKey = key;
             return true;
         }
 

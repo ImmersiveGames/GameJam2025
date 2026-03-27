@@ -1,130 +1,327 @@
-# ADR-0038: Module Service Registration and Runtime Composition
+# ADR-0038 — Registro modular de DI e composição runtime por módulo
 
 ## Status
-- Aceito e validado em pilotos
-
-## Evidências canônicas
-- auditorias recentes de `module registration` vs `runtime composition`
-- `Baseline 3.5`
-- `ADR-0035` de ownership canônico
-- `ADR-0030` e `ADR-0031` para fronteiras e pipeline macro
-- pilotos validados em `GameLoop`, `SceneFlow`, `Navigation`, `LevelFlow` e `WorldReset`
-- `Modules/GameLoop/Bootstrap/GameLoopBootstrap.cs` como referência positiva inicial
+- Estado: Implementado
+- Data: 2026-03-27
+- Escopo: `Infrastructure/Composition`, descriptors de composição, `GlobalCompositionRoot`, boot modular de `NewScripts`
 
 ## Contexto
-O modelo anterior misturava registro de serviços com composição runtime. Isso gerava pipelines frágeis, dependências invertidas e correções em cascata.
 
-A base correta em `NewScripts` é duas fases globais, com registro primeiro e uso operacional depois. A decisão consolidada precisa também refletir a ordem por dependência explícita e o fail-fast do pipeline.
+O modelo anterior misturava:
 
-O objetivo não é esvaziar `Infrastructure/Composition`. O objetivo é remover wiring interno de módulo do root global e preservar apenas o núcleo legítimo de orquestração, helpers e entry points.
+- registro de serviços;
+- composição runtime;
+- wiring interno de módulo no root global;
+- entrypoints implícitos de bootstrap.
+
+Esse desenho gerava:
+
+- dependências invertidas;
+- ordem de boot frágil;
+- wiring acidental fora do módulo dono;
+- dificuldade de auditoria por log;
+- regressões silenciosas quando um módulo dependia de outro sem contrato explícito.
+
+A necessidade desta decisão é formalizar o pipeline modular de composição de `NewScripts` com:
+
+- duas fases globais;
+- dependências explícitas por fase;
+- fail-fast;
+- idempotência;
+- observabilidade mínima;
+- fronteira auditável entre o que pertence ao módulo e o que pode permanecer no `GlobalCompositionRoot`.
 
 ## Decisão
-- `Module Installer` registra serviços, contratos, providers, factories, configs e pré-requisitos do módulo.
-- `Module Runtime Bootstrap / Composer` compõe e ativa runtime depois que todos os installers relevantes terminaram.
-- `GlobalCompositionRoot` orquestra fases, valida e resolve a ordem, e executa entry points explícitos.
-- A ordem entre módulos em cada fase é determinada por dependências explícitas, com ordenação topológica ou equivalente.
-- O pipeline falha cedo em dependência ausente, dependência inválida, ID duplicado e ciclo.
-- Arquivos de installer e bootstrap/composer permanecem dentro do próprio módulo.
-- Não há auto-registro mágico, reflection opaca ou bootstrap invisível.
 
-## Canonical Two-Phase Model
-Fase 1: todos os `Module Installers` executam primeiro e apenas registram o que o módulo disponibiliza.
+### 1. Modelo canônico de duas fases
 
-Fase 2: todos os `Module Runtime Bootstraps / Composers` executam depois, usando somente o DI já preenchido.
+A composição modular de `NewScripts` passa a seguir obrigatoriamente duas fases globais:
 
-As fases são globais. O módulo continua dono do seu wiring. O root apenas coordena a execução e não incorpora lógica interna de composição.
+1. **Fase 1 — Registration**
+    - todos os `Installers` executam primeiro;
+    - apenas registram contratos, serviços, configs, providers, registries e pré-requisitos do módulo.
 
-## Canonical Dependency Model
-Cada módulo declara dependências explícitas para sua fase de installer e, quando aplicável, para sua fase de runtime composition.
+2. **Fase 2 — Runtime Composition**
+    - todos os `Bootstraps` / `Runtime Composers` executam depois;
+    - compõem runtime usando apenas o DI já preenchido na Fase 1.
 
-O `GlobalCompositionRoot` monta o grafo de execução por fase e aplica ordenação determinística antes de invocar os entry points.
+As fases são globais e ordenadas pelo pipeline.
+O módulo continua dono do seu wiring interno.
+O `GlobalCompositionRoot` apenas coordena a execução.
 
-Dependências entre módulos não devem ser inferidas por reflexão, nomes de pasta ou descoberta implícita. A relação precisa ser declarada, validada e executada de forma previsível.
+### 2. Descriptor canônico obrigatório
 
-## What Belongs in Module Installers
-Podem entrar:
+Todo módulo incluído no grafo deve expor um descriptor canônico com, no mínimo:
+
+- `ModuleId`
+- `InstallerEntry`
+- `RuntimeComposerEntry`
+- `InstallerDependencies`
+- `BootstrapDependencies`
+- `Optional`
+- `InstallerOnly`
+- `Description`
+
+Regras:
+
+- `ModuleId` é obrigatório, estável e único no grafo.
+- `InstallerEntry` é obrigatório para módulo que participa da Fase 1.
+- `RuntimeComposerEntry` é obrigatório apenas para módulo que participa da Fase 2.
+- `InstallerOnly = true` implica:
+    - `RuntimeComposerEntry = null`
+    - `BootstrapDependencies = []`
+- `Optional = true` só pode ser usado quando a omissão do módulo for decisão explícita do profile de boot.
+- O descriptor não pode inferir identidade, dependência ou fase por nome de pasta, reflexão opaca ou convenção implícita.
+
+### 3. Fronteira dura entre Installer e Bootstrap
+
+#### O que pode entrar no Installer
 - serviços
 - interfaces
 - providers
 - factories
 - configs
 - registries
-- contratos explícitos para bootstrap/composer do próprio módulo
+- contratos necessários para o bootstrap do próprio módulo
 
-Não entram:
-- composição operacional
+#### O que não pode entrar no Installer
 - ativação de runtime
-- wiring entre serviços já consumíveis
-- integração de pipeline
-- execução de comportamento de domínio
+- orchestrators
+- bridges
+- listeners operacionais
+- wiring de domínio
+- composição final de runtime
 
-## What Belongs in Module Runtime Composition
-Podem entrar:
+#### O que pode entrar no Bootstrap / Runtime Composer
 - composição entre serviços já registrados
-- ativação de orchestrators e bridges
-- wiring operacional do stack
-- montagem de serviços finais de runtime
-- ligação explícita entre contratos de módulos já instalados
+- ativação de orchestrators, bridges, hosts e wiring operacional
+- integração explícita entre contratos já instalados
+- montagem final do runtime do módulo
 
-A fase runtime sempre acontece depois do registro. Ela não substitui o installer e não pode depender de registrar contratos novos para completar o próprio boot.
+#### O que não pode entrar no Bootstrap / Runtime Composer
+- registro tardio de contratos estruturais para viabilizar o próprio boot
+- compensação de ausência de installer
+- entrypoint canônico por `Awake`, `Start` ou `OnEnable`
 
-## What the Global Root Should Still Do
-- ordenar fases
-- validar dependências
-- chamar installers
-- chamar bootstraps/composers
-- passar contexto compartilhado
-- falhar cedo quando a ordem não puder ser resolvida
+Bootstrap canônico só pode executar pela Fase 2 orquestrada do pipeline.
 
-O root não deve conhecer o wiring interno detalhado dos módulos nem carregar composição operacional de domínio.
+### 4. Dependências por fase
 
-## What May Legitimately Remain in Global Composition
-- `Entry`
-- `Pipeline`
-- helpers/infra globais legítimos
-- shims finos de orquestração ou delegação
-- núcleos transversais que não pertencem a um módulo específico
+As dependências são separadas formalmente em:
 
-O critério não é remover tudo do root. O critério é remover wiring interno de módulo e manter apenas o que é realmente global.
+- `InstallerDependencies`
+- `BootstrapDependencies`
 
-## Fail-Fast Rules
-O pipeline deve falhar cedo quando houver:
-- dependência ausente
-- dependência inválida
-- ID duplicado
-- ciclo no grafo
-- bootstrap solicitado antes do fim dos installers da sua fase
+Regras:
 
-Fail-fast é obrigatório para preservar previsibilidade e evitar regressões silenciosas na composição modular.
+- dependência ausente é erro fatal;
+- dependência inválida é erro fatal;
+- `ModuleId` duplicado é erro fatal;
+- ciclo no grafo é erro fatal;
+- dependências não podem ser inferidas por transitividade implícita;
+- módulo `InstallerOnly` não pode ser dependência de bootstrap sem contrato correspondente;
+- bootstrap não pode mascarar ausência de installer com registro tardio.
 
-## Positive References
-- `GameLoop` validou a separação entre installer e runtime bootstrap
-- `SceneFlow` validou a composição runtime após registro
-- `Navigation` validou o split entre registro e dispatch/runtime
-- `LevelFlow` validou o mesmo padrão para wiring dependente de `Navigation`
+### 5. Optionalidade
 
-## Recommended Pilot
-O modelo canônico já está validado pelos pilotos citados. A partir daqui, novos módulos devem adotar a mesma regra sem reabrir ownership de domínio.
+Regras:
 
-## Non-Goals
-- não criar novo ADR para este mesmo assunto
-- não migrar todo o projeto de uma vez
-- não remover imediatamente o `GlobalCompositionRoot`
-- não criar sistema de plugin automático
-- não reorganizar pastas neste ADR
-- não reabrir ownership de domínio
+- `Optional = false`: o módulo não pode ser omitido pelo profile de boot quando sua presença for requerida pelo grafo selecionado.
+- `Optional = true`: a omissão precisa ser explícita e auditável.
+- módulo opcional pulado deve registrar `skip` com motivo e fase.
+- módulo ausente do grafo, mas referenciado como obrigatório, é erro fatal.
+- módulo opcional não pode virar dependência obrigatória silenciosa de outro módulo.
 
-## Consequences
-- installers ficam menores e previsíveis
-- bootstraps/composers ficam isolados da fase de registro
-- o root global fica menor, mais claro e mais seguro
-- a ordem de boot passa a ser determinística e auditável
-- regressões por mistura de boot com pipeline tendem a cair
-- módulos futuros passam a seguir um contrato reutilizável e homogêneo
+### 6. Idempotência e lifecycle
 
-## Validation Status
-O modelo foi validado na prática em `GameLoop`, `SceneFlow`, `Navigation`, `LevelFlow` e `WorldReset`.
+O pipeline deve ser idempotente por contrato:
 
-O pipeline em duas fases com dependências explícitas está operacional: installers primeiro, bootstraps/composers depois, com ordenação topológica e fail-fast.
+- chamada duplicada de installer no mesmo domain lifetime deve resultar em `no-op` controlado e logado;
+- chamada duplicada de bootstrap/composer no mesmo domain lifetime deve resultar em `no-op` controlado e logado;
+- `Domain Reload OFF` não pode causar registro duplicado nem dupla composição;
+- reentrada de boot não pode recriar o grafo se a composição global já concluiu com sucesso;
+- `RestartFromFirstLevel` e `ResetCurrentLevel` não reiniciam a composição global.
 
-O `GlobalCompositionRoot` permanece como agregador dos descriptors, executor do grafo e orquestrador das fases globais.
+Comportamento não idempotente é inválido para entrypoints de composição.
+
+### 7. Fail-fast e falha parcial
+
+Política mínima:
+
+- falha em installer aborta a Fase 1 e impede a Fase 2;
+- falha em bootstrap aborta a Fase 2 e coloca o sistema em fail-stop até restart limpo;
+- falha por dependência ausente, ciclo ou `ModuleId` duplicado deve ocorrer antes da execução do entrypoint afetado;
+- estado parcial não pode continuar como se a composição tivesse concluído;
+- rollback não é obrigatório por padrão; módulos com mutação externa devem ser idempotentes ou ter compensação própria.
+
+### 8. Observabilidade mínima
+
+O pipeline deve emitir, no mínimo:
+
+- início e fim da Fase 1;
+- início e fim da Fase 2;
+- ordem calculada dos módulos por fase;
+- `installer concluído`;
+- `runtime composition concluída`;
+- `skip` canônico com motivo (`optional`, `installer-only`);
+- dependência ausente;
+- ciclo detectado;
+- `ModuleId` duplicado;
+- tentativa de bootstrap antes do fim da Fase 1;
+- resumo final do pipeline.
+
+Política de severidade:
+
+- sucesso canônico do pipeline: `INFO`
+- `skip` canônico: `INFO`
+- detalhe interno/repetitivo: `VERBOSE`
+- falha de conformidade do pipeline: `ERROR`
+
+### 9. Fronteira auditável do GlobalCompositionRoot
+
+Pode permanecer no `GlobalCompositionRoot` apenas o que é estritamente global:
+
+- entry do pipeline;
+- resolução e execução das fases;
+- helpers globais de infraestrutura;
+- infra transversal compartilhada;
+- bridges globais estritamente compartilhadas;
+- shims finos de orquestração ou delegação.
+
+Não pode permanecer no `GlobalCompositionRoot`:
+
+- wiring interno de módulo;
+- conhecimento de tipos internos de módulo além do entrypoint contratual;
+- lógica operacional específica de domínio;
+- composição escondida por convenção de pasta ou lifecycle implícito.
+
+Critério auditável:
+
+> se um trecho existe apenas para um módulo específico, ele pertence ao módulo, não ao root global.
+
+### 10. Convenção de nomenclatura
+
+Padrão canônico esperado:
+
+- `XxxCompositionDescriptor`
+- `XxxInstaller`
+- `XxxBootstrap` ou `XxxRuntimeComposer`
+
+Localização padrão:
+
+- `Modules/<ModuleName>/Bootstrap/`
+
+IDs:
+
+- `ModuleId` em `PascalCase`
+- sem prefixo técnico
+- sem duplicar o nome da pasta
+- sem variantes instáveis entre fases
+
+### 11. Papel de Loading neste ciclo
+
+`Loading` **não é módulo first-class** neste ciclo.
+
+Contrato atual:
+
+- `Loading` é subcapability de `SceneFlow`;
+- não possui descriptor próprio;
+- não possui installer próprio;
+- não possui bootstrap próprio;
+- não possui entrada própria no grafo modular.
+
+Promoção futura só deve ocorrer quando houver:
+
+- contrato independente;
+- `ModuleId` próprio;
+- dependências de fase explícitas;
+- ownership estrutural fora de `SceneFlow`.
+
+## Fora de escopo
+
+- promover `Loading` a módulo próprio neste ciclo;
+- modularizar `Pause` nesta decisão;
+- remover imediatamente o `GlobalCompositionRoot`;
+- migrar todo o projeto de uma vez;
+- criar sistema de plugin automático;
+- reorganizar o repositório inteiro;
+- reabrir ownership funcional de domínio.
+
+## Consequências
+
+### Benefícios
+- boot determinístico e auditável;
+- separação clara entre registro e composição runtime;
+- redução de wiring interno no root global;
+- contratos modulares homogêneos;
+- menor risco de bootstrap invisível;
+- melhor leitura de sucesso/skip/falha em produção.
+
+### Trade-offs / Riscos
+- exige disciplina na modelagem de descriptors;
+- aumenta a necessidade de declarar dependências explicitamente;
+- módulos legados ou híbridos podem exigir adaptação incremental;
+- alguns concerns transversais ainda podem permanecer temporariamente no root até ganharem owner claro.
+
+## Notas de implementação
+
+### Estado consolidado da rodada
+Na consolidação desta rodada:
+
+- o pipeline modular passou a operar com Fase 1 e Fase 2 explícitas;
+- logs canônicos do pipeline foram promovidos para `INFO`;
+- `Gameplay` foi promovido a módulo `installer-only`;
+- `GameplayStateGate` e `GameplayCameraResolver` saíram do root e passaram ao módulo `Gameplay`;
+- `GamePauseGateBridge` saiu do root e foi movido para `GameLoopBootstrap`;
+- `PostGame` e `WorldReset` ficaram explícitos como `installer-only`;
+- `Loading` foi mantido como subcapability de `SceneFlow`;
+- `IInputModeService` permaneceu no root como trilho transversal global legítimo nesta passada.
+
+### Resultado esperado de auditoria
+Ao auditar o repositório contra este ADR, espera-se encontrar:
+
+- descriptors canônicos para os módulos do grafo;
+- ausência de bootstrap canônico por `Awake`, `Start` ou `OnEnable`;
+- dependências de fase explicitadas;
+- `skip` canônico de módulos opcionais ou `installer-only`;
+- root restrito a pipeline + infra global legítima.
+
+## Evidências
+
+- `Baseline 3.5`
+- auditorias recentes de `module registration` vs `runtime composition`
+- pilotos validados em:
+    - `GameLoop`
+    - `SceneFlow`
+    - `Navigation`
+    - `LevelFlow`
+    - `WorldReset`
+    - `Gameplay`
+    - `PostGame`
+- logs canônicos do pipeline com:
+    - Fase 1 em `INFO`
+    - Fase 2 em `INFO`
+    - installers concluídos em `INFO`
+    - runtime composition concluída em `INFO`
+    - `skip` canônico em `INFO`
+
+## Referências
+
+- `ADR-0030`
+- `ADR-0031`
+- `ADR-0035`
+- `ADR-0037`
+
+## Checklist de conformidade
+
+- [ ] Todo módulo do grafo expõe descriptor canônico.
+- [ ] `ModuleId` é único e estável.
+- [ ] `InstallerDependencies` estão explícitas.
+- [ ] `BootstrapDependencies` estão explícitas.
+- [ ] Não existe bootstrap canônico via `Awake`, `Start` ou `OnEnable`.
+- [ ] Nenhum contrato estrutural é registrado na fase errada.
+- [ ] Módulos `optional` registram `skip` auditável.
+- [ ] Módulos `installer-only` são tratados explicitamente.
+- [ ] O pipeline emite ordem, conclusão e resumo final.
+- [ ] O `GlobalCompositionRoot` não contém wiring interno de módulo.
+- [ ] `Loading` permanece em `SceneFlow` até haver contrato próprio.

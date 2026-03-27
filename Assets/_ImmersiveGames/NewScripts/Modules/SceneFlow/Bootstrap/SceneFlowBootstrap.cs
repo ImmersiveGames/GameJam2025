@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
@@ -32,6 +33,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
 
         public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
+            CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(SceneFlowBootstrap));
+
             if (_runtimeComposed)
             {
                 return;
@@ -49,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
 
             _runtimeComposed = true;
 
-            DebugUtility.LogVerbose(typeof(SceneFlowBootstrap),
+            DebugUtility.Log(typeof(SceneFlowBootstrap),
                 "[SceneFlow] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
         }
@@ -164,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
                 await fadeService.EnsureReadyAsync();
                 DebugUtility.LogVerbose(typeof(SceneFlowBootstrap),
                     "[OBS][Fade] FadeScene ready (source=SceneFlowBootstrap/ComposeRuntime).",
-                    DebugUtility.Colors.Success);
+                    DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {

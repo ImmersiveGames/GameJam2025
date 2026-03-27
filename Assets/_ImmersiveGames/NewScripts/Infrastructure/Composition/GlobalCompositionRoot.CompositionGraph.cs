@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap;
@@ -58,6 +59,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             return new[]
             {
+                CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),

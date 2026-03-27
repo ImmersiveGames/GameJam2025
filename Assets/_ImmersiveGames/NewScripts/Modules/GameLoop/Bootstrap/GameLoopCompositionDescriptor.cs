@@ -8,8 +8,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             new CompositionModuleDescriptor(
                 moduleId: "GameLoop",
                 installerDependencies: System.Array.Empty<string>(),
-                bootstrapDependencies: new[] { "LevelFlow" },
+                bootstrapDependencies: new[] { "SceneFlow" },
                 installer: _ => GameLoopInstaller.Install(),
-                bootstrap: bootstrapConfig => GameLoopBootstrap.ComposeRuntime(bootstrapConfig));
+                bootstrap: bootstrapConfig => GameLoopBootstrap.ComposeRuntime(bootstrapConfig),
+                installerEntry: "GameLoopInstaller.Install",
+                runtimeComposerEntry: "GameLoopBootstrap.ComposeRuntime",
+                description: "Runtime do GameLoop e start plan canonico.");
     }
 }

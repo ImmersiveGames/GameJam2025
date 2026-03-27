@@ -1,7 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
@@ -35,6 +38,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
 
         public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
+            CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(GameLoopBootstrap));
+
             if (_runtimeComposed)
             {
                 return;
@@ -49,6 +54,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             gameLoopService.Initialize();
 
             EnsureInputCommandBridge();
+            EnsurePauseBridge();
             EnsureGameRunRuntimeServices();
             EnsureOutcomeEventInputBridge();
             EnsureRunEndEventBridge();
@@ -57,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
 
             _runtimeComposed = true;
 
-            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
+            DebugUtility.Log(typeof(GameLoopBootstrap),
                 "[GameLoop] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
         }
@@ -90,6 +96,22 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             }
 
             var bridge = new GameLoopInputCommandBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+        }
+
+        private static void EnsurePauseBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out _))
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) || gateService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] ISimulationGateService ausente no DI global antes de registrar o GamePauseGateBridge.");
+            }
+
+            var bridge = new GamePauseGateBridge(gateService);
             DependencyManager.Provider.RegisterGlobal(bridge);
         }
 
@@ -244,10 +266,5 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             public string ProfileLabel => Profile != null ? Profile.name : string.Empty;
         }
 
-        private void Awake()
-        {
-            ComposeRuntime();
-            DontDestroyOnLoad(gameObject);
-        }
     }
 }

@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Camera;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
@@ -26,10 +25,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             ExecuteInstallerPipeline(bootstrapConfig);
 
             var gateService = ResolveSimulationGateServiceOrNull();
-            RegisterPauseBridge(gateService);
-
-            RegisterStateDependentService();
-            RegisterIfMissing<IGameplayCameraResolver>(() => new GameplayCameraResolver());
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();

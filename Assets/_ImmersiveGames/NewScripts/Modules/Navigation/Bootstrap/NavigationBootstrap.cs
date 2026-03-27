@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
@@ -25,6 +26,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
 
         public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
+            CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(NavigationBootstrap));
+
             if (_runtimeComposed)
             {
                 return;
@@ -43,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
 
             _runtimeComposed = true;
 
-            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
+            DebugUtility.Log(typeof(NavigationBootstrap),
                 "[Navigation] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
         }

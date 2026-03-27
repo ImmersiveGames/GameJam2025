@@ -10,6 +10,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
                 installerDependencies: new[] { "RuntimePolicy" },
                 bootstrapDependencies: System.Array.Empty<string>(),
                 installer: bootstrapConfig => SceneFlowInstaller.Install(bootstrapConfig),
-                bootstrap: bootstrapConfig => SceneFlowBootstrap.ComposeRuntime(bootstrapConfig));
+                bootstrap: bootstrapConfig => SceneFlowBootstrap.ComposeRuntime(bootstrapConfig),
+                installerEntry: "SceneFlowInstaller.Install",
+                runtimeComposerEntry: "SceneFlowBootstrap.ComposeRuntime",
+                description: "Scene transition, loading subcapability e fade runtime.");
     }
 }

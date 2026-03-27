@@ -46,6 +46,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         string CurrentStateIdName { get; }
     }
 
+    public interface IPauseStateService
+    {
+        bool IsPaused { get; }
+    }
+
     /// <summary>
     /// Policy compartilhada para validar se o GameLoop está em gameplay ativo.
     /// Centraliza a regra de "Playing" para serviços de run.

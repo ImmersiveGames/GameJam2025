@@ -11,6 +11,10 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap
                 installerDependencies: Array.Empty<string>(),
                 bootstrapDependencies: Array.Empty<string>(),
                 installer: bootstrapConfig => WorldResetInstaller.Install(bootstrapConfig),
-                bootstrap: null);
+                bootstrap: null,
+                installerEntry: "WorldResetInstaller.Install",
+                runtimeComposerEntry: null,
+                installerOnly: true,
+                description: "Reset macro installer-only.");
     }
 }

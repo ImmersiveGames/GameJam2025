@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
 
             _installed = true;
 
-            DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
+            DebugUtility.Log(typeof(SceneFlowInstaller),
                 "[SceneFlow] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }

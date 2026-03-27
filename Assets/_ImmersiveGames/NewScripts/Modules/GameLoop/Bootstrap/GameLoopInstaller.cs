@@ -29,11 +29,13 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             }
 
             RegisterGameLoopService();
+            RegisterPauseStateService();
             RegisterGameRunEndRequestService();
             RegisterGameRunPlayingStateGuard();
             RegisterGameRunResultSnapshotService();
             RegisterGameRunOutcomeService();
             RegisterGameLoopCommands();
+            RegisterPauseCommands();
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
             RegisterGameplaySceneClassifier();
@@ -41,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
 
             _installed = true;
 
-            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+            DebugUtility.Log(typeof(GameLoopInstaller),
                 "[GameLoop] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }
@@ -52,6 +54,32 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 () => new GameLoopService(),
                 "[GameLoop] IGameLoopService ja registrado no DI global.",
                 "[GameLoop] GameLoopService registrado no DI global.");
+        }
+
+        private static void RegisterPauseStateService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPauseStateService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+                    "[GameLoop] IPauseStateService ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService ausente ao registrar IPauseStateService.");
+            }
+
+            if (gameLoopService is not IPauseStateService pauseStateService)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService nao implementa IPauseStateService.");
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPauseStateService>(pauseStateService);
+            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+                "[GameLoop] IPauseStateService registrado no DI global.",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterGameRunEndRequestService()
@@ -84,6 +112,32 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 () => new GameRunResultSnapshotService(),
                 "[GameLoop] IGameRunResultSnapshotService ja registrado no DI global.",
                 "[GameLoop] GameRunResultSnapshotService registrado no DI global.");
+        }
+
+        private static void RegisterPauseCommands()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPauseCommands>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+                    "[GameLoop] IPauseCommands ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopCommands>(out var gameCommands) || gameCommands == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopCommands ausente ao registrar IPauseCommands.");
+            }
+
+            if (gameCommands is not IPauseCommands pauseCommands)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopCommands nao implementa IPauseCommands.");
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPauseCommands>(pauseCommands);
+            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+                "[GameLoop] IPauseCommands registrado no DI global.",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterGameRunOutcomeService()

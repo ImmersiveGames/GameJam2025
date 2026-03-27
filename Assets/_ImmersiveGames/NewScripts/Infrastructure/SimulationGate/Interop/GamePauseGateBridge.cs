@@ -1,10 +1,9 @@
 /*
  * ChangeLog
- * - Ponte de pause: converte GamePauseCommandEvent/GameResumeRequestedEvent em gate SimulationGateTokens.Pause sem congelar fisica.
+ * - Ponte de pause: converte PauseStateChangedEvent em gate SimulationGateTokens.Pause sem congelar fisica.
  * - Improvement: resolve gate sob demanda (lazy) para cenarios em que DI global ainda nao esta pronto no ctor.
  * - Fix: ownership deterministico. Bridge NUNCA libera token que nao foi adquirido por ela.
  * - Hardening: Release NAO depende de gate resolvido (evita leak em teardown) e protege Provider nulo.
- * - Fix: Resume sem ownership nao gera ruido ("release ignorado") - evento pode ocorrer fora do ciclo de pause.
  */
 
 using System;
@@ -12,36 +11,27 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GamePauseGateBridge : IDisposable
     {
         private const string PauseToken = SimulationGateTokens.Pause;
-        private const string ReasonResumeRequested = "GameResumeRequestedEvent";
         private const string ReasonExitToMenuRequested = "GameExitToMenuRequestedEvent";
+        private const string ReasonPauseStateChanged = "PauseStateChangedEvent";
 
         private ISimulationGateService _gateService;
-
-        private readonly EventBinding<GamePauseCommandEvent> _pauseBinding;
-        private readonly EventBinding<GameResumeRequestedEvent> _resumeBinding;
-
+        private readonly EventBinding<PauseStateChangedEvent> _pauseStateBinding;
         private IDisposable _activeHandle;
         private bool _bindingsRegistered;
         private bool _loggedMissingGate;
         private bool _disposed;
-        private int _lastPauseFrame = -1;
-        private string _lastPauseKey = string.Empty;
-        private int _lastResumeFrame = -1;
-        private string _lastResumeKey = string.Empty;
 
         public GamePauseGateBridge(ISimulationGateService gateService)
         {
             _gateService = gateService;
-
-            _pauseBinding = new EventBinding<GamePauseCommandEvent>(OnGamePause);
-            _resumeBinding = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
-
+            _pauseStateBinding = new EventBinding<PauseStateChangedEvent>(OnPauseStateChanged);
             TryRegisterBindings();
         }
 
@@ -56,11 +46,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
 
             if (_bindingsRegistered)
             {
-                EventBus<GamePauseCommandEvent>.Unregister(_pauseBinding);
-                EventBus<GameResumeRequestedEvent>.Unregister(_resumeBinding);
+                EventBus<PauseStateChangedEvent>.Unregister(_pauseStateBinding);
                 _bindingsRegistered = false;
             }
-
             ReleasePauseGate("Dispose");
         }
 
@@ -73,67 +61,39 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
         {
             try
             {
-                EventBus<GamePauseCommandEvent>.Register(_pauseBinding);
-                EventBus<GameResumeRequestedEvent>.Register(_resumeBinding);
+                EventBus<PauseStateChangedEvent>.Register(_pauseStateBinding);
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[PauseBridge] Registrado nos eventos GamePauseCommandEvent/GameResumeRequestedEvent -> SimulationGate.");
+                    "[PauseBridge] Registrado no evento PauseStateChangedEvent -> SimulationGate.");
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<GamePauseGateBridge>(
-                    $"[PauseBridge] EventBus indisponivel; pause/resume nao serao refletidos no gate ({ex.GetType().Name}).");
                 _bindingsRegistered = false;
+                DebugUtility.LogWarning<GamePauseGateBridge>(
+                    $"[PauseBridge] EventBus indisponivel; pause nao sera refletido no gate ({ex.GetType().Name}).");
             }
         }
 
-        private void OnGamePause(GamePauseCommandEvent evt)
+        private void OnPauseStateChanged(PauseStateChangedEvent evt)
         {
-            string key = BuildPauseKey(evt);
-            int frame = UnityEngine.Time.frameCount;
-            if (ShouldDedupePause(key, frame))
+            if (evt == null)
             {
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='{nameof(GamePauseGateBridge)}' key='{key}' frame='{frame}'",
-                    DebugUtility.Colors.Info);
                 return;
             }
 
-            MarkPauseConsumed(key, frame);
             DebugUtility.LogVerbose<GamePauseGateBridge>(
-                $"[OBS][GRS] GamePauseCommandEvent consumed consumer='{nameof(GamePauseGateBridge)}' key='{key}' frame='{frame}'",
+                $"[OBS][GRS] PauseStateChangedEvent consumed consumer='{nameof(GamePauseGateBridge)}' isPaused='{evt.IsPaused}'",
                 DebugUtility.Colors.Info);
 
-            bool shouldPause = evt is { IsPaused: true };
-            if (shouldPause)
+            if (evt.IsPaused)
             {
                 AcquirePauseGate();
             }
             else
             {
-                ReleasePauseGate("GamePauseCommandEvent(paused=false)");
+                ReleasePauseGate(ReasonPauseStateChanged);
             }
-        }
-
-        private void OnGameResumeRequested(GameResumeRequestedEvent evt)
-        {
-            string key = BuildResumeKey(evt);
-            int frame = UnityEngine.Time.frameCount;
-            if (ShouldDedupeResume(key, frame))
-            {
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    $"[OBS][GRS] GameResumeRequestedEvent dedupe_same_frame consumer='{nameof(GamePauseGateBridge)}' key='{key}' frame='{frame}'",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            MarkResumeConsumed(key, frame);
-            DebugUtility.LogVerbose<GamePauseGateBridge>(
-                $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='{nameof(GamePauseGateBridge)}' key='{key}' frame='{frame}'",
-                DebugUtility.Colors.Info);
-
-            ReleasePauseGate(ReasonResumeRequested);
         }
 
         private void AcquirePauseGate()
@@ -161,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
         {
             if (_activeHandle == null)
             {
-                if (reason == ReasonResumeRequested || reason == ReasonExitToMenuRequested)
+                if (reason == ReasonExitToMenuRequested)
                 {
                     return;
                 }
@@ -241,42 +201,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
             }
 
             DebugUtility.LogWarning<GamePauseGateBridge>(
-                "[PauseBridge] ISimulationGateService indisponivel; nao e possivel refletir pause/resume no gate.");
+                "[PauseBridge] ISimulationGateService indisponivel; nao e possivel refletir pause no gate.");
             _loggedMissingGate = true;
-        }
-
-        private static string BuildPauseKey(GamePauseCommandEvent evt)
-        {
-            string reason = "<null>";
-            bool isPaused = evt is { IsPaused: true };
-            return $"pause|isPaused={isPaused}|reason={reason}";
-        }
-
-        private static string BuildResumeKey(GameResumeRequestedEvent evt)
-        {
-            string reason = NormalizeReason(null);
-            return $"resume|reason={reason}";
-        }
-
-        private static string NormalizeReason(string reason)
-            => string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim();
-
-        private bool ShouldDedupePause(string key, int frame)
-            => _lastPauseFrame == frame && string.Equals(_lastPauseKey, key, StringComparison.Ordinal);
-
-        private bool ShouldDedupeResume(string key, int frame)
-            => _lastResumeFrame == frame && string.Equals(_lastResumeKey, key, StringComparison.Ordinal);
-
-        private void MarkPauseConsumed(string key, int frame)
-        {
-            _lastPauseFrame = frame;
-            _lastPauseKey = key;
-        }
-
-        private void MarkResumeConsumed(string key, int frame)
-        {
-            _lastResumeFrame = frame;
-            _lastResumeKey = key;
         }
     }
 }

@@ -13,6 +13,7 @@ Este documento define o conjunto oficial de hooks para integrações externas e 
 - `LevelSwapLocalAppliedEvent`: use quando o swap local de level for de fato aplicado; não use para seleção ou roteamento macro.
 - `LevelEnteredEvent`: use como hook canônico pós-aplicação do level para seams level-owned, incluindo IntroStage; não use antes do level estar ativo.
 - `LevelIntroCompletedEvent`: use como handoff canônico de fim da intro para liberar o fluxo level->gameplay; não use como substituto de `LevelEnteredEvent`.
+- `PauseStateChangedEvent`: use para reagir a entrada/saída de pause sem depender de wiring interno do GameLoop ou do overlay.
 - `ISceneResetHook`: use para extensões locais do lifecycle de reset de cena; não use como hook global de módulo.
 - `IActorLifecycleHook`: use para lifecycle local de actor durante reset; não use para lógica de gameplay fora de reset.
 
@@ -42,11 +43,14 @@ Esses sinais são úteis para UI, debug e telemetria, mas não são o seam princ
 
 Esses sinais e componentes são detalhes internos de coordenação e não devem ser usados como API externa.
 
-## 5. Pontos de Integração Recomendados
+## 5. Nota de Pause
+`GamePauseCommandEvent` e `GameResumeRequestedEvent` continuam internos. O contrato publico de pause passa a ser representado por `PauseStateChangedEvent` e pelas interfaces `IPauseCommands` / `IPauseStateService` definidas no ADR de Pause.
+
+## 6. Pontos de Integração Recomendados
 - Save: prefira `GameRunEndedEvent`, `WorldResetCompletedEvent` e `SceneTransitionCompletedEvent`.
 - Troféus/conquistas: prefira `GameRunEndedEvent`, `LevelSelectedEvent` e `LevelSwapLocalAppliedEvent`.
 - Telemetria: combine hooks oficiais com eventos observáveis quando necessário.
 - APIs externas: prefira apenas hooks oficiais.
 
-## 6. Notas
+## 7. Notas
 Promova novos hooks apenas por ADR ou plano, nunca por uso casual ou consumo ad hoc.

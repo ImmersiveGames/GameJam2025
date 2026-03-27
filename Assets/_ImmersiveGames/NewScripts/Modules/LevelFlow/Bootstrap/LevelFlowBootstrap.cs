@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
@@ -27,6 +28,8 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
 
         public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
+            CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(LevelFlowBootstrap));
+
             if (_runtimeComposed)
             {
                 return;
@@ -44,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
 
             _runtimeComposed = true;
 
-            DebugUtility.LogVerbose(typeof(LevelFlowBootstrap),
+            DebugUtility.Log(typeof(LevelFlowBootstrap),
                 "[LevelFlow] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
         }

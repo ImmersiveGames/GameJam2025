@@ -15,6 +15,9 @@ Exemplos semelhantes:
 - `Navigation`
 - `LevelFlow`
 
+Nota:
+- `Loading` nao entra aqui como modulo proprio; neste ciclo ele permanece como subcapability de `SceneFlow`.
+
 ## 3. Required Files
 - `XxxInstaller`
 - `XxxBootstrap` quando houver composição runtime real
@@ -30,11 +33,16 @@ Bootstrap:
 - compõe runtime
 - ativa bridges, coordinators e orchestrators
 - usa apenas o DI já preenchido
+- se o modulo possuir loading embutido, isso continua no ownership do modulo pai e nao vira grafo separado
 
 Descriptor:
 - expõe `ModuleId`
+- expõe `InstallerEntry`
+- expõe `RuntimeComposerEntry` quando houver runtime
 - expõe `InstallerDependencies`
 - expõe `BootstrapDependencies`
+- expõe `Optional`
+- expõe `InstallerOnly`
 - referencia installer e bootstrap do módulo
 
 ## 5. Declaring Dependencies
@@ -46,6 +54,8 @@ Regras:
 - installer não depende de bootstrap
 - bootstrap pode depender de bootstrap e de serviços já registrados
 - a ordem não vem de prioridade numérica manual
+- `InstallerOnly=true` exige bootstrap nulo
+- módulo opcional só pode ser pulado de forma explícita no profile de boot
 
 ## 6. Registering the Module in the Root
 O root apenas agrega o descriptor do módulo no grafo.

@@ -16,12 +16,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             RegisterAudioRoutingResolver();
             RegisterAudioListenerHost();
             RegisterAudioBgmService();
+            RegisterAudioPauseDuckingBridge();
             RegisterGlobalAudioService();
             RegisterEntityAudioService();
 
             DebugUtility.LogVerbose(
                 typeof(GlobalCompositionRoot),
-                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime + Global SFX Runtime + Entity Semantic Runtime).",
+                "[Audio][BOOT] Audio module foundations registered (Defaults + Settings + Routing + Listener + BGM Runtime + Pause Ducking Bridge + Global SFX Runtime + Entity Semantic Runtime).",
                 DebugUtility.Colors.Info);
         }
 
@@ -104,6 +105,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IAudioBgmService already registered.",
                 registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
+        }
+
+        private static void RegisterAudioPauseDuckingBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<AudioPauseDuckingBridge>(out _))
+            {
+                return;
+            }
+
+            var bridge = AudioPauseDuckingBridge.EnsureCreated();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(
+                typeof(GlobalCompositionRoot),
+                "[Audio][BOOT] AudioPauseDuckingBridge registered (PauseStateChangedEvent -> IAudioBgmService.SetPauseDucking).",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterGlobalAudioService()

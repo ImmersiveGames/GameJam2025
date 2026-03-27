@@ -5,6 +5,12 @@ using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Run;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
 {
+    public interface IPauseCommands
+    {
+        void RequestPause(string reason = null);
+        void RequestResume(string reason = null);
+    }
+
     /*
      * Auditoria (GameLoopCommands)
      * - GamePauseCommandEvent(bool isPaused) -> EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true/false)).

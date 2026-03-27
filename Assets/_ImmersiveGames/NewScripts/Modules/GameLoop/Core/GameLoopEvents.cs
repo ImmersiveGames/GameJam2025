@@ -17,6 +17,15 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
     }
 
     /// <summary>
+    /// Hook oficial de observacao do estado canonico de pause.
+    /// </summary>
+    public sealed class PauseStateChangedEvent : IEvent
+    {
+        public PauseStateChangedEvent(bool isPaused) => IsPaused = isPaused;
+        public bool IsPaused { get; }
+    }
+
+    /// <summary>
     /// Resultado final da run atual.
     /// </summary>
     public enum GameRunOutcome

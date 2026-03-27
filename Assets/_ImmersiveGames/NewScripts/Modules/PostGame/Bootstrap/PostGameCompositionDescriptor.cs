@@ -7,9 +7,13 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bootstrap
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
                 moduleId: "PostGame",
-                installerDependencies: new[] { "LevelFlow" },
+                installerDependencies: new[] { "GameLoop" },
                 bootstrapDependencies: System.Array.Empty<string>(),
                 installer: _ => PostGameInstaller.Install(),
-                bootstrap: null);
+                bootstrap: null,
+                installerEntry: "PostGameInstaller.Install",
+                runtimeComposerEntry: null,
+                installerOnly: true,
+                description: "PostGame installer-only.");
     }
 }

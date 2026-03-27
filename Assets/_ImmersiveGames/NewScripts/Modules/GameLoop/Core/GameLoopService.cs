@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
@@ -6,7 +7,7 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameLoopService : IGameLoopService, IGameLoopStateObserver
+    public sealed class GameLoopService : IGameLoopService, IPauseStateService, IGameLoopStateObserver
     {
         private readonly MutableGameLoopSignals _signals = new();
         private readonly EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
@@ -25,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         }
 
         public string CurrentStateIdName { get; private set; } = string.Empty;
+        public bool IsPaused => string.Equals(CurrentStateIdName, nameof(GameLoopStateId.Paused), StringComparison.Ordinal);
 
         public void RequestStart()
         {
@@ -136,6 +138,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             var previousState = _lastStateId;
             HandlePostPlayExitIfNeeded(previousState, stateId);
             UpdateCurrentState(stateId, isActive, previousState);
+            PublishPauseStateChangedIfNeeded(previousState, stateId);
             UpdateRunStartedFlag(stateId);
             HandlePostPlayEnterIfNeeded(stateId);
             HandlePlayingEnteredIfNeeded(stateId);
@@ -234,6 +237,26 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             {
                 _runStartedEmittedThisRun = true;
                 EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
+            }
+        }
+
+        private static void PublishPauseStateChangedIfNeeded(GameLoopStateId previousState, GameLoopStateId nextState)
+        {
+            if (nextState == GameLoopStateId.Paused)
+            {
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[Pause] PauseStateChangedEvent raised isPaused='true' previous='{previousState}' next='{nextState}'.",
+                    DebugUtility.Colors.Info);
+                EventBus<PauseStateChangedEvent>.Raise(new PauseStateChangedEvent(true));
+                return;
+            }
+
+            if (previousState == GameLoopStateId.Paused)
+            {
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[Pause] PauseStateChangedEvent raised isPaused='false' previous='{previousState}' next='{nextState}'.",
+                    DebugUtility.Colors.Info);
+                EventBus<PauseStateChangedEvent>.Raise(new PauseStateChangedEvent(false));
             }
         }
 

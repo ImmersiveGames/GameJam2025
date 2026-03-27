@@ -10,6 +10,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
                 installerDependencies: System.Array.Empty<string>(),
                 bootstrapDependencies: new[] { "SceneFlow" },
                 installer: bootstrapConfig => NavigationInstaller.Install(bootstrapConfig),
-                bootstrap: bootstrapConfig => NavigationBootstrap.ComposeRuntime(bootstrapConfig));
+                bootstrap: bootstrapConfig => NavigationBootstrap.ComposeRuntime(bootstrapConfig),
+                installerEntry: "NavigationInstaller.Install",
+                runtimeComposerEntry: "NavigationBootstrap.ComposeRuntime",
+                description: "Navigation catalog e runtime de dispatch.");
     }
 }

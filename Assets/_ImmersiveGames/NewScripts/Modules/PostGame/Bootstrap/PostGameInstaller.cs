@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bootstrap
 
             _installed = true;
 
-            DebugUtility.LogVerbose(typeof(PostGameInstaller),
+            DebugUtility.Log(typeof(PostGameInstaller),
                 "[PostGame] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }

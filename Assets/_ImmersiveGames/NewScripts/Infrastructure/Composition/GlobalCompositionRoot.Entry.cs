@@ -1,8 +1,7 @@
 /*
  * ChangeLog
- * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
- * - GameplayStateGate agora usa apenas GameplayStateGate (legacy removido).
- * - Entrada de infraestrutura mínima (SimulationGate/WorldReset/SceneReset/DI/Câmera/StateBridge) para NewScripts.
+ * - GamePauseGateBridge e GameplayStateGate deixaram o root e passaram para os modulos donos.
+ * - Entrada de infraestrutura mínima (SimulationGate/WorldReset/SceneReset/DI) para NewScripts.
  *
  * Ajustes (jan/2026):
  * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):

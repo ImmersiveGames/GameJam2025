@@ -123,8 +123,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
                 HandleGameStartRequested,
                 HandleGameRunStarted,
                 HandleGameRunEnded,
-                OnGamePauseEvent,
-                OnGameResumeRequested,
+                OnPauseStateChanged,
                 OnGameResetRequested,
                 OnReadinessChanged);
 
@@ -165,43 +164,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
             SyncMoveDecisionLogIfChanged();
         }
 
-        private void OnGamePauseEvent(GamePauseCommandEvent evt)
+        private void OnPauseStateChanged(PauseStateChangedEvent evt)
         {
-            string key = BuildPauseKey(evt);
-            int frame = Time.frameCount;
-            if (!_snapshot.TryConsumePause(key, frame))
+            if (evt == null)
             {
-            DebugUtility.LogVerbose<GameplayStateGate>(
-                $"[OBS][GRS] GamePauseCommandEvent dedupe_same_frame consumer='GameplayStateGate' key='{key}' frame='{frame}'",
-                DebugUtility.Colors.Info);
-            return;
-            }
-
-            DebugUtility.LogVerbose<GameplayStateGate>(
-                $"[OBS][GRS] GamePauseCommandEvent consumed consumer='GameplayStateGate' key='{key}' frame='{frame}'",
-                DebugUtility.Colors.Info);
-
-            _snapshot.SetState(evt is { IsPaused: true } ? StateDependentServiceState.Paused : StateDependentServiceState.Playing);
-            SyncMoveDecisionLogIfChanged();
-        }
-
-        private void OnGameResumeRequested(GameResumeRequestedEvent evt)
-        {
-            string key = BuildResumeKey(evt);
-            int frame = Time.frameCount;
-            if (!_snapshot.TryConsumeResume(key, frame))
-            {
-                DebugUtility.LogVerbose<GameplayStateGate>(
-                    $"[OBS][GRS] GameResumeRequestedEvent dedupe_same_frame consumer='GameplayStateGate' key='{key}' frame='{frame}'",
-                    DebugUtility.Colors.Info);
                 return;
             }
 
             DebugUtility.LogVerbose<GameplayStateGate>(
-                $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='GameplayStateGate' key='{key}' frame='{frame}'",
+                $"[OBS][GRS] PauseStateChangedEvent consumed consumer='{nameof(GameplayStateGate)}' isPaused='{evt.IsPaused}'.",
                 DebugUtility.Colors.Info);
 
-            _snapshot.SetState(StateDependentServiceState.Playing);
+            _snapshot.SetState(evt.IsPaused ? StateDependentServiceState.Paused : StateDependentServiceState.Ready);
             SyncMoveDecisionLogIfChanged();
         }
 
@@ -209,17 +183,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
         {
             _snapshot.UpdateReadiness(evt);
             SyncMoveDecisionLogIfChanged();
-        }
-
-        private static string BuildPauseKey(GamePauseCommandEvent evt)
-        {
-            bool isPaused = evt is { IsPaused: true };
-            return $"pause|isPaused={isPaused}|reason=<null>";
-        }
-
-        private static string BuildResumeKey(GameResumeRequestedEvent evt)
-        {
-            return "resume|reason=<null>";
         }
 
         private void SyncMoveDecisionLogIfChanged()

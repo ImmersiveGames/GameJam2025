@@ -10,6 +10,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
                 installerDependencies: new[] { "WorldReset", "SceneComposition" },
                 bootstrapDependencies: new[] { "Navigation" },
                 installer: bootstrapConfig => LevelFlowInstaller.Install(bootstrapConfig),
-                bootstrap: bootstrapConfig => LevelFlowBootstrap.ComposeRuntime(bootstrapConfig));
+                bootstrap: bootstrapConfig => LevelFlowBootstrap.ComposeRuntime(bootstrapConfig),
+                installerEntry: "LevelFlowInstaller.Install",
+                runtimeComposerEntry: "LevelFlowBootstrap.ComposeRuntime",
+                description: "Macro prepare, swap local e post level runtime.");
     }
 }
