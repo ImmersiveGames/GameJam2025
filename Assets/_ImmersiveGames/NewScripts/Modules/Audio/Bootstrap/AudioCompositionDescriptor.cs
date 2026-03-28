@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
             new CompositionModuleDescriptor(
                 moduleId: "Audio",
                 installerDependencies: new[] { "RuntimePolicy" },
-                bootstrapDependencies: Array.Empty<string>(),
+                bootstrapDependencies: new[] { "Preferences" },
                 installer: bootstrapConfig => AudioInstaller.Install(bootstrapConfig),
                 bootstrap: bootstrapConfig => AudioRuntimeComposer.ComposeRuntime(bootstrapConfig),
                 installerEntry: "AudioInstaller.Install",

@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
 {
@@ -34,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Audio] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
             }
 
+            ApplyPreferencesToAudioSettings();
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
             EnsureAudioPauseDuckingBridge();
@@ -55,6 +57,26 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
                 typeof(AudioRuntimeComposer),
                 "[Audio][BOOT] Canonical AudioListener runtime host ensured.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void ApplyPreferencesToAudioSettings()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPreferencesStateService>(out var preferencesState) || preferencesState == null)
+            {
+                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesStateService obrigatorio ausente antes do apply de AudioRuntimeComposer.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var audioSettings) || audioSettings == null)
+            {
+                throw new InvalidOperationException("[FATAL][Audio] IAudioSettingsService obrigatorio ausente antes do apply de Preferences.");
+            }
+
+            if (!preferencesState.HasSnapshot)
+            {
+                throw new InvalidOperationException("[FATAL][Preferences] Snapshot obrigatorio ausente antes do apply para o runtime de Audio.");
+            }
+
+            preferencesState.ApplyTo(audioSettings, "AudioRuntimeComposer/ApplyPreferences");
         }
 
         private static void EnsureAudioBgmService()

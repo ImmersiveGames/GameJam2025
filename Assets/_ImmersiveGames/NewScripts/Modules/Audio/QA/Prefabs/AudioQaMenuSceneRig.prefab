@@ -13,8 +13,9 @@ GameObject:
   - component: {fileID: 11400002}
   - component: {fileID: 11400003}
   - component: {fileID: 11400004}
+  - component: {fileID: 4245299595776981344}
   m_Layer: 0
-  m_Name: AudioQa_MenuSceneRig
+  m_Name: AudioQaMenuSceneRig
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -118,6 +119,29 @@ MonoBehaviour:
   ownerTransform: {fileID: 400001}
   fallbackSpatialPosition: {x: 0, y: 1.5, z: 2}
   explicitCue: {fileID: 11400000, guid: 18941817fb8b70d40a32a5149c115458, type: 2}
+  verboseLogs: 1
+--- !u!114 &4245299595776981344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81d0fb57de6e4ee4b04ec66d925f5f68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  emitterUnderTest: {fileID: 0}
+  emitterPurpose: semantic_spatial_direct
+  ownerTransform: {fileID: 0}
+  noEmitterPurpose: semantic_spatial_direct
+  fallbackSpatialPosition: {x: 0, y: 1.5, z: 2}
+  noEmitterVolumeScale: 1
+  semanticMap: {fileID: 11400000, guid: 8655b820fdbe45eb902e5e8086929880, type: 2}
+  explicitCue: {fileID: 11400000, guid: 6b9495d8817ee8e43987d6e7d5673563, type: 2}
+  autoStopDelaySeconds: 0.8
+  autoStopUseUnscaledTime: 1
   verboseLogs: 1
 --- !u!1 &100001
 GameObject:

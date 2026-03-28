@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c65614bfa4b74742af06229544744da, type: 3}
   m_Name: AudioDefaults
   m_EditorClassIdentifier: 
-  masterVolume: 1
+  masterVolume: 0.5
   bgmVolume: 1
-  sfxVolume: 1
+  sfxVolume: 0.25
   bgmCategoryMultiplier: 1
   sfxCategoryMultiplier: 1
   defaultBgmFadeSeconds: 1

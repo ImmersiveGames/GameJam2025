@@ -1,4 +1,6 @@
-﻿namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
+using System;
+
+namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 {
     /// <summary>
     /// Estado runtime de volume/sessão do jogador.
@@ -6,6 +8,8 @@
     /// </summary>
     public interface IAudioSettingsService
     {
+        event Action<string> VolumeChanged;
+
         float MasterVolume { get; set; }
         float BgmVolume { get; set; }
         float SfxVolume { get; set; }

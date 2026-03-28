@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap;
+using _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.PostGame.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap;
@@ -51,8 +52,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static IReadOnlyList<CompositionPipelineStep> GetModuleCompositionSteps()
         {
-            return new[]
+            // Ordem intencional:
+            // - Installer: Audio antes de Preferences (Preferences depende do Audio instalado).
+            // - Bootstrap: Preferences antes de Audio (Audio depende do snapshot de Preferences).
+            return new[] 
             {
+                CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),

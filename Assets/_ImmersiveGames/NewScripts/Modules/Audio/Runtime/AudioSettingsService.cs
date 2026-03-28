@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using System;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 {
@@ -13,6 +14,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         private float _sfxVolume;
         private float _bgmCategoryMultiplier;
         private float _sfxCategoryMultiplier;
+
+        public event Action<string> VolumeChanged;
 
         public AudioSettingsService(
             float masterVolume,
@@ -31,19 +34,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         public float MasterVolume
         {
             get => _masterVolume;
-            set => _masterVolume = Mathf.Clamp01(value);
+            set => SetClampedVolume(ref _masterVolume, value, "MasterVolumeChanged");
         }
 
         public float BgmVolume
         {
             get => _bgmVolume;
-            set => _bgmVolume = Mathf.Clamp01(value);
+            set => SetClampedVolume(ref _bgmVolume, value, "BgmVolumeChanged");
         }
 
         public float SfxVolume
         {
             get => _sfxVolume;
-            set => _sfxVolume = Mathf.Clamp01(value);
+            set => SetClampedVolume(ref _sfxVolume, value, "SfxVolumeChanged");
         }
 
         public float BgmCategoryMultiplier
@@ -56,6 +59,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         {
             get => _sfxCategoryMultiplier;
             set => _sfxCategoryMultiplier = Mathf.Max(0f, value);
+        }
+
+        private void SetClampedVolume(ref float field, float value, string reason)
+        {
+            float clamped = Mathf.Clamp01(value);
+            if (Mathf.Approximately(field, clamped))
+            {
+                return;
+            }
+
+            field = clamped;
+            VolumeChanged?.Invoke(reason);
         }
     }
 }

@@ -9,6 +9,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
     /// <summary>
     /// Runtime canônico de BGM global (single-channel lógico) para F3 do ADR-0028.
     /// Internamente usa duas fontes para suportar crossfade sem concorrência estrutural de BGM.
+    /// TODO: restaurar padrão via AudioDefaultsAsset e expor preview de SFX no commit do slider.
     /// </summary>
     public sealed class AudioBgmService : MonoBehaviour, IAudioBgmService
     {
@@ -27,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         private TransitionState _activeTransition;
         private int _nextTransitionToken;
         private bool _pauseDuckingEnabled;
+        private bool _settingsSubscriptionActive;
 
         public AudioBgmCueAsset ActiveCue { get; private set; }
 
@@ -213,6 +215,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         private void OnDestroy()
         {
+            UnsubscribeFromSettings();
             CancelActiveTransition("runtime_destroyed", "lifecycle_on_destroy");
             StopAndResetSource(_sourceA);
             StopAndResetSource(_sourceB);
@@ -228,10 +231,38 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             _sourceA = CreateConfiguredSource("BgmSource_A");
             _sourceB = CreateConfiguredSource("BgmSource_B");
             _activeSource = _sourceA;
+            SubscribeToSettings();
 
             DebugUtility.LogVerbose(typeof(AudioBgmService),
                 "[Audio][BOOT] IAudioBgmService runtime created (F3, single-channel global BGM).",
                 DebugUtility.Colors.Info);
+        }
+
+        private void SubscribeToSettings()
+        {
+            if (_settings == null || _settingsSubscriptionActive)
+            {
+                return;
+            }
+
+            _settings.VolumeChanged += OnSettingsVolumeChanged;
+            _settingsSubscriptionActive = true;
+        }
+
+        private void UnsubscribeFromSettings()
+        {
+            if (_settings == null || !_settingsSubscriptionActive)
+            {
+                return;
+            }
+
+            _settings.VolumeChanged -= OnSettingsVolumeChanged;
+            _settingsSubscriptionActive = false;
+        }
+
+        private void OnSettingsVolumeChanged(string _)
+        {
+            ApplyCurrentVolumeImmediately();
         }
 
         private AudioSource CreateConfiguredSource(string sourceName)
@@ -448,6 +479,28 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             {
                 secondary.volume = Mathf.Min(secondary.volume, targetVolume);
             }
+        }
+
+        private void ApplyCurrentVolumeImmediately()
+        {
+            if (ActiveCue == null)
+            {
+                return;
+            }
+
+            float targetVolume = ComputeCueTargetVolume(ActiveCue);
+
+            if (_activeSource != null && _activeSource.isPlaying)
+            {
+                _activeSource.volume = targetVolume;
+            }
+
+            var secondary = GetOtherSource(_activeSource);
+            if (secondary != null && secondary.isPlaying)
+            {
+                secondary.volume = Mathf.Min(secondary.volume, targetVolume);
+            }
+
         }
 
         private float ComputeCueTargetVolume(AudioBgmCueAsset cue)
