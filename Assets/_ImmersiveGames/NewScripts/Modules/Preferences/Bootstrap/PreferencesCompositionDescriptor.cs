@@ -13,6 +13,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
                 bootstrap: bootstrapConfig => PreferencesBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "PreferencesInstaller.Install",
                 runtimeComposerEntry: "PreferencesBootstrap.ComposeRuntime",
-                description: "Canonical audio preferences state and backend seam.");
+                description: "Canonical audio and video preferences state and backend seam.");
     }
 }

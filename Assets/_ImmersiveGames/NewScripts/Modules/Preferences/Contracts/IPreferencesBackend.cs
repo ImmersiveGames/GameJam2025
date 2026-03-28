@@ -14,5 +14,15 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Contracts
         bool TrySave(
             AudioPreferencesSnapshot snapshot,
             out string reason);
+
+        bool TryLoadVideo(
+            string profileId,
+            string slotId,
+            out VideoPreferencesSnapshot snapshot,
+            out string reason);
+
+        bool TrySaveVideo(
+            VideoPreferencesSnapshot snapshot,
+            out string reason);
     }
 }

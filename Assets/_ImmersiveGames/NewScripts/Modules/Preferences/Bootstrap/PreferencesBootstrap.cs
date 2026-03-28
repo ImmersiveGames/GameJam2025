@@ -53,15 +53,43 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
                     DebugUtility.Colors.Info);
             }
 
+            DebugUtility.LogVerbose(typeof(PreferencesBootstrap),
+                $"[Preferences] video load requested. backend='{saveService.BackendId}' profile='{VideoPreferencesSnapshot.BootstrapProfileId}' slot='{VideoPreferencesSnapshot.BootstrapSlotId}'.",
+                DebugUtility.Colors.Info);
+
+            bool videoLoaded = saveService.TryLoadVideo(
+                VideoPreferencesSnapshot.BootstrapProfileId,
+                VideoPreferencesSnapshot.BootstrapSlotId,
+                out var loadedVideoSnapshot,
+                out string videoLoadReason);
+
+            if (videoLoaded && loadedVideoSnapshot != null)
+            {
+                stateService.SetCurrent(loadedVideoSnapshot, "Preferences/BootstrapLoad");
+            }
+            else
+            {
+                DebugUtility.LogVerbose(typeof(PreferencesBootstrap),
+                    $"[Preferences] bootstrap kept installer seed for video. backend='{saveService.BackendId}' reason='{videoLoadReason}'.",
+                    DebugUtility.Colors.Info);
+            }
+
+            stateService.ApplyCurrentVideoToRuntime("Preferences/BootstrapApply");
+
             if (!stateService.HasSnapshot)
             {
                 throw new InvalidOperationException("[FATAL][Preferences] Snapshot indisponivel apos bootstrap.");
             }
 
+            if (!stateService.HasVideoSnapshot)
+            {
+                throw new InvalidOperationException("[FATAL][Preferences] Video snapshot indisponivel apos bootstrap.");
+            }
+
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(PreferencesBootstrap),
-                $"[Preferences] Runtime preparation concluded. backend='{saveService.BackendId}' snapshot={stateService.CurrentSnapshot}.",
+                $"[Preferences] Runtime preparation concluded. backend='{saveService.BackendId}' audio={stateService.CurrentSnapshot} video={stateService.CurrentVideoSnapshot}.",
                 DebugUtility.Colors.Info);
         }
     }

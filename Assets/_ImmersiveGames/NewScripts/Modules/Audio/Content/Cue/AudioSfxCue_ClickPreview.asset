@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AudioSfxCue_ClickPreview
   m_EditorClassIdentifier: 
   clips:
-  - {fileID: 8300000, guid: f129b8e3e6d922e4981a26d86c76a955, type: 3}
+  - {fileID: 8300000, guid: 05dd35653e0ed89488bd569fcd3b7f0d, type: 3}
   mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
   baseVolume: 1
   loop: 0

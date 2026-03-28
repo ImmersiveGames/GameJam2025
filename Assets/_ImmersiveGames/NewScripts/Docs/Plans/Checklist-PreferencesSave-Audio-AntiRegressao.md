@@ -1,6 +1,6 @@
 # Checklist — Preferences Save / Audio (Anti-regressão)
 
-Status: **Open**
+Status: **Closed for this cycle**
 Data: 2026-03-28
 
 ## A. Boundary do slice

@@ -33,5 +33,28 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Contracts
         bool TryRestoreAudioDefaults(
             string reason,
             out string saveReason);
+
+        bool TryRestoreVideoDefaults(
+            string reason,
+            out string saveReason);
+
+        bool TryLoadVideo(
+            string profileId,
+            string slotId,
+            out VideoPreferencesSnapshot snapshot,
+            out string reason);
+
+        bool TryPreviewVideoResolution(
+            int width,
+            int height,
+            bool fullscreen,
+            string reason,
+            out bool changed);
+
+        bool TryCommitCurrentVideoResolution(
+            string reason,
+            string fieldHint,
+            out bool changed,
+            out string saveReason);
     }
 }

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Modules.Preferences.Config;
 using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
 using _ImmersiveGames.NewScripts.Modules.Preferences.Runtime;
 
@@ -20,7 +21,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
                 return;
             }
 
-            _ = bootstrapConfig;
+            if (bootstrapConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config] BootstrapConfigAsset obrigatorio ausente para instalar Preferences.");
+            }
 
             if (!DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var audioSettings) || audioSettings == null)
             {
@@ -32,8 +36,26 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
                 throw new InvalidOperationException("[FATAL][Preferences] AudioDefaultsAsset obrigatorio ausente antes de instalar Preferences.");
             }
 
+            VideoDefaultsAsset videoDefaults = bootstrapConfig.VideoDefaults
+                ?? throw new InvalidOperationException("[FATAL][Preferences] BootstrapConfigAsset obrigatorio: VideoDefaults ausente.");
+
+            if (DependencyManager.Provider.TryGetGlobal<VideoDefaultsAsset>(out var registeredVideoDefaults)
+                && registeredVideoDefaults != null)
+            {
+                videoDefaults = registeredVideoDefaults;
+            }
+            else
+            {
+                DependencyManager.Provider.RegisterGlobal(videoDefaults, allowOverride: false);
+
+                DebugUtility.LogVerbose(
+                    typeof(PreferencesInstaller),
+                    $"[Preferences][BOOT] VideoDefaultsAsset registered. asset='{videoDefaults.name}'.",
+                    DebugUtility.Colors.Info);
+            }
+
             RegisterBackend();
-            RegisterPreferencesService(audioSettings, audioDefaults);
+            RegisterPreferencesService(audioSettings, audioDefaults, videoDefaults);
 
             _installed = true;
 
@@ -50,14 +72,23 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
                 registeredMessage: "[Preferences][BOOT] IPreferencesBackend registered (PlayerPrefs backend).");
         }
 
-        private static void RegisterPreferencesService(IAudioSettingsService audioSettings, AudioDefaultsAsset audioDefaults)
+        private static void RegisterPreferencesService(
+            IAudioSettingsService audioSettings,
+            AudioDefaultsAsset audioDefaults,
+            VideoDefaultsAsset videoDefaults)
         {
-            var service = new PreferencesService(ResolveBackend(), audioSettings, audioDefaults);
+            var service = new PreferencesService(ResolveBackend(), audioSettings, audioDefaults, videoDefaults);
             service.SetCurrent(
                 AudioPreferencesSnapshot.CaptureFrom(
                     AudioPreferencesSnapshot.BootstrapProfileId,
                     AudioPreferencesSnapshot.BootstrapSlotId,
                     audioSettings),
+                "Preferences/InstallerSeed");
+
+            service.SetCurrent(
+                videoDefaults.CreateDefaultSnapshot(
+                    VideoPreferencesSnapshot.BootstrapProfileId,
+                    VideoPreferencesSnapshot.BootstrapSlotId),
                 "Preferences/InstallerSeed");
 
             RegisterIfMissing<IPreferencesStateService>(
