@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +25,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
 
         [Header("Behavior")]
         [SerializeField] private bool syncOnEnable = true;
+
+        [Header("SFX Preview")]
+        [SerializeField] private bool enableSfxPreviewOnRelease;
+        [SerializeField] private AudioSfxCueAsset sfxPreviewCue;
 
         private IPreferencesStateService _stateService;
         private IPreferencesSaveService _saveService;
@@ -136,6 +141,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
                 out string _);
 
             SyncFromCurrentState("AudioPreferences/RestoreDefaults");
+        }
+
+        private void OnValidate()
+        {
+            if (enableSfxPreviewOnRelease && sfxPreviewCue == null)
+            {
+                throw new InvalidOperationException("[FATAL][Preferences] sfxPreviewCue obrigatorio quando enableSfxPreviewOnRelease estiver habilitado.");
+            }
         }
 
         private void SyncFromCurrentState(string reason)
@@ -292,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
                 relay = slider.gameObject.AddComponent<AudioPreferencesSliderInteractionRelay>();
             }
 
-            relay.Configure(this, kind);
+            relay.Configure(this, kind, enableSfxPreviewOnRelease, sfxPreviewCue);
         }
     }
 }

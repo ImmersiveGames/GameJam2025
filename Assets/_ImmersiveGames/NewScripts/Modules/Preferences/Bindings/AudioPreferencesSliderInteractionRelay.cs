@@ -1,5 +1,8 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
+using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -26,6 +29,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
 
         private AudioPreferencesOptionsBinder _owner;
         private Slider _slider;
+        private bool _enableSfxPreviewOnRelease;
+        private AudioSfxCueAsset _sfxPreviewCue;
         private bool _interactionActive;
         private bool _releaseHandled;
 
@@ -38,11 +43,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
             }
         }
 
-        public void Configure(AudioPreferencesOptionsBinder owner, AudioPreferenceSliderKind kind)
+        public void Configure(
+            AudioPreferencesOptionsBinder owner,
+            AudioPreferenceSliderKind kind,
+            bool enableSfxPreviewOnRelease,
+            AudioSfxCueAsset sfxPreviewCue)
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
             ValidateSliderKind(kind);
             sliderKind = kind;
+            _enableSfxPreviewOnRelease = enableSfxPreviewOnRelease;
+            _sfxPreviewCue = sfxPreviewCue;
 
             if (_slider == null)
             {
@@ -106,6 +117,71 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
             }
 
             _owner.TryCommitAudioPreferences(FieldHintFor(sliderKind), reason);
+
+            TryPlaySfxPreview(reason);
+        }
+
+        private void TryPlaySfxPreview(string reason)
+        {
+            if (sliderKind != AudioPreferenceSliderKind.Sfx)
+            {
+                DebugUtility.LogVerbose(typeof(AudioPreferencesSliderInteractionRelay),
+                    $"[Preferences] preview skipped reason='field_not_sfx' slider='{FormatSliderName(sliderKind)}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!_enableSfxPreviewOnRelease)
+            {
+                DebugUtility.LogVerbose(typeof(AudioPreferencesSliderInteractionRelay),
+                    "[Preferences] preview skipped reason='preview_disabled' slider='Sfx'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DebugUtility.LogVerbose(typeof(AudioPreferencesSliderInteractionRelay),
+                $"[Preferences] preview requested slider='Sfx' cue='{(_sfxPreviewCue != null ? _sfxPreviewCue.name : "null")}' globalAudioResolved='{TryResolveGlobalAudioService(out _)}'.",
+                DebugUtility.Colors.Info);
+
+            if (_sfxPreviewCue == null)
+            {
+                DebugUtility.LogWarning(typeof(AudioPreferencesSliderInteractionRelay),
+                    "[Preferences] preview skipped reason='cue_null' slider='Sfx'.");
+                return;
+            }
+
+            if (!TryResolveGlobalAudioService(out var globalAudioService) || globalAudioService == null)
+            {
+                DebugUtility.LogWarning(typeof(AudioPreferencesSliderInteractionRelay),
+                    "[Preferences] preview skipped reason='global_audio_service_missing' slider='Sfx'.");
+                return;
+            }
+
+            DebugUtility.Log(typeof(AudioPreferencesSliderInteractionRelay),
+                $"[Preferences] preview play dispatch slider='Sfx' cue='{_sfxPreviewCue.name}'.",
+                DebugUtility.Colors.Info);
+
+            globalAudioService.Play(
+                _sfxPreviewCue,
+                AudioPlaybackContext.Global(reason: "Preferences/SfxPreview", volumeScale: 1f));
+        }
+
+        private static bool TryResolveGlobalAudioService(out IGlobalAudioService globalAudioService)
+        {
+            globalAudioService = null;
+
+            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
+            {
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out globalAudioService) || globalAudioService == null)
+            {
+                globalAudioService = null;
+                return false;
+            }
+
+            return true;
         }
 
         private void ValidateSliderKind(AudioPreferenceSliderKind kind)

@@ -26988,6 +26988,8 @@ MonoBehaviour:
   bgmVolumeSlider: {fileID: 94429521}
   sfxVolumeSlider: {fileID: 56018526135370220}
   syncOnEnable: 1
+  enableSfxPreviewOnRelease: 1
+  sfxPreviewCue: {fileID: 11400000, guid: 5c7f552cac2dbf641b1fd497df83d1ef, type: 2}
 --- !u!1 &8819184943911884604
 GameObject:
   m_ObjectHideFlags: 0
