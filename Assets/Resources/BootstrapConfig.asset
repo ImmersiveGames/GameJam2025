@@ -20,4 +20,4 @@ MonoBehaviour:
   runtimeModeConfig: {fileID: 11400000, guid: 83957a798a35a4e4fb9774e74ccbfb03, type: 2}
   audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}
   videoDefaults: {fileID: 11400000, guid: 2abe1594c17cbf14ba99d5746f95f233, type: 2}
-  entityAudioSemanticMap: {fileID: 0}
+  entityAudioSemanticMap: {fileID: 11400000, guid: 8655b820fdbe45eb902e5e8086929880, type: 2}

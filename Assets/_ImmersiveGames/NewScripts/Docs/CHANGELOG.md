@@ -4,6 +4,11 @@
 - consolidou audio com load, apply, commit, restore e preview de SFX, e video com defaults, presets, apply e persistência
 - marcou o próximo passo apenas como smoke test em build desktop para confirmação visual final
 
+# 2026-03-28 - preferences baseline v1 closeout
+- registrado o fechamento do marco `Preferences baseline v1: Audio + Video concluídos`
+- consolidado o report datado em `Docs/Reports/Audits/2026-03-28/Preferences-Baseline-V1-Audio-Video.md`
+- mantido como próximo passo apenas o smoke test em build desktop para confirmar comportamento visual final de resolução/fullscreen
+
 # 2026-03-27 - structural docs closeout
 - consolidou a rodada estrutural atual em `ADR-0038`, `ADR-0039`, `ADR-0028`, `ADR-0008`, `ADR-0007` e `ADR-0040`
 - alinhou `RuntimeModeConfig` ao bootstrap canônico por referência direta em `BootstrapConfigAsset`

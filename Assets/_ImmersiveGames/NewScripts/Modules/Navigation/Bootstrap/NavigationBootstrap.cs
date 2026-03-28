@@ -3,10 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
@@ -14,11 +11,11 @@ using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
 {
     /// <summary>
-    /// Runtime composer do Navigation.
+    /// Runtime composer for Navigation.
     ///
-    /// Responsabilidade:
-    /// - compor e ativar o runtime do modulo depois que os installers relevantes concluirem;
-    /// - nao registrar contratos de boot.
+    /// Responsibility:
+    /// - compose and activate the module runtime after the relevant installers finish;
+    /// - do not register boot contracts.
     /// </summary>
     public static class NavigationBootstrap
     {
@@ -35,23 +32,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
 
             if (bootstrapConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
+                throw new InvalidOperationException("[FATAL][Config][Navigation] BootstrapConfigAsset required and missing to compose runtime.");
             }
 
-            EnsureNavigationService(bootstrapConfig);
-            EnsureExitToMenuCoordinator();
-            EnsureMacroRestartCoordinator();
-            EnsureLevelSelectedRestartSnapshotBridge();
-            EnsureNavigationLevelRouteBgmBridge(bootstrapConfig);
+            EnsureNavigationService();
 
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(NavigationBootstrap),
-                "[Navigation] Runtime composition concluida.",
+                "[Navigation] Runtime composition completed.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureNavigationService(BootstrapConfigAsset bootstrapConfig)
+        private static void EnsureNavigationService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var existingService) && existingService != null)
             {
@@ -60,104 +53,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] ISceneTransitionService ausente no DI global antes da composicao runtime.");
+                throw new InvalidOperationException("[FATAL][Config][Navigation] ISceneTransitionService missing from global DI before runtime composition.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationCatalog>(out var catalog) || catalog == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] IGameNavigationCatalog ausente no DI global antes da composicao runtime.");
+                throw new InvalidOperationException("[FATAL][Config][Navigation] IGameNavigationCatalog missing from global DI before runtime composition.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] IRestartContextService ausente no DI global antes da composicao runtime.");
-            }
-
-            var service = new GameNavigationService(
-                sceneFlow,
-                catalog,
-                restartContextService);
+            var service = new GameNavigationService(sceneFlow, catalog);
 
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                $"[Navigation] GameNavigationService composto no runtime (Catalog={catalog.GetType().Name}, RestartContext={restartContextService.GetType().Name}).",
+                $"[Navigation] GameNavigationService composed at runtime (Catalog={catalog.GetType().Name}).",
                 DebugUtility.Colors.Info);
-        }
-
-        private static void EnsureExitToMenuCoordinator()
-        {
-            RegisterIfMissing(
-                () => new ExitToMenuCoordinator(),
-                typeof(ExitToMenuCoordinator),
-                "[Navigation] ExitToMenuCoordinator ja registrado no DI global.",
-                "[Navigation] ExitToMenuCoordinator registrado no DI global.");
-        }
-
-        private static void EnsureMacroRestartCoordinator()
-        {
-            RegisterIfMissing(
-                () => new MacroRestartCoordinator(),
-                typeof(MacroRestartCoordinator),
-                "[Navigation] MacroRestartCoordinator ja registrado no DI global.",
-                "[Navigation] MacroRestartCoordinator registrado no DI global.");
-        }
-
-        private static void EnsureLevelSelectedRestartSnapshotBridge()
-        {
-            RegisterIfMissing(
-                () => new LevelSelectedRestartSnapshotBridge(),
-                typeof(LevelSelectedRestartSnapshotBridge),
-                "[Navigation] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
-                "[Navigation] LevelSelectedRestartSnapshotBridge registrado no DI global.");
-        }
-
-        private static void EnsureNavigationLevelRouteBgmBridge(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) || bgmService == null)
-            {
-                DebugUtility.LogWarning(typeof(NavigationBootstrap),
-                    "[Audio][BGM][Bridge] Skipped registration: IAudioBgmService unavailable.");
-                return;
-            }
-
-            var navigationCatalog = bootstrapConfig.NavigationCatalog as GameNavigationCatalogAsset;
-            if (navigationCatalog == null)
-            {
-                DebugUtility.LogWarning(typeof(NavigationBootstrap),
-                    "[Audio][BGM][Bridge] Skipped registration: NavigationCatalog missing in bootstrap.");
-                return;
-            }
-
-            DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext);
-
-            RegisterIfMissing(
-                () => new NavigationLevelRouteBgmBridge(
-                    bgmService,
-                    navigationCatalog,
-                    restartContext),
-                typeof(NavigationLevelRouteBgmBridge),
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge already registered in global DI.",
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge registered in global DI.");
-        }
-
-        private static void RegisterIfMissing<T>(Func<T> factory, Type contextType, string alreadyRegisteredMessage, string registeredMessage)
-            where T : class
-        {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(contextType, alreadyRegisteredMessage, DebugUtility.Colors.Info);
-                return;
-            }
-
-            var instance = factory();
-            if (instance == null)
-            {
-                throw new InvalidOperationException($"Factory returned null while registering {typeof(T).Name}.");
-            }
-
-            DependencyManager.Provider.RegisterGlobal(instance);
-            DebugUtility.LogVerbose(contextType, registeredMessage, DebugUtility.Colors.Info);
         }
     }
 }

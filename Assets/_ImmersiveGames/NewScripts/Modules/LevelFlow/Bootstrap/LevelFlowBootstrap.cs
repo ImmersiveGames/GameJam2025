@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Interop;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
@@ -42,6 +43,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
 
             EnsureLevelFlowCompletionGate();
             EnsureLevelFlowRuntimeService();
+            EnsureLevelSelectedRestartSnapshotBridge();
             EnsurePostLevelActionsService(bootstrapConfig);
             EnsureLevelStageOrchestrator();
 
@@ -129,6 +131,15 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap
             DebugUtility.LogVerbose(typeof(LevelFlowBootstrap),
                 "[OBS][LevelFlow] IPostLevelActionsService registrado no runtime.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureLevelSelectedRestartSnapshotBridge()
+        {
+            RegisterIfMissing(
+                () => new LevelSelectedRestartSnapshotBridge(),
+                typeof(LevelSelectedRestartSnapshotBridge),
+                "[LevelFlow] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
+                "[LevelFlow] LevelSelectedRestartSnapshotBridge registrado no DI global.");
         }
 
         private static IGameNavigationService ResolveRequiredNavigationService()

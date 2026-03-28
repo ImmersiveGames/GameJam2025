@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
-            await _navigationService.ExitToMenuAsync(normalizedReason);
+            await _navigationService.GoToMenuAsync(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] PostLevelActionApplied action='ExitToMenu' reason='{normalizedReason}'.",

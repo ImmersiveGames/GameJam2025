@@ -12,6 +12,8 @@ O primeiro vertical slice da camada canônica de Preferences foi fechado em duas
 
 O objetivo desta rodada foi concluir o baseline de Preferences sem abrir progressão, checkpoint ou outros domínios.
 
+Resultado macro registrado: Preferences baseline v1: Audio + Video concluídos.
+
 ## Escopo fechado
 
 - Preferences / Audio

@@ -42,3 +42,11 @@ MonoBehaviour:
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules.Preferences
     level: 4
+  - ruleId: infra_fontend
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.Frontend
+    level: 4
+  - ruleId: infra_navegation
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Modules.Navigation
+    level: 4
