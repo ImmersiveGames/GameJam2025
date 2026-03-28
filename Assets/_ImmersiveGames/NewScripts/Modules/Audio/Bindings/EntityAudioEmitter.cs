@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bindings
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IEntityAudioService>(out _entityAudioService) || _entityAudioService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _entityAudioService) || _entityAudioService == null)
             {
                 _entityAudioService = null;
                 return false;

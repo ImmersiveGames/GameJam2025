@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
 using UnityEngine;
@@ -10,13 +11,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Runtime
     {
         private readonly IPreferencesBackend _backend;
         private readonly IAudioSettingsService _audioSettings;
+        private readonly AudioDefaultsAsset _audioDefaults;
         private AudioPreferencesSnapshot _currentSnapshot;
         private AudioPreferencesSnapshot _lastCommittedSnapshot;
 
-        public PreferencesService(IPreferencesBackend backend, IAudioSettingsService audioSettings)
+        public PreferencesService(
+            IPreferencesBackend backend,
+            IAudioSettingsService audioSettings,
+            AudioDefaultsAsset audioDefaults)
         {
             _backend = backend ?? throw new ArgumentNullException(nameof(backend));
             _audioSettings = audioSettings ?? throw new ArgumentNullException(nameof(audioSettings));
+            _audioDefaults = audioDefaults ?? throw new ArgumentNullException(nameof(audioDefaults));
         }
 
         public string BackendId => _backend.BackendId;
@@ -136,6 +142,64 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Runtime
                 field: resolvedField,
                 committedFrom: committedFrom,
                 committedTo: CurrentSnapshot);
+
+            return true;
+        }
+
+        public bool TryRestoreAudioDefaults(
+            string reason,
+            out string saveReason)
+        {
+            if (!HasSnapshot)
+            {
+                saveReason = "missing_current_snapshot";
+                throw new InvalidOperationException("[FATAL][Preferences] Audio defaults restore requested before any snapshot was seeded.");
+            }
+
+            var restoredSnapshot = new AudioPreferencesSnapshot(
+                CurrentSnapshot.ProfileId,
+                CurrentSnapshot.SlotId,
+                _audioDefaults.MasterVolume,
+                _audioDefaults.BgmVolume,
+                _audioDefaults.SfxVolume);
+
+            DebugUtility.LogVerbose<PreferencesService>(
+                $"[Preferences] restore defaults requested. backend='{BackendId}' snapshot={restoredSnapshot}.",
+                DebugUtility.Colors.Info);
+
+            _currentSnapshot = restoredSnapshot;
+            ApplyCurrentSnapshotToAudioRuntime(reason);
+
+            string restoreField = "RestoreDefaults";
+            var committedFrom = _lastCommittedSnapshot;
+            if (HasSameAudioValues(restoredSnapshot, _lastCommittedSnapshot))
+            {
+                saveReason = "no_change";
+                LogCommitState(
+                    result: saveReason,
+                    field: restoreField,
+                    committedFrom: _lastCommittedSnapshot,
+                    committedTo: restoredSnapshot);
+
+                return true;
+            }
+
+            bool saved = TrySaveCurrent(out saveReason);
+            if (!saved)
+            {
+                DebugUtility.LogWarning<PreferencesService>(
+                    $"[Preferences] restore defaults failed. reason='{NormalizeReason(reason)}' snapshot={restoredSnapshot} saveReason='{saveReason}'.");
+                return false;
+            }
+
+            _lastCommittedSnapshot = restoredSnapshot;
+
+            saveReason = "save_executed";
+            LogCommitState(
+                result: saveReason,
+                field: restoreField,
+                committedFrom: committedFrom,
+                committedTo: restoredSnapshot);
 
             return true;
         }

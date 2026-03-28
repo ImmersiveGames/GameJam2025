@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap
                 "[WorldReset] IWorldResetService ja registrado no DI global.",
                 "[WorldReset] IWorldResetService registrado no DI global.");
 
-            RegisterIfMissing<WorldResetService>(
+            RegisterIfMissing(
                 () => service,
                 "[WorldReset] WorldResetService ja registrado no DI global.",
                 "[WorldReset] WorldResetService registrado no DI global.");
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap
 
         private static void RegisterSceneFlowWorldResetDriver()
         {
-            RegisterIfMissing<SceneFlowWorldResetDriver>(
+            RegisterIfMissing(
                 () => new SceneFlowWorldResetDriver(),
                 "[ResetInterop] SceneFlowWorldResetDriver ja registrado no DI global.",
                 "[ResetInterop] SceneFlowWorldResetDriver registrado no DI global.");

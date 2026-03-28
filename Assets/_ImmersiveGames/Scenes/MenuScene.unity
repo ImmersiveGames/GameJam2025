@@ -582,10 +582,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 687681967}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Navigation.Bindings.FrontendShowPanelButtonBinder,
+      - m_Target: {fileID: 8808600327062929377}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Modules.Preferences.Bindings.AudioPreferencesOptionsBinder,
           Assembly-CSharp
-        m_MethodName: OnClick
+        m_MethodName: RestoreAudioDefaults
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

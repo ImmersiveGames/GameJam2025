@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
     /// Regras:
     /// - sincroniza os sliders com o estado canônico ao abrir o painel;
     /// - publica apenas intencao de mudanca;
-    /// - nao conversa com backend nem com PlayerPrefs diretamente.
+    /// - não conversa com backend nem com PlayerPrefs diretamente.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class AudioPreferencesOptionsBinder : MonoBehaviour
@@ -124,6 +124,20 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
             }
         }
 
+        public void RestoreAudioDefaults()
+        {
+            if (_saveService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService ausente no AudioPreferencesOptionsBinder.");
+            }
+
+            _saveService.TryRestoreAudioDefaults(
+                reason: "AudioPreferences/RestoreDefaults",
+                out string _);
+
+            SyncFromCurrentState("AudioPreferences/RestoreDefaults");
+        }
+
         private void SyncFromCurrentState(string reason)
         {
             if (_stateService == null)
@@ -201,12 +215,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
                 throw new InvalidOperationException("[FATAL][Preferences] DependencyManager indisponivel para AudioPreferencesOptionsBinder.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPreferencesStateService>(out _stateService) || _stateService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _stateService) || _stateService == null)
             {
                 throw new InvalidOperationException("[FATAL][Preferences] IPreferencesStateService obrigatorio ausente para AudioPreferencesOptionsBinder.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPreferencesSaveService>(out _saveService) || _saveService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _saveService) || _saveService == null)
             {
                 throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService obrigatorio ausente para AudioPreferencesOptionsBinder.");
             }
@@ -267,12 +281,12 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
             }
 
             var relays = slider.GetComponents<AudioPreferencesSliderInteractionRelay>();
-            if (relays != null && relays.Length > 1)
+            if (relays is { Length: > 1 })
             {
                 throw new InvalidOperationException("[FATAL][Preferences] Relay duplicado encontrado no mesmo slider de Audio.");
             }
 
-            var relay = relays != null && relays.Length == 1 ? relays[0] : null;
+            var relay = relays is { Length: 1 } ? relays[0] : null;
             if (relay == null)
             {
                 relay = slider.gameObject.AddComponent<AudioPreferencesSliderInteractionRelay>();

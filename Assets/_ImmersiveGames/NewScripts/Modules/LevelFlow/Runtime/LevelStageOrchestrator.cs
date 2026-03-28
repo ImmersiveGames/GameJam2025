@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             presenterRegistry = null;
 
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelIntroStagePresenterRegistry>(out presenterRegistry) ||
+            if (!DependencyManager.Provider.TryGetGlobal(out presenterRegistry) ||
                 presenterRegistry == null)
             {
                 HardFailFastH1.Trigger(typeof(LevelStageOrchestrator),

@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
 using _ImmersiveGames.NewScripts.Modules.Preferences.Runtime;
@@ -26,8 +27,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
                 throw new InvalidOperationException("[FATAL][Preferences] IAudioSettingsService obrigatorio ausente antes de instalar Preferences.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var audioDefaults) || audioDefaults == null)
+            {
+                throw new InvalidOperationException("[FATAL][Preferences] AudioDefaultsAsset obrigatorio ausente antes de instalar Preferences.");
+            }
+
             RegisterBackend();
-            RegisterPreferencesService(audioSettings);
+            RegisterPreferencesService(audioSettings, audioDefaults);
 
             _installed = true;
 
@@ -44,9 +50,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
                 registeredMessage: "[Preferences][BOOT] IPreferencesBackend registered (PlayerPrefs backend).");
         }
 
-        private static void RegisterPreferencesService(IAudioSettingsService audioSettings)
+        private static void RegisterPreferencesService(IAudioSettingsService audioSettings, AudioDefaultsAsset audioDefaults)
         {
-            var service = new PreferencesService(ResolveBackend(), audioSettings);
+            var service = new PreferencesService(ResolveBackend(), audioSettings, audioDefaults);
             service.SetCurrent(
                 AudioPreferencesSnapshot.CaptureFrom(
                     AudioPreferencesSnapshot.BootstrapProfileId,

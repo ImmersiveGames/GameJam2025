@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 if (existing is IInputModeStateService existingState
                     && (!provider.TryGetGlobal<IInputModeStateService>(out var registeredState) || registeredState == null))
                 {
-                    provider.RegisterGlobal<IInputModeStateService>(existingState);
+                    provider.RegisterGlobal(existingState);
                 }
 
                 if (logVerbose)

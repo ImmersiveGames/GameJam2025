@@ -53,8 +53,8 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 throw new InvalidOperationException("IDependencyProvider is required to build the WorldResetOrchestrator.");
             }
 
-            provider.TryGetGlobal<IWorldResetPolicy>(out IWorldResetPolicy policy);
-            provider.TryGetGlobal<ISimulationGateService>(out ISimulationGateService gateService);
+            provider.TryGetGlobal(out IWorldResetPolicy policy);
+            provider.TryGetGlobal(out ISimulationGateService gateService);
 
             var guards = new List<IWorldResetGuard>(1)
             {

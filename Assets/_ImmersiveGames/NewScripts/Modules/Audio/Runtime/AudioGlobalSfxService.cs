@@ -693,7 +693,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPoolService>(out poolService) || poolService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out poolService) || poolService == null)
             {
                 return false;
             }

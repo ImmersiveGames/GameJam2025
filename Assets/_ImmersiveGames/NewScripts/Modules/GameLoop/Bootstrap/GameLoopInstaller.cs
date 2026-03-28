@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService nao implementa IPauseStateService.");
             }
 
-            DependencyManager.Provider.RegisterGlobal<IPauseStateService>(pauseStateService);
+            DependencyManager.Provider.RegisterGlobal(pauseStateService);
             DebugUtility.LogVerbose(typeof(GameLoopInstaller),
                 "[GameLoop] IPauseStateService registrado no DI global.",
                 DebugUtility.Colors.Info);
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopCommands nao implementa IPauseCommands.");
             }
 
-            DependencyManager.Provider.RegisterGlobal<IPauseCommands>(pauseCommands);
+            DependencyManager.Provider.RegisterGlobal(pauseCommands);
             DebugUtility.LogVerbose(typeof(GameLoopInstaller),
                 "[GameLoop] IPauseCommands registrado no DI global.",
                 DebugUtility.Colors.Info);

@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
             {
                 if (existingPresentation is ILoadingHudService loadingHudService)
                 {
-                    provider.RegisterGlobal<ILoadingHudService>(loadingHudService);
+                    provider.RegisterGlobal(loadingHudService);
                     DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
                         "[Loading] ILoadingHudService registrado como alias do servico existente.",
                         DebugUtility.Colors.Info);
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
             {
                 if (existingHud is ILoadingPresentationService loadingPresentationService)
                 {
-                    provider.RegisterGlobal<ILoadingPresentationService>(loadingPresentationService);
+                    provider.RegisterGlobal(loadingPresentationService);
                     DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
                         "[Loading] ILoadingPresentationService registrado como alias do servico existente.",
                         DebugUtility.Colors.Info);

@@ -390,7 +390,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out statusService) || statusService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out statusService) || statusService == null)
             {
                 return false;
             }

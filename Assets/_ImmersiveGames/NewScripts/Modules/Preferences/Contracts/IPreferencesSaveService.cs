@@ -29,5 +29,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Contracts
             string fieldHint,
             out bool changed,
             out string saveReason);
+
+        bool TryRestoreAudioDefaults(
+            string reason,
+            out string saveReason);
     }
 }
