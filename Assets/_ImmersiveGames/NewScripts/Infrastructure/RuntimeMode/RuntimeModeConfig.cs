@@ -10,8 +10,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
     /// Configuração global (asset) para controlar o modo de execução e a política do reporter de degradação.
     ///
     /// Uso esperado:
-    /// - Criar um asset em Resources com o nome "RuntimeModeConfig" para carregamento automático.
-    /// - Se o asset não existir, o sistema opera em modo Auto (comportamento atual).
+    /// - Criar um asset em Resources com o nome "RuntimeModeConfig".
+    /// - O bootstrap canônico faz a resolução explícita e falha cedo se o asset obrigatório estiver ausente.
     /// </summary>
     [CreateAssetMenu(
         fileName = "RuntimeModeConfig",

@@ -4,8 +4,9 @@
 Definir o modelo canônico de composição modular em `NewScripts` sem misturar registro com composição runtime.
 
 ## 2. Two Global Phases
-- `Module Installers`
-- `Module Runtime Bootstraps / Composers`
+- Fase 1: `Module Installers`
+- Fase 2: `Module Runtime Bootstraps / Composers`
+- a ordem canônica entre fases é explícita e auditável
 
 ## 3. What Belongs in an Installer
 - registros de serviços
@@ -36,6 +37,7 @@ Não entra:
 - bootstraps executam depois que todos os installers terminaram
 - a ordem em cada fase vem de dependências explícitas
 - o grafo é resolvido por ordenação topológica ou equivalente
+- logs canônicos do pipeline devem sair em `INFO`
 - fail-fast é obrigatório para:
   - dependência ausente
   - dependência inválida
@@ -49,6 +51,7 @@ Não entra:
 - agregação dos descriptors
 - validação e execução do grafo
 - shims finos de orquestração quando fizer sentido
+- `BootstrapConfigAsset` como único entrypoint aceitável por `Resources` no boot global
 
 ## 7. Current Positive References
 - `GameLoop`
@@ -56,3 +59,6 @@ Não entra:
 - `Navigation`
 - `LevelFlow`
 - `WorldReset`
+- `Gameplay` como `installer-only`
+- `Audio` como módulo canônico com `AudioCompositionDescriptor` / `AudioInstaller` / `AudioRuntimeComposer`
+- `Loading` como subcapability de `SceneFlow`

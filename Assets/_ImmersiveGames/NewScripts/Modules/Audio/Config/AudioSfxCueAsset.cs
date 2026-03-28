@@ -52,46 +52,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
         [SerializeField] private AudioSfxExecutionProfileAsset executionProfile;
 
         /// <summary>
-        /// Compatibilidade legada: será migrado gradualmente para EmissionProfile.
-        /// </summary>
-        [SerializeField] private AudioSfxPlaybackMode playbackMode = AudioSfxPlaybackMode.Global;
-        /// <summary>
-        /// Compatibilidade legada: será migrado gradualmente para EmissionProfile.
-        /// </summary>
-        [SerializeField] [Range(0f, 1f)] private float spatialBlend = 1f;
-        /// <summary>
-        /// Compatibilidade legada: será migrado gradualmente para EmissionProfile.
-        /// </summary>
-        [SerializeField] [Min(0f)] private float minDistance = 1f;
-        /// <summary>
-        /// Compatibilidade legada: será migrado gradualmente para EmissionProfile.
-        /// </summary>
-        [SerializeField] [Min(0f)] private float maxDistance = 40f;
-        /// <summary>
-        /// Compatibilidade legada: será migrado gradualmente para ExecutionProfile.
-        /// </summary>
-        [SerializeField] private AudioSfxExecutionMode executionMode = AudioSfxExecutionMode.DirectOneShot;
-        /// <summary>
-        /// Compatibilidade legada: será migrado gradualmente para ExecutionProfile (pooled).
-        /// </summary>
-        [SerializeField] private AudioSfxVoiceProfileAsset voiceProfileOverride;
-        /// <summary>
-        /// Compatibilidade legada: preocupação de política será movida gradualmente para profile dedicado.
+        /// Política ativa de concorrência para SFX.
         /// </summary>
         [SerializeField] [Min(1)] private int maxSimultaneousInstances = 1;
         /// <summary>
-        /// Compatibilidade legada: preocupação de política será movida gradualmente para profile dedicado.
+        /// Janela ativa de cooldown entre retriggers.
         /// </summary>
         [SerializeField] [Min(0f)] private float sfxRetriggerCooldownSeconds;
 
         public AudioSfxEmissionProfileAsset EmissionProfile => emissionProfile;
         public AudioSfxExecutionProfileAsset ExecutionProfile => executionProfile;
-        public AudioSfxPlaybackMode PlaybackMode => playbackMode;
-        public float SpatialBlend => spatialBlend;
-        public float MinDistance => minDistance;
-        public float MaxDistance => maxDistance;
-        public AudioSfxExecutionMode ExecutionMode => executionMode;
-        public AudioSfxVoiceProfileAsset VoiceProfileOverride => voiceProfileOverride;
         public int MaxSimultaneousInstances => maxSimultaneousInstances;
         public float SfxRetriggerCooldownSeconds => sfxRetriggerCooldownSeconds;
     }

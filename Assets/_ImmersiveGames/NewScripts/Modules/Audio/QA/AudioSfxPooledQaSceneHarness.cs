@@ -174,30 +174,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 defaultVoiceBudget: Mathf.Max(1, baseEffectiveProfile.DefaultVoiceBudget),
                 releaseGraceSeconds: baseEffectiveProfile.ReleaseGraceSeconds);
 
-            var probeCue = CreateRuntimeCueClone(
-                sourceCue: pooled2dCue,
-                executionMode: AudioSfxExecutionMode.PooledOneShot,
-                playbackMode: AudioSfxPlaybackMode.Global,
-                voiceProfileOverride: forcedFallbackProfile,
-                maxSimultaneousInstances: 64,
-                cooldownSeconds: 0f);
-
             var context = BuildContextWithForcedProfile(
-                cue: probeCue,
+                cue: pooled2dCue,
                 context: AudioPlaybackContext.Global(reason: "qa_sfx_probe_pooled_fallback_forced"),
                 forcedProfile: forcedFallbackProfile);
-            var handle = _globalAudioService.Play(probeCue, context);
+            var handle = _globalAudioService.Play(pooled2dCue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
             bool valid = handle != null && handle.IsValid;
             string inferredPath = InferPathFromHandle(handle);
             LogInfo("ProbePooledFallbackForced",
                 $"cue='{pooled2dCue.name}' effectiveProfile='context:{SafeName(forcedFallbackProfile)}' expectedPath='fallback_direct' inferredPath='{inferredPath}' handleValid={valid} (check runtime log path='fallback_direct')");
-
-            if (probeCue != null)
-            {
-                Destroy(probeCue);
-            }
 
             if (forcedFallbackProfile != null)
             {
@@ -315,38 +302,30 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 defaultVoiceBudget: 1,
                 releaseGraceSeconds: baseEffectiveProfile.ReleaseGraceSeconds);
 
-            var probeCue = CreateRuntimeCueClone(
-                sourceCue: cue,
-                executionMode: AudioSfxExecutionMode.PooledOneShot,
-                playbackMode: AudioSfxPlaybackMode.Spatial,
-                voiceProfileOverride: forcedBudgetProfile,
-                maxSimultaneousInstances: 64,
-                cooldownSeconds: 0f);
-
             LogInfo("ProbePooledBudgetForced",
-                $"start cue='{cue.name}' attempts={attempts} stepDelay={stepDelay:0.###} expectedPolicy='block_budget' effectiveProfile='cue_override:{forcedBudgetProfile.name}' source='{source}'");
+                $"start cue='{cue.name}' attempts={attempts} stepDelay={stepDelay:0.###} expectedPolicy='block_budget' effectiveProfile='context:{forcedBudgetProfile.name}' source='{source}'");
 
             var firstContext = BuildContextWithForcedProfile(
-                cue: probeCue,
+                cue: cue,
                 context: AudioPlaybackContext.Spatial(
                     worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
                     followTarget: spatialFollowTarget,
                     reason: "qa_pooled_budget_forced_first"),
                 forcedProfile: forcedBudgetProfile);
-            var firstHandle = _globalAudioService.Play(probeCue, firstContext);
+            var firstHandle = _globalAudioService.Play(cue, firstContext);
             _lastHandle = firstHandle ?? NullAudioPlaybackHandle.Instance;
             bool firstValid = firstHandle != null && firstHandle.IsValid;
 
             yield return null;
 
             var secondContext = BuildContextWithForcedProfile(
-                cue: probeCue,
+                cue: cue,
                 context: AudioPlaybackContext.Spatial(
                     worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
                     followTarget: spatialFollowTarget,
                     reason: "qa_pooled_budget_forced_second"),
                 forcedProfile: forcedBudgetProfile);
-            var secondHandle = _globalAudioService.Play(probeCue, secondContext);
+            var secondHandle = _globalAudioService.Play(cue, secondContext);
             bool secondValid = secondHandle != null && secondHandle.IsValid;
             if (secondValid)
             {
@@ -359,14 +338,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             for (int i = 0; i < additionalAttempts; i++)
             {
                 var context = BuildContextWithForcedProfile(
-                    cue: probeCue,
+                    cue: cue,
                     context: AudioPlaybackContext.Spatial(
                         worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
                         followTarget: spatialFollowTarget,
                         reason: $"qa_pooled_budget_forced_extra_{i + 1}"),
                     forcedProfile: forcedBudgetProfile);
 
-                var handle = _globalAudioService.Play(probeCue, context);
+                var handle = _globalAudioService.Play(cue, context);
                 if (handle != null && handle.IsValid)
                 {
                     additionalValid++;
@@ -389,11 +368,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             if (firstHandle != null && firstHandle.IsValid)
             {
                 firstHandle.Stop();
-            }
-
-            if (probeCue != null)
-            {
-                Destroy(probeCue);
             }
 
             if (forcedBudgetProfile != null)
@@ -427,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
 
             for (int i = 0; i < count; i++)
             {
-                var context = sequenceProbeCue.PlaybackMode == AudioSfxPlaybackMode.Spatial
+                var context = IsCueSpatial(sequenceProbeCue)
                     ? BuildDefaultPooledContext(
                         cue: sequenceProbeCue,
                         context: AudioPlaybackContext.Spatial(
@@ -580,13 +554,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
 
         private AudioPlaybackContext BuildDefaultPooledContext(AudioSfxCueAsset cue, AudioPlaybackContext context)
         {
-            var effectiveProfile = ResolveEffectiveProfile(cue, null, out _);
-            if (effectiveProfile != null)
-            {
-                return context;
-            }
-
-            context.VoiceProfile = pooledVoiceProfile;
             return context;
         }
 
@@ -601,17 +568,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
 
         private static bool IsCueConfiguredForPooled(AudioSfxCueAsset cue)
         {
-            if (cue == null)
-            {
-                return true;
-            }
-
-            if (cue.ExecutionProfile != null)
-            {
-                return cue.ExecutionProfile.ExecutionMode == AudioSfxExecutionMode.PooledOneShot;
-            }
-
-            return cue.ExecutionMode == AudioSfxExecutionMode.PooledOneShot;
+            return cue != null &&
+                   cue.EmissionProfile != null &&
+                   cue.ExecutionProfile != null &&
+                   cue.ExecutionProfile.ExecutionMode == AudioSfxExecutionMode.PooledOneShot &&
+                   cue.ExecutionProfile.PooledVoiceProfile != null;
         }
 
         private static string InferPathFromHandle(IAudioPlaybackHandle handle)
@@ -631,23 +592,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             return "pooled_or_other";
         }
 
-        private static AudioSfxCueAsset CreateRuntimeCueClone(
-            AudioSfxCueAsset sourceCue,
-            AudioSfxExecutionMode executionMode,
-            AudioSfxPlaybackMode playbackMode,
-            AudioSfxVoiceProfileAsset voiceProfileOverride,
-            int maxSimultaneousInstances,
-            float cooldownSeconds)
+        private static bool IsCueSpatial(AudioSfxCueAsset cue)
         {
-            var clone = Instantiate(sourceCue);
-            clone.name = $"{sourceCue.name}_RuntimeProbeClone";
-            SetPrivateField(clone, "executionMode", executionMode);
-            SetPrivateField(clone, "playbackMode", playbackMode);
-            SetPrivateField(clone, "voiceProfileOverride", voiceProfileOverride);
-            SetPrivateField(clone, "maxSimultaneousInstances", Mathf.Max(1, maxSimultaneousInstances));
-            SetPrivateField(clone, "sfxRetriggerCooldownSeconds", Mathf.Max(0f, cooldownSeconds));
-            SetPrivateField(clone, "loop", false);
-            return clone;
+            return cue != null &&
+                   cue.EmissionProfile != null &&
+                   cue.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
         }
 
         private static AudioSfxCueAsset CreateSequenceProbeCue(

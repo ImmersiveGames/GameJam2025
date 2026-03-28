@@ -268,14 +268,16 @@ Promoção futura só deve ocorrer quando houver:
 ### Estado consolidado da rodada
 Na consolidação desta rodada:
 
-- o pipeline modular passou a operar com Fase 1 e Fase 2 explícitas;
-- logs canônicos do pipeline foram promovidos para `INFO`;
-- `Gameplay` foi promovido a módulo `installer-only`;
+- o pipeline modular opera com Fase 1 e Fase 2 explícitas;
+- logs canônicos do pipeline são `INFO`;
+- `Gameplay` é `installer-only`;
+- `Audio` é módulo canônico com `AudioCompositionDescriptor` + `AudioInstaller` + `AudioRuntimeComposer`;
+- `Loading` permanece como subcapability de `SceneFlow`;
+- `BootstrapConfigAsset` continua sendo o único entrypoint aceitável por `Resources` no boot global;
 - `GameplayStateGate` e `GameplayCameraResolver` saíram do root e passaram ao módulo `Gameplay`;
 - `GamePauseGateBridge` saiu do root e foi movido para `GameLoopBootstrap`;
 - `PostGame` e `WorldReset` ficaram explícitos como `installer-only`;
-- `Loading` foi mantido como subcapability de `SceneFlow`;
-- `IInputModeService` permaneceu no root como trilho transversal global legítimo nesta passada.
+- `IInputModeService` permaneceu no trilho transversal global legítimo nesta passada.
 
 ### Resultado esperado de auditoria
 Ao auditar o repositório contra este ADR, espera-se encontrar:

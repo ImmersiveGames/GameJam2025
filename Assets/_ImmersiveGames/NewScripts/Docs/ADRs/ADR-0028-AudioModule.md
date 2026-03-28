@@ -59,17 +59,24 @@ Princípio de evolução:
 
 **reaproveitar comportamento e conceito útil do legado, reimplementar o runtime no canon atual.**
 
+### Estado consolidado da rodada
+- `Audio` saiu do `GlobalCompositionRoot` antigo e passou a ser instalado/composto por `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
+- `AudioInstaller` registra contratos e configs do módulo.
+- `AudioRuntimeComposer` fecha o runtime operacional do módulo.
+- `AudioSfxCueAsset` segue usando perfis canônicos de emissão/execução.
+- `maxSimultaneousInstances` e `sfxRetriggerCooldownSeconds` continuam ativos no trilho de SFX.
+- o runtime/QA legado não é mais a rota documental do fluxo canônico.
+
 ## Regras canônicas
 
 ### 1. Ownership e bootstrap
 
-A inicialização do sistema de áudio em `NewScripts` é responsabilidade do `GlobalCompositionRoot`.
+A inicialização do sistema de áudio em `NewScripts` é responsabilidade do pipeline modular canônico.
 
 Não entram no canon:
 
-- bootstrap próprio de áudio,
+- bootstrap próprio fora do pipeline modular,
 - `RuntimeInitializeOnLoadMethod`,
-- `EnsureAudioSystemInitialized`,
 - `Resources.Load`,
 - singleton estrutural como owner do sistema,
 - compat layer permanente para preservar shape legado.

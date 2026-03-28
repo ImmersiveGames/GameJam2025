@@ -56,6 +56,9 @@ Regra:
 - `IntroStage` e level-owned, opcional, disparada pelo hook `LevelEnteredEvent` e finalizada por `LevelIntroCompletedEvent`.
 - O presenter canonico da intro e resolvido por `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver`.
 - `PostGame` e global no runtime atual, com `PostStage` implementado e validado.
+- `Audio` está no pipeline modular canônico via `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
+- `RuntimeModeConfig` é obrigatório no `BootstrapConfigAsset` e não depende mais de fallback oculto.
+- `InputModes` usa `InputModeRequestKind`, `IInputModeStateService` e `IPlayerInputLocator`.
 - O contrato oficial de `PostStage` esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
 - Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.
 - Levels com presenter explicito executam `PostStage` real e validam GUI minima.

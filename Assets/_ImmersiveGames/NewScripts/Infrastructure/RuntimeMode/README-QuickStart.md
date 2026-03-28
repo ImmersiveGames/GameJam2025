@@ -5,6 +5,7 @@
 
 2) Salve em:
    Assets/_ImmersiveGames/NewScripts/Resources/RuntimeModeConfig.asset
+   e referencie esse asset em `BootstrapConfig.asset`.
 
 3) Valores padrão recomendados (já configurados no script):
    - ModeOverride: Auto
@@ -17,4 +18,4 @@
    - Strict: DegradedAsError=true, DegradedAsException=false
 
 Observação:
-- Se o asset não existir, o sistema deve cair em modo Auto (comportamento atual).
+- Se o asset não existir, o bootstrap falha cedo. Não há mais degraded path automático para esse config.

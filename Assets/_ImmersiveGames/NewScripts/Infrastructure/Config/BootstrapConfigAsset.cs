@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private SceneKeyAsset fadeSceneKey;
         [SerializeField] private SceneKeyAsset loadingHudSceneKey;
         [SerializeField] private LoggingConfigAsset loggingConfig;
+        [SerializeField] private RuntimeModeConfig runtimeModeConfig;
         [SerializeField] private AudioDefaultsAsset audioDefaults;
         [SerializeField] private EntityAudioSemanticMapAsset entityAudioSemanticMap;
 
@@ -30,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
         public SceneKeyAsset LoadingHudSceneKey => loadingHudSceneKey;
         public LoggingConfigAsset LoggingConfig => loggingConfig;
+        public RuntimeModeConfig RuntimeModeConfig => runtimeModeConfig;
         public AudioDefaultsAsset AudioDefaults => audioDefaults;
         public EntityAudioSemanticMapAsset EntityAudioSemanticMap => entityAudioSemanticMap;
 
@@ -54,6 +57,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
             {
                 string message =
                     $"[FATAL][Config] BootstrapConfigAsset invalid: configure loadingHudSceneKey with a valid SceneName. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (runtimeModeConfig == null)
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure runtimeModeConfig with a valid RuntimeModeConfig asset. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);

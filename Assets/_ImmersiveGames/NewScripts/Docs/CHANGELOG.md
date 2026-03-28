@@ -1,3 +1,9 @@
+# 2026-03-27 - structural docs closeout
+- consolidou a rodada estrutural atual em `ADR-0038`, `ADR-0039`, `ADR-0028`, `ADR-0008`, `ADR-0007` e `ADR-0040`
+- alinhou `RuntimeModeConfig` ao bootstrap canônico por referência direta em `BootstrapConfigAsset`
+- fechou a documentação de `Audio` como módulo canônico no pipeline modular
+- atualizou os índices canônicos, o guia de hooks oficiais e o resumo de `InputModes`
+
 # 2026-03-27 - intro stage canonical consolidation
 - consolidou `ADR-0027` como contrato principal do fluxo de IntroStage/LevelFlow
 - removeu duplicacao documental sobre gate de intro e topologia de presenter

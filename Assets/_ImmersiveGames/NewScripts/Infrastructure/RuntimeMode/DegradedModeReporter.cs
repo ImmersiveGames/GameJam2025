@@ -33,12 +33,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
         private int _droppedKeyReports;
 
         public DegradedModeReporter()
-            : this(new UnityRuntimeModeProvider(), RuntimeModeConfigLoader.LoadOrNull())
+            : this(new UnityRuntimeModeProvider(), null)
         {
         }
 
         public DegradedModeReporter(IRuntimeModeProvider runtimeModeProvider)
-            : this(runtimeModeProvider, RuntimeModeConfigLoader.LoadOrNull())
+            : this(runtimeModeProvider, null)
         {
         }
 

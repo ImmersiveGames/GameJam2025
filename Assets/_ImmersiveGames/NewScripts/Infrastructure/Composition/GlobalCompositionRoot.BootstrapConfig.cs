@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
@@ -63,21 +62,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 }
             }
 
-            RuntimeModeConfig runtimeModeConfig = RuntimeModeConfigLoader.LoadOrNull();
-            if (runtimeModeConfig == null)
+            bootstrapConfig = Resources.Load<BootstrapConfigAsset>("BootstrapConfig");
+            if (bootstrapConfig == null)
             {
-                reason = "runtime_mode_config_missing";
+                reason = "bootstrap_config_resource_missing";
                 return false;
             }
 
-            if (runtimeModeConfig.BootstrapConfig == null)
-            {
-                reason = "runtime_mode_bootstrap_config_missing";
-                return false;
-            }
-
-            bootstrapConfig = runtimeModeConfig.BootstrapConfig;
-            via = "RuntimeModeConfig";
+            via = "Resources/BootstrapConfig";
             _cachedBootstrapConfig = bootstrapConfig;
             _cachedBootstrapConfigVia = via;
 

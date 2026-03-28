@@ -1,16 +1,18 @@
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
         private static void RegisterRuntimePolicyServices()
         {
-            // RuntimeModeConfig (opcional) via Resources.
-            // Contrato: ausência de config não deve quebrar o jogo.
-            var config = RuntimeModeConfigLoader.LoadOrNull();
+            var bootstrapConfig = GetRequiredBootstrapConfig(out _);
+            var config = ResolveRuntimeModeConfigOrFailFast(bootstrapConfig);
 
             var provider = DependencyManager.Provider;
 
@@ -28,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 }
             }
 
-            // Provider configurável: usa o config se existir, senão cai no comportamento atual (UnityRuntimeModeProvider).
+            // Provider configurável: o config agora é obrigatório no boot; o fallback do provider fica só para override explícito no asset.
             RegisterIfMissing<IRuntimeModeProvider>(() =>
                 new ConfigurableRuntimeModeProvider(new UnityRuntimeModeProvider(), config));
 
@@ -38,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 runtimeModeProvider = new UnityRuntimeModeProvider();
             }
 
-            // Reporter configurável (dedupe/summary/limites via config, se existir).
+            // Reporter configurável com settings vindos do asset obrigatório.
             RegisterIfMissing<IDegradedModeReporter>(() =>
                 new DegradedModeReporter(runtimeModeProvider, config));
 
@@ -50,6 +52,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter + IWorldResetPolicy registrados no DI global.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFailFast(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (bootstrapConfig == null)
+            {
+                string message = "[FATAL][Config][RuntimePolicy] BootstrapConfigAsset obrigatorio ausente antes de resolver RuntimeModeConfig.";
+                DebugUtility.LogError(typeof(GlobalCompositionRoot), message);
+                throw new InvalidOperationException(message);
+            }
+
+            RuntimeModeConfig config = bootstrapConfig.RuntimeModeConfig;
+            if (config == null)
+            {
+                string message =
+                    $"[FATAL][Config][RuntimePolicy] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset. bootstrap='{bootstrapConfig.name}'.";
+
+                DebugUtility.LogError(typeof(GlobalCompositionRoot), message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (DependencyManager.HasInstance)
+            {
+                var provider = DependencyManager.Provider;
+                if (provider != null && (!provider.TryGetGlobal<RuntimeModeConfig>(out var existingConfig) || existingConfig == null))
+                {
+                    provider.RegisterGlobal(config, allowOverride: false);
+                }
+            }
+
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[RuntimePolicy] RuntimeModeConfig resolvido via BootstrapConfigAsset (asset='{config.name}').",
+                DebugUtility.Colors.Info);
+            return config;
         }
 
     }

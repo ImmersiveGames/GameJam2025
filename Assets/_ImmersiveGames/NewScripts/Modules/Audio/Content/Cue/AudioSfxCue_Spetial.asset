@@ -23,11 +23,5 @@ MonoBehaviour:
   randomVolumeJitter: 0
   emissionProfile: {fileID: 11400000, guid: 1464f936bdb44a278345f37abcc6e53b, type: 2}
   executionProfile: {fileID: 11400000, guid: 8f854571724f45b58b4e07f17f82f6e8, type: 2}
-  playbackMode: 1
-  spatialBlend: 1
-  minDistance: 1
-  maxDistance: 40
-  executionMode: 0
-  voiceProfileOverride: {fileID: 0}
   maxSimultaneousInstances: 1
   sfxRetriggerCooldownSeconds: 0

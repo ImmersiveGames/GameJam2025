@@ -30,22 +30,23 @@ Também não há um local único para documentar padrões de chaves, cooldown de
 
 ## Decisão
 
-Adicionar uma configuração opcional `RuntimeModeConfig` (ScriptableObject) carregada via `Resources`, e evoluir os serviços para respeitar essa configuração:
+Adicionar uma configuração `RuntimeModeConfig` como dependência obrigatória do bootstrap canônico, referenciada diretamente por `BootstrapConfigAsset`, e evoluir os serviços para respeitar essa configuração:
 
 - Criar `RuntimeModeConfig` com:
     - `modeOverride` (Auto/ForceStrict/ForceRelease)
     - parâmetros do reporter (cooldown, max keys, sumário, severidade)
 - Criar `ConfigurableRuntimeModeProvider`:
-    - Usa o provider atual (build-based) como fallback.
+    - Usa o provider atual (build-based) como fallback interno de modo.
     - Se `RuntimeModeConfig` existir e `modeOverride` não for Auto, o valor da config prevalece.
 - Evoluir `DegradedModeReporter`:
     - Aceita `IRuntimeModeProvider` + `RuntimeModeConfig`.
     - Aplica dedupe/cooldown, sumário e severidade conforme config.
-    - Mantém comportamento antigo quando config não existe.
+    - Não precisa mais resolver config por `Resources`.
 
 Integração:
 
 - O `GlobalCompositionRoot` passa a registrar `IRuntimeModeProvider` como `ConfigurableRuntimeModeProvider` e `IDegradedModeReporter` com injeção do provider + config.
+- A resolução do `RuntimeModeConfig` é feita via `BootstrapConfigAsset`; ausência da referência é fail-fast.
 
 ## Alternativas consideradas
 
@@ -64,16 +65,16 @@ Integração:
 
 - QA pode forçar Strict/Release via asset, sem rebuild.
 - Logs de “degraded” ficam padronizados (chaves, cooldown, sumário), reduzindo ruído.
-- Contrato explícito: sem config → comportamento antigo.
+- Contrato explícito: sem referência obrigatória → fail-fast.
 
 **Negativas / riscos**
 
-- Requer disciplina para manter o asset de config no projeto (ou aceitar o fallback).
-- `Resources.Load` é um mecanismo global; por isso o loader é best-effort e deve rodar apenas em init.
+- Requer disciplina para manter o asset de config e a referência no bootstrap canônico.
+- `Resources.Load<RuntimeModeConfig>` não faz mais parte do boot policy.
 
 ## Invariantes / contrato
 
-- Ausência de `RuntimeModeConfig` **não quebra produção** e mantém o comportamento atual.
+- Ausência de `RuntimeModeConfig` na referência canônica **quebra o boot** com fail-fast.
 - `IRuntimeModeProvider.GetMode()` deve ser determinístico dentro do mesmo run.
 - `IDegradedModeReporter.Report(...)` não deve causar exceções nem travar fluxo.
 - Reporter deve limitar spam (cooldown + cap de chaves) e emitir um sumário periódico quando habilitado.
@@ -86,12 +87,11 @@ Integração:
     - `ConfigurableRuntimeModeProvider.cs`
     - `DegradedKeys.cs`
     - atualizar `DegradedModeReporter.cs`
-2. Criar asset:
-    - `Assets/_ImmersiveGames/NewScripts/Resources/NewScripts/RuntimeModeConfig.asset`
+2. Referenciar `RuntimeModeConfig` em `BootstrapConfigAsset`.
 3. Atualizar `GlobalCompositionRoot.RegisterRuntimePolicyServices()` para:
-    - carregar config (best-effort)
-    - registrar provider configurável
-    - registrar reporter com provider + config
+    - resolver config via bootstrap canônico;
+    - registrar provider configurável;
+    - registrar reporter com provider + config.
 4. Validar em build Dev e Release com logs.
 
 ## Como testar
@@ -120,8 +120,8 @@ Sinais mínimos de que o ADR está **implementado e ativo**:
 
 - O **asset** foi registrado no DI global:
     - `Serviço RuntimeModeConfig registrado no escopo global.`
-- O `GlobalCompositionRoot` carregou o asset e anunciou:
-    - `[RuntimePolicy] RuntimeModeConfig carregado (asset='RuntimeModeConfig').`
+- O `GlobalCompositionRoot` resolveu o asset via `BootstrapConfigAsset` e anunciou:
+    - `[RuntimePolicy] RuntimeModeConfig resolvido via BootstrapConfigAsset (asset='RuntimeModeConfig').`
 - O `IRuntimeModeProvider` foi registrado e resolvido:
     - `Serviço IRuntimeModeProvider registrado no escopo global.`
     - `Serviço IRuntimeModeProvider encontrado no escopo global...`
@@ -136,11 +136,11 @@ Resultado observado no mesmo log: o fluxo segue normalmente (SceneFlow/WorldLife
 
 ## Nota de atualização (2026-02-16) — Boot canônico do NewScripts
 
-Para alinhar o boot ao plano `StringsToDirectRefs v1`, esta ADR registra as seguintes regras vigentes:
+Atualização consolidada da rodada estrutural atual:
 
-- `RuntimeModeConfig` é a **raiz canônica** de configuração do boot global do NewScripts.
-- `Resources` é permitido **somente** para carregar `RuntimeModeConfig` no path fixo `RuntimeModeConfig`.
-- `NewScriptsBootstrapConfigAsset` é resolvido por **referência direta** dentro de `RuntimeModeConfig` (`NewScriptsBootstrapConfig`).
-- Não existe caminho obrigatório via **provider/manifest em cena** para resolver bootstrap config.
-- O entrypoint global do `GlobalCompositionRoot` é único e determinístico em `BeforeSceneLoad`.
+- `RuntimeModeConfig` é dependência obrigatória do `BootstrapConfigAsset`.
+- não existe fallback oculto por `RuntimeModeConfigLoader` nem `Resources.Load<RuntimeModeConfig>` no boot policy.
+- a resolução de `RuntimeModeConfig` acontece por referência direta no bootstrap canônico.
+- ausência da referência obrigatória é fail-fast.
+- o entrypoint global do `GlobalCompositionRoot` permanece único e determinístico em `BeforeSceneLoad`.
 
