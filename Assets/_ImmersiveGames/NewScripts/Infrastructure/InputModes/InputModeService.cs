@@ -1,10 +1,8 @@
 using System;
-using System.Linq;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
-using UnityEngine;
 using UnityEngine.InputSystem;
-using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
 {
@@ -16,47 +14,45 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
     /// - Em gameplay, podem existir multiplos PlayerInput (multiplayer).
     /// - Menu/UI deve funcionar via EventSystem + InputSystemUIInputModule (sem PlayerInput obrigatorio).
     /// </summary>
-    public sealed class InputModeService : IInputModeService
+    public sealed class InputModeService : IInputModeService, IInputModeStateService
     {
+        private readonly IPlayerInputLocator _playerInputLocator;
         private readonly string _playerMapName;
         private readonly string _menuMapName;
 
-        private InputMode _currentMode = InputMode.None;
+        private InputModeRequestKind _currentMode = InputModeRequestKind.Unspecified;
 
-        public InputModeService(string playerMapName, string menuMapName)
+        public InputModeService(IPlayerInputLocator playerInputLocator, string playerMapName, string menuMapName)
         {
+            _playerInputLocator = playerInputLocator ?? throw new ArgumentNullException(nameof(playerInputLocator));
             _playerMapName = InputModesDefaults.NormalizeOrDefault(playerMapName, InputModesDefaults.PlayerActionMapName);
             _menuMapName = InputModesDefaults.NormalizeOrDefault(menuMapName, InputModesDefaults.MenuActionMapName);
         }
 
-        public void SetFrontendMenu(string reason) => ApplyMode(InputMode.FrontendMenu, reason);
-        public void SetGameplay(string reason) => ApplyMode(InputMode.Gameplay, reason);
-        public void SetPauseOverlay(string reason) => ApplyMode(InputMode.PauseOverlay, reason);
+        public void SetFrontendMenu(string reason) => ApplyMode(InputModeRequestKind.FrontendMenu, reason);
+        public void SetGameplay(string reason) => ApplyMode(InputModeRequestKind.Gameplay, reason);
+        public void SetPauseOverlay(string reason) => ApplyMode(InputModeRequestKind.PauseOverlay, reason);
 
-        private void ApplyMode(InputMode mode, string reason)
+        public InputModeRequestKind CurrentMode => _currentMode;
+
+        private void ApplyMode(InputModeRequestKind mode, string reason)
         {
-            string resolvedReason = string.IsNullOrWhiteSpace(reason) ? "InputMode/Unknown" : reason;
+            string resolvedReason = NormalizeReason(reason);
+            InputModeRequestKind previousMode = _currentMode;
 
-            bool isRepeat = _currentMode == mode;
+            bool isRepeat = previousMode == mode;
             _currentMode = mode;
             PlayerInput[] preResolvedInputs = null;
 
-            if (isRepeat && IsFrontendCompletedReason(resolvedReason))
+            if (isRepeat && mode != InputModeRequestKind.Gameplay)
             {
-                DebugUtility.LogVerbose<InputModeService>(
-                    $"[InputMode] Modo '{mode}' ja ativo. Skip reapply ({resolvedReason}).",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (isRepeat && mode != InputMode.Gameplay)
-            {
-                preResolvedInputs = FindActivePlayerInputs();
+                preResolvedInputs = _playerInputLocator.GetActivePlayerInputs();
                 if (preResolvedInputs.Length == 0)
                 {
                     DebugUtility.LogVerbose<InputModeService>(
                         $"[InputMode] Modo '{mode}' ja ativo e sem PlayerInput ativo. Skip reapply ({resolvedReason}).",
                         DebugUtility.Colors.Info);
+                    PublishModeChanged(previousMode, mode, resolvedReason);
                     return;
                 }
             }
@@ -75,13 +71,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
             }
 
             string targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
-            PlayerInput[] inputs = preResolvedInputs ?? FindActivePlayerInputs();
+            PlayerInput[] inputs = preResolvedInputs ?? _playerInputLocator.GetActivePlayerInputs();
             if (inputs.Length == 0)
             {
                 DebugUtility.LogVerbose<InputModeService>(
                     $"[InputMode] Nenhum PlayerInput ativo encontrado ao aplicar modo '{mode}'. " +
                     "Isto e esperado em Menu/Frontend. Em Gameplay, verifique se o Player foi spawnado.",
                     DebugUtility.Colors.Info);
+                PublishModeChanged(previousMode, mode, resolvedReason);
                 return;
             }
 
@@ -129,38 +126,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
                 DebugUtility.LogVerbose<InputModeService>(
                     $"[InputMode] Applied map '{targetMapName}' em {switchedCount}/{inputs.Length} PlayerInput(s) ({resolvedReason}).",
                     DebugUtility.Colors.Info);
+                PublishModeChanged(previousMode, mode, resolvedReason);
                 return;
             }
 
             DebugUtility.LogWarning<InputModeService>(
                 "[InputMode] Nenhum PlayerInput pode ser processado para alternar action maps (todos nulos/desabilitados/sem actions).");
-        }
-
-        private static PlayerInput[] FindActivePlayerInputs()
-        {
-            PlayerInput[] all = Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
-            if (all == null || all.Length == 0)
-            {
-                return Array.Empty<PlayerInput>();
-            }
-
-            int count = all.Count(pi => pi != null && pi.enabled && pi.gameObject.activeInHierarchy);
-            if (count == 0)
-            {
-                return Array.Empty<PlayerInput>();
-            }
-
-            var result = new PlayerInput[count];
-            int idx = 0;
-            foreach (var pi in all)
-            {
-                if (pi != null && pi.enabled && pi.gameObject.activeInHierarchy)
-                {
-                    result[idx++] = pi;
-                }
-            }
-
-            return result;
+            PublishModeChanged(previousMode, mode, resolvedReason);
         }
 
         private static bool HasActionMap(InputActionAsset asset, string mapName)
@@ -173,24 +145,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
             return asset.FindActionMap(mapName) != null;
         }
 
-        private static bool ShouldUseMenuMap(InputMode mode) => mode != InputMode.Gameplay;
+        private static bool ShouldUseMenuMap(InputModeRequestKind mode) => mode != InputModeRequestKind.Gameplay;
 
-        private static bool IsFrontendCompletedReason(string reason)
+        private static string NormalizeReason(string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
             {
-                return false;
+                return "InputMode/Unknown";
             }
 
-            return reason.StartsWith("SceneFlow/Completed:Frontend", StringComparison.OrdinalIgnoreCase);
+            return reason.Trim();
         }
 
-        private enum InputMode
+        private static void PublishModeChanged(InputModeRequestKind previousMode, InputModeRequestKind currentMode, string reason)
         {
-            None,
-            Gameplay,
-            PauseOverlay,
-            FrontendMenu
+            if (previousMode == currentMode)
+            {
+                return;
+            }
+
+            EventBus<InputModeChangedEvent>.Raise(new InputModeChangedEvent(previousMode, currentMode, reason));
         }
     }
 }

@@ -1,10 +1,11 @@
+using System;
 using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 {
     /// <summary>
-    /// Helper puro para manter a precedência canônica de profiles e intenção espacial em um único lugar.
-    /// Não executa playback; apenas resolve dados de configuração.
+    /// Helper puro para manter a precedencia canonica de profiles e intencao espacial em um unico lugar.
+    /// Nao executa playback; apenas resolve dados de configuracao.
     /// </summary>
     internal static class AudioPlaybackResolutionHelper
     {
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
 
             profile = null;
-            source = "legacy_cue";
+            source = "missing_profile";
             return false;
         }
 
@@ -54,56 +55,30 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
 
             profile = null;
-            source = "legacy_cue";
+            source = "missing_profile";
             return false;
         }
 
         public static bool ResolveUseSpatial(
-            AudioSfxCueAsset cue,
-            AudioPlaybackContext context)
-        {
-            TryResolveEmissionProfile(cue, context, out var emissionProfile, out _);
-            return ResolveUseSpatial(cue, context, emissionProfile);
-        }
-
-        public static bool ResolveUseSpatial(
-            AudioSfxCueAsset cue,
-            AudioPlaybackContext context,
             AudioSfxEmissionProfileAsset resolvedEmissionProfile)
         {
-            if (resolvedEmissionProfile != null)
+            if (resolvedEmissionProfile == null)
             {
-                return resolvedEmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
+                throw new InvalidOperationException("[FATAL][Audio] AudioSfxEmissionProfileAsset obrigatorio ausente.");
             }
 
-            return context.UseSpatial || (cue != null && cue.PlaybackMode == AudioSfxPlaybackMode.Spatial);
-        }
-
-        public static float ResolveLegacySpatialBlend(AudioSfxCueAsset cue)
-        {
-            return cue != null ? cue.SpatialBlend : 1f;
-        }
-
-        public static float ResolveLegacyMinDistance(AudioSfxCueAsset cue)
-        {
-            return cue != null ? cue.MinDistance : 1f;
-        }
-
-        public static float ResolveLegacyMaxDistance(AudioSfxCueAsset cue)
-        {
-            return cue != null ? cue.MaxDistance : 40f;
+            return resolvedEmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
         }
 
         public static AudioSfxExecutionMode ResolveExecutionMode(
-            AudioSfxCueAsset cue,
             AudioSfxExecutionProfileAsset resolvedExecutionProfile)
         {
-            if (resolvedExecutionProfile != null)
+            if (resolvedExecutionProfile == null)
             {
-                return resolvedExecutionProfile.ExecutionMode;
+                throw new InvalidOperationException("[FATAL][Audio] AudioSfxExecutionProfileAsset obrigatorio ausente.");
             }
 
-            return cue != null ? cue.ExecutionMode : AudioSfxExecutionMode.DirectOneShot;
+            return resolvedExecutionProfile.ExecutionMode;
         }
     }
 }

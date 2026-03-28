@@ -60,13 +60,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
 
             if (!IsCueConfiguredForPooled(pooled2dCue))
             {
-                LogError("ValidatePooledSetup", $"pooled2dCue='{SafeName(pooled2dCue)}' must resolve execution as pooled (execution profile or legacy field)");
+                LogError("ValidatePooledSetup", $"pooled2dCue='{SafeName(pooled2dCue)}' must resolve execution as pooled (execution profile)");
                 return;
             }
 
             if (!IsCueConfiguredForPooled(pooled3dCue))
             {
-                LogError("ValidatePooledSetup", $"pooled3dCue='{SafeName(pooled3dCue)}' must resolve execution as pooled (execution profile or legacy field)");
+                LogError("ValidatePooledSetup", $"pooled3dCue='{SafeName(pooled3dCue)}' must resolve execution as pooled (execution profile)");
                 return;
             }
 
@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             bool valid = handle != null && handle.IsValid;
             string inferredPath = InferPathFromHandle(handle);
             LogInfo("ProbePooledFallbackForced",
-                $"cue='{pooled2dCue.name}' effectiveProfile='cue_override:{SafeName(forcedFallbackProfile)}' expectedPath='fallback_direct' inferredPath='{inferredPath}' handleValid={valid} (check runtime log path='fallback_direct')");
+                $"cue='{pooled2dCue.name}' effectiveProfile='context:{SafeName(forcedFallbackProfile)}' expectedPath='fallback_direct' inferredPath='{inferredPath}' handleValid={valid} (check runtime log path='fallback_direct')");
 
             if (probeCue != null)
             {
@@ -574,12 +574,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
                 return cue.ExecutionProfile.PooledVoiceProfile;
             }
 
-            if (cue != null && cue.VoiceProfileOverride != null)
-            {
-                source = "cue_override";
-                return cue.VoiceProfileOverride;
-            }
-
             source = "none";
             return null;
         }
@@ -601,12 +595,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
             AudioPlaybackContext context,
             AudioSfxVoiceProfileAsset forcedProfile)
         {
-            bool hasExecutionProfile = cue != null && cue.ExecutionProfile != null;
-            if (!hasExecutionProfile && cue != null && cue.VoiceProfileOverride != null)
-            {
-                return context;
-            }
-
             context.VoiceProfile = forcedProfile;
             return context;
         }

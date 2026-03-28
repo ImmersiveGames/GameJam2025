@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap;
@@ -36,13 +37,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 bootstrap: null,
                 bootstrapDependencies: System.Array.Empty<string>()));
 
-            steps.Add(new CompositionPipelineStep(
-                id: "Audio",
-                installer: _ => InstallAudioServices(),
-                installerDependencies: new[] { "RuntimePolicy" },
-                bootstrap: null,
-                bootstrapDependencies: System.Array.Empty<string>()));
-
             steps.AddRange(GetModuleCompositionSteps());
 
             steps.Add(new CompositionPipelineStep(
@@ -59,6 +53,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             return new[]
             {
+                CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),

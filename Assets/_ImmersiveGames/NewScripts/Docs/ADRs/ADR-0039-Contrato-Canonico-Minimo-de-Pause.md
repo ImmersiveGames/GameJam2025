@@ -1,146 +1,219 @@
 # ADR-0039: Contrato Canônico Mínimo de Pause
 
 ## Status
-- Estado: Aceito
-- Data: 2026-03-27
-- Escopo: `NewScripts` only
+- Aceito e validado em runtime
+
+## Evidências canônicas
+- `ADR-0037` de hooks oficiais
+- `Baseline 3.5`
+- logs recentes de `Pause` com:
+    - `RequestPause`
+    - `RequestResume`
+    - `PauseWillEnterEvent`
+    - `PauseWillExitEvent`
+    - `PauseStateChangedEvent`
+    - `InputModeRequestEvent(PauseOverlay)` na entrada
+    - `InputModeRequestEvent(Gameplay)` na saída
+- runtime atual de `GameLoop`, `GamePauseOverlayController`, `GameplayStateGate` e `GamePauseGateBridge`
+- bridge de ducking de áudio reagindo aos hooks canônicos de pause
 
 ## Contexto
+O pause existia de forma funcional, mas com ownership e seams pouco claros. O fluxo misturava estado do `GameLoop`, overlay, gates, input mode e bridges reativos, com compensações locais e pouca clareza sobre o que era contrato público e o que era detalhe interno.
 
-`Pause` existe hoje como comportamento distribuído entre `GameLoop`, `Gameplay`, `SimulationGate`, `InputModes` e `Navigation`.
+Antes desta decisão, o risco principal era promover `Pause` a módulo próprio cedo demais, empacotando acoplamentos ainda imaturos em vez de estabilizar primeiro o contrato do domínio.
 
-Antes de qualquer promoção a módulo first-class, a baseline precisa separar:
-- estado canônico de pause;
-- comandos públicos de pause/resume;
-- leitura canônica de estado;
-- hook oficial de mudança de estado;
-- responsabilidades de overlay, gate, input e navegação.
-
-Este ADR não promove `Pause` a módulo próprio.
-Ele apenas fecha o contrato mínimo do domínio para reduzir ambiguidade e preparar uma possível modularização futura.
+A necessidade desta decisão é fechar um contrato mínimo, explícito e observável, sem modularizar `Pause` prematuramente.
 
 ## Decisão
+- O owner canônico do estado `Paused` continua sendo `GameLoop`.
+- A superfície pública mínima do domínio passa a ser:
+    - `IPauseCommands.RequestPause(string reason)`
+    - `IPauseCommands.RequestResume(string reason)`
+- A leitura canônica passa a ser:
+    - `IPauseStateService.IsPaused`
+- O hook oficial de observação do domínio passa a ser:
+    - `PauseStateChangedEvent`
+- Hooks precoces passam a existir apenas para consumidores que precisam reagir antes do `ENTER` final do estado:
+    - `PauseWillEnterEvent`
+    - `PauseWillExitEvent`
+- O overlay de pause é apresentação e reação de UI, não ownership do domínio.
+- `SimulationGate` continua sendo infraestrutura de bloqueio/liberação da simulação.
+- `InputMode` continua sendo infraestrutura transversal de contexto de input.
+- `Navigation` continua sendo owner da saída para menu, sem assumir o estado `Paused`.
+- `GamePauseCommandEvent` e `GameResumeRequestedEvent` continuam internos e não oficiais.
 
-### 1. Owner do estado `Paused`
+## Canonical Pause Ownership
+O estado `Paused` pertence ao `GameLoop`.
 
-Enquanto `Pause` permanecer fora de módulo próprio, o owner canônico do estado `Paused` continua sendo o `GameLoop`.
+Isso significa que:
+- a decisão final de entrar ou sair de `Paused` é do `GameLoop`;
+- o restante do sistema reage ao estado e aos hooks canônicos;
+- nenhum controller de UI, bridge ou overlay pode se tornar owner implícito do pause.
 
-Regra:
-- `GameLoop` é a fonte de verdade do estado macro `Paused`.
-- Nenhum overlay, gate ou bridge pode substituir esse ownership.
-- Outros consumidores podem refletir, bloquear ou apresentar o estado, mas não redefini-lo.
-
-### 2. Comandos públicos canônicos
-
-O contrato público mínimo do domínio passa a ser:
+## Canonical Public Surface
+A API pública mínima do domínio é:
 
 - `IPauseCommands.RequestPause(string reason)`
 - `IPauseCommands.RequestResume(string reason)`
-
-Semântica:
-- `RequestPause` solicita a entrada em `Paused`.
-- `RequestResume` solicita a saída de `Paused`.
-- O `reason` é obrigatório semanticamente quando houver contexto operacional relevante; vazio só deve ser usado quando a origem não tiver motivo específico.
-
-### 3. Leitura canônica
-
-O contrato de leitura passa a ser:
-
 - `IPauseStateService.IsPaused`
 
-Semântica:
-- `true` quando o jogo está em estado canônico de pause.
-- `false` nos demais estados.
-- A leitura deve derivar do owner canônico, não de inferência local do overlay ou de gate.
+Esses contratos são a superfície pública do pause.
 
-### 4. Hook oficial
+Chamadas externas não devem depender de:
+- `GamePauseCommandEvent`
+- `GameResumeRequestedEvent`
+- métodos internos do `GameLoopService`
+- callbacks de overlay
+- `OnDisable`
+- hotkey handler específico
 
-O hook oficial do domínio passa a ser:
-
+## Canonical Hooks
+### Hook oficial de estado
 - `PauseStateChangedEvent`
 
-Semântica:
-- representa uma mudança observável de estado de pause;
-- é o seam oficial para UI, telemetria e consumidores internos que precisam reagir ao pause sem conhecer o wiring interno;
-- não é comando;
-- não é substituto do estado canônico.
+Este é o hook canônico de observação do domínio.
+Consumidores que precisam saber a verdade final do estado devem reagir a este evento.
 
-### 5. Papel do overlay
+### Hooks precoces
+- `PauseWillEnterEvent`
+- `PauseWillExitEvent`
 
-O overlay de pause é apresentação, não ownership.
+Esses hooks existem para consumidores que precisam reagir cedo, mas ainda dentro do contrato canônico, antes do `ENTER` final do novo estado.
 
-Responsabilidades:
-- mostrar/ocultar UI de pause;
-- expor ações de usuário como `RequestPause`, `RequestResume` e `ReturnToMenu`;
-- reagir ao estado de pause para refletir a UI correta;
-- não decidir estado macro por conta própria;
-- não servir como fonte de verdade de pause.
+Regra:
+- `PauseWillEnterEvent` e `PauseWillExitEvent` não substituem `PauseStateChangedEvent`;
+- `PauseStateChangedEvent` continua sendo a verdade final do estado;
+- hooks precoces não podem virar superfície pública primária do domínio.
 
-### 6. Papel do `SimulationGate`
+## Canonical Runtime Order
+Entrada em pause:
+1. chamada de `IPauseCommands.RequestPause(reason)`
+2. request chega ao `GameLoop`
+3. transição é aceita
+4. `EXIT: Playing`
+5. `PauseWillEnterEvent`
+6. `ENTER: Paused`
+7. `PauseStateChangedEvent(isPaused=true)`
 
-`SimulationGate` continua sendo infraestrutura.
+Saída do pause:
+1. chamada de `IPauseCommands.RequestResume(reason)`
+2. request chega ao `GameLoop`
+3. transição é aceita
+4. `EXIT: Paused`
+5. `PauseWillExitEvent`
+6. `ENTER: Playing`
+7. `PauseStateChangedEvent(isPaused=false)`
 
-Responsabilidades:
-- bloquear/liberar simulação enquanto o pause estiver ativo;
-- usar token explícito para refletir o efeito do pause sobre gameplay;
-- não ser fonte de verdade do estado `Paused`;
-- não substituir o owner do estado macro.
+## What the Overlay Is
+O overlay de pause é:
+- apresentação visual;
+- consumidor do estado;
+- emissor de intenção via `IPauseCommands`, quando necessário.
 
-### 7. Papel do `InputMode`
+O overlay não é:
+- owner do estado `Paused`;
+- owner de navegação;
+- owner de input mode;
+- owner de gate de gameplay.
 
+Consequência prática:
+- o overlay abre e fecha por reação ao estado;
+- não deve esconder-se por writer local fora do trilho canônico;
+- não deve disparar `resume` em `OnDisable()`.
+
+## What SimulationGate and InputMode Are
+### SimulationGate
+`SimulationGate` continua sendo infraestrutura para bloquear/liberar a simulação durante pause e resume.
+
+Ele não é owner do domínio, apenas reage ao hook canônico.
+
+### InputMode
 `InputMode` continua sendo infraestrutura transversal.
 
-Responsabilidades:
-- alternar entre `Gameplay`, `PauseOverlay` e `FrontendMenu`;
-- refletir a intenção de input da UI;
-- não definir estado de pause;
-- não publicar significado de domínio.
+No pause:
+- entrada deve trocar para `PauseOverlay / UI`;
+- saída deve retornar para `Gameplay / Player`.
 
-### 8. Papel do `Navigation` no exit-to-menu
+A mudança de input mode deve ser observável em log e não deve redefinir ownership do pause.
 
-`Navigation` continua sendo owner do fluxo de saída para menu.
+## What Navigation Is
+`Navigation` continua sendo owner da navegação para menu e de seus fluxos próprios.
 
-Responsabilidades:
-- executar a navegação macro de saída;
-- encerrar o contexto de pause quando a saída for efetivada;
-- não assumir ownership do estado `Paused`;
-- não transformar `ExitToMenu` em parte do contrato de estado de pause.
+O pause não vira dono da navegação.
+O exit-to-menu deve continuar passando pelo trilho canônico de `Navigation`.
 
-### 9. O que continua interno e não oficial
-
-Os seguintes itens continuam internos:
+## Internal Events That Remain Internal
+Os seguintes eventos permanecem internos ao trilho atual:
 
 - `GamePauseCommandEvent`
 - `GameResumeRequestedEvent`
-- `GameLoopInputCommandBridge`
-- `GamePauseGateBridge`
-- dedupe por frame em consumidores de pause
-- hotkeys de debug/teardown do overlay
-- qualquer wiring específico entre overlay e `GameLoop` que exista só para suportar a implementação atual
 
-Esses elementos podem continuar existindo como detalhes de implementação, mas não devem ser tratados como API pública do domínio.
+Eles podem continuar existindo como detalhe de implementação, mas não são parte do contrato público do domínio.
 
-### 10. O que precisa mudar antes de `Pause` virar módulo próprio
+## Audio Ducking
+O ducking de áudio no pause é permitido, mas não muda o ownership do domínio.
 
-Antes de promover `Pause` a módulo first-class, este contrato ainda precisa de:
+Regras:
+- owner do ducking = módulo de Audio;
+- trigger canônico = hooks do pause;
+- `PauseWillEnterEvent` / `PauseWillExitEvent` podem ser usados para reação precoce;
+- `PauseStateChangedEvent` continua sendo usado para reconciliação/idempotência;
+- o áudio não deve depender de overlay, botão, hotkey ou `OnDisable`.
 
-- descriptor canônico próprio com `ModuleId`;
-- installer próprio para registrar contratos de pause;
-- runtime composer próprio para wiring operacional;
-- separação explícita entre comando de pause e bridge de runtime;
-- remoção do acoplamento físico de pause dentro do bootstrap de `GameLoop`;
-- definição de ownership explícito do overlay fora do módulo de loop;
-- revisão do vínculo de `Navigation` para sair de pause sem depender de wiring escondido.
+## What Is Still Missing Before a First-Class Pause Module
+Antes de promover `Pause` a módulo próprio, ainda faltam:
 
-## Consequências
+- `ModuleId` próprio;
+- `PauseInstaller`;
+- `PauseBootstrap` ou `PauseRuntimeComposer`;
+- reduzir o acoplamento residual do pause dentro do `GameLoopBootstrap` e do stack atual;
+- fechar com confiança se `Pause` tem lifecycle próprio suficiente para ser módulo first-class.
 
-- `Pause` passa a ter fronteira conceitual clara sem virar módulo ainda.
-- consumidores externos e internos ganham contrato mínimo estável para pause/resume.
-- a promoção a módulo só deve acontecer depois que o contrato acima estiver implementado de forma consistente no runtime.
+## Non-Goals
+- não promover `Pause` a módulo próprio neste ADR
+- não mover ownership de `Paused` para fora do `GameLoop`
+- não transformar overlay em owner
+- não mover `InputMode` para dentro do domínio Pause
+- não mover `SimulationGate` para dentro do domínio Pause
+- não reabrir ownership de `Navigation`
+- não resolver neste ADR a arquitetura completa do módulo de Audio
 
-## Non-goals
+## Consequences
+- o pause passa a ter contrato mínimo explícito e observável;
+- o `GameLoop` permanece owner do estado;
+- overlay, gate, input mode e áudio passam a reagir ao domínio de forma mais limpa;
+- hooks oficiais ficam claros para consumidores novos;
+- a promoção futura de `Pause` a módulo próprio fica condicionada a maturidade real, não a preferência estrutural.
 
-- não promover `Pause` a módulo próprio nesta decisão;
-- não alterar o runtime agora;
-- não mudar a policy global de input ou gate;
-- não criar novos eventos além do hook oficial desta ADR.
+## Validation Status
+O contrato está validado em runtime para:
+
+- gameplay normal;
+- entrada e saída de pause;
+- overlay reagindo ao estado;
+- `SimulationGate` reagindo ao hook oficial;
+- `InputMode` observável na entrada e na saída;
+- ducking de áudio reagindo aos hooks precoces e reconciliando no hook final.
+
+A semântica final ficou:
+
+- `PauseWillEnterEvent` / `PauseWillExitEvent` = hooks precoces válidos
+- `PauseStateChangedEvent` = verdade final do estado
+
+## References
+- `ADR-0037`
+- `ADR-0038`
+
+## Checklist
+- [ ] `IPauseCommands` é a superfície pública do domínio.
+- [ ] `IPauseStateService.IsPaused` é a leitura canônica.
+- [ ] `PauseStateChangedEvent` é o hook oficial de estado.
+- [ ] `PauseWillEnterEvent` e `PauseWillExitEvent` só são usados como hooks precoces.
+- [ ] O `GameLoop` continua owner do estado `Paused`.
+- [ ] O overlay permanece reativo e sem ownership.
+- [ ] `SimulationGate` reage ao hook canônico.
+- [ ] `InputMode` entra em `PauseOverlay/UI` e sai para `Gameplay/Player`.
+- [ ] `Navigation` continua owner do exit-to-menu.
+- [ ] `GamePauseCommandEvent` e `GameResumeRequestedEvent` permanecem internos.
+- [ ] O áudio reage por eventos, sem acoplamento ao overlay.
+- [ ] `Pause` ainda não é módulo first-class até fechar lifecycle e descriptor próprios.

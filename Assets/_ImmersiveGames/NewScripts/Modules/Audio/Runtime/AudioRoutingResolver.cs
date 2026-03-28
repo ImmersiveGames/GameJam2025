@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.NewScripts.Modules.Audio.Config;
+using System;
+using _ImmersiveGames.NewScripts.Modules.Audio.Config;
 using UnityEngine.Audio;
 
 namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
@@ -9,20 +10,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         public AudioRoutingResolver(AudioDefaultsAsset defaults)
         {
-            _defaults = defaults;
+            _defaults = defaults ?? throw new InvalidOperationException("[FATAL][Audio] AudioDefaultsAsset obrigatorio ausente para AudioRoutingResolver.");
         }
 
-        public string MasterVolumeParameter => string.IsNullOrWhiteSpace(_defaults?.MasterVolumeParameter)
-            ? "MasterVolume"
-            : _defaults.MasterVolumeParameter;
+        public string MasterVolumeParameter => RequireParameter(_defaults.MasterVolumeParameter, "MasterVolumeParameter");
 
-        public string BgmVolumeParameter => string.IsNullOrWhiteSpace(_defaults?.BgmVolumeParameter)
-            ? "BGM_Volume"
-            : _defaults.BgmVolumeParameter;
+        public string BgmVolumeParameter => RequireParameter(_defaults.BgmVolumeParameter, "BgmVolumeParameter");
 
-        public string SfxVolumeParameter => string.IsNullOrWhiteSpace(_defaults?.SfxVolumeParameter)
-            ? "SFX_Volume"
-            : _defaults.SfxVolumeParameter;
+        public string SfxVolumeParameter => RequireParameter(_defaults.SfxVolumeParameter, "SfxVolumeParameter");
 
         public AudioMixerGroup ResolveBgmMixerGroup(AudioBgmCueAsset cue)
         {
@@ -31,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return cue.MixerGroup;
             }
 
-            return _defaults != null ? _defaults.DefaultBgmMixerGroup : null;
+            return _defaults.DefaultBgmMixerGroup;
         }
 
         public AudioMixerGroup ResolveSfxMixerGroup(AudioSfxCueAsset cue)
@@ -41,7 +36,17 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return cue.MixerGroup;
             }
 
-            return _defaults != null ? _defaults.DefaultSfxMixerGroup : null;
+            return _defaults.DefaultSfxMixerGroup;
+        }
+
+        private static string RequireParameter(string value, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new InvalidOperationException($"[FATAL][Audio] AudioDefaultsAsset obrigatorio precisa definir {parameterName}.");
+            }
+
+            return value;
         }
     }
 }

@@ -221,19 +221,13 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         private void Initialize(AudioDefaultsAsset defaults, IAudioSettingsService settings, IAudioRoutingResolver routing)
         {
-            _defaults = defaults;
-            _settings = settings ?? new AudioSettingsService(1f, 1f, 1f, 1f, 1f);
-            _routing = routing ?? new AudioRoutingResolver(defaults);
+            _defaults = defaults ?? throw new InvalidOperationException("[FATAL][Audio] AudioDefaultsAsset obrigatorio ausente para AudioBgmService.");
+            _settings = settings ?? throw new InvalidOperationException("[FATAL][Audio] IAudioSettingsService obrigatorio ausente para AudioBgmService.");
+            _routing = routing ?? throw new InvalidOperationException("[FATAL][Audio] IAudioRoutingResolver obrigatorio ausente para AudioBgmService.");
 
             _sourceA = CreateConfiguredSource("BgmSource_A");
             _sourceB = CreateConfiguredSource("BgmSource_B");
             _activeSource = _sourceA;
-
-            if (defaults == null)
-            {
-                DebugUtility.LogWarning(typeof(AudioBgmService),
-                    "[Audio][BGM] AudioDefaultsAsset missing; runtime uses safe fallback values.");
-            }
 
             DebugUtility.LogVerbose(typeof(AudioBgmService),
                 "[Audio][BOOT] IAudioBgmService runtime created (F3, single-channel global BGM).",
@@ -432,12 +426,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         private UnityEngine.Audio.AudioMixerGroup ResolveMixerGroup(AudioBgmCueAsset cue)
         {
-            if (_routing != null)
-            {
-                return _routing.ResolveBgmMixerGroup(cue);
-            }
-
-            return cue != null ? cue.MixerGroup : null;
+            return _routing.ResolveBgmMixerGroup(cue);
         }
 
         private void ApplyCurrentDuckingImmediately()
@@ -469,9 +458,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             }
 
             float baseVolume = Mathf.Clamp01(cue.BaseVolume);
-            float master = _settings != null ? Mathf.Clamp01(_settings.MasterVolume) : 1f;
-            float bgm = _settings != null ? Mathf.Clamp01(_settings.BgmVolume) : 1f;
-            float category = _settings != null ? Mathf.Max(0f, _settings.BgmCategoryMultiplier) : 1f;
+            float master = Mathf.Clamp01(_settings.MasterVolume);
+            float bgm = Mathf.Clamp01(_settings.BgmVolume);
+            float category = Mathf.Max(0f, _settings.BgmCategoryMultiplier);
             float ducking = _pauseDuckingEnabled ? ResolvePauseDuckingScale() : 1f;
 
             return Mathf.Clamp01(baseVolume * master * bgm * category * ducking);
@@ -479,11 +468,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
         private float ResolvePauseDuckingScale()
         {
-            if (_defaults == null)
-            {
-                return 0.35f;
-            }
-
             return Mathf.Clamp01(_defaults.PauseDuckingScale);
         }
 
@@ -494,11 +478,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return requestedSeconds;
             }
 
-            if (_defaults == null)
-            {
-                return 1f;
-            }
-
             return Mathf.Max(0f, _defaults.DefaultBgmFadeSeconds);
         }
 
@@ -507,11 +486,6 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             if (requestedSeconds >= 0f)
             {
                 return requestedSeconds;
-            }
-
-            if (_defaults == null)
-            {
-                return 1f;
             }
 
             return Mathf.Max(0f, _defaults.DefaultBgmFadeSeconds);

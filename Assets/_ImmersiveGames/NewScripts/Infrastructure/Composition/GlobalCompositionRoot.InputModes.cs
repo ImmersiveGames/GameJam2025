@@ -10,7 +10,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     public static partial class GlobalCompositionRoot
     {
         private static bool _inputModeDefaultsAppliedLogged;
-        private static bool _inputModeRuntimeRailSkippedLogged;
 
         private static void RegisterInputModesFromRuntimeConfig()
         {
@@ -47,6 +46,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             if (provider.TryGetGlobal<IInputModeService>(out var existing) && existing != null)
             {
+                if (existing is IInputModeStateService existingState
+                    && (!provider.TryGetGlobal<IInputModeStateService>(out var registeredState) || registeredState == null))
+                {
+                    provider.RegisterGlobal<IInputModeStateService>(existingState);
+                }
+
                 if (logVerbose)
                 {
                     DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
@@ -73,7 +78,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             try
             {
-                provider.RegisterGlobal<IInputModeService>(new InputModeService(playerMapName, menuMapName));
+                var playerInputLocator = new PlayerInputLocator();
+                var inputModeService = new InputModeService(playerInputLocator, playerMapName, menuMapName);
+                provider.RegisterGlobal<IPlayerInputLocator>(playerInputLocator);
+                provider.RegisterGlobal<IInputModeService>(inputModeService);
+                provider.RegisterGlobal<IInputModeStateService>(inputModeService);
 
                 if (logVerbose)
                 {
@@ -103,56 +112,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
 
             reporter.Report(DegradedKeys.Feature.InputModes, reason, detail);
-        }
-
-        private static void RegisterInputModeCoordinator()
-        {
-            if (!ShouldRegisterInputModeRuntimeRail())
-            {
-                return;
-            }
-
-            RegisterIfMissing(
-                () => new InputModeCoordinator(),
-                "[InputMode] InputModeCoordinator ja registrado no DI global.",
-                "[InputMode] InputModeCoordinator registrado no DI global.");
-        }
-
-        private static bool ShouldRegisterInputModeRuntimeRail()
-        {
-            if (!DependencyManager.HasInstance)
-            {
-                LogInputModeRuntimeRailSkippedOnce();
-                return false;
-            }
-
-            var provider = DependencyManager.Provider;
-            if (provider == null)
-            {
-                LogInputModeRuntimeRailSkippedOnce();
-                return false;
-            }
-
-            if (!provider.TryGetGlobal<IInputModeService>(out var service) || service == null)
-            {
-                LogInputModeRuntimeRailSkippedOnce();
-                return false;
-            }
-
-            return true;
-        }
-
-        private static void LogInputModeRuntimeRailSkippedOnce()
-        {
-            if (_inputModeRuntimeRailSkippedLogged)
-            {
-                return;
-            }
-
-            _inputModeRuntimeRailSkippedLogged = true;
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][InputMode] InputMode runtime rail skipped reason='input_modes_disabled_or_not_registered'.",
-                DebugUtility.Colors.Info);
         }
     }
 }

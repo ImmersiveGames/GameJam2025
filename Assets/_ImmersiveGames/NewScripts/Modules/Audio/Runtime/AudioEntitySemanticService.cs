@@ -99,7 +99,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             float multiplier = Mathf.Max(0f, entry.VolumeScaleMultiplier);
             resolvedContext.VolumeScale = contextVolume * multiplier;
 
-            bool expectsSpatial = AudioPlaybackResolutionHelper.ResolveUseSpatial(entry.Cue, resolvedContext);
+            if (!AudioPlaybackResolutionHelper.TryResolveEmissionProfile(entry.Cue, resolvedContext, out var emissionProfile, out _))
+            {
+                DebugUtility.LogWarning(typeof(AudioEntitySemanticService),
+                    $"[Audio][Entity] PlayPurpose blocked: emission profile missing purpose='{purpose}' cue='{entry.Cue.name}'.");
+                return NullAudioPlaybackHandle.Instance;
+            }
+
+            bool expectsSpatial = AudioPlaybackResolutionHelper.ResolveUseSpatial(emissionProfile);
             if (entry.UseOwnerAsFollowTarget && owner != null && expectsSpatial)
             {
                 resolvedContext.UseSpatial = true;
