@@ -70,6 +70,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
             _gameplayReady = gameplayReady;
 
+            LogReadinessState(
+                gameplayReady ? "GameplayReadySet" : "GameplayNotReadySet",
+                reason,
+                gateOpen: _gateService?.IsOpen ?? true,
+                activeTokens: _gateService?.ActiveTokenCount ?? 0);
+
             // Manual/QA: sempre publica (mesmo se valor repetido), por ser uma intenção explícita.
             PublishSnapshot(reason, force: true);
         }
@@ -107,6 +113,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             _gameplayReady = false;
             AcquireGate();
 
+            LogReadinessTransition("TransitionBlocking", "SceneTransitionStartedEvent", evt.context, gateOpen: false);
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. consumer='GameReadinessService' Context={evt.context}");
 
@@ -115,6 +122,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
         private void OnSceneTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
+            LogReadinessTransition("ReadinessMidway", "SceneTransitionScenesReadyEvent", evt.context, gateOpen: _gateService?.IsOpen ?? true);
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. consumer='GameReadinessService' Context={evt.context}");
 
@@ -129,14 +137,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
             // Semântica correta: GameplayReady só deve subir em transição de gameplay.
             bool isGameplayTransition = evt.context.RouteKind == SceneRouteKind.Gameplay;
             _gameplayReady = isGameplayTransition;
+            bool gateOpen = _gateService?.IsOpen ?? true;
 
             string readinessPhase = isGameplayTransition
                 ? "GameplayReady"
                 : "NonGameplayReady";
 
+            LogReadinessTransition(
+                isGameplayTransition ? "GameplayReady" : "NonGameplayReady",
+                "SceneTransitionCompletedEvent",
+                evt.context,
+                gateOpen: gateOpen);
+
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionCompleted → gate liberado e fase {readinessPhase} marcada. consumer='GameReadinessService' " +
-                $"gameplayReady={_gameplayReady}. Context={evt.context}");
+                $"[Readiness] SceneTransitionCompleted → token de transicao liberado; fase tecnica {readinessPhase} marcada; gateGlobal={(gateOpen ? "Open" : "Closed")}. consumer='GameReadinessService' gameplayReady={_gameplayReady}. Context={evt.context}");
 
             PublishSnapshot(
                 isGameplayTransition
@@ -147,6 +161,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
         private void OnGateChanged(bool isOpen)
         {
+            LogReadinessState(isOpen ? "GateOpened" : "GateClosed", "GateChanged", isOpen, _gateService?.ActiveTokenCount ?? 0);
+
             // "Clean option": só publica se o snapshot realmente mudar.
             PublishSnapshot(isOpen ? "gate_opened" : "gate_closed", force: false);
         }
@@ -215,6 +231,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
 
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] Snapshot publicado. gameplayReady={snapshot.GameplayReady}, gateOpen={snapshot.GateOpen}, activeTokens={snapshot.ActiveTokens}, reason='{snapshot.Reason}'.");
+        }
+
+        private static void LogReadinessState(string label, string reason, bool gateOpen, int activeTokens)
+        {
+            DebugUtility.LogVerbose<GameReadinessService>(
+                $"[Readiness] {label} reason='{reason}' gateOpen={gateOpen} activeTokens={activeTokens}.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogReadinessTransition(string label, string eventName, SceneTransitionContext context, bool gateOpen)
+        {
+            DebugUtility.LogVerbose<GameReadinessService>(
+                $"[Readiness] {label} event='{eventName}' signature='{SceneTransitionSignature.Compute(context)}' routeId='{context.RouteId}' routeKind='{context.RouteKind}' gateOpen={gateOpen} gameplayReady={context.RouteKind == SceneRouteKind.Gameplay}.",
+                DebugUtility.Colors.Info);
         }
 
         private static bool SnapshotsEqual(ReadinessSnapshot a, ReadinessSnapshot b)

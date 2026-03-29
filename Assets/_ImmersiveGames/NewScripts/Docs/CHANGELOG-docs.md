@@ -5,6 +5,8 @@
 - Marcadas como concluidas as fases do plano do Slice 4 e removidas as pendencias antigas ja provadas em runtime.
 - Consolidado o owner documental: `Audio` como owner real das reacoes contextuais, `Navigation` como dispatch primario, `SceneFlow` como trilho tecnico e `GameLoop` como fonte upstream de pause / run state.
 - Abertura do Slice 5 como corte curto de `SceneFlow`, focado em trilho tecnico, readiness, loading e fade.
+- Fase 2 do Slice 5 fechada apos saneamento final de `LoadingProgressOrchestrator` e `GameReadinessService`, com a observabilidade de readiness alinhada e sem trilho paralelo novo.
+- O proximo passo documental permanece a Fase 3 do Slice 5.
 
 ## 2026-03-29
 - Fechamento documental do Slice 3 do Baseline 4.0 com o rail validado `PostRunMenu -> Restart / ExitToMenu -> Navigation primary dispatch`.

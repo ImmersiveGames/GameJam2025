@@ -16,6 +16,10 @@ Objetivo do Slice 5: consolidar `SceneFlow` como trilho tecnico unico de transic
 
 O slice parte do runtime ja validado e trata o codigo atual como inventario de reaproveitamento, nao como contrato final.
 
+Foco operacional do slice:
+
+`Navigation primary dispatch -> SceneFlow technical rail -> Loading / Fade / Readiness`
+
 Regra do slice:
 - `SceneFlow` = trilho tecnico de transicao/readiness/loading/fade
 - `Navigation` = dispatch primario upstream
@@ -42,6 +46,7 @@ Fora de escopo:
 - `Loading`
 - `Fade`
 - `Readiness`
+- nomes canônicos nao podem ser substituidos por aliases de gameplay, post-run ou audio
 
 ### Nomes temporarios / bridges
 
@@ -67,6 +72,8 @@ Fora de escopo:
 - progress/loading observers que parecam donos do fluxo
 - sincronizacao de input mode com semantica de gameplay
 - sync bridge que pareca ownership de `GameLoop`
+- readiness mascarado por bridges temporarias
+- qualquer segundo rail de loading fora de `SceneFlow`
 - qualquer semantica de rota ou gameplay dentro de `SceneFlow`
 
 ### Owners por modulo
@@ -122,19 +129,24 @@ Regra:
 
 - declarar `SceneFlow`, `Transition`, `Loading`, `Fade` e `Readiness` como nomes canonicos
 - marcar `SceneFlowInputModeBridge`, `GameLoopSceneFlowSyncCoordinator` e `SceneFlowWorldResetDriver` como bridges temporarias
-- deixar explicito que `SceneFlow` e tecnico e nao interpreta gameplay ou audio
+- marcar `LoadingHudOrchestrator`, `LoadingProgressOrchestrator` e `SceneFlowSignatureCache` como bridges temporarias
+- deixar explicito que `SceneFlow` e tecnico e nao interpreta gameplay, post-run, audio ou intencao de navegacao
 
 ### Fase 1 - lifecycle tecnico unico
 
-- alinhar os eventos `Started`, `FadeInCompleted`, `ScenesReady`, `BeforeFadeOut` e `Completed` como lifecycle unico
+- alinhar os eventos `SceneTransitionStartedEvent`, `SceneTransitionFadeInCompletedEvent`, `SceneTransitionScenesReadyEvent`, `SceneTransitionBeforeFadeOutEvent` e `SceneTransitionCompletedEvent` como lifecycle unico
 - garantir que a assinatura de transicao seja o identificador tecnico primario
 - evitar que loading/progress criem trilho paralelo
+- manter lifecycle tecnico sem semantica de gameplay
 
 ### Fase 2 - readiness e loading
 
 - consolidar `GameReadinessService` como publicador de readiness tecnico
 - manter `LoadingHudService` e orchestrators como consumidores de janela tecnica
 - evitar duplicacao de loading HUD entre consumidores
+- Fase 2 so e considerada fechada apos o saneamento final de observabilidade de `LoadingProgressOrchestrator` e `GameReadinessService`
+- o fechamento desta fase nao altera o lifecycle tecnico nem introduz trilho paralelo
+- depois deste saneamento, o proximo passo segue sendo a Fase 3
 
 ### Fase 3 - bridges temporarias
 
@@ -159,11 +171,13 @@ O Slice 5 so e aceito se:
 - `Frontend/UI` nao ganhar ownership de readiness ou loading
 - o lifecycle tecnico de transicao estiver completo e observavel em logs
 - nao houver trilhos paralelos de loading ou input mode mascarando o owner canonico
+- nao houver readiness mascarado por bridges temporarias
 - os slices 1, 2, 3 e 4 continuarem fechados sem reabertura
 
 ## 7. Pendencias herdadas / nao bloqueantes
 
 - `ExitToMenu` do Slice 3 continua como contexto herdado e anotado, sem bloqueio.
 - O fechamento documental do Slice 4 permanece valido e nao e reaberto neste plano.
-- Qualquer ajuste fino restante em bridges temporarias deve ser tratado como follow-up nao bloqueante, nao como nova fronteira canonica.
+- Qualquer ajuste fino restante em bridges temporarias continua como follow-up nao bloqueante, nao como nova fronteira canonica.
+- Residuo de Fase 2 resolvido por saneamento final; nao ha follow-up bloqueante novo neste corte.
 - `Save` nao entra neste corte.

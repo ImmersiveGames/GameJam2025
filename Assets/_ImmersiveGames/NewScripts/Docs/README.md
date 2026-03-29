@@ -77,6 +77,7 @@ Regra:
 - `Audio` esta no pipeline modular canonico via `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
 - Slice 4 do Baseline 4.0 esta fechado documentalmente: `Navigation primary dispatch -> Audio contextual reactions`, com BGM contextual, ducking e rail semantico de entidade validados.
 - Slice 5 do Baseline 4.0 foi aberto como corte curto de `SceneFlow`, focado em trilho tecnico, readiness, loading e fade.
+- A Fase 2 do Slice 5 foi fechada apos saneamento final de readiness/loading; o proximo passo segue sendo a Fase 3 com bridges temporarias.
 - `RuntimeModeConfig` e obrigatorio no `BootstrapConfigAsset` e e resolvido por referencia direta.
 - `InputModes` usa `InputModeRequestKind`, `IInputModeStateService` e `IPlayerInputLocator`.
 - O contrato oficial de `PostStage` esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.

@@ -128,15 +128,18 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                     $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' routeId='{context.RouteId}', style='{context.StyleLabel}', profile='{context.TransitionProfileName}', reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}' {context}",
                     DebugUtility.Colors.Info);
 
+                LogLifecycleEvent("SceneTransitionStartedEvent", transitionId, signature, context);
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
                 await RunFadeInIfNeeded(context, transitionId, signature);
 
                 if (context.UseFade)
                 {
+                    LogLifecycleEvent("SceneTransitionFadeInCompletedEvent", transitionId, signature, context);
                     EventBus<SceneTransitionFadeInCompletedEvent>.Raise(new SceneTransitionFadeInCompletedEvent(context));
                 }
 
                 await RunSceneOperationsAsync(context);
+                LogLifecycleEvent("SceneTransitionScenesReadyEvent", transitionId, signature, context);
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
                 DebugUtility.Log<SceneTransitionService>(
@@ -144,8 +147,10 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
                     DebugUtility.Colors.Info);
 
                 await AwaitCompletionGateAsync(context);
+                LogLifecycleEvent("SceneTransitionBeforeFadeOutEvent", transitionId, signature, context);
                 EventBus<SceneTransitionBeforeFadeOutEvent>.Raise(new SceneTransitionBeforeFadeOutEvent(context));
                 await RunFadeOutIfNeeded(context, transitionId, signature);
+                LogLifecycleEvent("SceneTransitionCompletedEvent", transitionId, signature, context);
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
                 MarkCompleted(signature);
 
@@ -402,6 +407,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
         {
             string normalizedSignature = string.IsNullOrWhiteSpace(signature) ? "n/a" : signature;
             DebugUtility.Log<SceneTransitionService>($"[OBS][Fade] {phase} id={transitionId} signature='{normalizedSignature}' profile='{profile}'.");
+        }
+
+        private static void LogLifecycleEvent(string eventName, long transitionId, string? signature, SceneTransitionContext context)
+        {
+            string normalizedSignature = string.IsNullOrWhiteSpace(signature) ? "n/a" : signature;
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow] {eventName} id={transitionId} signature='{normalizedSignature}' routeId='{context.RouteId}' routeKind='{context.RouteKind}' style='{context.StyleLabel}' profile='{context.TransitionProfileName}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void LogLoadedScenesSnapshot(string stage)

@@ -26,6 +26,9 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         private ActiveLoadingProgress _active;
         private bool _isRegistered;
         private bool _disposed;
+        private string _lastPublishedSignature = string.Empty;
+        private string _lastPublishedSnapshotKey = string.Empty;
+        private int _lastPublishedFrame = -1;
 
         public LoadingProgressOrchestrator()
         {
@@ -100,6 +103,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         {
             string signature = SceneTransitionSignature.Compute(evt.context);
             _active = new ActiveLoadingProgress(signature, evt.context.RouteKind, evt.context.RequiresWorldReset, evt.context.Reason);
+            LogProgressEvent("SceneTransitionStartedEvent", signature, evt.context.RouteKind, evt.context.RequiresWorldReset, evt.context.Reason, "loading_start");
             PublishCurrent();
         }
 
@@ -107,6 +111,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         {
             if (!HasActiveSignature(evt.ContextSignature))
             {
+                LogIgnoredProgress("SceneFlowRouteLoadingProgressEvent", evt.ContextSignature, "signature_mismatch_or_inactive");
                 return;
             }
 
@@ -116,6 +121,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                 _active.StepLabel = evt.StepLabel;
             }
 
+            LogProgressEvent("SceneFlowRouteLoadingProgressEvent", evt.ContextSignature, _active.RouteKind, _active.RequiresWorldReset, _active.Reason, evt.StepLabel);
             PublishCurrent();
         }
 
@@ -124,11 +130,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             string signature = SceneTransitionSignature.Compute(evt.context);
             if (!HasActiveSignature(signature))
             {
+                LogIgnoredProgress("SceneTransitionScenesReadyEvent", signature, "signature_mismatch_or_inactive");
                 return;
             }
 
             _active.RouteProgress = 1f;
             _active.StepLabel = _active.RouteKind == SceneRouteKind.Gameplay ? "Preparing gameplay" : "Finalizing route";
+            LogProgressEvent("SceneTransitionScenesReadyEvent", signature, evt.context.RouteKind, evt.context.RequiresWorldReset, evt.context.Reason, _active.StepLabel);
             PublishCurrent();
         }
 
@@ -136,12 +144,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         {
             if (_active == null || _active.RouteKind != SceneRouteKind.Gameplay)
             {
+                LogIgnoredProgress("LevelSelectedEvent", _active?.Signature ?? string.Empty, "inactive_or_non_gameplay_route");
                 return;
             }
 
             _active.PrepareProgress = 1f;
             string levelName = evt.LevelRef != null ? evt.LevelRef.name : "current level";
             _active.StepLabel = $"Preparing level: {levelName}";
+            LogProgressEvent("LevelSelectedEvent", _active.Signature, _active.RouteKind, _active.RequiresWorldReset, _active.Reason, _active.StepLabel);
             PublishCurrent();
         }
 
@@ -149,11 +159,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         {
             if (!HasActiveSignature(evt.ContextSignature))
             {
+                LogIgnoredProgress("WorldResetStartedEvent", evt.ContextSignature, "signature_mismatch_or_inactive");
                 return;
             }
 
             _active.ResetProgress = Mathf.Max(_active.ResetProgress, 0.35f);
             _active.StepLabel = "Resetting world";
+            LogProgressEvent("WorldResetStartedEvent", evt.ContextSignature, _active.RouteKind, _active.RequiresWorldReset, _active.Reason, _active.StepLabel);
             PublishCurrent();
         }
 
@@ -161,11 +173,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
         {
             if (!HasActiveSignature(evt.ContextSignature))
             {
+                LogIgnoredProgress("WorldResetCompletedEvent", evt.ContextSignature, "signature_mismatch_or_inactive");
                 return;
             }
 
             _active.ResetProgress = 1f;
             _active.StepLabel = _active.RouteKind == SceneRouteKind.Gameplay ? "Finalizing gameplay" : "Finalizing route";
+            LogProgressEvent("WorldResetCompletedEvent", evt.ContextSignature, _active.RouteKind, _active.RequiresWorldReset, _active.Reason, _active.StepLabel);
             PublishCurrent();
         }
 
@@ -174,12 +188,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             string signature = SceneTransitionSignature.Compute(evt.context);
             if (!HasActiveSignature(signature))
             {
+                LogIgnoredProgress("SceneTransitionBeforeFadeOutEvent", signature, "signature_mismatch_or_inactive");
                 return;
             }
 
             _active.RouteProgress = 1f;
             _active.FinalizingProgress = 1f;
             _active.StepLabel = "Finalizing";
+            LogProgressEvent("SceneTransitionBeforeFadeOutEvent", signature, evt.context.RouteKind, evt.context.RequiresWorldReset, evt.context.Reason, _active.StepLabel);
             PublishCurrent();
         }
 
@@ -188,11 +204,13 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             string signature = SceneTransitionSignature.Compute(evt.context);
             if (!HasActiveSignature(signature))
             {
+                LogIgnoredProgress("SceneTransitionCompletedEvent", signature, "signature_mismatch_or_inactive");
                 return;
             }
 
             _active.Completed = true;
             _active.StepLabel = "Ready";
+            LogProgressEvent("SceneTransitionCompletedEvent", signature, evt.context.RouteKind, evt.context.RequiresWorldReset, evt.context.Reason, _active.StepLabel);
             PublishCurrent();
             _active = null;
         }
@@ -204,7 +222,23 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
                 return;
             }
 
+            if (ShouldDedupePublishedSnapshot(_active))
+            {
+                LogIgnoredProgress(
+                    "LoadingProgressPublish",
+                    _active.Signature,
+                    "duplicate_same_frame_same_snapshot");
+                return;
+            }
+
+            _lastPublishedSignature = _active.Signature;
+            _lastPublishedSnapshotKey = BuildSnapshotKey(_active);
+            _lastPublishedFrame = Time.frameCount;
+
             _presentationService.SetProgress(_active.Signature, _active.ToSnapshot());
+            DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
+                $"[Loading] Progress published signature='{_active.Signature}' routeKind='{_active.RouteKind}' step='{_active.StepLabel}' routeProgress={_active.RouteProgress:0.##} prepareProgress={_active.PrepareProgress:0.##} resetProgress={_active.ResetProgress:0.##} finalizingProgress={_active.FinalizingProgress:0.##} completed={_active.Completed}.",
+                DebugUtility.Colors.Info);
         }
 
         private bool TryResolvePresentationService()
@@ -230,6 +264,49 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
             return _active != null &&
                    !string.IsNullOrWhiteSpace(signature) &&
                    string.Equals(_active.Signature, signature, StringComparison.Ordinal);
+        }
+
+        private bool ShouldDedupePublishedSnapshot(ActiveLoadingProgress active)
+        {
+            if (active == null)
+            {
+                return false;
+            }
+
+            int currentFrame = Time.frameCount;
+            string snapshotKey = BuildSnapshotKey(active);
+            bool sameFrame = currentFrame == _lastPublishedFrame;
+            bool sameSignature = string.Equals(_lastPublishedSignature, active.Signature, StringComparison.Ordinal);
+            bool sameSnapshot = string.Equals(_lastPublishedSnapshotKey, snapshotKey, StringComparison.Ordinal);
+            return sameFrame && sameSignature && sameSnapshot;
+        }
+
+        private static string BuildSnapshotKey(ActiveLoadingProgress active)
+        {
+            LoadingProgressSnapshot snapshot = active.ToSnapshot();
+            return string.Join("|",
+                active.Signature ?? string.Empty,
+                active.RouteKind,
+                active.RequiresWorldReset ? "1" : "0",
+                snapshot.NormalizedProgress.ToString("0.###"),
+                snapshot.Percentage.ToString(),
+                snapshot.StepLabel ?? string.Empty,
+                snapshot.Reason ?? string.Empty,
+                active.Completed ? "1" : "0");
+        }
+
+        private static void LogProgressEvent(string eventName, string signature, SceneRouteKind routeKind, bool requiresWorldReset, string reason, string stepLabel)
+        {
+            DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
+                $"[Loading] {eventName} signature='{signature}' routeKind='{routeKind}' requiresWorldReset={requiresWorldReset} reason='{reason}' step='{stepLabel}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogIgnoredProgress(string eventName, string signature, string reason)
+        {
+            DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
+                $"[Loading] {eventName} ignored signature='{signature}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private sealed class ActiveLoadingProgress
