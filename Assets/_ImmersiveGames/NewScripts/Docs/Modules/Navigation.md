@@ -15,6 +15,7 @@
 - `ExitToMenu` e dispatch canonico direto em `GameNavigationService`.
 - `Restart` nao e owner de `Navigation`; a execucao canonica fica em `LevelFlow`.
 - `Navigation` e owner do dispatch macro de rota, incluindo a saida ao menu.
+- `Navigation` nao escolhe level; ela entrega a gameplay macro route para `LevelFlow` finalizar a selecao em `LevelPrepare`.
 
 ## Regras praticas
 
@@ -23,6 +24,7 @@
 - `Exit` pode encerrar o `PostGame` global, mas a navegacao continua centralizada em `GameNavigationService`.
 - `Restart` nao passa por ponte de menu ou coordinador no `GameLoop`.
 - `ExitToMenu` nao depende semanticamente de `GameLoop`.
+- O log `StartGameplayRouteAsync without explicit level selection` representa apenas a ausencia de selecao no dispatch macro, nao uma decisao de nivel dentro de `Navigation`.
 
 ## Leitura cruzada
 

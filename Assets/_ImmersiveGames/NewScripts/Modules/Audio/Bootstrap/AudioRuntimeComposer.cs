@@ -42,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
             ApplyPreferencesToAudioSettings();
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
+            EnsureAudioBgmContextService(bootstrapConfig);
             EnsureAudioPauseDuckingBridge();
             EnsureNavigationLevelRouteBgmBridge(bootstrapConfig);
             EnsureGlobalAudioService();
@@ -117,10 +118,25 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
 
         private static void EnsureNavigationLevelRouteBgmBridge(BootstrapConfigAsset bootstrapConfig)
         {
+            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmContextService>(out var bgmContextService) || bgmContextService == null)
+            {
+                DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
+                    "[Audio][BGM][Bridge] Skipped registration: IAudioBgmContextService unavailable.");
+                return;
+            }
+
+            RegisterIfMissing<NavigationLevelRouteBgmBridge>(
+                () => new NavigationLevelRouteBgmBridge(bgmContextService),
+                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge already registered in global DI.",
+                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge registered in global DI.");
+        }
+
+        private static void EnsureAudioBgmContextService(BootstrapConfigAsset bootstrapConfig)
+        {
             if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) || bgmService == null)
             {
                 DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Bridge] Skipped registration: IAudioBgmService unavailable.");
+                    "[Audio][BGM][Context] Skipped registration: IAudioBgmService unavailable.");
                 return;
             }
 
@@ -128,19 +144,16 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
             if (navigationCatalog == null)
             {
                 DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Bridge] Skipped registration: NavigationCatalog missing in bootstrap.");
+                    "[Audio][BGM][Context] Skipped registration: NavigationCatalog missing in bootstrap.");
                 return;
             }
 
             DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext);
 
-            RegisterIfMissing<NavigationLevelRouteBgmBridge>(
-                () => new NavigationLevelRouteBgmBridge(
-                    bgmService,
-                    navigationCatalog,
-                    restartContext),
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge already registered in global DI.",
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge registered in global DI.");
+            RegisterIfMissing<IAudioBgmContextService>(
+                () => new AudioBgmContextService(bgmService, navigationCatalog, restartContext),
+                "[Audio][BGM][Context] IAudioBgmContextService already registered in global DI.",
+                "[Audio][BGM][Context] IAudioBgmContextService registered in global DI.");
         }
 
         private static void EnsureGlobalAudioService()

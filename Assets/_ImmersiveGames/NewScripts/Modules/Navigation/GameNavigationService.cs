@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation
             ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                "[OBS][Navigation] StartGameplayRouteAsync without level selection; default will be selected in LevelPrepare.",
+                "[OBS][Navigation] StartGameplayRouteAsync dispatched without explicit level selection; LevelFlow owns default selection in LevelPrepare.",
                 DebugUtility.Colors.Info);
 
             var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty, gameplayEntry.RouteRef);

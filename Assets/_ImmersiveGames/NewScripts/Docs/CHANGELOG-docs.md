@@ -1,6 +1,16 @@
 # Changelog Docs
 
 # 2026-03-29
+- Registrado o fechamento documental da frente central da `Phase 2 - Core Boundary Cleanup`.
+- Consolidado o next step como `Audio / BGM context ownership cleanup`.
+- Mantido o escopo fora de `Save`, `PostGame x GameLoop` e cleanup físico de projeto.
+
+# 2026-03-29
+- Clarificada documentalmente a fronteira `LevelFlow x Navigation` na entrada em gameplay.
+- Registrado que `Navigation` apenas despacha a macro route e que `LevelFlow` é owner da seleção explicita/default no `LevelPrepare`.
+- Alinhado o log de runtime para refletir essa separação sem ambiguidade.
+
+# 2026-03-29
 - Fechada documentalmente a frente `PostGame / Restart / ExitToMenu` dentro da `Phase 2 - Core Boundary Cleanup`.
 - Registrado que `Restart`, `RestartFromFirstLevel` e `ExitToMenu` estão estabilizados no canon atual.
 - Reapontado o próximo foco para `LevelFlow x Navigation boundary cleanup`.

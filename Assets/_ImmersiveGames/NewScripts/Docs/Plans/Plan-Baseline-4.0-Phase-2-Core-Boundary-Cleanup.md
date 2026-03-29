@@ -20,9 +20,10 @@ The project is in a structural, pre-production phase. Canon-first takes priority
 - temporary bridges are not to be preserved by provisional compatibility alone
 - legacy naming and legacy surfaces may be replaced when they keep the wrong boundary alive
 - the restart contract is already split and validated: `Restart` keeps current context, `RestartFromFirstLevel` forces the canonical first level
-- the remaining focus of this frontier is `ExitToMenu`
 - the `RunResult / Restart / ExitToMenu` frontier is closed
-- the next focus is `LevelFlow x Navigation boundary cleanup`
+- the `LevelFlow x Navigation` entry boundary is clarified: `Navigation` dispatches the gameplay macro route and `LevelFlow` owns selection/default in `LevelPrepare`
+- the central `GameLoop / PostGame / LevelFlow / Navigation` boundary cleanup is closed
+- the next architectural front is `Audio / BGM context ownership cleanup`
 
 ## Scope
 

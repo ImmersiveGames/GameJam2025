@@ -27,6 +27,7 @@
 - `LevelSwapLocalService`: swap local no gameplay.
 - `IPostLevelActionsService` / `PostLevelActionsService`: execucao canonica de restart e exit-to-menu no trilho pos-level/post-run, delegando a semântica concreta de restart para `LevelFlow`.
 - `LevelFlow` e owner da semântica concreta de `Restart` e executor da saida pós-run antes do dispatch macro de `Navigation`.
+- `LevelFlow` e owner da selecao explicita/default de level quando a gameplay macro route entra no `LevelPrepare`.
 - `LevelEnteredEvent`: hook canonico para level aplicado/ativo.
 - `LevelIntroCompletedEvent`: handoff canonico de fim da intro.
 - `LevelStageOrchestrator`: trigger e dedupe de intro.
@@ -47,6 +48,8 @@
 - `RestartFromFirstLevel` e contrato distinto: o owner de `LevelFlow` resolve o primeiro level canonico do catalogo e nao reaproveita o contexto atual.
 - A decisão entre `Restart` e `RestartFromFirstLevel` pertence ao owner de `LevelFlow`, nao ao `PostGame`.
 - `ExitToMenu` e executado no trilho de `LevelFlow`, mas o dispatch de rota macro pertence a `Navigation`.
+- `StartGameplayRouteAsync` pertence ao dispatch macro; a selecao de level nao acontece em `Navigation`.
+- `LevelPrepare` resolve a selecao canonica e o default index 0 quando nao ha snapshot valido para o mesmo macro route.
 - `NextLevel` e uma acao de progressao local, nao um post stage generico.
 - O host de presenter nao conhece o tipo concreto do mock e nao conhece a topologia de carregamento; ele consome contratos do LevelFlow.
 
