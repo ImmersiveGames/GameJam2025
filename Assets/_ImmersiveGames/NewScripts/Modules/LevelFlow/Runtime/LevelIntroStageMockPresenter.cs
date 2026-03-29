@@ -7,7 +7,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu("ImmersiveGames/NewScripts/LevelFlow/Intro/Level Intro Presenter Mock")]
+    [AddComponentMenu("ImmersiveGames/NewScripts/LevelFlow/EnterStage/Level EnterStage Presenter Mock")]
     public sealed class LevelIntroStageMockPresenter : MonoBehaviour, ILevelIntroStagePresenter
     {
         [Header("Layout")]
@@ -65,11 +65,11 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             Rect rect = BuildPanelRect();
             GUILayout.BeginArea(rect, GUI.skin.box);
-            GUILayout.Label("Level Intro");
+            GUILayout.Label("EnterStage");
             GUILayout.Label($"levelRef: {model.LevelRefName}");
             GUILayout.Label($"contentId: {model.ContentId}");
             GUILayout.Label($"levelSignature: {model.LevelSignature}");
-            GUILayout.Label("Mock presentation for level intro.");
+            GUILayout.Label("Mock presentation for EnterStage.");
 
             GUILayout.Space(8f);
 
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             GUI.enabled = model.CanContinue;
             if (GUILayout.Button("Continue", GUILayout.Height(34f)))
             {
-                controlService.CompleteIntroStage("LevelIntro/ContinueButton");
+                controlService.CompleteIntroStage("EnterStage/ContinueButton");
             }
 
             GUI.enabled = previous;
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _isRegistered = true;
 
             DebugUtility.Log<LevelIntroStageMockPresenter>(
-                $"[OBS][LevelFlow] IntroPresenterRegistered levelRef='{contract.LevelRef.name}' contentId='{contract.LocalContentId}' signature='{contract.LevelSignature}' presenter='{name}'.",
+                $"[OBS][LevelFlow] EnterStagePresenterRegistered levelRef='{contract.LevelRef.name}' contentId='{contract.LocalContentId}' signature='{contract.LevelSignature}' presenter='{name}'.",
                 DebugUtility.Colors.Info);
         }
 

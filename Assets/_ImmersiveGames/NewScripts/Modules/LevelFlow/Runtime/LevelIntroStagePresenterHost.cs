@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             _presenterScopeResolver = presenterScopeResolver ?? throw new ArgumentNullException(nameof(presenterScopeResolver));
             DebugUtility.LogVerbose<LevelIntroStagePresenterHost>(
-                "[OBS][LevelFlow] LevelIntroStagePresenterHost registrado (level content presenter lifecycle).",
+                "[OBS][LevelFlow] LevelIntroStagePresenterHost registrado (EnterStage presenter lifecycle bridge).",
                 DebugUtility.Colors.Info);
         }
 
@@ -215,7 +215,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             DebugUtility.Log<LevelIntroStagePresenterHost>(
-                $"[OBS][LevelFlow] IntroPresenterSpawned source='{source}' levelRef='{session.LevelRef.name}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}' presenter='{prefab.name}'.",
+                $"[OBS][LevelFlow] EnterStagePresenterSpawned source='{source}' levelRef='{session.LevelRef.name}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}' presenter='{prefab.name}'.",
                 DebugUtility.Colors.Info);
         }
 

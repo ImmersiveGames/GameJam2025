@@ -122,14 +122,22 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 : LevelFlowContentDefaults.BuildCanonicalLevelContentId(selectedLevelRef);
             string levelSignature = CreateLevelSignature(selectedLevelRef, macroRouteId, normalizedReason);
 
-            EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
+            LevelSelectedEvent selectedEvent = new LevelSelectedEvent(
                 macroRouteId,
                 routeRef,
                 selectedLevelRef,
                 selectionVersion,
                 localContentId,
                 normalizedReason,
-                levelSignature));
+                levelSignature);
+
+            GameplayStartSnapshot gameplayStartSnapshot = GameplayStartSnapshot.FromLevelSelectedEvent(selectedEvent);
+
+            DebugUtility.Log<LevelMacroPrepareService>(
+                $"[OBS][LevelFlow] LevelSelectedCanonical levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' macroRouteId='{macroRouteId}' signature='{levelSignature}' reason='{normalizedReason}' snapshot='{gameplayStartSnapshot}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<LevelSelectedEvent>.Raise(selectedEvent);
 
             ct.ThrowIfCancellationRequested();
             await _worldResetCommands.ResetLevelAsync(

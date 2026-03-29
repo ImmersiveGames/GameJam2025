@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             DebugUtility.Log<LevelFlowRuntimeService>(
-                $"[OBS][LevelFlow] StartGameplayDefaultRequested routeId='{gameplayRouteId}' source='navigation_core_slot' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] LevelEntryRequested source='Gameplay' routeId='{gameplayRouteId}' rail='Gameplay -> Level -> EnterStage -> Playing' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             await _navigationService.StartGameplayRouteAsync(gameplayRouteId, SceneTransitionPayload.Empty, normalizedReason);

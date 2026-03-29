@@ -32,6 +32,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                     "[FATAL][H1][LevelFlow] Invalid LevelEnteredEvent received.");
             }
 
+            DebugUtility.Log<LevelStageOrchestrator>(
+                $"[OBS][EnterStage] EnterStageStartRequested source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' rail='Gameplay -> Level -> EnterStage -> Playing' v='{evt.Session.SelectionVersion}' reason='{Normalize(evt.Session.Reason)}' levelSignature='{Normalize(evt.Session.LevelSignature)}'.",
+                DebugUtility.Colors.Info);
+
             if (!TryAdvanceDedupe(evt.Session.SelectionVersion, evt.Session.LevelSignature, evt.Source))
             {
                 return;
@@ -70,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (selectionVersion <= _lastProcessedSelectionVersion)
             {
                 DebugUtility.LogVerbose<LevelStageOrchestrator>(
-                    $"[LevelFlow] IntroStage skipped reason='dedupe_selection_version' selectionVersion='{selectionVersion}' source='{source}' levelSignature='{Normalize(levelSignature)}'.",
+                    $"[LevelFlow] EnterStage skipped reason='dedupe_selection_version' selectionVersion='{selectionVersion}' source='{source}' levelSignature='{Normalize(levelSignature)}'.",
                     DebugUtility.Colors.Info);
                 return false;
             }
@@ -106,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (isLocalSwap)
             {
                 DebugUtility.LogVerbose<LevelStageOrchestrator>(
-                    $"[OBS][IntroStageController] IntroStageLocalSwapDispatch source='{source}' levelRef='{session.LevelRef.name}' v='{session.SelectionVersion}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
+                    $"[OBS][EnterStageController] EnterStageLocalSwapDispatch source='{source}' levelRef='{session.LevelRef.name}' v='{session.SelectionVersion}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -114,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string levelName = session.LevelRef != null ? session.LevelRef.name : "<none>";
 
             DebugUtility.Log<LevelStageOrchestrator>(
-                $"[OBS][IntroStageController] IntroStageStartRequested source='{source}' levelRef='{levelName}' v='{session.SelectionVersion}' disposition='{session.Disposition}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
+                $"[OBS][EnterStageController] EnterStageStartRequested source='{source}' levelRef='{levelName}' v='{session.SelectionVersion}' disposition='{session.Disposition}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
                 DebugUtility.Colors.Info);
 
             var context = new IntroStageContext(
@@ -125,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             if (!DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var coordinator) || coordinator == null)
             {
                 HardFailFastH1.Trigger(typeof(LevelStageOrchestrator),
-                    $"[FATAL][H1][LevelFlow] Missing IIntroStageCoordinator for intro dispatch. source='{source}' levelSignature='{session.LevelSignature}'.");
+                    $"[FATAL][H1][LevelFlow] Missing IIntroStageCoordinator for EnterStage dispatch. source='{source}' levelSignature='{session.LevelSignature}'.");
             }
 
             _ = coordinator.RunIntroStageAsync(context);
@@ -135,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         {
             string levelName = session.LevelRef != null ? session.LevelRef.name : "<none>";
             DebugUtility.Log<LevelStageOrchestrator>(
-                $"[OBS][IntroStageController] LevelIntroCompletedPublished source='{source}' levelRef='{levelName}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
+                $"[OBS][EnterStageController] EnterStageCompletedPublished source='{source}' levelRef='{levelName}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(session, source, wasSkipped, reason));

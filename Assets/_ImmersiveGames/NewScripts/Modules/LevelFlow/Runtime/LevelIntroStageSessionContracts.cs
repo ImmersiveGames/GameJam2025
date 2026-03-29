@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
 
             DebugUtility.LogVerbose<LevelIntroStageSessionService>(
-                "[OBS][LevelFlow] LevelIntroStageSessionService registrado (LevelSelectedEvent -> intro session canonica).",
+                "[OBS][LevelFlow] LevelIntroStageSessionService registrado (LevelSelectedEvent -> EnterStage session bridge canonica).",
                 DebugUtility.Colors.Info);
         }
 
@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             }
 
             DebugUtility.Log<LevelIntroStageSessionService>(
-                $"[OBS][LevelFlow] LevelIntroStageSessionUpdated levelRef='{levelName}' routeId='{evt.MacroRouteId}' disposition='{session.Disposition}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' reason='{session.Reason}'.",
+                $"[OBS][LevelFlow] EnterStageSessionUpdated levelRef='{levelName}' routeId='{evt.MacroRouteId}' disposition='{session.Disposition}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' reason='{session.Reason}'.",
                 DebugUtility.Colors.Info);
         }
     }

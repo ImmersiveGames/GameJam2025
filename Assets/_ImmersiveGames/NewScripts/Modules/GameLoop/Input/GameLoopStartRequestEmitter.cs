@@ -63,8 +63,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
 
             _hasRequested = true;
 
-            DebugUtility.Log(typeof(GameLoopStartRequestEmitter),
-                "[Production][StartRequest] Start solicitado (GameStartRequestedEvent).",
+            DebugUtility.Log<GameLoopStartRequestEmitter>(
+                "[OBS][Gameplay] GameStartRequestedEvent emitted for slice rail 'Gameplay -> Level -> EnterStage -> Playing'.",
                 DebugUtility.Colors.Info);
 
             EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());

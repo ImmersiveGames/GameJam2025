@@ -33,6 +33,22 @@ Fora de escopo:
 
 ## 2. Backbone do Slice 1
 
+### Nomes canônicos congelados
+
+- `Gameplay`
+- `Level`
+- `EnterStage`
+- `Playing`
+
+### Nomes temporários / bridges
+
+- `StartGameplayDefaultAsync`
+- `LevelIntroStageSessionService`
+- `LevelIntroStagePresenterHost`
+- `LevelIntroStagePresenterScopeResolver`
+- `LevelIntroStageMockPresenter`
+- `MenuPlayButtonBinder`
+
 ### Ordem runtime alvo
 
 1. Frontend/UI emite o start do gameplay.
@@ -147,9 +163,28 @@ Regra:
 
 ### Fase 0 - congelar o rail
 
-- travar a terminologia do slice
+- travar os nomes canônicos: `Gameplay`, `Level`, `EnterStage`, `Playing`
+- declarar os hooks atuais que são temporários/bridges: `StartGameplayDefaultAsync`, `LevelIntroStageSessionService`, `LevelIntroStagePresenterHost`, `LevelIntroStagePresenterScopeResolver`, `LevelIntroStageMockPresenter`, `MenuPlayButtonBinder`
 - mapear `Keep`, `Keep with reshape`, `Bridge temporária`, `Adapter temporário`, `Substituição futura`
 - confirmar o caminho runtime alvo e os fora de escopo
+- fixar o log mínimo esperado do slice abaixo
+
+### Log alvo mínimo
+
+O slice deve conseguir registrar, no mínimo, a sequência conceitual abaixo:
+
+`Gameplay -> Level -> EnterStage -> Playing`
+
+Leitura prática:
+- `Gameplay` aceita a intenção de start
+- `Level` é selecionado
+- `EnterStage` inicia
+- `Playing` entra como estado ativo
+
+Regra de validação:
+- se o log não mostrar essa sequência, o slice ainda não está congelado
+- se o log mostrar `ExitStage`, `RunResult` ou `PostRunMenu`, o slice cruzou a fronteira
+- UI pode emitir a intenção de start, mas nunca pode virar owner do rail
 
 ### Fase 1 - entrada macro
 
@@ -194,4 +229,3 @@ O Slice 1 só é aceito se:
 - os logs mostrarem a sequência mínima de entrada e a ausência de caminhos de `RunResult` / `PostRunMenu`
 - nenhuma pasta de legado seja tocada
 - nenhuma renomeação massiva seja necessária para provar o slice
-

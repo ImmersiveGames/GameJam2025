@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 if (_isActive)
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        "[IntroStageController] BeginIntroStage chamado enquanto outra IntroStage ainda esta ativa. Rearmando para o novo contexto.");
+                        "[OBS][EnterStageController] BeginEnterStage chamado enquanto outro EnterStage ainda esta ativo. Rearmando para o novo contexto.");
                 }
 
                 _isActive = true;
@@ -158,19 +158,19 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 {
                     string ignoreReason = alreadyCompleted ? "already_completed" : "not_active";
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' ignoreReason='{ignoreReason}' state='{gameLoopState}' executionState='{previousState}' isActive=false signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
+                        $"[OBS][EnterStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' ignoreReason='{ignoreReason}' state='{gameLoopState}' executionState='{previousState}' isActive=false signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 DebugUtility.Log<IntroStageControlService>(
-                    $"[OBS][IntroStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' state='{gameLoopState}' executionState='{_state}' isActive=true signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
+                    $"[OBS][EnterStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' state='{gameLoopState}' executionState='{_state}' isActive=true signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        $"[OBS][IntroStageController] IntroStageTimedOut signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.");
+                        $"[OBS][EnterStageController] EnterStageTimedOut signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.");
                 }
 
                 source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
@@ -178,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 if (context.IsValid)
                 {
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][IntroStageController] LevelIntroCompletedPublished source='IntroStageControlService' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
+                        $"[OBS][EnterStageController] EnterStageCompletedPublished source='IntroStageControlService' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
                         DebugUtility.Colors.Info);
 
                     EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(

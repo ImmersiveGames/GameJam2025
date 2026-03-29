@@ -39,6 +39,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                 return;
             }
 
+            DebugUtility.Log<GameLoopService>(
+                "[OBS][Gameplay] RequestStart accepted for slice rail 'Gameplay -> Level -> EnterStage -> Playing'.",
+                DebugUtility.Colors.Info);
+
             _signals.MarkStart();
         }
 
@@ -202,8 +206,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                 return;
             }
 
-            DebugUtility.LogVerbose<GameLoopService>(
-                $"[GameLoop] LevelIntroCompleted received source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state={CurrentStateIdName}.",
+            DebugUtility.Log<GameLoopService>(
+                $"[OBS][Gameplay] LevelHandoffAccepted source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' rail='Gameplay -> Level -> EnterStage -> Playing' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state='{CurrentStateIdName}'.",
                 DebugUtility.Colors.Info);
 
             RequestStart();
@@ -256,6 +260,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             {
                 return;
             }
+
+            DebugUtility.Log<GameLoopService>(
+                "[OBS][Gameplay] PlayingEntered state='Playing' rail='Gameplay -> Level -> EnterStage -> Playing'.",
+                DebugUtility.Colors.Success);
 
             _signals.ClearStartPending();
 

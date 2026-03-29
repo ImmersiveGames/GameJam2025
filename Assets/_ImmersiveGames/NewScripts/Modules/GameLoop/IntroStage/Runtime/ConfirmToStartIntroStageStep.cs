@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             IIntroStageControlService controlService = ResolveIntroStageControlService();
 
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
-                $"[OBS][IntroStageController] Waiting for canonical level presenter confirmation. scene='{SceneManager.GetActiveScene().name}'.",
+                $"[OBS][EnterStageController] Waiting for canonical level presenter confirmation. scene='{SceneManager.GetActiveScene().name}'.",
                 DebugUtility.Colors.Info);
 
             await controlService.WaitForCompletionAsync(cancellationToken);

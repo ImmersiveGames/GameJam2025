@@ -40,12 +40,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             try
             {
                 DebugUtility.Log<IntroStageCoordinator>(
-                    $"[OBS][IntroStageController] IntroStageStarted signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' disposition='{context.Session.Disposition}'.",
+                    $"[OBS][EnterStageController] EnterStageStarted signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' disposition='{context.Session.Disposition}'.",
                     DebugUtility.Colors.Info);
 
                 if (!context.HasIntroStage)
                 {
-                    LogSkipped("session_no_intro", context, SceneManager.GetActiveScene().name);
+                    LogSkipped("session_no_enterstage", context, SceneManager.GetActiveScene().name);
                     return;
                 }
 
@@ -55,12 +55,12 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 controlService.BeginIntroStage(context);
 
                 DebugUtility.Log<IntroStageCoordinator>(
-                    "[IntroStageController] IntroStage active: gameplay simulation blocked; waiting for canonical confirmation.",
+                    "[OBS][EnterStageController] EnterStage active: gameplay simulation blocked; waiting for canonical confirmation.",
                     DebugUtility.Colors.Info);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 DebugUtility.LogVerbose<IntroStageCoordinator>(
-                    "[QA][IntroStageController] EditorQAActions available for Complete/Skip in Editor/Dev.",
+                    "[QA][EnterStageController] EditorQAActions available for Complete/Skip in Editor/Dev.",
                     DebugUtility.Colors.Info);
 #endif
 
@@ -71,14 +71,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 else
                 {
                     HardFailFastH1.Trigger(typeof(IntroStageCoordinator),
-                        $"[FATAL][H1][GameLoop] IntroStage step registered without content for signature='{signature}'.");
+                        $"[FATAL][H1][GameLoop] EnterStage step registered without content for signature='{signature}'.");
                 }
 
                 var completion = await controlService.WaitForCompletionAsync(CancellationToken.None);
                 if (IsSupersededCompletion(completion))
                 {
                     DebugUtility.LogVerbose<IntroStageCoordinator>(
-                        $"[OBS][IntroStageController] IntroStageSuperseded signature='{signature}' routeKind='{routeLabel}' target='{targetScene}'.",
+                        $"[OBS][EnterStageController] EnterStageSuperseded signature='{signature}' routeKind='{routeLabel}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -96,9 +96,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<IntroStageCoordinator>(
-                    $"[IntroStageController] Falha ao executar IntroStage. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[EnterStageController] Falha ao executar EnterStage. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
 
-                controlService.SkipIntroStage("IntroStageController/ErrorFallback");
+                controlService.SkipIntroStage("EnterStageController/ErrorFallback");
 
                 LogCompletion(signature, targetScene, routeLabel, IntroStageRunResult.Failed);
             }
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 {
                     gateLease.Dispose();
                     DebugUtility.Log<IntroStageCoordinator>(
-                        $"[OBS][IntroStageController] GameplaySimulationUnblocked token='{SimulationGateTokens.GameplaySimulation}' signature='{signature}' routeKind='{routeLabel}' target='{targetScene}'.",
+                        $"[OBS][EnterStageController] GameplaySimulationUnblocked token='{SimulationGateTokens.GameplaySimulation}' signature='{signature}' routeKind='{routeLabel}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                 }
 
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
             IDisposable lease = gateService!.Acquire(SimulationGateTokens.GameplaySimulation);
 
             DebugUtility.Log<IntroStageCoordinator>(
-                $"[OBS][IntroStageController] GameplaySimulationBlocked token='{SimulationGateTokens.GameplaySimulation}' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.",
+                $"[OBS][EnterStageController] GameplaySimulationBlocked token='{SimulationGateTokens.GameplaySimulation}' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return lease;
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
                 if (string.Equals(_activeSignature, signature, StringComparison.Ordinal))
                 {
                     DebugUtility.LogWarning<IntroStageCoordinator>(
-                        $"[OBS][IntroStageController] IntroStageSkipped reason='in_progress' signature='{signature}'.");
+                        $"[OBS][EnterStageController] EnterStageSkipped reason='in_progress' signature='{signature}'.");
                     return false;
                 }
 
@@ -239,14 +239,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
         private static void LogCompletion(string signature, string targetScene, string routeKind, IntroStageRunResult result)
         {
             DebugUtility.Log<IntroStageCoordinator>(
-                $"[OBS][IntroStageController] IntroStageCompleted signature='{signature}' result='{FormatResult(result)}' routeKind='{routeKind}' target='{targetScene}'.",
+                $"[OBS][EnterStageController] EnterStageCompleted signature='{signature}' result='{FormatResult(result)}' routeKind='{routeKind}' target='{targetScene}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void LogSkipped(string reason, IntroStageContext context, string sceneName)
         {
             DebugUtility.Log<IntroStageCoordinator>(
-                $"[OBS][IntroStageController] IntroStageSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' routeKind='{FormatRouteKind(context.RouteKind)}' target='{NormalizeValue(context.TargetScene)}' scene='{NormalizeValue(sceneName)}'.",
+                $"[OBS][EnterStageController] EnterStageSkipped reason='{reason}' signature='{NormalizeSignature(context.ContextSignature)}' routeKind='{FormatRouteKind(context.RouteKind)}' target='{NormalizeValue(context.TargetScene)}' scene='{NormalizeValue(sceneName)}'.",
                 DebugUtility.Colors.Info);
         }
 
