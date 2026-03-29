@@ -1,6 +1,23 @@
 # Changelog Docs
 
 # 2026-03-29
+- Fechado o ciclo atual de `Save` com o Slice 7 e o Slice 8 concluídos.
+- Registrada a decisão de estacionar `Save/Checkpoint` no estado atual, sem novo aprofundamento imediato.
+- Repriorizado o roadmap para os módulos centrais da baseline.
+- Formalizado o próximo passo como `Phase 2 - Core Boundary Cleanup`, com foco em `GameLoop`, `PostGame`, `LevelFlow` e `Navigation`.
+
+# 2026-03-29
+- Fechada documentalmente a implementação mínima estrutural de `Checkpoint` dentro de `Save`.
+- Criado o relatório de closure do Slice 8 em `Docs/Reports/Audits/2026-03-29/Slice-8-Checkpoint-Minimal-Implementation-Closure.md`.
+- Mantido o Slice 8 como contrato canônico, sem reescrever o plano como histórico operacional.
+
+# 2026-03-29
+- Aberto o Slice 8 como freeze documental do rail canônico de `Checkpoint` dentro de `Save`.
+- Registrado `Checkpoint` como domínio próprio, distinto de `Preferences` e `Progression`.
+- Congelados `CheckpointSnapshot`, `ICheckpointService`, `ICheckpointBackend` e `checkpointId` como nomes canônicos mínimos.
+- Mantidos backend final, save state completo e checkpoint operacional fora de escopo.
+
+# 2026-03-29
 - Fechada documentalmente a validação do Slice 7 apos a composicao explicita do backend de `Progression`.
 - Confirmado `Save` como camada canonica de orquestracao e `Progression` como detalhe de infraestrutura via `IProgressionBackend`.
 - Registrado `InMemoryProgressionBackend` como backend provisório explicitamente composto.

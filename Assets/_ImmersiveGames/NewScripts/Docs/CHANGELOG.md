@@ -1,3 +1,9 @@
+# 2026-03-29 - slice 8 phase 0 checkpoint freeze
+- abriu o Slice 8 como freeze documental do rail canônico de `Checkpoint` dentro de `Save`
+- registrou `Checkpoint` como domínio próprio, distinto de `Preferences` e `Progression`
+- congelou `CheckpointSnapshot`, `ICheckpointService`, `ICheckpointBackend` e `checkpointId` como nomes canônicos mínimos
+- manteve backend final, save state completo e checkpoint operacional fora de escopo
+
 # 2026-03-29 - slice 7 phase 5 documentary validation
 - fechou documentalmente o Slice 7 apos a composicao explicita do backend de `Progression`
 - confirmou `Save` como camada canonica de orquestracao e `Progression` como detalhe de infraestrutura via `IProgressionBackend`

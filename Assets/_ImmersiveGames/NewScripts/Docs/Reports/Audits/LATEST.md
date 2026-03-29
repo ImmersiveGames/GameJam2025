@@ -1,13 +1,14 @@
 # LATEST
 
 ## Fase vigente
-### Preferences baseline v1: Audio + Video closeout
+### Baseline 4.0 - Phase 2 - Core Boundary Cleanup
 
 ## Entrega
-- report `Reports/Audits/2026-03-28/Preferences-Baseline-V1-Audio-Video.md` registrado
-- baseline v1 de Preferences fechado para Audio + Video
-- marco macro: `Preferences baseline v1: Audio + Video concluídos`
-- próximo passo recomendado: smoke test em build desktop para confirmar resolução/fullscreen
+- fechamento documental do `Slice 8` concluído
+- implementação mínima estrutural de `Checkpoint` dentro de `Save` concluída
+- `Save/Checkpoint` estacionado no estado atual, sem aprofundamento imediato
+- próximo passo recomendado: `Phase 2 - Core Boundary Cleanup`
+- módulos foco: `GameLoop`, `PostGame`, `LevelFlow`, `Navigation`
 
 ## Regra
-Nesta fase, o foco e fechamento documental do baseline de Preferences, nao reabertura de implementacao.
+Nesta fase, o foco atual do Baseline 4.0 é a limpeza de fronteiras centrais; `Save/Checkpoint` permanece estacionado e não é o foco imediato.

@@ -46,6 +46,22 @@ namespace _ImmersiveGames.NewScripts.Modules.Save.Bootstrap
             var progressionSaveService = progressionStateService as IProgressionSaveService
                 ?? throw new InvalidOperationException("[FATAL][Save] ProgressionService nao implementa IProgressionSaveService.");
 
+            RegisterIfMissing<ICheckpointBackend>(
+                factory: () => new InMemoryCheckpointBackend(),
+                alreadyRegisteredMessage: "[Save][BOOT] ICheckpointBackend already registered.",
+                registeredMessage: "[Save][BOOT] ICheckpointBackend registered (InMemoryCheckpointBackend).");
+
+            if (!DependencyManager.Provider.TryGetGlobal<ICheckpointBackend>(out var checkpointBackend) || checkpointBackend == null)
+            {
+                throw new InvalidOperationException("[FATAL][Save] ICheckpointBackend obrigatorio ausente antes de instalar Save.");
+            }
+
+            var checkpointIdentity = new CheckpointIdentity(
+                CheckpointIdentity.BootstrapCheckpointId,
+                CheckpointIdentity.BootstrapProfileId,
+                CheckpointIdentity.BootstrapSlotId);
+            var checkpointService = ResolveOrCreateCheckpointService(checkpointIdentity, checkpointBackend);
+
             var requiredIdentity = new SaveIdentity(ProgressionSnapshot.BootstrapProfileId, ProgressionSnapshot.BootstrapSlotId);
             _orchestrationService = new SaveOrchestrationService(
                 requiredIdentity,
@@ -58,6 +74,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Save.Bootstrap
                 factory: () => _orchestrationService,
                 alreadyRegisteredMessage: "[Save][BOOT] ISaveOrchestrationService already registered.",
                 registeredMessage: "[Save][BOOT] ISaveOrchestrationService registered.");
+
+            RegisterIfMissing<ICheckpointService>(
+                factory: () => checkpointService,
+                alreadyRegisteredMessage: "[Save][BOOT] ICheckpointService already registered.",
+                registeredMessage: "[Save][BOOT] ICheckpointService registered.");
 
             _installed = true;
 
@@ -101,6 +122,36 @@ namespace _ImmersiveGames.NewScripts.Modules.Save.Bootstrap
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(typeof(SaveInstaller),
                 "[Save][BOOT] ProgressionService registered.",
+                DebugUtility.Colors.Info);
+            return instance;
+        }
+
+        private static CheckpointService ResolveOrCreateCheckpointService(
+            CheckpointIdentity requiredIdentity,
+            ICheckpointBackend backend)
+        {
+            if (requiredIdentity == null)
+            {
+                throw new InvalidOperationException("[FATAL][Save] CheckpointIdentity obrigatorio ausente para construir CheckpointService.");
+            }
+
+            if (backend == null)
+            {
+                throw new InvalidOperationException("[FATAL][Save] ICheckpointBackend obrigatorio ausente para construir CheckpointService.");
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<CheckpointService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(SaveInstaller),
+                    "[Save][BOOT] CheckpointService already registered.",
+                    DebugUtility.Colors.Info);
+                return existing;
+            }
+
+            var instance = new CheckpointService(requiredIdentity, backend);
+            DependencyManager.Provider.RegisterGlobal(instance);
+            DebugUtility.LogVerbose(typeof(SaveInstaller),
+                $"[Save][BOOT] CheckpointService registered. identity={requiredIdentity}.",
                 DebugUtility.Colors.Info);
             return instance;
         }

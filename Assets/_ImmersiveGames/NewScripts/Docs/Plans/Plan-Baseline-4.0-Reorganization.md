@@ -4,6 +4,14 @@ Status: Draft
 Date: 2026-03-28
 Note: auxiliary execution backlog only. Subordinate to [ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md), [ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md), [Blueprint-Baseline-4.0-Ideal-Architecture.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md) and [Plan-Baseline-4.0-Execution-Guardrails.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md).
 
+## Current Priority
+
+The immediate focus of Baseline 4.0 is now `Phase 2 - Core Boundary Cleanup`.
+
+- `Save` and `Checkpoint` are parked in their current state after Slice 7 and Slice 8 closure.
+- The next operational step is to clean the central boundaries of `GameLoop`, `PostGame`, `LevelFlow` and `Navigation`.
+- This phase starts with audit and normalization of the core boundary, not with broad blind refactoring.
+
 ## 1. Executive Summary
 
 This document is the domain backlog for structural reorganization. It does not define the canonical target or the mandatory phase template; those belong to the blueprint and to [Plan-Baseline-4.0-Execution-Guardrails.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md).
