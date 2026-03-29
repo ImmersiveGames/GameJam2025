@@ -105,18 +105,41 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
 
             if (evt.IsPaused)
             {
+                if (_pauseDuckingApplied)
+                {
+                    DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                        $"[Audio][PauseDuck] PauseStateChanged no-op reason='{ReasonPauseStateChanged}' state='paused' applied='true'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
                 ApplyDucking(ReasonPauseStateChanged);
+                return;
             }
-            else
+
+            if (!_pauseDuckingApplied)
             {
-                ReleaseDucking(ReasonPauseStateChanged);
+                DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                    $"[Audio][PauseDuck] PauseStateChanged no-op reason='{ReasonPauseStateChanged}' state='resumed' applied='false'.",
+                    DebugUtility.Colors.Info);
+                return;
             }
+
+            ReleaseDucking(ReasonPauseStateChanged);
         }
 
         private void OnPauseWillEnter(PauseWillEnterEvent evt)
         {
             if (evt == null)
             {
+                return;
+            }
+
+            if (_pauseDuckingApplied)
+            {
+                DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                    $"[Audio][PauseDuck] PauseAudioDuckingRequestedEarly no-op reason='{SafeReason(evt.Reason)}' applied='true'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
@@ -134,6 +157,14 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return;
             }
 
+            if (!_pauseDuckingApplied)
+            {
+                DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                    $"[Audio][PauseDuck] PauseAudioDuckingReleaseRequestedEarly no-op reason='{SafeReason(evt.Reason)}' applied='false'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
                 $"[Audio][PauseDuck] PauseAudioDuckingReleaseRequestedEarly reason='{SafeReason(evt.Reason)}'.",
                 DebugUtility.Colors.Info);
@@ -145,6 +176,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         {
             if (_pauseDuckingApplied)
             {
+                DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                    $"[Audio][PauseDuck] PauseAudioDuckingApply no-op reason='{reason}' applied='true'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
@@ -166,6 +200,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
         {
             if (!_pauseDuckingApplied)
             {
+                DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
+                    $"[Audio][PauseDuck] PauseAudioDuckingRelease no-op reason='{reason}' applied='false'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 

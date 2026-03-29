@@ -18,8 +18,8 @@ Regra:
 - `Canon Index` e indice de estado atual/historico; nao e autoridade canonica do Baseline 4.0
 
 Rodada estrutural consolidada:
-- `ADR-0038` fecha o pipeline modular em duas fases canônicas, com `Gameplay` installer-only, `Audio` como módulo canônico e `Loading` como subcapability de `SceneFlow`.
-- `ADR-0039` fecha o contrato mínimo de `Pause`, com `GameLoop` como owner de `Paused`, hooks oficiais e overlay reativo.
+- `ADR-0038` fecha o pipeline modular em duas fases canonicas, com `Gameplay` installer-only, `Audio` como modulo canonico e `Loading` como subcapability de `SceneFlow`.
+- `ADR-0039` fecha o contrato minimo de `Pause`, com `GameLoop` como owner de `Paused`, hooks oficiais e overlay reativo.
 - `ADR-0008`, `ADR-0028` e `ADR-0007` fecham `RuntimeModeConfig`, `Audio` e `InputModes` no estado validado.
 
 Leia nesta ordem:
@@ -74,8 +74,10 @@ Regra:
 - `IntroStage` e level-owned, opcional, disparada pelo hook `LevelEnteredEvent` e finalizada por `LevelIntroCompletedEvent`.
 - O presenter canonico da intro e resolvido por `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver`.
 - `PostGame` e global no runtime atual, com `PostStage` implementado e validado.
-- `Audio` está no pipeline modular canônico via `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
-- `RuntimeModeConfig` é obrigatório no `BootstrapConfigAsset` e é resolvido por referência direta.
+- `Audio` esta no pipeline modular canonico via `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
+- Slice 4 do Baseline 4.0 esta fechado documentalmente: `Navigation primary dispatch -> Audio contextual reactions`, com BGM contextual, ducking e rail semantico de entidade validados.
+- Slice 5 do Baseline 4.0 foi aberto como corte curto de `SceneFlow`, focado em trilho tecnico, readiness, loading e fade.
+- `RuntimeModeConfig` e obrigatorio no `BootstrapConfigAsset` e e resolvido por referencia direta.
 - `InputModes` usa `InputModeRequestKind`, `IInputModeStateService` e `IPlayerInputLocator`.
 - O contrato oficial de `PostStage` esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
 - Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.

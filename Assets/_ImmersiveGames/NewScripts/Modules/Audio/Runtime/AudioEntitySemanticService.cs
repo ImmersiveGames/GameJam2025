@@ -44,6 +44,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 return NullAudioPlaybackHandle.Instance;
             }
 
+            DebugUtility.LogVerbose(typeof(AudioEntitySemanticService),
+                $"[Audio][Entity] PlayCue resolved semanticKey='direct_cue' cue='{cue.name}' source='direct' owner='none' reason='{ResolveReason(context.Reason)}'.",
+                DebugUtility.Colors.Info);
+
             return _globalAudioService.Play(cue, context);
         }
 
@@ -59,21 +63,23 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
             if (string.IsNullOrWhiteSpace(purpose))
             {
                 DebugUtility.LogWarning(typeof(AudioEntitySemanticService),
-                    "[Audio][Entity] PlayPurpose blocked: purpose is null/empty.");
+                    "[Audio][Entity] PlayPurpose blocked: semanticKey is null/empty.");
                 return NullAudioPlaybackHandle.Instance;
             }
+
+            string semanticKey = NormalizeSemanticKey(purpose);
 
             if (_semanticMap == null)
             {
                 DebugUtility.LogWarning(typeof(AudioEntitySemanticService),
-                    $"[Audio][Entity] PlayPurpose blocked: semantic map is null purpose='{purpose}'.");
+                    $"[Audio][Entity] PlayPurpose blocked: missing semantic map semanticKey='{semanticKey}' owner='{ResolveOwnerName(owner)}'.");
                 return NullAudioPlaybackHandle.Instance;
             }
 
             if (!_semanticMap.TryResolve(purpose, out var entry) || entry == null || entry.Cue == null)
             {
                 DebugUtility.LogVerbose(typeof(AudioEntitySemanticService),
-                    $"[Audio][Entity] PlayPurpose no-op: missing mapping purpose='{purpose}' map='{_semanticMap.name}'.",
+                    $"[Audio][Entity] PlayPurpose no-op: missing mapping semanticKey='{semanticKey}' map='{_semanticMap.name}' owner='{ResolveOwnerName(owner)}' reason='missing_mapping'.",
                     DebugUtility.Colors.Info);
                 return NullAudioPlaybackHandle.Instance;
             }
@@ -122,10 +128,25 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
                 : $"{resolvedContext.Reason}|{mappedReason}";
 
             DebugUtility.LogVerbose(typeof(AudioEntitySemanticService),
-                $"[Audio][Entity] PlayPurpose resolved purpose='{purpose}' cue='{entry.Cue.name}' map='{_semanticMap.name}' owner='{(owner != null ? owner.name : "null")}' emissionOverride='{(entry.EmissionProfileOverride != null ? entry.EmissionProfileOverride.name : "none")}' executionOverride='{(entry.ExecutionProfileOverride != null ? entry.ExecutionProfileOverride.name : "none")}' voiceOverride='{(entry.VoiceProfileOverride != null ? entry.VoiceProfileOverride.name : "none")}'.",
+                $"[Audio][Entity] PlayPurpose resolved semanticKey='{semanticKey}' cue='{entry.Cue.name}' map='{_semanticMap.name}' owner='{ResolveOwnerName(owner)}' source='semantic_map' emissionOverride='{(entry.EmissionProfileOverride != null ? entry.EmissionProfileOverride.name : "none")}' executionOverride='{(entry.ExecutionProfileOverride != null ? entry.ExecutionProfileOverride.name : "none")}' voiceOverride='{(entry.VoiceProfileOverride != null ? entry.VoiceProfileOverride.name : "none")}' reason='{ResolveReason(context.Reason)}'.",
                 DebugUtility.Colors.Info);
 
             return _globalAudioService.Play(entry.Cue, resolvedContext);
         }
-}
+
+        private static string NormalizeSemanticKey(string purpose)
+        {
+            return string.IsNullOrWhiteSpace(purpose) ? "<none>" : purpose.Trim();
+        }
+
+        private static string ResolveOwnerName(Transform owner)
+        {
+            return owner != null ? owner.name : "none";
+        }
+
+        private static string ResolveReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? "unspecified" : reason.Trim();
+        }
+    }
 }

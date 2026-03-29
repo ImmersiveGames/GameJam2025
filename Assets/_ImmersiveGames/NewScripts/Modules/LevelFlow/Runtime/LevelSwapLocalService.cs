@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             LevelAdditiveSceneRuntimeApplier.RecordAppliedLevel(targetLevelRef);
 
-            PublishLevelSwapLocalApplied(targetLevelRef, macroRouteId, normalizedReason, nextSelectionVersion, levelSignature);
+            PublishLevelSwapLocalApplied(targetLevelRef, macroRouteId, localContentId, normalizedReason, nextSelectionVersion, levelSignature);
 
             DebugUtility.Log<LevelSwapLocalService>(
                 $"[OBS][LevelFlow] LevelSwapLocalApplied fromLevelRef='{(fromLevelRef != null ? fromLevelRef.name : "<none>")}' toLevelRef='{targetLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' contentId='{localContentId}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} v='{nextSelectionVersion}' signature='{swapSignature}' reason='{normalizedReason}'.",
@@ -171,11 +171,12 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 DebugUtility.Colors.Info);
         }
 
-        private static void PublishLevelSwapLocalApplied(LevelDefinitionAsset levelRef, SceneRouteId macroRouteId, string reason, int selectionVersion, string levelSignature)
+        private static void PublishLevelSwapLocalApplied(LevelDefinitionAsset levelRef, SceneRouteId macroRouteId, string localContentId, string reason, int selectionVersion, string levelSignature)
         {
             EventBus<LevelSwapLocalAppliedEvent>.Raise(new LevelSwapLocalAppliedEvent(
                 levelRef,
                 macroRouteId,
+                localContentId,
                 reason,
                 selectionVersion,
                 levelSignature));

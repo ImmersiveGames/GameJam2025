@@ -1251,6 +1251,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1256861815}
   - component: {fileID: 1256861814}
+  - component: {fileID: 1256861816}
   m_Layer: 0
   m_Name: EmitterUnderTest
   m_TagString: Untagged
@@ -1288,6 +1289,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1256861816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1256861813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d1caef1f5f4469f93f0f23265d38d58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  semanticMap: {fileID: 11400000, guid: 8655b820fdbe45eb902e5e8086929880, type: 2}
+  globalPurpose: semantic_global_direct
+  spatialPurpose: semantic_spatial_direct
+  pooledPurpose: semantic_spatial_pooled
+  missingPurpose: semantic_missing
+  ownerTransform: {fileID: 0}
+  fallbackSpatialPosition: {x: 0, y: 1.5, z: 2}
+  explicitCue: {fileID: 11400000, guid: 4d09929d1aac5364cacc40f436669b9d, type: 2}
+  verboseLogs: 1
 --- !u!1 &1321203159
 GameObject:
   m_ObjectHideFlags: 0
