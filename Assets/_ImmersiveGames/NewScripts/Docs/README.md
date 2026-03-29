@@ -4,6 +4,24 @@ Esta pasta documenta o estado operacional atual de `Assets/_ImmersiveGames/NewSc
 
 ## Superficie oficial vigente
 
+### Baseline 4.0 - cadeia canonica e operacional
+
+- Canon: [`ADR-0044`](./ADRs/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md)
+- Ancora: [`ADR-0043`](./ADRs/ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md)
+- Alvo: [`Blueprint-Baseline-4.0-Ideal-Architecture.md`](./Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md)
+- Guardrail operacional: [`Plan-Baseline-4.0-Execution-Guardrails.md`](./Plans/Plan-Baseline-4.0-Execution-Guardrails.md)
+- Backlog auxiliar: [`Plan-Baseline-4.0-Reorganization.md`](./Plans/Plan-Baseline-4.0-Reorganization.md)
+- Auditoria de alinhamento: [`Baseline-4.0-Docs-Alignment-Audit.md`](./Reports/Audits/2026-03-29/Baseline-4.0-Docs-Alignment-Audit.md)
+
+Regra:
+- o Baseline 4.0 deve ser lido por essa cadeia, e nao pelo estado atual do runtime como contrato final
+- `Canon Index` e indice de estado atual/historico; nao e autoridade canonica do Baseline 4.0
+
+Rodada estrutural consolidada:
+- `ADR-0038` fecha o pipeline modular em duas fases canônicas, com `Gameplay` installer-only, `Audio` como módulo canônico e `Loading` como subcapability de `SceneFlow`.
+- `ADR-0039` fecha o contrato mínimo de `Pause`, com `GameLoop` como owner de `Paused`, hooks oficiais e overlay reativo.
+- `ADR-0008`, `ADR-0028` e `ADR-0007` fecham `RuntimeModeConfig`, `Audio` e `InputModes` no estado validado.
+
 Leia nesta ordem:
 1. `Docs/Canon/Canon-Index.md`
 2. `Docs/Guides/Production-How-To-Use-Core-Modules.md`
@@ -57,7 +75,7 @@ Regra:
 - O presenter canonico da intro e resolvido por `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver`.
 - `PostGame` e global no runtime atual, com `PostStage` implementado e validado.
 - `Audio` está no pipeline modular canônico via `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
-- `RuntimeModeConfig` é obrigatório no `BootstrapConfigAsset` e não depende mais de fallback oculto.
+- `RuntimeModeConfig` é obrigatório no `BootstrapConfigAsset` e é resolvido por referência direta.
 - `InputModes` usa `InputModeRequestKind`, `IInputModeStateService` e `IPlayerInputLocator`.
 - O contrato oficial de `PostStage` esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
 - Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.

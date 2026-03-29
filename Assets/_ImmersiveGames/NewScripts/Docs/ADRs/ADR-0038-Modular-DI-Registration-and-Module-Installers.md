@@ -199,6 +199,15 @@ Critério auditável:
 
 > se um trecho existe apenas para um módulo específico, ele pertence ao módulo, não ao root global.
 
+## Estado consolidado da rodada
+
+- As duas fases canônicas são `Installer` e `Runtime Composer`, nesta ordem.
+- Os logs canônicos do pipeline devem sair em `INFO`.
+- `Gameplay` permanece `installer-only`.
+- `Audio` é módulo canônico com `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
+- `Loading` continua subcapability de `SceneFlow`.
+- `BootstrapConfigAsset` continua sendo o único entrypoint aceitável por `Resources` no boot global.
+
 ### 10. Convenção de nomenclatura
 
 Padrão canônico esperado:

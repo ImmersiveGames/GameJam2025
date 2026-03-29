@@ -1,3 +1,10 @@
+# 2026-03-29 - structural docs consolidation closeout
+- consolidou a rodada estrutural atual em `ADR-0038`, `ADR-0039`, `ADR-0008`, `ADR-0028`, `ADR-0007`, `Docs/Canon/Official-Baseline-Hooks.md` e indices/guia impactados
+- registrou `Audio` como modulo canonico no pipeline modular com descriptor, installer e runtime composer
+- fechou `RuntimeModeConfig` como referencia obrigatoria no `BootstrapConfigAsset`
+- consolidou `InputModes` com `InputModeRequestKind` e `IPlayerInputLocator`
+- fechou o contrato minimo de `Pause` com hooks oficiais e overlay reativo
+
 # 2026-03-28 - preferences baseline v1 closeout
 - fechou o baseline v1 de Preferences com Audio + Video como trilho canônico funcional
 - registrou o fechamento documental do slice em `Docs/Reports/Audits/2026-03-28/Preferences-Baseline-V1-Audio-Video.md`

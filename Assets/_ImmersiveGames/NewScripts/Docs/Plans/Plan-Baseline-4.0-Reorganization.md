@@ -2,9 +2,11 @@
 
 Status: Draft
 Date: 2026-03-28
-Note: auxiliary execution support only. Subordinate to [Blueprint-Baseline-4.0-Ideal-Architecture.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md) and [ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md).
+Note: auxiliary execution backlog only. Subordinate to [ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md), [ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/ADRs/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md), [Blueprint-Baseline-4.0-Ideal-Architecture.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md) and [Plan-Baseline-4.0-Execution-Guardrails.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md).
 
 ## 1. Executive Summary
+
+This document is the domain backlog for structural reorganization. It does not define the canonical target or the mandatory phase template; those belong to the blueprint and to [Plan-Baseline-4.0-Execution-Guardrails.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md).
 
 O Baseline 4.0 deve consolidar a separacao entre:
 
@@ -18,7 +20,9 @@ O Baseline 4.0 deve consolidar a separacao entre:
 
 O plano abaixo transforma as auditorias em backlog e sequenciamento. Ele nao reabre catalogacao conceitual; usa o que ja foi validado para mover ownership, reduzir duplicacao e separar bridges de dominio.
 
-## 2. Target Architecture by Module
+## 2. Backlog by Module
+
+The table below is a derived backlog. It mirrors the canonical target only to organize pending work; it does not redefine the target.
 
 | Module | Final role | Must stay | Must leave | Bridge / adapter | Wrong naming to normalize | Real structural refactor |
 |---|---|---|---|---|---|---|
@@ -69,7 +73,7 @@ O plano abaixo transforma as auditorias em backlog e sequenciamento. Ele nao rea
 - Post-run gate/input handling split between `PostGameOwnershipService` and overlay controller.
 - Contextual audio precedence duplicated between navigation-facing config and audio-facing resolution.
 
-## 4. Execution Phases
+## 4. Backlog Sequencing
 
 ### Phase 1 - Semantic Freeze
 
@@ -116,7 +120,7 @@ O plano abaixo transforma as auditorias em backlog e sequenciamento. Ele nao rea
 - Acceptance: UI keeps emitting the same actions, while ownership remains elsewhere.
 - Do not mix: domain ownership changes or route catalog changes.
 
-## 5. Non-Regressions by Phase
+## 5. Backlog Validation by Phase
 
 | Phase | Must keep working | Evidence to validate | Critical flows that cannot break |
 |---|---|---|---|

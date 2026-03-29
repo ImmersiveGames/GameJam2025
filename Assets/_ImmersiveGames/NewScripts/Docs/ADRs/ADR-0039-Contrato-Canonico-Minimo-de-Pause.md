@@ -202,6 +202,15 @@ A semântica final ficou:
 - `PauseStateChangedEvent` = verdade final do estado
 - o overlay segue reativo, e não owner do pause
 
+## Estado consolidado da rodada
+
+- `GameLoop` continua owner de `Paused`.
+- `IPauseCommands.RequestPause/RequestResume` é a superfície pública.
+- `IPauseStateService.IsPaused` é a leitura canônica.
+- `PauseStateChangedEvent`, `PauseWillEnterEvent` e `PauseWillExitEvent` são os hooks oficiais.
+- o overlay é reativo.
+- o ducking de áudio reage aos hooks do pause, sem acoplamento ao overlay.
+
 ## References
 - `ADR-0037`
 - `ADR-0038`

@@ -46,6 +46,10 @@ Ele nao promove como API principal:
 - O level atual pode complementar o `PostGame` global com um hook opcional e, se expuser presenter de `PostStage`, validara a GUI da cena atual.
 - `Restart` nao passa por esse hook.
 - `ActorGroupRearm` e o trilho canonico de rearm local.
+- `Audio` e um modulo canônico do pipeline, composto por descriptor, installer e runtime composer.
+- `RuntimeModeConfig` e obrigatorio no `BootstrapConfigAsset`.
+- `InputModeService` usa `InputModeRequestKind` e `IPlayerInputLocator`.
+- `Pause` permanece com `GameLoop` como owner de `Paused`, overlay reativo e hooks oficiais.
 
 ## Servicos publicos que voce realmente chama
 

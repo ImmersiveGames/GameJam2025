@@ -29,7 +29,7 @@ MonoBehaviour:
   - ruleId: modules_root
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Modules
-    level: 3
+    level: 4
   - ruleId: infra_composition
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure.Composition

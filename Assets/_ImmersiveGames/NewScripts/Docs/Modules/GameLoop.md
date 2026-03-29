@@ -11,7 +11,7 @@
 
 - O owner do `PostStage` e `Modules/PostGame`.
 - `GameLoop` nao e owner do post-outcome; ele consome apenas o handoff final apos `PostStageCompletedEvent`.
-- `RequestRunEnd()` continua como comando de entrada para `PostPlay/PostGame`, mas nao define o stage.
+- `RequestRunEnd()` continua como comando de entrada para `RunEnd/PostGame`, mas nao define o stage.
 - O `GameLoop` nao conhece presenter, UI ou contrato de cena do `PostStage`.
 - O contrato oficial esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
 
@@ -23,16 +23,16 @@
 - `IntroStageCoordinator`: executor da IntroStage do level atual.
 - `LevelStageOrchestrator`: trigger level-owned da intro via `LevelEnteredEvent`.
 - `LevelIntroCompletedEvent`: handoff nivel->loop para sair de `Ready` e entrar em `Playing`.
-- `PostGameOwnershipService`: input mode e gate do post global.
+- `PostGameOwnershipService`: gate e elegibilidade contextual do pos-run.
 - `PostGameResultService`: resultado formal do post global.
 
 ## Contrato de post atual
 
 - Resultados formais: `Victory`, `Defeat` e `Exit`.
 - `Victory` e `Defeat` entram pelo fim de run.
-- `Exit` e formalizado na saida para menu a partir de `PostPlay`.
+- `Exit` e formalizado na saida para menu a partir de `PostGame`; `PostPlay` e legado/ambíguo.
 - `Restart` segue direto por reset macro e nao entra no post hook do level.
-- O `PostStage` acontece antes de `PostPlay` e o overlay de `PostGame` entra apenas depois de `PostGameEnteredEvent`.
+- O `PostStage` acontece antes de `PostGame`; `PostPlay` e legado/ambíguo e nao deve ser usado como fase operacional.
 - Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.
 - Presenter explicito da cena/conteudo executa GUI minima com `Continue` e `Skip` one-shot.
 - `IntroStage` nao depende de `Ready`/`IntroStage` do GameLoop para existir; o GameLoop apenas reflete o estado alto nivel depois.

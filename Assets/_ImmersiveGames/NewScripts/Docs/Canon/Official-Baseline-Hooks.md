@@ -3,6 +3,10 @@
 ## 1. Propósito
 Este documento define o conjunto oficial de hooks para integrações externas e módulos independentes. Use esses seams primeiro para save, troféus, telemetria e APIs externas; não promova sinais técnicos de pipeline a contratos públicos.
 
+Rodada estrutural atual:
+- `PauseStateChangedEvent`, `PauseWillEnterEvent` e `PauseWillExitEvent` são os hooks oficiais do contrato mínimo de `Pause`.
+- `PostStageStartRequestedEvent`, `PostStageStartedEvent` e `PostStageCompletedEvent` continuam como hooks oficiais do `PostStage`.
+
 ## 2. Hooks Oficiais
 - `GameRunStartedEvent`: use quando precisar do início real de uma run; não use para fluxos apenas de request ou UI pré-run.
 - `GameRunEndedEvent`: use para save, troféus e telemetria terminal no resultado final da run; não use para fluxos apenas de request.

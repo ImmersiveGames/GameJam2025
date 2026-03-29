@@ -41,7 +41,7 @@ Adicionar uma configuração `RuntimeModeConfig` como dependência obrigatória 
 - Evoluir `DegradedModeReporter`:
     - Aceita `IRuntimeModeProvider` + `RuntimeModeConfig`.
     - Aplica dedupe/cooldown, sumário e severidade conforme config.
-    - Não precisa mais resolver config por `Resources`.
+
 
 Integração:
 
@@ -70,7 +70,7 @@ Integração:
 **Negativas / riscos**
 
 - Requer disciplina para manter o asset de config e a referência no bootstrap canônico.
-- `Resources.Load<RuntimeModeConfig>` não faz mais parte do boot policy.
+
 
 ## Invariantes / contrato
 
@@ -83,7 +83,6 @@ Integração:
 
 1. Adicionar arquivos em `Assets/_ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/`:
     - `RuntimeModeConfig.cs`
-    - `RuntimeModeConfigLoader.cs`
     - `ConfigurableRuntimeModeProvider.cs`
     - `DegradedKeys.cs`
     - atualizar `DegradedModeReporter.cs`
@@ -138,9 +137,14 @@ Resultado observado no mesmo log: o fluxo segue normalmente (SceneFlow/WorldLife
 
 Atualização consolidada da rodada estrutural atual:
 
+- `RuntimeModeConfig` é resolvido por referência obrigatória no `BootstrapConfigAsset`.
 - `RuntimeModeConfig` é dependência obrigatória do `BootstrapConfigAsset`.
-- não existe fallback oculto por `RuntimeModeConfigLoader` nem `Resources.Load<RuntimeModeConfig>` no boot policy.
-- a resolução de `RuntimeModeConfig` acontece por referência direta no bootstrap canônico.
 - ausência da referência obrigatória é fail-fast.
 - o entrypoint global do `GlobalCompositionRoot` permanece único e determinístico em `BeforeSceneLoad`.
+
+## Estado consolidado da rodada
+
+- `RuntimeModeConfig` é resolvido por referência obrigatória no `BootstrapConfigAsset`.
+- `RuntimeModeConfig` é obrigatória no `BootstrapConfigAsset`.
+- a referência ausente quebra o boot em fail-fast.
 

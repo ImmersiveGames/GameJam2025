@@ -61,4 +61,11 @@ Não entra:
 - `WorldReset`
 - `Gameplay` como `installer-only`
 - `Audio` como módulo canônico com `AudioCompositionDescriptor` / `AudioInstaller` / `AudioRuntimeComposer`
-- `Loading` como subcapability de `SceneFlow`
+- `Loading` como subcapability de `SceneFlow` e não como módulo próprio no estado atual
+
+## 8. Rodada estrutural atual
+
+- Fase 1 e Fase 2 são canônicas e seguem a ordem `Installer` -> `Runtime Composer`.
+- Logs do pipeline canônico saem em `INFO`.
+- `BootstrapConfigAsset` continua sendo o único entrypoint aceitável por `Resources` no boot global.
+- `Loading` continua fora do grafo modular como módulo próprio.

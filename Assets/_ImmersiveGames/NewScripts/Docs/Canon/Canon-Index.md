@@ -2,6 +2,11 @@
 
 Este indice resume owners e contratos canonicos vigentes.
 
+## Escopo documental
+
+- Este indice descreve o estado atual/historico da docs operacional.
+- Ele nao substitui `ADR-0044`, o blueprint alvo nem o plano de guardrails do Baseline 4.0.
+
 ## Status do baseline atual
 
 - Baseline V3 vigente: `PASS`
@@ -35,6 +40,7 @@ Este indice resume owners e contratos canonicos vigentes.
 - A docs oficial conta uma unica historia operacional atual.
 - Guias e modulos devem concordar com os ADRs vigentes e com a auditoria canonica mais recente.
 - Historico nao substitui contrato atual.
+- A rodada estrutural atual esta fechada em `ADR-0038`, `ADR-0039`, `ADR-0008`, `ADR-0028` e `ADR-0007`; estes documentos registram o estado validado de pipeline, pause, runtime mode, audio e input modes.
 - `LoadingHudScene` faz parte do estado atual oficial: apresentacao canonica do macro flow, sem ownership do pipeline.
 - `BootstrapConfigAsset` continua sendo o único entrypoint aceitável por `Resources` no boot global.
 - `Victory/Defeat` pertencem ao baseline atual via mock explicito e controlado, sem canonizar regra final de gameplay.
@@ -43,7 +49,7 @@ Este indice resume owners e contratos canonicos vigentes.
 - O default operacional continua sendo sem PostStage; levels com presenter explicito executam stage real.
 - `IntroStage` e level-owned, opcional, disparada por hook canonico pos-level-applied (`LevelEnteredEvent`) e finalizada por `LevelIntroCompletedEvent`.
 - O presenter canonico da intro e resolvido por contrato, com escopo fornecido por `ILevelIntroStagePresenterScopeResolver`.
-- `RuntimeModeConfig` e obrigatorio no bootstrap canônico e nao possui fallback oculto por `Resources.Load`.
+- `RuntimeModeConfig` e obrigatorio no bootstrap canônico e é resolvido por referência direta no `BootstrapConfigAsset`.
 
 ## Cadeia oficial
 

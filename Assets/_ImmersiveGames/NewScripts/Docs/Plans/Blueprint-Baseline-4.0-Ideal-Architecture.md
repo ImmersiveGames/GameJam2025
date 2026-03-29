@@ -4,6 +4,7 @@ Status: Canonical architecture reference for Baseline 4.0
 Date: 2026-03-28
 
 This blueprint is the primary architecture reference for Baseline 4.0 and is consolidated by `ADR-0044`.
+Operational phase formatting and acceptance rules live in [Plan-Baseline-4.0-Execution-Guardrails.md](/C:/Projetos/GameJam2025/Assets/_ImmersiveGames/NewScripts/Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md).
 
 ## 1. Executive Summary
 
@@ -314,6 +315,8 @@ Camada de contextos visuais locais e emissores de intents.
 
 ## 5. Current Code Reuse Map
 
+Inventario de apoio ao alvo. Este mapa nao define sequenciamento, rollout ou prioridade de implementacao.
+
 ### 5.1 `GameLoop`
 
 | Current piece | Ideal use | Verdict |
@@ -386,181 +389,29 @@ Camada de contextos visuais locais e emissores de intents.
 | button binders | intent emitters | reuse with adjustment |
 | panel controllers | local context switching | reuse with adjustment |
 
-## 6. Structural Backlog
-
-### 6.1 Conceptual renames
-
-- `PostPlay` should be treated as technical retention, not domain phase.
-- `PostGame` should mean post-run ownership, not macro context.
-- `PostRunMenu` should be the conceptual label for the visual layer, even if the runtime name differs.
-
-### 6.2 Service extraction / substitution
-
-- separate post-run ownership from result projection if they remain coupled.
-- move any post-run overlay ownership out of flow state owners.
-- isolate audio precedence from navigation.
-- keep scene-flow strictly technical.
-
-### 6.3 Asset remodeling
-
-- reduce or split `EntityAudioSemanticMapAsset` if it still carries non-entity semantics.
-- keep route/style assets in navigation or scene-flow only.
-- keep post-run presentation assets out of gameplay flow ownership.
-
-### 6.4 Duplication removal
-
-- collapse duplicate result projection surfaces.
-- choose one canonical exit-to-menu execution path for post-run.
-- avoid duplicated post-run gate/input ownership.
-
-### 6.5 Temporary bridges only when unavoidable
-
-- gameplay to post-run handoff bridge.
-- post-run visual adoption bridge.
-- audio contextual bridge from consumer domains.
-
-## 7. Implementation Phases
-
-### Phase 1 - Spine and vocabulary freeze
-
-#### What is born
-
-- canonical blueprint for the target architecture
-- boundary map for each domain
-
-#### What can be reused
-
-- the current audited code as evidence and temporary runtime source
-- existing ADR glossary
-
-#### What must be replaced
-
-- any conceptual assumption that current module boundaries are final
-
-#### Runtime invariants
-
-- gameplay start still works
-- run end still produces a result
-- pause still suspends gameplay
-
-### Phase 2 - Gameplay core and post-run separation
-
-#### What is born
-
-- clean ownership split between `GameLoop` and `PostGame`
-- single post-run handoff semantics
-
-#### What can be reused
-
-- `GameLoopStateMachine`
-- `GameRunOutcomeService`
-- `PostStage` control flow
-
-#### What must be replaced
-
-- post-run ownership inside flow state owners
-- direct visual ownership inside gameplay core
-
-#### Runtime invariants
-
-- `Playing` remains the active flow state
-- `Victory` / `Defeat` still reach post-run
-- restart and exit-to-menu still function
-
-### Phase 3 - LevelFlow and navigation normalization
-
-#### What is born
-
-- one canonical restart path
-- one canonical intent-to-route dispatch path
-
-#### What can be reused
-
-- `LevelFlowRuntimeService`
-- `GameNavigationService`
-- route/intents catalogs
-
-#### What must be replaced
-
-- duplicated restart semantics
-- duplicated exit semantics
-
-#### Runtime invariants
-
-- level selection still works
-- gameplay can restart
-- menu return still works
-
-### Phase 4 - Audio boundary independence
-
-#### What is born
-
-- audio-owned contextual precedence
-- explicit consumer bridges
-
-#### What can be reused
-
-- existing audio runtime and asset model where already canonical
-
-#### What must be replaced
-
-- any navigation-owned audio policy
-- any cross-domain audio ownership inside gameplay flow
-
-#### Runtime invariants
-
-- BGM continuity
-- contextual cues
-- entity audio playback
-
-### Phase 5 - UI and presenter cleanup
-
-#### What is born
-
-- local visual contexts with intent emission only
-
-#### What can be reused
-
-- overlay/panel controllers as UI surfaces
-
-#### What must be replaced
-
-- UI as owner of gameplay/post-run semantics
-
-#### Runtime invariants
-
-- buttons still emit the same intents
-- overlays still show/hide correctly
-- focus and gate behavior remain stable
-
-## 8. Reuse / Recreate / Adapter / Discard Rules
-
-### Reuse when
-
-- the current piece already expresses the correct domain role.
-- the current piece can be simplified without changing semantics.
-- the current piece is a thin bridge or projection.
-
-### Recreate when
-
-- the current piece mixes two domain roles that cannot be untangled safely.
-- the current piece is conceptually wrong even if it works.
-- the current piece exists only to preserve legacy shape.
-
-### Adapters are forbidden when
-
-- they would preserve a wrong ownership boundary indefinitely.
-- they would hide a domain mismatch behind compatibility.
-- they would become the permanent answer to a conceptual bug.
-
-### Old names must be discarded when
-
-- they encode a legacy technical phase as if it were a domain concept.
-- they obscure whether something is result, intent, context or bridge.
-- they force consumers to reason about implementation details instead of domain meaning.
-
-## 9. Final Verdict
-
-Blueprint pronto para execucao planejada.
+## 6. Structural Rules
+
+As regras abaixo sao permanentes e nao constituem roadmap.
+
+### Permanent rules
+
+- `PostPlay` is technical retention, not a domain phase.
+- `PostGame` means post-run ownership, not macro context.
+- `PostRunMenu` is the conceptual label for the visual layer, even if the runtime name differs.
+- Separate post-run ownership from result projection if they remain coupled.
+- Move any post-run overlay ownership out of flow state owners.
+- Isolate audio precedence from navigation.
+- Keep SceneFlow strictly technical.
+- Reduce or split `EntityAudioSemanticMapAsset` if it still carries non-entity semantics.
+- Keep route and style assets in navigation or scene-flow only.
+- Keep post-run presentation assets out of gameplay flow ownership.
+- Collapse duplicate result projection surfaces.
+- Choose one canonical exit-to-menu execution path for post-run.
+- Avoid duplicated post-run gate/input ownership.
+- Gameplay-to-post-run handoff, post-run visual adoption and audio contextual bridges are only acceptable when explicitly temporary and justified by the canonical target.
+
+## 7. Final Note
+
+Blueprint pronto como referencia alvo.
 
 Este documento define a arquitetura ideal do Baseline 4.0 sem depender da organizacao atual como contrato. O legado continua util como evidencia e como fonte de reaproveitamento, mas nao define o desenho final.

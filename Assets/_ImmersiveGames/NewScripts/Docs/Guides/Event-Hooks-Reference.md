@@ -48,6 +48,9 @@ private void OnRunEnded(GameRunEndedEvent evt)
 | saber que a troca local terminou | `LevelSwapLocalAppliedEvent` | `LevelSwapLocalService` | atualizar HUD e cameras apos swap |
 | saber que o level ja foi aplicado e esta ativo | `LevelEnteredEvent` | `LevelMacroPrepareService` e `LevelSwapLocalService` | seams level-owned, incluindo IntroStage |
 | saber que a intro do level terminou | `LevelIntroCompletedEvent` | `IntroStageControlService` e `LevelStageOrchestrator` | handoff level->gameplay apos intro |
+| saber que o pause vai entrar | `PauseWillEnterEvent` | `GameLoopService` | reagir cedo antes da entrada final em pause |
+| saber que o pause vai sair | `PauseWillExitEvent` | `GameLoopService` | reagir cedo antes da saida final de pause |
+| saber que o estado de pause mudou | `PauseStateChangedEvent` | `GameLoopService` | tratar o estado final de pause sem depender do overlay |
 | saber que o PostStage foi pedido | `PostStageStartRequestedEvent` | `PostStageCoordinator` | iniciar fase de validacao pos-outcome |
 | saber que o PostStage foi assumido | `PostStageStartedEvent` | `PostStageCoordinator` | mostrar presenter opcional da cena atual |
 | saber que o PostStage terminou | `PostStageCompletedEvent` | `PostStageCoordinator` | liberar o handoff final para `GameLoop.RequestRunEnd()` |
