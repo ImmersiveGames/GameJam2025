@@ -1,5 +1,10 @@
 # Changelog Docs
 
+## 2026-03-29
+- Fechamento documental do Slice 2 do Baseline 4.0 com o rail validado `Playing -> ExitStage -> RunResult -> PostRunMenu`.
+- Marcadas as fases concluídas no plano do Slice 2 e mantidos os follow-ups sem bloqueio como ruído de naming.
+- Consolidado o owner documental: `GameLoop` para `Playing` e fronteira de fim de run; `PostGame` para `ExitStage`, `RunResult` e `PostRunMenu`.
+
 ## 2026-03-28
 - Registrado o fechamento documental de `Preferences baseline v1: Audio + Video concluídos`.
 - Alinhados o report datado, o `LATEST` de auditoria e o overview ativo do slice.

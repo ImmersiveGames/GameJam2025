@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             _hasEndedThisRun = true;
 
             DebugUtility.Log<GameRunOutcomeService>(
-                $"[GameLoop] Publicando GameRunEndedEvent. Outcome={outcome}, Reason='{GameLoopReasonFormatter.Format(reason)}'.");
+                $"[OBS][ExitStage] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent'.");
 
             EventBus<GameRunEndedEvent>.Raise(new GameRunEndedEvent(outcome, reason));
             return true;

@@ -70,6 +70,9 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             }
 
             _isActive = true;
+            DebugUtility.Log<PostGameOwnershipService>(
+                $"[OBS][PostRunMenu] PostRunMenuEntered signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info);
             ApplyPostGameInputMode(context);
             AcquireGate();
             EventBus<PostGameEnteredEvent>.Raise(new PostGameEnteredEvent(context));
@@ -88,6 +91,9 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             }
 
             _isActive = false;
+            DebugUtility.Log<PostGameOwnershipService>(
+                $"[OBS][PostRunMenu] PostRunMenuExited signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}' nextState='{context.NextState}'.",
+                DebugUtility.Colors.Info);
             ReleaseGate(context.Reason);
             ApplyExitInputMode(context);
             EventBus<PostGameExitedEvent>.Raise(new PostGameExitedEvent(context));

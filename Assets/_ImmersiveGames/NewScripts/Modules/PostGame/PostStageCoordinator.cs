@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             if (!context.IsGameplayScene)
             {
                 DebugUtility.LogVerbose<PostStageCoordinator>(
-                    $"[OBS][PostGame] PostStageSkipped reason='scene_not_gameplay' scene='{Normalize(context.SceneName)}'.",
+                    $"[OBS][PostGame][Bridge] PostStageSkipped reason='scene_not_gameplay' scene='{Normalize(context.SceneName)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -37,19 +37,19 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             }
 
             DebugUtility.Log<PostStageCoordinator>(
-                $"[OBS][PostGame] PostStageStartRequested signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
+                $"[OBS][PostGame][Bridge] PostStageStartRequested signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
             EventBus<PostStageStartRequestedEvent>.Raise(new PostStageStartRequestedEvent(context));
 
             DebugUtility.Log<PostStageCoordinator>(
-                $"[OBS][PostGame] PostStageStarted signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
+                $"[OBS][PostGame][Bridge] PostStageStarted signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
             EventBus<PostStageStartedEvent>.Raise(new PostStageStartedEvent(context));
 
             if (!_presenterRegistry.TryEnsureCurrentPresenter(context, nameof(PostStageCoordinator), out IPostStagePresenter presenter))
             {
                 DebugUtility.Log<PostStageCoordinator>(
-                    $"[OBS][PostGame] PostStageSkipped reason='PostStage/NoPresenter' signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
+                    $"[OBS][PostGame][Bridge] PostStageSkipped reason='PostStage/NoPresenter' signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);
                 _controlService.TrySkip("PostStage/NoPresenter");
             }
@@ -62,14 +62,14 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
                 }
 
                 DebugUtility.Log<PostStageCoordinator>(
-                    $"[OBS][PostGame] PostStageWaitingForPresenterConfirmation signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame} presenter='{presenter.GetType().FullName}'.",
+                    $"[OBS][PostGame][Bridge] PostStageWaitingForPresenterConfirmation signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame} presenter='{presenter.GetType().FullName}'.",
                     DebugUtility.Colors.Info);
             }
 
             PostStageCompletionResult completion = await _controlService.WaitForCompletionAsync(cancellationToken);
 
             DebugUtility.Log<PostStageCoordinator>(
-                $"[OBS][PostGame] PostStageCompleted signature='{Normalize(context.Signature)}' kind='{completion.Kind}' reason='{Normalize(completion.Reason)}' outcome='{context.Outcome}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
+                $"[OBS][PostGame][Bridge] PostStageCompleted signature='{Normalize(context.Signature)}' kind='{completion.Kind}' reason='{Normalize(completion.Reason)}' outcome='{context.Outcome}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
             EventBus<PostStageCompletedEvent>.Raise(new PostStageCompletedEvent(context, completion));
         }

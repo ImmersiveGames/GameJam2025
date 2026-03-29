@@ -7,6 +7,12 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
 {
+    /// <summary>
+    /// Resolver bridge temporario para leitura downstream do resultado de fim de run.
+    ///
+    /// Não é owner de RunResult/PostRunMenu; apenas projeta o snapshot já consolidado
+    /// em PostGame para efeitos de transição e UI downstream enquanto o backbone amadurece.
+    /// </summary>
     public sealed class GameLoopPostGameSnapshotResolver
     {
         public IPostGameOwnershipService ResolvePostPlayOwnershipService()

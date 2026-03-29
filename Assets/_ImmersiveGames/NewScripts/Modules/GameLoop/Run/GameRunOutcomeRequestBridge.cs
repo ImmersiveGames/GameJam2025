@@ -38,6 +38,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
                 return;
             }
 
+            DebugUtility.Log<GameRunOutcomeRequestBridge>(
+                $"[OBS][ExitStage] GameRunEndRequestedEvent recebido outcome='{evt.Outcome}' reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
+
             switch (evt.Outcome)
             {
                 case GameRunOutcome.Victory:

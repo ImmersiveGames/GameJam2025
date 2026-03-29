@@ -21,4 +21,16 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
 
         public PostGameOwnershipExitContext Context { get; }
     }
+
+    public readonly struct PostGameResultUpdatedEvent : IEvent
+    {
+        public PostGameResultUpdatedEvent(PostGameResult result, string reason)
+        {
+            Result = result;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+        }
+
+        public PostGameResult Result { get; }
+        public string Reason { get; }
+    }
 }

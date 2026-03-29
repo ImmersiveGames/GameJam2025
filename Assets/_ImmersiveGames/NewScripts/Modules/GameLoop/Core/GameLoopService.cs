@@ -121,7 +121,13 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         }
 
         public void RequestReset() => _signals.MarkReset();
-        public void RequestRunEnd() => _signals.MarkEnd();
+        public void RequestRunEnd()
+        {
+            DebugUtility.LogVerbose<GameLoopService>(
+                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}' rail='Playing -> ExitStage -> RunResult -> PostRunMenu'.");
+
+            _signals.MarkEnd();
+        }
 
         public void Initialize()
         {

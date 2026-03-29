@@ -15,9 +15,9 @@ using UnityEngine.UI;
 namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 {
     /// <summary>
-    /// Controller do overlay de pós-game (Game Over / Victory).
+    /// Controller do contexto visual downstream de PostRunMenu.
     /// Nota: a pausa da simulação em Victory/Defeat é solicitada pelo GameRunResultSnapshotService.
-    /// Este overlay apenas exibe UI e publica intents (Restart / ExitToMenu).
+    /// Este overlay apenas exibe UI e publica intents downstream (Restart / ExitToMenu).
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             if (ShouldShowOverlayOnStart(out var statusService))
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
-                    "[PostGame] Resultado pré-existente detectado na inicialização. Exibindo overlay após PostGame ativo.",
+                    "[PostRunMenu] Resultado pré-existente detectado na inicialização. Exibindo menu após contexto downstream ativo.",
                     DebugUtility.Colors.Info);
                 ApplyStatus(statusService);
                 Show();
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
-                    "[PostGame] Restart ignorado (ação já solicitada).",
+                    "[PostRunMenu] Restart ignorado (ação já solicitada).",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
-                    "[PostGame] ExitToMenu ignorado (ação já solicitada).",
+                    "[PostRunMenu] ExitToMenu ignorado (ação já solicitada).",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             if (_postLevelActionsService == null)
             {
                 DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[PostGame] {actionName} cancelado: IPostLevelActionsService indisponível. reason='{reason}'.");
+                    $"[PostRunMenu] {actionName} cancelado: IPostLevelActionsService indisponível. reason='{reason}'.");
                 _actionRequested = false;
                 return;
             }
@@ -163,13 +163,13 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             {
                 await action(CancellationToken.None);
                 DebugUtility.Log<PostGameOverlayController>(
-                    $"[PostGame] {actionName} solicitado via overlay. reason='{reason}'.");
+                    $"[PostRunMenu] {actionName} solicitado via overlay. reason='{reason}'.");
             }
             catch (Exception ex)
             {
                 _actionRequested = false;
                 DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[PostGame] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
+                    $"[PostRunMenu] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
             }
         }
 
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             _registered = true;
 
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] Bindings de PostGameEntered/PostGameExited/GameRunStarted registrados.",
+                "[PostRunMenu] Bindings de PostGameEntered/PostGameExited/GameRunStarted registrados.",
                 DebugUtility.Colors.Info);
         }
 
@@ -203,14 +203,14 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             _registered = false;
 
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] Bindings de PostGameEntered/PostGameExited/GameRunStarted removidos.",
+                "[PostRunMenu] Bindings de PostGameEntered/PostGameExited/GameRunStarted removidos.",
                 DebugUtility.Colors.Info);
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] GameRunStartedEvent recebido. Ocultando overlay.",
+                "[PostRunMenu] GameRunStartedEvent recebido. Ocultando menu.",
                 DebugUtility.Colors.Info);
 
             _actionRequested = false;
@@ -225,8 +225,8 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
         {
             if (_actionRequested)
             {
-                DebugUtility.LogVerbose<PostGameOverlayController>(
-                    "[PostGame] PostGameEnteredEvent ignorado (ação já solicitada).",
+            DebugUtility.LogVerbose<PostGameOverlayController>(
+                "[PostRunMenu] PostRunMenuEnteredEvent ignorado (ação já solicitada).",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -237,14 +237,14 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             }
 
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] PostGameEnteredEvent recebido. Exibindo overlay.",
+                "[PostRunMenu] PostRunMenuEnteredEvent recebido. Exibindo menu.",
                 DebugUtility.Colors.Info);
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out var statusService)
                 || statusService == null)
             {
                 DebugUtility.LogWarning<PostGameOverlayController>(
-                    "[PostGame] IGameRunResultSnapshotService indisponível. Usando fallback de texto.");
+                    "[PostRunMenu] IGameRunResultSnapshotService indisponível. Usando fallback de texto.");
                 ApplyFallbackText();
                 Show();
                 return;
@@ -257,7 +257,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
         private void OnPostGameExited(PostGameExitedEvent evt)
         {
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostGame] PostGameExitedEvent recebido. Ocultando overlay.",
+                "[PostRunMenu] PostRunMenuExitedEvent recebido. Ocultando menu.",
                 DebugUtility.Colors.Info);
 
             _actionRequested = false;
@@ -358,7 +358,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             if (rootCanvasGroup == null)
             {
                 DebugUtility.LogWarning<PostGameOverlayController>(
-                    "[PostGame] CanvasGroup não configurado. Não foi possível alterar visibilidade.");
+                    "[PostRunMenu] CanvasGroup não configurado. Não foi possível alterar visibilidade.");
                 return;
             }
 
@@ -440,8 +440,8 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             {
                 if (!_loggedMissingGate)
                 {
-                    DebugUtility.LogWarning<PostGameOverlayController>(
-                        "[PostGame] ISimulationGateService indisponível. Gate não será adquirido.");
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                        "[PostRunMenu] ISimulationGateService indisponível. Gate não será adquirido.");
                     _loggedMissingGate = true;
                 }
 
@@ -450,7 +450,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 
             _postGameGateHandle = _gateService.Acquire(PostGameGateToken);
             DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Gate adquirido token='{PostGameGateToken}'.");
+                $"[PostRunMenu] Gate adquirido token='{PostGameGateToken}'.");
         }
 
         private void ReleasePostGameGate(string reason)
@@ -467,7 +467,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<PostGameOverlayController>(
-                    $"[PostGame] Falha ao liberar gate ({reason}): {ex}");
+                    $"[PostRunMenu] Falha ao liberar gate ({reason}): {ex}");
             }
             finally
             {
@@ -475,30 +475,30 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             }
 
             DebugUtility.Log<PostGameOverlayController>(
-                $"[PostGame] Gate liberado token='{PostGameGateToken}'.");
+                $"[PostRunMenu] Gate liberado token='{PostGameGateToken}'.");
         }
 
         private void ValidateReferences()
         {
             if (rootCanvasGroup == null)
             {
-                DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] rootCanvasGroup não configurado no Inspector.");
+                DebugUtility.LogWarning<PostGameOverlayController>("[PostRunMenu] rootCanvasGroup não configurado no Inspector.");
             }
             if (titleText == null)
             {
-                DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] titleText não configurado no Inspector.");
+                DebugUtility.LogWarning<PostGameOverlayController>("[PostRunMenu] titleText não configurado no Inspector.");
             }
             if (reasonText == null)
             {
-                DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] reasonText não configurado no Inspector.");
+                DebugUtility.LogWarning<PostGameOverlayController>("[PostRunMenu] reasonText não configurado no Inspector.");
             }
             if (restartButton == null)
             {
-                DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] restartButton não configurado no Inspector.");
+                DebugUtility.LogWarning<PostGameOverlayController>("[PostRunMenu] restartButton não configurado no Inspector.");
             }
             if (exitToMenuButton == null)
             {
-                DebugUtility.LogWarning<PostGameOverlayController>("[PostGame] exitToMenuButton não configurado no Inspector.");
+                DebugUtility.LogWarning<PostGameOverlayController>("[PostRunMenu] exitToMenuButton não configurado no Inspector.");
             }
         }
     }

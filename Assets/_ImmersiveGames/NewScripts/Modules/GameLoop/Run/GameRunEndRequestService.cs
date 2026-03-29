@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             string normalizedReason = GameLoopReasonFormatter.NormalizeRequired(reason);
 
             DebugUtility.LogVerbose(typeof(GameRunEndRequestService),
-                "RequestRunEnd(" + outcome + ", reason='" + normalizedReason + "')");
+                "[OBS][ExitStage] GameRunEndRequestedEvent requested outcome='" + outcome + "' reason='" + normalizedReason + "'.");
 
             EventBus<GameRunEndRequestedEvent>.Raise(new GameRunEndRequestedEvent(outcome, normalizedReason));
         }

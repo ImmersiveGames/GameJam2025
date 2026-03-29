@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 
 namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         PostGameResult Result { get; }
         string Reason { get; }
         void Clear(string reason = null);
+        bool TrySetRunOutcome(GameRunOutcome outcome, string reason = null);
         bool TrySetExit(string reason = null);
     }
 }

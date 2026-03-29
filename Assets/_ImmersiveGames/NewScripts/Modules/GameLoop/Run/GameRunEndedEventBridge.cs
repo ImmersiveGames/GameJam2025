@@ -12,7 +12,14 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
 {
     /// <summary>
-    /// Bridge do fim de run: GameRunEndedEvent -> PostStage -> IGameLoopService.RequestRunEnd().
+    /// Bridge do fim de run: GameRunEndedEvent -> ExitStage -> IGameLoopService.RequestRunEnd().
+    ///
+    /// O PostStage aqui é apenas mecanismo interno/transitório do PostGame.
+    ///
+    /// Slice 2:
+    /// - mantém a fronteira de fim de run fora do GameLoop;
+    /// - publica logs operacionais do rail ExitStage;
+    /// - não assume ownership de RunResult/PostRunMenu.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -74,14 +81,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             if (!IsGameplayScene())
             {
                 DebugUtility.LogWarning<GameRunEndedEventBridge>(
-                    $"[OBS][PostGame] PostStageSkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
+                    $"[OBS][ExitStage] ExitStageSkipped reason='scene_not_gameplay' scene='{SceneManager.GetActiveScene().name}'.");
                 return;
             }
 
             if (_postStagePending)
             {
                 DebugUtility.LogVerbose<GameRunEndedEventBridge>(
-                    "[OBS][PostGame] PostStageRunEndIgnored reason='already_pending'.",
+                    "[OBS][ExitStage] ExitStageRunEndIgnored reason='already_pending'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -104,14 +111,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
                 if (!DependencyManager.Provider.TryGetGlobal<IPostStageCoordinator>(out var postStageCoordinator) || postStageCoordinator == null)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][PostGame] GameRunEndedEvent recebido mas IPostStageCoordinator nao foi encontrado no escopo global.");
+                        "[FATAL][ExitStage] GameRunEndedEvent recebido mas IPostStageCoordinator nao foi encontrado no escopo global.");
                     return;
                 }
 
                 if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][GameLoop] GameRunEndedEvent recebido mas IGameLoopService nao foi encontrado no escopo global.");
+                        "[FATAL][ExitStage] GameRunEndedEvent recebido mas IGameLoopService nao foi encontrado no escopo global.");
                     return;
                 }
 
@@ -126,20 +133,33 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
                     isGameplayScene: IsGameplayScene());
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[GameLoop] GameRunEndedEvent recebido. Outcome={evt?.Outcome}, Reason='{reason}'. Iniciando PostStage.");
+                    $"[OBS][ExitStage] ExitStageStarted outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount}.");
 
                 await postStageCoordinator.RunAsync(context);
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][PostGame] PostStageRunEndHandoff signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
+                    $"[OBS][ExitStage] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);
 
+                if (DependencyManager.Provider.TryGetGlobal<IPostGameResultService>(out var resultService) && resultService != null)
+                {
+                    resultService.TrySetRunOutcome(evt?.Outcome ?? GameRunOutcome.Unknown, reason);
+                }
+                else
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][ExitStage] IPostGameResultService nao foi encontrado no escopo global para consolidar RunResult.");
+                }
+
+                DebugUtility.Log<GameRunEndedEventBridge>(
+                    $"[OBS][ExitStage] DownstreamHandoffRequested target='IGameLoopService.RequestRunEnd' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
+                    DebugUtility.Colors.Info);
                 gameLoopService.RequestRunEnd();
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<GameRunEndedEventBridge>(
-                    $"[FATAL][PostGame] Falha inesperada ao executar PostStage. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[FATAL][ExitStage] Falha inesperada ao executar PostStage. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

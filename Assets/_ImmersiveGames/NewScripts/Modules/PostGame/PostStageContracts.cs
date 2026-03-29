@@ -57,6 +57,12 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
         Task<PostStageCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken = default);
     }
 
+    /// <summary>
+    /// Rail interno/transitório do PostGame para orquestrar a saída.
+    ///
+    /// Não é um segundo rail público do GameLoop; a superfície canônica externa
+    /// continua sendo o ExitStage exposto pelo bridge de fim de run.
+    /// </summary>
     public interface IPostStageCoordinator
     {
         Task RunAsync(PostStageContext context, CancellationToken cancellationToken = default);

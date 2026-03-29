@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
                 if (_isActive)
                 {
                     DebugUtility.LogWarning<PostStageControlService>(
-                        $"[OBS][PostGame] PostStageBeginIgnored reason='already_active' signature='{Normalize(context.Signature)}' scene='{Normalize(context.SceneName)}' frame={context.Frame} outcome='{context.Outcome}' reason='{Normalize(context.Reason)}'.");
+                        $"[OBS][PostGame][Bridge] PostStageBeginIgnored reason='already_active' signature='{Normalize(context.Signature)}' scene='{Normalize(context.SceneName)}' frame={context.Frame} outcome='{context.Outcome}' reason='{Normalize(context.Reason)}'.");
                     return false;
                 }
 
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
                 if (!_isActive || _completionSource == null || _hasCompleted)
                 {
                     DebugUtility.LogWarning<PostStageControlService>(
-                        $"[OBS][PostGame] PostStageFinishIgnored kind='{kind}' reason='{Normalize(reason)}'.");
+                        $"[OBS][PostGame][Bridge] PostStageFinishIgnored kind='{kind}' reason='{Normalize(reason)}'.");
                     return false;
                 }
 

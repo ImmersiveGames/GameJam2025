@@ -7,16 +7,13 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostGameResultService : IPostGameResultService
     {
-        private readonly EventBinding<GameRunEndedEvent> _runEndedBinding;
         private readonly EventBinding<GameRunStartedEvent> _runStartedBinding;
         private bool _disposed;
 
         public PostGameResultService()
         {
-            _runEndedBinding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
 
-            EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
         }
 
@@ -31,25 +28,34 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             Reason = string.Empty;
 
             DebugUtility.LogVerbose<PostGameResultService>(
-                $"[OBS][PostGame] PostGameResultCleared reason='{Normalize(reason)}'.");
+                $"[OBS][PostGame] RunResultCleared reason='{Normalize(reason)}'.");
         }
 
-        public bool TrySetExit(string reason = null)
+        public bool TrySetRunOutcome(GameRunOutcome outcome, string reason = null)
         {
             if (_disposed)
             {
                 return false;
             }
 
-            HasResult = true;
-            Result = PostGameResult.Exit;
-            Reason = Normalize(reason);
+            PostGameResult mapped = outcome switch
+            {
+                GameRunOutcome.Victory => PostGameResult.Victory,
+                GameRunOutcome.Defeat => PostGameResult.Defeat,
+                _ => PostGameResult.None,
+            };
 
-            DebugUtility.Log<PostGameResultService>(
-                $"[OBS][PostGame] PostGameResultUpdated result='{Result}' reason='{Reason}'.",
-                DebugUtility.Colors.Info);
+            if (mapped == PostGameResult.None)
+            {
+                return false;
+            }
 
-            return true;
+            return TrySet(mapped, reason, "RunOutcome");
+        }
+
+        public bool TrySetExit(string reason = null)
+        {
+            return TrySet(PostGameResult.Exit, reason, "Exit");
         }
 
         public void Dispose()
@@ -60,36 +66,38 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame
             }
 
             _disposed = true;
-            EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
         }
 
-        private void OnGameRunEnded(GameRunEndedEvent evt)
+        private bool TrySet(PostGameResult result, string reason, string source)
         {
-            if (_disposed || evt == null)
+            if (_disposed)
             {
-                return;
+                return false;
             }
 
-            PostGameResult mapped = evt.Outcome switch
+            if (result == PostGameResult.None)
             {
-                GameRunOutcome.Victory => PostGameResult.Victory,
-                GameRunOutcome.Defeat => PostGameResult.Defeat,
-                _ => PostGameResult.None,
-            };
+                return false;
+            }
 
-            if (mapped == PostGameResult.None)
+            if (HasResult)
             {
-                return;
+                DebugUtility.LogVerbose<PostGameResultService>(
+                    $"[OBS][PostGame] RunResultIgnored result='{result}' reason='{Normalize(reason)}' source='{source}' already='{Result}'.");
+                return false;
             }
 
             HasResult = true;
-            Result = mapped;
-            Reason = Normalize(evt.Reason);
+            Result = result;
+            Reason = Normalize(reason);
 
             DebugUtility.Log<PostGameResultService>(
-                $"[OBS][PostGame] PostGameResultUpdated result='{Result}' reason='{Reason}'.",
+                $"[OBS][PostGame] RunResultUpdated result='{Result}' reason='{Reason}' source='{source}'.",
                 DebugUtility.Colors.Info);
+
+            EventBus<PostGameResultUpdatedEvent>.Raise(new PostGameResultUpdatedEvent(Result, Reason));
+            return true;
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
