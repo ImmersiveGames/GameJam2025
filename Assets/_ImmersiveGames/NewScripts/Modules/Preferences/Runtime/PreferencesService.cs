@@ -412,6 +412,11 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Runtime
             return TrySaveCurrentAudio(out reason);
         }
 
+        public bool TrySaveCurrentVideo(out string reason)
+        {
+            return TrySaveCurrentVideoInternal(out reason);
+        }
+
         public bool TrySave(AudioPreferencesSnapshot snapshot, out string reason)
         {
             if (snapshot == null)
@@ -549,7 +554,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Runtime
             return TrySave(CurrentSnapshot, out reason);
         }
 
-        private bool TrySaveCurrentVideo(out string reason)
+        private bool TrySaveCurrentVideoInternal(out string reason)
         {
             if (!HasVideoSnapshot)
             {

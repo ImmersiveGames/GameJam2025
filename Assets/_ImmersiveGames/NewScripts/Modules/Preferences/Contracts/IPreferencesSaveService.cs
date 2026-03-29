@@ -13,6 +13,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Preferences.Contracts
 
         bool TrySaveCurrent(out string reason);
 
+        bool TrySaveCurrentVideo(out string reason);
+
         bool TrySave(
             AudioPreferencesSnapshot snapshot,
             out string reason);

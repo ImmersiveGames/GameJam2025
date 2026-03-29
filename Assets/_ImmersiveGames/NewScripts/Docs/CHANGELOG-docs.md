@@ -1,5 +1,26 @@
 # Changelog Docs
 
+# 2026-03-29
+- Fechada documentalmente a validação do Slice 7 apos a composicao explicita do backend de `Progression`.
+- Confirmado `Save` como camada canonica de orquestracao e `Progression` como detalhe de infraestrutura via `IProgressionBackend`.
+- Registrado `InMemoryProgressionBackend` como backend provisório explicitamente composto.
+- Mantidos `GameRunEndedEvent`, `WorldResetCompletedEvent` e `SceneTransitionCompletedEvent` como hooks oficiais canônicos.
+- Mantidos backend final, checkpoint, migração e cloud fora do corte.
+
+# 2026-03-29
+- Extratado contrato explicito de backend de `Progression`, separado do orquestrador canonico de `Save`.
+- Adaptada a implementacao provisoria para `InMemoryProgressionBackend`, mantendo comportamento atual.
+- Compensada a composicao do backend de forma explicita no installer do `Save`, sem fallback silencioso.
+- Mantido `SaveOrchestrationService` como owner de policy, dedupe e dispatch para `Preferences` / `Progression`.
+- Mantidos backend final e `Checkpoint` operacional fora do corte.
+
+## 2026-03-29
+- Endurecida a policy canônica de `Save` para impedir persistência redundante entre hooks equivalentes no mesmo trilho.
+- `WorldResetCompletedEvent` passou a persistir apenas em `Level + Completed`; `Macro + Completed` e `Macro + SkippedByPolicy` ficam como no-op.
+- `SceneTransitionCompletedEvent` passou a persistir apenas em `Gameplay` quando `RequiresWorldReset=false`; frontend e transições delegadas ao reset ficam como no-op.
+- Adicionado dedupe same-frame no rail de `Save` e guard defensivo equivalente no `Progression`.
+- Backend final e `Checkpoint` operacional seguem fora de escopo.
+
 ## 2026-03-29
 - Fase 4 do Slice 6 fechada com validacao runtime do rail de `Frontend/UI`, sem ownership de run state, route, result, readiness ou dispatch primario.
 - Observados no log os cenarios `Menu -> Play`, `Menu -> Quit`, `Pause -> Resume`, `PostRunMenu -> Restart` e `PostRunMenu -> ExitToMenu`, com `Quit` executado no Editor via `IFrontendQuitService`.
@@ -13,6 +34,13 @@
 - Fase 0 do Slice 6 fechada como freeze documental do rail `SceneFlow technical rail -> Frontend/UI local visual contexts -> derived intents`.
 - Consolidado `Frontend/UI` como contexto visual local e emissor de intents, sem ownership de run state, route, result, readiness ou dispatch primario downstream.
 - Mantidos como bridges/temporarios `GamePauseOverlayController`, `PostGameOverlayController`, `FrontendPanelsController`, `MenuPlayButtonBinder`, `MenuQuitButtonBinder`, `FrontendButtonBinderBase`, `PostLevelActionsService` e `GamePauseGateBridge`.
+- Aberto o Slice 7 como corte oficial de `Save`, ancorado em `ADR-0041` e nos hooks oficiais de persistencia.
+- Registrado `Preferences` como base reutilizavel do novo corte, com `Checkpoint` mantido apenas como contrato conceitual inicial.
+- Fechada a Fase 1 do Slice 7 com o contrato canonico de `Save` formalizado por `SaveIdentity`, `ISaveOrchestrationService` e os contratos separados de `Progression`.
+- Mantido como follow-up nao bloqueante o payload ainda opaco de `Progression`, sem backend final.
+- Fechada a Fase 2 do Slice 7 com o rail oficial de hooks de `Save` conectado a `GameRunEndedEvent`, `WorldResetCompletedEvent` e `SceneTransitionCompletedEvent`.
+- Restrito `SceneTransitionCompletedEvent` a transicoes de gameplay ou contextos com `RequiresWorldReset`, mantendo transicoes de frontend como no-op observavel.
+- Mantidos backend final e `Checkpoint` fora da fatia operacional.
 - Fechamento documental do Slice 4 do Baseline 4.0 com o backbone validado `Navigation primary dispatch -> Audio contextual reactions`.
 - Marcadas como concluidas as fases do plano do Slice 4 e removidas as pendencias antigas ja provadas em runtime.
 - Consolidado o owner documental: `Audio` como owner real das reacoes contextuais, `Navigation` como dispatch primario, `SceneFlow` como trilho tecnico e `GameLoop` como fonte upstream de pause / run state.

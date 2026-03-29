@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap;
+using _ImmersiveGames.NewScripts.Modules.Save.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.PostGame.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap;
@@ -64,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(LevelFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(PostGameCompositionDescriptor.Descriptor),
             };
