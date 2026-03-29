@@ -46,6 +46,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
                     "[FATAL][Config][FrontendUI] IFrontendQuitService ausente. Nao foi possivel delegar a quit intent.");
             }
 
+            DebugUtility.Log<MenuQuitButtonBinder>(
+                "[OBS][FrontendUI][Delegate] Intent de Quit delegada ao executor tecnico IFrontendQuitService.");
+
             _quitService.Quit(actionReason);
             return true;
         }
@@ -59,21 +62,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Runtime
         void Quit(string reason);
     }
 
-    public sealed class FrontendQuitService : IFrontendQuitService
-    {
-        public void Quit(string reason)
+        public sealed class FrontendQuitService : IFrontendQuitService
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "FrontendUI/Quit" : reason.Trim();
+            public void Quit(string reason)
+            {
+                string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "FrontendUI/Quit" : reason.Trim();
 
 #if UNITY_EDITOR
             DebugUtility.Log(typeof(FrontendQuitService),
-                $"[OBS][Quit] Quit executado no Editor. Stopping Play Mode. reason='{normalizedReason}'.",
+                $"[OBS][Quit][Execute] Quit executado no Editor. Stopping Play Mode. reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             UnityEditor.EditorApplication.isPlaying = false;
 #else
             DebugUtility.Log(typeof(FrontendQuitService),
-                $"[OBS][Quit] Quit executado em build. Application.Quit() reason='{normalizedReason}'.",
+                $"[OBS][Quit][Execute] Quit executado em build. Application.Quit() reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             Application.Quit();

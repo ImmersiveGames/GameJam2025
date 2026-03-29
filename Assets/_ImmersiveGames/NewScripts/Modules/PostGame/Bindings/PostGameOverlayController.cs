@@ -167,9 +167,11 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 
             try
             {
+                DebugUtility.Log<PostGameOverlayController>(
+                    $"[PostRunMenu][Delegate] {actionName} entregue ao executor real IPostLevelActionsService. reason='{reason}'.");
                 await action(CancellationToken.None);
                 DebugUtility.Log<PostGameOverlayController>(
-                    $"[PostRunMenu][Intent] {actionName} delegado downstream. reason='{reason}'.");
+                    $"[PostRunMenu][Execute] {actionName} executado downstream. reason='{reason}'.");
             }
             catch (Exception ex)
             {

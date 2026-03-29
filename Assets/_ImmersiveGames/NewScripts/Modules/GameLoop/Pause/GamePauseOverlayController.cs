@@ -133,6 +133,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
                 return;
             }
 
+            DebugUtility.Log(typeof(GamePauseOverlayController),
+                $"[OBS][PauseOverlay][Intent] Pause solicitado pelo contexto visual local. reason='{showReason}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(GamePauseOverlayController),
+                "[OBS][PauseOverlay][Delegate] RequestPause encaminhado ao executor real IPauseCommands.",
+                DebugUtility.Colors.Info);
+
             _pauseCommands.RequestPause(showReason);
         }
 
@@ -149,6 +157,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
                     "[PauseOverlay][Intent] IPauseCommands indisponivel; intent de resume nao delegada.");
                 return;
             }
+
+            DebugUtility.Log(typeof(GamePauseOverlayController),
+                $"[OBS][PauseOverlay][Intent] Resume solicitado pelo contexto visual local. reason='{hideReason}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(GamePauseOverlayController),
+                "[OBS][PauseOverlay][Delegate] RequestResume encaminhado ao executor real IPauseCommands.",
+                DebugUtility.Colors.Info);
 
             _pauseCommands.RequestResume(hideReason);
         }
@@ -303,7 +319,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
         private void ApplyPauseInputMode()
         {
             DebugUtility.Log(typeof(GamePauseOverlayController),
-                $"[OBS][InputMode] UI local exibida; request mode='PauseOverlay' map='UI' phase='Pause' reason='{showReason}' source='PauseOverlay'.",
+                $"[OBS][PauseOverlay][Visual] UI local exibida. reason='{showReason}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(GamePauseOverlayController),
+                $"[OBS][InputMode] Request mode='PauseOverlay' map='UI' phase='Pause' reason='{showReason}' source='PauseOverlay'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(

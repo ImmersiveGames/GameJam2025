@@ -42,7 +42,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 $"[OBS][PostRunMenu] RestartRequested downstreamFrom='PostRunMenu' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][PostRunMenu][Delegate] Restart recebido pelo executor real IPostLevelActionsService. reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
             IGameLoopCommands gameLoopCommands = ResolveGameCommandsOrFail(normalizedReason);
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][PostRunMenu][Execute] Restart executado pelo executor real IGameLoopCommands. reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
             gameLoopCommands.RequestRestart(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
@@ -147,6 +154,9 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             ct.ThrowIfCancellationRequested();
             DebugUtility.Log<PostLevelActionsService>(
                 $"[OBS][LevelFlow] ExitToMenuBridgeDispatched reason='{normalizedReason}' dispatch='Navigation.GoToMenuAsync'.",
+                DebugUtility.Colors.Info);
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][PostRunMenu][Delegate] ExitToMenu encaminhado ao executor real IGameNavigationService. reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
             await _navigationService.GoToMenuAsync(normalizedReason);
 

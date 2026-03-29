@@ -49,6 +49,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
                 $"[OBS][FrontendUI][Intent] MenuPlay -> StartGameplayDefaultAsync reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
+            DebugUtility.LogVerbose<MenuPlayButtonBinder>(
+                "[OBS][FrontendUI][Delegate] Intent de Play delegada downstream para LevelFlow.",
+                DebugUtility.Colors.Info);
+
             NavigationTaskRunner.FireAndForget(
                 _levelFlow.StartGameplayDefaultAsync(normalizedReason),
                 typeof(MenuPlayButtonBinder),

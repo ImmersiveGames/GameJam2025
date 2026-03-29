@@ -162,11 +162,16 @@ Fase 2 fechada: `Frontend/UI` emite intents derivadas explicitas, sem ownership 
 - preservar fail-fast para configs obrigatorias
 - manter `LevelFlow` e `Navigation` como consumidores, nao como UI
 
+Follow-up nao bloqueante:
+- `FrontendQuitService` funcionou corretamente como servico tecnico de quit, mas deve ser extraido futuramente para um arquivo tecnico proprio, em vez de permanecer no mesmo arquivo de `MenuQuitButtonBinder`.
+
 ### Fase 4 - validacao runtime
 
 - conectar logs de `Frontend/UI`, `PostRunMenu`, `PauseMenu` e intents derivadas
 - validar que overlays nao viraram owners de fluxo
 - validar que `SceneFlow` e `GameLoop` continuam fora da camada visual
+
+Fase 4 fechada: runtime validado com `Frontend/UI` mantendo apenas contexto visual local, emissao de intents e delegacao downstream; `Menu -> Play`, `Menu -> Quit`, `Pause -> Resume`, `PostRunMenu -> Restart` e `PostRunMenu -> ExitToMenu` observados no log, com `Quit` executado no Editor via `IFrontendQuitService`.
 
 ## 6. Critrios de aceite
 

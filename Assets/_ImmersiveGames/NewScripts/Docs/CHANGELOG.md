@@ -1,4 +1,7 @@
 # 2026-03-29 - slice 6 phase 0 freeze
+- fechou a Fase 4 do Slice 6 com validacao runtime do rail de `Frontend/UI` sem ownership de run state, route, result, readiness ou dispatch primario
+- registrou os cenarios `Menu -> Play`, `Menu -> Quit`, `Pause -> Resume`, `PostRunMenu -> Restart` e `PostRunMenu -> ExitToMenu` no log atual, com `Quit` executado no Editor via `IFrontendQuitService`
+- manteve como follow-up nao bloqueante a extracao futura de `FrontendQuitService` para arquivo tecnico proprio
 - fechou a Fase 0 do Slice 6 como freeze documental do rail `SceneFlow technical rail -> Frontend/UI local visual contexts -> derived intents`
 - consolidou `Frontend/UI` como contexto visual local e emissor de intents, sem ownership de run state, route, result, readiness ou dispatch primario downstream
 - manteve como bridges/temporarios `GamePauseOverlayController`, `PostGameOverlayController`, `FrontendPanelsController`, `MenuPlayButtonBinder`, `MenuQuitButtonBinder`, `FrontendButtonBinderBase`, `PostLevelActionsService` e `GamePauseGateBridge`

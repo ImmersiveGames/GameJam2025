@@ -1,6 +1,9 @@
 # Changelog Docs
 
 ## 2026-03-29
+- Fase 4 do Slice 6 fechada com validacao runtime do rail de `Frontend/UI`, sem ownership de run state, route, result, readiness ou dispatch primario.
+- Observados no log os cenarios `Menu -> Play`, `Menu -> Quit`, `Pause -> Resume`, `PostRunMenu -> Restart` e `PostRunMenu -> ExitToMenu`, com `Quit` executado no Editor via `IFrontendQuitService`.
+- Mantido como follow-up nao bloqueante a extracao futura de `FrontendQuitService` para arquivo tecnico proprio.
 - Fase 2 do Slice 6 fechada com `Frontend/UI` consolidado como emissor de intents derivadas explicitas.
 - Reforcada nos logs a separacao entre exibicao local, emissao de intent e delegacao downstream.
 - Mantidos `Restart`, `ExitToMenu`, `Pause` e `Resume` como intents visuais, sem ownership de estado, rota, resultado, readiness ou dispatch primario downstream.
