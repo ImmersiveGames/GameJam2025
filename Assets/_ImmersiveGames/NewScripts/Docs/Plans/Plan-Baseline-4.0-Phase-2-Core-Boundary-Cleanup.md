@@ -10,12 +10,24 @@ Audit and normalize the central boundary owners of Baseline 4.0 before any broad
 
 The canonical focus is the core boundary cleanup of `GameLoop`, `PostGame`, `LevelFlow` and `Navigation`.
 
+## Execution Stance
+
+The project is in a structural, pre-production phase. Canon-first takes priority over preserving the current shape of the runtime.
+
+- wide rewrite/refactor is allowed when it is the most canonical way to close ownership and boundary
+- preserving current behavior is desirable when cheap, but not mandatory
+- the primary acceptance signal is correct ownership, correct semantics, and removal of parallel rails
+- temporary bridges are not to be preserved by provisional compatibility alone
+- legacy naming and legacy surfaces may be replaced when they keep the wrong boundary alive
+- the restart contract is already split and validated: `Restart` keeps current context, `RestartFromFirstLevel` forces the canonical first level
+- the remaining focus of this frontier is `ExitToMenu`
+
 ## Scope
 
 - audit first, implementation second
 - validate ownership lines and semantic boundaries
 - identify duplicated intent paths and stale bridges
-- preserve the existing runtime behavior while clarifying canonical ownership
+- keep runtime working, but prefer canonical replacement over preserving the current structure
 
 ## Priority Modules
 
@@ -40,8 +52,10 @@ The canonical focus is the core boundary cleanup of `GameLoop`, `PostGame`, `Lev
 - the canonical owner of each boundary is explicit
 - duplicated intent paths are identified and normalized
 - no broad blind refactor is introduced
-- current gameplay start, run end, post-run and navigation flows remain behaviorally stable
+- the phase may replace wrong structure when that is the canonical fix
+- current gameplay start, run end, post-run and navigation flows stay compilable and validated
 - the phase remains subordinate to the blueprint and guardrails
+- restart semantics must not collapse back into a single path
 
 ## Evidence Expected
 

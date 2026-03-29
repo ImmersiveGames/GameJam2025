@@ -98,5 +98,26 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
             await StartGameplayDefaultAsync(reason, ct);
         }
+
+        public async Task RestartFromFirstLevelAsync(string reason = null, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartFromFirstLevel" : reason.Trim();
+
+            if (_restartContextService == null)
+            {
+                HardFailFastH1.Trigger(typeof(LevelFlowRuntimeService),
+                    $"[FATAL][H1][LevelFlow] RestartFromFirstLevelAsync requires IRestartContextService. reason='{normalizedReason}'.");
+            }
+
+            _restartContextService.Clear(normalizedReason);
+
+            DebugUtility.Log<LevelFlowRuntimeService>(
+                $"[OBS][LevelFlow] RestartFromFirstLevelRequested reason='{normalizedReason}' dispatch='Navigation.StartGameplayDefaultAsync'.",
+                DebugUtility.Colors.Info);
+
+            await StartGameplayDefaultAsync(normalizedReason, ct);
+        }
     }
 }

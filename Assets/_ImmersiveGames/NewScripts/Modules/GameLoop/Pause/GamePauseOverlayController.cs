@@ -11,12 +11,14 @@
  * - Ao reagir ao estado, o overlay NÃO altera ownership do pause.
  */
 
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
+using _ImmersiveGames.NewScripts.Modules.Navigation;
 using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
@@ -49,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
         private bool _dependenciesInjected;
         [Inject] private IPauseCommands _pauseCommands;
         [Inject] private IPauseStateService _pauseStateService;
+        [Inject] private IGameNavigationService _navigationService;
 
         // Run lifecycle gating (mesma regra do Hotkey)
         private bool _runActive;
@@ -173,19 +176,40 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
 
         /// <summary>
         /// Chamado por UI (botão ReturnToMenu).
-        /// Publica intent visual e deixa a bridge única navegar downstream.
+        /// Publica intent visual e delega direto ao owner canonico de navigation.
         /// </summary>
         public void ReturnToMenuFrontend()
         {
             EnsureDependenciesInjected();
 
-            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
             DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
-                $"[PauseOverlay][Intent] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado e delegado downstream. reason='{ExitToMenuReason}'.",
+                $"[PauseOverlay][Intent] ReturnToMenuFrontend delegado ao executor real IGameNavigationService. reason='{ExitToMenuReason}'.",
                 DebugUtility.Colors.Info);
+
+            if (_navigationService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    $"[FATAL][H1][Navigation] IGameNavigationService indisponivel para ReturnToMenuFrontend. reason='{ExitToMenuReason}'.");
+                return;
+            }
+
+            _ = ObserveAsync(_navigationService.GoToMenuAsync(ExitToMenuReason), ExitToMenuReason);
 
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "PauseOverlay/ReturnToMenuFrontend", "PauseOverlay"));
+        }
+
+        private static async System.Threading.Tasks.Task ObserveAsync(System.Threading.Tasks.Task task, string reason)
+        {
+            try
+            {
+                await task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(GamePauseOverlayController),
+                    $"[PauseOverlay] ReturnToMenuFrontend failed reason='{reason}'. ex={ex}");
+            }
         }
 
         public void Toggle()

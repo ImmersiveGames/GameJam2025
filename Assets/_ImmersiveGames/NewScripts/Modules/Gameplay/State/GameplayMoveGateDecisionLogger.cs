@@ -88,13 +88,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
 
         private static string NormalizeLoopStateName(string loopStateName)
         {
-            if (string.IsNullOrWhiteSpace(loopStateName))
-            {
-                return string.Empty;
-            }
-
-            return string.Equals(loopStateName, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal)
-                ? "PostRunMenu"
+            return string.IsNullOrWhiteSpace(loopStateName)
+                ? string.Empty
                 : loopStateName;
         }
     }

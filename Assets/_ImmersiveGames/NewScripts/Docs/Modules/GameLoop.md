@@ -17,9 +17,8 @@
 
 ## Ownership
 
-- `GameLoopService`: coordenacao do loop (ready, playing, pause e post game) e reflexo de atividade.
+- `GameLoopService`: coordenacao do loop (ready, playing, pause e terminal tecnico da run) e reflexo de atividade.
 - `GameRunOutcomeService`: owner terminal do fim de run e publish de `GameRunEndedEvent`.
-- `GameRunResultSnapshotService`: projecao/snapshot do resultado atual da run.
 - `IntroStageCoordinator`: executor da IntroStage do level atual.
 - `LevelStageOrchestrator`: trigger level-owned da intro via `LevelEnteredEvent`.
 - `LevelIntroCompletedEvent`: handoff nivel->loop para sair de `Ready` e entrar em `Playing`.
@@ -30,9 +29,9 @@
 
 - Resultados formais: `Victory`, `Defeat` e `Exit`.
 - `Victory` e `Defeat` entram pelo fim de run.
-- `Exit` e formalizado na saida para menu a partir de `PostGame`; `PostPlay` e legado/ambíguo.
-- `Restart` segue direto por reset macro e nao entra no post hook do level.
-- O `PostStage` acontece antes de `PostGame`; `PostPlay` e legado/ambíguo e nao deve ser usado como fase operacional.
+- `Exit` e formalizado na saida para menu a partir de `PostGame`; `RunEnded` e estado terminal tecnico do GameLoop.
+- `Restart` e `ExitToMenu` nao sao owner do GameLoop; o dispatch canonico fica em `LevelFlow` e `Navigation`.
+- O `PostStage` acontece antes de `PostGame`; `RunEnded` e terminal tecnico do GameLoop e nao deve ser lido como ownership de `PostRunMenu`.
 - Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.
 - Presenter explicito da cena/conteudo executa GUI minima com `Continue` e `Skip` one-shot.
 - `IntroStage` nao depende de `Ready`/`IntroStage` do GameLoop para existir; o GameLoop apenas reflete o estado alto nivel depois.

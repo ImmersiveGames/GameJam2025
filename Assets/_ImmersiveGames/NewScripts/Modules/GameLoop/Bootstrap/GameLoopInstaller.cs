@@ -32,7 +32,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             RegisterPauseStateService();
             RegisterGameRunEndRequestService();
             RegisterGameRunPlayingStateGuard();
-            RegisterGameRunResultSnapshotService();
             RegisterGameRunOutcomeService();
             RegisterGameLoopCommands();
             RegisterPauseCommands();
@@ -104,14 +103,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 },
                 "[GameLoop] IGameRunPlayingStateGuard ja registrado no DI global.",
                 "[GameLoop] GameRunPlayingStateGuard registrado no DI global.");
-        }
-
-        private static void RegisterGameRunResultSnapshotService()
-        {
-            RegisterIfMissing<IGameRunResultSnapshotService>(
-                () => new GameRunResultSnapshotService(),
-                "[GameLoop] IGameRunResultSnapshotService ja registrado no DI global.",
-                "[GameLoop] GameRunResultSnapshotService registrado no DI global.");
         }
 
         private static void RegisterPauseCommands()

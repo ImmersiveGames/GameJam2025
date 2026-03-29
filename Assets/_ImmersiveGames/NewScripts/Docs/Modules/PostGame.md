@@ -17,7 +17,7 @@
 6. `PostStageCompletedEvent`
 7. `PostStageRunEndHandoff`
 8. `IGameLoopService.RequestRunEnd()`
-9. `GameLoop -> PostPlay/PostGame`
+9. `GameLoop -> RunEnded/PostGame`
 10. `PostGameEnteredEvent`
 11. abertura do overlay
 
@@ -47,6 +47,9 @@
 - `PostGameResultService`: snapshot formal do resultado.
 - `PostStageCoordinator`: coordenacao da fase de validacao pos-outcome.
 - `PostStagePresenterRegistry`: adocao do presenter scene-local.
+- `PostGameOverlayController`: contexto visual local que delega `Restart` e `ExitToMenu` ao owner de `LevelFlow`/`Navigation`.
+- `PostGame` pode emitir a intenção de restart, mas a semântica concreta do restart é resolvida downstream em `LevelFlow`.
+- `PostGame` permanece owner do pós-run e da projeção do resultado, nao do significado de `Restart` em si.
 
 ## Leitura cruzada
 

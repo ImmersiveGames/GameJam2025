@@ -18,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
     public sealed class GamePauseGateBridge : IDisposable
     {
         private const string PauseToken = SimulationGateTokens.Pause;
-        private const string ReasonExitToMenuRequested = "GameExitToMenuRequestedEvent";
         private const string ReasonPauseStateChanged = "PauseStateChangedEvent";
 
         private ISimulationGateService _gateService;
@@ -54,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
 
         internal void ReleaseForExitToMenu(string reason)
         {
-            ReleasePauseGate(ReasonExitToMenuRequested);
+            ReleasePauseGate(reason);
         }
 
         private void TryRegisterBindings()
@@ -121,11 +120,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
         {
             if (_activeHandle == null)
             {
-                if (reason == ReasonExitToMenuRequested)
-                {
-                    return;
-                }
-
                 if (_gateService != null)
                 {
                     DebugUtility.LogVerbose<GamePauseGateBridge>(

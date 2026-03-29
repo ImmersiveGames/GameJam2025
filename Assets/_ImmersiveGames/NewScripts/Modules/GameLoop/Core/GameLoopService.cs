@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 
         public GameLoopService()
         {
-            _stateTransitionEffects = new GameLoopStateTransitionEffects(new GameLoopPostGameSnapshotResolver());
+            _stateTransitionEffects = new GameLoopStateTransitionEffects();
             _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(OnLevelIntroCompleted);
             EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
         }
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             {
                 if (currentState is GameLoopStateId.Playing
                     or GameLoopStateId.Paused
-                    or GameLoopStateId.PostPlay)
+                    or GameLoopStateId.RunEnded)
                 {
                     DebugUtility.LogVerbose<GameLoopService>(
                         $"[GameLoop] SceneFlow completion sync: frontend em '{GetLogStateName(currentState)}' -> RequestReady().",
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public void RequestRunEnd()
         {
             DebugUtility.LogVerbose<GameLoopService>(
-                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}' rail='Playing -> ExitStage -> RunResult -> PostRunMenu'.");
+                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}'.");
 
             _signals.MarkEnd();
         }
@@ -171,11 +171,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public void OnStateEntered(GameLoopStateId stateId, bool isActive)
         {
             var previousState = _lastStateId;
-            HandlePostPlayExitIfNeeded(previousState, stateId);
             UpdateCurrentState(stateId, isActive, previousState);
             PublishPauseStateChangedIfNeeded(previousState, stateId);
             UpdateRunStartedFlag(stateId);
-            HandlePostPlayEnterIfNeeded(stateId);
             HandlePlayingEnteredIfNeeded(stateId);
             _lastStateId = stateId;
         }
@@ -219,14 +217,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             RequestStart();
         }
 
-        private void HandlePostPlayExitIfNeeded(GameLoopStateId previousState, GameLoopStateId nextState)
-        {
-            if (previousState == GameLoopStateId.PostPlay && nextState != GameLoopStateId.PostPlay)
-            {
-                HandlePostPlayExited(nextState);
-            }
-        }
-
         private void UpdateCurrentState(GameLoopStateId stateId, bool isActive, GameLoopStateId previousState)
         {
             CurrentStateIdName = stateId.ToString();
@@ -246,17 +236,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         {
             if (stateId == GameLoopStateId.Boot ||
                 stateId == GameLoopStateId.Ready ||
-                stateId == GameLoopStateId.PostPlay)
+                stateId == GameLoopStateId.RunEnded)
             {
                 _runStartedEmittedThisRun = false;
-            }
-        }
-
-        private void HandlePostPlayEnterIfNeeded(GameLoopStateId stateId)
-        {
-            if (stateId == GameLoopStateId.PostPlay)
-            {
-                _stateTransitionEffects.HandlePostPlayEntered();
             }
         }
 
@@ -328,41 +310,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             }
         }
 
-        private void HandlePostPlayExited(GameLoopStateId nextState)
-        {
-            string reason = ResolvePostPlayExitReason(nextState);
-            _stateTransitionEffects.HandlePostPlayExited(nextState, reason);
-        }
-
-        private string ResolvePostPlayExitReason(GameLoopStateId nextState)
-        {
-            if (_signals.ResetRequested)
-            {
-                return "Restart";
-            }
-
-            if (_signals.ReadyRequested)
-            {
-                return "ExitToMenu";
-            }
-
-            if (_signals.StartRequested)
-            {
-                return "RunStarted";
-            }
-
-            return nextState switch
-            {
-                GameLoopStateId.Playing => "RunStarted",
-                GameLoopStateId.Ready => "Ready",
-                GameLoopStateId.Boot => "Boot",
-                _ => "Unknown"
-            };
-        }
-
         private static string GetLogStateName(GameLoopStateId stateId)
         {
-            return stateId == GameLoopStateId.PostPlay ? "PostRunMenu" : stateId.ToString();
+            return stateId.ToString();
         }
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals

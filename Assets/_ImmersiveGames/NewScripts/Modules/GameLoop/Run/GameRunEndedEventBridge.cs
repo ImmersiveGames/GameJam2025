@@ -12,14 +12,10 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
 {
     /// <summary>
-    /// Bridge do fim de run: GameRunEndedEvent -> ExitStage -> IGameLoopService.RequestRunEnd().
+    /// Bridge do fim de run: GameRunEndedEvent -> PostStage -> PostGame.
     ///
-    /// O PostStage aqui é apenas mecanismo interno/transitório do PostGame.
-    ///
-    /// Slice 2:
-    /// - mantém a fronteira de fim de run fora do GameLoop;
-    /// - publica logs operacionais do rail ExitStage;
-    /// - não assume ownership de RunResult/PostRunMenu.
+    /// O GameLoop permanece owner do estado de fluxo e do terminal interno da run.
+    /// O PostGame assume a projeção do resultado e a entrada do pós-run.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -141,18 +137,29 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
                     $"[OBS][ExitStage] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);
 
-                if (DependencyManager.Provider.TryGetGlobal<IPostGameResultService>(out var resultService) && resultService != null)
-                {
-                    resultService.TrySetRunOutcome(evt?.Outcome ?? GameRunOutcome.Unknown, reason);
-                }
-                else
+                var postGameResultService = ResolveRequiredPostGameResultService(reason);
+                var postGameOwnershipService = ResolveRequiredPostGameOwnershipService(reason);
+
+                GameRunOutcome outcome = evt?.Outcome ?? GameRunOutcome.Unknown;
+                if (!TryMapToPostGameResult(outcome, out PostGameResult postGameResult))
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][ExitStage] IPostGameResultService nao foi encontrado no escopo global para consolidar RunResult.");
+                        $"[FATAL][ExitStage] GameRunEndedEvent recebido com outcome nao terminal='{outcome}' reason='{reason}'.");
+                    return;
                 }
 
+                postGameResultService.TrySetRunOutcome(outcome, reason);
+
+                postGameOwnershipService.OnPostGameEntered(new PostGameOwnershipContext(
+                    signature: context.Signature,
+                    sceneName: context.SceneName,
+                    profile: string.Empty,
+                    frame: context.Frame,
+                    result: postGameResult,
+                    reason: reason));
+
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][ExitStage] DownstreamHandoffRequested target='IGameLoopService.RequestRunEnd' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
+                    $"[OBS][ExitStage] DownstreamHandoffRequested target='PostGameOwnershipService.OnPostGameEntered' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);
                 gameLoopService.RequestRunEnd();
             }
@@ -171,6 +178,42 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Run
             }
 
             return false;
+        }
+
+        private static IPostGameResultService ResolveRequiredPostGameResultService(string reason)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPostGameResultService>(out var resultService) && resultService != null)
+            {
+                return resultService;
+            }
+
+            HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
+                $"[FATAL][H1][PostGame] IPostGameResultService nao encontrado no escopo global. reason='{reason}'.");
+            return null;
+        }
+
+        private static IPostGameOwnershipService ResolveRequiredPostGameOwnershipService(string reason)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPostGameOwnershipService>(out var ownershipService) && ownershipService != null)
+            {
+                return ownershipService;
+            }
+
+            HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
+                $"[FATAL][H1][PostGame] IPostGameOwnershipService nao encontrado no escopo global. reason='{reason}'.");
+            return null;
+        }
+
+        private static bool TryMapToPostGameResult(GameRunOutcome outcome, out PostGameResult result)
+        {
+            result = outcome switch
+            {
+                GameRunOutcome.Victory => PostGameResult.Victory,
+                GameRunOutcome.Defeat => PostGameResult.Defeat,
+                _ => PostGameResult.None,
+            };
+
+            return result != PostGameResult.None;
         }
     }
 }

@@ -1,6 +1,16 @@
 # Changelog Docs
 
 # 2026-03-29
+- Registrada a validação do contrato canônico de restart após a correção em runtime.
+- `Restart` foi consolidado como reinício do level/contexto atual e `RestartFromFirstLevel` como força do primeiro level canônico do catálogo.
+- Marcada como fechada a parte de restart da `Phase 2 - Core Boundary Cleanup`, mantendo `ExitToMenu` como próximo foco da fronteira.
+
+# 2026-03-29
+- Explicitada a stance estrutural da `Phase 2 - Core Boundary Cleanup` como canon-first.
+- Registrado que rewrite/refactor canônico é permitido quando for a forma mais canônica de fechar ownership e fronteira.
+- Priorizado ownership canônico sobre compatibilidade estrutural provisória e preservação por inércia de trilhos paralelos.
+
+# 2026-03-29
 - Fechado o ciclo atual de `Save` com o Slice 7 e o Slice 8 concluídos.
 - Registrada a decisão de estacionar `Save/Checkpoint` no estado atual, sem novo aprofundamento imediato.
 - Repriorizado o roadmap para os módulos centrais da baseline.

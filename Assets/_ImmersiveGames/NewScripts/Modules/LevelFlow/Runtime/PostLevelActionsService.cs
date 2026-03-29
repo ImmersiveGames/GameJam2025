@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 
 namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
@@ -30,37 +29,46 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public Task RestartLevelAsync(string reason = null, CancellationToken ct = default)
         {
-            return RestartFromFirstLevelAsync(reason, ct);
+            return RestartCurrentLevelInternalAsync(reason, ct);
         }
 
         public Task RestartFromFirstLevelAsync(string reason = null, CancellationToken ct = default)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartFromFirstLevel" : reason.Trim();
-            _ = ct;
+            return RestartFromFirstLevelInternalAsync(reason, ct);
+        }
+
+        private async Task RestartCurrentLevelInternalAsync(string reason, CancellationToken ct)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartLevel" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][PostRunMenu] RestartRequested downstreamFrom='PostRunMenu' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] RestartRequested action='Restart' scope='current_level' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][PostRunMenu][Delegate] Restart recebido pelo executor real IPostLevelActionsService. reason='{normalizedReason}'.",
-                DebugUtility.Colors.Info);
+            ct.ThrowIfCancellationRequested();
 
-            IGameLoopCommands gameLoopCommands = ResolveGameCommandsOrFail(normalizedReason);
-            DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][PostRunMenu][Execute] Restart executado pelo executor real IGameLoopCommands. reason='{normalizedReason}'.",
-                DebugUtility.Colors.Info);
-            gameLoopCommands.RequestRestart(normalizedReason);
+            await _levelFlowRuntimeService.RestartLastGameplayAsync(normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartBridgeDispatched reason='{normalizedReason}' dispatched='GameResetRequestedEvent'.",
-                DebugUtility.Colors.Info);
-
-            DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartBridgeApplied reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] RestartApplied action='Restart' scope='current_level' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
+        }
 
-            return Task.CompletedTask;
+        private async Task RestartFromFirstLevelInternalAsync(string reason, CancellationToken ct)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartFromFirstLevel" : reason.Trim();
+
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] RestartRequested action='RestartFromFirstLevel' scope='first_level' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            ct.ThrowIfCancellationRequested();
+
+            await _levelFlowRuntimeService.RestartFromFirstLevelAsync(normalizedReason, ct);
+
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] RestartApplied action='RestartFromFirstLevel' scope='first_level' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
         }
 
         public async Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default)
@@ -148,38 +156,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostLevel/ExitToMenu" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][PostRunMenu] ExitToMenuRequested downstreamFrom='PostRunMenu' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] ExitToMenuRequested action='ExitToMenu' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] ExitToMenuBridgeDispatched reason='{normalizedReason}' dispatch='Navigation.GoToMenuAsync'.",
-                DebugUtility.Colors.Info);
-            DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][PostRunMenu][Delegate] ExitToMenu encaminhado ao executor real IGameNavigationService. reason='{normalizedReason}'.",
+                $"[OBS][Navigation] ExitToMenuDispatch action='GoToMenuAsync' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
             await _navigationService.GoToMenuAsync(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] ExitToMenuBridgeApplied reason='{normalizedReason}'.",
+                $"[OBS][Navigation] ExitToMenuApplied action='GoToMenuAsync' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
-        }
-
-        private static IGameLoopCommands ResolveGameCommandsOrFail(string reason)
-        {
-            if (DependencyManager.Provider == null)
-            {
-                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
-                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing DependencyManager.Provider. reason='{reason}'.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopCommands>(out var gameCommands) || gameCommands == null)
-            {
-                HardFailFastH1.Trigger(typeof(PostLevelActionsService),
-                    $"[FATAL][H1][LevelFlow] RestartMacroRequested missing IGameLoopCommands. reason='{reason}'.");
-            }
-
-            return gameCommands;
         }
     }
 }

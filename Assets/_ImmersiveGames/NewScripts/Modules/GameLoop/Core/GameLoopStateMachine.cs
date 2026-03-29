@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             {
                 if (Current is GameLoopStateId.Boot
                     or GameLoopStateId.Paused
-                    or GameLoopStateId.PostPlay)
+                    or GameLoopStateId.RunEnded)
                 {
                     return TransitionTo(GameLoopStateId.Ready);
                 }
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                 case GameLoopStateId.Playing:
                     if (_signals.EndRequested)
                     {
-                        next = GameLoopStateId.PostPlay;
+                        next = GameLoopStateId.RunEnded;
                     }
                     else if (_signals.PauseRequested)
                     {
@@ -84,9 +84,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                     }
                     break;
 
-                case GameLoopStateId.PostPlay:
-                    // Mantem PostPlay como estado pos-run.
-                    // Permite um caminho simples "Play Again" sem exigir Reset duro.
+                case GameLoopStateId.RunEnded:
+                    // Mantem RunEnded como estado terminal interno do GameLoop.
                     if (_signals.StartRequested)
                     {
                         next = GameLoopStateId.Ready;
@@ -131,7 +130,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             GameLoopStateId.Boot => true,
             GameLoopStateId.Ready => true,
             GameLoopStateId.Paused => true,
-            GameLoopStateId.PostPlay => true,
             _ => false
         };
 
@@ -140,7 +138,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
             GameLoopStateId.Boot => true,
             GameLoopStateId.Ready => true,
             GameLoopStateId.Paused => true,
-            GameLoopStateId.PostPlay => true,
             _ => false
         };
 

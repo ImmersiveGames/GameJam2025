@@ -155,7 +155,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
                 nameof(GameLoopStateId.Paused) => StateDependentServiceState.Paused,
                 nameof(GameLoopStateId.Ready) => StateDependentServiceState.Ready,
                 nameof(GameLoopStateId.Boot) => StateDependentServiceState.Ready,
-                nameof(GameLoopStateId.PostPlay) => StateDependentServiceState.Ready,
+                nameof(GameLoopStateId.RunEnded) => StateDependentServiceState.Ready,
                 _ => null
             };
         }

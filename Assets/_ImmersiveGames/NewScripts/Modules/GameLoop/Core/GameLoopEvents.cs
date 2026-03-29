@@ -141,18 +141,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         public GameResumeRequestedEvent(string reason = null) => Reason = reason;
         public string Reason { get; }
     }
-    /// <summary>
-    /// REQUEST (intencao): "quero sair do gameplay e voltar ao frontend/menu".
-    /// </summary>
-    public sealed class GameExitToMenuRequestedEvent : IEvent
-    {
-        public GameExitToMenuRequestedEvent(string reason = null)
-        {
-            Reason = GameLoopReasonFormatter.NormalizeOptional(reason, "ExitToMenu/Unspecified");
-        }
 
-        public string Reason { get; }
-    }
     /// <summary>
     /// REQUEST (intencao): "reiniciar a run" (Restart).
     /// </summary>

@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Interop;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Run;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
@@ -57,8 +56,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
             EnsureInputCommandBridge();
             EnsurePauseBridge();
             EnsureGameRunRuntimeServices();
-            EnsureMacroRestartCoordinator();
-            EnsureExitToMenuCoordinator();
             EnsureOutcomeEventInputBridge();
             EnsureRunEndEventBridge();
             EnsureDriver();
@@ -130,33 +127,10 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunPlayingStateGuard ausente no DI global antes da composicao runtime.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out var status) || status == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunResultSnapshotService ausente no DI global antes da composicao runtime.");
-            }
-
             if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcome) || outcome == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunOutcomeService ausente no DI global antes da composicao runtime.");
             }
-        }
-
-        private static void EnsureMacroRestartCoordinator()
-        {
-            RegisterIfMissing(
-                () => new MacroRestartCoordinator(),
-                typeof(MacroRestartCoordinator),
-                "[GameLoop] MacroRestartCoordinator ja registrado no DI global.",
-                "[GameLoop] MacroRestartCoordinator registrado no DI global.");
-        }
-
-        private static void EnsureExitToMenuCoordinator()
-        {
-            RegisterIfMissing(
-                () => new ExitToMenuCoordinator(),
-                typeof(ExitToMenuCoordinator),
-                "[GameLoop] ExitToMenuCoordinator ja registrado no DI global.",
-                "[GameLoop] ExitToMenuCoordinator registrado no DI global.");
         }
 
         private static void EnsureOutcomeEventInputBridge()

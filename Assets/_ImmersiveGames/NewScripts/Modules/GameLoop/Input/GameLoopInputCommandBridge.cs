@@ -12,8 +12,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
     /// Regras (alinhadas ao GameLoop.md):
     /// - NAO consome eventos de intencao de start (GameStartCommandEvent). Start e coordenado via SceneFlow.
     /// - Consome apenas eventos definitivos: pause/resume.
-    /// - MacroRestart canonico e coordenado por MacroRestartCoordinator (sem listener de reset aqui).
-    /// - ExitToMenu canonico e coordenado por ExitToMenuCoordinator.
+    /// - Restart e ExitToMenu seguem owner downstream canonico; este bridge nao absorve essas intents.
     /// </summary>
     public sealed class GameLoopInputCommandBridge : IDisposable
     {
@@ -39,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
                 "[GameLoop] Bridge de entrada registrado no EventBus (pause/resume).",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
-                "[OBS][LEGACY] GameResetRequestedEvent listener disabled in GameLoopInputCommandBridge; MacroRestartCoordinator owns canonical restart.",
+                "[OBS][LEGACY] Restart/ExitToMenu nao passam por este bridge; owners canonicos ficam em LevelFlow/Navigation.",
                 DebugUtility.Colors.Info);
         }
 

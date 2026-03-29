@@ -10,9 +10,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         Playing,
         Paused,
         /// <summary>
-        /// Estado pós-gameplay, após o fim da run (Game Over / Victory), antes de reiniciar ou sair para o menu.
+        /// Estado terminal técnico após o fim da run, antes de qualquer novo start ou reset.
         /// </summary>
-        PostPlay
+        RunEnded
     }
 
     public interface IGameLoopSignals
@@ -62,31 +62,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
         /// Também devolve o nome atual do estado para logs/diagnóstico.
         /// </summary>
         bool IsInActiveGameplay(out string stateName);
-    }
-
-    public interface IGameRunResultSnapshotService
-    {
-        /// <summary>
-        /// Indica se já existe um resultado registrado para a run atual/anterior.
-        /// </summary>
-        bool HasResult { get; }
-
-        /// <summary>
-        /// Resultado da última run finalizada.
-        /// Se HasResult == false, deve ser GameRunOutcome.Unknown.
-        /// </summary>
-        GameRunOutcome Outcome { get; }
-
-        /// <summary>
-        /// Motivo textual do fim da run (ex.: "AllPlanetsDestroyed", "BossDefeated", "QA_ForcedEnd").
-        /// Pode ser null.
-        /// </summary>
-        string Reason { get; }
-
-        /// <summary>
-        /// Limpa o estado, voltando para "sem resultado".
-        /// </summary>
-        void ClearSnapshot();
     }
 
     /// <summary>

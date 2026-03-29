@@ -1,8 +1,11 @@
+using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
 using _ImmersiveGames.NewScripts.Modules.GameLoop.Run;
+using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Modules.Navigation;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
 {
     public interface IPauseCommands
@@ -18,8 +21,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
      * - GameRunEndRequestedEvent(GameRunOutcome outcome, string reason) -> IGameRunEndRequestService.RequestRunEnd(...)
      *   (publica EventBus<GameRunEndRequestedEvent> dentro do serviço).
      * - GameRunEndedEvent(GameRunOutcome outcome, string reason) -> publicado pelo GameRunOutcomeService via EventBus<GameRunEndedEvent>.
-     * - GameResetRequestedEvent(reason) -> EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(reason)).
-     * - GameExitToMenuRequestedEvent(reason) -> EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(reason)).
+     * - Restart/ExitToMenu => dispatch direto ao owner canonico downstream (LevelFlow/Navigation).
      */
     public sealed class GameLoopCommands : IGameLoopCommands
     {
@@ -75,7 +77,8 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
             DebugUtility.Log(typeof(GameLoopCommands),
                 $"[GameLoopCommands] RequestRestart reason='{normalizedReason}'");
 
-            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent(normalizedReason));
+            IPostLevelActionsService postLevelActions = ResolveRequiredPostLevelActionsOrFail(normalizedReason);
+            _ = ObserveAsync(postLevelActions.RestartLevelAsync(normalizedReason, System.Threading.CancellationToken.None), normalizedReason, "Restart");
         }
 
         public void RequestExitToMenu(string reason)
@@ -85,7 +88,55 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Input
             DebugUtility.Log(typeof(GameLoopCommands),
                 $"[GameLoopCommands] RequestExitToMenu reason='{normalizedReason}'");
 
-            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(normalizedReason));
+            IGameNavigationService navigationService = ResolveRequiredNavigationServiceOrFail(normalizedReason);
+            _ = ObserveAsync(navigationService.GoToMenuAsync(normalizedReason), normalizedReason, "ExitToMenu");
+        }
+
+        private static async System.Threading.Tasks.Task ObserveAsync(System.Threading.Tasks.Task task, string reason, string actionName)
+        {
+            try
+            {
+                await task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(GameLoopCommands),
+                    $"[GameLoopCommands] {actionName} failed reason='{reason}'. ex={ex}");
+            }
+        }
+
+        private static IPostLevelActionsService ResolveRequiredPostLevelActionsOrFail(string reason)
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameLoopCommands),
+                    $"[FATAL][H1][LevelFlow] Restart requested without DependencyManager.Provider. reason='{reason}'.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var postLevelActions) || postLevelActions == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameLoopCommands),
+                    $"[FATAL][H1][LevelFlow] Restart requested without IPostLevelActionsService. reason='{reason}'.");
+            }
+
+            return postLevelActions;
+        }
+
+        private static IGameNavigationService ResolveRequiredNavigationServiceOrFail(string reason)
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameLoopCommands),
+                    $"[FATAL][H1][Navigation] ExitToMenu requested without DependencyManager.Provider. reason='{reason}'.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameLoopCommands),
+                    $"[FATAL][H1][Navigation] ExitToMenu requested without IGameNavigationService. reason='{reason}'.");
+            }
+
+            return navigationService;
         }
 
         private void RequestRunEnd(GameRunOutcome outcome, string reason)
