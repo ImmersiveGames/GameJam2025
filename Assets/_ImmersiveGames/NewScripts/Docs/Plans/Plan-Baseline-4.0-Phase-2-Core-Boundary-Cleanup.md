@@ -21,6 +21,8 @@ The project is in a structural, pre-production phase. Canon-first takes priority
 - legacy naming and legacy surfaces may be replaced when they keep the wrong boundary alive
 - the restart contract is already split and validated: `Restart` keeps current context, `RestartFromFirstLevel` forces the canonical first level
 - the remaining focus of this frontier is `ExitToMenu`
+- the `RunResult / Restart / ExitToMenu` frontier is closed
+- the next focus is `LevelFlow x Navigation boundary cleanup`
 
 ## Scope
 
@@ -56,6 +58,7 @@ The project is in a structural, pre-production phase. Canon-first takes priority
 - current gameplay start, run end, post-run and navigation flows stay compilable and validated
 - the phase remains subordinate to the blueprint and guardrails
 - restart semantics must not collapse back into a single path
+- `ExitToMenu` remains canonically owned outside `GameLoop`
 
 ## Evidence Expected
 

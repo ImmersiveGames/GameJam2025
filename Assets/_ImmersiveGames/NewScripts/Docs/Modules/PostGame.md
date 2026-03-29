@@ -50,6 +50,7 @@
 - `PostGameOverlayController`: contexto visual local que delega `Restart` e `ExitToMenu` ao owner de `LevelFlow`/`Navigation`.
 - `PostGame` pode emitir a intenção de restart, mas a semântica concreta do restart é resolvida downstream em `LevelFlow`.
 - `PostGame` permanece owner do pós-run e da projeção do resultado, nao do significado de `Restart` em si.
+- `PostGame` emite as intenções de saída pós-run; a execução concreta segue para `LevelFlow` e `Navigation`.
 
 ## Leitura cruzada
 

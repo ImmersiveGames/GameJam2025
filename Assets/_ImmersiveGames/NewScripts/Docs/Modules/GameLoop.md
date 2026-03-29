@@ -24,6 +24,7 @@
 - `LevelIntroCompletedEvent`: handoff nivel->loop para sair de `Ready` e entrar em `Playing`.
 - `PostGameOwnershipService`: gate e elegibilidade contextual do pos-run.
 - `PostGameResultService`: resultado formal do post global.
+- `GameLoop` nao e owner semantico de `PostRunMenu`, `Restart` ou `ExitToMenu`.
 
 ## Contrato de post atual
 

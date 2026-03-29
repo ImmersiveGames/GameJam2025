@@ -1,6 +1,11 @@
 # Changelog Docs
 
 # 2026-03-29
+- Fechada documentalmente a frente `PostGame / Restart / ExitToMenu` dentro da `Phase 2 - Core Boundary Cleanup`.
+- Registrado que `Restart`, `RestartFromFirstLevel` e `ExitToMenu` estão estabilizados no canon atual.
+- Reapontado o próximo foco para `LevelFlow x Navigation boundary cleanup`.
+
+# 2026-03-29
 - Registrada a validação do contrato canônico de restart após a correção em runtime.
 - `Restart` foi consolidado como reinício do level/contexto atual e `RestartFromFirstLevel` como força do primeiro level canônico do catálogo.
 - Marcada como fechada a parte de restart da `Phase 2 - Core Boundary Cleanup`, mantendo `ExitToMenu` como próximo foco da fronteira.

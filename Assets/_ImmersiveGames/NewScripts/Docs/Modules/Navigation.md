@@ -14,6 +14,7 @@
 - `TransitionStyleAsset`: style ligado a cada entry.
 - `ExitToMenu` e dispatch canonico direto em `GameNavigationService`.
 - `Restart` nao e owner de `Navigation`; a execucao canonica fica em `LevelFlow`.
+- `Navigation` e owner do dispatch macro de rota, incluindo a saida ao menu.
 
 ## Regras praticas
 
@@ -21,6 +22,7 @@
 - Labels de style/profile sao apenas observabilidade.
 - `Exit` pode encerrar o `PostGame` global, mas a navegacao continua centralizada em `GameNavigationService`.
 - `Restart` nao passa por ponte de menu ou coordinador no `GameLoop`.
+- `ExitToMenu` nao depende semanticamente de `GameLoop`.
 
 ## Leitura cruzada
 
