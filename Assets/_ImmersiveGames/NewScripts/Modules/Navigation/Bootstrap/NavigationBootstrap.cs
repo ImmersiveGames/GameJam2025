@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Modules.Frontend.UI.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
             }
 
             EnsureNavigationService();
+            EnsureFrontendQuitService();
 
             _runtimeComposed = true;
 
@@ -67,6 +69,21 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
                 $"[Navigation] GameNavigationService composed at runtime (Catalog={catalog.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureFrontendQuitService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IFrontendQuitService>(out var existingService) && existingService != null)
+            {
+                return;
+            }
+
+            var service = new FrontendQuitService();
+            DependencyManager.Provider.RegisterGlobal<IFrontendQuitService>(service);
+
+            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
+                "[FrontendUI] FrontendQuitService composed at runtime.",
                 DebugUtility.Colors.Info);
         }
     }

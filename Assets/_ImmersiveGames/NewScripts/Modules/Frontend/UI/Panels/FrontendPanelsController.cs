@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 {
     /// <summary>
-    /// Controla painéis locais do Frontend dentro do MenuScene (sem SceneFlow / sem GameLoop).
+    /// Controla painéis locais do Frontend/UI dentro do MenuScene (sem SceneFlow / sem GameLoop).
     ///
     /// Uso:
     /// - Configure uma lista de "Panels": cada item tem um PanelId e um Root (GameObject).

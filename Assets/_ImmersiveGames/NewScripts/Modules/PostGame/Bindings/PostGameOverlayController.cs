@@ -15,9 +15,9 @@ using UnityEngine.UI;
 namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 {
     /// <summary>
-    /// Controller do contexto visual downstream de PostRunMenu.
+    /// Controller do contexto visual local de PostRunMenu.
     /// Nota: a pausa da simulação em Victory/Defeat é solicitada pelo GameRunResultSnapshotService.
-    /// Este overlay apenas consome RunResult consolidado e publica intents downstream (Restart / ExitToMenu).
+    /// Este overlay apenas consome RunResult consolidado e mantém a UI como apresentação local; a integração downstream já existente segue como ponte temporária.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             if (ShouldShowOverlayOnStart(out var statusService))
             {
                 DebugUtility.LogVerbose<PostGameOverlayController>(
-                    "[PostRunMenu] RunResult já consolidado detectado. Exibindo contexto visual downstream de PostRunMenu.",
+                    "[PostRunMenu] RunResult já consolidado detectado. Exibindo contexto visual local de PostRunMenu.",
                     DebugUtility.Colors.Info);
                 ApplyStatus(statusService);
                 Show();
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 
             _actionRequested = true;
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostRunMenu] RestartRequested recebido. Disparando intent downstream.",
+                "[PostRunMenu][Intent] Restart solicitado. Delegando downstream via IPostLevelActionsService.",
                 DebugUtility.Colors.Info);
             // Ao solicitar restart, o overlay deixa de fazer sentido imediatamente.
             HideImmediate();
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
 
             _actionRequested = true;
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostRunMenu] ExitToMenuRequested recebido. Disparando intent downstream.",
+                "[PostRunMenu][Intent] ExitToMenu solicitado. Delegando downstream via IPostLevelActionsService.",
                 DebugUtility.Colors.Info);
             // Ao sair para o menu, o overlay não é mais relevante — ocultamos imediatamente.
             HideImmediate();
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             {
                 await action(CancellationToken.None);
                 DebugUtility.Log<PostGameOverlayController>(
-                    $"[PostRunMenu] {actionName} solicitado via overlay. reason='{reason}'.");
+                    $"[PostRunMenu][Intent] {actionName} delegado downstream. reason='{reason}'.");
             }
             catch (Exception ex)
             {
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostRunMenu] GameRunStartedEvent recebido. Ocultando contexto visual downstream.",
+                "[PostRunMenu] GameRunStartedEvent recebido. Ocultando contexto visual local.",
                 DebugUtility.Colors.Info);
 
             _actionRequested = false;
@@ -243,7 +243,7 @@ namespace _ImmersiveGames.NewScripts.Modules.PostGame.Bindings
             }
 
             DebugUtility.LogVerbose<PostGameOverlayController>(
-                "[PostRunMenu] PostRunMenuEnteredEvent recebido. Exibindo contexto visual downstream.",
+                "[PostRunMenu] PostRunMenuEnteredEvent recebido. Exibindo contexto visual local.",
                 DebugUtility.Colors.Info);
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameRunResultSnapshotService>(out var statusService)

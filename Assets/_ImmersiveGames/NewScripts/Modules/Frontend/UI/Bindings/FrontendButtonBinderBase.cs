@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 {
     /// <summary>
-    /// Base comum para binders de botões do Frontend.
+    /// Base comum para binders de intents do Frontend/UI.
     /// - Não registra listeners via código: use OnClick() no Inspector.
     /// - Fornece click-guard (anti auto submit), opcionalmente limpa seleção do EventSystem,
     ///   e (opcional) desabilita o botão durante a ação.

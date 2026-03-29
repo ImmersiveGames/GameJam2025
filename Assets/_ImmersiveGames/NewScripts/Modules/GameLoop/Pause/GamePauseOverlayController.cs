@@ -22,10 +22,10 @@ using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
 {
     /// <summary>
-    /// Controlador do overlay de pausa no UIGlobal.
+    /// Controlador do contexto visual local de PauseMenu no UIGlobal.
     ///
     /// Duas responsabilidades:
-    /// 1) UI (overlayRoot + InputMode)
+    /// 1) UI local (overlayRoot + InputMode)
     /// 2) Acionar o contrato público IPauseCommands quando acionado por UI (botões)
     ///
     /// Regras:
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
 
         /// <summary>
         /// Chamado por UI (ex.: botão Pause, se existir).
-        /// Solicita o estado canônico de pause.
+        /// Emite intent visual de pause e delega ao contrato canônico de pause.
         /// </summary>
         public void Show()
         {
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
             if (_pauseCommands == null)
             {
                 DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay] IPauseCommands indisponivel; RequestPause nao executado.");
+                    "[PauseOverlay][Intent] IPauseCommands indisponivel; intent de pause nao delegada.");
                 return;
             }
 
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
 
         /// <summary>
         /// Chamado por UI (botão Resume).
-        /// Solicita saída do estado canônico de pause.
+        /// Emite intent visual de resume e delega ao contrato canônico de pause.
         /// </summary>
         public void Hide()
         {
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
             if (_pauseCommands == null)
             {
                 DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay] IPauseCommands indisponivel; RequestResume nao executado.");
+                    "[PauseOverlay][Intent] IPauseCommands indisponivel; intent de resume nao delegada.");
                 return;
             }
 
@@ -157,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
 
         /// <summary>
         /// Chamado por UI (botão ReturnToMenu).
-        /// Publica intenção e deixa a bridge única navegar.
+        /// Publica intent visual e deixa a bridge única navegar downstream.
         /// </summary>
         public void ReturnToMenuFrontend()
         {
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
 
             EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent(ExitToMenuReason));
             DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
-                $"[PauseOverlay] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado. reason='{ExitToMenuReason}'.",
+                $"[PauseOverlay][Intent] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado e delegado downstream. reason='{ExitToMenuReason}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
@@ -179,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
             if (_pauseStateService == null)
             {
                 DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay] IPauseStateService indisponivel; Toggle ignorado.");
+                    "[PauseOverlay] IPauseStateService indisponivel; Toggle de intent ignorado.");
                 return;
             }
 
@@ -303,7 +303,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
         private void ApplyPauseInputMode()
         {
             DebugUtility.Log(typeof(GamePauseOverlayController),
-                $"[OBS][InputMode] Request mode='PauseOverlay' map='UI' phase='Pause' reason='{showReason}' source='PauseOverlay'.",
+                $"[OBS][InputMode] UI local exibida; request mode='PauseOverlay' map='UI' phase='Pause' reason='{showReason}' source='PauseOverlay'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(

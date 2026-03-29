@@ -1,9 +1,12 @@
+using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Frontend.UI.Runtime;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 {
     /// <summary>
-    /// Binder (produção) para o botão "Quit" do Frontend.
+    /// Binder (produção) para a intent visual "Quit" do Frontend/UI.
     /// - OnClick() deve ser ligado no Inspector.
     /// - Sem corrotinas.
     ///
@@ -11,22 +14,70 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
     /// No Editor: encerra Play Mode.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed partial class MenuQuitButtonBinder : FrontendButtonBinderBase
+    public sealed class MenuQuitButtonBinder : FrontendButtonBinderBase
     {
+        private IFrontendQuitService _quitService;
+
+        protected override void Awake()
+        {
+            base.Awake();
+
+            DependencyManager.Provider.TryGetGlobal(out _quitService);
+            if (_quitService == null)
+            {
+                DebugUtility.LogWarning<MenuQuitButtonBinder>(
+                    "[FATAL][Config][FrontendUI] IFrontendQuitService indisponivel no Awake. Quit deve ser registrado antes do Frontend UI.");
+            }
+        }
+
         protected override bool OnClickCore(string actionReason)
         {
             DebugUtility.Log<MenuQuitButtonBinder>(
-                $"[Quit] Quit solicitado. reason='{actionReason}'.");
+                $"[OBS][FrontendUI][Intent] Quit solicitado. reason='{actionReason}'.");
 
-#if UNITY_EDITOR
-            DevStopPlayModeInEditor();
-#else
-            // Build: encerrar aplicação.
-            Application.Quit();
-#endif
+            if (_quitService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _quitService);
+            }
+
+            if (_quitService == null)
+            {
+                throw new System.InvalidOperationException(
+                    "[FATAL][Config][FrontendUI] IFrontendQuitService ausente. Nao foi possivel delegar a quit intent.");
+            }
+
+            _quitService.Quit(actionReason);
             return true;
         }
+    }
+}
 
-        partial void DevStopPlayModeInEditor();
+namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Runtime
+{
+    public interface IFrontendQuitService
+    {
+        void Quit(string reason);
+    }
+
+    public sealed class FrontendQuitService : IFrontendQuitService
+    {
+        public void Quit(string reason)
+        {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "FrontendUI/Quit" : reason.Trim();
+
+#if UNITY_EDITOR
+            DebugUtility.Log(typeof(FrontendQuitService),
+                $"[OBS][Quit] Quit executado no Editor. Stopping Play Mode. reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            DebugUtility.Log(typeof(FrontendQuitService),
+                $"[OBS][Quit] Quit executado em build. Application.Quit() reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            Application.Quit();
+#endif
+        }
     }
 }

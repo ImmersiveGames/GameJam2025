@@ -7,11 +7,11 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
 {
     /// <summary>
-    /// Binder (produção) para o botão "Play" do Frontend.
+    /// Binder (produção) para a intent visual "Play" do Frontend/UI.
     /// - OnClick() deve ser ligado no Inspector.
     /// - Sem corrotinas.
     ///
-    /// Inicializa LevelFlow no Awake e inicia gameplay padrão no click.
+    /// Emite intent visual de start e delega a execução downstream para LevelFlow.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MenuPlayButtonBinder : FrontendButtonBinderBase
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
             if (_levelFlow == null)
             {
                 DebugUtility.LogWarning<MenuPlayButtonBinder>(
-                    "[LevelFlow] ILevelFlowRuntimeService unavailable on Awake. Verify GlobalCompositionRoot registration before Frontend.");
+                    "[LevelFlow] ILevelFlowRuntimeService unavailable on Awake. Verify GlobalCompositionRoot registration before Frontend intent emission.");
             }
         }
 
@@ -40,19 +40,19 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
             if (_levelFlow == null)
             {
                 DebugUtility.LogWarning<MenuPlayButtonBinder>(
-                    "[LevelFlow] Click ignored: ILevelFlowRuntimeService unavailable.");
+                    "[LevelFlow] Intent ignored: ILevelFlowRuntimeService unavailable.");
                 return false;
             }
 
             string normalizedReason = string.IsNullOrWhiteSpace(actionReason) ? "Menu/PlayButton" : actionReason.Trim();
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[OBS][LevelFlow] MenuPlay -> StartGameplayDefaultAsync reason='{normalizedReason}'.",
+                $"[OBS][FrontendUI][Intent] MenuPlay -> StartGameplayDefaultAsync reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             NavigationTaskRunner.FireAndForget(
                 _levelFlow.StartGameplayDefaultAsync(normalizedReason),
                 typeof(MenuPlayButtonBinder),
-                "Menu/Play route-only");
+                "Menu/Play intent -> LevelFlow");
 
             return true;
         }

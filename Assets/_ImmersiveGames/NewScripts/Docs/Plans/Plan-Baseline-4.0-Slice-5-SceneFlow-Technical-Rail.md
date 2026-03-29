@@ -161,6 +161,15 @@ Fechada nesta rodada:
 
 ### Fase 4 - validacao runtime
 
+Fechada nesta rodada:
+- `SceneFlow` permaneceu estritamente tecnico
+- `Navigation` continuou como dispatch primario upstream
+- `GameLoop` continuou como fonte upstream de run/pause state
+- `Audio` permaneceu consumidor downstream de contexto
+- `Frontend/UI` permaneceu emissor/consumidor visual sem ownership de readiness/loading
+- lifecycle tecnico e readiness permaneceram observaveis por logs canônicos
+- `ExitToMenu` permaneceu contexto herdado e nao bloqueante nesta fase
+
 - validar o rail com as rotas ja existentes, sem abrir novas frentes
 - confirmar que `Navigation` continua sendo dispatch primario
 - confirmar que `GameLoop`, `Audio` e `Frontend/UI` apenas consomem contexto

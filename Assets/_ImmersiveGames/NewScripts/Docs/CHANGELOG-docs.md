@@ -1,11 +1,22 @@
 # Changelog Docs
 
 ## 2026-03-29
+- Fase 2 do Slice 6 fechada com `Frontend/UI` consolidado como emissor de intents derivadas explicitas.
+- Reforcada nos logs a separacao entre exibicao local, emissao de intent e delegacao downstream.
+- Mantidos `Restart`, `ExitToMenu`, `Pause` e `Resume` como intents visuais, sem ownership de estado, rota, resultado, readiness ou dispatch primario downstream.
+- Fase 1 do Slice 6 fechada com `PostRunMenu` e `PauseMenu` consolidados como contextos visuais locais.
+- Mantidos os overlays como apresentacao local reagindo ao contexto canonico ja consolidado, sem ownership de estado, rota, resultado, readiness ou dispatch downstream.
+- Nao foram abertas intents derivadas novas nem integracao downstream nesta fase.
+- Fase 0 do Slice 6 fechada como freeze documental do rail `SceneFlow technical rail -> Frontend/UI local visual contexts -> derived intents`.
+- Consolidado `Frontend/UI` como contexto visual local e emissor de intents, sem ownership de run state, route, result, readiness ou dispatch primario downstream.
+- Mantidos como bridges/temporarios `GamePauseOverlayController`, `PostGameOverlayController`, `FrontendPanelsController`, `MenuPlayButtonBinder`, `MenuQuitButtonBinder`, `FrontendButtonBinderBase`, `PostLevelActionsService` e `GamePauseGateBridge`.
 - Fechamento documental do Slice 4 do Baseline 4.0 com o backbone validado `Navigation primary dispatch -> Audio contextual reactions`.
 - Marcadas como concluidas as fases do plano do Slice 4 e removidas as pendencias antigas ja provadas em runtime.
 - Consolidado o owner documental: `Audio` como owner real das reacoes contextuais, `Navigation` como dispatch primario, `SceneFlow` como trilho tecnico e `GameLoop` como fonte upstream de pause / run state.
 - Abertura do Slice 5 como corte curto de `SceneFlow`, focado em trilho tecnico, readiness, loading e fade.
 - Fase 2 do Slice 5 fechada apos saneamento final de `LoadingProgressOrchestrator` e `GameReadinessService`, com a observabilidade de readiness alinhada e sem trilho paralelo novo.
+- Fase 4 do Slice 5 fechada com validacao do rail tecnico, mantendo `SceneFlow`, `Navigation`, `GameLoop`, `Audio` e `Frontend/UI` nas fronteiras canonicas.
+- Abertura do Slice 6 como corte de `Frontend/UI`, focado em contexto visual local e emissao de intents derivadas.
 - O proximo passo documental permanece a Fase 3 do Slice 5.
 
 ## 2026-03-29
