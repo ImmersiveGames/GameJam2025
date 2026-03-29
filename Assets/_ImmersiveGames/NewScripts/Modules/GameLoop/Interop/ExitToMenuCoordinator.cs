@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Interop
             EventBus<GameExitToMenuRequestedEvent>.Register(_exitBinding);
 
             DebugUtility.LogVerbose<ExitToMenuCoordinator>(
-                "[GameLoop] ExitToMenuCoordinator registered (GameExitToMenuRequestedEvent -> menu dispatch).",
+                "[GameLoop] ExitToMenuCoordinator registered as bridge temporária (GameExitToMenuRequestedEvent -> Navigation).",
                 DebugUtility.Colors.Info);
         }
 
@@ -41,7 +41,11 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Interop
         {
             string reason = NormalizeReason(evt?.Reason);
             DebugUtility.Log<ExitToMenuCoordinator>(
-                $"[OBS][GameLoop] ExitToMenuRequested reason='{reason}'.",
+                $"[OBS][ExitToMenu] ExitToMenuRequested reason='{reason}' bridge='ExitToMenuCoordinator'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log<ExitToMenuCoordinator>(
+                $"[OBS][Navigation] ExitToMenuPrimaryDispatch reason='{reason}' dispatch='GoToMenuAsync'.",
                 DebugUtility.Colors.Info);
 
             ResolveDependenciesOrFail(reason, out var loop, out var navigation);

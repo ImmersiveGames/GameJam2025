@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Interop
         {
             string reason = NormalizeReason(evt?.Reason);
             DebugUtility.Log<MacroRestartCoordinator>(
-                $"[OBS][GameLoop] MacroRestartRequested reason='{reason}'.",
+                $"[OBS][Restart] RestartRequested reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             ResolveDependenciesOrFail(reason, out var gameLoopService, out var levelFlowRuntimeService, out var restartContextService);
@@ -56,6 +56,9 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Interop
         {
             restartContextService.Clear(reason);
             gameLoopService.RequestReset();
+            DebugUtility.Log<MacroRestartCoordinator>(
+                $"[OBS][Navigation] RestartPrimaryDispatch reason='{reason}' via='StartGameplayDefaultAsync'.",
+                DebugUtility.Colors.Info);
             await levelFlowRuntimeService.StartGameplayDefaultAsync(reason, CancellationToken.None);
         }
 

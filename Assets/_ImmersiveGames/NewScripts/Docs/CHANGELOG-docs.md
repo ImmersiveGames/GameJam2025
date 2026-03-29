@@ -1,6 +1,11 @@
 # Changelog Docs
 
 ## 2026-03-29
+- Fechamento documental do Slice 3 do Baseline 4.0 com o rail validado `PostRunMenu -> Restart / ExitToMenu -> Navigation primary dispatch`.
+- Marcadas as fases concluídas no plano do Slice 3 e mantidas as pendências sem bloqueio como follow-up arquitetural.
+- Consolidado o owner documental: `PostGame` para `PostRunMenu`, `Navigation` para dispatch primario, `GameLoop` sem ownership visual do menu/dispatch.
+
+## 2026-03-29
 - Fechamento documental do Slice 2 do Baseline 4.0 com o rail validado `Playing -> ExitStage -> RunResult -> PostRunMenu`.
 - Marcadas as fases concluídas no plano do Slice 2 e mantidos os follow-ups sem bloqueio como ruído de naming.
 - Consolidado o owner documental: `GameLoop` para `Playing` e fronteira de fim de run; `PostGame` para `ExitStage`, `RunResult` e `PostRunMenu`.

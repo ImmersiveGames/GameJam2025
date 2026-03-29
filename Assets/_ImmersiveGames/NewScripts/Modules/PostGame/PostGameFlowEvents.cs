@@ -2,6 +2,11 @@ using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.NewScripts.Modules.PostGame
 {
+    /// <summary>
+    /// Eventos de bridge temporária do contexto visual de PostRunMenu.
+    ///
+    /// Mantém o runtime observável sem transformar o menu em um segundo rail público.
+    /// </summary>
     public readonly struct PostGameEnteredEvent : IEvent
     {
         public PostGameEnteredEvent(PostGameOwnershipContext context)

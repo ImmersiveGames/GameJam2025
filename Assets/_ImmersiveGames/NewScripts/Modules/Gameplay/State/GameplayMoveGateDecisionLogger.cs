@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
                 return;
             }
 
-            string effectiveLoopStateName = loopStateName ?? string.Empty;
+            string effectiveLoopStateName = NormalizeLoopStateName(loopStateName);
             if (!force &&
                 _hasMoveDecision &&
                 decision == _lastMoveDecision &&
@@ -84,6 +84,18 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.State
                 decision == StateDependentMoveDecision.Allowed
                     ? $"[StateDependent] Action 'Move' liberada (gateOpen={gateIsOpen}, gameplayReady={gameplayReady}, paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens})."
                     : $"[StateDependent] Action 'Move' bloqueada: {decision} (gateOpen={gateIsOpen}, gameplayReady={gameplayReady}, paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens}).");
+        }
+
+        private static string NormalizeLoopStateName(string loopStateName)
+        {
+            if (string.IsNullOrWhiteSpace(loopStateName))
+            {
+                return string.Empty;
+            }
+
+            return string.Equals(loopStateName, nameof(GameLoopStateId.PostPlay), StringComparison.Ordinal)
+                ? "PostRunMenu"
+                : loopStateName;
         }
     }
 }

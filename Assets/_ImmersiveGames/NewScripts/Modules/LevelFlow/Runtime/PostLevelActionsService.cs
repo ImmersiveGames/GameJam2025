@@ -39,18 +39,18 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             _ = ct;
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionRequested action='RestartFromFirstLevel' reason='{normalizedReason}'.",
+                $"[OBS][PostRunMenu] RestartRequested downstreamFrom='PostRunMenu' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             IGameLoopCommands gameLoopCommands = ResolveGameCommandsOrFail(normalizedReason);
             gameLoopCommands.RequestRestart(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartMacroRequested reason='{normalizedReason}' dispatched='GameResetRequestedEvent'.",
+                $"[OBS][LevelFlow] RestartBridgeDispatched reason='{normalizedReason}' dispatched='GameResetRequestedEvent'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='RestartFromFirstLevel' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] RestartBridgeApplied reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
 
             return Task.CompletedTask;
@@ -141,14 +141,17 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostLevel/ExitToMenu" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionRequested action='ExitToMenu' reason='{normalizedReason}'.",
+                $"[OBS][PostRunMenu] ExitToMenuRequested downstreamFrom='PostRunMenu' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][LevelFlow] ExitToMenuBridgeDispatched reason='{normalizedReason}' dispatch='Navigation.GoToMenuAsync'.",
+                DebugUtility.Colors.Info);
             await _navigationService.GoToMenuAsync(normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='ExitToMenu' reason='{normalizedReason}'.",
+                $"[OBS][LevelFlow] ExitToMenuBridgeApplied reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
         }
 

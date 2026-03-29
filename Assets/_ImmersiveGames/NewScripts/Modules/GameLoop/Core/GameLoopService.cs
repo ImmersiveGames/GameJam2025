@@ -108,14 +108,14 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
                     or GameLoopStateId.PostPlay)
                 {
                     DebugUtility.LogVerbose<GameLoopService>(
-                        $"[GameLoop] SceneFlow completion sync: frontend em '{currentState}' -> RequestReady().",
+                        $"[GameLoop] SceneFlow completion sync: frontend em '{GetLogStateName(currentState)}' -> RequestReady().",
                         DebugUtility.Colors.Info);
                     RequestReady();
                     return;
                 }
 
                 DebugUtility.LogVerbose<GameLoopService>(
-                    $"[GameLoop] SceneFlow completion sync: frontend em '{currentState}' -> no-op.",
+                    $"[GameLoop] SceneFlow completion sync: frontend em '{GetLogStateName(currentState)}' -> no-op.",
                     DebugUtility.Colors.Info);
             }
         }
@@ -362,7 +362,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Core
 
         private static string GetLogStateName(GameLoopStateId stateId)
         {
-            return stateId == GameLoopStateId.PostPlay ? "PostGame" : stateId.ToString();
+            return stateId == GameLoopStateId.PostPlay ? "PostRunMenu" : stateId.ToString();
         }
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals
