@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
         public GameLoopSceneFlowSyncCoordinator(ISceneTransitionService sceneFlow, SceneTransitionRequest startPlan)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
-            _startPlan = startPlan;
+            _startPlan = ValidateStartPlanOrFailFast(startPlan);
 
             _startRequestedBinding = new EventBinding<GameStartRequestedEvent>(_ => OnStartRequestedCommon());
             _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
@@ -47,13 +47,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
             _subscriptions.Register(_transitionStartedBinding);
             _subscriptions.Register(_transitionCompletedBinding);
             _subscriptions.Register(_worldResetCompletedBinding);
-
-            if (_startPlan == null)
-            {
-                DebugUtility.LogWarning(typeof(GameLoopSceneFlowSyncCoordinator),
-                    "[GameLoopSceneFlow] Coordinator registrado com startPlan NULL. Start sera ignorado ate corrigir o GlobalCompositionRoot.");
-                return;
-            }
 
             DebugUtility.Log(typeof(GameLoopSceneFlowSyncCoordinator),
                 $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', UseFade={_startPlan.UseFade}, Style='{_startPlan.StyleLabel}'.");
@@ -72,13 +65,6 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
 
         private void OnStartRequestedCommon()
         {
-            if (_startPlan == null)
-            {
-                DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator),
-                    "[GameLoopSceneFlow] Start REQUEST recebido, mas startPlan e NULL. Abortando.");
-                return;
-            }
-
             if (_startInProgress)
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
@@ -356,6 +342,33 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Flow
 
             gameLoop.RequestReady();
             _startInProgress = false;
+        }
+
+        private static SceneTransitionRequest ValidateStartPlanOrFailFast(SceneTransitionRequest startPlan)
+        {
+            if (startPlan == null)
+            {
+                FailFastConfig("GameLoopSceneFlowSyncCoordinator requires a non-null startPlan.");
+            }
+
+            if (!startPlan.RouteId.IsValid)
+            {
+                FailFastConfig($"GameLoopSceneFlowSyncCoordinator requires a valid startPlan RouteId. routeId='{startPlan.RouteId}'.");
+            }
+
+            if (string.IsNullOrWhiteSpace(startPlan.TargetActiveScene))
+            {
+                FailFastConfig($"GameLoopSceneFlowSyncCoordinator requires a non-empty startPlan TargetActiveScene. routeId='{startPlan.RouteId}'.");
+            }
+
+            return startPlan;
+        }
+
+        private static void FailFastConfig(string message)
+        {
+            string fatalMessage = $"[FATAL][Config][GameLoopSceneFlow] {message}";
+            DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator), fatalMessage);
+            throw new InvalidOperationException(fatalMessage);
         }
     }
 }

@@ -150,6 +150,11 @@ Regra:
 
 ### Fase 3 - bridges temporarias
 
+Fechada nesta rodada:
+- `SceneFlowInputModeBridge` permaneceu OK como adapter tecnico
+- `SceneFlowWorldResetDriver` permaneceu OK como handoff tecnico
+- `GameLoopSceneFlowSyncCoordinator` foi endurecido com fail-fast para `startPlan` obrigatorio
+
 - manter `SceneFlowInputModeBridge` como adapter de input mode, sem ownership de estado
 - manter `GameLoopSceneFlowSyncCoordinator` como sync tecnico, sem ownership de rota
 - manter `SceneFlowWorldResetDriver` apenas se ainda for necessario ao handoff tecnico
