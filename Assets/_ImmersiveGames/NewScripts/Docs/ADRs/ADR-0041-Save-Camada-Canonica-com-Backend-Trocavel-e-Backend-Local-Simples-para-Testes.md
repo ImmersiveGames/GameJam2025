@@ -1,8 +1,13 @@
 # ADR-0041: Camada Canônica de Save com Backend Trocável e Backend Local Simples para Testes
 
+## Status atual do runtime
+
+- Leitura prática: parcial.
+- O runtime atual já expõe SaveOrchestrationService, ProgressionService e CheckpointService; este ADR segue como contrato canônico de leitura do conjunto, não como descrição de implementação ausente.
+
 ## Status
 - Estado: Aceito
-- Implementação: Não iniciada
+- Implementação: Parcialmente presente no runtime
 - Escopo: camada canônica de Save, contratos de aplicação, ports/adapters de backend e observabilidade mínima do módulo
 
 ## Contexto
@@ -87,7 +92,7 @@ O Save responde a hooks e intents canônicos, e não a ruído de runtime.
 O módulo de Save não pode virar dono de:
 
 - `SceneFlow`;
-- `WorldLifecycle`;
+- `WorldReset`;
 - `GameLoop`;
 - loading e fade;
 - navegação;
@@ -139,7 +144,7 @@ Fica fora de escopo neste ciclo:
 
 - definir o core definitivo de Save;
 - implementar checkpoint/resume;
-- acoplar o Save a `SceneFlow`, `WorldLifecycle`, `GameLoop`, loading/fade, navegação ou reset;
+- acoplar o Save a `SceneFlow`, `WorldReset`, `GameLoop`, loading/fade, navegação ou reset;
 - fazer varredura genérica do mundo para montar snapshot;
 - criar fallback silencioso para configuração ausente;
 - migrar o jogo para um backend remoto ou cloud;

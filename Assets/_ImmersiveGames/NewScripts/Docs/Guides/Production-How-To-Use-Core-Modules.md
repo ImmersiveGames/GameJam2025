@@ -1,5 +1,10 @@
 # Production How-To Use Core Modules
 
+## Status documental
+
+- Parcial / leitura junto do runtime atual.
+- O guia normaliza termos residuais quando descreve o presente; referencias antigas seguem como historico quando necessario.
+
 ## O que este guia cobre
 
 Este guia mostra o uso operacional atual da superficie publica real do runtime.
@@ -24,7 +29,7 @@ Ele nao promove como API principal:
 |---|---|---|---|
 | Abrir o gameplay | `ILevelFlowRuntimeService.StartGameplayDefaultAsync(reason, ct)` | `Task` | `await levelFlow.StartGameplayDefaultAsync("Menu/PlayButton", cancellationToken);` |
 | Reiniciar a run | `IGameCommands.RequestRestart(reason)` ou `IPostLevelActionsService.RestartLevelAsync(reason, ct)` | `void` ou `Task` | `gameCommands.RequestRestart("Pause/RestartButton");` |
-| Ir para o menu | `IGameNavigationService.ExitToMenuAsync(reason)` ou `IPostLevelActionsService.ExitToMenuAsync(reason, ct)` | `Task` | `await navigation.ExitToMenuAsync("Pause/ExitToMenu");` |
+| Ir para o menu | `IGameNavigationService.GoToMenuAsync(reason)` ou `IPostLevelActionsService.ExitToMenuAsync(reason, ct)` | `Task` | `await navigation.GoToMenuAsync("Pause/ExitToMenu");` |
 | Trocar para o proximo level | `IPostLevelActionsService.NextLevelAsync(reason, ct)` | `Task` | `await postLevelActions.NextLevelAsync("PostGame/NextLevel", cancellationToken);` |
 | Trocar para um level especifico | `ILevelFlowRuntimeService.SwapLevelLocalAsync(levelRef, reason, ct)` | `Task` | `await levelFlow.SwapLevelLocalAsync(levelRef, "UI/SelectLevel", cancellationToken);` |
 | Rearm local de atores | `IActorGroupRearmOrchestrator.RequestResetAsync(request)` | `Task<bool>` | `await actorGroupRearm.RequestResetAsync(request);` |
@@ -42,9 +47,9 @@ Ele nao promove como API principal:
 - `LoadingHudScene` e a HUD canonica de loading do macro flow.
 - `ILoadingPresentationService` cuida apenas da apresentacao de loading.
 - `IntroStage` e level-owned e opcional.
-- `PostGame` e global, com `PostStage` validado antes do handoff final.
-- O level atual pode complementar o `PostGame` global com um hook opcional e, se expuser presenter de `PostStage`, validara a GUI da cena atual.
-- `Restart` nao passa por esse hook.
+- `PostGame` é global, com `PostStage` validado antes do handoff final. `PostPlay` é nomenclatura residual em textos antigos.
+- O level atual pode complementar o `PostGame` global com um hook opcional e, se expuser presenter de `PostStage`, validará a GUI da cena atual.
+- `Restart` não passa por esse hook.
 - `ActorGroupRearm` e o trilho canonico de rearm local.
 - `Audio` e um modulo canônico do pipeline, composto por descriptor, installer e runtime composer.
 - `RuntimeModeConfig` e obrigatorio no `BootstrapConfigAsset`.
@@ -211,7 +216,7 @@ Use quando:
 
 Nao use para:
 - decidir se a transicao macro deve acontecer
-- substituir `SceneTransitionService`, `WorldLifecycle` ou `LevelFlow`
+- substituir `SceneTransitionService`, `WorldReset` ou `LevelFlow`
 - inventar progresso por tempo
 
 ## Assets canonicos atuais
@@ -391,7 +396,7 @@ O que esperar:
 
 ### Erro comum
 
-Tratar o loading como dono do fluxo ou esperar progresso puramente temporal. Hoje a HUD so apresenta; a decisao continua em `SceneFlow + WorldLifecycle + LevelFlow`.
+Tratar o loading como dono do fluxo ou esperar progresso puramente temporal. Hoje a HUD so apresenta; a decisao continua em `SceneFlow + WorldReset + LevelFlow`.
 
 ## Receita: criar uma rota nova do zero
 
@@ -759,7 +764,7 @@ using _ImmersiveGames.NewScripts.Modules.Navigation;
 
 public async Task OnExitPressedAsync(IGameNavigationService navigation)
 {
-    await navigation.ExitToMenuAsync("Pause/ExitToMenu");
+    await navigation.GoToMenuAsync("Pause/ExitToMenu");
 }
 ```
 
@@ -860,7 +865,7 @@ Erro comum:
 
 O que fazer:
 - trate `LoadingHudScene` como apresentacao do macro flow
-- deixe `SceneTransitionService`, `WorldLifecycle` e `LevelFlow` decidirem o pipeline
+- deixe `SceneTransitionService`, `WorldReset` e `LevelFlow` decidirem o pipeline
 - use o progresso hibrido atual
 
 ### Level

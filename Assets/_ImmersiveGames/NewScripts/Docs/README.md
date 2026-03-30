@@ -1,6 +1,12 @@
-﻿# NewScripts Docs
+# NewScripts Docs
 
 Esta pasta agora separa claramente o canon atual, as entradas ativas e o historico arquivado do Baseline 4.0.
+
+## Status documental
+
+- O canon atual e a leitura primaria.
+- As paginas ativas podem exigir leitura junto do runtime quando houver mistura real de responsabilidades.
+- Termos residuais como `WorldLifecycle`, `ContentSwap`, `LevelManager` e `PostPlay` devem ser lidos como historicos quando aparecerem fora do canon.
 
 ## Canon atual
 
@@ -17,6 +23,7 @@ Esta pasta agora separa claramente o canon atual, as entradas ativas e o histori
 - `Docs/Guides/Production-How-To-Use-Core-Modules.md`
 - `Docs/Guides/Event-Hooks-Reference.md`
 - `Docs/Guides/How-To-Add-A-New-Module-To-Composition.md`
+- `Docs/Modules/README.md`
 - `Docs/Modules/GameLoop.md`
 - `Docs/Modules/Gameplay.md`
 - `Docs/Modules/InputModes.md`

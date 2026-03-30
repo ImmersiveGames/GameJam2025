@@ -1,5 +1,10 @@
 # ADR-0012 - Fluxo de Pos-Gameplay, GameOver, Vitoria e Restart
 
+## Status documental
+
+- Canônico atual para o fluxo de pós-run.
+- `PostPlay` é nomenclatura residual em textos antigos; o runtime atual usa `PostGame`.
+
 ## Status
 - Estado: Implementado e validado
 - Data (decisao): 2026-03-27
@@ -16,7 +21,7 @@
 
 ## Contexto validado
 - `GameRunEndedEvent` continua sendo o evento terminal de outcome.
-- O `PostStage` acontece entre `GameRunEndedEvent` e a entrada formal em `PostPlay/PostGame`.
+- O `PostStage` acontece entre `GameRunEndedEvent` e a entrada formal em `PostGame`.
 - `PostGameOverlay` nao abre direto em `GameRunEndedEvent`; ele abre depois de `PostGameEnteredEvent`.
 - O handoff final para `IGameLoopService.RequestRunEnd()` ocorre somente apos `PostStageCompletedEvent`.
 - `Modules/PostGame` e o owner do `PostStage`.
@@ -34,7 +39,7 @@
 8. O usuario conclui com `Complete` ou `Skip` one-shot.
 9. `PostStageCompletedEvent` e publicado uma unica vez.
 10. O consumer de handoff final chama `IGameLoopService.RequestRunEnd()`.
-11. O `GameLoop` entra em `PostPlay/PostGame`.
+11. O `GameLoop` entra em `PostGame`.
 12. `PostGameEnteredEvent` e publicado.
 13. O `PostGameOverlay` abre somente depois do `PostGameEnteredEvent`.
 
@@ -53,7 +58,7 @@
 ### Papel do GameLoop
 - Consumidor do handoff final.
 - Continua responsavel apenas por:
-  - transicao macro para `PostPlay`
+  - transicao macro para `PostGame`
   - observabilidade do estado de loop
   - reflexo final de `PostGame` no estado alto nivel
 
@@ -153,7 +158,7 @@ O fluxo deve parar com erro deterministico quando:
   - fail-fast em config obrigatoria ausente
 - Nao deve ser copiado o ownership:
   - `IntroStage` e pre-run e bloqueia gameplay
-  - `PostStage` e pos-outcome e bloqueia apenas a entrada em `PostPlay`
+  - `PostStage` e pos-outcome e bloqueia apenas a entrada em `PostGame`
 
 ## Integracao com PostGame atual
 - O overlay de `PostGame` nao e mais consumidor direto de `GameRunEndedEvent` no fluxo final.

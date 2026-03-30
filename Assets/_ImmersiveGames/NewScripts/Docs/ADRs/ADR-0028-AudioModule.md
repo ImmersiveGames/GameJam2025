@@ -1,4 +1,9 @@
-# ADR-0028 – Arquitetura Canônica de Audio em NewScripts (`GlobalAudio` vs `EntityAudio`)
+# ADR-0028 – Arquitetura Canônica de Audio em NewScripts (GlobalAudio vs EntityAudio)
+
+## Status atual do runtime
+
+- O contrato canônico de Audio continua válido.
+- O runtime atual já mostra integrações contextuais com Navigation e LevelFlow para BGM e routing, então a separação é de ownership, não de ausência de sinais cruzados.
 
 ## Status
 
@@ -42,7 +47,7 @@ Além disso, a primeira tentativa de reconstrução arrastou um problema de dire
 
 Este ADR unifica os dois contratos anteriores e explicita uma correção adicional:
 
-**o módulo `Audio` deve nascer standalone, com portas próprias e sem dependência de módulos consumidores.**
+**o módulo `Audio` deve nascer standalone, com portas próprias e sem dependência estrutural de módulos consumidores.**
 
 ## Decisão
 
@@ -105,7 +110,8 @@ O módulo `Audio` não deve depender estruturalmente de:
 Consequência:
 
 - coleções, catálogos, profiles e regras específicas de domínio ficam fora do core do módulo `Audio`;
-- integrações com outros módulos acontecem depois, por `helpers`, `facades`, `bridges` ou `adapters`, no lado consumidor ou em `Interop/**`, sem transferir ownership para o módulo de áudio.
+- integrações com outros módulos acontecem depois, por helpers, facades, bridges ou adapters, no lado consumidor ou em Interop/**, sem transferir ownership para o módulo de áudio.
+- o consumo de contexto vindo de Navigation, LevelFlow ou Gameplay segue permitido quando a origem já está definida e o áudio apenas reage.
 
 ### 3. `Presentation` não é runtime owner de áudio
 

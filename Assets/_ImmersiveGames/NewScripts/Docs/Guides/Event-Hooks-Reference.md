@@ -1,13 +1,18 @@
 # Event Hooks Reference
 
+## Status documental
+
+- Parcial / leitura junto do runtime atual.
+- Este guia e a referencia operacional dos hooks ativos; nomes residuais antigos continuam marcados como historicos quando aparecerem.
+
 Esta referencia lista os hooks reais do runtime atual e como usa-los em producao.
 
 ## Regra simples
 
 - hooks operacionais: primeira escolha para UI, gameplay e systems
 - hooks tecnicos: existem no runtime, mas nao sao a primeira escolha de integracao
-- `Exit` continua resultado formal do `PostGame` global, mas nao tem evento operacional promoted dedicado
-- `Restart` nao passa por post hook
+- `Exit` continua resultado formal do `PostGame` global, mas não tem evento operacional promovido dedicado
+- `Restart` não passa por post hook
 
 ## Como assinar um hook
 
@@ -41,7 +46,7 @@ private void OnRunEnded(GameRunEndedEvent evt)
 | Se voce quer... | Use este hook | Publisher atual | Use para |
 |---|---|---|---|
 | saber que a troca de rota terminou | `SceneTransitionCompletedEvent` | `SceneTransitionService` | UI e systems que dependem da rota ja aplicada |
-| saber que o reset completo terminou | `WorldLifecycleResetCompletedEvent` | `WorldResetOrchestrator` | systems que precisam do mundo pronto |
+| saber que o reset completo terminou | `WorldResetCompletedEvent` | `WorldResetOrchestrator` | systems que precisam do mundo pronto |
 | saber que a run comecou | `GameRunStartedEvent` | `GameLoopService` | ligar comportamento de gameplay ativo |
 | saber que a run terminou | `GameRunEndedEvent` | `GameRunOutcomeService` | iniciar o `PostStage` antes do handoff final |
 | saber que um level entrou no fluxo | `LevelSelectedEvent` | `LevelMacroPrepareService` e `LevelSwapLocalService` | UI e systems ligados ao level atual |
@@ -54,7 +59,7 @@ private void OnRunEnded(GameRunEndedEvent evt)
 | saber que o PostStage foi pedido | `PostStageStartRequestedEvent` | `PostStageCoordinator` | iniciar fase de validacao pos-outcome |
 | saber que o PostStage foi assumido | `PostStageStartedEvent` | `PostStageCoordinator` | mostrar presenter opcional da cena atual |
 | saber que o PostStage terminou | `PostStageCompletedEvent` | `PostStageCoordinator` | liberar o handoff final para `GameLoop.RequestRunEnd()` |
-| saber que o `PostGame` entrou | `PostGameEnteredEvent` | `PostGameOwnershipService` | abrir overlay e aplicar ownership do pos-game |
+| saber que o `PostGame` entrou | `PostGameEnteredEvent` | `PostGameOwnershipService` | abrir overlay e aplicar ownership do pós-game |
 | observar pedido de fim de run | `GameRunEndRequestedEvent` | `GameRunEndRequestService` | auditoria, telemetria e bridges |
 | observar restart macro | `GameResetRequestedEvent` | `GameCommands` | ouvir intencao de restart |
 | observar saida para menu | `GameExitToMenuRequestedEvent` | `GameCommands` | ouvir intencao de exit |
@@ -119,7 +124,7 @@ Quando usar:
 Quando nao usar:
 - quando voce precisa do inicio tecnico do pipeline; nesse caso o hook e outro
 
-### `WorldLifecycleResetCompletedEvent`
+### `WorldResetCompletedEvent`
 
 Quem publica:
 - `WorldResetOrchestrator`
@@ -139,22 +144,22 @@ Mini exemplo real:
 
 ```csharp
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Modules.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 
-private EventBinding<WorldLifecycleResetCompletedEvent> _binding;
+private EventBinding<WorldResetCompletedEvent> _binding;
 
 private void OnEnable()
 {
-    _binding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnResetCompleted);
-    EventBus<WorldLifecycleResetCompletedEvent>.Register(_binding);
+    _binding = new EventBinding<WorldResetCompletedEvent>(OnResetCompleted);
+    EventBus<WorldResetCompletedEvent>.Register(_binding);
 }
 
 private void OnDisable()
 {
-    EventBus<WorldLifecycleResetCompletedEvent>.Unregister(_binding);
+    EventBus<WorldResetCompletedEvent>.Unregister(_binding);
 }
 
-private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
+private void OnResetCompleted(WorldResetCompletedEvent evt)
 {
     string reason = evt.Reason;
     string signature = evt.ContextSignature;
@@ -637,7 +642,7 @@ Quando nao usar:
 - `SceneTransitionFadeInCompletedEvent`
 - `SceneTransitionScenesReadyEvent`
 - `SceneTransitionBeforeFadeOutEvent`
-- `WorldLifecycleResetStartedEvent`
+- `WorldResetResetStartedEvent`
 - `InputModeRequestEvent`
 
 Use esses hooks apenas quando o caso realmente depender do ponto tecnico do pipeline.

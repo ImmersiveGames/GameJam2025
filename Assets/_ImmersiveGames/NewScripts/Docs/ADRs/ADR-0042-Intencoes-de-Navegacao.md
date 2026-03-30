@@ -1,5 +1,10 @@
 # ADR-0042 — Intenções de Navegação
 
+## Status atual do runtime
+
+- Leitura prática: parcial / em formalização.
+- O runtime atual já executa a distinção entre intenção, rota e dispatch; este ADR formaliza a leitura canônica, mas ainda está em Draft.
+
 ## Status
 - Estado: Draft
 - Data: 2026-03-28

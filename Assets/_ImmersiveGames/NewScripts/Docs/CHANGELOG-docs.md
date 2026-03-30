@@ -1,10 +1,12 @@
-﻿# Changelog Docs
+# Changelog Docs
 
 ## 2026-03-30
 - Consolidated the Docs tree after Baseline 4.0 stabilization.
 - Moved superseded plans, duplicate top-level docs, HTML guide exports and older audit batches to `Docs/Archive`.
 - Kept the active canon centered on `ADR-0001`, `ADR-0043`, `ADR-0044`, the blueprint and the execution guardrails.
 - Archived the auxiliary reorganization backlog so it no longer competes with the canonical chain.
+- Normalized the active operational docs and ADRs to match the current runtime terminology and ownership boundaries.
+- Formalized the four canonical domains in `ADR-0001` as the project-wide ownership taxonomy.
 - The next project direction is `player`, `enemies` and programmatic objects.
 
 ## 2026-03-29

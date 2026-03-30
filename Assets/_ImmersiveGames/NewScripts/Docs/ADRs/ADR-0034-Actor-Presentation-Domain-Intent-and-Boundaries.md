@@ -1,5 +1,10 @@
 # ADR-0034: Actor Presentation Domain Intent and Boundaries
 
+## Status atual do runtime
+
+- Leitura prática: histórico / intenção futura.
+- O runtime atual ainda não consolidou Actor Presentation como domínio único; a apresentação runtime do ator continua distribuída entre Gameplay, Audio, IntroStage, PostGame e bridges locais.
+
 ## Status
 
 - Estado: **Aceito**

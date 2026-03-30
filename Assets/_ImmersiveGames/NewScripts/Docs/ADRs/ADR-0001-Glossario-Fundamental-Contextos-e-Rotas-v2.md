@@ -1,7 +1,7 @@
 # ADR-0001 — Glossário Fundamental de Contextos, Rotas e Fluxos
 
 ## Status
-- Estado: Draft
+- Estado: Canônico atual
 - Data: 2026-03-28
 - Tipo: Glossário / Definições fundamentais
 
@@ -21,9 +21,53 @@ Essa falta de definição clara aumenta o risco de:
 
 Este ADR define o vocabulário base para o domínio.
 
+Este ADR também é o owner do vocabulário oficial do projeto e da taxonomia canônica de ownership arquitetural.  
+O glossário define significado; a taxonomia define ownership.
+
 ## Decisão
 
 O projeto passa a adotar oficialmente os conceitos abaixo.
+
+## Taxonomia canônica de domínios
+
+Esta taxonomia classifica ownership arquitetural. Ela complementa o glossário e não o substitui.
+
+### 1. Core Domain
+
+Base transversal do sistema. Inclui contratos-base, DI, eventos, logging, observability, ids, config transversal, gates e infraestrutura neutra.
+
+### 2. Orchestration Domain
+
+Domínio que faz o jogo girar. Inclui boot, transição, loading, reset, readiness, navegação, input modes e handoffs operacionais do lifecycle.
+
+### 3. Game Domain
+
+Domínio que define o que o jogo é. Inclui entidades, identidade, regras, interações, progressão, sessão, conteúdo e definições authoring-driven.
+
+Subgrupos internos:
+- `Entities & Identity`
+- `Rules & Interactions`
+- `Progression & Session`
+- `Content & Definitions`
+
+### 4. Experience Domain
+
+Domínio de apresentação, adaptação e conexão na borda do sistema. Inclui UI, HUD, overlays, presenters, câmera, áudio, persistência, analytics, bridges de plataforma e integrações externas.
+
+## Regra de interpretação
+
+- o glossário define significado
+- a taxonomia define ownership
+- `Core Domain` sustenta os demais
+- `Orchestration Domain` coordena o runtime e pode orquestrar `Game Domain` e `Experience Domain`
+- `Game Domain` define o coração do jogo e não deve ser owner do lifecycle macro
+- `Experience Domain` apresenta, adapta e integra, mas não deve ser owner do coração do jogo nem do lifecycle macro
+
+## Relação entre glossário e taxonomia
+
+- a taxonomia não substitui `Contexto Macro`, `Contexto Local`, `Rota`, `Rota Macro`, `Rota Local`, `Intenção de Navegação`, `Estágio Local`, `Resultado da Run`, `Intenção Derivada` e `Estado Transversal`
+- o glossário continua sendo a fonte de significado dos termos
+- a taxonomia adiciona uma leitura de ownership arquitetural para orientar módulos, arquivos e decisões futuras
 
 ---
 
@@ -463,6 +507,8 @@ Se existirem no código atual, devem ser lidos como nomenclatura técnica legado
 
 ## Próximos passos
 
+- usar esta taxonomia para orientar a revisão de ownership dos módulos
+- usar esta taxonomia como base para futura organização de arquivos
 - usar este ADR como base para revisar os ADRs de Navigation, Audio, SceneFlow, LevelFlow, GameLoop e PostGame
 - validar se os contratos e assets atuais respeitam essa separação conceitual
 - revisar onde o projeto ainda mistura Contexto Macro, Contexto Local, Rota, Resultado e Intenção Derivada
