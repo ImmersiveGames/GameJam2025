@@ -1,6 +1,21 @@
 # Changelog Docs
 
 # 2026-03-29
+- Concluida a limpeza tecnica local dos placeholders fisicos residuais em `Modules/GameLoop/Interop`.
+- Registrado o fechamento do housekeeping residual prioritario sem impacto funcional.
+- Consolidado o baseline em estado de manutencao controlada, com backlog restante passivo.
+
+# 2026-03-29
+- Consolidado o estado macro atual do Baseline 4.0.
+- Marcadas como fechadas as frentes centrais de `GameLoop / PostGame / LevelFlow / Navigation` e o ciclo funcional de `Frontend/UI`.
+- Registrado o backlog remanescente como housekeeping tecnico leve, sem reabrir ownership ou arquitetura central.
+
+# 2026-03-29
+- Concluida a auditoria funcional da frente de `Frontend/UI` / presenter.
+- Confirmado que nao ha bug de ownership: a camada permanece visual local, com emissao de intents e delegacao downstream.
+- Registrado que o proximo corte e apenas reshape tecnico, guiado pelo `Slice 6 - Frontend/UI Local Visual Intents`.
+
+# 2026-03-29
 - Registrado o fechamento documental da frente central da `Phase 2 - Core Boundary Cleanup`.
 - Consolidado o next step como `Audio / BGM context ownership cleanup`.
 - Mantido o escopo fora de `Save`, `PostGame x GameLoop` e cleanup físico de projeto.

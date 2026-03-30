@@ -11,6 +11,19 @@ The immediate focus of Baseline 4.0 is now `Phase 2 - Core Boundary Cleanup`.
 - `Save` and `Checkpoint` are parked in their current state after Slice 7 and Slice 8 closure.
 - The next operational step is to clean the central boundaries of `GameLoop`, `PostGame`, `LevelFlow` and `Navigation`.
 - This phase starts with audit and normalization of the core boundary, not with broad blind refactoring.
+- `Frontend/UI` is not demanding a functional refactor at this time; the remaining follow-up is technical reshape only.
+- The active reference for that follow-up is `Slice 6 - Frontend/UI Local Visual Intents`.
+
+## Current State Snapshot
+
+- the core boundary cleanup has been completed and documented as closed
+- `Restart`, `RestartFromFirstLevel` and `ExitToMenu` remain stable in the canonical owner chain
+- `Audio / BGM context` is stabilized with audio-owned final precedence
+- `SceneFlow` is monitor-only for technical hardening, with no local correction in the current pass
+- `Frontend/UI` is functionally stable; the remaining work is technical reshape only
+- the remaining backlog is predominantly housekeeping: naming, namespace alignment and superseded docs
+- the former `GameLoop/Interop` placeholders were removed and are no longer active work
+- the backlog that remains is not a front of work; it is passive maintenance only
 
 ## 1. Executive Summary
 
@@ -127,6 +140,7 @@ The table below is a derived backlog. It mirrors the canonical target only to or
 - Risks: broken button wiring or focus gating.
 - Acceptance: UI keeps emitting the same actions, while ownership remains elsewhere.
 - Do not mix: domain ownership changes or route catalog changes.
+- Current status: functionally stable; pending work is reshape técnico guiado pelo Slice 6, not a functional rewrite.
 
 ## 5. Backlog Validation by Phase
 

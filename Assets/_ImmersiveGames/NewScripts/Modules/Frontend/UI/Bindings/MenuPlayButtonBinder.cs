@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Modules.Navigation;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Bindings
 {
     /// <summary>
     /// Binder (produção) para a intent visual "Play" do Frontend/UI.

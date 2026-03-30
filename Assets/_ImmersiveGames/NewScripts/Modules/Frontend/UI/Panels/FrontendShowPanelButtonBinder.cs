@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Modules.Frontend.UI.Panels;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Bindings
 {
     /// <summary>
     /// Binder genérico para trocar painéis do Frontend (Main/Options/HowTo).

@@ -4,7 +4,7 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.EventSystems;
-namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Panels
 {
     /// <summary>
     /// Controla painéis locais do Frontend/UI dentro do MenuScene (sem SceneFlow / sem GameLoop).
