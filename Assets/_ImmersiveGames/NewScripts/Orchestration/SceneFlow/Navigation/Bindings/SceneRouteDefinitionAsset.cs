@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
 {
     /// <summary>
      /// OWNER: definicao de uma rota (cenas/policy) e validacoes de consistencia.

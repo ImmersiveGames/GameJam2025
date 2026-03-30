@@ -1,5 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Policies
+using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies
 {
     /// <summary>
     /// Policy padrão de produção.

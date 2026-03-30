@@ -1,10 +1,9 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Adapters;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime
 {
     /// <summary>
     /// Adapters para integrar SceneFlow no pipeline NewScripts sem depender de tipos/DI legados.

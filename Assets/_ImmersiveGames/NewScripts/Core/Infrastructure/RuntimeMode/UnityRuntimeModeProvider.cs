@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode
 {
     /// <summary>
     /// ResolvePlayerActor o modo de runtime baseado nas flags padrão do Unity.

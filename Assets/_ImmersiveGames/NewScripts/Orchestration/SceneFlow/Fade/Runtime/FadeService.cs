@@ -3,11 +3,10 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime
 {
     /// <summary>
     /// Serviço de Fade do NewScripts.

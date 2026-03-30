@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks
 {
     /// <summary>
     /// Implementação base com no-op para facilitar adoção incremental.

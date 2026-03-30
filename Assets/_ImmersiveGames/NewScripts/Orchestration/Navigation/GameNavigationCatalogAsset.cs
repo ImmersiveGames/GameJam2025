@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     public enum GameNavigationIntentKind
     {

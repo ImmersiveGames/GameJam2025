@@ -4,8 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.SceneComposition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneCompositionExecutor : ISceneCompositionExecutor

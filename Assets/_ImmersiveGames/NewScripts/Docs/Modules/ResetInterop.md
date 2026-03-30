@@ -1,4 +1,4 @@
-﻿# ResetInterop
+# ResetInterop
 
 ## Precedencia canonica
 - Fonte de verdade operacional: `ADR-0030`, `ADR-0031`, `ADR-0032`, `ADR-0033`.
@@ -7,6 +7,7 @@
 ## Estado atual
 - `ResetInterop` concentra a ponte entre `SceneFlow` e `WorldReset` no trilho macro.
 - O modulo reune driver, gate e tokens publicos de correlacao para a transicao macro.
+- `SceneResetFacade` continua em `SceneReset`, como compat historica separada.
 
 ## Ownership
 - `SceneFlowWorldResetDriver`: handoff `SceneFlow/ScenesReady -> WorldResetService` com guard/dedupe de assinatura.
@@ -17,9 +18,10 @@
 ## Regras praticas
 - `ResetInterop` nao e owner do reset macro (owner: `WorldReset`).
 - `ResetInterop` nao e owner do reset local de cena (owner: `SceneReset`).
-- `ResetInterop` nao e owner de semantica local de level (owner: `LevelFlow`).
+- `ResetInterop` nao e owner de semantica local de level (owner: `LevelLifecycle`).
 - `ResetInterop` nao define policy macro de reset (policy permanece em `WorldReset`).
 - O gate existe para correlacao e liberacao do fim macro; nao redefine ownership da timeline do `SceneFlow`.
+- `Orchestration/LevelFlow/Runtime` ainda existe por compat de transicao, mas nao e owner do reset macro.
 
 ## Boundary com completion gate
 - `WorldResetCompletionGate` aguarda `WorldResetCompletedEvent` correlacionado por `ContextSignature`.

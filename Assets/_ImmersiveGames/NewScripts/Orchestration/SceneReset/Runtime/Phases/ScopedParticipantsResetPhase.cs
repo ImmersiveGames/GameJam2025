@@ -1,13 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases
 {
     internal sealed class ScopedParticipantsResetPhase : ISceneResetPhase
     {
@@ -18,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases
                 return;
             }
 
-            List<IActorGroupRearmWorldParticipant> participants = context.CollectScopedParticipants();
+            List<IActorGroupGameplayResetWorldParticipant> participants = context.CollectScopedParticipants();
             if (participants.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(SceneResetFacade),
@@ -26,8 +25,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases
                 return;
             }
 
-            var filtered = new List<IActorGroupRearmWorldParticipant>();
-            foreach (IActorGroupRearmWorldParticipant participant in participants)
+            var filtered = new List<IActorGroupGameplayResetWorldParticipant>();
+            foreach (IActorGroupGameplayResetWorldParticipant participant in participants)
             {
                 if (participant == null)
                 {
@@ -56,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases
             filtered.Sort(context.CompareResetScopeParticipants);
             LogScopedParticipantOrder(filtered);
 
-            foreach (IActorGroupRearmWorldParticipant participant in filtered)
+            foreach (IActorGroupGameplayResetWorldParticipant participant in filtered)
             {
                 ct.ThrowIfCancellationRequested();
                 string participantType = participant.GetType().FullName ?? participant.GetType().Name;
@@ -92,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases
             }
         }
 
-        private static void LogScopedParticipantOrder(List<IActorGroupRearmWorldParticipant> participants)
+        private static void LogScopedParticipantOrder(List<IActorGroupGameplayResetWorldParticipant> participants)
         {
             string[] orderedLabels = participants
                 .Select(participant =>
@@ -107,3 +106,4 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases
         }
     }
 }
+

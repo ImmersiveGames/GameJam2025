@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
 {
     /// <summary>
     /// Tokens canônicos usados pelo módulo de WorldReset ao interagir com o SimulationGate.

@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Contracts
 {
     /// <summary>
     /// Optional base behaviour with predictable, domain-agnostic pool lifecycle state.

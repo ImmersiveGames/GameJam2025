@@ -1,23 +1,21 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate.Interop;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Flow;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Run;
-using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
+namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 {
     /// <summary>
     /// Runtime composer do GameLoop.

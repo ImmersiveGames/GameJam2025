@@ -1,11 +1,12 @@
 using System.Collections;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Models;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
+namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 {
     /// <summary>
     /// Harness dedicado ao trilho direto de SFX (F4).

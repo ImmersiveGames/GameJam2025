@@ -1,7 +1,6 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Config;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Contracts
 {
     /// <summary>
     /// Canonical global pooling service contract.

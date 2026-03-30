@@ -1,7 +1,7 @@
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     internal static class PlayerSpawnActorResolver
     {

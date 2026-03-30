@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     /// <summary>
     /// Define as propriedades de emissão de áudio SFX: modo de emissão e configurações espaciais.

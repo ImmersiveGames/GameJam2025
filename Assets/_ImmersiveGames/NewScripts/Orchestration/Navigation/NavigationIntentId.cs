@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     /// <summary>
     /// Identificador tipado para intents de navegação.

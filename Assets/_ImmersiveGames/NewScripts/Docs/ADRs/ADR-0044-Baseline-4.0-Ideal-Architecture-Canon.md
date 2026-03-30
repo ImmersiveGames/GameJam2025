@@ -1,4 +1,4 @@
-# ADR-0044 - Baseline 4.0 Ideal Architecture Canon
+﻿# ADR-0044 - Baseline 4.0 Ideal Architecture Canon
 
 ## Status
 - Estado: Aceito
@@ -58,7 +58,7 @@ Sequencia canonica do runtime:
 - Estado de fluxo, run e pausa.
 - Nao deve possuir ownership de pos-run visual, route dispatch ou audio precedence.
 
-### PostGame
+### PostRun
 - Ownership do pos-run, projecao do resultado e contexto visual local.
 - Nao deve possuir a maquina de estados do gameplay nem a politica primara de navegacao.
 
@@ -105,3 +105,4 @@ O nome da implementacao local atual nao redefine o canon. Quando um boundary mac
 ## Fechamento
 
 Este ADR consolida o Baseline 4.0 como arquitetura ideal primeiro, legado depois.
+

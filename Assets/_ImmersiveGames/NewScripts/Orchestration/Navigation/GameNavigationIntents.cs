@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     /// <summary>
     /// Fonte canônica em código para os intents core e aliases oficiais de navigation.

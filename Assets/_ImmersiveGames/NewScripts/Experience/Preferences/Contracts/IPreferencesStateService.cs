@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Config;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Contracts
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Contracts
 {
     public interface IPreferencesStateService
     {

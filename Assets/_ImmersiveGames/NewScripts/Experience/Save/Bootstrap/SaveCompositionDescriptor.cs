@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.Save.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Experience.Save.Bootstrap
 {
     public static class SaveCompositionDescriptor
     {

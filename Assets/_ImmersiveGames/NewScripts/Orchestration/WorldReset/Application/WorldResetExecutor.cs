@@ -1,10 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
-using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
     /// Executa o trilho local de reset em boundary neutro resolvido pelo pipeline macro.

@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     /// <summary>
     /// Mapeia um propósito semântico para uma configuração de áudio SFX com perfis de emissão e execução.

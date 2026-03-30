@@ -1,13 +1,12 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Application;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap
+using _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
 {
     /// <summary>
     /// Installer do WorldReset.

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     /// <summary>
     /// Catálogo de rotas de navegação.

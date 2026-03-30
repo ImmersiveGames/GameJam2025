@@ -2,13 +2,12 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Bindings;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Adapters
 {
     /// <summary>
     /// Adapter NewScripts: aplica referência direta de SceneTransitionProfile em FadeConfig.

@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {

@@ -2,8 +2,7 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Audio;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     /// <summary>
     /// Classe base abstrata para configuração de cue de áudio.

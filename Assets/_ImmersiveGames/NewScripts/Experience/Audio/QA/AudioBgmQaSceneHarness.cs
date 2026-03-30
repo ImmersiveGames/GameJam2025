@@ -1,11 +1,11 @@
 ﻿using System.Collections;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
+namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 {
     /// <summary>
     /// Scene-level manual harness to validate F3 BGM runtime without route/navigation integrations.

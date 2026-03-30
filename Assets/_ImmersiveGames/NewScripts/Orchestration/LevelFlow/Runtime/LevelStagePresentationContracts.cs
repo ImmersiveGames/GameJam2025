@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
-
-namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
+﻿using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
     public readonly struct LevelStagePresentationContract
     {
@@ -10,14 +9,14 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
             int selectionVersion,
             string localContentId,
             bool hasIntroStage,
-            bool hasPostGameReactionHook)
+            bool hasPostRunReactionHook)
         {
             LevelRef = levelRef;
             LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
             LocalContentId = string.IsNullOrWhiteSpace(localContentId) ? string.Empty : localContentId.Trim();
             HasIntroStage = hasIntroStage;
-            HasPostGameReactionHook = hasPostGameReactionHook;
+            HasPostRunReactionHook = hasPostRunReactionHook;
         }
 
         public LevelDefinitionAsset LevelRef { get; }
@@ -25,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         public int SelectionVersion { get; }
         public string LocalContentId { get; }
         public bool HasIntroStage { get; }
-        public bool HasPostGameReactionHook { get; }
+        public bool HasPostRunReactionHook { get; }
 
         public bool IsValid => LevelRef != null;
     }
@@ -35,3 +34,4 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
         bool TryGetCurrentContract(out LevelStagePresentationContract contract);
     }
 }
+

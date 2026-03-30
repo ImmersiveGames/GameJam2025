@@ -1,6 +1,6 @@
 #nullable enable
 using System.Threading.Tasks;
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
 {
     /// <summary>
     /// Entry-point de produção para solicitar ResetWorld (hard reset) fora de QA.

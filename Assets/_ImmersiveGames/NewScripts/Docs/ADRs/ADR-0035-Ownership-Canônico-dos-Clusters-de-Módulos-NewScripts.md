@@ -21,7 +21,7 @@
 A árvore `Assets/_ImmersiveGames/NewScripts` evoluiu de forma incremental e hoje mistura, no mesmo nível organizacional, categorias diferentes de responsabilidade:
 
 - **domínios de negócio** (`Gameplay`, `WorldReset`, `LevelFlow`)
-- **fluxos/orquestração** (`SceneFlow`, `GameLoop`, `Navigation`, `SceneReset`, `PostGame`)
+- **fluxos/orquestração** (`SceneFlow`, `GameLoop`, `Navigation`, `SceneReset`, `PostRun`)
 - **interop/bridges** (`ResetInterop`)
 - **capabilities compartilhadas** (`Audio`)
 - **infraestrutura técnica** (`Core`, `Infrastructure/*`)
@@ -60,7 +60,7 @@ Owners de fluxo, coordenação, handoff e lifecycle macro:
 - `Modules/GameLoop`
 - `Modules/Navigation`
 - `Modules/SceneReset`
-- `Modules/PostGame`
+- `Modules/PostRun`
 
 ### 3.3 Interop
 Ponte explícita entre módulos já canônicos, sem semântica própria de domínio:
@@ -86,7 +86,7 @@ Documentação, auditoria, análise, QA e governança:
 5. **`Navigation` continua sendo camada de intenção e dispatch do usuário, não owner de roteamento macro de cena.**
    O roteamento e timeline macro permanecem semanticamente em `SceneFlow`.
 
-6. **`PostGame` deve ser lido como comportamento terminal da run, semanticamente adjacente a `GameLoop`, mesmo permanecendo fisicamente separado por enquanto.**
+6. **`PostRun` deve ser lido como comportamento terminal da run, semanticamente adjacente a `GameLoop`, mesmo permanecendo fisicamente separado por enquanto.**
 
 7. **Esta decisão é lógica, não física.**
    Ela não reorganiza a árvore neste momento. Ela apenas congela a leitura correta de ownership para orientar documentação, planos e refactors futuros.
@@ -143,7 +143,7 @@ Documentação, auditoria, análise, QA e governança:
 
 **Critério de leitura correta após a decisão:**
 - `Gameplay`, `WorldReset` e `LevelFlow` são lidos como domínios;
-- `SceneFlow`, `GameLoop`, `Navigation`, `SceneReset` e `PostGame` são lidos como orquestração;
+- `SceneFlow`, `GameLoop`, `Navigation`, `SceneReset` e `PostRun` são lidos como orquestração;
 - `ResetInterop` é lido como bridge;
 - `Audio` é lido como capability;
 - `Infrastructure/*` e `Core/*` permanecem técnicos.
@@ -157,3 +157,4 @@ Documentação, auditoria, análise, QA e governança:
 - [x] `Modules/Gates` marcado como resíduo técnico
 - [x] Regra explícita de “decisão lógica antes de reorganização física” registrada
 - [x] Base preparada para futuros ADRs e planos de reorganização incremental
+

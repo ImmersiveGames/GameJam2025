@@ -1,8 +1,7 @@
 using System;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Contracts
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Contracts
 {
     public sealed class AudioPreferencesSnapshot
     {

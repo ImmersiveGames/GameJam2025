@@ -1,6 +1,6 @@
 #nullable enable
 using System.Threading.Tasks;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition
 {
     /// <summary>
     /// Adapter para operações de loading/unloading/ActiveScene independente da fonte (SceneManager ou legado).

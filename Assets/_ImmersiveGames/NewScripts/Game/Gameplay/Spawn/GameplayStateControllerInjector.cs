@@ -1,7 +1,8 @@
 using System;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     internal static class GameplayStateControllerInjector
     {

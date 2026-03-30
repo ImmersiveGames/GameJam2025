@@ -1,14 +1,13 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Config;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Config;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Runtime;
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Bootstrap
 {
     public static class PreferencesInstaller
     {

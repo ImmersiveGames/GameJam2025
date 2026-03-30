@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Object = UnityEngine.Object;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime
 {
     internal sealed class PlayerInputLocator : IPlayerInputLocator
     {

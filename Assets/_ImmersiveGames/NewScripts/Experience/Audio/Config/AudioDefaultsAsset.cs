@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Audio;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     [CreateAssetMenu(
         fileName = "AudioDefaults",

@@ -1,12 +1,14 @@
 using System.Collections;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Audio.Bindings;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Bindings;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Models;
+using _ImmersiveGames.NewScripts.Experience.Audio.Semantics;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
+namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 {
     /// <summary>
     /// Harness de QA para F7: emitter mínimo + prova de uso com e sem emitter.

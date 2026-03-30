@@ -1,7 +1,7 @@
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime
 {
 
     /// <summary>

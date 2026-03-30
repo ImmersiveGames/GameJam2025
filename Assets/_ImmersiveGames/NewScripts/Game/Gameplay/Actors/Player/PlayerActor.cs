@@ -2,9 +2,9 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player
 {
     /// <summary>
     /// Implementação simples de IActor para o baseline de NewScripts.

@@ -1,7 +1,6 @@
 ﻿using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.QA
+namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 {
     /// <summary>
     /// Shim legado para orientar migração do QA antigo para harnesses separados.

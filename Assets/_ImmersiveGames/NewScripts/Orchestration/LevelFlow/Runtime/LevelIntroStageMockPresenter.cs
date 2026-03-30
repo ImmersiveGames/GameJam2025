@@ -1,10 +1,9 @@
 #nullable enable
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/NewScripts/LevelFlow/EnterStage/Level EnterStage Presenter Mock")]

@@ -1,7 +1,6 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Config;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Runtime
 {
     /// <summary>
     /// Runtime binding between a pooled instance and its canonical source pool.

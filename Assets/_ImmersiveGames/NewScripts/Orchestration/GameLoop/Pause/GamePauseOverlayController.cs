@@ -14,14 +14,14 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
-using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 using UnityEngine;
 using UnityEngine.InputSystem;
-namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Pause
+namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Pause
 {
     /// <summary>
     /// Controlador do contexto visual local de PauseMenu no UIGlobal.

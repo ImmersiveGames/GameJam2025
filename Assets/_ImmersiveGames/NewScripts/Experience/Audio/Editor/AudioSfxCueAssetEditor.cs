@@ -1,6 +1,6 @@
 using System;
 using System.Reflection;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using UnityEditor;
 using UnityEngine;
 

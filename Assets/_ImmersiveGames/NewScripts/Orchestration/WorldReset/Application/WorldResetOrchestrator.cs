@@ -2,16 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Guards;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Validation;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Guards;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Validation;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
     /// Orquestra o pipeline de reset do WorldReset.

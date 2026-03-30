@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// Política de navegação usada para validar transições antes do processamento do SceneFlow.

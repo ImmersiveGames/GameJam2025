@@ -1,12 +1,17 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
-using _ImmersiveGames.NewScripts.Modules.Save.Contracts;
-using _ImmersiveGames.NewScripts.Modules.Save.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.Save.Bootstrap
+using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.Experience.Save.Checkpoint;
+using _ImmersiveGames.NewScripts.Experience.Save.Checkpoint.Backends;
+using _ImmersiveGames.NewScripts.Experience.Save.Contracts;
+using _ImmersiveGames.NewScripts.Experience.Save.Models;
+using _ImmersiveGames.NewScripts.Experience.Save.Orchestration;
+using _ImmersiveGames.NewScripts.Experience.Save.Progression;
+using _ImmersiveGames.NewScripts.Experience.Save.Progression.Backends;
+namespace _ImmersiveGames.NewScripts.Experience.Save.Bootstrap
 {
     public static class SaveInstaller
     {
@@ -45,6 +50,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Save.Bootstrap
             var progressionStateService = ResolveOrCreateProgressionService(progressionBackend);
             var progressionSaveService = progressionStateService as IProgressionSaveService
                 ?? throw new InvalidOperationException("[FATAL][Save] ProgressionService nao implementa IProgressionSaveService.");
+
+            InitializeProgressionSnapshot(progressionStateService, progressionSaveService);
 
             RegisterIfMissing<ICheckpointBackend>(
                 factory: () => new InMemoryCheckpointBackend(),
@@ -154,6 +161,49 @@ namespace _ImmersiveGames.NewScripts.Modules.Save.Bootstrap
                 $"[Save][BOOT] CheckpointService registered. identity={requiredIdentity}.",
                 DebugUtility.Colors.Info);
             return instance;
+        }
+
+        private static void InitializeProgressionSnapshot(
+            IProgressionStateService progressionStateService,
+            IProgressionSaveService progressionSaveService)
+        {
+            if (progressionStateService == null)
+            {
+                throw new ArgumentNullException(nameof(progressionStateService));
+            }
+
+            if (progressionSaveService == null)
+            {
+                throw new ArgumentNullException(nameof(progressionSaveService));
+            }
+
+            DebugUtility.LogVerbose(typeof(SaveInstaller),
+                $"[Save] progression load requested. backend='{progressionSaveService.BackendId}' profile='{ProgressionSnapshot.BootstrapProfileId}' slot='{ProgressionSnapshot.BootstrapSlotId}'.",
+                DebugUtility.Colors.Info);
+
+            bool loaded = progressionSaveService.TryLoad(
+                ProgressionSnapshot.BootstrapProfileId,
+                ProgressionSnapshot.BootstrapSlotId,
+                out var loadedSnapshot,
+                out string loadReason);
+
+            if (loaded && loadedSnapshot != null)
+            {
+                progressionStateService.SetCurrent(loadedSnapshot, "Save/BootstrapLoad");
+                return;
+            }
+
+            var bootstrapSnapshot = new ProgressionSnapshot(
+                ProgressionSnapshot.BootstrapProfileId,
+                ProgressionSnapshot.BootstrapSlotId,
+                new Dictionary<string, string>(),
+                revision: 0);
+
+            progressionStateService.SetCurrent(bootstrapSnapshot, "Save/BootstrapSeed");
+
+            DebugUtility.LogVerbose(typeof(SaveInstaller),
+                $"[Save] bootstrap kept seed progression. backend='{progressionSaveService.BackendId}' reason='{loadReason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterIfMissing<T>(

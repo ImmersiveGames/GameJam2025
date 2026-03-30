@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
 {
     /// <summary>
     /// Resultado canônico observado ao concluir um WorldReset.

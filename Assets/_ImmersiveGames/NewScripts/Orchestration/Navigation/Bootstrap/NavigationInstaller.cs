@@ -1,10 +1,8 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.Navigation;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
     /// <summary>
     /// Installer do Navigation.

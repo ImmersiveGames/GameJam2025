@@ -2,9 +2,9 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Bindings
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Bindings
 {
     /// <summary>
     /// Controla o fade (CanvasGroup alpha) dentro da FadeScene.

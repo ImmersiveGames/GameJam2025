@@ -1,14 +1,13 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Logging.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Config;
-using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Config;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Config
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Config
 {
     /// <summary>
     /// Root configuration with the canonical infrastructure references.

@@ -1,9 +1,9 @@
-# ADR-0034: Actor Presentation Domain Intent and Boundaries
+﻿# ADR-0034: Actor Presentation Domain Intent and Boundaries
 
 ## Status atual do runtime
 
 - Leitura prática: histórico / intenção futura.
-- O runtime atual ainda não consolidou Actor Presentation como domínio único; a apresentação runtime do ator continua distribuída entre Gameplay, Audio, IntroStage, PostGame e bridges locais.
+- O runtime atual ainda não consolidou Actor Presentation como domínio único; a apresentação runtime do ator continua distribuída entre Gameplay, Audio, IntroStage, PostRun e bridges locais.
 
 ## Status
 
@@ -25,7 +25,7 @@
 
 O módulo legado `SkinSystems` aponta para uma intenção arquitetural clara: a apresentação runtime do ator deve ter **owner local por ator**, com um **controller local** responsável por orquestrar aplicação técnica, estado observável e resolução de contratos ligados à aparência do ator.
 
-No stack atual de `NewScripts`, essa semântica não aparece consolidada em um domínio único. Elementos de apresentação estão distribuídos entre fluxos como `SceneFlow/Loading`, `LevelFlow`, `IntroStage`, `PostGame`, lifecycle local de cena e bridges auxiliares. Isso torna difuso quem é dono da apresentação runtime do ator e favorece acoplamento com fluxos que não deveriam definir essa semântica.
+No stack atual de `NewScripts`, essa semântica não aparece consolidada em um domínio único. Elementos de apresentação estão distribuídos entre fluxos como `SceneFlow/Loading`, `LevelFlow`, `IntroStage`, `PostRun`, lifecycle local de cena e bridges auxiliares. Isso torna difuso quem é dono da apresentação runtime do ator e favorece acoplamento com fluxos que não deveriam definir essa semântica.
 
 Antes de qualquer consolidação maior, o domínio precisa de um limite canônico explícito: **qual problema ele resolve, quem o possui, o que pertence a ele e o que permanece fora dele**.
 
@@ -126,7 +126,7 @@ Este domínio **não** é owner de:
 - Navigation e route dispatch
 - GameLoop state machine
 - IntroStage como fluxo macro
-- PostGame como fluxo macro
+- PostRun como fluxo macro
 - Reset macro
 - root global de UI
 - decisão de level/scene
@@ -146,7 +146,7 @@ Este domínio **não** é owner de:
 | Reset / WorldReset | pode limpar estado global e recriar contexto | reset macro permanece fora de `Actor Presentation` |
 | SceneReset | pode acionar cleanup/recriação local de cena/ator | pipeline local de reset permanece fora do domínio |
 | Loading | pode coexistir visualmente e consumir estado de loading | loading global permanece owner de loading |
-| PostGame | pode reagir ao estado terminal da run | semântica de postgame permanece em `PostGame` |
+| PostRun | pode reagir ao estado terminal da run | semântica de postgame permanece em `PostRun` |
 | IntroStage | pode consumir contratos do level ou do ator para projeção de entrada | fluxo de intro permanece fora do domínio |
 | Audio global | pode coexistir e tocar cues globais | ownership global de áudio permanece fora |
 | VFX global | pode coexistir com apresentação do ator | ownership global de VFX permanece fora |
@@ -158,7 +158,7 @@ Este domínio **não** é owner de:
 - `SkinSystems` indica uma intenção correta de ownership local por ator.
 - O stack atual de `NewScripts` ainda não consolidou essa intenção em um domínio único.
 - Sem esta decisão, a apresentação do ator tende a continuar espalhada por fluxos macro do jogo.
-- Definir o domínio antes do plano evita criar um “mega-módulo de presentation” genérico demais ou deixar `SceneFlow`, `LevelFlow`, `IntroStage` ou `PostGame` assumirem ownership semântico por acidente.
+- Definir o domínio antes do plano evita criar um “mega-módulo de presentation” genérico demais ou deixar `SceneFlow`, `LevelFlow`, `IntroStage` ou `PostRun` assumirem ownership semântico por acidente.
 
 ---
 
@@ -195,14 +195,14 @@ Este ADR:
 
 **Esperado após esta decisão:**
 - futuros planos e refactors tratam `Actor Presentation` como domínio local ao ator;
-- fluxos como `SceneFlow`, `LevelFlow`, `IntroStage` e `PostGame` passam a ser consumidores/disparadores, não owners;
+- fluxos como `SceneFlow`, `LevelFlow`, `IntroStage` e `PostRun` passam a ser consumidores/disparadores, não owners;
 - qualquer introdução futura de visual/audio/fx actor-bound respeita owner local por ator;
 - métricas/bounds da apresentação podem ser consultadas por outros sistemas sem transferir ownership de gameplay.
 
 **Critério de leitura correta após a decisão:**
 - “quem é dono da apresentação desse ator?” → o stack de `Actor Presentation`
 - “quem pode disparar ou observar?” → módulos externos
-- “quem define o significado da apresentação?” → não é `SceneFlow`, `LevelFlow`, `PostGame`, `IntroStage`, `Navigation` nem `Reset`
+- “quem define o significado da apresentação?” → não é `SceneFlow`, `LevelFlow`, `PostRun`, `IntroStage`, `Navigation` nem `Reset`
 
 ---
 
@@ -215,3 +215,4 @@ Este ADR:
 - [x] Boundary explícito para `Audio/FX` actor-bound
 - [x] Fora de escopo e boundaries com fluxos globais formalizados
 - [x] Base preparada para plano futuro de consolidação de `Actor Presentation`
+

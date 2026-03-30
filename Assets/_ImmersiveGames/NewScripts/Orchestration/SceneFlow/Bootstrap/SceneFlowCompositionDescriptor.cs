@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
 {
     public static class SceneFlowCompositionDescriptor
     {

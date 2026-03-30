@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime
 {
     /// <summary>
     /// Cache simples para expor a ultima assinatura de SceneFlow observada em runtime.

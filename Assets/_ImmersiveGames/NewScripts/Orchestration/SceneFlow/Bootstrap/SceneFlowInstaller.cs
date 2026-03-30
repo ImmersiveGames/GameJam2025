@@ -1,16 +1,15 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
 {
     /// <summary>
     /// Installer do SceneFlow.

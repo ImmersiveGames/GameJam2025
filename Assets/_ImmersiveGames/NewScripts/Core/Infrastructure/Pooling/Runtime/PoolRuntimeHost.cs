@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Runtime
 {
     /// <summary>
     /// Runtime owner for pooled objects of a canonical pool definition.

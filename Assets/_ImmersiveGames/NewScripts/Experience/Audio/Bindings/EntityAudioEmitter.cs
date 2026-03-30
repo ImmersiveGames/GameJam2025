@@ -1,10 +1,12 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Models;
+using _ImmersiveGames.NewScripts.Experience.Audio.Semantics;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Bindings
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
 {
     /// <summary>
     /// Binding estrutural mínimo de contexto local para EntityAudio.

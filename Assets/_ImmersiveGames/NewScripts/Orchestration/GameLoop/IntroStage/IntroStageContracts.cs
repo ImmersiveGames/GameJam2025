@@ -1,10 +1,9 @@
 #nullable enable
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
+using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 {
     /// <summary>
     /// Contexto minimo para execucao da IntroStage antes da revelacao da cena.

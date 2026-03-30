@@ -1,5 +1,5 @@
 using System;
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
 {
     [Flags]
     public enum WorldResetFlags

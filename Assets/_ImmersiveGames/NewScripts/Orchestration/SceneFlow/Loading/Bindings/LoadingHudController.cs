@@ -1,11 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Bindings
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Bindings
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudController : MonoBehaviour

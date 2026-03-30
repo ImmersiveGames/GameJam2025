@@ -1,9 +1,9 @@
 using _ImmersiveGames.NewScripts.Core.Identifiers;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Dummy;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Dummy;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     /// <summary>
     /// Serviço de spawn que cria um único DummyActor para validar o pipeline.

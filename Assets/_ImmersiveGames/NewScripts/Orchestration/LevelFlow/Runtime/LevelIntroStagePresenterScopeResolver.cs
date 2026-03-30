@@ -1,10 +1,8 @@
 #nullable enable
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
     public sealed class LevelIntroStagePresenterScopeResolver : ILevelIntroStagePresenterScopeResolver
     {

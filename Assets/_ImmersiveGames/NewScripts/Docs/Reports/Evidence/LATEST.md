@@ -1,12 +1,13 @@
 ﻿# Latest Evidence
 
-Evidencia canonica vigente: `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md`.
+Evidencia canonica vigente: `Docs/Reports/Audits/2026-03-30/Structural-Freeze-Snapshot.md`.
 
 ## Leitura vigente
 
 - `Docs/Reports/Audits/LATEST.md` e a entrada atual de auditoria.
-- `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md` registra a limpeza real da pasta de Docs.
-- `Docs/Reports/Audits/2026-03-29/Baseline-4.0-Residual-Housekeeping-Audit.md` permanece como ultimo audit residual mantido no fluxo ativo.
+- `Docs/Reports/Audits/2026-03-30/Structural-Freeze-Snapshot.md` registra o estado estrutural congelado apos as podas validadas.
+- `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md` registra a consolidacao documental.
+- `Docs/Reports/Audits/2026-03-29/Baseline-4.0-Residual-Housekeeping-Audit.md` foi arquivado e nao compete mais com a trilha ativa.
 - A evidencia confirma a poda do caminho documental ativo e o envio do material superado para `Docs/Archive`.
 
 ## O que isso confirma

@@ -2,13 +2,13 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingProgressOrchestrator : IDisposable

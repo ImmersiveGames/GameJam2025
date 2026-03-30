@@ -1,24 +1,24 @@
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
-using _ImmersiveGames.NewScripts.Modules.PostGame;
-
-namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
+using _ImmersiveGames.NewScripts.Experience.PostRun;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
-    public readonly struct LevelPostGameHookContext
+    public readonly struct LevelPostRunHookContext
     {
-        public LevelPostGameHookContext(
+        public LevelPostRunHookContext(
             LevelDefinitionAsset levelRef,
             string levelSignature,
             string postGameSignature,
             string sceneName,
-            PostGameResult result,
+            PostRunResult result,
             string reason,
             int frame)
         {
             LevelRef = levelRef;
             LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
-            PostGameSignature = string.IsNullOrWhiteSpace(postGameSignature) ? string.Empty : postGameSignature.Trim();
+            PostRunSignature = string.IsNullOrWhiteSpace(postGameSignature) ? string.Empty : postGameSignature.Trim();
             SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
             Result = result;
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
@@ -27,15 +27,16 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
 
         public LevelDefinitionAsset LevelRef { get; }
         public string LevelSignature { get; }
-        public string PostGameSignature { get; }
+        public string PostRunSignature { get; }
         public string SceneName { get; }
-        public PostGameResult Result { get; }
+        public PostRunResult Result { get; }
         public string Reason { get; }
         public int Frame { get; }
     }
 
-    public interface ILevelPostGameHookService
+    public interface ILevelPostRunHookService
     {
-        Task RunReactionAsync(LevelPostGameHookContext context, CancellationToken cancellationToken = default);
+        Task RunReactionAsync(LevelPostRunHookContext context, CancellationToken cancellationToken = default);
     }
 }
+

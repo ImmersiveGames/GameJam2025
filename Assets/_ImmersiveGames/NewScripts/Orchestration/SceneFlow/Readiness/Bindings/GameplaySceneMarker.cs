@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Bindings
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Bindings
 {
     /// <summary>
     /// Marker explícito para identificar cenas de gameplay em runtime.

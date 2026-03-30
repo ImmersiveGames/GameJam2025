@@ -1,7 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Bootstrap
 {
     public static class GameplayCompositionDescriptor
     {

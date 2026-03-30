@@ -5,16 +5,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Adapters;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed partial class SceneTransitionService : ISceneTransitionService

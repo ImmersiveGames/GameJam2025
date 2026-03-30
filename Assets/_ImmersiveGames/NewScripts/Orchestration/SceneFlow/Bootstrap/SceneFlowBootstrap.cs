@@ -1,21 +1,17 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Interop;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
-using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap
+using _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Interop;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
 {
     /// <summary>
     /// Runtime composer do SceneFlow.

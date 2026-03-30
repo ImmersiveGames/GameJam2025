@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Bindings
+namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
 {
     /// <summary>
     /// Base comum para binders de intents do Frontend/UI.

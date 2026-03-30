@@ -1,4 +1,4 @@
-# Blueprint - Baseline 4.0 Ideal Architecture
+﻿# Blueprint - Baseline 4.0 Ideal Architecture
 
 Status: Canonical architecture reference for Baseline 4.0
 Date: 2026-03-28
@@ -122,7 +122,7 @@ Owner da maquina de estados de fluxo, da run e da pausa.
 - audio precedence
 - post-run menu logic
 
-### 4.2 `PostGame`
+### 4.2 `PostRun`
 
 #### Ideal role
 
@@ -141,8 +141,8 @@ Owner do pos-run: ownership de input/gate, apresentacao do resultado e contexto 
 - `PostStageStartRequested`
 - `PostStageStarted`
 - `PostStageCompleted`
-- `PostGameEntered`
-- `PostGameExited`
+- `PostRunEntered`
+- `PostRunExited`
 
 #### Main assets/config
 
@@ -177,7 +177,7 @@ Owner do conteudo local do gameplay e das acoes pos-level.
 - `LevelSelected`
 - `LevelIntroCompleted`
 - `LevelSwapLocalApplied`
-- `LevelPostGameHook...` events, if retained
+- `LevelPostRunHook...` events, if retained
 
 #### Main assets/config
 
@@ -330,7 +330,7 @@ Inventario de apoio ao alvo. Este mapa nao define sequenciamento, rollout ou pri
 | `GameLoopCommands` | intent bridge facade | reuse with adjustment |
 | `GameResetRequestedEvent` / `GameExitToMenuRequestedEvent` | intents only | reuse as concept, but may move ownership |
 
-### 5.2 `PostGame`
+### 5.2 `PostRun`
 
 | Current piece | Ideal use | Verdict |
 |---|---|---|
@@ -338,9 +338,9 @@ Inventario de apoio ao alvo. Este mapa nao define sequenciamento, rollout ou pri
 | `PostStageControlService` | stage control state | reuse with adjustment |
 | `PostStagePresenterRegistry` | presenter adoption | reuse with adjustment |
 | `PostStagePresenterScopeResolver` | presenter discovery seam | reuse with adjustment |
-| `PostGameOwnershipService` | post-run ownership/gate/input | reuse with adjustment |
-| `PostGameResultService` | result projection | reuse with adjustment |
-| `PostGameOverlayController` | visual context local | reuse with adjustment or move to UI-owned presentation layer |
+| `PostRunOwnershipService` | post-run ownership/gate/input | reuse with adjustment |
+| `PostRunResultService` | result projection | reuse with adjustment |
+| `PostRunOverlayController` | visual context local | reuse with adjustment or move to UI-owned presentation layer |
 | `GameRunEndedEventBridge` | handoff bridge from gameplay to post-run | reuse with adjustment |
 | `LevelPostStageMockPresenter` | QA/prototyping only | reuse for QA only or replace |
 
@@ -352,7 +352,7 @@ Inventario de apoio ao alvo. Este mapa nao define sequenciamento, rollout ou pri
 | `PostLevelActionsService` | post-level intent execution | reuse with adjustment |
 | `RestartContextService` | restart context/snapshot | reuse with adjustment |
 | `LevelSelectedRestartSnapshotBridge` | snapshot sync bridge | reuse with adjustment |
-| `LevelPostGameHookService` | optional level reaction | reuse with adjustment |
+| `LevelPostRunHookService` | optional level reaction | reuse with adjustment |
 | `GameplayStartSnapshot` | restart/start context | reuse as is or with small adjustment |
 
 ### 5.4 `Navigation`
@@ -396,7 +396,7 @@ As regras abaixo sao permanentes e nao constituem roadmap.
 ### Permanent rules
 
 - `PostPlay` is technical retention, not a domain phase.
-- `PostGame` means post-run ownership, not macro context.
+- `PostRun` means post-run ownership, not macro context.
 - `PostRunMenu` is the conceptual label for the visual layer, even if the runtime name differs.
 - Separate post-run ownership from result projection if they remain coupled.
 - Move any post-run overlay ownership out of flow state owners.
@@ -415,3 +415,4 @@ As regras abaixo sao permanentes e nao constituem roadmap.
 Blueprint pronto como referencia alvo.
 
 Este documento define a arquitetura ideal do Baseline 4.0 sem depender da organizacao atual como contrato. O legado continua util como evidencia e como fonte de reaproveitamento, mas nao define o desenho final.
+

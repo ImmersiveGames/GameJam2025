@@ -1,8 +1,7 @@
 #nullable enable
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime
 {
     /// <summary>
     /// Serviço de fade degradado: transições seguem sem efeito visual de fade.

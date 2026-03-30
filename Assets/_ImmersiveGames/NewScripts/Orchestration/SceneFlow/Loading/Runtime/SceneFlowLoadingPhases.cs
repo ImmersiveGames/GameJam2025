@@ -1,5 +1,5 @@
 #nullable enable
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
 {
     /// <summary>
     /// Constantes canonicas de fases do Loading HUD no SceneFlow.

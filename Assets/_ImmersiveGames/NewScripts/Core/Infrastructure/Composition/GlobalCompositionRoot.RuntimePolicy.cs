@@ -1,11 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {

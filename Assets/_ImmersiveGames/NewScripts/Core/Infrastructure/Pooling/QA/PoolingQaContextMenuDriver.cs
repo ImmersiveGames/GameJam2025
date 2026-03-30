@@ -3,12 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Runtime;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.QA
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.QA
 {
     /// <summary>
     /// Reusable consumer base for explicit pool dependencies.

@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.SceneComposition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition
 {
     public interface ISceneCompositionExecutor
     {

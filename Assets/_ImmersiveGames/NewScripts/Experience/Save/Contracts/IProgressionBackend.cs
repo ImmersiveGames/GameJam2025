@@ -1,4 +1,5 @@
-namespace _ImmersiveGames.NewScripts.Modules.Save.Contracts
+using _ImmersiveGames.NewScripts.Experience.Save.Models;
+namespace _ImmersiveGames.NewScripts.Experience.Save.Contracts
 {
     public interface IProgressionBackend
     {

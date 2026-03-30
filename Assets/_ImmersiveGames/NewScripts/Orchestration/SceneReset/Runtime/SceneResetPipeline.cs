@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime.Phases;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal sealed class SceneResetPipeline
     {

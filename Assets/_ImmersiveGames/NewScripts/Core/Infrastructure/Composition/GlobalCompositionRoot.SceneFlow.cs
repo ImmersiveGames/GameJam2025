@@ -1,7 +1,6 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap;
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {

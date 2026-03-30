@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode
 {
     /// <summary>
     /// Provider de modo de execução que respeita o RuntimeModeConfig.

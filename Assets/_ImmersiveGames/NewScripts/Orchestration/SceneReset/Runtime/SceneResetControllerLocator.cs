@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     /// <summary>
     /// Utilitário centralizado para localizar <see cref="SceneResetController"/>.

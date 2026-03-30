@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     internal sealed class CompositionPipelineStep
     {

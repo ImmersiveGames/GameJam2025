@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// Centraliza a assinatura de correlacao usada entre SceneFlow e WorldReset.

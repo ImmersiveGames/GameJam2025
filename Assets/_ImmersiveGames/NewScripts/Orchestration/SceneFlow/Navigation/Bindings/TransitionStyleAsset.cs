@@ -1,9 +1,8 @@
 using System;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Bindings;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
 {
     /// <summary>
     /// Asset canonico de estilo de transicao.

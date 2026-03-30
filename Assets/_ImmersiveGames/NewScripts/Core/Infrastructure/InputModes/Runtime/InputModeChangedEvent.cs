@@ -1,7 +1,5 @@
-using System;
 using _ImmersiveGames.NewScripts.Core.Events;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime
 {
     /// <summary>
     /// Hook oficial de observacao quando o modo de input muda de fato.

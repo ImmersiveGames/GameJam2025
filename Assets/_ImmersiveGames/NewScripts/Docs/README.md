@@ -1,12 +1,13 @@
-# NewScripts Docs
+﻿# NewScripts Docs
 
-Esta pasta agora separa claramente o canon atual, as entradas ativas e o historico arquivado do Baseline 4.0.
+Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do Baseline 4.0.
 
 ## Status documental
 
-- O canon atual e a leitura primaria.
-- As paginas ativas podem exigir leitura junto do runtime quando houver mistura real de responsabilidades.
-- Termos residuais como `WorldLifecycle`, `ContentSwap`, `LevelManager` e `PostPlay` devem ser lidos como historicos quando aparecerem fora do canon.
+- `ADR-0001` e o owner de glossario, intencao e taxonomia.
+- As paginas ativas seguem o tree fisico atual, mas algumas mantem nomes historicos por compatibilidade.
+- Termos como `WorldLifecycle`, `ContentSwap`, `LevelManager` e `PostPlay` devem ser lidos como historicos fora do canon.
+- `Experience/Save` deve ser lido hoje como superficie de hooks e contratos placeholder, nao como sistema final de persistencia.
 
 ## Canon atual
 
@@ -16,38 +17,43 @@ Esta pasta agora separa claramente o canon atual, as entradas ativas e o histori
 - `Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md`
 - `Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md`
 
+## Entradas ativas de auditoria
+
+- `Docs/Reports/Audits/LATEST.md`
+- `Docs/Reports/Audits/2026-03-30/Structural-Freeze-Snapshot.md`
+- `Docs/Reports/Audits/2026-03-30/Structural-Xray-NewScripts.md`
+- `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md`
+
 ## Entradas ativas
 
-- `Docs/README.md`
-- `Docs/ADRs/README.md`
-- `Docs/Guides/Production-How-To-Use-Core-Modules.md`
-- `Docs/Guides/Event-Hooks-Reference.md`
-- `Docs/Guides/How-To-Add-A-New-Module-To-Composition.md`
 - `Docs/Modules/README.md`
 - `Docs/Modules/GameLoop.md`
 - `Docs/Modules/Gameplay.md`
 - `Docs/Modules/InputModes.md`
 - `Docs/Modules/LevelFlow.md`
 - `Docs/Modules/Navigation.md`
-- `Docs/Modules/PostGame.md`
+- `Docs/Modules/PostRun.md`
+- `Docs/Modules/Save.md`
 - `Docs/Modules/ResetInterop.md`
 - `Docs/Modules/SceneFlow.md`
 - `Docs/Modules/SceneReset.md`
 - `Docs/Modules/WorldReset.md`
-- `Docs/Reports/Audits/LATEST.md`
-- `Docs/Reports/Audits/2026-03-29/Baseline-4.0-Residual-Housekeeping-Audit.md`
-- `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md`
-- `Docs/Reports/Evidence/LATEST.md`
+- `Docs/Guides/Production-How-To-Use-Core-Modules.md`
+- `Docs/Guides/Event-Hooks-Reference.md`
+- `Docs/Guides/How-To-Add-A-New-Module-To-Composition.md`
 - `Docs/CHANGELOG-docs.md`
 
-## Historico
+## Estado fisico atual resumido
 
-- `Docs/Canon/Canon-Index.md`
-- `Docs/Archive/`
+- `Core`: base transversal.
+- `Orchestration`: `SceneFlow`, `WorldReset`, `ResetInterop`, `Navigation`, `LevelLifecycle`, `GameLoop` e `SceneReset`.
+- `Game`: `Gameplay`, `Content/Definitions/Levels` e o runtime de estado/GameplayReset.
+- `Experience`: `PostRun`, `Audio`, `Save` como superficie de hooks placeholder, `Preferences`, `Frontend` e `Camera`.
 
 ## Regras de leitura
 
-- O canon atual sempre prevalece sobre docs antigos ou intermediarios.
-- Se um arquivo estiver em `Docs/Archive/`, ele e historico e nao compete com o canon.
-- O backlog auxiliar de reorganizacao foi arquivado e nao deve mais ser tratado como frente ativa.
-- A proxima direcao do projeto sai do baseline consolidado e aponta para a camada de `player`, `enemies` e objetos programaticos.
+- O canon atual prevalece sobre docs antigos ou intermediarios.
+- `Docs/Archive/` e historico e nao compete com o canon.
+- As linhas de compatibilidade ainda vivas sao parte do estado atual, nao do alvo final.
+- A proxima direcao do projeto sai da consolidacao atual, nao de um redesenho idealizado.
+

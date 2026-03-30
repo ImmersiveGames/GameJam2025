@@ -1,11 +1,12 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement
 {
     /// <summary>
     /// Controlador mínimo de movimento do Player no padrão NewScripts.
@@ -13,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PlayerMovementController : MonoBehaviour, IActorGroupRearmable, IActorGroupRearmTargetFilter, IActorGroupRearmOrder
+    public sealed class PlayerMovementController : MonoBehaviour, IActorGroupGameplayResettable, IActorGroupGameplayResetTargetFilter, IActorGroupGameplayResetOrder
     {
         [Header("Movement")]
         [SerializeField]
@@ -71,10 +72,10 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
 
         public int ResetOrder => -50;
 
-        public bool ShouldParticipate(ActorGroupRearmTarget target)
+        public bool ShouldParticipate(ActorGroupGameplayResetTarget target)
         {
-            return target == ActorGroupRearmTarget.ByActorKind ||
-                   target == ActorGroupRearmTarget.ActorIdSet;
+            return target == ActorGroupGameplayResetTarget.ByActorKind ||
+                   target == ActorGroupGameplayResetTarget.ActorIdSet;
         }
 
         #endregion
@@ -480,9 +481,9 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
 
         #endregion
 
-        #region Resets (IActorGroupRearmable)
+        #region Resets (IActorGroupGameplayResettable)
 
-        public Task ResetCleanupAsync(ActorGroupRearmContext ctx)
+        public Task ResetCleanupAsync(ActorGroupGameplayResetContext ctx)
         {
             HaltHorizontalVelocity();
             moveInputReader?.ClearInput();
@@ -490,7 +491,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
             return Task.CompletedTask;
         }
 
-        public Task ResetRestoreAsync(ActorGroupRearmContext ctx)
+        public Task ResetRestoreAsync(ActorGroupGameplayResetContext ctx)
         {
             if (_hasInitialPose)
             {
@@ -510,7 +511,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
             return Task.CompletedTask;
         }
 
-        public Task ResetRebindAsync(ActorGroupRearmContext ctx)
+        public Task ResetRebindAsync(ActorGroupGameplayResetContext ctx)
         {
             ResolveServices();
             ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
@@ -544,6 +545,7 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
         #endregion
     }
 }
+
 
 
 

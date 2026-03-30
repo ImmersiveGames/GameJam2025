@@ -1,7 +1,6 @@
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Guards
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Guards
 {
     /// <summary>
     /// Guard de pré-condições do reset.

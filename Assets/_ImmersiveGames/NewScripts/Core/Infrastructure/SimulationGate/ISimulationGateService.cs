@@ -1,5 +1,5 @@
 using System;
-namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate
 {
     /// <summary>
     /// Controla se a "simulação" (lógica de gameplay) deve rodar ou não,

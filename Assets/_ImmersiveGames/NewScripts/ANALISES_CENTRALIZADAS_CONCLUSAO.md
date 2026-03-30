@@ -89,7 +89,7 @@ Assets/_ImmersiveGames/NewScripts/Analises/
 | **SCENEFLOW_ANALYSIS_REPORT.md** | SceneFlow | ✅ Vigente |
 | **NAVIGATION_ANALYSIS_REPORT.md** | Navigation | ✅ Vigente |
 | **LEVELFLOW_ANALYSIS_REPORT.md** | LevelFlow | ✅ Vigente |
-| **POSTGAME_ANALYSIS_REPORT.md** | PostGame | ✅ Vigente |
+| **POSTGAME_ANALYSIS_REPORT.md** | PostRun | ✅ Vigente |
 | **CONTENTSWAP_ANALYSIS_REPORT.md** | ContentSwap | 🟡 Histórico |
 | **Infrastructure/SimulationGate/GATES_ANALYSIS_REPORT.md** | SimulationGate | ✅ Vigente |
 | **Infrastructure/InputModes/INPUTMODES_ANALYSIS_REPORT.md** | InputModes | ✅ Vigente |
@@ -261,5 +261,6 @@ Assets/_ImmersiveGames/NewScripts/Analises/
 **Data:** 22 de março de 2026
 **Confiança:** 95%
 **Próximo Passo:** Leia `Analises/README.md`
+
 
 

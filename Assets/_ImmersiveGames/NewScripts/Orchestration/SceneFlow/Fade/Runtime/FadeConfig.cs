@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime
 {
     /// <summary>
     /// Configuração “crua” de fade (sem depender de SceneTransitionProfile).

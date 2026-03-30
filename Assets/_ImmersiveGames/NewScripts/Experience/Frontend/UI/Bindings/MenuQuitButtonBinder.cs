@@ -1,9 +1,8 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Frontend.UI.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Bindings
+namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
 {
     /// <summary>
     /// Binder (produção) para a intent visual "Quit" do Frontend/UI.

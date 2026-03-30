@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn.Definitions
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn.Definitions
 {
     /// <summary>
     /// Define a ordem de spawn do mundo, utilizada pelo bootstrap de cena para registrar serviços.

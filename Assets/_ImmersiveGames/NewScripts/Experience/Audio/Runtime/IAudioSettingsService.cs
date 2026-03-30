@@ -1,6 +1,5 @@
 using System;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime
 {
     /// <summary>
     /// Estado runtime de volume/sessão do jogador.

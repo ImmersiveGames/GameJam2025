@@ -1,4 +1,4 @@
-# InputModes
+﻿# InputModes
 
 ## Estado atual
 
@@ -7,7 +7,7 @@
 - `InputModeRequestKind` é o contrato efetivo dos requests (`FrontendMenu`, `Gameplay`, `PauseOverlay`).
 - `IPlayerInputLocator` encapsula a descoberta concreta de `PlayerInput`.
 - `InputModeChangedEvent` é o hook oficial de mudança efetiva de modo.
-- `SceneFlowInputModeBridge`, `GameLoop`, `Pause` e `PostGame` publicam requests; o serviço aplica o mapa efetivo.
+- `SceneFlowInputModeBridge`, `GameLoop`, `Pause` e `PostRun` publicam requests; o serviço aplica o mapa efetivo.
 
 ## Ownership
 
@@ -23,3 +23,4 @@
 - `startup` não é decidido por InputModes.
 - `FrontendMenu`, `Gameplay` e `PauseOverlay` são os requests canonicos já publicados.
 - o post global usa requests explícitos, não inferência por stage.
+

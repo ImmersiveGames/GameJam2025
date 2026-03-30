@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// OWNER: composicao de gates no fim da transicao macro.

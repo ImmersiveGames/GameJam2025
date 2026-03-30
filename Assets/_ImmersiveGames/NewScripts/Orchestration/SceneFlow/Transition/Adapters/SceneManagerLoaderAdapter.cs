@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Adapters
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Adapters
 {
     /// <summary>
     /// Implementação padrão de loader usando SceneManager (fallback).

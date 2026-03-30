@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal static class SceneResetHookExecution
     {

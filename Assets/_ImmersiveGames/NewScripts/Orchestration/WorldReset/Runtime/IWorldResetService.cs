@@ -1,7 +1,7 @@
 #nullable enable
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
 {
     /// <summary>
     /// Contrato para orquestrar um reset determinístico do WorldReset.

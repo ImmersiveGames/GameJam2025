@@ -1,11 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
 {
     /// <summary>
     /// Entry-point de produção para solicitar ResetWorld fora de QA.

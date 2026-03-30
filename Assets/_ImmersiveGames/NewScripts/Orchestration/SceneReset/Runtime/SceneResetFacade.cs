@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     /// <summary>
     /// Façade fina do trilho local de reset.

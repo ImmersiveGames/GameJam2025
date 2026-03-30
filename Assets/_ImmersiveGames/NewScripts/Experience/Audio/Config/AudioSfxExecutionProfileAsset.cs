@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     /// <summary>
     /// Define como os efeitos sonoros SFX são executados: diretamente ou por um pool.

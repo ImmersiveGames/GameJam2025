@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime
 {
     /// <summary>
     /// Identificador tipado para rotas do SceneFlow.

@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime
 {
     /// <summary>
     /// Serviço de classificação de cenas de gameplay.

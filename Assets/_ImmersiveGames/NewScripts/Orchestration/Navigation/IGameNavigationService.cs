@@ -1,8 +1,6 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     /// <summary>
     /// Public navigation API for core scene dispatch.

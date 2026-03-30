@@ -1,8 +1,7 @@
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.QA
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.QA
 {
     /// <summary>
     /// Mock neutro para observar lifecycle do pooling em Play Mode.

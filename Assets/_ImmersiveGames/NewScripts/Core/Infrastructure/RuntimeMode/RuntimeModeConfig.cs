@@ -1,10 +1,9 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode
 {
     /// <summary>
     /// Configuração global (asset) para controlar o modo de execução e a política do reporter de degradação.

@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Policies
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies
 {
     /// <summary>
     /// Policy central para reset (Strict/Release + fallback/degraded).

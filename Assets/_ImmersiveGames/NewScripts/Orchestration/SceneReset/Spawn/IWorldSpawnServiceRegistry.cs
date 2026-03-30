@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
 {
     /// <summary>
     /// Registro simples de serviços de spawn para o escopo da cena atual.

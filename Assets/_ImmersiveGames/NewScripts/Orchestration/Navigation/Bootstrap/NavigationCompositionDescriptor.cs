@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
     public static class NavigationCompositionDescriptor
     {

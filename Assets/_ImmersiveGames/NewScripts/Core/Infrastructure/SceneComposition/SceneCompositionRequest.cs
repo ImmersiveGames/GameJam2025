@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.SceneComposition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition
 {
     public readonly struct SceneCompositionRequest
     {

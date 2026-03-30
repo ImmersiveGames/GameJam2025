@@ -10,9 +10,8 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate.Interop
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GamePauseGateBridge : IDisposable

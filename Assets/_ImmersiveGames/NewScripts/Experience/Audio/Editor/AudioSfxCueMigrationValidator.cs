@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using UnityEditor;
 using UnityEngine;
 

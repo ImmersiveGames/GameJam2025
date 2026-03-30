@@ -1,7 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal static class SceneResetHookOrdering
     {

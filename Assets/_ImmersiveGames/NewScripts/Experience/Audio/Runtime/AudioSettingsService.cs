@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Runtime
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime
 {
     /// <summary>
     /// Estado runtime mutável da sessão do jogador.

@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
 {
     /// <summary>
     /// Serviço responsável por spawn/despawn dos elementos que compõem o mundo atual.

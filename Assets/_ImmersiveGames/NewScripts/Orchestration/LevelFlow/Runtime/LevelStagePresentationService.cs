@@ -1,8 +1,6 @@
-using System;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Config;
-
-namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
+﻿using System;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
     public sealed class LevelStagePresentationService : ILevelStagePresentationService
     {
@@ -36,9 +34,10 @@ namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
                 session.SelectionVersion,
                 session.LocalContentId,
                 session.HasIntroStage,
-                levelRef.HasPostGameReactionHook);
+                levelRef.HasPostRunReactionHook);
 
             return contract.IsValid;
         }
     }
 }
+

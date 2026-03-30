@@ -1,15 +1,15 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
-using _ImmersiveGames.NewScripts.Modules.PostGame;
-using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
-namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
+using _ImmersiveGames.NewScripts.Experience.PostRun;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Observability.Baseline
 {
     /// <summary>
     /// Opt-in (dev/QA) asserter para tornar o Baseline 2.0 "autofail":
@@ -288,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<BaselineInvariantAsserter>(
-                    "[Baseline] Bindings registrados (SceneFlow + WorldLifecycle + GameLoop + Pause + PostGame).",
+                    "[Baseline] Bindings registrados (SceneFlow + WorldLifecycle + GameLoop + Pause + PostRun).",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
@@ -718,5 +718,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
         }
     }
 }
+
 
 

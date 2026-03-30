@@ -4,8 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 {
     /// <summary>
     /// Passo minimo da IntroStage que apenas aguarda a confirmacao canonica do presenter de level.

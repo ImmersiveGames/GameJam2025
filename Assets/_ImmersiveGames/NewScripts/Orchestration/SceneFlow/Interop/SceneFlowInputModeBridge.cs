@@ -1,12 +1,12 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Interop
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Interop
 {
     /// <summary>
     /// Bridge global para sincronizar InputMode com base nos eventos do SceneFlow.

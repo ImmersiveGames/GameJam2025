@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
 {
     /// <summary>
     /// Chave de cena para evitar string solta em configurações de rota.

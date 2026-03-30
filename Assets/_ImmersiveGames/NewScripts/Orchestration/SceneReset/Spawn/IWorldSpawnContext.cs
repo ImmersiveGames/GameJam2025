@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
 {
     /// <summary>
     /// Contexto de spawn para agrupar o WorldRoot e o nome da cena corrente.

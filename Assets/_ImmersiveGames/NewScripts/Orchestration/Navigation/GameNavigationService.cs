@@ -1,14 +1,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     /// <summary>
     /// Canonical navigation service.

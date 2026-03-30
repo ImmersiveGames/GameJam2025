@@ -1,10 +1,10 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Bindings
+namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
 {
     /// <summary>
     /// Binder (produção) para a intent visual "Play" do Frontend/UI.

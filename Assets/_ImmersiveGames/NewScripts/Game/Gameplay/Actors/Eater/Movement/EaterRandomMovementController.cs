@@ -1,8 +1,9 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Eater.Movement
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Eater.Movement
 {
     /// <summary>
     /// Controlador simples de movimentação aleatória para o Eater no pipeline NewScripts.

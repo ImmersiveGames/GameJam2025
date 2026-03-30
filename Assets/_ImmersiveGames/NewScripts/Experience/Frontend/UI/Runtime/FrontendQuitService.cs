@@ -1,7 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Logging;
-using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Frontend.UI.Runtime
+namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime
 {
     public interface IFrontendQuitService
     {

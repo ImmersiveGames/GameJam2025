@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Bootstrap
 {
     public static class PreferencesCompositionDescriptor
     {

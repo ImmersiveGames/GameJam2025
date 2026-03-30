@@ -22,7 +22,7 @@ Definir ciclo unico e auditavel com ordem estavel:
 2. Frontend/menu
 3. Entrada em gameplay
 4. Playing
-5. PostGame
+5. PostRun
 
 ## Sequencia canonica consolidada
 - `SceneFlow` executa a transicao macro.
@@ -51,7 +51,7 @@ Definir ciclo unico e auditavel com ordem estavel:
 ### GameLoop
 - IntroStage bloqueia `sim.gameplay` ate confirmacao.
 - Entrada em Playing ocorre apos desbloqueio da simulacao.
-- PostGame permanece idempotente.
+- PostRun permanece idempotente.
 
 ## Nao-objetivos
 - Nao redefine arquitetura fora da linha canonica 0030..0033.
@@ -76,3 +76,4 @@ Definir ciclo unico e auditavel com ordem estavel:
 
 ## Evidencia
 - Fonte canonica atual: `Docs/Reports/Evidence/LATEST.md`
+

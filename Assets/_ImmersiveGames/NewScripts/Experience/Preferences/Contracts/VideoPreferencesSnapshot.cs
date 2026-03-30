@@ -1,7 +1,5 @@
 using System;
-using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Contracts
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Contracts
 {
     public sealed class VideoPreferencesSnapshot
     {

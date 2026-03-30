@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 {
     public static class GameLoopCompositionDescriptor
     {

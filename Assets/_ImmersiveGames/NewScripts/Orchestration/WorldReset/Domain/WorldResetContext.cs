@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
 {
     public readonly struct WorldResetContext
     {

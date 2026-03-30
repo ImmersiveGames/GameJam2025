@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode
 {
     /// <summary>
     /// Resolve RuntimeModeConfig apenas a partir do DI global.

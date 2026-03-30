@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Dummy
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Dummy
 {
     /// <summary>
     /// Implementação mínima de um ator para validar o pipeline de spawn/despawn.

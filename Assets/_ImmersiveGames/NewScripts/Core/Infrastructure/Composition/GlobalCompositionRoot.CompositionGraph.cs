@@ -1,16 +1,15 @@
-using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.Save.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.PostGame.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+﻿using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Bootstrap;
+using _ImmersiveGames.NewScripts.Experience.Save.Bootstrap;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap;
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
@@ -67,8 +66,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(LevelFlowCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(PostGameCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(PostRunCompositionDescriptor.Descriptor),
             };
         }
     }
 }
+

@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     /// <summary>
     /// Base que concentra a lógica comum de spawn/despawn para os serviços de actor.

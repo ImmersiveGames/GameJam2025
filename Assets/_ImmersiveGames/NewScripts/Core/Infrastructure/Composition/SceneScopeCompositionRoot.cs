@@ -1,15 +1,15 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn.Definitions;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn.Definitions;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     /// <summary>
     /// Inicializa serviços de escopo de cena para o NewScripts e garante limpeza determinística.
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     $"SceneResetHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
-            RegisterActorGroupRearmServices(provider, hookRegistry, worldRoot);
+            RegisterActorGroupGameplayResetServices(provider, hookRegistry, worldRoot);
 
             RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
@@ -270,6 +270,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         }
     }
 }
+
 
 
 

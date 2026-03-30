@@ -1,4 +1,4 @@
-# Plan - Baseline 4.0 Execution Guardrails
+﻿# Plan - Baseline 4.0 Execution Guardrails
 
 ## 1. Objetivo
 
@@ -16,7 +16,7 @@ Definir o formato operacional obrigatorio para todas as fases futuras do Baselin
 ## 3. Ordem de Trabalho Por Dominio
 
 1. `GameLoop`
-2. `PostGame`
+2. `PostRun`
 3. `LevelFlow`
 4. `Navigation`
 5. `Audio`
@@ -130,4 +130,5 @@ Cada fase deve anexar evidencia concreta, no minimo:
 - `Blueprint-Baseline-4.0-Ideal-Architecture.md` define o alvo.
 - Este plano define o formato operacional das fases futuras.
 - O audit de alinhamento registra conflitos e gaps, nao substitui o canon.
+
 

@@ -1,14 +1,13 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Input;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage.Runtime;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Run;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Readiness.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 {
     /// <summary>
     /// Installer do GameLoop.

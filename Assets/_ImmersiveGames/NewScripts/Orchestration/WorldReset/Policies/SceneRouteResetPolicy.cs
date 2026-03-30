@@ -1,8 +1,8 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Policies
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies
 {
     public sealed partial class SceneRouteResetPolicy : IRouteResetPolicy
     {

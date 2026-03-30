@@ -1,14 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal sealed class SceneResetHookSourceResolver
     {
@@ -65,14 +63,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
             return hooks;
         }
 
-        public List<IActorGroupRearmWorldParticipant> CollectScopedParticipants()
+        public List<IActorGroupGameplayResetWorldParticipant> CollectScopedParticipants()
         {
-            var participants = new List<IActorGroupRearmWorldParticipant>();
-            var uniques = new HashSet<IActorGroupRearmWorldParticipant>(ResetScopeParticipantReferenceComparer.Instance);
+            var participants = new List<IActorGroupGameplayResetWorldParticipant>();
+            var uniques = new HashSet<IActorGroupGameplayResetWorldParticipant>(ResetScopeParticipantReferenceComparer.Instance);
 
             foreach (IWorldSpawnService service in _spawnServices)
             {
-                if (service is IActorGroupRearmWorldParticipant participant && uniques.Add(participant))
+                if (service is IActorGroupGameplayResetWorldParticipant participant && uniques.Add(participant))
                 {
                     participants.Add(participant);
                 }
@@ -80,14 +78,14 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
 
             if (_provider != null && !string.IsNullOrWhiteSpace(_sceneName))
             {
-                var sceneParticipants = new List<IActorGroupRearmWorldParticipant>();
+                var sceneParticipants = new List<IActorGroupGameplayResetWorldParticipant>();
                 _provider.GetAllForScene(_sceneName, sceneParticipants);
                 participants.AddRange(sceneParticipants.Where(participant => participant != null && uniques.Add(participant)));
             }
 
             foreach (ISceneResetHook hook in ResolveSceneHooks())
             {
-                if (hook is IActorGroupRearmWorldParticipant participant && uniques.Add(participant))
+                if (hook is IActorGroupGameplayResetWorldParticipant participant && uniques.Add(participant))
                 {
                     participants.Add(participant);
                 }
@@ -95,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
 
             foreach (ISceneResetHook hook in ResolveRegistryHooks())
             {
-                if (hook is IActorGroupRearmWorldParticipant participant && uniques.Add(participant))
+                if (hook is IActorGroupGameplayResetWorldParticipant participant && uniques.Add(participant))
                 {
                     participants.Add(participant);
                 }
@@ -126,19 +124,20 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
             return _hookRegistry.Hooks;
         }
 
-        private sealed class ResetScopeParticipantReferenceComparer : IEqualityComparer<IActorGroupRearmWorldParticipant>
+        private sealed class ResetScopeParticipantReferenceComparer : IEqualityComparer<IActorGroupGameplayResetWorldParticipant>
         {
             public static readonly ResetScopeParticipantReferenceComparer Instance = new();
 
-            public bool Equals(IActorGroupRearmWorldParticipant x, IActorGroupRearmWorldParticipant y)
+            public bool Equals(IActorGroupGameplayResetWorldParticipant x, IActorGroupGameplayResetWorldParticipant y)
             {
                 return ReferenceEquals(x, y);
             }
 
-            public int GetHashCode(IActorGroupRearmWorldParticipant obj)
+            public int GetHashCode(IActorGroupGameplayResetWorldParticipant obj)
             {
                 return RuntimeHelpers.GetHashCode(obj);
             }
         }
     }
 }
+

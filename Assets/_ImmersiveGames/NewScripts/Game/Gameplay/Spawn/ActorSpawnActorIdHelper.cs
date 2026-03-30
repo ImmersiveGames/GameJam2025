@@ -2,7 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     internal static class ActorSpawnActorIdHelper
     {

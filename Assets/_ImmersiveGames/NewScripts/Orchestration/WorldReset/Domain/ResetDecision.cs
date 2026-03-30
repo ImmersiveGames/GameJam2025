@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
 {
     /// <summary>
     /// Resultado de guard/validação para o pipeline de reset.

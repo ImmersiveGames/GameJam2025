@@ -1,8 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-
-namespace _ImmersiveGames.NewScripts.Modules.Navigation
+namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     /// <summary>
     /// Utilitário pequeno para evitar Task "fire-and-forget" silenciosa.

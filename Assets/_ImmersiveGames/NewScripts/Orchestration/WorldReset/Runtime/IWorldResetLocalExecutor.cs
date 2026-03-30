@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
 {
     /// <summary>
     /// Boundary neutro para execucao local/material do reset.

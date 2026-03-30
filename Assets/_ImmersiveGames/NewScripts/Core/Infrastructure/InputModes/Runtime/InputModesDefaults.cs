@@ -1,5 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
+using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime
 {
     internal static class InputModesDefaults
     {

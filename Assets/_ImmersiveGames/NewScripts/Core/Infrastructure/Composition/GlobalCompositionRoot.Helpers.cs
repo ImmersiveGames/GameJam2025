@@ -1,9 +1,8 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {

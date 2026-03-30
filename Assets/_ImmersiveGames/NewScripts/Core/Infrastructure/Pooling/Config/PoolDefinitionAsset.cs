@@ -2,8 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.Serialization;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Config
 {
     [CreateAssetMenu(
         fileName = "PoolDefinitionAsset",

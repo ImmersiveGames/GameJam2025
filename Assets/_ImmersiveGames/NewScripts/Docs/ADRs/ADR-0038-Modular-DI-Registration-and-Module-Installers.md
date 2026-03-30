@@ -1,4 +1,4 @@
-# ADR-0038 — Registro modular de DI e composição runtime por módulo
+﻿# ADR-0038 — Registro modular de DI e composição runtime por módulo
 
 ## Status
 - Estado: Implementado
@@ -285,7 +285,7 @@ Na consolidação desta rodada:
 - `BootstrapConfigAsset` continua sendo o único entrypoint aceitável por `Resources` no boot global;
 - `GameplayStateGate` e `GameplayCameraResolver` saíram do root e passaram ao módulo `Gameplay`;
 - `GamePauseGateBridge` saiu do root e foi movido para `GameLoopBootstrap`;
-- `PostGame` e `WorldReset` ficaram explícitos como `installer-only`;
+- `PostRun` e `WorldReset` ficaram explícitos como `installer-only`;
 - `IInputModeService` permaneceu no trilho transversal global legítimo nesta passada.
 
 ### Resultado esperado de auditoria
@@ -308,7 +308,7 @@ Ao auditar o repositório contra este ADR, espera-se encontrar:
     - `LevelFlow`
     - `WorldReset`
     - `Gameplay`
-    - `PostGame`
+    - `PostRun`
 - logs canônicos do pipeline com:
     - Fase 1 em `INFO`
     - Fase 2 em `INFO`
@@ -336,3 +336,4 @@ Ao auditar o repositório contra este ADR, espera-se encontrar:
 - [ ] O pipeline emite ordem, conclusão e resumo final.
 - [ ] O `GlobalCompositionRoot` não contém wiring interno de módulo.
 - [ ] `Loading` permanece em `SceneFlow` até haver contrato próprio.
+

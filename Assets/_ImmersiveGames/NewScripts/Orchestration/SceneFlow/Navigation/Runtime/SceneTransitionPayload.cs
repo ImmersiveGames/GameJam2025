@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime
 {
     /// <summary>
     /// Payload semântico da navegação.

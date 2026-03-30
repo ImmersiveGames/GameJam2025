@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Config
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Config
 {
     [CreateAssetMenu(
         fileName = "VideoDefaults",

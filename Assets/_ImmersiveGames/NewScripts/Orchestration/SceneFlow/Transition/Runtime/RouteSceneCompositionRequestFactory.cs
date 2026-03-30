@@ -2,10 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 {
     public static class RouteSceneCompositionRequestFactory
     {

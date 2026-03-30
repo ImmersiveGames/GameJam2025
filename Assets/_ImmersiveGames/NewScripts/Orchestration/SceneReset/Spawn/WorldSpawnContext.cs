@@ -1,6 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
 {
     /// <summary>
     /// Implementação concreta do contexto de spawn para uma cena.

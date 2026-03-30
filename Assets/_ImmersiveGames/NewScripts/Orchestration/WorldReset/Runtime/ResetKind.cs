@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
 {
     /// <summary>
     /// Tipos de reset explícitos do domínio WorldReset.

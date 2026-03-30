@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Player.Movement
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement
 {
     /// <summary>
     /// Leitor mínimo de input para o stack do Player no NewScripts.

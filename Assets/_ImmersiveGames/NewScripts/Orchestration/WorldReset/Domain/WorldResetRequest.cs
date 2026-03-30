@@ -1,9 +1,9 @@
 using System;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
+using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
 {
     /// <summary>
     /// Request imutável para reset do WorldReset.

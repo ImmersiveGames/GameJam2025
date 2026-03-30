@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core
 {
 
     public sealed class ActorRegistry : IActorRegistry

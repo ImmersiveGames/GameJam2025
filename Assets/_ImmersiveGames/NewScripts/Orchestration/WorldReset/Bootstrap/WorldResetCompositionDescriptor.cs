@@ -1,7 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
 {
     public static class WorldResetCompositionDescriptor
     {

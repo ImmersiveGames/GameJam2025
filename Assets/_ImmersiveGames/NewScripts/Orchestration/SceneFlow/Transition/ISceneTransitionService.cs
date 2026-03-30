@@ -1,7 +1,7 @@
 #nullable enable
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition
 {
     public interface ISceneTransitionService
     {

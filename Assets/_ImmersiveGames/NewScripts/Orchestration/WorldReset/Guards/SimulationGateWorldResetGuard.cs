@@ -1,9 +1,8 @@
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Guards
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Guards
 {
     /// <summary>
     /// Guard baseado nos tokens do SimulationGate (flow.scene_transition / sim.gameplay).

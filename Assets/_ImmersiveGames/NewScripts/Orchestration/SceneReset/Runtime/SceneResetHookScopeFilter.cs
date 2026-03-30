@@ -1,9 +1,7 @@
-using System;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+﻿using System;
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal sealed class SceneResetHookScopeFilter
     {
@@ -26,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
                 return true;
             }
 
-            if (candidate is IActorGroupRearmWorldParticipant scopedParticipant)
+            if (candidate is IActorGroupGameplayResetWorldParticipant scopedParticipant)
             {
                 return _resetContext.Value.ContainsScope(scopedParticipant.Scope);
             }
@@ -34,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
             return false;
         }
 
-        public int CompareResetScopeParticipants(IActorGroupRearmWorldParticipant left, IActorGroupRearmWorldParticipant right)
+        public int CompareResetScopeParticipants(IActorGroupGameplayResetWorldParticipant left, IActorGroupGameplayResetWorldParticipant right)
         {
             if (ReferenceEquals(left, right))
             {
@@ -82,7 +80,8 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
 
         private static int GetParticipantScope(object participant)
         {
-            return participant is IActorGroupRearmWorldParticipant scoped ? (int)scoped.Scope : int.MaxValue;
+            return participant is IActorGroupGameplayResetWorldParticipant scoped ? (int)scoped.Scope : int.MaxValue;
         }
     }
 }
+

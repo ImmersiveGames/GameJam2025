@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bindings
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Bindings
 {
     /// <summary>
     /// Binder de intencao para opcoes de video.

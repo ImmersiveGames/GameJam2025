@@ -1,10 +1,8 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
     /// Publicador canônico do lifecycle de WorldReset.

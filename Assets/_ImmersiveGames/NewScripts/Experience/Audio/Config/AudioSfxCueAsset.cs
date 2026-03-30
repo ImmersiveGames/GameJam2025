@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     /// <summary>
     /// Define o modo de emissão de áudio: global (não espacial) ou espacial (3D).

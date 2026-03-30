@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
     /// Localiza executores locais neutros do reset sem depender do nome do modulo concreto.

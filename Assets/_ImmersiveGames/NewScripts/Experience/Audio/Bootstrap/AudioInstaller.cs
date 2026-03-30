@@ -1,11 +1,11 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
 {
     /// <summary>
     /// Installer do Audio.

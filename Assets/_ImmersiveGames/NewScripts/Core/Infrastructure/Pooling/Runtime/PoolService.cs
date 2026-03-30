@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Runtime
 {
     /// <summary>
     /// Canonical global pooling service runtime.

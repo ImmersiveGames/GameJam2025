@@ -1,14 +1,13 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
+namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 {
     /// <summary>
     /// Servico global que controla o termino da IntroStage via comando explicito.
@@ -62,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
                 if (_isActive)
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        "[OBS][EnterStageController] BeginEnterStage chamado enquanto outro EnterStage ainda esta ativo. Rearmando para o novo contexto.");
+                        "[OBS][EnterStageController] BeginEnterStage chamado enquanto outro EnterStage ainda esta ativo. GameplayResetando para o novo contexto.");
                 }
 
                 _isActive = true;
@@ -262,3 +261,4 @@ namespace _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage
         }
     }
 }
+

@@ -1,6 +1,6 @@
 #nullable enable
 using System.Threading.Tasks;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Fade.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime
 {
 
     public interface IFadeService

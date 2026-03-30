@@ -1,11 +1,11 @@
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Spawn.Definitions;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn.Definitions;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
 {
     /// <summary>
     /// ResolvePlayerActor e valida as dependências mínimas necessárias para criar serviços de spawn.

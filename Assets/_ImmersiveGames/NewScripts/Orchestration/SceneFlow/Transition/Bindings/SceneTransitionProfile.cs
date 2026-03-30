@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Bindings
 {
     /// <summary>
     /// Profile editável (ScriptableObject) para parametrizar a transição no NewScripts.

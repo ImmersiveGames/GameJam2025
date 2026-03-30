@@ -1,8 +1,7 @@
-﻿using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
+﻿using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Config;
 using UnityEngine;
 using UnityEngine.Serialization;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     /// <summary>
     /// Define o perfil de vozes para execução de áudio em pool.

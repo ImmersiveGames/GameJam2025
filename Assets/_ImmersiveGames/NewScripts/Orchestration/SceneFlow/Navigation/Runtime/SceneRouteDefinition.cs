@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime
 {
     public enum SceneRouteKind
     {

@@ -1,12 +1,11 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Bindings
 {
     internal sealed class SceneResetRuntimeFactory
     {

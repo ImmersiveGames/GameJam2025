@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
 {
     public readonly struct LoadingProgressSnapshot
     {

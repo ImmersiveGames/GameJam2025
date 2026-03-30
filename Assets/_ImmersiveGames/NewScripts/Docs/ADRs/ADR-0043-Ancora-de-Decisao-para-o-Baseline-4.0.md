@@ -1,4 +1,4 @@
-# ADR-0043 — Âncora de decisão para o Baseline 4.0
+﻿# ADR-0043 — Âncora de decisão para o Baseline 4.0
 
 ## Status
 - Estado: Draft
@@ -29,13 +29,13 @@ As auditorias seguintes mostraram que o código atual ainda mistura esses concei
 - `Modules/LevelFlow`
 - `Modules/SceneFlow`
 - `Modules/GameLoop`
-- `Modules/PostGame`
+- `Modules/PostRun`
 - `Modules/Frontend/UI`
 
 Os conflitos principais observados foram:
 
 1. `Navigation` ainda carrega mistura entre intenção, rota e, em alguns pontos, áudio contextual.
-2. `GameLoop` e `PostGame` ainda precisam ser lidos à luz de:
+2. `GameLoop` e `PostRun` ainda precisam ser lidos à luz de:
    - Estado de Fluxo
    - Resultado da Run
    - Intenção Derivada
@@ -121,7 +121,7 @@ Para efeito do Baseline 4.0, a leitura preferida de `Gameplay` é:
 A ordem recomendada de análise e adequação passa a ser:
 
 1. `Modules/GameLoop`
-2. `Modules/PostGame`
+2. `Modules/PostRun`
 3. `Modules/LevelFlow`
 4. `Modules/Navigation`
 5. `Modules/Audio`
@@ -139,7 +139,7 @@ A ordem recomendada de análise e adequação passa a ser:
 - Intenção Derivada
 - Estado Transversal
 
-### PostGame
+### PostRun
 É o ponto de ligação entre:
 - resultado
 - menu pós-run
@@ -212,5 +212,6 @@ O Baseline 4.0 pode ser considerado atingido quando:
 
 1. Registrar este ADR como âncora do Baseline 4.0.
 2. Abrir análise individual de `Modules/GameLoop`.
-3. Em seguida, `Modules/PostGame`.
+3. Em seguida, `Modules/PostRun`.
 4. Prosseguir na ordem definida acima.
+

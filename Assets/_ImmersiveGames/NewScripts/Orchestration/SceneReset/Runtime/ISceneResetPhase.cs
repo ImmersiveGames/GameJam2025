@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal interface ISceneResetPhase
     {

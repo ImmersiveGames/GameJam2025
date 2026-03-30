@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core
 {
     /// <summary>
     /// Classificação de alto nível para agrupar atores por papel/identidade.

@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode
 {
     /// <summary>
     /// Reporter canônico de DEGRADED_MODE.

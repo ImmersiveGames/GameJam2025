@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
 {
     /// <summary>
     /// Reasons canônicas para reset do WorldReset (evita strings mágicas).

@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Camera;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.State;
-
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap
+using _ImmersiveGames.NewScripts.Experience.GameplayCamera;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.State.Gate;
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Bootstrap
 {
     /// <summary>
     /// Installer do Gameplay.
@@ -70,3 +71,4 @@ namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap
         }
     }
 }
+

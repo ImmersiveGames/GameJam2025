@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
 {
 
     public sealed class WorldSpawnServiceRegistry : IWorldSpawnServiceRegistry, IDisposable

@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core
 {
     /// <summary>
     /// Contrato mínimo para atores controlados pelo novo pipeline.

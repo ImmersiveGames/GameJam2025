@@ -1,10 +1,9 @@
 using System;
 using System.Text;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Runtime
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Runtime
 {
     public sealed class PlayerPrefsPreferencesBackend : IPreferencesBackend
     {

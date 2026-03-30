@@ -1,11 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.Preferences.Contracts;
-
-namespace _ImmersiveGames.NewScripts.Modules.Preferences.Bootstrap
+using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
+namespace _ImmersiveGames.NewScripts.Experience.Preferences.Bootstrap
 {
     public static class PreferencesBootstrap
     {

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core
 {
     /// <summary>
     /// Registro básico de atores para o escopo da cena.

@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-namespace _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core
 {
     /// <summary>
     /// Hooks opcionais para lifecycle do Actor durante reset do mundo.

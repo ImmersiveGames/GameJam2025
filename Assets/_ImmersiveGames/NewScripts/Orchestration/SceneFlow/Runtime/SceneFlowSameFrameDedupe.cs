@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime
 {
     internal static class SceneFlowSameFrameDedupe
     {

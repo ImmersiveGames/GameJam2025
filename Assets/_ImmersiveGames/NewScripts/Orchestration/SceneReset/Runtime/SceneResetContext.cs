@@ -1,20 +1,18 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Core;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Rearm.Integration;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal sealed class SceneResetContext
     {
@@ -182,12 +180,12 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
             _hookCatalog.ClearActorHookCacheForCycle();
         }
 
-        public List<IActorGroupRearmWorldParticipant> CollectScopedParticipants()
+        public List<IActorGroupGameplayResetWorldParticipant> CollectScopedParticipants()
         {
             return _hookCatalog.CollectScopedParticipants();
         }
 
-        public int CompareResetScopeParticipants(IActorGroupRearmWorldParticipant left, IActorGroupRearmWorldParticipant right)
+        public int CompareResetScopeParticipants(IActorGroupGameplayResetWorldParticipant left, IActorGroupGameplayResetWorldParticipant right)
         {
             return _hookCatalog.CompareResetScopeParticipants(left, right);
         }
@@ -239,3 +237,4 @@ namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime
         }
     }
 }
+

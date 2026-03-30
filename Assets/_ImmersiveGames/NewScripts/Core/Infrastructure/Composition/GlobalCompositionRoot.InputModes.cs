@@ -1,11 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {

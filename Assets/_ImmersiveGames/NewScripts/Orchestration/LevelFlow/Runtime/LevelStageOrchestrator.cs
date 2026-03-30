@@ -2,10 +2,9 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
     public sealed class LevelStageOrchestrator : IDisposable
     {

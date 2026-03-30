@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
     /// Valida as pós-condições mínimas do hard reset macro.

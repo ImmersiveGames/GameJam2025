@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Config
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Config
 {
     [CreateAssetMenu(
         fileName = "AudioBgmCue",

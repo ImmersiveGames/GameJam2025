@@ -1,7 +1,5 @@
-using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-
-namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
+using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
 {
     public static class AudioCompositionDescriptor
     {
@@ -10,8 +8,8 @@ namespace _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap
                 moduleId: "Audio",
                 installerDependencies: new[] { "RuntimePolicy" },
                 bootstrapDependencies: new[] { "Preferences" },
-                installer: bootstrapConfig => AudioInstaller.Install(bootstrapConfig),
-                bootstrap: bootstrapConfig => AudioRuntimeComposer.ComposeRuntime(bootstrapConfig),
+                installer: AudioInstaller.Install,
+                bootstrap: AudioRuntimeComposer.ComposeRuntime,
                 installerEntry: "AudioInstaller.Install",
                 runtimeComposerEntry: "AudioRuntimeComposer.ComposeRuntime",
                 description: "Audio defaults, services and runtime wiring.");

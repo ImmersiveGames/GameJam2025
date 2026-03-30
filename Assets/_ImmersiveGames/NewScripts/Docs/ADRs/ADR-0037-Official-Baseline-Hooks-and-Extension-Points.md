@@ -1,4 +1,4 @@
-# ADR-0037: Official Baseline Hooks and Extension Points
+﻿# ADR-0037: Official Baseline Hooks and Extension Points
 
 ## Status
 - Aceito
@@ -44,8 +44,8 @@ Os seguintes pontos sao tratados como contracts oficiais para extensao externa o
 - `IActorLifecycleHook`
 
 Seams especificos de dominio permanecem no proprio owner e nao sao promovidos a hook oficial global:
-- `IActorGroupRearmOrchestrator`
-- `ILevelPostGameHookService`
+- `IActorGroupGameplayResetOrchestrator`
+- `ILevelPostRunHookService`
 
 Os seguintes sinais sao apenas observaveis e nao devem ser tratados como contrato externo principal:
 - `GameRunEndRequestedEvent`
@@ -66,7 +66,7 @@ Os seguintes sinais sao internos ou tecnicos e nao devem ser promovidos como API
 - `GameResumeRequestedEvent`
 - `SceneFlowInputModeBridge`
 - `LoadingProgressOrchestrator`
-- `PostGameOwnershipService`
+- `PostRunOwnershipService`
 
 ## Official Hooks
 - `GameRunStartedEvent`: use para marcar o inicio real de uma run e iniciar integracoes de sessao.
@@ -106,7 +106,7 @@ Os seguintes sinais sao internos ou tecnicos e nao devem ser promovidos como API
 ## Internal Components
 - `SceneFlowInputModeBridge`
 - `LoadingProgressOrchestrator`
-- `PostGameOwnershipService`
+- `PostRunOwnershipService`
 
 ## Candidate Gaps
 Nenhum gap novo foi aprovado nesta ADR.
@@ -126,3 +126,4 @@ Se uma lacuna futura provar ser real para save, trofeus, telemetria ou APIs exte
 - Nao criar sistema de plugins
 - Nao criar mega-bus novo
 - Nao promover todo evento existente a API publica
+

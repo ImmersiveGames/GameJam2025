@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
+namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
 {
     /// <summary>
     /// Escopos suportados para reset parcial (soft reset) do WorldReset/SceneReset.

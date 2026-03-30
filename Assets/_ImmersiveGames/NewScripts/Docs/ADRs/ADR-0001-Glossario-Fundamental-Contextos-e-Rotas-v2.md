@@ -1,4 +1,4 @@
-# ADR-0001 — Glossário Fundamental de Contextos, Rotas e Fluxos
+﻿# ADR-0001 — Glossário Fundamental de Contextos, Rotas e Fluxos
 
 ## Status
 - Estado: Canônico atual
@@ -483,7 +483,7 @@ O termo **slot** não entra como conceito central do domínio.
 Se existir no projeto, ele deve ser tratado apenas como detalhe técnico ou de configuração, e não como parte principal do vocabulário arquitetural.
 
 ### Exclusão 2
-`PostPlay` / `PostGame`, quando usados apenas como forma global de se referir ao resultado da run, não devem ser tratados como fase própria de domínio.
+`PostPlay` / `PostRun`, quando usados apenas como forma global de se referir ao resultado da run, não devem ser tratados como fase própria de domínio.
 
 Se existirem no código atual, devem ser lidos como nomenclatura técnica legado ou conveniência de implementação, e não como conceito central do glossário.
 
@@ -494,7 +494,7 @@ Se existirem no código atual, devem ser lidos como nomenclatura técnica legado
 ### Positivas
 - reduz ambiguidades conceituais
 - facilita discutir ownership entre módulos
-- melhora a leitura de Navigation, Audio, SceneFlow, LevelFlow, GameLoop, PostGame e Frontend
+- melhora a leitura de Navigation, Audio, SceneFlow, LevelFlow, GameLoop, PostRun e Frontend
 - reduz o risco de usar termos diferentes para o mesmo problema
 - separa com mais clareza conteúdo, interface, fluxo, resultado e intenção derivada
 
@@ -509,7 +509,8 @@ Se existirem no código atual, devem ser lidos como nomenclatura técnica legado
 
 - usar esta taxonomia para orientar a revisão de ownership dos módulos
 - usar esta taxonomia como base para futura organização de arquivos
-- usar este ADR como base para revisar os ADRs de Navigation, Audio, SceneFlow, LevelFlow, GameLoop e PostGame
+- usar este ADR como base para revisar os ADRs de Navigation, Audio, SceneFlow, LevelFlow, GameLoop e PostRun
 - validar se os contratos e assets atuais respeitam essa separação conceitual
 - revisar onde o projeto ainda mistura Contexto Macro, Contexto Local, Rota, Resultado e Intenção Derivada
 - revisar nomenclaturas técnicas que ainda escondem o papel real de elementos como `Victory`, `Defeat`, `Restart`, `ExitToMenu`, `Pause`, `EnterStage` e `ExitStage`
+

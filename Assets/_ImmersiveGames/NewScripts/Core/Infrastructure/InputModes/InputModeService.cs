@@ -1,10 +1,9 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using UnityEngine.InputSystem;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.InputModes
 {
     /// <summary>
     /// Controla action maps (Player/UI) alternando entre gameplay, pause overlay e frontend menu.

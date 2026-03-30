@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Bindings;
-
-namespace _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Runtime
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Bindings;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime
 {
     /// <summary>
     /// Define as propriedades efetivas de um estilo de transicao.

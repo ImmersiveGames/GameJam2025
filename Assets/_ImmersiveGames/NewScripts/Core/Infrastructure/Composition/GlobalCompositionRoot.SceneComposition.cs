@@ -1,6 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.SceneComposition;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition;
+namespace _ImmersiveGames.NewScripts.Core.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
