@@ -10,6 +10,12 @@
 - o housekeeping residual prioritario foi concluido e o baseline entra em manutencao controlada
 - o backlog restante fica em estado passivo, sem caracter de frente ativa
 
+## WorldReset / SceneReset boundary audit
+- o boundary minimo entre `WorldReset` e a execucao local foi neutralizado
+- `WorldReset` deixou de depender semanticamente de `SceneReset` como identidade conceitual do macro
+- `SceneReset` continua como implementacao local/material atual do reset
+- a futura decomposicao de actors segue fora desta rodada
+
 ## EntityAudioSemanticMapAsset audit
 - `EntityAudioSemanticMapAsset` permanece scoped a semantica de entidade
 - o asset contem apenas `purpose -> cue` com overrides de emissao/execucao/voz e ajuste de follow target/volume/reason

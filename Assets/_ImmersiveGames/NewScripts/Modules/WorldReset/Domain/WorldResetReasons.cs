@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Domain
         public const string SceneFlowScenesReady = "SceneFlow/ScenesReady";
 
         public const string SkippedNonGameplayRoutePrefix = "Skipped_NonGameplayRoute";
-        public const string FailedNoControllerPrefix = "Failed_NoController";
+        public const string FailedNoLocalExecutorPrefix = "Failed_NoLocalExecutor";
         public const string FailedNoResetService = "Failed_NoResetService";
         public const string FailedExecutionPrefix = "Failed_Execution";
         public const string FailedServiceExceptionPrefix = "Failed_ServiceException";

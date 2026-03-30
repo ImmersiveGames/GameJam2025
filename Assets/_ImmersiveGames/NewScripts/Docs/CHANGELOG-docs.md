@@ -1,5 +1,10 @@
 # Changelog Docs
 
+## 2026-03-29
+- Neutralizada documentalmente a fronteira `WorldReset -> SceneReset` para leitura canônica futura.
+- Introduzido o boundary neutro de execucao local como contrato de `WorldReset`.
+- Registrado `SceneReset` como implementacao local atual desse boundary, sem reclassificar o modulo como owner conceitual do macro.
+
 # 2026-03-29
 - Concluida a limpeza tecnica local dos placeholders fisicos residuais em `Modules/GameLoop/Interop`.
 - Registrado o fechamento do housekeeping residual prioritario sem impacto funcional.

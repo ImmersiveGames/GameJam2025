@@ -27,6 +27,8 @@ Definir ciclo unico e auditavel com ordem estavel:
 ## Sequencia canonica consolidada
 - `SceneFlow` executa a transicao macro.
 - Em `ScenesReady`, o handoff de reset ocorre via `ResetInterop` para `WorldReset` quando aplicavel.
+- O handoff local subsequente ocorre por boundary neutro de execucao local.
+- A implementacao local atual desse boundary e `SceneReset`, mas o ciclo canonico nao depende desse nome para ser explicado.
 - O completion gate macro (reset + prepare/clear) conclui antes da revelacao final.
 - `SceneTransitionCompleted` fecha o ciclo macro.
 - `GameLoop` segue para IntroStage/Playing conforme contrato de estado.
@@ -41,8 +43,10 @@ Definir ciclo unico e auditavel com ordem estavel:
 
 ### WorldReset / SceneReset / ResetInterop
 - `ResetWorld` e deterministico para mesmo `reason/contextSignature`.
+- `WorldReset` e o owner do reset macro e da orquestracao macro -> local.
 - `WorldResetCompletedEvent` e correlacionado por `ContextSignature` para liberar o gate macro.
 - `ResetInterop` faz ponte e correlacao; nao absorve policy de reset.
+- O boundary local neutro e executado atualmente por `SceneReset`, que continua sendo a implementacao material local.
 
 ### GameLoop
 - IntroStage bloqueia `sim.gameplay` ate confirmacao.

@@ -6,12 +6,13 @@ using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Modules.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Modules.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Modules.WorldReset.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings
 {
     [DisallowMultipleComponent]
-    public sealed class SceneResetController : MonoBehaviour
+    public sealed class SceneResetController : MonoBehaviour, IWorldResetLocalExecutor
     {
         // OWNER boundary: bootstrap/queue de reset local da cena via SceneResetRunner + pipeline interno de SceneReset.
         // Nao publica eventos V1/V2 de gate/telemetria do trilho macro.

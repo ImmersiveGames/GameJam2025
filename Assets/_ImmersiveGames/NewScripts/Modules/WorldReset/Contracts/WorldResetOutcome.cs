@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts
         SkippedValidation = 2,
         FailedExecution = 3,
         FailedService = 4,
-        FailedNoController = 5,
+        FailedNoLocalExecutor = 5,
         SkippedInvalidContext = 6,
         Disposed = 7
     }

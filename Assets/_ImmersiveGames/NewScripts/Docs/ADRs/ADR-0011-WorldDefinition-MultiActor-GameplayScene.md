@@ -6,7 +6,7 @@
 - Data (decisão): 2025-12-28
 - Última atualização: 2026-03-25
 - Tipo: Implementação
-- Escopo: `GameplayScene`, `SceneScopeCompositionRoot`, spawn pipeline (Player/Eater), WorldReset/SceneReset
+- Escopo: `GameplayScene`, `SceneScopeCompositionRoot`, spawn pipeline (Player/Eater), WorldReset e execucao local material
 
 ## Contexto
 
@@ -47,6 +47,8 @@ A integração acontece no `SceneScopeCompositionRoot` (nome atual observado em 
 
 > Observação: versões anteriores do texto referiam “NewSceneBootstrapper”. Na evidência canônica atual, o componente observado é `SceneScopeCompositionRoot`.
 
+> Nota de boundary: o runtime observado ainda passa pela implementação local atual de execução material, hoje representada por `SceneReset`, mas isso não define o boundary macro canônico de `WorldReset`.
+
 ## Política Strict/Release
 
 ### Regra de contrato
@@ -69,6 +71,7 @@ Evidência canônica mostra:
 
 - `profile=startup` e `profile=frontend`: reset pode ser SKIP.
 - `profile=gameplay`: reset executa e o spawn pipeline roda.
+- O fato de o runtime atual passar por `SceneReset` é uma decisão de implementação local, não a definição conceitual do boundary macro.
 
 ## Evidência
 

@@ -94,6 +94,8 @@ Sequencia canonica do runtime:
 O codigo atual e fonte de evidencia, inventario de comportamento e material de reaproveitamento.
 Ele nao e contrato.
 
+O nome da implementacao local atual nao redefine o canon. Quando um boundary macro conversa com uma execucao local, o contrato deve ser lido primeiro pela funcao canonica e so depois pela implementacao concreta observada.
+
 ## Consequencias
 
 - O blueprint passa a ser lido sob a cobertura do ADR-0044.

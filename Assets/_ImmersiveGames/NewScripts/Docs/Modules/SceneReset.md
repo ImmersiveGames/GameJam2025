@@ -6,6 +6,7 @@
 - `SceneResetRunner` monta as dependencias efemeras do trilho local.
 - `SceneResetFacade` delega para o pipeline local.
 - `Runtime/SceneReset/*` concentra o pipeline deterministico por fases.
+- `SceneResetController` implementa o boundary neutro de execucao local consumido por `WorldReset`.
 
 ## Ownership
 
@@ -19,9 +20,10 @@
 
 ## Regras praticas
 
-- `SceneReset*` representa apenas o reset local de cena.
+- `SceneReset*` representa uma implementacao concreta do reset local de cena.
 - O modulo nao e owner do reset macro; esse papel pertence a `WorldReset`.
 - O modulo nao e owner do bridge com `SceneFlow`; esse papel pertence a `ResetInterop`.
+- O fato de `WorldReset` descobrir `SceneReset` hoje e apenas a implementacao local observada do boundary neutro; nao e a definicao canonica do boundary.
 
 ## Leitura cruzada
 

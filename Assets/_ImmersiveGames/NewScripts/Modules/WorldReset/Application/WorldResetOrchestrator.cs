@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Bindings;
-using _ImmersiveGames.NewScripts.Modules.SceneReset.Runtime;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Modules.WorldReset.Guards;
@@ -93,13 +91,13 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
                 return HandleDecision("Validation", decision, request);
             }
 
-            IReadOnlyList<SceneResetController> controllers = DiscoverControllers(request.TargetScene);
-            if (controllers.Count == 0)
+            IReadOnlyList<IWorldResetLocalExecutor> executors = DiscoverExecutors(request.TargetScene);
+            if (executors.Count == 0)
             {
                 string target = string.IsNullOrWhiteSpace(request.TargetScene) ? "<unknown>" : request.TargetScene;
-                string detail = $"{WorldResetReasons.FailedNoControllerPrefix}:{target}";
-                LogDegraded($"Nenhum SceneResetController encontrado para reset. targetScene='{target}'.");
-                _lifecyclePublisher.PublishCompleted(request, WorldResetOutcome.FailedNoController, detail);
+                string detail = $"{WorldResetReasons.FailedNoLocalExecutorPrefix}:{target}";
+                LogDegraded($"Nenhum executor local neutro encontrado para reset. targetScene='{target}'.");
+                _lifecyclePublisher.PublishCompleted(request, WorldResetOutcome.FailedNoLocalExecutor, detail);
                 return WorldResetResult.Failed;
             }
 
@@ -111,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
 
             try
             {
-                await _executor.ExecuteAsync(controllers, request.Reason);
+                await _executor.ExecuteAsync(executors, request.Reason);
                 _postResetValidator.ValidateEssentialActors(request.TargetScene, _policy);
             }
             catch (Exception ex)
@@ -155,9 +153,9 @@ namespace _ImmersiveGames.NewScripts.Modules.WorldReset.Application
             return ResetDecision.Proceed();
         }
 
-        private static IReadOnlyList<SceneResetController> DiscoverControllers(string targetScene)
+        private static IReadOnlyList<IWorldResetLocalExecutor> DiscoverExecutors(string targetScene)
         {
-            return SceneResetControllerLocator.FindControllersForScene(targetScene);
+            return WorldResetLocalExecutorLocator.FindExecutorsForScene(targetScene);
         }
 
         private WorldResetResult HandleDecision(string stage, ResetDecision decision, WorldResetRequest request)
