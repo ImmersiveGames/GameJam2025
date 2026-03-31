@@ -13,8 +13,8 @@ using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Validation;
 namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
-    /// Orquestra o pipeline de reset do WorldReset.
-    /// Guard -> Validate -> Discover -> Execute -> PostValidate -> PublishCompleted.
+    /// Orquestra a decisÃ£o de reset do WorldReset.
+    /// Guard -> Validate -> Dispatch execution -> PostValidate -> PublishCompleted.
     /// </summary>
     public sealed class WorldResetOrchestrator
     {
@@ -90,8 +90,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
                 return HandleDecision("Validation", decision, request);
             }
 
-            IReadOnlyList<IWorldResetLocalExecutor> executors = DiscoverExecutors(request.TargetScene);
-            if (executors.Count == 0)
+            if (!_executor.TryResolveExecutors(request.TargetScene, out IReadOnlyList<IWorldResetLocalExecutor> executors) ||
+                executors == null ||
+                executors.Count == 0)
             {
                 string target = string.IsNullOrWhiteSpace(request.TargetScene) ? "<unknown>" : request.TargetScene;
                 string detail = $"{WorldResetReasons.FailedNoLocalExecutorPrefix}:{target}";
@@ -150,11 +151,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
             }
 
             return ResetDecision.Proceed();
-        }
-
-        private static IReadOnlyList<IWorldResetLocalExecutor> DiscoverExecutors(string targetScene)
-        {
-            return WorldResetLocalExecutorLocator.FindExecutorsForScene(targetScene);
         }
 
         private WorldResetResult HandleDecision(string stage, ResetDecision decision, WorldResetRequest request)

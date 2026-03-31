@@ -5,10 +5,31 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
     /// Executa o trilho local de reset em boundary neutro resolvido pelo pipeline macro.
-    /// Não valida pós-condições nem publica lifecycle.
+    /// Nao valida pos-condicoes nem publica lifecycle.
+    /// Mantem a descoberta de executores como helper operacional da fase 6.
     /// </summary>
     public sealed class WorldResetExecutor
     {
+        public bool TryResolveExecutors(
+            string targetScene,
+            out IReadOnlyList<IWorldResetLocalExecutor> executors)
+        {
+            executors = WorldResetLocalExecutorLocator.FindExecutorsForScene(targetScene);
+            return executors != null && executors.Count > 0;
+        }
+
+        public async Task<bool> TryExecuteAsync(string targetScene, string reason)
+        {
+            IReadOnlyList<IWorldResetLocalExecutor> executors = WorldResetLocalExecutorLocator.FindExecutorsForScene(targetScene);
+            if (executors == null || executors.Count == 0)
+            {
+                return false;
+            }
+
+            await ExecuteResetOnControllersAsync(executors, reason);
+            return true;
+        }
+
         public async Task ExecuteAsync(
             IReadOnlyList<IWorldResetLocalExecutor> executors,
             string reason)

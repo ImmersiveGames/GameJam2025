@@ -5,7 +5,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
-    /// Localiza executores locais neutros do reset sem depender do nome do modulo concreto.
+    /// Helper operacional da fase 6 para localizar executores locais neutros do reset sem depender do nome do modulo concreto.
     /// </summary>
     internal static class WorldResetLocalExecutorLocator
     {
