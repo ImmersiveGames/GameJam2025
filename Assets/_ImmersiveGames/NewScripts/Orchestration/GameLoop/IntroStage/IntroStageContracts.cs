@@ -1,7 +1,7 @@
 #nullable enable
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 {
@@ -21,12 +21,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 
         public IntroStageContext(
             LevelIntroStageSession session,
+            SceneRouteKind routeKind,
             string? targetScene,
             string? reason)
         {
             Session = session;
             ContextSignature = session.LevelSignature;
-            RouteKind = session.MacroRouteRef != null ? session.MacroRouteRef.RouteKind : SceneRouteKind.Unspecified;
+            RouteKind = routeKind;
             TargetScene = targetScene ?? string.Empty;
             Reason = reason ?? string.Empty;
         }

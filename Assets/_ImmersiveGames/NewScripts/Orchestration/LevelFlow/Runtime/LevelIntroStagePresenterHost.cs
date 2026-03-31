@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
             }
         }
 
-        public bool TryEnsureCurrentPresenter(LevelIntroStageSession session, string source, out ILevelIntroStagePresenter presenter)
+        public bool TryEnsureCurrentPresenter(_ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session, string source, out ILevelIntroStagePresenter presenter)
         {
             presenter = null!;
 
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
                    string.Equals(_currentSessionSignature, sessionSignature, StringComparison.Ordinal);
         }
 
-        private void CreatePresenterInstanceLocked(LevelIntroStageSession session, string source)
+        private void CreatePresenterInstanceLocked(_ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session, string source)
         {
             if (_presenterScopeResolver.TryResolvePresenters(session, out IReadOnlyList<ILevelIntroStagePresenter> scopedPresenters))
             {
@@ -259,7 +259,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
             return presenters.Count > 0;
         }
 
-        private void AdoptPresenterLocked(ILevelIntroStagePresenter presenter, LevelIntroStageSession session, string source, bool ownedByHost, GameObject? presenterInstanceOverride = null)
+        private void AdoptPresenterLocked(ILevelIntroStagePresenter presenter, _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session, string source, bool ownedByHost, GameObject? presenterInstanceOverride = null)
         {
             if (presenter is not MonoBehaviour presenterComponent)
             {

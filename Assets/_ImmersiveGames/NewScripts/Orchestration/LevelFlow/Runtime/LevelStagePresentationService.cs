@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
         {
             contract = default;
 
-            if (!_introStageSessionService.TryGetCurrentSession(out LevelIntroStageSession session) ||
+            if (!_introStageSessionService.TryGetCurrentSession(out _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session) ||
                 !session.IsValid ||
                 !session.HasLevelRef)
             {

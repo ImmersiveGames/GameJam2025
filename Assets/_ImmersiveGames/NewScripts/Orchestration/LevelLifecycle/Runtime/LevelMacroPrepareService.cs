@@ -187,17 +187,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 DebugUtility.Colors.Info);
 
             EventBus<LevelEnteredEvent>.Raise(new LevelEnteredEvent(
-                new LevelIntroStageSession(
-                    selectedLevelRef,
-                    macroRouteId,
-                    routeRef,
+                selectedLevelRef.CreateIntroStageSession(
                     localContentId,
                     normalizedReason,
                     selectionVersion,
-                    levelSignature,
-                    selectedLevelRef.IntroPresenterPrefab,
-                    selectedLevelRef.HasIntroStage ? LevelIntroStageDisposition.HasIntro : LevelIntroStageDisposition.NoIntro),
-                "LevelPrepare"));
+                    levelSignature),
+                "LevelPrepare",
+                routeKind));
         }
 
         private async Task ClearActiveLevelAsync(

@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
     public sealed class LevelIntroStagePresenterScopeResolver : ILevelIntroStagePresenterScopeResolver
     {
-        public bool TryResolvePresenters(LevelIntroStageSession session, out IReadOnlyList<ILevelIntroStagePresenter> presenters)
+        public bool TryResolvePresenters(_ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session, out IReadOnlyList<ILevelIntroStagePresenter> presenters)
         {
             presenters = new List<ILevelIntroStagePresenter>();
 

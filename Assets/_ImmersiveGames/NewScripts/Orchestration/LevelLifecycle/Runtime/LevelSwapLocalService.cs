@@ -78,7 +78,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             using IDisposable gateHandle = AcquireSwapGate();
 
-            PublishLevelSelected(targetLevelRef, macroRouteId, routeAsset, localContentId, normalizedReason, nextSelectionVersion, levelSignature);
+            LevelSelectedEvent selectedEvent = new LevelSelectedEvent(
+                macroRouteId,
+                routeAsset,
+                targetLevelRef,
+                nextSelectionVersion,
+                localContentId,
+                normalizedReason,
+                levelSignature);
+
+            PublishLevelSelected(selectedEvent);
 
             ct.ThrowIfCancellationRequested();
             await _worldResetCommands.ResetLevelAsync(targetLevelRef, normalizedReason, new LevelContextSignature(levelSignature), ct);
@@ -105,17 +114,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 DebugUtility.Colors.Info);
 
             EventBus<LevelEnteredEvent>.Raise(new LevelEnteredEvent(
-                new LevelIntroStageSession(
-                    targetLevelRef,
-                    macroRouteId,
-                    routeAsset,
+                targetLevelRef.CreateIntroStageSession(
                     localContentId,
                     normalizedReason,
                     nextSelectionVersion,
-                    levelSignature,
-                    targetLevelRef.IntroPresenterPrefab,
-                    targetLevelRef.HasIntroStage ? LevelIntroStageDisposition.HasIntro : LevelIntroStageDisposition.NoIntro),
-                "LevelSwapLocal"));
+                    levelSignature),
+                "LevelSwapLocal",
+                routeKind));
         }
 
         private IDisposable AcquireSwapGate()
@@ -133,19 +138,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         private static string NormalizeSwapReason(string reason)
             => string.IsNullOrWhiteSpace(reason) ? "LevelFlow/SwapLevelLocal" : reason.Trim();
 
-        private static void PublishLevelSelected(LevelDefinitionAsset levelRef, SceneRouteId macroRouteId, SceneRouteDefinitionAsset routeRef, string localContentId, string reason, int selectionVersion, string levelSignature)
+        private static void PublishLevelSelected(LevelSelectedEvent selectedEvent)
         {
-            EventBus<LevelSelectedEvent>.Raise(new LevelSelectedEvent(
-                macroRouteId,
-                routeRef,
-                levelRef,
-                selectionVersion,
-                localContentId,
-                reason,
-                levelSignature));
+            EventBus<LevelSelectedEvent>.Raise(selectedEvent);
 
             DebugUtility.Log<LevelSwapLocalService>(
-                $"[OBS][Level] LevelSelectedEventPublished levelRef='{(levelRef != null ? levelRef.name : "<none>")}' macroRouteId='{macroRouteId}' contentId='{localContentId}' reason='{reason}' v='{selectionVersion}' levelSignature='{levelSignature}'.",
+                $"[OBS][Level] LevelSelectedEventPublished levelRef='{(selectedEvent.LevelRef != null ? selectedEvent.LevelRef.name : "<none>")}' macroRouteId='{selectedEvent.MacroRouteId}' contentId='{selectedEvent.LocalContentId}' reason='{selectedEvent.Reason}' v='{selectedEvent.SelectionVersion}' levelSignature='{selectedEvent.LevelSignature}'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
 namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config
@@ -33,6 +34,22 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config
         public bool AllowLocalCurtainIn => allowLocalCurtainIn;
         public bool AllowLocalCurtainOut => allowLocalCurtainOut;
         public AudioBgmCueAsset BgmCue => bgmCue;
+
+        public LevelIntroStageSession CreateIntroStageSession(
+            string localContentId,
+            string reason,
+            int selectionVersion,
+            string levelSignature)
+        {
+            return new LevelIntroStageSession(
+                this,
+                localContentId,
+                reason,
+                selectionVersion,
+                levelSignature,
+                introPresenterPrefab,
+                hasIntroStage ? LevelIntroStageDisposition.HasIntro : LevelIntroStageDisposition.NoIntro);
+        }
 
         public bool TryValidateRuntime(out string error)
         {

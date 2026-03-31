@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
@@ -60,7 +61,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
                     $"[FATAL][H1][LevelFlow] Intro session requires a canonical level presenter but none is registered. source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' signature='{evt.Session.LevelSignature}'.");
             }
 
-            DispatchIntroStage(evt.Source, evt.Session, Normalize(evt.Session.Reason), isLocalSwap: string.Equals(evt.Source, "LevelSwapLocal", StringComparison.Ordinal));
+            DispatchIntroStage(
+                evt.Source,
+                evt.Session,
+                evt.RouteKind,
+                Normalize(evt.Session.Reason),
+                isLocalSwap: string.Equals(evt.Source, "LevelSwapLocal", StringComparison.Ordinal));
         }
 
         private bool TryAdvanceDedupe(int selectionVersion, string levelSignature, string source)
@@ -102,7 +108,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 
         private void DispatchIntroStage(
             string source,
-            LevelIntroStageSession session,
+            _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session,
+            SceneRouteKind routeKind,
             string reason,
             bool isLocalSwap)
         {
@@ -122,6 +129,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 
             var context = new IntroStageContext(
                 session: session,
+                routeKind: routeKind,
                 targetScene: activeSceneName,
                 reason: reason);
 
@@ -134,7 +142,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
             _ = coordinator.RunIntroStageAsync(context);
         }
 
-        private static void PublishLevelIntroCompleted(LevelIntroStageSession session, string source, bool wasSkipped, string reason)
+        private static void PublishLevelIntroCompleted(_ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session, string source, bool wasSkipped, string reason)
         {
             string levelName = session.LevelRef != null ? session.LevelRef.name : "<none>";
             DebugUtility.Log<LevelStageOrchestrator>(
