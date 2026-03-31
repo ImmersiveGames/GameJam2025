@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Bindings;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;

@@ -1,8 +1,8 @@
-﻿using System;
-using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition;
-using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
+using System;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Orchestration.SceneComposition;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;

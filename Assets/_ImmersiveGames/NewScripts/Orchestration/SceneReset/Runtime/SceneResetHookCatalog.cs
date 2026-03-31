@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Composition;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;

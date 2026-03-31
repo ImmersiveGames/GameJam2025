@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;

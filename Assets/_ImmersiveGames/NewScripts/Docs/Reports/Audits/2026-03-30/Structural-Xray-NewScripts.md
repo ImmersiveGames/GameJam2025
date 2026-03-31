@@ -19,7 +19,8 @@
 
 | Root | Papel | Dominio | Status |
 |---|---|---|---|
-| `Core` | Fundacao transversal: composicao, eventos, FSM, IDs, logging, validacao e infra base. | `Core Domain` | estavel |
+| `Core` | Fundacao transversal: eventos, FSM, IDs, logging e validacao. | `Core Domain` | estavel |
+| `Infrastructure` | Mecanismos tecnicos: composicao, pooling, runtime mode, input modes, simulation gate e observability/baseline. | suporte transversal | estavel |
 | `Orchestration` | Backbone operacional: scene flow, reset, navigation, level lifecycle, game loop e bridges. | `Orchestration Domain` | estavel |
 | `Game` | Ownership do jogo: content/definitions, gameplay state, GameplayReset, actors e spawn. | `Game Domain` | estavel |
 | `Experience` | Borda de experiencia: post-run, audio, save placeholder, preferences, frontend e camera. | `Experience Domain` | estavel |
@@ -30,19 +31,24 @@
 ```text
 NewScripts/
   Core/
-    Composition/
     Events/
       Legacy/                    (compat)
     Fsm/
     Identifiers/
-    Infrastructure/
-      SimulationGate/
-      InputModes/
-      SceneComposition/
     Logging/
     Validation/
 
+  Infrastructure/
+    Composition/
+    InputModes/
+    Observability/
+      Baseline/
+    Pooling/
+    RuntimeMode/
+    SimulationGate/
+
   Orchestration/
+    SceneComposition/
     SceneFlow/
       Bootstrap/
       Fade/
@@ -160,8 +166,10 @@ NewScripts/
 
 ```mermaid
 flowchart LR
+  Core --> INF["Infrastructure"]
   Core --> SF["Orchestration/SceneFlow"]
-  Core --> Gate["Core/Infrastructure/SimulationGate"]
+  INF --> SF
+  INF --> Gate["Infrastructure/SimulationGate"]
 
   SF --> LL["Orchestration/LevelLifecycle"]
   LL --> GL["Orchestration/GameLoop"]
@@ -196,18 +204,28 @@ flowchart LR
 
 | Pasta/Subarea | O que ela e | Para que serve | Observacao curta |
 |---|---|---|---|
-| `Core/Composition` | area de montagem | junta os servicos do runtime | base para o resto subir |
 | `Core/Events` | barramento de eventos | liga areas sem acoplamento direto | `Legacy` e compat |
 | `Core/Fsm` | base de estado | coordena transicoes internas | apoio para loops e gates |
 | `Core/Identifiers` | nomes e identidades canonicas | evita ids soltos e repetidos | pouco visivel, mas central |
-| `Core/Infrastructure/SimulationGate` | gate tecnico de simulacao | controla ready/pause/sim | fundacao operacional |
 | `Core/Logging` | logs padronizados | ajuda leitura e diagnose | utilidade transversal |
 | `Core/Validation` | validacao de contrato/config | falha rapido quando algo falta | protege boot e setup |
+
+### Infrastructure
+
+| Pasta/Subarea | O que ela e | Para que serve | Observacao curta |
+|---|---|---|---|
+| `Infrastructure/Composition` | area de montagem e bootstrap | junta os servicos do runtime | wiring e registries |
+| `Infrastructure/InputModes` | adaptacao de modo de input | troca action maps e estado de modo | suporte transversal |
+| `Infrastructure/Observability/Baseline` | assercao e observacao de invariantes | monitora ordem e saude do runtime | nao e testing puro |
+| `Infrastructure/Pooling` | pooling canonico de objetos | controla lifecycle de objetos reutilizaveis | infraestrutura de performance |
+| `Infrastructure/RuntimeMode` | policy de modo de runtime | decide strict/diagnostic/degraded | camada tecnica de boot |
+| `Infrastructure/SimulationGate` | gate tecnico de simulacao | controla ready/pause/sim | fundacao operacional |
 
 ### Orchestration
 
 | Pasta/Subarea | O que ela e | Para que serve | Observacao curta |
 |---|---|---|---|
+| `Orchestration/SceneComposition` | composicao de cena em runtime | executa load/unload/set active scene | coordena fluxo de cena |
 | `Orchestration/SceneFlow` | fluxo macro de cena | carrega, transita e prepara a cena | backbone de navegacao |
 | `Orchestration/WorldReset` | reset global do mundo | reinicia o estado macro de forma deterministica | backbone de reset |
 | `Orchestration/ResetInterop` | ponte de reset | conecta `SceneFlow` e `WorldReset` | bridge legitima |
@@ -244,11 +262,16 @@ flowchart LR
 
 | Pasta/area | Papel | Dominio | Conecta com | Status |
 |---|---|---|---|---|
-| `Core/Composition` | wiring e composicao de runtime | Core | todos os roots | estavel |
 | `Core/Events` | bus/eventos globais | Core | Orchestration, Game, Experience | estavel |
 | `Core/Fsm` | maquinas de estado base | Core | GameLoop e transicoes | estavel |
-| `Core/Infrastructure/SimulationGate` | gate tecnico de ready/pause/sim | Core | GameLoop, SceneFlow, Gameplay | estavel |
 | `Core/Events/Legacy` | wrapper/[compat] historica | compat | codigo legado fora do canon novo | compat |
+| `Infrastructure/Composition` | wiring, bootstrap e registries | Infrastructure | todos os roots | estavel |
+| `Infrastructure/InputModes` | modo de input e action maps | Infrastructure | SceneFlow, GameLoop, UI | estavel |
+| `Infrastructure/Observability/Baseline` | observacao de invariantes | Infrastructure | SceneFlow, Gate, Reset | estavel |
+| `Infrastructure/Pooling` | pooling canonico | Infrastructure | Audio, Gameplay, VFX | estavel |
+| `Infrastructure/RuntimeMode` | policy de runtime | Infrastructure | Boot, diagnostics | estavel |
+| `Infrastructure/SimulationGate` | gate tecnico de ready/pause/sim | Infrastructure | GameLoop, SceneFlow, Gameplay | estavel |
+| `Orchestration/SceneComposition` | composicao de cena em runtime | Orchestration | SceneFlow, LevelLifecycle | estavel |
 | `Orchestration/SceneFlow` | rota macro, loading, readiness, transition | Orchestration | LevelLifecycle, Save, Audio | estavel |
 | `Orchestration/WorldReset` | reset deterministico global | Orchestration | GameplayReset, Save, SceneReset | estavel |
 | `Orchestration/ResetInterop` | bridge entre scene flow e world reset | Orchestration | SceneFlow, WorldReset | bridge |

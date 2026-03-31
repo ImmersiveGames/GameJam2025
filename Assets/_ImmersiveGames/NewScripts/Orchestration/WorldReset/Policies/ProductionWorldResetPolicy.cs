@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Infrastructure.RuntimeMode;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies
 {
     /// <summary>

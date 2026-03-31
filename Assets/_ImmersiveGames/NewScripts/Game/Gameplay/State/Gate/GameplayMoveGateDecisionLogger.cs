@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.NewScripts.Core.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;

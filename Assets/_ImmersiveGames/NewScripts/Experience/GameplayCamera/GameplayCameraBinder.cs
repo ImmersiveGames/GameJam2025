@@ -1,11 +1,11 @@
-﻿/*
+/*
  * ChangeLog
  * - Mantido registro/desregistro idempotente, evitando logs repetitivos ao resolver indisponível.
  * - Mantido retry em Awake/Start/OnEnable, com log único quando o resolver aparece após falha.
  * - Garantido desregistro também em OnDestroy (cobre casos de teardown/Domain reload).
  */
 
-using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Experience.GameplayCamera

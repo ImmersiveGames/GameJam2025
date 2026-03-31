@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Composition;
-using _ImmersiveGames.NewScripts.Core.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
 using _ImmersiveGames.NewScripts.Experience.Save.Checkpoint;

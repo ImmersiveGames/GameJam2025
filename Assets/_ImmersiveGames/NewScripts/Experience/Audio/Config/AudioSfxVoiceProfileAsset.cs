@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
 using UnityEngine;
 using UnityEngine.Serialization;
 namespace _ImmersiveGames.NewScripts.Experience.Audio.Config

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Infrastructure.SceneComposition;
+using _ImmersiveGames.NewScripts.Orchestration.SceneComposition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime

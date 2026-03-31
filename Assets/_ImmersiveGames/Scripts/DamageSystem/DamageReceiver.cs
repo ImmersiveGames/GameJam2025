@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Composition;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;

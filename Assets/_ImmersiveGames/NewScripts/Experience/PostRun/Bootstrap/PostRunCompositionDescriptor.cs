@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Core.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
 {
     public static class PostRunCompositionDescriptor

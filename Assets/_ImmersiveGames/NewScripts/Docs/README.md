@@ -6,6 +6,7 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 
 - `ADR-0001` e o owner de glossario, intencao e taxonomia.
 - As paginas ativas seguem o tree fisico atual, mas algumas mantem nomes historicos por compatibilidade.
+- O eixo fisico atual separa `Core`, `Infrastructure`, `Orchestration`, `Game` e `Experience`.
 - Termos como `WorldLifecycle`, `ContentSwap`, `LevelManager` e `PostPlay` devem ser lidos como historicos fora do canon.
 - `Experience/Save` deve ser lido hoje como superficie de hooks e contratos placeholder, nao como sistema final de persistencia.
 
@@ -45,8 +46,9 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 
 ## Estado fisico atual resumido
 
-- `Core`: base transversal.
-- `Orchestration`: `SceneFlow`, `WorldReset`, `ResetInterop`, `Navigation`, `LevelLifecycle`, `GameLoop` e `SceneReset`.
+- `Core`: primitivas fundamentais e base conceitual.
+- `Infrastructure`: composicao, pooling, runtime mode, input modes, simulation gate, observability/baseline e suporte transversal.
+- `Orchestration`: `SceneFlow`, `WorldReset`, `ResetInterop`, `Navigation`, `LevelLifecycle`, `GameLoop`, `SceneReset` e `SceneComposition`.
 - `Game`: `Gameplay`, `Content/Definitions/Levels` e o runtime de estado/GameplayReset.
 - `Experience`: `PostRun`, `Audio`, `Save` como superficie de hooks placeholder, `Preferences`, `Frontend` e `Camera`.
 
