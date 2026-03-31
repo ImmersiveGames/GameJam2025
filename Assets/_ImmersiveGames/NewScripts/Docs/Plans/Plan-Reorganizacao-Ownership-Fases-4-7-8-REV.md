@@ -309,3 +309,43 @@ Ao final desta reorganização conceitual, o projeto deve conseguir responder co
 - quem deixa os objetos válidos para jogar
 - onde `Orchestration` para
 - onde `Game Domain` passa a ser owner semântico
+
+---
+
+## Status consolidado pós-execução
+
+### Fase 4 — Local Content Context Activation
+- Status: **congelada**
+- Leitura: correta e validada por log
+- Observação: semântica local no `Game Domain`; contexto macro na borda de `Orchestration`
+
+### Fase 7 — Object Materialization
+- Status: **congelada com ressalva pequena**
+- Leitura: ownership semântico correto no `Game`; `SceneReset` como executor operacional/local
+- Ressalva R1: factory/resolver/validator de spawn ainda estão fisicamente sob pasta de `Orchestration/SceneReset/Spawn`, embora semanticamente pertençam ao `Game`
+- Quando retomar R1:
+  - quando houver etapa de reorganização física/organizacional
+  - ou quando essa divergência começar a causar confusão de manutenção
+- Observação: isso é pendência de alinhamento físico, não blocker arquitetural atual
+
+### Fase 8 — Object Initialization / Rebind
+- Status: **congelada com ressalva pequena**
+- Leitura: contrato de rebind/inicialização no `Game`; `SceneReset` segue como executor/disparador operacional
+- Ressalva R2: `GameplayReset` ainda depende diretamente de `IWorldResetPolicy`
+- Quando retomar R2:
+  - quando houver etapa de hardening de contratos operacionais
+  - ou quando forem revisar o boundary entre `GameplayReset` e `WorldReset`
+  - ou se essa dependência começar a puxar semântica indevida de `Orchestration` para dentro do `Game`
+- Observação: isso é acoplamento operacional aceito no estado atual, não blocker
+
+### Regra para retomada futura
+- não mover só execução
+- corrigir ownership semântico de verdade
+- não aceitar adapter/bridge/wrapper apenas para mascarar boundary ruim
+
+### Conclusão consolidada
+- o pacote **4/7/8 está fechado por agora**
+- as pendências abertas são:
+  - **R1**: alinhamento físico da fase 7
+  - **R2**: desacoplamento operacional da fase 8
+- ambas são pendências de qualidade arquitetural, não blockers do estado atual

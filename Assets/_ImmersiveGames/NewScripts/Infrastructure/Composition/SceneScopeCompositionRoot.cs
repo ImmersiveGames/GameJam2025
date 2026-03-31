@@ -3,6 +3,7 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn.Definitions;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;

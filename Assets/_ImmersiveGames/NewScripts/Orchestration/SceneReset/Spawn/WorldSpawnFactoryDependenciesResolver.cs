@@ -5,7 +5,8 @@ using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn.Definitions;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
-namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     /// <summary>
     /// ResolvePlayerActor e valida as dependências mínimas necessárias para criar serviços de spawn.

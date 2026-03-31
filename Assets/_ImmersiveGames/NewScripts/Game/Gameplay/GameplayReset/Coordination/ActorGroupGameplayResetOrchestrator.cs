@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Discovery;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Execution;
-using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Policy;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
 using UnityEngine.SceneManagement;
@@ -27,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
         private IActorRegistry _actorRegistry;
         private IActorGroupGameplayResetTargetClassifier _classifier;
 
-        private IActorGroupGameplayResetPolicy _policy;
+        private IWorldResetPolicy _policy;
         private IActorGroupGameplayResetDiscoveryStrategy _registryDiscovery;
         private IActorGroupGameplayResetDiscoveryStrategy _sceneScanDiscovery;
 
@@ -170,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
                 worldResetPolicy = new ProductionWorldResetPolicy(runtimeModeProvider, degradedModeReporter);
             }
 
-            _policy = new ActorGroupGameplayResetPolicyAdapter(worldResetPolicy);
+            _policy = worldResetPolicy;
             _registryDiscovery = new ActorGroupGameplayResetRegistryDiscoveryStrategy(_actorRegistry, _classifier);
             _sceneScanDiscovery = new ActorGroupGameplayResetSceneScanDiscoveryStrategy(scene);
 

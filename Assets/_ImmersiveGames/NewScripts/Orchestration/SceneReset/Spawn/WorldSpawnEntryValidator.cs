@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Eater;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn.Definitions;
-namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     /// <summary>
     /// Valida a configuração mínima da SpawnEntry por kind conhecido.

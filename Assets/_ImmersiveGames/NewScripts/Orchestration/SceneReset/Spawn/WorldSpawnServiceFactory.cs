@@ -1,10 +1,10 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Eater;
-using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn.Definitions;
-namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     /// <summary>
     /// Factory explícita para criação de serviços de spawn baseados em definições.
