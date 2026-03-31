@@ -9,6 +9,8 @@ using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 {
+    // Boundary note: this coordinator owns the operational gate of EnterStage.
+    // It does not define the final gameplay-release signal.
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageCoordinator : IIntroStageCoordinator
     {
@@ -54,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 controlService.BeginIntroStage(context);
 
                 DebugUtility.Log<IntroStageCoordinator>(
-                    "[OBS][EnterStageController] EnterStage active: gameplay simulation blocked; waiting for canonical confirmation.",
+                    "[OBS][EnterStageController] EnterStage active: gameplay simulation blocked; operational intro gate held until confirmation.",
                     DebugUtility.Colors.Info);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -107,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 {
                     gateLease.Dispose();
                     DebugUtility.Log<IntroStageCoordinator>(
-                        $"[OBS][EnterStageController] GameplaySimulationUnblocked token='{SimulationGateTokens.GameplaySimulation}' signature='{signature}' routeKind='{routeLabel}' target='{targetScene}'.",
+                        $"[OBS][EnterStageController] GameplaySimulationUnblocked token='{SimulationGateTokens.GameplaySimulation}' signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' (intro gate released).",
                         DebugUtility.Colors.Info);
                 }
 

@@ -15,6 +15,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime
     ///
     /// Nota: baseline/QA pode não disparar Scene Flow; para isso existe SetGameplayReady(...) para sinalização manual.
     /// </summary>
+    // Boundary note: this service tracks technical readiness only.
+    // The canonical "gameplay actually released" signal remains the GameLoop entering Playing.
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameReadinessService : IDisposable
     {

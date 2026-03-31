@@ -248,8 +248,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
                 return;
             }
 
+            // Boundary note: Playing is the canonical final signal that gameplay is actually released.
             DebugUtility.Log<GameLoopService>(
-                "[OBS][Gameplay] PlayingEntered state='Playing' rail='Gameplay -> Level -> EnterStage -> Playing'.",
+                "[OBS][Gameplay] PlayingEntered state='Playing' rail='Gameplay -> Level -> EnterStage -> Playing' canonical='final_release'.",
                 DebugUtility.Colors.Success);
 
             _signals.ClearStartPending();

@@ -23,6 +23,8 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.State.Gate
     /// - Logs de "Move bloqueado/liberado" são emitidos SOMENTE quando a situação muda
     ///   E apenas após o primeiro consumo de CanExecuteAction(Move) (clean option).
     /// </summary>
+    // Boundary note: this gate is a consumer of readiness and loop state.
+    // It does not own the final gameplay-release signal.
     public sealed class GameplayStateGate : IGameplayStateGate
     {
         private ISimulationGateService _gateService;
