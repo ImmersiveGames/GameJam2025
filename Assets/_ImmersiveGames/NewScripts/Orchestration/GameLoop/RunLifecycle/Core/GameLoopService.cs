@@ -1,15 +1,12 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameLoopService : IGameLoopService, IPauseStateService, IGameLoopStateObserver
     {
         private readonly MutableGameLoopSignals _signals = new();
-        private readonly EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
         private GameLoopStateMachine _stateMachine;
         private bool _initialized;
 
@@ -22,8 +19,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         public GameLoopService()
         {
             _stateTransitionEffects = new GameLoopStateTransitionEffects();
-            _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(OnLevelIntroCompleted);
-            EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
         }
 
         public string CurrentStateIdName { get; private set; } = string.Empty;
@@ -70,55 +65,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         }
         public void RequestReady() => _signals.MarkReady();
 
-        public void RequestSceneFlowCompletionSync(SceneRouteKind routeKind)
-        {
-            var currentState = _stateMachine?.Current ?? GameLoopStateId.Boot;
-
-            if (routeKind == SceneRouteKind.Gameplay)
-            {
-                if (currentState == GameLoopStateId.Boot)
-                {
-                    DebugUtility.LogVerbose<GameLoopService>(
-                        "[GameLoop] SceneFlow completion sync: gameplay em Boot -> RequestReady().",
-                        DebugUtility.Colors.Info);
-                    RequestReady();
-                    return;
-                }
-
-                if (currentState == GameLoopStateId.Paused)
-                {
-                    DebugUtility.LogVerbose<GameLoopService>(
-                        "[GameLoop] SceneFlow completion sync: gameplay em Paused -> RequestResume().",
-                        DebugUtility.Colors.Info);
-                    RequestResume("GameLoop/SceneFlowCompletionSync/GameplayPaused");
-                    return;
-                }
-
-                DebugUtility.LogVerbose<GameLoopService>(
-                    $"[GameLoop] SceneFlow completion sync: gameplay em '{currentState}' -> no-op.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (routeKind == SceneRouteKind.Frontend)
-            {
-                if (currentState is GameLoopStateId.Playing
-                    or GameLoopStateId.Paused
-                    or GameLoopStateId.RunEnded)
-                {
-                    DebugUtility.LogVerbose<GameLoopService>(
-                        $"[GameLoop] SceneFlow completion sync: frontend em '{GetLogStateName(currentState)}' -> RequestReady().",
-                        DebugUtility.Colors.Info);
-                    RequestReady();
-                    return;
-                }
-
-                DebugUtility.LogVerbose<GameLoopService>(
-                    $"[GameLoop] SceneFlow completion sync: frontend em '{GetLogStateName(currentState)}' -> no-op.",
-                    DebugUtility.Colors.Info);
-            }
-        }
-
         public void RequestReset() => _signals.MarkReset();
         public void RequestRunEnd()
         {
@@ -155,7 +101,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         public void Dispose()
         {
             _initialized = false;
-            EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
             _stateMachine = null;
             CurrentStateIdName = string.Empty;
             _pendingPauseWillEnterReason = null;
@@ -195,25 +140,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
 
             EventBus<GameLoopActivityChangedEvent>.Raise(
                 new GameLoopActivityChangedEvent(currentState, isActive));
-        }
-
-        private void OnLevelIntroCompleted(LevelIntroCompletedEvent evt)
-        {
-            if (!evt.Session.IsValid)
-            {
-                return;
-            }
-
-            if (_stateMachine is { IsGameActive: true })
-            {
-                return;
-            }
-
-            DebugUtility.Log<GameLoopService>(
-                $"[OBS][Gameplay] LevelHandoffAccepted source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' rail='Gameplay -> Level -> EnterStage -> Playing' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state='{CurrentStateIdName}'.",
-                DebugUtility.Colors.Info);
-
-            RequestStart();
         }
 
         private void UpdateCurrentState(GameLoopStateId stateId, bool isActive, GameLoopStateId previousState)

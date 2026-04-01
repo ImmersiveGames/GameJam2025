@@ -56,7 +56,6 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement
 
         private bool _stateBlockedLogged;
 
-        private string _gateLogContext = string.Empty;
         private int _lastGateLogFrame = -1;
         private bool _lastGateLogOpen;
 
@@ -352,7 +351,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement
                 if (ShouldLogGateChange(isOpen))
                 {
                     DebugUtility.LogVerbose<PlayerMovementController>(
-                        $"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}', actor='{_gateLogContext}'.");
+                        $"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}', actor='{BuildGateLogContext()}'.");
                 }
             }
 
@@ -408,7 +407,6 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement
             _rigidbody = GetComponent<Rigidbody>();
             _actor = GetComponent<PlayerActor>();
             _sceneName = gameObject.scene.name;
-            _gateLogContext = BuildGateLogContext();
         }
 
         private bool ShouldLogGateChange(bool isOpen)
@@ -426,6 +424,8 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement
 
         private string BuildGateLogContext()
         {
+            // O ActorId pode ainda nao existir no Awake do componente.
+            // O contrato canonico de observabilidade segura vem do spawn completed.
             if (_actor != null && !string.IsNullOrWhiteSpace(_actor.ActorId))
             {
                 return _actor.ActorId;

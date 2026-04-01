@@ -5,9 +5,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     internal static class PlayerSpawnActorResolver
     {
-        public static IActor ResolvePlayerActor(
-            GameObject instance,
-            System.Func<PlayerActor, GameObject, bool> ensurePlayer)
+        public static IActor ResolvePlayerActor(GameObject instance)
         {
             if (instance == null)
             {
@@ -17,18 +15,18 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             // Try PlayerActor
             if (instance.TryGetComponent(out PlayerActor playerActor))
             {
-                return !ensurePlayer(playerActor, instance) ? null : playerActor;
+                return playerActor;
             }
 
             // Try any existing IActor
             if (instance.TryGetComponent(out IActor existingActor) && existingActor != null)
             {
-                return string.IsNullOrWhiteSpace(existingActor.ActorId) ? null : existingActor;
+                return existingActor;
             }
 
             // Fallback: add PlayerActor
             var fallback = instance.AddComponent<PlayerActor>();
-            return !ensurePlayer(fallback, instance) ? null : fallback;
+            return fallback;
         }
     }
 }

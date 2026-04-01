@@ -5,13 +5,13 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 {
     /// <summary>
-    /// Emite GameStartRequestedEvent (REQUEST) uma única vez ao iniciar a cena.
+    /// Emite BootStartPlanRequestedEvent (REQUEST) uma unica vez ao iniciar a cena.
     /// </summary>
     [DefaultExecutionOrder(-900)]
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameLoopStartRequestEmitter : MonoBehaviour
+    public sealed class BootStartPlanRequestEmitter : MonoBehaviour
     {
-        private const string EmitterObjectName = "[GameLoop]_GameStartRequestEmitter";
+        private const string EmitterObjectName = "[GameLoop]_BootStartPlanRequestEmitter";
 
         private static bool _hasRequested;
         private static bool _installed;
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 return;
             }
 
-            var existing = FindFirstObjectByType<GameLoopStartRequestEmitter>(FindObjectsInactive.Include);
+            var existing = FindFirstObjectByType<BootStartPlanRequestEmitter>(FindObjectsInactive.Include);
             if (existing != null)
             {
                 _installed = true;
@@ -37,15 +37,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 DontDestroyOnLoad(go);
             }
 
-            if (!go.TryGetComponent<GameLoopStartRequestEmitter>(out _))
+            if (!go.TryGetComponent<BootStartPlanRequestEmitter>(out _))
             {
-                go.AddComponent<GameLoopStartRequestEmitter>();
+                go.AddComponent<BootStartPlanRequestEmitter>();
             }
 
             _installed = true;
 
-            DebugUtility.LogVerbose(typeof(GameLoopStartRequestEmitter),
-                "[OBS][GameLoop] GameLoopStartRequestEmitter ensured in runtime bootstrap.",
+            DebugUtility.LogVerbose(typeof(BootStartPlanRequestEmitter),
+                "[OBS][GameLoop] BootStartPlanRequestEmitter ensured in runtime bootstrap.",
                 DebugUtility.Colors.Info);
         }
 
@@ -63,11 +63,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
             _hasRequested = true;
 
-            DebugUtility.Log<GameLoopStartRequestEmitter>(
-                "[OBS][Gameplay] GameStartRequestedEvent emitted for slice rail 'Gameplay -> Level -> EnterStage -> Playing'.",
+            DebugUtility.Log<BootStartPlanRequestEmitter>(
+                "[OBS][Gameplay] BootStartPlanRequestedEvent emitted for slice rail 'Gameplay -> Level -> EnterStage -> Playing'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
+            EventBus<BootStartPlanRequestedEvent>.Raise(new BootStartPlanRequestedEvent());
         }
     }
 }

@@ -30,11 +30,5 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
         {
             return instance.GetComponent<DummyActor>();
         }
-
-        protected override bool EnsureActorId(IActor actor, GameObject instance)
-        {
-            return actor is DummyActor dummy &&
-                   EnsureGeneratedActorId(dummy.ActorId, instance, "DummyActor", dummy.Initialize);
-        }
     }
 }

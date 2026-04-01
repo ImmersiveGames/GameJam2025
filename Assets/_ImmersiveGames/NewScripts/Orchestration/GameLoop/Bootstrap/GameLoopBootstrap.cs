@@ -52,6 +52,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             gameLoopService.Initialize();
 
             EnsureInputCommandBridge();
+            EnsureIntroStageBridge();
             EnsurePauseBridge();
             EnsureGameRunRuntimeServices();
             EnsureOutcomeEventInputBridge();
@@ -94,6 +95,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             }
 
             var bridge = new GameLoopInputCommandBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+        }
+
+        private static void EnsureIntroStageBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<GameLoopIntroStageBridge>(out _))
+            {
+                return;
+            }
+
+            var bridge = new GameLoopIntroStageBridge();
             DependencyManager.Provider.RegisterGlobal(bridge);
         }
 

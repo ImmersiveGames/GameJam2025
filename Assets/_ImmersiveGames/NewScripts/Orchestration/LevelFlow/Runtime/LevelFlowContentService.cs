@@ -4,6 +4,8 @@ using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using System.Collections.Generic;
+using System.Text;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
@@ -38,6 +40,35 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
             }
 
             return routeAsset.LevelCollection;
+        }
+
+        public GameplayContentManifest ResolveGameplayContentManifestOrFail(
+            LevelDefinitionAsset levelRef,
+            SceneRouteId macroRouteId,
+            string signature,
+            string reason)
+        {
+            if (levelRef == null)
+            {
+                FailFastConfig(macroRouteId, SceneRouteKind.Gameplay, signature, reason, "LevelRef is null.");
+            }
+
+            levelRef.ValidateOrFailFast($"GameplayContentManifest routeId='{macroRouteId}' reason='{reason}'");
+
+            GameplayContentManifest manifest = levelRef.ContentManifest;
+            if (manifest == null)
+            {
+                FailFastConfig(macroRouteId, SceneRouteKind.Gameplay, signature, reason, $"Gameplay content manifest is null for levelRef='{levelRef.name}'.");
+            }
+
+            if (!manifest.TryValidateRuntime(out string manifestError))
+            {
+                FailFastConfig(macroRouteId, SceneRouteKind.Gameplay, signature, reason, $"Gameplay content manifest invalid for levelRef='{levelRef.name}'. detail='{manifestError}'.");
+            }
+
+            LogGameplayContentManifestAccepted(levelRef, manifest);
+
+            return manifest;
         }
 
         public LevelDefinitionAsset ResolveSelectedLevelDefinitionOrFail(
@@ -170,6 +201,120 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
         {
             HardFailFastH1.Trigger(typeof(LevelFlowContentService),
                 $"[FATAL][H1][LevelFlow] Content contract error. routeId='{routeId}' routeKind='{routeKind}' signature='{signature}' reason='{reason}' detail='{configReason}'");
+        }
+
+        private static void LogGameplayContentManifestAccepted(LevelDefinitionAsset levelRef, GameplayContentManifest manifest)
+        {
+            if (manifest == null)
+            {
+                return;
+            }
+
+            IReadOnlyList<GameplayContentEntry> entries = manifest.Entries;
+            int entryCount = entries != null ? entries.Count : 0;
+            bool isEmpty = entryCount == 0;
+            string ids = BuildEntryIdSummary(entries);
+            string roles = BuildRoleSummary(entries);
+
+            DebugUtility.Log<LevelFlowContentService>(
+                $"[OBS][LevelFlow] GameplayContentManifestAccepted levelRef='{levelRef.name}' entries={entryCount} empty={isEmpty.ToString().ToLowerInvariant()} ids={ids} roles={roles}.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static string BuildEntryIdSummary(IReadOnlyList<GameplayContentEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return "[]";
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append('[');
+            for (int i = 0; i < entries.Count; i++)
+            {
+                GameplayContentEntry entry = entries[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (builder.Length > 1)
+                {
+                    builder.Append(',');
+                }
+
+                builder.Append(entry.EntryId);
+            }
+
+            builder.Append(']');
+            return builder.ToString();
+        }
+
+        private static string BuildRoleSummary(IReadOnlyList<GameplayContentEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return "[]";
+            }
+
+            bool hasMain = false;
+            bool hasAux = false;
+            bool hasPrototype = false;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                GameplayContentEntry entry = entries[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                switch (entry.Role)
+                {
+                    case GameplayContentEntryRole.Main:
+                        hasMain = true;
+                        break;
+                    case GameplayContentEntryRole.Aux:
+                        hasAux = true;
+                        break;
+                    case GameplayContentEntryRole.Prototype:
+                        hasPrototype = true;
+                        break;
+                }
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append('[');
+
+            bool first = true;
+            if (hasMain)
+            {
+                AppendRole(builder, "Main", ref first);
+            }
+
+            if (hasAux)
+            {
+                AppendRole(builder, "Aux", ref first);
+            }
+
+            if (hasPrototype)
+            {
+                AppendRole(builder, "Prototype", ref first);
+            }
+
+            builder.Append(']');
+            return builder.ToString();
+        }
+
+        private static void AppendRole(StringBuilder builder, string role, ref bool first)
+        {
+            if (!first)
+            {
+                builder.Append(',');
+            }
+
+            builder.Append(role);
+            first = false;
         }
     }
 }

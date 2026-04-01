@@ -100,6 +100,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string source = useSnapshot ? "snapshot" : "catalog_index_0";
 
             LevelDefinitionAsset selectedLevelRef = _levelFlowContentService.ResolveSelectedLevelDefinitionOrFail(levelCollection, useSnapshot, currentSnapshot, macroRouteId, routeKind, prepareSignature, normalizedReason);
+            _levelFlowContentService.ResolveGameplayContentManifestOrFail(selectedLevelRef, macroRouteId, prepareSignature, normalizedReason);
             selectedLevelRef.ValidateOrFailFast($"LevelPrepare routeId='{macroRouteId}' reason='{normalizedReason}'");
 
             if (!useSnapshot)

@@ -14,7 +14,8 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
 {
     /// <summary>
-    /// Orquestra GameplayReset (Cleanup/Restore/Rebind) por grupo canônico de atores.
+    /// Orquestra GameplayReset (Cleanup/Restore/Rebind) para atores ja vivos,
+    /// materializados e registrados. Nao materializa nem assume ownership do objeto.
     /// </summary>
     public sealed class ActorGroupGameplayResetOrchestrator : IActorGroupGameplayResetOrchestrator
     {

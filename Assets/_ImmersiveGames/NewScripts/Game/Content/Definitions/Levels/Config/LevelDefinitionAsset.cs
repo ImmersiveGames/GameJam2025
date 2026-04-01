@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config
     public sealed class LevelDefinitionAsset : ScriptableObject
     {
         [SerializeField] private List<SceneBuildIndexRef> additiveScenes = new();
+        [SerializeField] private GameplayContentManifest contentManifest = new();
 
         [Header("Level Flags")]
         [SerializeField] private bool hasIntroStage = true;
@@ -26,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config
         [SerializeField] private AudioBgmCueAsset bgmCue;
 
         public IReadOnlyList<SceneBuildIndexRef> AdditiveScenes => additiveScenes;
+        public GameplayContentManifest ContentManifest => contentManifest;
         public bool HasIntroStage => hasIntroStage;
         public GameObject IntroPresenterPrefab => introPresenterPrefab;
         public bool HasIntroPresenterPrefab => introPresenterPrefab != null;
@@ -64,6 +66,18 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config
             if (additiveScenes.Count == 0)
             {
                 error = "Additive scenes list is empty.";
+                return false;
+            }
+
+            if (contentManifest == null)
+            {
+                error = "Gameplay content manifest is null.";
+                return false;
+            }
+
+            if (!contentManifest.TryValidateRuntime(out string manifestError))
+            {
+                error = $"Gameplay content manifest invalid. detail='{manifestError}'";
                 return false;
             }
 
@@ -139,6 +153,17 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config
                     DebugUtility.LogWarning<LevelDefinitionAsset>(
                         $"[WARN][LevelFlow][Config] LevelDefinitionAsset '{name}' has duplicate additive scene buildIndex='{sceneRef.BuildIndex}'.");
                 }
+            }
+
+            if (contentManifest == null)
+            {
+                DebugUtility.LogWarning<LevelDefinitionAsset>(
+                    $"[WARN][LevelFlow][Config] LevelDefinitionAsset '{name}' has no gameplay content manifest.");
+            }
+            else if (!contentManifest.TryValidateRuntime(out string manifestError))
+            {
+                DebugUtility.LogWarning<LevelDefinitionAsset>(
+                    $"[WARN][LevelFlow][Config] LevelDefinitionAsset '{name}' has invalid gameplay content manifest. detail='{manifestError}'.");
             }
         }
 #endif

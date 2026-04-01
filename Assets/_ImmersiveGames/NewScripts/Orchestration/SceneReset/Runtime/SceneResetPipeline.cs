@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
@@ -41,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 throw new ArgumentNullException(nameof(context));
             }
 
-            var resetWatch = System.Diagnostics.Stopwatch.StartNew();
+            var resetWatch = Stopwatch.StartNew();
             DebugUtility.Log(typeof(SceneResetFacade), context.StartLog);
             bool completed = false;
 
@@ -77,6 +81,177 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 DebugUtility.LogVerbose(typeof(SceneResetFacade),
                     $"Reset duration: {resetWatch.ElapsedMilliseconds}ms");
             }
+        }
+    }
+
+    internal sealed class SceneResetSpawnOwnerExecutor
+    {
+        public async Task ExecuteAsync(SceneResetContext context, string stepName, Func<IWorldSpawnService, Task> stepAction)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (stepAction == null)
+            {
+                throw new ArgumentNullException(nameof(stepAction));
+            }
+
+            var stepWatch = Stopwatch.StartNew();
+            DebugUtility.Log(typeof(SceneResetFacade), $"{stepName} started");
+
+            if (context.SpawnServices.Count == 0)
+            {
+                DebugUtility.LogWarning(typeof(SceneResetFacade),
+                    $"{stepName} skipped (no spawn services registered).");
+                stepWatch.Stop();
+                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
+                return;
+            }
+
+            foreach (IWorldSpawnService service in context.SpawnServices)
+            {
+                if (service == null)
+                {
+                    DebugUtility.LogError(typeof(SceneResetFacade),
+                        $"{stepName} service é nulo e será ignorado.");
+                    continue;
+                }
+
+                if (!context.ShouldIncludeForScopes(service))
+                {
+                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                        $"{stepName} service skipped by scope filter: {service.Name}");
+                    continue;
+                }
+
+                DebugUtility.Log(typeof(SceneResetFacade),
+                    $"{stepName} service started: {service.Name}");
+
+                var serviceWatch = Stopwatch.StartNew();
+                try
+                {
+                    await stepAction(service);
+                }
+                finally
+                {
+                    serviceWatch.Stop();
+                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                        $"{stepName} service duration: {service.Name} => {serviceWatch.ElapsedMilliseconds}ms");
+                }
+
+                DebugUtility.Log(typeof(SceneResetFacade),
+                    $"{stepName} service completed: {service.Name}");
+            }
+
+            stepWatch.Stop();
+            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
+        }
+    }
+
+    internal sealed class SceneResetGameplayResetExecutor
+    {
+        public async Task ExecuteAsync(SceneResetContext context, CancellationToken ct)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (context.ResetContext == null)
+            {
+                return;
+            }
+
+            List<IActorGroupGameplayResetWorldParticipant> participants = context.CollectScopedParticipants();
+            if (participants.Count == 0)
+            {
+                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    "Scoped reset participants step skipped (participants=0)");
+                return;
+            }
+
+            var filtered = new List<IActorGroupGameplayResetWorldParticipant>();
+            foreach (IActorGroupGameplayResetWorldParticipant participant in participants)
+            {
+                if (participant == null)
+                {
+                    DebugUtility.LogError(typeof(SceneResetFacade),
+                        "Scoped reset participant é nulo e será ignorado.");
+                    continue;
+                }
+
+                if (!context.ResetContext.Value.ContainsScope(participant.Scope))
+                {
+                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                        $"Scoped reset participant skipped by scope: {participant.GetType().Name}");
+                    continue;
+                }
+
+                filtered.Add(participant);
+            }
+
+            if (filtered.Count == 0)
+            {
+                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    "Scoped reset participants step skipped (filtered=0)");
+                return;
+            }
+
+            filtered.Sort(context.CompareResetScopeParticipants);
+            LogScopedParticipantOrder(filtered);
+
+            foreach (IActorGroupGameplayResetWorldParticipant participant in filtered)
+            {
+                ct.ThrowIfCancellationRequested();
+                string participantType = participant.GetType().FullName ?? participant.GetType().Name;
+                var watch = Stopwatch.StartNew();
+                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    $"Scoped reset started: {participantType}");
+
+                try
+                {
+                    await participant.ResetAsync(context.ResetContext.Value);
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogError(typeof(SceneResetFacade),
+                        $"Scoped reset falhou para {participantType}: {ex}");
+                    throw;
+                }
+                finally
+                {
+                    watch.Stop();
+                    if (watch.ElapsedMilliseconds > SceneResetContext.SlowHookWarningMs)
+                    {
+                        DebugUtility.LogWarning(typeof(SceneResetFacade),
+                            $"Scoped reset lento: {participantType} levou {watch.ElapsedMilliseconds}ms.");
+                    }
+
+                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                        $"Scoped reset duration: {participantType} => {watch.ElapsedMilliseconds}ms");
+                }
+
+                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    $"Scoped reset completed: {participantType}");
+            }
+        }
+
+        private static void LogScopedParticipantOrder(List<IActorGroupGameplayResetWorldParticipant> participants)
+        {
+            string[] orderedLabels = participants
+                .Select(participant =>
+                {
+                    string typeName = participant?.GetType().Name ?? "<null participant>";
+                    return $"{typeName}(scope={participant?.Scope}, order={participant?.Order})";
+                })
+                .ToArray();
+
+            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                $"Scoped reset execution order: {string.Join(", ", orderedLabels)}");
         }
     }
 }

@@ -6,14 +6,14 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.State.RuntimeSignals
 {
     internal sealed class GameplayRuntimeSignalsAdapter : IDisposable
     {
-        private readonly Action _onGameStartRequested;
+        private readonly Action _onBootStartPlanRequested;
         private readonly Action _onGameRunStarted;
         private readonly Action _onGameRunEnded;
         private readonly Action<PauseStateChangedEvent> _onPauseStateChanged;
         private readonly Action<GameResetRequestedEvent> _onGameResetRequested;
         private readonly Action<ReadinessChangedEvent> _onReadinessChanged;
 
-        private EventBinding<GameStartRequestedEvent> _gameStartRequestedBinding;
+        private EventBinding<BootStartPlanRequestedEvent> _bootStartPlanRequestedBinding;
         private EventBinding<GameRunStartedEvent> _gameRunStartedBinding;
         private EventBinding<GameRunEndedEvent> _gameRunEndedBinding;
         private EventBinding<PauseStateChangedEvent> _pauseStateBinding;
@@ -23,14 +23,14 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.State.RuntimeSignals
         private bool _bindingsRegistered;
 
         public GameplayRuntimeSignalsAdapter(
-            Action onGameStartRequested,
+            Action onBootStartPlanRequested,
             Action onGameRunStarted,
             Action onGameRunEnded,
             Action<PauseStateChangedEvent> onPauseStateChanged,
             Action<GameResetRequestedEvent> onGameResetRequested,
             Action<ReadinessChangedEvent> onReadinessChanged)
         {
-            _onGameStartRequested = onGameStartRequested;
+            _onBootStartPlanRequested = onBootStartPlanRequested;
             _onGameRunStarted = onGameRunStarted;
             _onGameRunEnded = onGameRunEnded;
             _onPauseStateChanged = onPauseStateChanged;
@@ -42,14 +42,14 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.State.RuntimeSignals
         {
             try
             {
-                _gameStartRequestedBinding = new EventBinding<GameStartRequestedEvent>(_ => _onGameStartRequested());
+                _bootStartPlanRequestedBinding = new EventBinding<BootStartPlanRequestedEvent>(_ => _onBootStartPlanRequested());
                 _gameRunStartedBinding = new EventBinding<GameRunStartedEvent>(_ => _onGameRunStarted());
                 _gameRunEndedBinding = new EventBinding<GameRunEndedEvent>(_ => _onGameRunEnded());
                 _pauseStateBinding = new EventBinding<PauseStateChangedEvent>(_onPauseStateChanged);
                 _gameResetBinding = new EventBinding<GameResetRequestedEvent>(_onGameResetRequested);
                 _readinessBinding = new EventBinding<ReadinessChangedEvent>(_onReadinessChanged);
 
-                EventBus<GameStartRequestedEvent>.Register(_gameStartRequestedBinding);
+                EventBus<BootStartPlanRequestedEvent>.Register(_bootStartPlanRequestedBinding);
                 EventBus<GameRunStartedEvent>.Register(_gameRunStartedBinding);
                 EventBus<GameRunEndedEvent>.Register(_gameRunEndedBinding);
                 EventBus<PauseStateChangedEvent>.Register(_pauseStateBinding);
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.State.RuntimeSignals
                 return;
             }
 
-            EventBus<GameStartRequestedEvent>.Unregister(_gameStartRequestedBinding);
+            EventBus<BootStartPlanRequestedEvent>.Unregister(_bootStartPlanRequestedBinding);
             EventBus<GameRunStartedEvent>.Unregister(_gameRunStartedBinding);
             EventBus<GameRunEndedEvent>.Unregister(_gameRunEndedBinding);
             EventBus<PauseStateChangedEvent>.Unregister(_pauseStateBinding);

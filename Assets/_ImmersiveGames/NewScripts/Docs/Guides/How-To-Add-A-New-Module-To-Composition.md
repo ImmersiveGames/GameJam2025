@@ -1,86 +1,96 @@
 # How To Add A New Module To Composition
 
-## 1. When a Module Needs Installer Only
-Use somente installer quando o módulo só precisa registrar serviços, contratos e helpers pre-runtime.
+## Regra base
 
-Exemplo semelhante:
-- `WorldReset`
+- Use `Installer` quando o modulo so registra contratos, providers, factories e configuracao pre-runtime.
+- Use `Installer + Bootstrap` quando o modulo tambem compoe runtime operacional.
+- Nao crie trilho novo se a camada atual ja tem owner claro.
 
-## 2. When a Module Needs Installer + Bootstrap
-Use as duas fases quando o módulo precisa registrar primeiro e depois compor runtime operacional.
+## Onde isso se aplica hoje
 
-Exemplos semelhantes:
 - `GameLoop`
 - `SceneFlow`
 - `Navigation`
-- `LevelFlow`
+- `LevelLifecycle`
+- `Save`
 
-Nota:
-- `Loading` nao entra aqui como modulo proprio; neste ciclo ele permanece como subcapability de `SceneFlow`.
+`LevelFlow` aparece apenas como nome historico do boundary de conteudo.
+Quando o assunto e fluxo ativo de level, o owner real esta em `LevelLifecycle`.
 
-## 3. Required Files
+## Arquivos obrigatorios
+
 - `XxxInstaller`
-- `XxxBootstrap` quando houver composição runtime real
+- `XxxBootstrap` quando houver composicao runtime real
 - `XxxCompositionDescriptor`
 
-## 4. Minimal Responsibilities
+## Responsabilidades minimas
+
 Installer:
-- registra serviços, contratos, providers, factories e configs
-- não compõe runtime
-- não depende de bootstrap
+
+- registra servicos, contratos, providers, factories e configs.
+- nao compoe runtime.
+- nao depende de bootstrap.
 
 Bootstrap:
-- compõe runtime
-- ativa bridges, coordinators e orchestrators
-- usa apenas o DI já preenchido
-- se o modulo possuir loading embutido, isso continua no ownership do modulo pai e nao vira grafo separado
+
+- compoe runtime.
+- ativa bridges, coordinators e orchestrators.
+- usa apenas o DI ja preenchido.
+- mantem loading dentro da camada dona; nao cria grafo paralelo.
 
 Descriptor:
-- expõe `ModuleId`
-- expõe `InstallerEntry`
-- expõe `RuntimeComposerEntry` quando houver runtime
-- expõe `InstallerDependencies`
-- expõe `BootstrapDependencies`
-- expõe `Optional`
-- expõe `InstallerOnly`
-- referencia installer e bootstrap do módulo
 
-## 5. Declaring Dependencies
-Declare dependências explicitamente por fase:
+- expõe `ModuleId`.
+- expõe `InstallerEntry`.
+- expõe `RuntimeComposerEntry` quando houver runtime.
+- expõe `InstallerDependencies`.
+- expõe `BootstrapDependencies`.
+- expõe `Optional`.
+- expõe `InstallerOnly`.
+
+## Dependencias por fase
+
+Declare dependencias explicitamente:
+
 - `InstallerDependencies`
 - `BootstrapDependencies`
 
 Regras:
-- installer não depende de bootstrap
-- bootstrap pode depender de bootstrap e de serviços já registrados
-- a ordem não vem de prioridade numérica manual
-- `InstallerOnly=true` exige bootstrap nulo
-- módulo opcional só pode ser pulado de forma explícita no profile de boot
 
-## 6. Registering the Module in the Root
-O root apenas agrega o descriptor do módulo no grafo.
+- installer nao depende de bootstrap.
+- bootstrap pode depender de bootstrap e de servicos ja registrados.
+- a ordem nao vem de prioridade numerica manual.
+- `InstallerOnly=true` exige bootstrap nulo.
+- modulo opcional so pode ser pulado de forma explicita no profile de boot.
 
-O root não deve conhecer o wiring interno do módulo.
+## Root
 
-## 7. Fail-Fast Rules
+- O root apenas agrega o descriptor do modulo no grafo.
+- O root nao deve conhecer o wiring interno do modulo.
+
+## Fail-fast
+
 O pipeline deve falhar cedo em:
-- dependência ausente
-- dependência inválida
-- ID duplicado
-- ciclo
-- dependência declarada na fase errada
 
-## 8. Practical Checklist
-- criar `XxxInstaller`
-- criar `XxxCompositionDescriptor`
-- criar `XxxBootstrap` somente se houver runtime real
-- declarar dependências explícitas
-- adicionar o descriptor ao grafo global
-- verificar se o módulo não exige serviços de runtime na fase de installer
+- dependencia ausente.
+- dependencia invalida.
+- ID duplicado.
+- ciclo.
+- dependencia declarada na fase errada.
 
-## 9. Common Mistakes
-- misturar installer com runtime
-- colocar wiring interno no root
-- depender de bootstrap na fase de installer
-- criar bootstrap artificial sem necessidade
-- usar prioridade numérica como source-of-truth principal
+## Checklist rapido
+
+- criar `XxxInstaller`.
+- criar `XxxCompositionDescriptor`.
+- criar `XxxBootstrap` somente se houver runtime real.
+- declarar dependencias explicitas por fase.
+- adicionar o descriptor ao grafo global.
+- verificar se o modulo nao exige servicos de runtime na fase de installer.
+
+## Erros comuns
+
+- misturar installer com runtime.
+- colocar wiring interno no root.
+- depender de bootstrap na fase de installer.
+- criar bootstrap artificial sem necessidade.
+- usar prioridade numerica como source of truth.

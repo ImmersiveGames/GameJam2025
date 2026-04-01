@@ -17,10 +17,17 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 - `Docs/ADRs/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md`
 - `Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md`
 - `Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md`
+- `Docs/Plans/Plan-Round-2-Object-Lifecycle.md`
 
 ## Entradas ativas de auditoria
 
 - `Docs/Reports/Audits/LATEST.md`
+- `Docs/Reports/Audits/2026-04-01/Round-2-Cut-3-Runtime-Ownership-Reset-Participation.md`
+- `Docs/Reports/Audits/2026-04-01/Round-2-Cut-4-Pooling-Future-Ready-Seam.md`
+- `Docs/Reports/Audits/2026-04-01/Round-2-Freeze-Object-Lifecycle.md`
+- `Docs/Reports/Audits/2026-04-01/Round-2-Cut-2-Actor-Consumption-Contract.md`
+- `Docs/Reports/Audits/2026-04-01/Round-2-Cut-1-Ownership-Taxonomy.md`
+- `Docs/Reports/Audits/2026-04-01/Backbone-Round-1-Freeze.md`
 - `Docs/Reports/Audits/2026-03-30/Structural-Freeze-Snapshot.md`
 - `Docs/Reports/Audits/2026-03-30/Structural-Xray-NewScripts.md`
 - `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md`
@@ -41,6 +48,7 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 - `Docs/Modules/WorldReset.md`
 - `Docs/Guides/Production-How-To-Use-Core-Modules.md`
 - `Docs/Guides/Event-Hooks-Reference.md`
+- `Docs/Guides/GameLoop-Start-Contracts.md`
 - `Docs/Guides/How-To-Add-A-New-Module-To-Composition.md`
 - `Docs/CHANGELOG-docs.md`
 

@@ -11,7 +11,7 @@ using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
-namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// OWNER: gate de correlação do WorldResetCompletedEvent para liberar SceneFlow.

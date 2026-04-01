@@ -17,7 +17,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void PrimeEventSystems()
         {
-            EventBus<GameStartRequestedEvent>.Clear();
+            EventBus<BootStartPlanRequestedEvent>.Clear();
+            EventBus<GamePlayRequestedEvent>.Clear();
             EventBus<GamePauseCommandEvent>.Clear();
             EventBus<GameResumeRequestedEvent>.Clear();
             EventBus<PauseWillEnterEvent>.Clear();

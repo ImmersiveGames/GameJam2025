@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Presentation;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
-using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
 {
@@ -136,16 +135,10 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
                         throw new InvalidOperationException("[FATAL][Config][PostRun] IPostRunOwnershipService ausente ao registrar IPostRunHandoffService.");
                     }
 
-                    if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
-                    {
-                        throw new InvalidOperationException("[FATAL][Config][PostRun] IGameLoopService ausente ao registrar IPostRunHandoffService.");
-                    }
-
                     return new PostRunHandoffService(
                         postStageCoordinator,
                         resultService,
-                        ownershipService,
-                        gameLoopService);
+                        ownershipService);
                 },
                 "[PostRun] IPostRunHandoffService ja registrado no DI global.",
                 "[PostRun] PostRunHandoffService registrado no DI global.");

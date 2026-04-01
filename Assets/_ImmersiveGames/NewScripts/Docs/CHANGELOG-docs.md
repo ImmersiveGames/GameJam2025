@@ -1,4 +1,25 @@
-﻿# Changelog Docs
+# Changelog Docs
+
+## 2026-04-01
+- Added `Docs/Reports/Audits/2026-04-01/Round-2-Freeze-Object-Lifecycle.md` as the canonical freeze snapshot for round 2.
+- Marked round 2 as concluded in `Docs/Plans/Plan-Round-2-Object-Lifecycle.md`.
+- Added `Docs/Reports/Audits/2026-04-01/Round-2-Cut-4-Pooling-Future-Ready-Seam.md` as the canonical snapshot for round 2 cut 4.
+- Marked round 2 cut 4 (`Pooling Future-Ready Seam`) as concluded in `Docs/Plans/Plan-Round-2-Object-Lifecycle.md`.
+- Clarified in `Infrastructure/Pooling/Pooling-How-To.md` that pooling is backend only and does not own gameplay object lifecycle.
+- Added `Docs/Reports/Audits/2026-04-01/Round-2-Cut-3-Runtime-Ownership-Reset-Participation.md` as the canonical snapshot for round 2 cut 3.
+- Marked round 2 cut 3 (`Runtime Ownership + Reset Participation`) as concluded in `Docs/Plans/Plan-Round-2-Object-Lifecycle.md`.
+- Added `Docs/Guides/GameLoop-Start-Contracts.md` as the canonical short contract for `BootStartPlanRequestedEvent` and `GamePlayRequestedEvent`.
+- Renamed the boot/start-plan request contract from `GameStartRequestedEvent` to `BootStartPlanRequestedEvent` to remove semantic overlap with user Play intent.
+- Added `Docs/Reports/Audits/2026-04-01/Round-2-Cut-2-Actor-Consumption-Contract.md` as the canonical snapshot for round 2 cut 2.
+- Marked round 2 cut 2 (`Actor Consumption Contract`) as concluded in `Docs/Plans/Plan-Round-2-Object-Lifecycle.md`.
+- Added `Docs/Reports/Audits/2026-04-01/Round-2-Cut-1-Ownership-Taxonomy.md` as the canonical snapshot for round 2 cut 1.
+- Marked round 2 cut 1 (`Ownership Taxonomy`) as concluded in `Docs/Plans/Plan-Round-2-Object-Lifecycle.md`.
+- Added `Docs/Plans/Plan-Round-2-Object-Lifecycle.md` as the canonical roadmap for round 2 focused on gameplay object lifecycle.
+- Added `Docs/Reports/Audits/2026-04-01/Backbone-Round-1-Freeze.md` as the freeze snapshot for the completed backbone round 1.
+- Marked the backbone roadmap as completed for cuts `1A` through `6`.
+- Added `Docs/Plans/Plan-Backbone-Execution-Roadmap.md` as the canonical execution roadmap for the backbone.
+- Froze the official backbone cut order: `Spawn + Identity`, `SceneReset` executor local, `ResetInterop` seam fino, `LevelLifecycle` vs `SceneComposition`, `GameLoop` puro, and `Experience` edge reativo.
+- Split cut 1 into `1A - Spawn + Identity` and `1B - Spawn Completion Contract` and recorded the spawn completion timing contract in the roadmap.
 
 ## 2026-03-30
 - Consolidated the Docs tree after Baseline 4.0 stabilization.
@@ -26,4 +47,3 @@
 
 ## 2026-03-28
 - Marked the earlier baseline stabilization and operational guide work as historical context for the current baseline.
-

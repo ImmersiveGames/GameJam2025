@@ -109,7 +109,8 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core
     }
 
     /// <summary>
-    /// Participante assíncrono de reset de gameplay (recomendado).
+    /// Participante assíncrono de gameplay reset sobre um actor ja vivo,
+    /// materializado e registrado pelo trilho de Spawn.
     /// </summary>
     public interface IActorGroupGameplayResettable
     {
@@ -119,7 +120,8 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core
     }
 
     /// <summary>
-    /// Participante síncrono. Um orchestrator pode adaptar para Task.
+    /// Participante síncrono sobre um actor ja vivo, materializado e registrado.
+    /// Um orchestrator pode adaptar para Task.
     /// </summary>
     public interface IActorGroupGameplayResettableSync
     {

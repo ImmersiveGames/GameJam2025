@@ -3,9 +3,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
 {
     /// <summary>
     /// REQUEST (intencao): "quero iniciar a simulacao".
-    /// O start definitivo e o COMMAND executado pelo Coordinator via IGameLoopService.RequestStart() quando ready.
+    /// Contrato canonico: usado apenas pelo boot/start-plan.
     /// </summary>
-    public sealed class GameStartRequestedEvent : IEvent { }
+    public sealed class BootStartPlanRequestedEvent : IEvent { }
+
+    /// <summary>
+    /// REQUEST (intencao): "quero entrar em gameplay".
+    /// Contrato canonico para intent de Play vinda de UI/Frontend.
+    /// </summary>
+    public sealed class GamePlayRequestedEvent : IEvent
+    {
+        public GamePlayRequestedEvent(string reason = null) => Reason = reason;
+        public string Reason { get; }
+    }
 
     /// <summary>
     /// Evento definitivo para pausa / despausa.

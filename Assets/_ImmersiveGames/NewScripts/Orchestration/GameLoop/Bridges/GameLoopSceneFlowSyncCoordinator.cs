@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
         private string _expectedContextSignature;
 
-        private readonly EventBinding<GameStartRequestedEvent> _startRequestedBinding;
+        private readonly EventBinding<BootStartPlanRequestedEvent> _startRequestedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
         private readonly EventBinding<WorldResetCompletedEvent> _worldResetCompletedBinding;
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _startPlan = ValidateStartPlanOrFailFast(startPlan);
 
-            _startRequestedBinding = new EventBinding<GameStartRequestedEvent>(_ => OnStartRequestedCommon());
+            _startRequestedBinding = new EventBinding<BootStartPlanRequestedEvent>(_ => OnStartRequestedCommon());
             _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
             _worldResetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnWorldResetCompleted);
@@ -214,7 +214,54 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 $"[GameLoopSceneFlow] Runtime sync delegada ao GameLoop. routeKind='{context.RouteKind}'.",
                 DebugUtility.Colors.Info);
 
-            gameLoopService.RequestSceneFlowCompletionSync(context.RouteKind);
+            if (!Enum.TryParse(gameLoopService.CurrentStateIdName, out GameLoopStateId currentState))
+            {
+                currentState = GameLoopStateId.Boot;
+            }
+
+            if (context.RouteKind == SceneRouteKind.Gameplay)
+            {
+                if (currentState == GameLoopStateId.Boot)
+                {
+                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                        "[GameLoopSceneFlow] Completion sync gameplay em Boot -> RequestReady().",
+                        DebugUtility.Colors.Info);
+                    gameLoopService.RequestReady();
+                    return;
+                }
+
+                if (currentState == GameLoopStateId.Paused)
+                {
+                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                        "[GameLoopSceneFlow] Completion sync gameplay em Paused -> RequestResume().",
+                        DebugUtility.Colors.Info);
+                    gameLoopService.RequestResume("GameLoop/SceneFlowCompletionSync/GameplayPaused");
+                    return;
+                }
+
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                    $"[GameLoopSceneFlow] Completion sync gameplay em '{currentState}' -> no-op.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (context.RouteKind == SceneRouteKind.Frontend)
+            {
+                if (currentState is GameLoopStateId.Playing
+                    or GameLoopStateId.Paused
+                    or GameLoopStateId.RunEnded)
+                {
+                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                        $"[GameLoopSceneFlow] Completion sync frontend em '{currentState}' -> RequestReady().",
+                        DebugUtility.Colors.Info);
+                    gameLoopService.RequestReady();
+                    return;
+                }
+
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                    $"[GameLoopSceneFlow] Completion sync frontend em '{currentState}' -> no-op.",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private void OnWorldResetCompleted(WorldResetCompletedEvent evt)

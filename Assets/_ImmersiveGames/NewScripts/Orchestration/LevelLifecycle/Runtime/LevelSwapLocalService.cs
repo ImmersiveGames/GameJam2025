@@ -65,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 FailFast(macroRouteId, routeKind, swapSignature, normalizedReason, $"Target levelRef='{targetLevelRef.name}' is not part of route LevelCollection.");
             }
 
+            _levelFlowContentService.ResolveGameplayContentManifestOrFail(targetLevelRef, macroRouteId, swapSignature, normalizedReason);
             targetLevelRef.ValidateOrFailFast($"LevelSwapLocal routeId='{macroRouteId}' reason='{normalizedReason}' targetLevelRef='{targetLevelRef.name}'");
 
             LevelDefinitionAsset fromLevelRef = currentSnapshot.LevelRef;

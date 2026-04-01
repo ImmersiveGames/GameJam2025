@@ -121,6 +121,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 DebugUtility.Log<GameRunEndedEventBridge>(
                     $"[OBS][ExitStage] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);
+
+                if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][ExitStage] GameRunEndedEvent processado, mas IGameLoopService nao foi encontrado para sincronizar o fim da run.");
+                    return;
+                }
+
+                gameLoopService.RequestRunEnd();
+
+                DebugUtility.Log<GameRunEndedEventBridge>(
+                    $"[OBS][ExitStage] GameLoopRunEndRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount}.",
+                    DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {

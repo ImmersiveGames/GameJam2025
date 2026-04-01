@@ -33,23 +33,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
         public override bool IsRequiredForWorldReset => true;
 
         protected override IActor ResolveActor(GameObject instance) =>
-            PlayerSpawnActorResolver.ResolvePlayerActor(instance, EnsureActorIdForPlayer);
-
-        protected override bool EnsureActorId(IActor actor, GameObject instance)
-        {
-            return actor switch
-            {
-                null => false,
-                PlayerActor player => EnsureActorIdForPlayer(player, instance),
-                _ => !string.IsNullOrWhiteSpace(actor.ActorId)
-            };
-        }
-
-        private bool EnsureActorIdForPlayer(PlayerActor player, GameObject instance)
-        {
-            return player != null &&
-                   EnsureGeneratedActorId(player.ActorId, instance, "Player", player.Initialize);
-        }
+            PlayerSpawnActorResolver.ResolvePlayerActor(instance);
 
         protected override void OnPostInstantiate(GameObject instance)
         {

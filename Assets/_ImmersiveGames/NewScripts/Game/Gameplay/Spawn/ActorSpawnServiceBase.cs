@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
@@ -7,9 +8,9 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     /// <summary>
-    /// Base que concentra a lógica comum de spawn/despawn para os serviços de actor.
-    /// Implementações concretas devem providenciar apenas os detalhes específicos
-    /// (resolver o componente actor, garantir actor id e injeções de serviços).
+    /// Base que concentra a logica comum de spawn/despawn para os servicos de actor.
+    /// Implementacoes concretas devem providenciar apenas os detalhes especificos
+    /// (resolver o componente actor, garantir actor id e injecoes de servicos).
     /// </summary>
     public abstract class ActorSpawnServiceBase : IWorldSpawnService
     {
@@ -36,12 +37,12 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
         public virtual string Name => GetType().Name;
 
         /// <summary>
-        /// Kind canônico do actor criado por este serviço.
+        /// Kind canonico do actor criado por este servico.
         /// </summary>
         public abstract ActorKind SpawnedActorKind { get; }
 
         /// <summary>
-        /// Indica se o actor deste serviço deve existir após o hard reset macro.
+        /// Indica se o actor deste servico deve existir apos o hard reset macro.
         /// </summary>
         public virtual bool IsRequiredForWorldReset => false;
 
@@ -53,21 +54,21 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             if (uniqueIdFactory == null || _actorRegistry == null)
             {
                 DebugUtility.LogError(GetType(),
-                    "Dependências ausentes para executar SpawnAsync.");
+                    "Dependencias ausentes para executar SpawnAsync.");
                 return Task.CompletedTask;
             }
 
             if (_context?.WorldRoot == null)
             {
                 DebugUtility.LogError(GetType(),
-                    "WorldSpawnContext inválido para executar SpawnAsync.");
+                    "WorldSpawnContext invalido para executar SpawnAsync.");
                 return Task.CompletedTask;
             }
 
             if (_prefab == null)
             {
                 DebugUtility.LogError(GetType(),
-                    "Prefab não configurado para serviço de spawn.");
+                    "Prefab nao configurado para servico de spawn.");
                 return Task.CompletedTask;
             }
 
@@ -89,20 +90,18 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             _spawnedObject = instance;
             _spawnedObject.name = _prefab.name;
 
-            // hook para que implementações façam ajustes (movimento, input, injeções)
             OnPostInstantiate(_spawnedObject);
 
             var actor = ResolveActor(_spawnedObject);
             if (actor == null)
             {
                 DebugUtility.LogError(GetType(),
-                    "Prefab não contém IActor esperado. Objetos destruídos.");
+                    "Prefab nao contem IActor esperado. Objetos destruidos.");
                 Object.Destroy(_spawnedObject);
                 _spawnedObject = null;
                 return Task.CompletedTask;
             }
 
-            // garante que o actor possua ActorId válido
             if (!EnsureActorId(actor, _spawnedObject))
             {
                 Object.Destroy(_spawnedObject);
@@ -115,12 +114,21 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             if (!_actorRegistry.Register(_spawnedActor))
             {
                 DebugUtility.LogError(GetType(),
-                    $"Falha ao registrar ator no registry. Destruindo instância. ActorId={_spawnedActor.ActorId}");
+                    $"Falha ao registrar ator no registry. Destruindo instancia. ActorId={_spawnedActor.ActorId}");
                 Object.Destroy(_spawnedObject);
                 _spawnedObject = null;
                 _spawnedActor = null;
                 return Task.CompletedTask;
             }
+
+            EventBus<ActorSpawnCompletedEvent>.Raise(
+                new ActorSpawnCompletedEvent(
+                    _spawnedActor,
+                    SpawnedActorKind,
+                    _spawnedActor.ActorId,
+                    Name,
+                    _context.SceneName,
+                    IsRequiredForWorldReset));
 
             string prefabName = _prefab != null ? _prefab.name : "<null>";
             string instanceName = _spawnedObject != null ? _spawnedObject.name : "<null>";
@@ -139,7 +147,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             if (_actorRegistry == null)
             {
                 DebugUtility.LogError(GetType(),
-                    "Dependências ausentes para executar DespawnAsync.");
+                    "Dependencias ausentes para executar DespawnAsync.");
                 return Task.CompletedTask;
             }
 
@@ -174,41 +182,52 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
         }
 
         /// <summary>
-        /// ResolvePlayerActor o componente IActor na instância. Deve retornar null se não houver.
+        /// Resolve o componente IActor na instancia. Deve retornar null se nao houver.
         /// </summary>
         protected abstract IActor ResolveActor(GameObject instance);
 
         /// <summary>
-        /// Garante que o actor possua ActorId válido. Retorna true se válido/gerado.
-        /// Implementações concretas devem usar _uniqueIdFactory quando necessário.
+        /// Garante que o actor possua ActorId valido.
+        /// A geracao ocorre aqui, no trilho de Spawn; o actor apenas recebe a identidade.
         /// </summary>
         protected virtual bool EnsureActorId(IActor actor, GameObject instance)
         {
-            // Default assume que o actor já tem id válido.
             if (actor == null)
             {
                 return false;
             }
-            return !string.IsNullOrWhiteSpace(actor.ActorId);
-        }
 
-        protected bool EnsureGeneratedActorId(
-            string currentActorId,
-            GameObject idSource,
-            string actorLabel,
-            System.Action<string> assignActorId)
-        {
-            return ActorSpawnActorIdHelper.EnsureActorId(
-                GetType(),
-                uniqueIdFactory,
-                currentActorId,
-                idSource,
-                actorLabel,
-                assignActorId);
+            if (!string.IsNullOrWhiteSpace(actor.ActorId))
+            {
+                return true;
+            }
+
+            string actorLabel = actor is IActorKindProvider kindProvider
+                ? kindProvider.Kind.ToString()
+                : actor.GetType().Name;
+
+            string actorId = uniqueIdFactory.GenerateId(instance);
+            if (string.IsNullOrWhiteSpace(actorId))
+            {
+                DebugUtility.LogError(GetType(),
+                    $"IUniqueIdFactory retornou ActorId vazio; abortando spawn de {actorLabel}.");
+                return false;
+            }
+
+            actor.Initialize(actorId);
+
+            if (string.IsNullOrWhiteSpace(actor.ActorId))
+            {
+                DebugUtility.LogError(GetType(),
+                    $"Actor nao aceitou ActorId gerado; abortando spawn de {actorLabel}.");
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
-        /// Hook chamado logo após a instanciação do prefab. Usado para garantir stack de movimento, injeção de serviços, etc.
+        /// Hook chamado logo apos a instanciação do prefab. Usado para garantir stack de movimento, injecao de servicos, etc.
         /// </summary>
         protected virtual void OnPostInstantiate(GameObject instance) { }
     }

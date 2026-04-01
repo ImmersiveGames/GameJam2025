@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -13,18 +13,15 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
         private readonly IPostStageCoordinator _postStageCoordinator;
         private readonly IPostRunResultService _postGameResultService;
         private readonly IPostRunOwnershipService _postGameOwnershipService;
-        private readonly IGameLoopService _gameLoopService;
 
         public PostRunHandoffService(
             IPostStageCoordinator postStageCoordinator,
             IPostRunResultService postGameResultService,
-            IPostRunOwnershipService postGameOwnershipService,
-            IGameLoopService gameLoopService)
+            IPostRunOwnershipService postGameOwnershipService)
         {
             _postStageCoordinator = postStageCoordinator ?? throw new ArgumentNullException(nameof(postStageCoordinator));
             _postGameResultService = postGameResultService ?? throw new ArgumentNullException(nameof(postGameResultService));
             _postGameOwnershipService = postGameOwnershipService ?? throw new ArgumentNullException(nameof(postGameOwnershipService));
-            _gameLoopService = gameLoopService ?? throw new ArgumentNullException(nameof(gameLoopService));
         }
 
         public async Task HandleRunEndedAsync(PostRunHandoffContext context, CancellationToken cancellationToken = default)
@@ -77,8 +74,6 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
                 DebugUtility.Log<PostRunHandoffService>(
                     $"[OBS][ExitStage] DownstreamHandoffRequested target='PostRunOwnershipService.OnPostRunEntered' outcome='{stageContext.Outcome}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
                     DebugUtility.Colors.Info);
-
-                _gameLoopService.RequestRunEnd();
             }
             catch (Exception ex)
             {
@@ -105,4 +100,3 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
         }
     }
 }
-

@@ -20,7 +20,10 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Dummy
 
         public void Initialize(string id)
         {
-            actorId = id ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(id))
+            {
+                actorId = id;
+            }
         }
     }
 }

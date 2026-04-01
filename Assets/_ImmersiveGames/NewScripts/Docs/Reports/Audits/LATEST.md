@@ -1,4 +1,20 @@
-# LATEST
+# Round 2 runtime ownership
+- New cut snapshot: `Docs/Reports/Audits/2026-04-01/Round-2-Cut-3-Runtime-Ownership-Reset-Participation.md`
+
+# Round 2 pooling seam
+- New cut snapshot: `Docs/Reports/Audits/2026-04-01/Round-2-Cut-4-Pooling-Future-Ready-Seam.md`
+
+# Round 2 freeze
+- New freeze snapshot: `Docs/Reports/Audits/2026-04-01/Round-2-Freeze-Object-Lifecycle.md`
+
+# Round 2 actor consumption
+- New cut snapshot: `Docs/Reports/Audits/2026-04-01/Round-2-Cut-2-Actor-Consumption-Contract.md`
+
+# Round 2 object ownership
+- New cut snapshot: `Docs/Reports/Audits/2026-04-01/Round-2-Cut-1-Ownership-Taxonomy.md`
+
+# Backbone round 1 freeze
+- New freeze snapshot: `Docs/Reports/Audits/2026-04-01/Backbone-Round-1-Freeze.md`
 
 ## Orchestration backbone analysis
 - New consultation report: `Docs/Reports/Audits/2026-03-31/Orchestration-Backbone-Analysis.md`

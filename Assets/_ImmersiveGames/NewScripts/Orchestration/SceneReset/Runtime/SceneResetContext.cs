@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -45,6 +43,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 
         public const long SlowHookWarningMs = 50;
 
+        /// <summary>
+        /// Servicos owner de Spawn material/despawn/respawn, apenas sequenciados por SceneReset.
+        /// </summary>
         public IReadOnlyList<IWorldSpawnService> SpawnServices { get; }
         public IActorRegistry ActorRegistry { get; }
         public WorldResetContext? ResetContext { get; }
@@ -85,61 +86,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             _gateLease.ReleaseIfNeeded();
         }
 
-        public async Task RunSpawnServicesStepAsync(string stepName, Func<IWorldSpawnService, Task> stepAction)
-        {
-            var stepWatch = Stopwatch.StartNew();
-            DebugUtility.Log(typeof(SceneResetFacade), $"{stepName} started");
-
-            if (SpawnServices.Count == 0)
-            {
-                DebugUtility.LogWarning(typeof(SceneResetFacade),
-                    $"{stepName} skipped (no spawn services registered).");
-                stepWatch.Stop();
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
-                    $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
-                return;
-            }
-
-            foreach (IWorldSpawnService service in SpawnServices)
-            {
-                if (service == null)
-                {
-                    DebugUtility.LogError(typeof(SceneResetFacade),
-                        $"{stepName} service é nulo e será ignorado.");
-                    continue;
-                }
-
-                if (!_hookCatalog.ShouldIncludeForScopes(service))
-                {
-                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
-                        $"{stepName} service skipped by scope filter: {service.Name}");
-                    continue;
-                }
-
-                DebugUtility.Log(typeof(SceneResetFacade),
-                    $"{stepName} service started: {service.Name}");
-
-                var serviceWatch = Stopwatch.StartNew();
-                try
-                {
-                    await stepAction(service);
-                }
-                finally
-                {
-                    serviceWatch.Stop();
-                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
-                        $"{stepName} service duration: {service.Name} => {serviceWatch.ElapsedMilliseconds}ms");
-                }
-
-                DebugUtility.Log(typeof(SceneResetFacade),
-                    $"{stepName} service completed: {service.Name}");
-            }
-
-            stepWatch.Stop();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
-                $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
-        }
-
         public List<(string Label, ISceneResetHook Hook)> CollectWorldHooks()
         {
             return _hookCatalog.CollectWorldHooks();
@@ -156,6 +102,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 return actors;
             }
 
+            // Snapshot de observabilidade para hooks e participacao de reset.
+            // Nao altera ownership nem readiness: isso continua no trilho de Spawn.
             ActorRegistry.GetActors(actors);
             return actors;
         }
@@ -163,6 +111,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         public bool TryGetCachedActorHooks(Transform transform, out List<(string Label, IActorLifecycleHook Hook)> hooks)
         {
             return _hookCatalog.TryGetCachedActorHooks(transform, out hooks);
+        }
+
+        public bool ShouldIncludeForScopes(object candidate)
+        {
+            return _hookCatalog.ShouldIncludeForScopes(candidate);
         }
 
         public List<(string Label, IActorLifecycleHook Hook)> CollectActorHooks(Transform transform)
@@ -182,6 +135,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 
         public List<IActorGroupGameplayResetWorldParticipant> CollectScopedParticipants()
         {
+            // Participantes de reset sao bridges de execucao, nao owners do actor.
             return _hookCatalog.CollectScopedParticipants();
         }
 

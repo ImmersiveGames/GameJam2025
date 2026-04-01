@@ -1,8 +1,6 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
 {
@@ -11,52 +9,28 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
     /// - OnClick() deve ser ligado no Inspector.
     /// - Sem corrotinas.
     ///
-    /// Emite intent visual de start e delega a execução downstream para LevelFlow.
+    /// Emite intent visual de start e delega a execução downstream para o backbone.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MenuPlayButtonBinder : FrontendButtonBinderBase
     {
-        private ILevelFlowRuntimeService _levelFlow;
-
         protected override void Awake()
         {
             base.Awake();
-
-            DependencyManager.Provider.TryGetGlobal(out _levelFlow);
-            if (_levelFlow == null)
-            {
-                DebugUtility.LogWarning<MenuPlayButtonBinder>(
-                    "[LevelFlow] ILevelFlowRuntimeService unavailable on Awake. Verify GlobalCompositionRoot registration before Frontend intent emission.");
-            }
         }
 
         protected override bool OnClickCore(string actionReason)
         {
-            if (_levelFlow == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _levelFlow);
-            }
-
-            if (_levelFlow == null)
-            {
-                DebugUtility.LogWarning<MenuPlayButtonBinder>(
-                    "[LevelFlow] Intent ignored: ILevelFlowRuntimeService unavailable.");
-                return false;
-            }
-
             string normalizedReason = string.IsNullOrWhiteSpace(actionReason) ? "Menu/PlayButton" : actionReason.Trim();
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[OBS][FrontendUI][Intent] MenuPlay -> StartGameplayDefaultAsync reason='{normalizedReason}'.",
+                $"[OBS][FrontendUI][Intent] MenuPlay -> GamePlayRequestedEvent reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                "[OBS][FrontendUI][Delegate] Intent de Play delegada downstream para LevelFlow.",
+                "[OBS][FrontendUI][Delegate] Intent de Play delegada downstream para o backbone canonico.",
                 DebugUtility.Colors.Info);
 
-            NavigationTaskRunner.FireAndForget(
-                _levelFlow.StartGameplayDefaultAsync(normalizedReason),
-                typeof(MenuPlayButtonBinder),
-                "Menu/Play intent -> LevelFlow");
+            EventBus<GamePlayRequestedEvent>.Raise(new GamePlayRequestedEvent(normalizedReason));
 
             return true;
         }

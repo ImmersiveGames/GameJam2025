@@ -38,16 +38,6 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             return instance ? instance.GetComponent<EaterActor>() as IActor : null;
         }
 
-        protected override bool EnsureActorId(IActor actor, GameObject instance)
-        {
-            if (actor is not EaterActor eater)
-            {
-                return false;
-            }
-
-            return EnsureGeneratedActorId(eater.ActorId, eater.gameObject, "Eater", eater.Initialize);
-        }
-
         protected override void OnPostInstantiate(GameObject instance)
         {
             GameplayStateControllerInjector.TryInject<EaterRandomMovementController>(
