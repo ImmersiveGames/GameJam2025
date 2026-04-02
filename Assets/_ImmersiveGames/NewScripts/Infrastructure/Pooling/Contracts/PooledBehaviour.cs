@@ -1,5 +1,4 @@
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts
 {
     /// <summary>

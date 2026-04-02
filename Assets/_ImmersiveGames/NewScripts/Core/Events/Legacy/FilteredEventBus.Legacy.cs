@@ -29,4 +29,3 @@ namespace _ImmersiveGames.NewScripts.Core.Events.Legacy
             FilteredEventBus<object, TEvent>.ClearAll();
     }
 }
-

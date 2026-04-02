@@ -1,19 +1,26 @@
-# InputModes
+﻿# InputModes
 
 ## Estado atual
 
-- `SceneFlowInputModeBridge` sincroniza InputMode com o fluxo de cenas.
-- `PostGameOwnershipService` sincroniza o modo de input do post global.
-- A decisao principal continua vindo do `RouteKind` observado no contexto da transicao.
+- `InputModeService` é o aplicador canônico e implementa leitura de estado via `IInputModeStateService`.
+- `InputModeCoordinator` é o writer canônico dos requests.
+- `InputModeRequestKind` é o contrato efetivo dos requests (`FrontendMenu`, `Gameplay`, `PauseOverlay`).
+- `IPlayerInputLocator` encapsula a descoberta concreta de `PlayerInput`.
+- `InputModeChangedEvent` é o hook oficial de mudança efetiva de modo.
+- `SceneFlowInputModeBridge`, `GameLoop`, `Pause` e `PostRun` publicam requests; o serviço aplica o mapa efetivo.
 
 ## Ownership
 
 - `IInputModeService`: aplicacao efetiva do mapa/input mode.
+- `IInputModeStateService`: leitura canonica do modo atual.
+- `InputModeChangedEvent`: observacao de transicao efetiva.
 - `SceneFlowInputModeBridge`: traducao de eventos de SceneFlow para requests de InputMode.
-- `PostGameOwnershipService`: ownership do input no `PostGame` global.
+- `IPlayerInputLocator`: descoberta concreta de `PlayerInput`.
 
 ## Regras praticas
 
-- `frontend` e `gameplay` pertencem a `RouteKind`.
-- `startup` nao e decidido por InputModes.
-- O post game usa input de frontend por ownership global, nao por stage do level.
+- `InputModes` não conhece regra semântica de `SceneFlow` por string.
+- `startup` não é decidido por InputModes.
+- `FrontendMenu`, `Gameplay` e `PauseOverlay` são os requests canonicos já publicados.
+- o post global usa requests explícitos, não inferência por stage.
+

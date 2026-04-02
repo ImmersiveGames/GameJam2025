@@ -1,12 +1,10 @@
-using _ImmersiveGames.NewScripts.Core.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Core;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Modules.ResetInterop.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Loading.Runtime;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -17,13 +15,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void PrimeEventSystems()
         {
-            EventBus<GameStartRequestedEvent>.Clear();
+            EventBus<BootStartPlanRequestedEvent>.Clear();
+            EventBus<GamePlayRequestedEvent>.Clear();
             EventBus<GamePauseCommandEvent>.Clear();
             EventBus<GameResumeRequestedEvent>.Clear();
             EventBus<PauseWillEnterEvent>.Clear();
             EventBus<PauseWillExitEvent>.Clear();
             EventBus<PauseStateChangedEvent>.Clear();
-            EventBus<GameExitToMenuRequestedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
             EventBus<GameLoopActivityChangedEvent>.Clear();
             EventBus<GameRunStartedEvent>.Clear();

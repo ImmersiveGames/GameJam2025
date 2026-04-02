@@ -20,4 +20,4 @@ MonoBehaviour:
   hasPostGameReactionHook: 1
   allowLocalCurtainIn: 1
   allowLocalCurtainOut: 1
-  bgmCue: {fileID: 0}
+  bgmCue: {fileID: 11400000, guid: 85c801c0653c8d34e99cac5d737003b9, type: 2}

@@ -1,9 +1,8 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine.InputSystem;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes
 {
     /// <summary>

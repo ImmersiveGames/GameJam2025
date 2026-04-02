@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap;
-
+using _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot

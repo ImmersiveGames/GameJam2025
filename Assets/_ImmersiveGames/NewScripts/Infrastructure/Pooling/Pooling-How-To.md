@@ -13,6 +13,7 @@ Ele nao existe para:
 - conter regra de gameplay
 - decidir fluxo de audio, UI, VFX ou actor systems
 - substituir composition root
+- assumir ownership do lifecycle de gameplay objects
 
 ## Onde vive
 
@@ -27,6 +28,13 @@ Ele nao existe para:
 - bootstrap global registra apenas `IPoolService`
 - nao existe lista global de pools no boot
 - sem scan automatico de assets
+
+## Boundary com `Spawn`
+
+- `Spawn` continua sendo a fachada/owner do lifecycle de entrada e saida de gameplay objects
+- pooling e apenas backend de materializacao/despawn para reuse de `GameObject`
+- pooling nao decide identidade, readiness, reset nem gameplay state
+- qualquer integracao futura com pool deve passar pelo trilho de `Spawn`, nao por ownership paralelo
 
 ## Contratos principais
 

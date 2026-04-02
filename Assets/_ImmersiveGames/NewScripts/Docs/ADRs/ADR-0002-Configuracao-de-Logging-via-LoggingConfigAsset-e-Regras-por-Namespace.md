@@ -1,4 +1,4 @@
-# ADR-0002 - Configuracao de Logging via LoggingConfigAsset e Regras por Namespace
+﻿# ADR-0002 - Configuracao de Logging via LoggingConfigAsset e Regras por Namespace
 
 ## Status
 
@@ -27,7 +27,7 @@ Na auditoria do codigo real, dois problemas concretos explicaram logs que contin
    - efeito: a regra de `Infrastructure` nao casava e os logs caiam no `defaultLevel`
 
 2. namespace fora da taxonomia modular esperada
-   - observado: `PostGameOverlayController` em namespace fora de `_ImmersiveGames.NewScripts.Modules.*`
+   - observado: `PostRunOverlayController` em namespace fora de `_ImmersiveGames.NewScripts.Modules.*`
    - efeito: a regra ampla de `Modules` nao casava e o `[DebugLevel(DebugLevel.Verbose)]` permanecia ativo
 
 O objetivo desta decisao e restaurar a policy asset-driven, sem criar pipeline paralelo, sem mudar os call sites atuais de `DebugUtility` e sem usar override operacional por classe/tipo no Inspector.
@@ -260,3 +260,4 @@ A política recomendada é:
 - `Assets/_ImmersiveGames/NewScripts/Core/Logging/Config/LoggingConfigAsset.cs`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Config/BootstrapConfigAsset.cs`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/Composition/GlobalCompositionRoot.Entry.cs`
+

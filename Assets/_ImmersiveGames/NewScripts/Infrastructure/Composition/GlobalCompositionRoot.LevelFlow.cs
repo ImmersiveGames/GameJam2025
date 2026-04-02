@@ -1,18 +1,19 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static void InstallLevelFlowServices(BootstrapConfigAsset bootstrapConfig)
+        // Historical file name kept for composition routing compatibility.
+        private static void InstallLevelLifecycleServices(BootstrapConfigAsset bootstrapConfig)
         {
-            LevelFlowInstaller.Install(bootstrapConfig);
+            LevelLifecycleInstaller.Install(bootstrapConfig);
         }
 
-        private static void BootstrapLevelFlowRuntime(BootstrapConfigAsset bootstrapConfig)
+        private static void BootstrapLevelLifecycleRuntime(BootstrapConfigAsset bootstrapConfig)
         {
-            LevelFlowBootstrap.ComposeRuntime(bootstrapConfig);
+            LevelLifecycleBootstrap.ComposeRuntime(bootstrapConfig);
         }
     }
 }

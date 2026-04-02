@@ -1,53 +1,69 @@
-# LevelFlow
+﻿# LevelFlow
 
-## Estado atual
+## Status documental
 
-- `LevelFlowRuntimeService` e owner do start/restart de gameplay pelo trilho principal.
-- `LevelMacroPrepareService` prepara ou limpa o level durante a fase macro.
-- `LevelSwapLocalService` faz troca intra-macro sem nova transicao macro.
-- `LevelEnteredEvent` e o hook canonico pos-level-applied para seams owned pelo level.
-- `LevelIntroCompletedEvent` e o handoff canonico para gameplay depois da intro.
-- `LevelStageOrchestrator` e seam fino de disparo da `IntroStage`.
-- `ILevelIntroStagePresenterRegistry` + `ILevelIntroStagePresenterScopeResolver` resolvem o presenter canonico da intro sem prender o host ao mock concreto.
-- O level atual pode expor:
-  - `IntroStage` opcional
-  - hook opcional para complementar a resposta ao resultado global
+- Este arquivo mantem o nome historico `LevelFlow`, mas o owner operacional atual e `Orchestration/LevelLifecycle`.
+- `Game/Content/Definitions/Levels` e o owner de definitions/content de level.
+- O seam principal entre os dois continua sendo `ILevelFlowContentService`.
 
-## PostStage em runtime
+## Estrutura atual
+
+- `LevelLifecycle`: prepare, swap, restart, next, exit e intro local.
+- `Game/Content/Definitions/Levels`: `LevelDefinitionAsset`, `LevelCollectionAsset` e contratos de conteudo.
+- `LevelFlowRuntimeService`, `LevelMacroPrepareService`, `LevelSwapLocalService`, `PostLevelActionsService` e `LevelStageOrchestrator` continuam como runtime de compat.
+
+## Responsabilidades atuais
+
+- `LevelLifecycle` executa start/restart de gameplay e restauracao de nivel.
+- `LevelMacroPrepareService` prepara ou limpa o level na entrada macro.
+- `LevelSwapLocalService` faz troca local sem nova transicao macro.
+- `LevelEnteredEvent` e o hook canonico pos-aplicacao do level.
+- `LevelIntroCompletedEvent` e o handoff canonico para `Playing`.
+- `LevelStageOrchestrator` dispara e deduplica a `IntroStage`.
+- `PostLevelActionsService` executa restart, next-level e exit-to-menu a partir do contexto atual.
+
+## Dependências e limites
+
+- `SceneFlow` aplica a rota macro.
+- `Navigation` resolve e despacha a rota macro de saida.
+- `GameLoop` consome o handoff final da intro e reflete o estado alto nivel.
+- `PostRun` fornece o resultado global; `LevelLifecycle` pode complementar com hook opcional.
+- `ILevelIntroStagePresenterRegistry` e `ILevelIntroStagePresenterScopeResolver` resolvem o presenter da intro.
+
+## Handoff e ownership
 
 - `LevelFlow` nao e owner do `PostStage`.
-- O papel de `LevelFlow` e fornecer contrato/conteudo da cena atual para o `PostStage` quando existir presenter explicito no level.
-- O hook opcional de nivel continua complementar, nao orquestrador.
-- O contrato completo fica definido em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
+- O papel daqui e fornecer contrato/conteudo da cena atual quando houver presenter explicito.
+- O hook opcional de nivel e complementar, nao orquestrador.
+- `Restart` e `ExitToMenu` continuam sendo acoes de contexto, nao ownership de `Navigation`.
 
-## Ownership
+## Compatibilidade temporaria
 
-- `LevelFlowRuntimeService`: start gameplay default e restart da ultima entrada valida.
-- `LevelMacroPrepareService`: prepare/clear do level na entrada macro.
-- `LevelSwapLocalService`: swap local no gameplay.
-- `LevelEnteredEvent`: hook canonico para level aplicado/ativo.
-- `LevelIntroCompletedEvent`: handoff canonico de fim da intro.
-- `LevelStageOrchestrator`: trigger e dedupe de intro.
-- `ILevelStagePresentationService`: contrato do level atual para intro e hook opcional de post.
-- `ILevelPostGameHookService`: reacao opcional do level ao resultado global.
-- `ILevelIntroStagePresenterRegistry`: contrato atomico de adotar/validar o presenter de intro.
-- `ILevelIntroStagePresenterScopeResolver`: abstracao de escopo/candidatos validos de presenter do level atual.
-- No runtime validado de `PostStage`, o level continua apenas como provedor de contrato/conteudo/presenter, sem ownership da orquestracao.
+- `Orchestration/LevelFlow/Runtime` continua de pe por transicao.
+- `PostPlay` e termo historico; o runtime presente usa `PostRun`.
+- Namespaces antigos podem permanecer para seguranca ate a limpeza final.
+
+## Hooks / contratos publicos
+
+- `LevelEnteredEvent`
+- `LevelIntroCompletedEvent`
+- `ILevelStagePresentationService`
+- `ILevelPostRunHookService`
+- `ILevelIntroStagePresenterRegistry`
+- `ILevelIntroStagePresenterScopeResolver`
 
 ## Regras praticas
 
-- Intro e level-owned, disparada pelo hook canonico `LevelEnteredEvent`.
-- Quando a intro conclui ou e pulada, `LevelIntroCompletedEvent` faz o handoff para o GameLoop seguir para `Playing`.
-- Se o level nao tiver intro, o fluxo segue sem erro e sem pendencia.
+- Intro e `level-owned` e dispara pelo `LevelEnteredEvent`.
+- Se o level nao tiver intro, o fluxo segue sem pendencia.
 - Se o level nao expuser presenter de `PostStage`, o fluxo faz skip automatico.
-- O hook opcional do level nao substitui o resultado global.
-- `Restart` nao passa por esse hook.
-- `NextLevel` e uma acao de progressao local, nao um post stage generico.
-- O host de presenter nao conhece o tipo concreto do mock e nao conhece a topologia de carregamento; ele consome contratos do LevelFlow.
+- `RestartFromFirstLevel` e contrato distinto de `RestartLastGameplay`.
+- `StartGameplayRouteAsync` pertence ao dispatch macro; a selecao de level nao acontece em `Navigation`.
 
 ## Leitura cruzada
 
-- `Docs/Modules/PostGame.md`
+- `Docs/Modules/PostRun.md`
 - `Docs/Modules/GameLoop.md`
 - `Docs/Modules/Navigation.md`
 - `Docs/Guides/Production-How-To-Use-Core-Modules.md`
+

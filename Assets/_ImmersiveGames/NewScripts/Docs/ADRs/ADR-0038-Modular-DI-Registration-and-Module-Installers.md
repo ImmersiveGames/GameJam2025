@@ -1,4 +1,4 @@
-# ADR-0038 — Registro modular de DI e composição runtime por módulo
+﻿# ADR-0038 — Registro modular de DI e composição runtime por módulo
 
 ## Status
 - Estado: Implementado
@@ -199,6 +199,15 @@ Critério auditável:
 
 > se um trecho existe apenas para um módulo específico, ele pertence ao módulo, não ao root global.
 
+## Estado consolidado da rodada
+
+- As duas fases canônicas são `Installer` e `Runtime Composer`, nesta ordem.
+- Os logs canônicos do pipeline devem sair em `INFO`.
+- `Gameplay` permanece `installer-only`.
+- `Audio` é módulo canônico com `AudioCompositionDescriptor`, `AudioInstaller` e `AudioRuntimeComposer`.
+- `Loading` continua subcapability de `SceneFlow`.
+- `BootstrapConfigAsset` continua sendo o único entrypoint aceitável por `Resources` no boot global.
+
 ### 10. Convenção de nomenclatura
 
 Padrão canônico esperado:
@@ -268,14 +277,16 @@ Promoção futura só deve ocorrer quando houver:
 ### Estado consolidado da rodada
 Na consolidação desta rodada:
 
-- o pipeline modular passou a operar com Fase 1 e Fase 2 explícitas;
-- logs canônicos do pipeline foram promovidos para `INFO`;
-- `Gameplay` foi promovido a módulo `installer-only`;
+- o pipeline modular opera com Fase 1 e Fase 2 explícitas;
+- logs canônicos do pipeline são `INFO`;
+- `Gameplay` é `installer-only`;
+- `Audio` é módulo canônico com `AudioCompositionDescriptor` + `AudioInstaller` + `AudioRuntimeComposer`;
+- `Loading` permanece como subcapability de `SceneFlow`;
+- `BootstrapConfigAsset` continua sendo o único entrypoint aceitável por `Resources` no boot global;
 - `GameplayStateGate` e `GameplayCameraResolver` saíram do root e passaram ao módulo `Gameplay`;
 - `GamePauseGateBridge` saiu do root e foi movido para `GameLoopBootstrap`;
-- `PostGame` e `WorldReset` ficaram explícitos como `installer-only`;
-- `Loading` foi mantido como subcapability de `SceneFlow`;
-- `IInputModeService` permaneceu no root como trilho transversal global legítimo nesta passada.
+- `PostRun` e `WorldReset` ficaram explícitos como `installer-only`;
+- `IInputModeService` permaneceu no trilho transversal global legítimo nesta passada.
 
 ### Resultado esperado de auditoria
 Ao auditar o repositório contra este ADR, espera-se encontrar:
@@ -297,7 +308,7 @@ Ao auditar o repositório contra este ADR, espera-se encontrar:
     - `LevelFlow`
     - `WorldReset`
     - `Gameplay`
-    - `PostGame`
+    - `PostRun`
 - logs canônicos do pipeline com:
     - Fase 1 em `INFO`
     - Fase 2 em `INFO`
@@ -325,3 +336,4 @@ Ao auditar o repositório contra este ADR, espera-se encontrar:
 - [ ] O pipeline emite ordem, conclusão e resumo final.
 - [ ] O `GlobalCompositionRoot` não contém wiring interno de módulo.
 - [ ] `Loading` permanece em `SceneFlow` até haver contrato próprio.
+

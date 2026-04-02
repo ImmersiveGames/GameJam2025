@@ -1,47 +1,62 @@
-# GameLoop
+﻿# GameLoop
 
-## Estado atual
+## Status documental
 
-- `GameLoopService` e coordenador do loop; o owner terminal da run e `GameRunOutcomeService`.
-- `GameLoopSceneFlowSyncCoordinator` sincroniza start plan e readiness com SceneFlow.
-- `IntroStage` e opcional por level, mas nao e gate canonico do GameLoop.
-- `PostGame` e global no runtime atual.
+- Parcial / leitura junto do runtime atual.
+- O root fisico atual e `Orchestration/GameLoop`.
+- O loop continua sendo owner do estado `Paused`, mas nao do `PostRun`.
 
-## PostStage em runtime
+## Estrutura atual
 
-- O owner do `PostStage` e `Modules/PostGame`.
-- `GameLoop` nao e owner do post-outcome; ele consome apenas o handoff final apos `PostStageCompletedEvent`.
-- `RequestRunEnd()` continua como comando de entrada para `PostPlay/PostGame`, mas nao define o stage.
-- O `GameLoop` nao conhece presenter, UI ou contrato de cena do `PostStage`.
-- O contrato oficial esta em `Docs/ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md`.
+- `RunLifecycle/Core`: miolo do loop, state machine, eventos base e transicoes.
+- `RunOutcome`: outcome terminal da run e request de fim.
+- `Commands`: comandos explicitos do loop.
+- `Bridges`: adaptadores entre `GameLoop`, `SceneFlow`, `PostRun` e input.
+- `Pause`: overlay reativo e hooks de pausa.
+- `IntroStage`: handoff da intro level-owned.
 
-## Ownership
+## Objetivo
 
-- `GameLoopService`: coordenacao do loop (ready, playing, pause e post game) e reflexo de atividade.
-- `GameRunOutcomeService`: owner terminal do fim de run e publish de `GameRunEndedEvent`.
-- `GameRunResultSnapshotService`: projecao/snapshot do resultado atual da run.
-- `IntroStageCoordinator`: executor da IntroStage do level atual.
-- `LevelStageOrchestrator`: trigger level-owned da intro via `LevelEnteredEvent`.
-- `LevelIntroCompletedEvent`: handoff nivel->loop para sair de `Ready` e entrar em `Playing`.
-- `PostGameOwnershipService`: input mode e gate do post global.
-- `PostGameResultService`: resultado formal do post global.
+- Coordenar `Boot -> Ready -> Playing -> Paused -> terminal da run`.
+- Publicar o estado terminal da run sem assumir ownership de `PostRun`.
+- Consumir handoffs de `LevelLifecycle`, `SceneFlow` e `PostRun` sem inverter ownership.
 
-## Contrato de post atual
+## Ownership atual
 
-- Resultados formais: `Victory`, `Defeat` e `Exit`.
-- `Victory` e `Defeat` entram pelo fim de run.
-- `Exit` e formalizado na saida para menu a partir de `PostPlay`.
-- `Restart` segue direto por reset macro e nao entra no post hook do level.
-- O `PostStage` acontece antes de `PostPlay` e o overlay de `PostGame` entra apenas depois de `PostGameEnteredEvent`.
-- Default operacional: ausencia de presenter implica `PostStageSkipped reason='PostStage/NoPresenter'`.
-- Presenter explicito da cena/conteudo executa GUI minima com `Continue` e `Skip` one-shot.
-- `IntroStage` nao depende de `Ready`/`IntroStage` do GameLoop para existir; o GameLoop apenas reflete o estado alto nivel depois.
-- Quando `LevelIntroCompletedEvent` chega, o GameLoop faz apenas o handoff para `Playing`.
-- O timing e ownership da intro ficam em `LevelFlow`; o GameLoop so consome o handoff final.
+- `GameLoopService`: coordenacao do loop e reflexo de atividade.
+- `GameLoopStateMachine`: transicoes de estado do loop.
+- `GameRunOutcomeService`: fim terminal da run e `GameRunEndedEvent`.
+- `GameLoopCommands`: request de pause, resume, victory, defeat, restart e exit.
+- `GamePauseOverlayController`: apresentacao reativa do pause.
+- `IntroStageControlService`: conclusao/pulo da intro do level atual.
+- `GameRunEndedEventBridge`: seam explicito para `Experience/PostRun/Handoff`.
+
+## Handoff e limites
+
+- `IPostRunHandoffService` e a fronteira principal com `Experience/PostRun`.
+- `PostRun` e o owner do `PostStage` e do fluxo pos-run global.
+- `GameLoop` consome o handoff final, mas nao conhece presenter ou overlay de `PostRun`.
+- `LevelIntroCompletedEvent` libera a passagem para `Playing`; o timing da intro continua level-owned.
+- `Restart` e `ExitToMenu` seguem intencao de contexto; a execucao concreta fica em `LevelLifecycle` e `Navigation`.
+
+## Compatibilidade temporaria
+
+- Namespaces antigos ainda podem existir por seguranca.
+- Os shells antigos de `Core`, `Flow`, `Input`, `Interop`, `Run` e `EndConditions` ja foram podados.
+- O nome historico `PostPlay` nao e o runtime atual.
+
+## Hooks / contratos publicos
+
+- `GameRunStartedEvent`
+- `GameRunEndedEvent`
+- `PauseWillEnterEvent`
+- `PauseWillExitEvent`
+- `PauseStateChangedEvent`
+- `LevelIntroCompletedEvent`
 
 ## Leitura cruzada
 
-- `Docs/Modules/PostGame.md`
+- `Docs/Modules/PostRun.md`
 - `Docs/Modules/LevelFlow.md`
 - `Docs/Modules/Navigation.md`
 - `Docs/Guides/Event-Hooks-Reference.md`

@@ -1,10 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime
 {
     /// <summary>

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 {
     /// <summary>
@@ -33,12 +32,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
         private int _droppedKeyReports;
 
         public DegradedModeReporter()
-            : this(new UnityRuntimeModeProvider(), RuntimeModeConfigLoader.LoadOrNull())
+            : this(new UnityRuntimeModeProvider(), null)
         {
         }
 
         public DegradedModeReporter(IRuntimeModeProvider runtimeModeProvider)
-            : this(runtimeModeProvider, RuntimeModeConfigLoader.LoadOrNull())
+            : this(runtimeModeProvider, null)
         {
         }
 

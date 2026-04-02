@@ -1,11 +1,12 @@
 using System;
+using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Logging.Config;
-using _ImmersiveGames.NewScripts.Modules.Audio.Config;
-using _ImmersiveGames.NewScripts.Modules.Navigation;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Config;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 {
     /// <summary>
@@ -22,7 +23,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private SceneKeyAsset fadeSceneKey;
         [SerializeField] private SceneKeyAsset loadingHudSceneKey;
         [SerializeField] private LoggingConfigAsset loggingConfig;
+        [SerializeField] private RuntimeModeConfig runtimeModeConfig;
         [SerializeField] private AudioDefaultsAsset audioDefaults;
+        [SerializeField] private VideoDefaultsAsset videoDefaults;
         [SerializeField] private EntityAudioSemanticMapAsset entityAudioSemanticMap;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
@@ -30,7 +33,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
         public SceneKeyAsset LoadingHudSceneKey => loadingHudSceneKey;
         public LoggingConfigAsset LoggingConfig => loggingConfig;
+        public RuntimeModeConfig RuntimeModeConfig => runtimeModeConfig;
         public AudioDefaultsAsset AudioDefaults => audioDefaults;
+        public VideoDefaultsAsset VideoDefaults => videoDefaults;
         public EntityAudioSemanticMapAsset EntityAudioSemanticMap => entityAudioSemanticMap;
 
 #if UNITY_EDITOR
@@ -54,6 +59,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
             {
                 string message =
                     $"[FATAL][Config] BootstrapConfigAsset invalid: configure loadingHudSceneKey with a valid SceneName. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (runtimeModeConfig == null)
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure runtimeModeConfig with a valid RuntimeModeConfig asset. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (videoDefaults == null)
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure videoDefaults with a valid VideoDefaultsAsset asset. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);

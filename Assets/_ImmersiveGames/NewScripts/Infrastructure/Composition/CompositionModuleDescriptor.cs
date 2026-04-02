@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public interface ICompositionModuleDescriptor

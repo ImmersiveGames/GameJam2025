@@ -1,11 +1,16 @@
-# ADR-0012 - Fluxo de Pos-Gameplay, GameOver, Vitoria e Restart
+﻿# ADR-0012 - Fluxo de Pos-Gameplay, GameOver, Vitoria e Restart
+
+## Status documental
+
+- Canônico atual para o fluxo de pós-run.
+- `PostPlay` é nomenclatura residual em textos antigos; o runtime atual usa `PostRun`.
 
 ## Status
 - Estado: Implementado e validado
 - Data (decisao): 2026-03-27
 - Ultima atualizacao: 2026-03-27
 - Tipo: Arquitetura / Contrato
-- Escopo: PostStage + PostGame + handoff final para GameLoop
+- Escopo: PostStage + PostRun + handoff final para GameLoop
 
 ## Fonte unica de verdade
 - Este ADR documenta o fluxo canonico atualmente implementado para o `PostStage`.
@@ -16,17 +21,17 @@
 
 ## Contexto validado
 - `GameRunEndedEvent` continua sendo o evento terminal de outcome.
-- O `PostStage` acontece entre `GameRunEndedEvent` e a entrada formal em `PostPlay/PostGame`.
-- `PostGameOverlay` nao abre direto em `GameRunEndedEvent`; ele abre depois de `PostGameEnteredEvent`.
+- O `PostStage` acontece entre `GameRunEndedEvent` e a entrada formal em `PostRun`.
+- `PostRunOverlay` nao abre direto em `GameRunEndedEvent`; ele abre depois de `PostRunEnteredEvent`.
 - O handoff final para `IGameLoopService.RequestRunEnd()` ocorre somente apos `PostStageCompletedEvent`.
-- `Modules/PostGame` e o owner do `PostStage`.
+- `Modules/PostRun` e o owner do `PostStage`.
 - `GameLoop` nao e owner do `PostStage`; ele e apenas consumidor do handoff final.
 - `LevelFlow` nao orquestra o `PostStage`; ele apenas pode fornecer contexto/conteudo/presenter da cena atual quando aplicavel.
 
 ## Fluxo validado
 1. Intencao de fim de run: `Victory` ou `Defeat`.
 2. `GameRunEndedEvent` e publicado pelo owner terminal do outcome.
-3. `PostStageStartRequestedEvent` e publicado por `Modules/PostGame`.
+3. `PostStageStartRequestedEvent` e publicado por `Modules/PostRun`.
 4. `PostStageStartedEvent` confirma que o stage foi assumido.
 5. O resolver procura presenter valido na cena/conteudo atual.
 6. Se nao houver presenter, o stage publica `PostStageSkipped reason='PostStage/NoPresenter'`.
@@ -34,14 +39,14 @@
 8. O usuario conclui com `Complete` ou `Skip` one-shot.
 9. `PostStageCompletedEvent` e publicado uma unica vez.
 10. O consumer de handoff final chama `IGameLoopService.RequestRunEnd()`.
-11. O `GameLoop` entra em `PostPlay/PostGame`.
-12. `PostGameEnteredEvent` e publicado.
-13. O `PostGameOverlay` abre somente depois do `PostGameEnteredEvent`.
+11. O `GameLoop` entra em `PostRun`.
+12. `PostRunEnteredEvent` e publicado.
+13. O `PostRunOverlay` abre somente depois do `PostRunEnteredEvent`.
 
 ## Owners e fronteiras
 
 ### Owner do PostStage
-- `Modules/PostGame`
+- `Modules/PostRun`
 - Responsavel por:
   - coordenar o stage
   - controlar one-shot completion
@@ -53,9 +58,9 @@
 ### Papel do GameLoop
 - Consumidor do handoff final.
 - Continua responsavel apenas por:
-  - transicao macro para `PostPlay`
+  - transicao macro para `PostRun`
   - observabilidade do estado de loop
-  - reflexo final de `PostGame` no estado alto nivel
+  - reflexo final de `PostRun` no estado alto nivel
 
 ### Papel do LevelFlow
 - Provedor do contrato/conteudo da cena atual.
@@ -67,7 +72,7 @@
 
 ## Seam de interceptacao
 - O seam canonico e `GameRunEndedEventBridge.OnGameRunEnded(...)`, antes de `IGameLoopService.RequestRunEnd()`.
-- Nesse ponto, `Modules/PostGame` inicia o `PostStage`, resolve o presenter opcional e segura o handoff final.
+- Nesse ponto, `Modules/PostRun` inicia o `PostStage`, resolve o presenter opcional e segura o handoff final.
 - O runtime validado mostra que esse seam funciona tanto para skip automatico quanto para presenter real de cena.
 
 ## Contrato minimo do PostStage
@@ -117,8 +122,8 @@ Deve transportar, no minimo:
 - `PostStageStartRequestedEvent`
 - `PostStageStartedEvent`
 - `PostStageCompletedEvent`
-- `PostGameEnteredEvent`
-- `PostGameExitedEvent`
+- `PostRunEnteredEvent`
+- `PostRunExitedEvent`
 
 ### PostStageCompletedEvent
 - Deve carregar, no minimo:
@@ -153,28 +158,29 @@ O fluxo deve parar com erro deterministico quando:
   - fail-fast em config obrigatoria ausente
 - Nao deve ser copiado o ownership:
   - `IntroStage` e pre-run e bloqueia gameplay
-  - `PostStage` e pos-outcome e bloqueia apenas a entrada em `PostPlay`
+  - `PostStage` e pos-outcome e bloqueia apenas a entrada em `PostRun`
 
-## Integracao com PostGame atual
-- O overlay de `PostGame` nao e mais consumidor direto de `GameRunEndedEvent` no fluxo final.
-- O overlay surge apenas depois do handoff final e do `PostGameEnteredEvent`.
-- O `ILevelPostGameHookService` continua como complemento de nivel, nao como owner da orquestracao.
+## Integracao com PostRun atual
+- O overlay de `PostRun` nao e mais consumidor direto de `GameRunEndedEvent` no fluxo final.
+- O overlay surge apenas depois do handoff final e do `PostRunEnteredEvent`.
+- O `ILevelPostRunHookService` continua como complemento de nivel, nao como owner da orquestracao.
 
 ## Nao-objetivos
 - Nao mover o owner do `PostStage` para `GameLoop`.
 - Nao transformar `LevelFlow` em owner do pos-outcome.
 - Nao acoplar cena ou UI ao `GameLoop`.
-- Nao reintroduzir o fluxo paralelo antigo de `PostGameOverlay` em `GameRunEndedEvent`.
+- Nao reintroduzir o fluxo paralelo antigo de `PostRunOverlay` em `GameRunEndedEvent`.
 
 ## Riscos reconhecidos
-- Se o `PostGameOverlay` voltar a ouvir `GameRunEndedEvent` diretamente, o stage sera furado.
+- Se o `PostRunOverlay` voltar a ouvir `GameRunEndedEvent` diretamente, o stage sera furado.
 - Se o `GameLoop` passar a conhecer presenter ou UI, o boundary ficara instavel.
 - Se `LevelFlow` assumir ownership da orquestracao, o contrato de run vai se fragmentar outra vez.
 - Se houver mais de um presenter valido no mesmo contexto, o runtime deve falhar fast.
 
 ## Referencias de leitura
-- `Docs/Modules/PostGame.md`
+- `Docs/Modules/PostRun.md`
 - `Docs/Modules/GameLoop.md`
 - `Docs/Modules/LevelFlow.md`
 - `Docs/Canon/Canon-Index.md`
 - `Docs/Guides/Event-Hooks-Reference.md`
+

@@ -1,18 +1,17 @@
-# Latest Evidence
+﻿# Latest Evidence
 
-Evidencia canonica vigente: `Docs/Reports/Audits/2026-03-19/Audit-NewScripts-Canonical-Cleanup-Round1.md`.
+Evidencia canonica vigente: `Docs/Reports/Audits/2026-03-30/Structural-Freeze-Snapshot.md`.
 
 ## Leitura vigente
 
-- A auditoria canônica da rodada e a referencia operacional atual de evidence.
-- A leitura operacional parte de:
-  - `Docs/Reports/Audits/LATEST.md`
-  - `Docs/Reports/Audits/2026-03-19/Audit-NewScripts-Canonical-Cleanup-Round1.md`
-  - docs modulares e guias oficiais atuais
-- A evidencia vigente confirma:
-  - trilho canônico único em `NewScripts`
-  - remoção de trilhos `Dev/QA` de runtime/editor auxiliares
-  - limpeza de histórico documental não canônico em `Reports`
+- `Docs/Reports/Audits/LATEST.md` e a entrada atual de auditoria.
+- `Docs/Reports/Audits/2026-03-30/Structural-Freeze-Snapshot.md` registra o estado estrutural congelado apos as podas validadas.
+- `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md` registra a consolidacao documental.
+- `Docs/Reports/Audits/2026-03-29/Baseline-4.0-Residual-Housekeeping-Audit.md` foi arquivado e nao compete mais com a trilha ativa.
+- A evidencia confirma a poda do caminho documental ativo e o envio do material superado para `Docs/Archive`.
 
-Estados anteriores permanecem apenas como historico rastreavel e nao devem substituir esta leitura vigente.
+## O que isso confirma
 
+- a cadeia canonica ficou curta e explicita
+- docs superados nao competem com o canon atual
+- a proxima direcao do projeto sai do baseline consolidado e vai para `player`, `enemies` e objetos programaticos

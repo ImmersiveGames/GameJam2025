@@ -1,6 +1,0 @@
-Cleanup manual recomendado apos aplicar este pacote:
-
-1. Apagar `NewScripts/Modules/ContentSwap/**`.
-2. Apagar `NewScripts/Docs/ADRs/ADR-0016-ContentSwap-WorldLifecycle.md` se voce nao quiser manter stub historico.
-3. Apagar `NewScripts/Modules/Gates/SimulationGateTokens.cs` se esse caminho ja estiver morto no repositorio real.
-4. Apagar `NewScripts/Infrastructure/Composition/GlobalCompositionRoot.ContentLevels.cs` se ele nao voltar a registrar nada util.

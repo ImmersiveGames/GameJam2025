@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
             public const string Navigation = "Navigation";
             public const string Gates = "Gates";
             public const string InputModes = "InputModes";
-            public const string PostGame = "PostGame";
+            public const string PostRun = "PostRun";
             public const string Infrastructure = "Infrastructure";
         }
 
@@ -35,3 +35,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
         }
     }
 }
+

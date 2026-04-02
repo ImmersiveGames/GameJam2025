@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
 using UnityEngine.Serialization;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config
 {
     [CreateAssetMenu(

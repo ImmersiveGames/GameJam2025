@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.Runtime
 {
     /// <summary>

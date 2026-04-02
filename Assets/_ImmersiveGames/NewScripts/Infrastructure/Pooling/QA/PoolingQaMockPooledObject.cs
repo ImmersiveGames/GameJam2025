@@ -1,7 +1,6 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.Pooling.QA
 {
     /// <summary>

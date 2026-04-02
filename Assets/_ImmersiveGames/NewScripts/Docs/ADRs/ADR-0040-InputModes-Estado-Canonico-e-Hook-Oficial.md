@@ -20,6 +20,7 @@ Sem esses contratos, consumidores precisavam inferir estado por efeito colateral
 - `InputModeService` passa a publicar `InputModeChangedEvent` quando o modo realmente muda.
 - No-op redundante não publica evento.
 - A descoberta concreta de `PlayerInput` continua encapsulada no `IPlayerInputLocator`.
+- Os requests canônicos usam `InputModeRequestKind` (`FrontendMenu`, `Gameplay`, `PauseOverlay`).
 
 ## Superfície Pública
 A superfície pública canônica do módulo passa a ser:
@@ -60,6 +61,13 @@ Ele existe para:
 
 O locator não vira registry complexo, nem novo owner do domínio.
 
+## Estado consolidado da rodada
+
+- `InputModeService` continua sem conhecer regra semântica de `SceneFlow` por string.
+- a leitura canônica de estado fica em `IInputModeStateService.CurrentMode`.
+- o hook oficial continua em `InputModeChangedEvent`.
+- não há registry adicional documentado como contrato.
+
 ## Fora de Escopo
 Explicitamente fora de escopo nesta etapa:
 
@@ -79,4 +87,3 @@ Explicitamente fora de escopo nesta etapa:
 ## Referências
 - `ADR-0037`
 - `ADR-0039`
-

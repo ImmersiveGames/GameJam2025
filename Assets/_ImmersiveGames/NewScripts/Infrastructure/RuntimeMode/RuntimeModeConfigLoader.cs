@@ -1,11 +1,12 @@
-using _ImmersiveGames.NewScripts.Core.Composition;
-using UnityEngine;
-
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
 {
     /// <summary>
-    /// ResolvePlayerActor RuntimeModeConfig via DI global e fallback por Resources (path canônico).
-    /// Retorna null quando não houver configuração disponível.
+    /// Resolve RuntimeModeConfig apenas a partir do DI global.
+    ///
+    /// Observação:
+    /// - A leitura transitória por Resources foi removida deste helper.
+    /// - Bootstrap/composition root deve fazer a resolução explícita quando o asset for obrigatório.
     /// </summary>
     public static class RuntimeModeConfigLoader
     {
@@ -20,8 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode
                 }
             }
 
-            RuntimeModeConfig fromResources = Resources.Load<RuntimeModeConfig>(RuntimeModeConfig.DefaultResourcesPath);
-            return fromResources;
+            return null;
         }
     }
 }

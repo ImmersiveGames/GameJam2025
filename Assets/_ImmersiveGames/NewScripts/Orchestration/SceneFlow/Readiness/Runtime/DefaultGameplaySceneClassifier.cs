@@ -1,0 +1,56 @@
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Bindings;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime
+{
+
+    /// <summary>
+    /// Implementação padrão: marker explícito na cena ativa, com fallback compatível por nome canonical.
+    /// </summary>
+    public sealed class DefaultGameplaySceneClassifier : IGameplaySceneClassifier
+    {
+        private const string FallbackGameplaySceneName = "GameplayScene";
+
+        public bool IsGameplayScene()
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid())
+            {
+                return false;
+            }
+
+            if (HasMarkerInScene(activeScene))
+            {
+                return true;
+            }
+
+            // Fallback compatível: mantém a leitura canônica sem depender apenas do marker.
+            return string.Equals(activeScene.name, FallbackGameplaySceneName, System.StringComparison.Ordinal);
+        }
+
+        private static bool HasMarkerInScene(Scene scene)
+        {
+            GameObject[] roots = scene.GetRootGameObjects();
+            if (roots == null || roots.Length == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < roots.Length; i++)
+            {
+                if (roots[i] == null)
+                {
+                    continue;
+                }
+
+                if (roots[i].GetComponentInChildren<GameplaySceneMarker>(true) != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+}
+

@@ -1,24 +1,61 @@
-# Gameplay
+﻿# Gameplay
 
-## Estado atual
+## Status documental
 
-- `ActorGroupRearm` continua sendo a nomenclatura canonica para rearm local de gameplay.
-- `WorldDefinition` e o runtime de spawn continuam owners do setup de mundo e atores.
-- O rearm de gameplay acontece no escopo da cena e nao reabre trilhos legados.
+- Parcial / leitura junto do runtime atual.
+- `Gameplay` ainda concentra setup de mundo, spawn, state, GameplayReset e apoio de camera.
+- A camera de gameplay saiu para `Experience/GameplayCamera`.
 
-## Ownership
+## Estrutura atual
 
-- `WorldDefinition` + spawning runtime: setup e spawn de gameplay.
-- `GameplayStateGate`: gate canonico de acoes/gameplay por estado.
-- `ActorGroupRearmOrchestrator`: rearm canonico de grupos de atores.
-- `PlayerActorGroupRearmWorldParticipant`: ponte do reset de players para `ByActorKind(Player)`.
-- `GameplayCameraResolver`: camera gameplay para consumers globais.
+- `Spawn`: definicoes, contexto, registry e factories de spawn do mundo.
+- `State/Core`: snapshot e contrato de estado jogavel.
+- `State/RuntimeSignals`: adaptador de sinais do runtime.
+- `State/Gate`: gate de execucao e logs de decisao.
+- `GameplayReset/Coordination`: orchestrador do GameplayReset local.
+- `GameplayReset/Policy`: policy do GameplayReset.
+- `GameplayReset/Discovery`: resolucao de alvos.
+- `GameplayReset/Execution`: aplicacao concreta do GameplayReset.
+
+## Responsabilidades atuais
+
+- `Game/Content/Definitions/Worlds/WorldDefinition.asset` e `Game/Content/Definitions/Worlds/Config/WorldDefinition` definem o authoring do conjunto de atores e o setup inicial do mundo.
+- `GameplayStateGate` bloqueia e libera acoes de gameplay conforme estado e readiness.
+- `ActorGroupGameplayResetOrchestrator` coordena o GameplayReset local.
+- `PlayerActorGroupGameplayResetWorldParticipant` e a ponte de GameplayReset de players para `ByActorKind(Player)`.
+- `Experience/GameplayCamera` resolve a camera gameplay fora do owner de gameplay.
+
+## Dependências e limites
+
+- `SceneReset` e `WorldReset` continuam sendo o trilho material de reset.
+- `ActorGroupGameplayReset` depende de `ActorKind` e `ActorIdSet`.
+- `Game/Content/Definitions/Levels` guarda definitions/content de level; `Gameplay` nao e owner desse boundary.
+- `Gameplay` ainda mistura entidade, mecanica e orquestracao local em vez de separa-las completamente.
+
+## Fora de escopo
+
+- Nao e owner de `SceneFlow`.
+- Nao e owner de `Navigation`.
+- Nao e owner de `GameLoop`.
+- Nao e owner de `PostRun`.
+
+## Limites conhecidos
+
+- O nome `Gameplay` ainda cobre mais de uma camada.
+- O GameplayReset continua sendo um caminho operacional dentro da area de gameplay.
+- `WorldLifecycle` e termo historico; o runtime presente usa `WorldReset` e `SceneReset`.
+
+## Hooks / contratos publicos
+
+- `ActorGroupGameplayResetOrchestrator`
+- `GameplayStateGate`
+- `WorldDefinition`
 
 ## Regras praticas
 
 - Prefira `ByActorKind` como trilho principal.
-- Use `ActorIdSet` apenas quando o caso realmente exigir selecao tecnica explicita.
-- Nomeie e documente esse fluxo como `ActorGroupRearm`.
+- Use `ActorIdSet` apenas quando a selecao tecnica explicita for necessaria.
+- Continue nomeando esse fluxo como `ActorGroupGameplayReset`.
 
 ## Leitura cruzada
 

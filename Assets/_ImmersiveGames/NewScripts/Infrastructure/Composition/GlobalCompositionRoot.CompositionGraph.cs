@@ -1,13 +1,14 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Modules.Audio.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.Gameplay.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.GameLoop.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.LevelFlow.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.Navigation.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.PostGame.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.WorldReset.Bootstrap;
-using _ImmersiveGames.NewScripts.Modules.SceneFlow.Bootstrap;
-
+using _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap;
+using _ImmersiveGames.NewScripts.Experience.Preferences.Bootstrap;
+using _ImmersiveGames.NewScripts.Experience.Save.Bootstrap;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -51,17 +52,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static IReadOnlyList<CompositionPipelineStep> GetModuleCompositionSteps()
         {
-            return new[]
+            // Ordem intencional:
+            // - Installer: Audio antes de Preferences (Preferences depende do Audio instalado).
+            // - Bootstrap: Preferences antes de Audio (Audio depende do snapshot de Preferences).
+            return new[] 
             {
+                CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(LevelFlowCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(PostGameCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(PostRunCompositionDescriptor.Descriptor),
             };
         }
     }
 }
+

@@ -1,6 +1,4 @@
-using System;
 using _ImmersiveGames.NewScripts.Core.Events;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
 {
     /// <summary>

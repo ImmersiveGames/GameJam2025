@@ -1,0 +1,176 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &100000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 400000}
+  - component: {fileID: 11400001}
+  - component: {fileID: 11400002}
+  - component: {fileID: 11400003}
+  - component: {fileID: 11400004}
+  - component: {fileID: 4245299595776981344}
+  m_Layer: 0
+  m_Name: AudioQaMenuSceneRig
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &400000
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 400001}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &11400001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0d22a2fd41243759d216e3611d4bc69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  primaryCue: {fileID: 11400000, guid: 25cf9ecd2e0df8c40bb384c00bcc510a, type: 2}
+  alternateCue: {fileID: 11400000, guid: 8bdd0f6cc3520b24bae1d6e1e1b57835, type: 2}
+  playPrimaryOnStart: 0
+  scenarioStepDelaySeconds: 2
+  verboseLogs: 1
+--- !u!114 &11400002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0904bcf587b554b498587e8fedb14a4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  direct2dCue: {fileID: 11400000, guid: 18941817fb8b70d40a32a5149c115458, type: 2}
+  direct3dCue: {fileID: 11400000, guid: 4d09929d1aac5364cacc40f436669b9d, type: 2}
+  spatialFollowTarget: {fileID: 400001}
+  spatialProbePosition: {x: 0, y: 1.5, z: 2}
+  burstCount: 4
+  burstStepDelaySeconds: 0.05
+  verboseLogs: 1
+--- !u!114 &11400003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d198dfb0e75a7d4783a6945cd3577b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pooled2dCue: {fileID: 11400000, guid: 6b9495d8817ee8e43987d6e7d5673563, type: 2}
+  pooled3dCue: {fileID: 11400000, guid: 79902214d7c76454f9a90389b7ea4610, type: 2}
+  pooledSequenceCue: {fileID: 11400000, guid: 6b9495d8817ee8e43987d6e7d5673563, type: 2}
+  pooledVoiceProfile: {fileID: 11400000, guid: 827b095c46ab3e44bb1d322e4ecdc86b, type: 2}
+  spatialFollowTarget: {fileID: 400001}
+  spatialProbePosition: {x: 0, y: 1.5, z: 2}
+  pooledRetriggerInterruptDelaySeconds: 0.15
+  pooledRetriggerRepeatCount: 1
+  pooledBudgetBurstCount: 6
+  pooledBudgetStepDelaySeconds: 0.02
+  pooledSequenceCount: 5
+  pooledSequenceStepDelaySeconds: 0.2
+  pooledSequenceWaitTimeoutSeconds: 8
+  verboseLogs: 1
+--- !u!114 &11400004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d1caef1f5f4469f93f0f23265d38d58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  semanticMap: {fileID: 11400000, guid: 8655b820fdbe45eb902e5e8086929880, type: 2}
+  globalPurpose: semantic_global_direct
+  spatialPurpose: semantic_spatial_direct
+  pooledPurpose: semantic_spatial_pooled
+  missingPurpose: semantic_missing
+  ownerTransform: {fileID: 400001}
+  fallbackSpatialPosition: {x: 0, y: 1.5, z: 2}
+  explicitCue: {fileID: 11400000, guid: 18941817fb8b70d40a32a5149c115458, type: 2}
+  verboseLogs: 1
+--- !u!114 &4245299595776981344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81d0fb57de6e4ee4b04ec66d925f5f68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  emitterUnderTest: {fileID: 0}
+  emitterPurpose: semantic_spatial_direct
+  ownerTransform: {fileID: 0}
+  noEmitterPurpose: semantic_spatial_direct
+  fallbackSpatialPosition: {x: 0, y: 1.5, z: 2}
+  noEmitterVolumeScale: 1
+  semanticMap: {fileID: 11400000, guid: 8655b820fdbe45eb902e5e8086929880, type: 2}
+  explicitCue: {fileID: 11400000, guid: 6b9495d8817ee8e43987d6e7d5673563, type: 2}
+  autoStopDelaySeconds: 0.8
+  autoStopUseUnscaledTime: 1
+  verboseLogs: 1
+--- !u!1 &100001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 400001}
+  m_Layer: 0
+  m_Name: AudioQa_SpatialOwner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &400001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.5, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 400000}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
