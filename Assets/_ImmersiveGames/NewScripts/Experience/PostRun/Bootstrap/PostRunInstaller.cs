@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
     /// Installer do PostRun.
     ///
     /// Responsabilidade:
-    /// - registrar contratos e serviços de post-game no boot;
+/// - registrar contratos e serviços de post-run no boot;
     /// - nao compor runtime nem criar bridges.
     /// </summary>
     public static class PostRunInstaller

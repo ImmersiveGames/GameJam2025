@@ -44,7 +44,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
             EnsureAudioBgmContextService(bootstrapConfig);
-            EnsureAudioPauseDuckingBridge();
             EnsureNavigationLevelRouteBgmBridge(bootstrapConfig);
             EnsureGlobalAudioService();
             EnsureEntityAudioService(bootstrapConfig);
@@ -99,22 +98,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IAudioBgmService already registered.",
                 registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
-        }
-
-        private static void EnsureAudioPauseDuckingBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<AudioPauseDuckingBridge>(out _))
-            {
-                return;
-            }
-
-            var bridge = AudioPauseDuckingBridge.EnsureCreated();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(
-                typeof(AudioRuntimeComposer),
-                "[Audio][BOOT] AudioPauseDuckingBridge registered (PauseStateChangedEvent -> IAudioBgmService.SetPauseDucking).",
-                DebugUtility.Colors.Info);
         }
 
         private static void EnsureNavigationLevelRouteBgmBridge(BootstrapConfigAsset bootstrapConfig)

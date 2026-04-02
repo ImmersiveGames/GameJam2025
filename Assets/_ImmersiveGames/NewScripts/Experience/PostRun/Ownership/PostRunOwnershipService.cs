@@ -1,13 +1,10 @@
 using System;
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 {
     public readonly struct PostRunOwnershipContext
@@ -55,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostRunOwnershipService : IPostRunOwnershipService
     {
-        private const string PostRunGateToken = "state.postgame";
+        private const string RunDecisionGateToken = "state.rundecision";
 
         private bool _isActive;
         private bool _loggedMissingGate;
@@ -73,16 +70,11 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 
             _isActive = true;
             DebugUtility.Log<PostRunOwnershipService>(
-                $"[OBS][PostRunMenu] PostRunMenuEntered downstreamFrom='RunResult' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                $"[OBS][RunDecision] RunDecisionEntered downstreamFrom='PostRun' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
                 DebugUtility.Colors.Info);
-            ApplyPostRunInputMode(context);
+            ApplyRunDecisionInputMode(context);
             AcquireGate();
             EventBus<PostRunEnteredEvent>.Raise(new PostRunEnteredEvent(context));
-
-            if (context.Result == PostRunResult.Victory || context.Result == PostRunResult.Defeat)
-            {
-                _ = RunLevelHookSafelyAsync(context.Signature, context.SceneName, context.Result, context.Reason, context.Frame);
-            }
         }
 
         public void OnPostRunExited(PostRunOwnershipExitContext context)
@@ -94,26 +86,21 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 
             _isActive = false;
             DebugUtility.Log<PostRunOwnershipService>(
-                $"[OBS][PostRunMenu] PostRunMenuExited downstreamTo='{context.NextState}' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                $"[OBS][RunDecision] RunDecisionExited downstreamTo='{context.NextState}' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
                 DebugUtility.Colors.Info);
             ReleaseGate(context.Reason);
             ApplyExitInputMode(context);
             EventBus<PostRunExitedEvent>.Raise(new PostRunExitedEvent(context));
-
-            if (context.Result == PostRunResult.Exit)
-            {
-                _ = RunLevelHookSafelyAsync(context.Signature, context.SceneName, context.Result, context.Reason, context.Frame);
-            }
         }
 
-        private static void ApplyPostRunInputMode(PostRunOwnershipContext context)
+        private static void ApplyRunDecisionInputMode(PostRunOwnershipContext context)
         {
             DebugUtility.Log<PostRunOwnershipService>(
-                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='PostRunMenu' reason='PostRunMenu/Entered' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
+                $"[OBS][InputMode] Request mode='FrontendMenu' map='UI' phase='RunDecision' reason='RunDecision/Entered' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
-                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "PostRunMenu/Entered", "PostRunMenu", context.Signature));
+                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "RunDecision/Entered", "RunDecision", context.Signature));
         }
 
         private void ApplyExitInputMode(PostRunOwnershipExitContext context)
@@ -121,47 +108,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             bool applyGameplay = context.NextState == "Playing";
             string modeName = applyGameplay ? "Gameplay" : "FrontendMenu";
             string mapName = applyGameplay ? "Player" : "UI";
-            string reason = $"PostRunMenu/{context.Reason}";
+            string reason = $"RunDecision/{context.Reason}";
 
             DebugUtility.Log<PostRunOwnershipService>(
-                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='PostRunMenuExit' reason='{reason}' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
+                $"[OBS][InputMode] Request mode='{modeName}' map='{mapName}' phase='RunDecisionExit' reason='{reason}' signature='{context.Signature}' scene='{context.SceneName}' profile='{context.Profile}' frame={context.Frame} result='{context.Result}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
-                new InputModeRequestEvent(applyGameplay ? InputModeRequestKind.Gameplay : InputModeRequestKind.FrontendMenu, reason, "PostRunMenu", context.Signature));
-        }
-
-        private async Task RunLevelHookSafelyAsync(string signature, string sceneName, PostRunResult result, string reason, int frame)
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelPostRunHookService>(out var hookService) || hookService == null)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var stagePresentationService) ||
-                stagePresentationService == null ||
-                !stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
-                !contract.IsValid)
-            {
-                return;
-            }
-
-            try
-            {
-                await hookService.RunReactionAsync(new LevelPostRunHookContext(
-                    contract.LevelRef,
-                    contract.LevelSignature,
-                    signature,
-                    sceneName,
-                    result,
-                    reason,
-                    frame));
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PostRunOwnershipService>(
-                    $"[OBS][PostRun] LevelPostRunHookFailed levelRef='{contract.LevelRef.name}' result='{result}' ex='{ex.GetType().Name}: {ex.Message}'.");
-            }
+                new InputModeRequestEvent(applyGameplay ? InputModeRequestKind.Gameplay : InputModeRequestKind.FrontendMenu, reason, "RunDecision", context.Signature));
         }
 
         private void AcquireGate()
@@ -180,12 +134,12 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
                 }
 
                 _loggedMissingGate = true;
-                DebugUtility.LogWarning<PostRunOwnershipService>("[PostRunMenu] ISimulationGateService indisponivel. Gate nao sera adquirido.");
+                DebugUtility.LogWarning<PostRunOwnershipService>("[RunDecision] ISimulationGateService indisponivel. Gate nao sera adquirido.");
                 return;
             }
 
-            _gateHandle = gateService.Acquire(PostRunGateToken);
-            DebugUtility.Log<PostRunOwnershipService>($"[PostRunMenu] Gate adquirido token='{PostRunGateToken}'.", DebugUtility.Colors.Info);
+            _gateHandle = gateService.Acquire(RunDecisionGateToken);
+            DebugUtility.Log<PostRunOwnershipService>($"[RunDecision] Gate adquirido token='{RunDecisionGateToken}'.", DebugUtility.Colors.Info);
         }
 
         private void ReleaseGate(string reason)
@@ -201,11 +155,11 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<PostRunOwnershipService>($"[PostRunMenu] Falha ao liberar gate ({reason}): {ex}");
+                DebugUtility.LogWarning<PostRunOwnershipService>($"[RunDecision] Falha ao liberar gate ({reason}): {ex}");
             }
 
             _gateHandle = null;
-            DebugUtility.Log<PostRunOwnershipService>($"[PostRunMenu] Gate liberado token='{PostRunGateToken}'.", DebugUtility.Colors.Info);
+            DebugUtility.Log<PostRunOwnershipService>($"[RunDecision] Gate liberado token='{RunDecisionGateToken}'.", DebugUtility.Colors.Info);
         }
 
         private static ISimulationGateService ResolveGateService()

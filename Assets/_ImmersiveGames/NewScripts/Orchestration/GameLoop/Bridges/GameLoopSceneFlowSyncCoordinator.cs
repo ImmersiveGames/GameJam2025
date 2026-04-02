@@ -1,20 +1,19 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 {
     public sealed partial class GameLoopSceneFlowSyncCoordinator : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
+        private readonly IGameLoopService _gameLoop;
+        private readonly IFadeService _fadeService;
         private readonly SceneTransitionRequest _startPlan;
         private readonly GameLoopEventSubscriptionSet _subscriptions = new();
 
@@ -32,10 +31,21 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
         private bool _disposed;
 
-        public GameLoopSceneFlowSyncCoordinator(ISceneTransitionService sceneFlow, SceneTransitionRequest startPlan)
+        public GameLoopSceneFlowSyncCoordinator(
+            ISceneTransitionService sceneFlow,
+            IGameLoopService gameLoop,
+            IFadeService fadeService,
+            SceneTransitionRequest startPlan)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
+            _gameLoop = gameLoop ?? throw new InvalidOperationException("[FATAL][Config][GameLoopSceneFlow] IGameLoopService obrigatorio ausente para o coordinator.");
+            _fadeService = fadeService;
             _startPlan = ValidateStartPlanOrFailFast(startPlan);
+
+            if (_startPlan.UseFade && _fadeService == null)
+            {
+                FailFastConfig("GameLoopSceneFlowSyncCoordinator requires IFadeService when startPlan.UseFade is true.");
+            }
 
             _startRequestedBinding = new EventBinding<BootStartPlanRequestedEvent>(_ => OnStartRequestedCommon());
             _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
@@ -94,61 +104,21 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[GameLoopSceneFlow] Falha ao executar TransitionAsync(startPlan). ex={ex}");
-
                 _startInProgress = false;
+                HardFailFastH1.Trigger(typeof(GameLoopSceneFlowSyncCoordinator),
+                    $"[FATAL][H1][GameLoopSceneFlow] Falha ao executar TransitionAsync(startPlan). ex={ex}",
+                    ex);
             }
         }
 
-        private static async Task EnsureFadeReadyForStartTransitionAsync()
+        private async Task EnsureFadeReadyForStartTransitionAsync()
         {
-            if (!DependencyManager.Provider.TryGetGlobal<IFadeService>(out var fadeService) || fadeService == null)
+            if (_fadeService == null)
             {
-                HandleFadeStartFailure("IFadeService is not available in global DI before start transition.");
-                return;
+                throw new InvalidOperationException("[FATAL][Config][GameLoopSceneFlow] IFadeService obrigatorio ausente para o startPlan com fade habilitado.");
             }
 
-            try
-            {
-                await fadeService.EnsureReadyAsync();
-            }
-            catch (Exception ex)
-            {
-                HandleFadeStartFailure($"EnsureReadyAsync failed before start transition. ex='{ex.GetType().Name}: {ex.Message}'");
-            }
-        }
-
-        private static void HandleFadeStartFailure(string detail)
-        {
-            if (ShouldDegradeFadeInRuntime())
-            {
-                DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[DEGRADED][Fade] {detail} Continuing without fade.");
-                return;
-            }
-
-            string message = $"[FATAL][Fade] {detail}";
-            DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator), message);
-
-            DevStopPlayModeInEditor();
-            if (!Application.isEditor)
-            {
-                Application.Quit();
-            }
-
-            throw new InvalidOperationException(message);
-        }
-
-        static partial void DevStopPlayModeInEditor();
-
-        private static bool ShouldDegradeFadeInRuntime()
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            return true;
-#else
-            return false;
-#endif
+            await _fadeService.EnsureReadyAsync();
         }
 
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
@@ -167,7 +137,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
         {
             if (!ShouldHandleTransition(evt.context))
             {
-                TrySyncGameLoopFromTransitionCompleted(evt.context);
                 return;
             }
 
@@ -188,80 +157,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 DebugUtility.Colors.Info);
 
             TryIssueGameLoopSync();
-        }
-
-        private void TrySyncGameLoopFromTransitionCompleted(SceneTransitionContext context)
-        {
-            if (_startInProgress)
-            {
-                return;
-            }
-
-            if (context.RouteKind != SceneRouteKind.Gameplay &&
-                context.RouteKind != SceneRouteKind.Frontend)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
-            {
-                DebugUtility.LogWarning(typeof(GameLoopSceneFlowSyncCoordinator),
-                    "[GameLoopSceneFlow] IGameLoopService indisponivel; runtime sync de SceneFlow/Completed ignorado.");
-                return;
-            }
-
-            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[GameLoopSceneFlow] Runtime sync delegada ao GameLoop. routeKind='{context.RouteKind}'.",
-                DebugUtility.Colors.Info);
-
-            if (!Enum.TryParse(gameLoopService.CurrentStateIdName, out GameLoopStateId currentState))
-            {
-                currentState = GameLoopStateId.Boot;
-            }
-
-            if (context.RouteKind == SceneRouteKind.Gameplay)
-            {
-                if (currentState == GameLoopStateId.Boot)
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        "[GameLoopSceneFlow] Completion sync gameplay em Boot -> RequestReady().",
-                        DebugUtility.Colors.Info);
-                    gameLoopService.RequestReady();
-                    return;
-                }
-
-                if (currentState == GameLoopStateId.Paused)
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        "[GameLoopSceneFlow] Completion sync gameplay em Paused -> RequestResume().",
-                        DebugUtility.Colors.Info);
-                    gameLoopService.RequestResume("GameLoop/SceneFlowCompletionSync/GameplayPaused");
-                    return;
-                }
-
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[GameLoopSceneFlow] Completion sync gameplay em '{currentState}' -> no-op.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (context.RouteKind == SceneRouteKind.Frontend)
-            {
-                if (currentState is GameLoopStateId.Playing
-                    or GameLoopStateId.Paused
-                    or GameLoopStateId.RunEnded)
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        $"[GameLoopSceneFlow] Completion sync frontend em '{currentState}' -> RequestReady().",
-                        DebugUtility.Colors.Info);
-                    gameLoopService.RequestReady();
-                    return;
-                }
-
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[GameLoopSceneFlow] Completion sync frontend em '{currentState}' -> no-op.",
-                    DebugUtility.Colors.Info);
-            }
         }
 
         private void OnWorldResetCompleted(WorldResetCompletedEvent evt)
@@ -370,16 +265,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
-            {
-                DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator),
-                    "[GameLoopSceneFlow] IGameLoopService indisponivel no DI global; nao foi possivel sincronizar GameLoop.");
-
-                _startInProgress = false;
-                return;
-            }
-
             _syncIssued = true;
+            var gameLoop = _gameLoop;
             gameLoop.Initialize();
 
             DebugUtility.LogVerbose<GameLoopSceneFlowSyncCoordinator>(

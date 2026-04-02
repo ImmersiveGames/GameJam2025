@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
@@ -18,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             Func<ISceneResetHook, Task> hookAction)
         {
             var hookWatch = Stopwatch.StartNew();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} started: {serviceName}");
 
             try
@@ -27,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(SceneResetFacade),
+                DebugUtility.LogError(typeof(SceneResetPipeline),
                     $"{hookName} falhou para {serviceName}: {ex}");
                 throw;
             }
@@ -36,15 +35,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 hookWatch.Stop();
                 if (hookWatch.ElapsedMilliseconds > SceneResetContext.SlowHookWarningMs)
                 {
-                    DebugUtility.LogWarning(typeof(SceneResetFacade),
+                    DebugUtility.LogWarning(typeof(SceneResetPipeline),
                         $"{hookName} lento: {serviceName} levou {hookWatch.ElapsedMilliseconds}ms.");
                 }
 
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{hookName} duration: {serviceName} => {hookWatch.ElapsedMilliseconds}ms");
             }
 
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} completed: {serviceName}");
         }
 
@@ -56,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         {
             string actorLabel = SceneResetContext.GetActorLabel(actor);
             var actorWatch = Stopwatch.StartNew();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} actor started: {actorLabel}");
 
             try
@@ -64,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 Transform transform = actor.Transform;
                 if (transform == null)
                 {
-                    DebugUtility.LogWarning(typeof(SceneResetFacade),
+                    DebugUtility.LogWarning(typeof(SceneResetPipeline),
                         $"{hookName} ignorado para {actorLabel}: Transform ausente.");
                     return;
                 }
@@ -89,9 +88,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             finally
             {
                 actorWatch.Stop();
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{hookName} actor duration: {actorLabel} => {actorWatch.ElapsedMilliseconds}ms");
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{hookName} actor completed: {actorLabel}");
             }
         }
@@ -104,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             Func<IActorLifecycleHook, Task> hookAction)
         {
             var hookWatch = Stopwatch.StartNew();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} started: {hookLabel} (actor={actorLabel})");
 
             try
@@ -113,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(SceneResetFacade),
+                DebugUtility.LogError(typeof(SceneResetPipeline),
                     $"{hookName} falhou para {hookLabel} (actor={actorLabel}): {ex}");
                 throw;
             }
@@ -122,15 +121,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 hookWatch.Stop();
                 if (hookWatch.ElapsedMilliseconds > SceneResetContext.SlowHookWarningMs)
                 {
-                    DebugUtility.LogWarning(typeof(SceneResetFacade),
+                    DebugUtility.LogWarning(typeof(SceneResetPipeline),
                         $"{hookName} lento: {hookLabel} (actor={actorLabel}) levou {hookWatch.ElapsedMilliseconds}ms.");
                 }
 
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{hookName} duration: {hookLabel} (actor={actorLabel}) => {hookWatch.ElapsedMilliseconds}ms");
             }
 
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} completed: {hookLabel} (actor={actorLabel})");
         }
     }

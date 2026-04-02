@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
@@ -10,7 +9,7 @@ using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 {
-    
+
     public class EaterAnimationController : AnimationControllerBase, IActorAnimationController,IExecutionToggleIgnored
     {
         private EaterAnimationConfig EaterAnimationConfig => animationConfig as EaterAnimationConfig;
@@ -66,9 +65,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 return;
             }
 
-            FilteredEventBus<DamageEvent>.Register(_damageBinding, Actor.ActorId);
-            FilteredEventBus<DeathEvent>.Register(_deathBinding, Actor.ActorId);
-            FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
+            //FilteredEventBus<DamageEvent>.Register(_damageBinding, Actor.ActorId);
+            //FilteredEventBus<DeathEvent>.Register(_deathBinding, Actor.ActorId);
+            //FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
             _listenersRegistered = true;
 
             DebugUtility.LogVerbose<EaterAnimationController>(
@@ -79,8 +78,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         private int EatingHash => EaterAnimationConfig?.EatingHash ?? Animator.StringToHash("isEating");
         protected int HappyHash => EaterAnimationConfig?.HappyHash ?? Animator.StringToHash("Happy");
         protected int MadHash => EaterAnimationConfig?.MadHash ?? Animator.StringToHash("Mad");
-        
-        
+
+
 
         private void UnregisterDamageListeners()
         {
@@ -92,17 +91,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
             if (_damageBinding != null)
             {
-                FilteredEventBus<DamageEvent>.Unregister(_damageBinding, Actor.ActorId);
+                //FilteredEventBus<DamageEvent>.Unregister(_damageBinding, Actor.ActorId);
             }
 
             if (_deathBinding != null)
             {
-                FilteredEventBus<DeathEvent>.Unregister(_deathBinding, Actor.ActorId);
+                //FilteredEventBus<DeathEvent>.Unregister(_deathBinding, Actor.ActorId);
             }
 
             if (_reviveBinding != null)
             {
-                FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, Actor.ActorId);
+                //FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, Actor.ActorId);
             }
             _listenersRegistered = false;
         }

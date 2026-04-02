@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
@@ -60,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 return;
             }
 
-            DebugUtility.LogWarning(typeof(SceneResetFacade),
+            DebugUtility.LogWarning(typeof(SceneResetPipeline),
                 $"Nenhum spawn service disponível para a cena '{_sceneName}'. Reset seguirá apenas com hooks.");
         }
 
@@ -68,12 +67,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         {
             if (ActorRegistry == null)
             {
-                DebugUtility.LogWarning(typeof(SceneResetFacade),
+                DebugUtility.LogWarning(typeof(SceneResetPipeline),
                     $"ActorRegistry ausente ao logar '{label}'.");
                 return;
             }
 
-            DebugUtility.Log(typeof(SceneResetFacade),
+            DebugUtility.Log(typeof(SceneResetPipeline),
                 $"ActorRegistry count at '{label}': {ActorRegistry.Count}");
         }
 
@@ -98,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 
             if (ActorRegistry == null)
             {
-                DebugUtility.LogWarning(typeof(SceneResetFacade),
+                DebugUtility.LogWarning(typeof(SceneResetPipeline),
                     "ActorRegistry ausente ao criar snapshot de atores. Nenhum hook de ator será executado.");
                 return actors;
             }
@@ -182,7 +181,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 })
                 .ToArray();
 
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} execution order: {string.Join(", ", orderedLabels)}");
         }
 
@@ -192,4 +191,3 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         }
     }
 }
-

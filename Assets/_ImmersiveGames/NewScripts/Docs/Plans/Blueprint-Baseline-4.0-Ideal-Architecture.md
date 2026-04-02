@@ -16,8 +16,9 @@ A direcao central e:
 - `Level` e o `Contexto Local de Conteudo`.
 - `EnterStage` e `ExitStage` sao `Estagios Locais`.
 - `Playing` e o `Estado de Fluxo`.
-- `Victory` / `Defeat` sao `Resultado da Run`.
-- `PostRunMenu` e `Contexto Local Visual`.
+- `RunOutcome` e o `Resultado da Run`.
+- `PostRun` e o `Contexto Local Visual`.
+- `RunDecision` e o overlay/menu final.
 - `Restart` / `ExitToMenu` sao `Intencoes Derivadas`.
 - `Pause` e `Estado Transversal`.
 
@@ -45,8 +46,9 @@ O Baseline 4.0 ideal nao preserva nomes ou splits atuais por compatibilidade aut
 - `EnterStage` prepara a entrada.
 - `Playing` e a fase principal.
 - `ExitStage` fecha o conteudo local.
-- `RunResult` consolida a run.
-- `PostRunMenu` aparece depois do resultado.
+- `RunOutcome` consolida a run.
+- `PostRun` aparece depois do resultado.
+- `RunDecision` aparece depois de `PostRun`.
 - `Restart` e `ExitToMenu` nascem do pos-run.
 - `Pause` modifica o fluxo sem virar contexto macro.
 
@@ -60,8 +62,9 @@ Gameplay
 -> EnterStage
 -> Playing
 -> ExitStage
--> RunResult
--> PostRunMenu
+-> RunOutcome
+-> PostRun
+-> RunDecision
 -> Restart / ExitToMenu
 -> Navigation primary dispatch
 -> Audio contextual reactions
@@ -70,8 +73,9 @@ Gameplay
 ### 3.2 Runtime Semantics
 
 - `Playing` e o unico estado de fluxo canonicamente ativo.
-- `RunResult` nasce no dominio de gameplay quando a run termina.
-- `PostRunMenu` nao descobre o resultado; apenas o apresenta.
+- `RunOutcome` nasce no dominio de gameplay quando a run termina.
+- `PostRun` nao descobre o resultado; apenas o apresenta de forma intermediaria.
+- `RunDecision` nao descobre o resultado; apenas o apresenta como overlay final.
 - `Restart` e `ExitToMenu` sao comandos derivados do pos-run, nao estados de fluxo.
 - `Navigation` resolve e despacha a mudanca primaria, mas nao define o significado do resultado.
 - `Audio` reage ao contexto ja consolidado e nao o define.

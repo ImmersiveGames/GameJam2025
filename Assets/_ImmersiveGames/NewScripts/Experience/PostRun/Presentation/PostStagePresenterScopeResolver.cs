@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
 {
     public sealed class PostStagePresenterScopeResolver : IPostStagePresenterScopeResolver
@@ -50,6 +51,12 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
                 return false;
             }
 
+            if (TryPreferCanonicalPresenter(resolvedPresenters, out IReadOnlyList<IPostStagePresenter> canonicalPresenters))
+            {
+                presenters = canonicalPresenters;
+                return true;
+            }
+
             presenters = resolvedPresenters;
             return true;
         }
@@ -86,8 +93,22 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
                 return false;
             }
 
+            if (TryPreferCanonicalPresenter(resolvedPresenters, out IReadOnlyList<IPostStagePresenter> canonicalPresenters))
+            {
+                presenters = canonicalPresenters;
+                return true;
+            }
+
             presenters = resolvedPresenters;
             return true;
+        }
+
+        private static bool TryPreferCanonicalPresenter(
+            IReadOnlyList<IPostStagePresenter> resolvedPresenters,
+            out IReadOnlyList<IPostStagePresenter> presenters)
+        {
+            presenters = resolvedPresenters;
+            return false;
         }
 
         private static void CollectPresentersFromScene(Scene scene, ICollection<IPostStagePresenter> resolvedPresenters)
@@ -112,4 +133,3 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
         }
     }
 }
-

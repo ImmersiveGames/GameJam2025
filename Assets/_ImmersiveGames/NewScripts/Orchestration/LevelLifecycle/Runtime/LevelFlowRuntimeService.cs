@@ -121,15 +121,4 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         }
     }
 
-    [Obsolete("Historical wrapper. Use LevelLifecycleRuntimeService instead.")]
-    public sealed class LevelFlowRuntimeService : LevelLifecycleRuntimeService
-    {
-        public LevelFlowRuntimeService(
-            IGameNavigationService navigationService,
-            IRestartContextService restartContextService = null,
-            ILevelSwapLocalService levelSwapLocalService = null)
-            : base(navigationService, restartContextService, levelSwapLocalService)
-        {
-        }
-    }
 }

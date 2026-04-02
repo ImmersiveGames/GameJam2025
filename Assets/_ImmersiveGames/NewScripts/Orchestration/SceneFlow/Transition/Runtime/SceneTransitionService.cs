@@ -37,16 +37,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
         public SceneTransitionService(
             ISceneFlowLoaderAdapter? loaderAdapter,
             ISceneFlowFadeAdapter? fadeAdapter,
-            ISceneTransitionCompletionGate? completionGate = null,
-            INavigationPolicy? navigationPolicy = null,
-            IRouteGuard? routeGuard = null,
+            ISceneTransitionCompletionGate? completionGate,
+            INavigationPolicy navigationPolicy,
+            IRouteGuard routeGuard,
             IRouteResetPolicy? routeResetPolicy = null)
         {
             _loaderAdapter = loaderAdapter ?? new SceneManagerLoaderAdapter();
             _fadeAdapter = fadeAdapter ?? new NoFadeAdapter();
             _completionGate = completionGate ?? new NoOpTransitionCompletionGate();
-            _navigationPolicy = navigationPolicy ?? new AllowAllNavigationPolicy();
-            _routeGuard = routeGuard ?? new AllowAllRouteGuard();
+            _navigationPolicy = navigationPolicy ?? throw new ArgumentNullException(nameof(navigationPolicy));
+            _routeGuard = routeGuard ?? throw new ArgumentNullException(nameof(routeGuard));
             _routeResetPolicy = routeResetPolicy;
         }
 

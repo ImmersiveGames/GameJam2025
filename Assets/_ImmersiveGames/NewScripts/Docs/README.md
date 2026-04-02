@@ -1,4 +1,4 @@
-﻿# NewScripts Docs
+# NewScripts Docs
 
 Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do Baseline 4.0.
 
@@ -7,7 +7,8 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 - `ADR-0001` e o owner de glossario, intencao e taxonomia.
 - As paginas ativas seguem o tree fisico atual, mas algumas mantem nomes historicos por compatibilidade.
 - O eixo fisico atual separa `Core`, `Infrastructure`, `Orchestration`, `Game` e `Experience`.
-- Termos como `WorldLifecycle`, `ContentSwap`, `LevelManager` e `PostPlay` devem ser lidos como historicos fora do canon.
+- Termos como `WorldLifecycle`, `ContentSwap`, `LevelManager`, `PostGame`, `PostPlay` e `GameOver` devem ser lidos como historicos fora do canon.
+- A superficie ativa de conclusao de run e `IntroStage`, `Run`, `RunOutcome`, `PostRun` e `RunDecision`.
 - `Experience/Save` deve ser lido hoje como superficie de hooks e contratos placeholder, nao como sistema final de persistencia.
 
 ## Canon atual
@@ -58,7 +59,7 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 - `Infrastructure`: composicao, pooling, runtime mode, input modes, simulation gate, observability/baseline e suporte transversal.
 - `Orchestration`: `SceneFlow`, `WorldReset`, `ResetInterop`, `Navigation`, `LevelLifecycle`, `GameLoop`, `SceneReset` e `SceneComposition`.
 - `Game`: `Gameplay`, `Content/Definitions/Levels` e o runtime de estado/GameplayReset.
-- `Experience`: `PostRun`, `Audio`, `Save` como superficie de hooks placeholder, `Preferences`, `Frontend` e `Camera`.
+- `Experience`: `PostRun` como fluxo local intermediario, `RunDecision` como overlay final, `Audio`, `Save` como superficie de hooks placeholder, `Preferences`, `Frontend` e `Camera`.
 
 ## Regras de leitura
 
@@ -66,4 +67,3 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 - `Docs/Archive/` e historico e nao compete com o canon.
 - As linhas de compatibilidade ainda vivas sao parte do estado atual, nao do alvo final.
 - A proxima direcao do projeto sai da consolidacao atual, nao de um redesenho idealizado.
-

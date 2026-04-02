@@ -1,10 +1,10 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -14,7 +14,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
         private const string ReasonPauseWillEnter = "PauseWillEnterEvent";
         private const string ReasonPauseWillExit = "PauseWillExitEvent";
         private const string ReasonPauseStateChanged = "PauseStateChangedEvent";
-        private const string ReasonMissingBgmService = "missing_IAudioBgmService";
 
         private EventBinding<PauseWillEnterEvent> _pauseWillEnterBinding;
         private EventBinding<PauseWillExitEvent> _pauseWillExitBinding;
@@ -22,20 +21,23 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
         private IAudioBgmService _bgmService;
         private bool _pauseDuckingApplied;
         private bool _bindingsRegistered;
-        private bool _warnedMissingBgmService;
+        private bool _configured;
         private bool _disposed;
 
-        public static AudioPauseDuckingBridge EnsureCreated()
+        public static AudioPauseDuckingBridge EnsureCreated(IAudioBgmService bgmService)
         {
             var existing = FindFirstObjectByType<AudioPauseDuckingBridge>();
             if (existing != null)
             {
+                existing.Configure(bgmService);
                 return existing;
             }
 
             var go = new GameObject(RuntimeObjectName);
             DontDestroyOnLoad(go);
-            return go.AddComponent<AudioPauseDuckingBridge>();
+            var bridge = go.AddComponent<AudioPauseDuckingBridge>();
+            bridge.Configure(bgmService);
+            return bridge;
         }
 
         private void Awake()
@@ -43,6 +45,12 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
             _pauseWillEnterBinding ??= new EventBinding<PauseWillEnterEvent>(OnPauseWillEnter);
             _pauseWillExitBinding ??= new EventBinding<PauseWillExitEvent>(OnPauseWillExit);
             _pauseStateBinding ??= new EventBinding<PauseStateChangedEvent>(OnPauseStateChanged);
+        }
+
+        public void Configure(IAudioBgmService bgmService)
+        {
+            _bgmService = bgmService ?? throw new InvalidOperationException("[FATAL][Config][Audio] IAudioBgmService obrigatorio ausente para o AudioPauseDuckingBridge.");
+            _configured = true;
             TryRegisterBindings();
         }
 
@@ -78,6 +86,11 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
                 return;
             }
 
+            if (!_configured || _bgmService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Audio] AudioPauseDuckingBridge precisa ser configurado com IAudioBgmService antes do registro no EventBus.");
+            }
+
             try
             {
                 EventBus<PauseWillEnterEvent>.Register(_pauseWillEnterBinding);
@@ -86,13 +99,12 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
-                    "[Audio][BOOT] AudioPauseDuckingBridge registrado nos hooks PauseWillEnterEvent/PauseWillExitEvent/PauseStateChangedEvent.",
+                    "[Audio][BOOT] AudioPauseDuckingBridge registrado nos hooks PauseWillEnterEvent/PauseWillExitEvent/PauseStateChangedEvent com owner IAudioBgmService explícito.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<AudioPauseDuckingBridge>(
-                    $"[Audio][BOOT] Falha ao registrar bridge de ducking nos hooks de pause ({ex.GetType().Name}).");
+                throw new InvalidOperationException("[FATAL][Config][Audio] Falha ao registrar AudioPauseDuckingBridge no EventBus.", ex);
             }
         }
 
@@ -182,13 +194,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
                 return;
             }
 
-            if (!EnsureBgmService())
-            {
-                WarnMissingBgmService();
-                return;
-            }
-
-            _bgmService.SetPauseDucking(true, reason);
+            RequireBgmService().SetPauseDucking(true, reason);
             _pauseDuckingApplied = true;
 
             DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
@@ -206,11 +212,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
                 return;
             }
 
-            if (EnsureBgmService())
-            {
-                _bgmService.SetPauseDucking(false, reason);
-            }
-
+            RequireBgmService().SetPauseDucking(false, reason);
             _pauseDuckingApplied = false;
 
             DebugUtility.LogVerbose<AudioPauseDuckingBridge>(
@@ -218,38 +220,14 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bridges
                 DebugUtility.Colors.Info);
         }
 
-        private bool EnsureBgmService()
+        private IAudioBgmService RequireBgmService()
         {
             if (_bgmService != null)
             {
-                return true;
+                return _bgmService;
             }
 
-            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
-            {
-                return false;
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) && bgmService != null)
-            {
-                _bgmService = bgmService;
-                _warnedMissingBgmService = false;
-                return true;
-            }
-
-            return false;
-        }
-
-        private void WarnMissingBgmService()
-        {
-            if (_warnedMissingBgmService)
-            {
-                return;
-            }
-
-            _warnedMissingBgmService = true;
-            DebugUtility.LogWarning<AudioPauseDuckingBridge>(
-                $"[Audio][PauseDuck] ducking skipped: IAudioBgmService unavailable. reason='{ReasonMissingBgmService}'.");
+            throw new InvalidOperationException("[FATAL][Config][Audio] IAudioBgmService obrigatorio ausente no AudioPauseDuckingBridge.");
         }
 
         private static string SafeReason(string reason)

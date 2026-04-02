@@ -1,12 +1,10 @@
-
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
-    
+
     public class RuntimeAttributeThresholdService : IDisposable
     {
         private readonly RuntimeAttributeContext _system;
@@ -53,7 +51,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                     (!asc && oldPct > thr && newPct <= thr))
                 {
                     var e = new RuntimeAttributeThresholdEvent(evt.ActorId, evt.RuntimeAttributeType, thr, asc, newPct);
-                    FilteredEventBus<RuntimeAttributeThresholdEvent>.RaiseFiltered(e, evt.ActorId);
+                    //FilteredEventBus<RuntimeAttributeThresholdEvent>.RaiseFiltered(e, evt.ActorId);
                 }
             }
 

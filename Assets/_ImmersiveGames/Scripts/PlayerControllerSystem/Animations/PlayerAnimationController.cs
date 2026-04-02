@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
@@ -7,7 +6,7 @@ using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
-    
+
     public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController,IExecutionToggleIgnored
     {
         private EventBinding<DamageEvent> _damageBinding;
@@ -61,9 +60,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
                 return;
             }
 
-            FilteredEventBus<DamageEvent>.Register(_damageBinding, Actor.ActorId);
-            FilteredEventBus<DeathEvent>.Register(_deathBinding, Actor.ActorId);
-            FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
+// FilteredEventBus<DamageEvent>.Register(_damageBinding, Actor.ActorId);
+           // FilteredEventBus<DeathEvent>.Register(_deathBinding, Actor.ActorId);
+            //FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
             _listenersRegistered = true;
 
             DebugUtility.LogVerbose<PlayerAnimationController>(
@@ -81,17 +80,17 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 
             if (_damageBinding != null)
             {
-                FilteredEventBus<DamageEvent>.Unregister(_damageBinding, Actor.ActorId);
+                //FilteredEventBus<DamageEvent>.Unregister(_damageBinding, Actor.ActorId);
             }
 
             if (_deathBinding != null)
             {
-                FilteredEventBus<DeathEvent>.Unregister(_deathBinding, Actor.ActorId);
+                //FilteredEventBus<DeathEvent>.Unregister(_deathBinding, Actor.ActorId);
             }
 
             if (_reviveBinding != null)
             {
-                FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, Actor.ActorId);
+                //FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, Actor.ActorId);
             }
             _listenersRegistered = false;
         }

@@ -2,6 +2,8 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
@@ -32,6 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             }
 
             EnsureNavigationService();
+            EnsureGameLoopInputBridge();
             EnsureFrontendQuitService();
 
             _runtimeComposed = true;
@@ -79,6 +82,31 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
                 "[FrontendUI] FrontendQuitService composed at runtime.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureGameLoopInputBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<GameLoopInputCommandBridge>(out _))
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Navigation] IGameLoopService missing from global DI before composing GameLoopInputCommandBridge.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Navigation] IGameNavigationService missing from global DI before composing GameLoopInputCommandBridge.");
+            }
+
+            var bridge = new GameLoopInputCommandBridge(gameLoopService, navigationService);
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
+                "[GameLoop] GameLoopInputCommandBridge composed after NavigationService became available.",
                 DebugUtility.Colors.Info);
         }
     }

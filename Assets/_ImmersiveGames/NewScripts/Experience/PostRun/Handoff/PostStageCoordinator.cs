@@ -48,6 +48,8 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
 
             if (!_presenterRegistry.TryEnsureCurrentPresenter(context, nameof(PostStageCoordinator), out IPostStagePresenter presenter))
             {
+                // Comentário: ausência de presenter aqui é um skip opcional intencional.
+                // O rail de PostStage continua canonico mesmo quando nao existe UI de apresentacao para a cena.
                 DebugUtility.Log<PostStageCoordinator>(
                     $"[OBS][PostRun][Bridge] PostStageSkipped reason='PostStage/NoPresenter' signature='{Normalize(context.Signature)}' outcome='{context.Outcome}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);

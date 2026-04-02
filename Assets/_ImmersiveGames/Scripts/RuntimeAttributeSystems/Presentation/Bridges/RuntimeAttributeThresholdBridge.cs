@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
@@ -8,7 +7,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
-    
+
     public class RuntimeAttributeThresholdBridge : RuntimeAttributeBridgeBase
     {
         private RuntimeAttributeThresholdService _service;
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
             _service = new RuntimeAttributeThresholdService(runtimeAttributeContext);
             _binding = new EventBinding<RuntimeAttributeThresholdEvent>(OnThresholdEvent);
-            FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_binding, actor.ActorId);
+            //FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_binding, actor.ActorId);
 
             DebugUtility.LogVerbose<RuntimeAttributeThresholdBridge>(
                 $"✅ ThresholdBridge ativo para {actor.ActorId}",
@@ -57,7 +56,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
         protected override void OnServiceDispose()
         {
-            FilteredEventBus<RuntimeAttributeThresholdEvent>.Unregister(actor.ActorId);
+            //FilteredEventBus<RuntimeAttributeThresholdEvent>.Unregister(actor.ActorId);
             _service?.Dispose();
             _service = null;
         }

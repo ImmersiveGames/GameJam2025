@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
@@ -19,16 +20,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime
 
         public static ISceneFlowFadeAdapter CreateFadeAdapter(IDependencyProvider provider)
         {
-            IFadeService fadeService = null;
             if (provider != null && provider.TryGetGlobal<IFadeService>(out var resolved) && resolved != null)
             {
-                fadeService = resolved;
+                DebugUtility.LogVerbose(typeof(SceneFlowAdapterFactory),
+                    "[SceneFlow] FadeService resolvido explicitamente para o SceneFlowFadeAdapter.");
+                return new SceneFlowFadeAdapter(resolved);
             }
 
-            DebugUtility.LogVerbose(typeof(SceneFlowAdapterFactory),
-                "[SceneFlow] Usando SceneFlowFadeAdapter com SceneTransitionProfile direto (sem resolver por id).");
-
-            return new SceneFlowFadeAdapter(fadeService);
+            throw new InvalidOperationException("[FATAL][Config][SceneFlow] IFadeService obrigatorio ausente no DI global antes da composicao do SceneFlowFadeAdapter.");
         }
     }
 }

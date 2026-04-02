@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
@@ -18,13 +17,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             List<(string Label, ISceneResetHook Hook)> collectedHooks = context.CollectWorldHooks();
             if (collectedHooks.Count == 0)
             {
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{hookName} step skipped (hooks=0)");
                 return;
             }
 
             var stepWatch = Stopwatch.StartNew();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} step started (hooks={collectedHooks.Count})");
 
             try
@@ -35,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 {
                     if (hookEntry.Hook == null)
                     {
-                        DebugUtility.LogError(typeof(SceneResetFacade),
+                        DebugUtility.LogError(typeof(SceneResetPipeline),
                             $"{hookName} hook '{hookEntry.Label}' é nulo e será ignorado.");
                         continue;
                     }
@@ -46,9 +45,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             finally
             {
                 stepWatch.Stop();
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{hookName} step duration: {stepWatch.ElapsedMilliseconds}ms");
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{hookName} step completed");
             }
         }
@@ -82,14 +81,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             Func<IActorLifecycleHook, Task> hookAction)
         {
             var stepWatch = Stopwatch.StartNew();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} actor hooks step started (actors={actors.Count})");
 
             foreach (IActor actor in actors)
             {
                 if (actor == null)
                 {
-                    DebugUtility.LogError(typeof(SceneResetFacade),
+                    DebugUtility.LogError(typeof(SceneResetPipeline),
                         $"{hookName} actor é nulo e será ignorado.");
                     continue;
                 }
@@ -98,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             }
 
             stepWatch.Stop();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{hookName} actor hooks step duration: {stepWatch.ElapsedMilliseconds}ms");
         }
     }

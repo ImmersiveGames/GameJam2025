@@ -1,7 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal sealed class SceneResetGateLease
@@ -28,14 +27,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 
             if (_gateService == null || string.IsNullOrWhiteSpace(_gateToken))
             {
-                DebugUtility.LogWarning(typeof(SceneResetFacade),
+                DebugUtility.LogWarning(typeof(SceneResetPipeline),
                     "ISimulationGateService ausente: reset seguirá sem gate.");
                 return;
             }
 
             _gateHandle = _gateService.Acquire(_gateToken);
             _gateAcquired = true;
-            DebugUtility.Log(typeof(SceneResetFacade), $"Gate Acquired ({_gateToken})");
+            DebugUtility.Log(typeof(SceneResetPipeline), $"Gate Acquired ({_gateToken})");
         }
 
         public void ReleaseIfNeeded()
@@ -48,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 }
                 catch (Exception ex)
                 {
-                    DebugUtility.LogError(typeof(SceneResetFacade),
+                    DebugUtility.LogError(typeof(SceneResetPipeline),
                         $"Failed to release gate handle: {ex}");
                 }
                 finally
@@ -59,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 
             if (_gateAcquired)
             {
-                DebugUtility.Log(typeof(SceneResetFacade), "Gate Released");
+                DebugUtility.Log(typeof(SceneResetPipeline), "Gate Released");
                 _gateAcquired = false;
             }
         }

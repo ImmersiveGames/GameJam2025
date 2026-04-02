@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
@@ -13,13 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
         {
             if (gateService == null)
             {
-                // fallback: tenta resolver aqui (best-effort)
-                if (!DependencyManager.Provider.TryGetGlobal(out gateService) || gateService == null)
-                {
-                    DebugUtility.LogError(typeof(GlobalCompositionRoot),
-                        "[Readiness] ISimulationGateService indisponível. Scene Flow readiness ficará sem proteção de gate.");
-                    return;
-                }
+                throw new InvalidOperationException("[FATAL][Config][GlobalCompositionRoot] ISimulationGateService obrigatorio ausente para inicializar readiness.");
             }
 
             if (DependencyManager.Provider.TryGetGlobal<GameReadinessService>(out var registered) && registered != null)

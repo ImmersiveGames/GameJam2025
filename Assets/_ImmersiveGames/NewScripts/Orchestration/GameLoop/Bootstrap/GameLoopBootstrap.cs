@@ -4,10 +4,13 @@ using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Experience.Audio.Bridges;
+using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
@@ -50,14 +53,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             var gameLoopService = ResolveRequiredGameLoopService();
             gameLoopService.Initialize();
 
-            EnsureInputCommandBridge();
+            EnsureAudioPauseDuckingBridge();
             EnsureIntroStageBridge();
             EnsurePauseBridge();
             EnsureGameRunRuntimeServices();
             EnsureOutcomeEventInputBridge();
             EnsureRunEndEventBridge();
             EnsureDriver();
-            EnsureSceneFlowSyncCoordinator(bootstrapConfig);
+            EnsureSceneFlowSyncCoordinator(bootstrapConfig, gameLoopService);
 
             _runtimeComposed = true;
 
@@ -86,17 +89,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService ausente no DI global antes da composicao runtime.");
         }
 
-        private static void EnsureInputCommandBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<GameLoopInputCommandBridge>(out _))
-            {
-                return;
-            }
-
-            var bridge = new GameLoopInputCommandBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-        }
-
         private static void EnsureIntroStageBridge()
         {
             if (DependencyManager.Provider.TryGetGlobal<GameLoopIntroStageBridge>(out _))
@@ -106,6 +98,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 
             var bridge = new GameLoopIntroStageBridge();
             DependencyManager.Provider.RegisterGlobal(bridge);
+        }
+
+        private static void EnsureAudioPauseDuckingBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<AudioPauseDuckingBridge>(out _))
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) || bgmService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IAudioBgmService ausente no DI global antes de registrar o AudioPauseDuckingBridge.");
+            }
+
+            var bridge = AudioPauseDuckingBridge.EnsureCreated(bgmService);
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
+                "[Audio][BOOT] AudioPauseDuckingBridge composed after GameLoopService became available.",
+                DebugUtility.Colors.Info);
         }
 
         private static void EnsurePauseBridge()
@@ -182,13 +194,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             DontDestroyOnLoad(go);
         }
 
-        private static void EnsureSceneFlowSyncCoordinator(BootstrapConfigAsset bootstrapConfig)
+        private static void EnsureSceneFlowSyncCoordinator(BootstrapConfigAsset bootstrapConfig, IGameLoopService gameLoopService)
         {
             if (_sceneFlowSyncCoordinator != null)
             {
                 return;
             }
 
+            // Comentário: este coordinator pertence ao GameLoopBootstrap porque conecta
+            // o owner de SceneFlow, já materializado nesta fase, com o GameLoopService
+            // que nasce aqui. Antes disso, um dos dois owners ainda não existe.
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][GameLoop] ISceneTransitionService ausente no DI global antes de compor o SceneFlow sync.");
@@ -196,6 +211,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 
             var bootStartRoute = ResolveBootStartRouteOrFailFast(bootstrapConfig);
             StartupTransitionResolution startup = ResolveRequiredStartupTransition(bootstrapConfig);
+            IFadeService fadeService = startup.UseFade ? ResolveRequiredFadeService() : null;
 
             var startPlan = new SceneTransitionRequest(
                 bootStartRoute.ToDefinition(),
@@ -208,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
                 reason: "Boot/StartPlan",
                 resolvedRouteRef: bootStartRoute);
 
-            _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, startPlan);
+            _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, gameLoopService, fadeService, startPlan);
 
             DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
                 $"[GameLoopSceneFlow] Coordinator composto (startPlan production, routeId='{bootStartRoute.RouteId}', routeRef='{bootStartRoute.name}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
@@ -271,6 +287,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 
             TransitionStyleDefinition definition = styleRef.ToDefinitionOrFail(nameof(GameLoopBootstrap), "Boot/StartPlan");
             return new StartupTransitionResolution(styleRef, definition.Profile, definition.UseFade);
+        }
+
+        private static IFadeService ResolveRequiredFadeService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IFadeService>(out var fadeService) && fadeService != null)
+            {
+                return fadeService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][GameLoop] IFadeService ausente no DI global antes da composicao do SceneFlow sync.");
         }
 
         private readonly struct StartupTransitionResolution

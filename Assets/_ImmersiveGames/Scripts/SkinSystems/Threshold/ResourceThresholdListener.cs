@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
@@ -89,7 +88,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             }
 
             _registrationScope = _expectedActorId;
-            FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_registrationScope,_thresholdBinding);
+            //FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_registrationScope,_thresholdBinding);
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Registered on FilteredEventBus para ActorId {_expectedActorId} em {gameObject.name}");
@@ -105,7 +104,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
 
             if (_registrationScope != null)
             {
-                FilteredEventBus<RuntimeAttributeThresholdEvent>.Unregister(_thresholdBinding, _registrationScope);
+                //FilteredEventBus<RuntimeAttributeThresholdEvent>.Unregister(_thresholdBinding, _registrationScope);
                 _registrationScope = null;
                 if (showDebugLogs)
                 {

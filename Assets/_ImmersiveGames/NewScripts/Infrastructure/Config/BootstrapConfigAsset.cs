@@ -64,6 +64,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
                 throw new InvalidOperationException(message);
             }
 
+            if (fadeSceneKey == null || string.IsNullOrWhiteSpace(fadeSceneKey.SceneName))
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure fadeSceneKey with a valid SceneName. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
             if (runtimeModeConfig == null)
             {
                 string message =

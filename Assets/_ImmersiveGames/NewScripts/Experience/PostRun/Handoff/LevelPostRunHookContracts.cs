@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
         public LevelPostRunHookContext(
             LevelDefinitionAsset levelRef,
             string levelSignature,
-            string postGameSignature,
+            string postRunSignature,
             string sceneName,
             PostRunResult result,
             string reason,
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
         {
             LevelRef = levelRef;
             LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? string.Empty : levelSignature.Trim();
-            PostRunSignature = string.IsNullOrWhiteSpace(postGameSignature) ? string.Empty : postGameSignature.Trim();
+            PostRunSignature = string.IsNullOrWhiteSpace(postRunSignature) ? string.Empty : postRunSignature.Trim();
             SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
             Result = result;
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
@@ -38,4 +38,3 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
         Task RunReactionAsync(LevelPostRunHookContext context, CancellationToken cancellationToken = default);
     }
 }
-

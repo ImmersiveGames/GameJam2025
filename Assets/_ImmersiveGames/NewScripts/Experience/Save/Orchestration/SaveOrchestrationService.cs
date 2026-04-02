@@ -101,6 +101,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Save.Orchestration
             GameRunEndedEvent evt,
             out string reason)
         {
+            // Comentário: este hook é o rail canônico de Save para fim de run.
             string trailKey = BuildRunTrailKey(evt.Outcome, evt.Reason);
             return TryHandleHook(
                 SaveHookOrigin.GameRunEnded,
@@ -119,6 +120,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Save.Orchestration
             WorldResetCompletedEvent evt,
             out string reason)
         {
+            // Comentário: somente reset de Level concluído pode virar save.
+            // Macro reset, skip por policy e outros contextos permanecem no-op por design.
             bool allowSave = evt.Kind == ResetKind.Level && evt.Outcome == WorldResetOutcome.Completed;
             string trailKey = BuildContextTrailKey(
                 evt.ContextSignature,
@@ -141,6 +144,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Save.Orchestration
             SceneTransitionCompletedEvent evt,
             out string reason)
         {
+            // Comentário: este hook salva apenas quando a transição é de gameplay
+            // e o fluxo não delegou o reset ao WorldReset.
             bool allowSave = evt.context.RouteKind == SceneRouteKind.Gameplay && !evt.context.RequiresWorldReset;
             string trailKey = BuildContextTrailKey(
                 evt.context.ContextSignature,
@@ -370,6 +375,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Save.Orchestration
             bool requiresWorldReset,
             string outcomeLabel)
         {
+            // Comentário: no-op aqui é decisão canônica explícita, não ausência de consumer.
+            // Cada origem só persiste quando o contexto realmente pertence ao rail de Save.
             if (origin == SaveHookOrigin.SceneTransitionCompleted)
             {
                 if (!string.Equals(routeKind, SceneRouteKind.Gameplay.ToString(), StringComparison.Ordinal))

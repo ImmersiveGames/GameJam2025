@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
 using _ImmersiveGames.NewScripts.Core.Fsm;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
@@ -31,9 +30,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _reviveBinding = new EventBinding<ReviveEvent>(OnRevive);
             _resetBinding = new EventBinding<ResetEvent>(OnReset);
 
-            FilteredEventBus<DeathEvent>.Register(_deathBinding, _actorId);
-            FilteredEventBus<ReviveEvent>.Register(_reviveBinding, _actorId);
-            FilteredEventBus<ResetEvent>.Register(_resetBinding, _actorId);
+            //FilteredEventBus<DeathEvent>.Register(_deathBinding, _actorId);
+            //FilteredEventBus<ReviveEvent>.Register(_reviveBinding, _actorId);
+            //FilteredEventBus<ResetEvent>.Register(_resetBinding, _actorId);
         }
 
         public bool Evaluate()
@@ -43,9 +42,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public void Dispose()
         {
-            FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _actorId);
-            FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _actorId);
-            FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _actorId);
+            //FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _actorId);
+            //FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _actorId);
+            //FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _actorId);
         }
 
         private void OnDeath(DeathEvent deathEvent)
@@ -88,9 +87,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _resetBinding = new EventBinding<ResetEvent>(OnReset);
             _deathBinding = new EventBinding<DeathEvent>(OnDeath);
 
-            FilteredEventBus<ReviveEvent>.Register(_reviveBinding, _actorId);
-            FilteredEventBus<ResetEvent>.Register(_resetBinding, _actorId);
-            FilteredEventBus<DeathEvent>.Register(_deathBinding, _actorId);
+            //FilteredEventBus<ReviveEvent>.Register(_reviveBinding, _actorId);
+            //FilteredEventBus<ResetEvent>.Register(_resetBinding, _actorId);
+            //FilteredEventBus<DeathEvent>.Register(_deathBinding, _actorId);
         }
 
         public bool Evaluate()
@@ -106,9 +105,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public void Dispose()
         {
-            FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _actorId);
-            FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _actorId);
-            FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _actorId);
+            //FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _actorId);
+           //FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _actorId);
+           // FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _actorId);
         }
 
         private void OnRevive(ReviveEvent reviveEvent)

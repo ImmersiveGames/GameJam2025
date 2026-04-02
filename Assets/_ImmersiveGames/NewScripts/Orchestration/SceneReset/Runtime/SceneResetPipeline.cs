@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
@@ -47,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             }
 
             var resetWatch = Stopwatch.StartNew();
-            DebugUtility.Log(typeof(SceneResetFacade), context.StartLog);
+            DebugUtility.Log(typeof(SceneResetPipeline), context.StartLog);
             bool completed = false;
 
             try
@@ -65,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(SceneResetFacade), $"World reset failed: {ex}");
+                DebugUtility.LogError(typeof(SceneResetPipeline), $"World reset failed: {ex}");
                 throw;
             }
             finally
@@ -76,10 +75,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 
                 if (completed)
                 {
-                    DebugUtility.Log(typeof(SceneResetFacade), context.CompletionLog);
+                    DebugUtility.Log(typeof(SceneResetPipeline), context.CompletionLog);
                 }
 
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"Reset duration: {resetWatch.ElapsedMilliseconds}ms");
             }
         }
@@ -100,14 +99,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             }
 
             var stepWatch = Stopwatch.StartNew();
-            DebugUtility.Log(typeof(SceneResetFacade), $"{stepName} started");
+            DebugUtility.Log(typeof(SceneResetPipeline), $"{stepName} started");
 
             if (context.SpawnServices.Count == 0)
             {
-                DebugUtility.LogWarning(typeof(SceneResetFacade),
+                DebugUtility.LogWarning(typeof(SceneResetPipeline),
                     $"{stepName} skipped (no spawn services registered).");
                 stepWatch.Stop();
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
                 return;
             }
@@ -116,19 +115,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             {
                 if (service == null)
                 {
-                    DebugUtility.LogError(typeof(SceneResetFacade),
+                    DebugUtility.LogError(typeof(SceneResetPipeline),
                         $"{stepName} service é nulo e será ignorado.");
                     continue;
                 }
 
                 if (!context.ShouldIncludeForScopes(service))
                 {
-                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                         $"{stepName} service skipped by scope filter: {service.Name}");
                     continue;
                 }
 
-                DebugUtility.Log(typeof(SceneResetFacade),
+                DebugUtility.Log(typeof(SceneResetPipeline),
                     $"{stepName} service started: {service.Name}");
 
                 var serviceWatch = Stopwatch.StartNew();
@@ -139,16 +138,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 finally
                 {
                     serviceWatch.Stop();
-                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                         $"{stepName} service duration: {service.Name} => {serviceWatch.ElapsedMilliseconds}ms");
                 }
 
-                DebugUtility.Log(typeof(SceneResetFacade),
+                DebugUtility.Log(typeof(SceneResetPipeline),
                     $"{stepName} service completed: {service.Name}");
             }
 
             stepWatch.Stop();
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"{stepName} duration: {stepWatch.ElapsedMilliseconds}ms");
         }
     }
@@ -170,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             List<IActorGroupGameplayResetWorldParticipant> participants = context.CollectScopedParticipants();
             if (participants.Count == 0)
             {
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     "Scoped reset participants step skipped (participants=0)");
                 return;
             }
@@ -180,14 +179,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             {
                 if (participant == null)
                 {
-                    DebugUtility.LogError(typeof(SceneResetFacade),
+                    DebugUtility.LogError(typeof(SceneResetPipeline),
                         "Scoped reset participant é nulo e será ignorado.");
                     continue;
                 }
 
                 if (!context.ResetContext.Value.ContainsScope(participant.Scope))
                 {
-                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                         $"Scoped reset participant skipped by scope: {participant.GetType().Name}");
                     continue;
                 }
@@ -197,7 +196,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 
             if (filtered.Count == 0)
             {
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     "Scoped reset participants step skipped (filtered=0)");
                 return;
             }
@@ -210,7 +209,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 ct.ThrowIfCancellationRequested();
                 string participantType = participant.GetType().FullName ?? participant.GetType().Name;
                 var watch = Stopwatch.StartNew();
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"Scoped reset started: {participantType}");
 
                 try
@@ -219,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 }
                 catch (Exception ex)
                 {
-                    DebugUtility.LogError(typeof(SceneResetFacade),
+                    DebugUtility.LogError(typeof(SceneResetPipeline),
                         $"Scoped reset falhou para {participantType}: {ex}");
                     throw;
                 }
@@ -228,15 +227,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                     watch.Stop();
                     if (watch.ElapsedMilliseconds > SceneResetContext.SlowHookWarningMs)
                     {
-                        DebugUtility.LogWarning(typeof(SceneResetFacade),
+                        DebugUtility.LogWarning(typeof(SceneResetPipeline),
                             $"Scoped reset lento: {participantType} levou {watch.ElapsedMilliseconds}ms.");
                     }
 
-                    DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                    DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                         $"Scoped reset duration: {participantType} => {watch.ElapsedMilliseconds}ms");
                 }
 
-                DebugUtility.LogVerbose(typeof(SceneResetFacade),
+                DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                     $"Scoped reset completed: {participantType}");
             }
         }
@@ -251,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
                 })
                 .ToArray();
 
-            DebugUtility.LogVerbose(typeof(SceneResetFacade),
+            DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                 $"Scoped reset execution order: {string.Join(", ", orderedLabels)}");
         }
     }

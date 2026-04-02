@@ -46,10 +46,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             }
         }
 
-        private static ISimulationGateService ResolveSimulationGateServiceOrNull()
+        private static ISimulationGateService ResolveSimulationGateServiceOrFail()
         {
-            DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
-            return gateService;
+            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) && gateService != null)
+            {
+                return gateService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][GlobalCompositionRoot] ISimulationGateService obrigatorio ausente no DI global.");
         }
     }
 }

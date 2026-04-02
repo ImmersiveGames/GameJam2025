@@ -34,8 +34,8 @@
 ## Handoff e limites
 
 - `IPostRunHandoffService` e a fronteira principal com `Experience/PostRun`.
-- `PostRun` e o owner do `PostStage` e do fluxo pos-run global.
-- `GameLoop` consome o handoff final, mas nao conhece presenter ou overlay de `PostRun`.
+- `PostRun` e o owner do rail local de pos-run; `RunDecision` e o overlay final.
+- `GameLoop` consome o handoff final, mas nao conhece presenter ou overlay de `PostRun` / `RunDecision`.
 - `LevelIntroCompletedEvent` libera a passagem para `Playing`; o timing da intro continua level-owned.
 - `Restart` e `ExitToMenu` seguem intencao de contexto; a execucao concreta fica em `LevelLifecycle` e `Navigation`.
 
@@ -43,7 +43,7 @@
 
 - Namespaces antigos ainda podem existir por seguranca.
 - Os shells antigos de `Core`, `Flow`, `Input`, `Interop`, `Run` e `EndConditions` ja foram podados.
-- O nome historico `PostPlay` nao e o runtime atual.
+- `PostGame` e `PostPlay` sao nomes historicos; o runtime atual usa `RunOutcome`, `PostRun` e `RunDecision`.
 
 ## Hooks / contratos publicos
 

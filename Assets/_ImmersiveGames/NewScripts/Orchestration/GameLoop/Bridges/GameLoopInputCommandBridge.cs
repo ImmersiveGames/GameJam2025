@@ -18,6 +18,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
     /// </summary>
     public sealed class GameLoopInputCommandBridge : IDisposable
     {
+        private readonly IGameLoopService _gameLoop;
+        private readonly IGameNavigationService _navigation;
         private readonly GameLoopEventSubscriptionSet _subscriptions = new();
         private readonly EventBinding<GamePlayRequestedEvent> _onPlay;
         private readonly EventBinding<GamePauseCommandEvent> _onPause;
@@ -31,8 +33,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
         private int _lastResumeFrame = -1;
         private string _lastResumeKey = string.Empty;
 
-        public GameLoopInputCommandBridge()
+        public GameLoopInputCommandBridge(IGameLoopService gameLoop, IGameNavigationService navigation)
         {
+            _gameLoop = gameLoop ?? throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService obrigatorio ausente para GameLoopInputCommandBridge.");
+            _navigation = navigation ?? throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameNavigationService obrigatorio ausente para GameLoopInputCommandBridge.");
             _onPlay = new EventBinding<GamePlayRequestedEvent>(OnGamePlayRequested);
             _onPause = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _onResume = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
@@ -42,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _subscriptions.Register(_onResume);
 
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
-                "[GameLoop] Bridge de entrada registrado no EventBus (play/pause/resume).",
+                "[GameLoop] Bridge de entrada registrado no EventBus (play/pause/resume) com owners IGameLoopService e IGameNavigationService explícitos.",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
                 "[OBS][LEGACY] Restart/ExitToMenu nao passam por este bridge; owners canonicos ficam em LevelFlow/Navigation.",
@@ -58,18 +62,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
             _disposed = true;
             _subscriptions.Dispose();
-        }
-
-        private static bool TryResolveLoop(out IGameLoopService loop)
-        {
-            loop = null;
-            return DependencyManager.Provider.TryGetGlobal(out loop) && loop != null;
-        }
-
-        private static bool TryResolveNavigation(out IGameNavigationService navigation)
-        {
-            navigation = null;
-            return DependencyManager.Provider.TryGetGlobal(out navigation) && navigation != null;
         }
 
         private void OnGamePlayRequested(GamePlayRequestedEvent evt)
@@ -90,12 +82,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 $"[OBS][GRS] GamePlayRequestedEvent consumed consumer='{nameof(GameLoopInputCommandBridge)}' key='{key}' frame='{frame}'",
                 DebugUtility.Colors.Info);
 
-            if (!TryResolveNavigation(out var navigation))
-            {
-                return;
-            }
-
-            _ = navigation.NavigateAsync(GameNavigationIntentKind.Gameplay, evt?.Reason);
+            _ = _navigation.NavigateAsync(GameNavigationIntentKind.Gameplay, evt?.Reason);
         }
 
         private void OnGamePause(GamePauseCommandEvent evt)
@@ -116,18 +103,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 $"[OBS][GRS] GamePauseCommandEvent consumed consumer='{nameof(GameLoopInputCommandBridge)}' key='{key}' frame='{frame}'",
                 DebugUtility.Colors.Info);
 
-            if (!TryResolveLoop(out var loop))
-            {
-                return;
-            }
-
             if (evt != null && evt.IsPaused)
             {
-                loop.RequestPause(evt.Reason);
+                _gameLoop.RequestPause(evt.Reason);
             }
             else
             {
-                loop.RequestResume(evt?.Reason);
+                _gameLoop.RequestResume(evt?.Reason);
             }
         }
 
@@ -149,12 +131,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='{nameof(GameLoopInputCommandBridge)}' key='{key}' frame='{frame}'",
                 DebugUtility.Colors.Info);
 
-            if (!TryResolveLoop(out var loop))
-            {
-                return;
-            }
-
-            loop.RequestResume(evt?.Reason);
+            _gameLoop.RequestResume(evt?.Reason);
         }
 
         private static string BuildPauseKey(GamePauseCommandEvent evt)

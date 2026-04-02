@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
             ExecuteInstallerPipeline(bootstrapConfig);
 
-            var gateService = ResolveSimulationGateServiceOrNull();
+            var gateService = ResolveSimulationGateServiceOrFail();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();

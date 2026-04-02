@@ -53,17 +53,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
             string fadeSceneName = ResolveFadeSceneName(bootstrapConfig, out string failureReason);
             if (string.IsNullOrWhiteSpace(fadeSceneName))
             {
-                if (ShouldDegradeFadeInRuntime())
-                {
-                    DebugUtility.LogError(typeof(SceneFlowInstaller),
-                        $"[ERROR][DEGRADED][Fade] {failureReason}");
-
-                    DependencyManager.Provider.RegisterGlobal<IFadeService>(
-                        new DegradedFadeService(failureReason),
-                        allowOverride: true);
-                    return;
-                }
-
                 throw new InvalidOperationException(failureReason);
             }
 
@@ -84,17 +73,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
         private static void RegisterNavigationPolicy()
         {
             RegisterIfMissing<INavigationPolicy>(
-                () => new AllowAllNavigationPolicy(),
+                () => new SceneFlowNavigationPolicy(),
                 "[SceneFlow] INavigationPolicy ja registrado no DI global.",
-                "[SceneFlow] INavigationPolicy registrado no DI global (AllowAllNavigationPolicy).");
+                "[SceneFlow] INavigationPolicy registrado no DI global (SceneFlowNavigationPolicy).");
         }
 
         private static void RegisterRouteGuard()
         {
             RegisterIfMissing<IRouteGuard>(
-                () => new AllowAllRouteGuard(),
+                () => new SceneFlowRouteGuard(),
                 "[SceneFlow] IRouteGuard ja registrado no DI global.",
-                "[SceneFlow] IRouteGuard registrado no DI global (AllowAllRouteGuard).");
+                "[SceneFlow] IRouteGuard registrado no DI global (SceneFlowRouteGuard).");
         }
 
         private static void RegisterRouteResetPolicy()
@@ -194,16 +183,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
             }
 
             throw new InvalidOperationException("[FATAL][Config][Loading] IDegradedModeReporter obrigatorio ausente em modo strict.");
-        }
-
-        private static bool ShouldDegradeFadeInRuntime()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider) && runtimeModeProvider != null)
-            {
-                return !runtimeModeProvider.IsStrict;
-            }
-
-            return false;
         }
 
         private static string ResolveFadeSceneName(BootstrapConfigAsset bootstrap, out string failureReason)

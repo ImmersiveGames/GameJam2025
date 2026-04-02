@@ -1,16 +1,8 @@
-/*
- * ChangeLog
- * - Ponte de pause: converte PauseStateChangedEvent em gate SimulationGateTokens.Pause sem congelar fisica.
- * - Improvement: resolve gate sob demanda (lazy) para cenarios em que DI global ainda nao esta pronto no ctor.
- * - Fix: ownership deterministico. Bridge NUNCA libera token que nao foi adquirido por ela.
- * - Hardening: Release NAO depende de gate resolvido (evita leak em teardown) e protege Provider nulo.
- */
-
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -19,16 +11,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
         private const string PauseToken = SimulationGateTokens.Pause;
         private const string ReasonPauseStateChanged = "PauseStateChangedEvent";
 
-        private ISimulationGateService _gateService;
+        private readonly ISimulationGateService _gateService;
         private readonly EventBinding<PauseStateChangedEvent> _pauseStateBinding;
         private IDisposable _activeHandle;
         private bool _bindingsRegistered;
-        private bool _loggedMissingGate;
         private bool _disposed;
 
+        // Bridge legitima: conecta o gate global ao estado de pause emitido pelo GameLoopService.
+        // Nasce no GameLoopBootstrap, depois que o GameLoopService ja foi composto.
         public GamePauseGateBridge(ISimulationGateService gateService)
         {
-            _gateService = gateService;
+            _gateService = gateService ?? throw new InvalidOperationException("[FATAL][Config][PauseBridge] ISimulationGateService obrigatorio ausente para GamePauseGateBridge.");
             _pauseStateBinding = new EventBinding<PauseStateChangedEvent>(OnPauseStateChanged);
             TryRegisterBindings();
         }
@@ -63,13 +56,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[PauseBridge] Registrado no evento PauseStateChangedEvent -> SimulationGate.");
+                    "[PauseBridge] Registrado no evento PauseStateChangedEvent -> SimulationGate com owner ISimulationGateService explícito.");
             }
             catch (Exception ex)
             {
-                _bindingsRegistered = false;
-                DebugUtility.LogWarning<GamePauseGateBridge>(
-                    $"[PauseBridge] EventBus indisponivel; pause nao sera refletido no gate ({ex.GetType().Name}).");
+                throw new InvalidOperationException("[FATAL][Config][PauseBridge] Falha ao registrar GamePauseGateBridge no EventBus.", ex);
             }
         }
 
@@ -96,12 +87,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
 
         private void AcquirePauseGate()
         {
-            if (!EnsureGateResolved())
-            {
-                LogGateUnavailable();
-                return;
-            }
-
             if (_activeHandle != null)
             {
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
@@ -119,17 +104,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
         {
             if (_activeHandle == null)
             {
-                if (_gateService != null)
-                {
-                    DebugUtility.LogVerbose<GamePauseGateBridge>(
-                        $"[PauseBridge] Release ignorado ({reason}) - sem handle ativo (ownership inexistente). IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
-                }
-                else
-                {
-                    DebugUtility.LogVerbose<GamePauseGateBridge>(
-                        $"[PauseBridge] Release ignorado ({reason}) - sem handle ativo (ownership inexistente).");
-                }
-
+                DebugUtility.LogVerbose<GamePauseGateBridge>(
+                    $"[PauseBridge] Release ignorado ({reason}) - sem handle ativo (ownership inexistente). IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
                 return;
             }
 
@@ -147,55 +123,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate.Interop
                 _activeHandle = null;
             }
 
-            if (_gateService != null)
-            {
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
-            }
-            else
-            {
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. (gate indisponivel para snapshot)");
-            }
-        }
-
-        private bool EnsureGateResolved()
-        {
-            if (_gateService != null)
-            {
-                return true;
-            }
-
-            var provider = DependencyManager.Provider;
-            if (provider == null)
-            {
-                return false;
-            }
-
-            if (provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
-            {
-                _gateService = resolved;
-                _loggedMissingGate = false;
-
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[PauseBridge] ISimulationGateService resolvido via DependencyManager (lazy).");
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private void LogGateUnavailable()
-        {
-            if (_loggedMissingGate)
-            {
-                return;
-            }
-
-            DebugUtility.LogWarning<GamePauseGateBridge>(
-                "[PauseBridge] ISimulationGateService indisponivel; nao e possivel refletir pause no gate.");
-            _loggedMissingGate = true;
+            DebugUtility.LogVerbose<GamePauseGateBridge>(
+                $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
         }
     }
 }

@@ -22,7 +22,7 @@ Auditoria baseada no conteúdo real de `Assets/_ImmersiveGames/NewScripts/**`, c
 - `Orchestration/LevelLifecycle`
 - `Game/Gameplay/State`
 - `Orchestration/SceneReset`
-- `Experience/PostGame`  <span style="white-space:nowrap;">(parcialmente histórico)</span>
+- `Experience/PostRun`  <span style="white-space:nowrap;">(parcialmente histórico)</span>
 - `Experience/Camera`  <span style="white-space:nowrap;">(amplo demais)</span>
 
 ### As 5 piores
@@ -53,7 +53,7 @@ Auditoria baseada no conteúdo real de `Assets/_ImmersiveGames/NewScripts/**`, c
 | `Game/Content/Definitions/Levels` | `Game/Content/Definitions/Levels/Config/LevelCollectionAsset.cs`; `Game/Content/Definitions/Levels/Config/LevelDefinitionAsset.cs`; `Game/Content/Definitions/Levels/Runtime/LevelDefinition.cs`; `Game/Content/Definitions/Levels/Runtime/LevelFlowContentDefaults.cs` | Definições e coleções de level, com defaults de content | sim | amplo, mas honesto | sem mudança | baixo | alta |
 | `Game/Gameplay/State` | `Game/Gameplay/State/Core/GameplayStateSnapshot.cs`; `Game/Gameplay/State/Gate/GameplayStateGate.cs`; `Game/Gameplay/State/RuntimeSignals/GameplayRuntimeSignalsAdapter.cs`; `Game/Gameplay/State/Core/GameplayAction.cs`; `Game/Gameplay/State/Core/SystemAction.cs`; `Game/Gameplay/State/Core/UiAction.cs` | Gate de ações de gameplay/UI/system baseado em readiness, pause e loop | não | "State" esconde que o núcleo é gating/autorização de ações | `GameplayStateGate` | médio | alta |
 | `Game/Gameplay/Rearm` | `Game/Gameplay/Rearm/Coordination/ActorGroupRearmOrchestrator.cs`; `Game/Gameplay/Rearm/Discovery/ActorGroupRearmTargetResolver.cs`; `Game/Gameplay/Rearm/Execution/ActorGroupRearmExecutor.cs`; `Game/Gameplay/Rearm/Core/ActorGroupRearmContracts.cs` | Reset de gameplay por grupo de atores, com cleanup/restore/rebind | não | termo obscuro/histórico; não diz "reset" | `GameplayReset` | médio | alta |
-| `Experience/PostGame` | `Experience/PostGame/Handoff/PostStageCoordinator.cs`; `Experience/PostGame/Result/PostGameResultService.cs`; `Experience/PostGame/Ownership/PostGameOwnershipService.cs` | Handoff, ownership, presentation e result do pós-run | parcialmente | o código fala mais `PostRun`/`PostStage` do que `PostGame` | `PostRun` | médio | média |
+| `Experience/PostRun` | `Experience/PostRun/Handoff/PostStageCoordinator.cs`; `Experience/PostRun/Result/PostRunResultService.cs`; `Experience/PostRun/Ownership/PostRunOwnershipService.cs` | Handoff, ownership, presentation e result do pós-run | parcialmente | o código fala mais `PostRun`/`PostStage` do que o nome antigo | `PostRun` | médio | média |
 | `Experience/Audio` | `Experience/Audio/Runtime/Core/AudioBgmService.cs`; `Experience/Audio/Runtime/Core/AudioGlobalSfxService.cs`; `Experience/Audio/Semantics/AudioEntitySemanticService.cs`; `Experience/Audio/Runtime/AudioSettingsService.cs`; `Experience/Audio/Context/AudioBgmContextService.cs`; `Experience/Audio/Bridges/NavigationLevelRouteBgmBridge.cs` | Subsistema completo de áudio: BGM, SFX, semântica, settings e contexto | sim | amplo, mas fiel | sem mudança | baixo | alta |
 | `Experience/Save` | `Experience/Save/Orchestration/SaveOrchestrationService.cs`; `Experience/Save/Checkpoint/CheckpointService.cs`; `Experience/Save/Progression/ProgressionService.cs` | Orquestra checkpoint + progression + hooks de save | sim | umbrella amplo, mas honesto | sem mudança | baixo | alta |
 | `Experience/Preferences` | `Experience/Preferences/Runtime/PreferencesService.cs`; `Experience/Preferences/Bindings/AudioPreferencesOptionsBinder.cs`; `Experience/Preferences/Bindings/VideoPreferencesOptionsBinder.cs` | Estado, preview, persistência e aplicação de prefs de áudio/vídeo | sim | nenhum relevante | sem mudança | baixo | alta |
@@ -80,7 +80,7 @@ Auditoria baseada no conteúdo real de `Assets/_ImmersiveGames/NewScripts/**`, c
 - Problema: o nome parece histórico; o conteúdo não usa "lifecycle" como eixo principal.
 - Nome mais honesto: `LevelFlow`.
 
-### `PostGame`
+### `PostRun`
 - Sugere: tudo depois da partida.
 - Realidade: handoff, ownership, presentation e result do pós-run.
 - Problema: aceitável, mas menos preciso que o vocabulário real do código.
@@ -118,7 +118,7 @@ Auditoria baseada no conteúdo real de `Assets/_ImmersiveGames/NewScripts/**`, c
 - `Orchestration/GameLoop` -> `Orchestration/RunLifecycle`
   - A superfície é grande e espalhada; rename agora teria impacto amplo.
   - Precisa revisão coordenada de contratos, pastas e referências.
-- `Experience/PostGame` -> `Experience/PostRun`
+- `Experience/PostRun` -> `Experience/PostRun`
   - É mais honesto, mas o nome atual ainda é aceitável.
   - Vale esperar uma decisão terminológica oficial do projeto.
 

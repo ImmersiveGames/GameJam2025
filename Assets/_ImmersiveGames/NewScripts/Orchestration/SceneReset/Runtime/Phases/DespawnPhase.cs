@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases
 {
     internal sealed class DespawnPhase : ISceneResetPhase
@@ -10,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases
 
         public async Task ExecuteAsync(SceneResetContext context, SceneResetHookRunner hookRunner, CancellationToken ct)
         {
-            DebugUtility.Log(typeof(SceneResetFacade),
+            DebugUtility.Log(typeof(SceneResetPipeline),
                 "Despawn phase delegating to Spawn owner services.");
             await Executor.ExecuteAsync(context, "Despawn", service => service.DespawnAsync());
             context.LogActorRegistryCount("After Despawn");

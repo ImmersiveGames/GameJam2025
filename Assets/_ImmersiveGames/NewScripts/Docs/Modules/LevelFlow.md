@@ -1,4 +1,4 @@
-﻿# LevelFlow
+# LevelFlow
 
 ## Status documental
 
@@ -20,6 +20,7 @@
 - `LevelEnteredEvent` e o hook canonico pos-aplicacao do level.
 - `LevelIntroCompletedEvent` e o handoff canonico para `Playing`.
 - `LevelStageOrchestrator` dispara e deduplica a `IntroStage`.
+- `LevelPostRunHookService` executa o rail local de `PostRun` da cena atual.
 - `PostLevelActionsService` executa restart, next-level e exit-to-menu a partir do contexto atual.
 
 ## Dependências e limites
@@ -27,20 +28,21 @@
 - `SceneFlow` aplica a rota macro.
 - `Navigation` resolve e despacha a rota macro de saida.
 - `GameLoop` consome o handoff final da intro e reflete o estado alto nivel.
-- `PostRun` fornece o resultado global; `LevelLifecycle` pode complementar com hook opcional.
+- `PostRun` fornece o resultado global e o rail local de nivel antes de `RunDecision`.
+- `LevelLifecycle` complementa com hook opcional de nivel, nao com ownership global.
 - `ILevelIntroStagePresenterRegistry` e `ILevelIntroStagePresenterScopeResolver` resolvem o presenter da intro.
 
 ## Handoff e ownership
 
-- `LevelFlow` nao e owner do `PostStage`.
+- `LevelFlow` nao e owner do `PostRun` nem do `RunDecision`.
 - O papel daqui e fornecer contrato/conteudo da cena atual quando houver presenter explicito.
-- O hook opcional de nivel e complementar, nao orquestrador.
+- O hook opcional de nivel e complementar, nao orchestrador.
 - `Restart` e `ExitToMenu` continuam sendo acoes de contexto, nao ownership de `Navigation`.
 
 ## Compatibilidade temporaria
 
 - `Orchestration/LevelFlow/Runtime` continua de pe por transicao.
-- `PostPlay` e termo historico; o runtime presente usa `PostRun`.
+- `PostGame`, `GameOver` e `PostPlay` sao termos historicos; o runtime presente usa `RunOutcome`, `PostRun` e `RunDecision`.
 - Namespaces antigos podem permanecer para seguranca ate a limpeza final.
 
 ## Hooks / contratos publicos
@@ -49,6 +51,7 @@
 - `LevelIntroCompletedEvent`
 - `ILevelStagePresentationService`
 - `ILevelPostRunHookService`
+- `ILevelPostRunHookPresenter`
 - `ILevelIntroStagePresenterRegistry`
 - `ILevelIntroStagePresenterScopeResolver`
 
@@ -56,7 +59,7 @@
 
 - Intro e `level-owned` e dispara pelo `LevelEnteredEvent`.
 - Se o level nao tiver intro, o fluxo segue sem pendencia.
-- Se o level nao expuser presenter de `PostStage`, o fluxo faz skip automatico.
+- Se o level nao expuser presenter de `PostRun`, o fluxo faz skip observavel explicito.
 - `RestartFromFirstLevel` e contrato distinto de `RestartLastGameplay`.
 - `StartGameplayRouteAsync` pertence ao dispatch macro; a selecao de level nao acontece em `Navigation`.
 
@@ -66,4 +69,3 @@
 - `Docs/Modules/GameLoop.md`
 - `Docs/Modules/Navigation.md`
 - `Docs/Guides/Production-How-To-Use-Core-Modules.md`
-

@@ -74,17 +74,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Bindings
             return valid;
         }
 
-        public SceneResetRunner CreateRunner()
-        {
-            return new SceneResetRunner(
-                _gateService,
-                _spawnRegistry,
-                _actorRegistry,
-                provider: _provider,
-                hookRegistry: _hookRegistry,
-                sceneName: _sceneName);
-        }
-
         public void Cleanup(bool verboseLogs)
         {
             if (_hookRegistry != null)

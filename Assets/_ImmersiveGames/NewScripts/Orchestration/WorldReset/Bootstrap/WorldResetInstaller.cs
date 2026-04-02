@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
     /// Responsabilidade:
     /// - registrar contratos, servicos e bridges do reset macro no boot;
     /// - nao compor runtime operacional nem depender de bootstrap posterior;
-    /// - nao exigir gate de transicao como prerequisito obrigatorio.
+    /// - falhar cedo se contratos estruturais obrigatorios estiverem ausentes.
     /// </summary>
     public static class WorldResetInstaller
     {
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
         private static void RegisterSceneFlowWorldResetDriver()
         {
             RegisterIfMissing(
-                () => new SceneFlowWorldResetDriver(),
+                () => new SceneFlowWorldResetDriver(ResolveRequiredWorldResetService()),
                 "[ResetInterop] SceneFlowWorldResetDriver ja registrado no DI global.",
                 "[ResetInterop] SceneFlowWorldResetDriver registrado no DI global.");
         }
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
         private static void RegisterWorldResetRequestService()
         {
             RegisterIfMissing<IWorldResetRequestService>(
-                () => new WorldResetRequestService(ResolveSimulationGateServiceOrNull()),
+                () => new WorldResetRequestService(ResolveSimulationGateServiceOrFail()),
                 "[WorldReset] IWorldResetRequestService ja registrado no DI global.",
                 "[WorldReset] WorldResetRequestService registrado no DI global.");
         }
@@ -93,14 +93,29 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
             return new WorldResetService();
         }
 
-        private static ISimulationGateService ResolveSimulationGateServiceOrNull()
+        private static WorldResetService ResolveRequiredWorldResetService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<WorldResetService>(out var service) && service != null)
+            {
+                return service;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<IWorldResetService>(out var existingInterface) && existingInterface is WorldResetService existingService)
+            {
+                return existingService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][WorldReset] IWorldResetService obrigatorio ausente no DI global antes de registrar o SceneFlowWorldResetDriver.");
+        }
+
+        private static ISimulationGateService ResolveSimulationGateServiceOrFail()
         {
             if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) && gateService != null)
             {
                 return gateService;
             }
 
-            return null;
+            throw new InvalidOperationException("[FATAL][Config][WorldReset] ISimulationGateService obrigatorio ausente no DI global.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)
