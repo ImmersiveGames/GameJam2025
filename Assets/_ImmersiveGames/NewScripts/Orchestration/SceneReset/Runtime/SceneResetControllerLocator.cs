@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime

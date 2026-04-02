@@ -16,7 +16,7 @@ MonoBehaviour:
   verboseEnabled: 1
   fallbacksEnabled: 1
   repeatedVerboseEnabled: 1
-  defaultLevel: 3
+  defaultLevel: 4
   rules:
   - ruleId: core_root
     enabled: 1
@@ -26,11 +26,3 @@ MonoBehaviour:
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure
     level: 4
-  - ruleId: modules_root
-    enabled: 1
-    namespacePrefix: _ImmersiveGames.NewScripts.Modules
-    level: 4
-  - ruleId: infra_composition
-    enabled: 1
-    namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure.Composition
-    level: 3

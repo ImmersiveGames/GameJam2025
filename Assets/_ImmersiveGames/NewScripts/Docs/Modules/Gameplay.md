@@ -8,6 +8,7 @@
 
 ## Estrutura atual
 
+- `Spawn`: definicoes, contexto, registry e factories de spawn do mundo.
 - `State/Core`: snapshot e contrato de estado jogavel.
 - `State/RuntimeSignals`: adaptador de sinais do runtime.
 - `State/Gate`: gate de execucao e logs de decisao.
@@ -18,7 +19,7 @@
 
 ## Responsabilidades atuais
 
-- `WorldDefinition` e o runtime de spawn definem o conjunto de atores e o setup inicial do mundo.
+- `Game/Content/Definitions/Worlds/WorldDefinition.asset` e `Game/Content/Definitions/Worlds/Config/WorldDefinition` definem o authoring do conjunto de atores e o setup inicial do mundo.
 - `GameplayStateGate` bloqueia e libera acoes de gameplay conforme estado e readiness.
 - `ActorGroupGameplayResetOrchestrator` coordena o GameplayReset local.
 - `PlayerActorGroupGameplayResetWorldParticipant` e a ponte de GameplayReset de players para `ByActorKind(Player)`.

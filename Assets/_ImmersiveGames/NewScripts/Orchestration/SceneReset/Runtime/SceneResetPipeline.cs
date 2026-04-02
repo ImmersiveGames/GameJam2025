@@ -6,7 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {

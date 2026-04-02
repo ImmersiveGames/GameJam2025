@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.GameplayCamera;
-using _ImmersiveGames.NewScripts.Game.Gameplay.State;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Gate;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.Bootstrap

@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
 {
     internal sealed class SceneResetHookSourceResolver

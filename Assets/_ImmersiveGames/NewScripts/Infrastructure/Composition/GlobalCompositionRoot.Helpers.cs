@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition

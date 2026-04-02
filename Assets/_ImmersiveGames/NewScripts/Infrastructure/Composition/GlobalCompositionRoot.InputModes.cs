@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode;

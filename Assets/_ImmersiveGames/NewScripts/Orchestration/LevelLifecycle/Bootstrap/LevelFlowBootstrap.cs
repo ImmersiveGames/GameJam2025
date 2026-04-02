@@ -1,31 +1,32 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Interop;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
+
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 {
     /// <summary>
-    /// Runtime composer do LevelFlow.
+    /// Runtime composer canonico do LevelLifecycle.
+    /// O nome historico do arquivo permanece apenas por compatibilidade.
     ///
     /// Responsabilidade:
-    /// - compor as partes do LevelFlow que dependem de Navigation depois que o DI ja esta preenchido;
+    /// - compor as partes do LevelLifecycle que dependem de Navigation depois que o DI ja esta preenchido;
     /// - nao registrar contratos de boot.
     /// </summary>
-    public static class LevelFlowBootstrap
+    public static class LevelLifecycleBootstrap
     {
         private static bool _runtimeComposed;
         private static bool _levelFlowGateComposed;
 
         public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
-            CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(LevelFlowBootstrap));
+            CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(LevelLifecycleBootstrap));
 
             if (_runtimeComposed)
             {
@@ -34,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
             if (bootstrapConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][LevelFlow] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
             }
 
             EnsureLevelFlowCompletionGate();
@@ -45,8 +46,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
             _runtimeComposed = true;
 
-            DebugUtility.Log(typeof(LevelFlowBootstrap),
-                "[LevelFlow] Runtime composition concluida.",
+            DebugUtility.Log(typeof(LevelLifecycleBootstrap),
+                "[LevelLifecycle] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
         }
 
@@ -61,15 +62,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             var restartContextService = ResolveRequiredRestartContextService();
             var levelSwapLocalService = ResolveRequiredLevelSwapLocalService();
 
-            var runtimeService = new LevelFlowRuntimeService(
+            var runtimeService = new LevelLifecycleRuntimeService(
                 navigationService,
                 restartContextService,
                 levelSwapLocalService);
 
             DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
-            DebugUtility.LogVerbose(typeof(LevelFlowBootstrap),
-                "[OBS][LevelFlow] LevelFlowRuntimeService registrado no runtime.",
+            DebugUtility.LogVerbose(typeof(LevelLifecycleBootstrap),
+                "[OBS][LevelLifecycle] LevelLifecycleRuntimeService registrado no runtime.",
                 DebugUtility.Colors.Info);
         }
 
@@ -78,13 +79,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) || existingGate == null)
             {
                 throw new InvalidOperationException(
-                    "[FATAL][Config][LevelFlow] ISceneTransitionCompletionGate obrigatorio ausente para composicao de LevelPrepare/Clear.");
+                    "[FATAL][Config][LevelLifecycle] ISceneTransitionCompletionGate obrigatorio ausente para composicao de LevelPrepare/Clear.");
             }
 
             if (existingGate is not MacroLevelPrepareCompletionGate macroGate)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][LevelFlow] ISceneTransitionCompletionGate invalido para composicao de LevelFlow (tipo='{existingGate.GetType().Name}').");
+                    $"[FATAL][Config][LevelLifecycle] ISceneTransitionCompletionGate invalido para composicao de LevelLifecycle (tipo='{existingGate.GetType().Name}').");
             }
 
             if (_levelFlowGateComposed)
@@ -95,8 +96,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             macroGate.ConfigureLevelFlowGate(new LevelFlowMacroPrepareCompletionGate());
             _levelFlowGateComposed = true;
 
-            DebugUtility.LogVerbose(typeof(LevelFlowBootstrap),
-                "[OBS][LevelFlow] Gate de LevelPrepare/Clear acoplado ao completion gate macro do SceneFlow.",
+            DebugUtility.LogVerbose(typeof(LevelLifecycleBootstrap),
+                "[OBS][LevelLifecycle] Gate de LevelPrepare/Clear acoplado ao completion gate macro do SceneFlow.",
                 DebugUtility.Colors.Info);
         }
 
@@ -109,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
             if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][LevelFlow] ILevelFlowRuntimeService ausente no DI global antes da composicao runtime.");
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelFlowRuntimeService ausente no DI global antes da composicao runtime.");
             }
 
             var levelSwapLocalService = ResolveRequiredLevelSwapLocalService();
@@ -126,8 +127,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
             DependencyManager.Provider.RegisterGlobal(postLevelActions);
 
-            DebugUtility.LogVerbose(typeof(LevelFlowBootstrap),
-                "[OBS][LevelFlow] IPostLevelActionsService registrado no runtime.",
+            DebugUtility.LogVerbose(typeof(LevelLifecycleBootstrap),
+                "[OBS][LevelLifecycle] IPostLevelActionsService registrado no runtime.",
                 DebugUtility.Colors.Info);
         }
 
@@ -136,8 +137,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RegisterIfMissing(
                 () => new LevelSelectedRestartSnapshotBridge(),
                 typeof(LevelSelectedRestartSnapshotBridge),
-                "[LevelFlow] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
-                "[LevelFlow] LevelSelectedRestartSnapshotBridge registrado no DI global.");
+                "[LevelLifecycle] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
+                "[LevelLifecycle] LevelSelectedRestartSnapshotBridge registrado no DI global.");
         }
 
         private static IGameNavigationService ResolveRequiredNavigationService()
@@ -147,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 return navigationService;
             }
 
-            throw new InvalidOperationException("[FATAL][Config][LevelFlow] IGameNavigationService ausente no DI global antes da composicao runtime.");
+            throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameNavigationService ausente no DI global antes da composicao runtime.");
         }
 
         private static ILevelFlowContentService ResolveRequiredLevelFlowContentService()
@@ -157,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 return levelFlowContentService;
             }
 
-            throw new InvalidOperationException("[FATAL][Config][LevelFlow] ILevelFlowContentService ausente no DI global antes da composicao runtime.");
+            throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelFlowContentService ausente no DI global antes da composicao runtime.");
         }
 
         private static IRestartContextService ResolveRequiredRestartContextService()
@@ -167,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 return restartContextService;
             }
 
-            throw new InvalidOperationException("[FATAL][Config][LevelFlow] IRestartContextService ausente no DI global antes da composicao runtime.");
+            throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IRestartContextService ausente no DI global antes da composicao runtime.");
         }
 
         private static ILevelSwapLocalService ResolveRequiredLevelSwapLocalService()
@@ -177,16 +178,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 return levelSwapLocalService;
             }
 
-            throw new InvalidOperationException("[FATAL][Config][LevelFlow] ILevelSwapLocalService ausente no DI global antes da composicao runtime.");
+            throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelSwapLocalService ausente no DI global antes da composicao runtime.");
         }
 
         private static void EnsureLevelStageOrchestrator()
         {
             RegisterIfMissing(
-                () => new LevelStageOrchestrator(),
-                typeof(LevelStageOrchestrator),
-                "[LevelFlow] LevelStageOrchestrator ja registrado no DI global.",
-                "[LevelFlow] LevelStageOrchestrator registrado (LevelEntered hook).");
+                () => new LevelLifecycleStageOrchestrator(),
+                typeof(LevelLifecycleStageOrchestrator),
+                "[LevelLifecycle] LevelLifecycleStageOrchestrator ja registrado no DI global.",
+                "[LevelLifecycle] LevelLifecycleStageOrchestrator registrado (LevelEntered hook).");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, Type contextType, string alreadyRegisteredMessage, string registeredMessage)
@@ -233,7 +234,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 string signature = SceneTransitionSignature.Compute(context);
 
                 DebugUtility.Log<LevelFlowMacroPrepareCompletionGate>(
-                    $"[OBS][LevelFlow] MacroLoadingPhase='LevelPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                    $"[OBS][LevelLifecycle] MacroLoadingPhase='LevelPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
                 if (context.RouteRef == null)
@@ -247,8 +248,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             private static void FailFastConfig(SceneTransitionContext context, string detail)
             {
                 HardFailFastH1.Trigger(typeof(LevelFlowMacroPrepareCompletionGate),
-                    $"[FATAL][H1][LevelFlow] Macro completion gate misconfigured: {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+                    $"[FATAL][H1][LevelLifecycle] Macro completion gate misconfigured: {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
             }
+        }
+    }
+
+    [Obsolete("Historical wrapper. Use LevelLifecycleBootstrap instead.")]
+    public static class LevelFlowBootstrap
+    {
+        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        {
+            LevelLifecycleBootstrap.ComposeRuntime(bootstrapConfig);
         }
     }
 }

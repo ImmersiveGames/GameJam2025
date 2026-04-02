@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases
 {
     internal sealed class DespawnPhase : ISceneResetPhase

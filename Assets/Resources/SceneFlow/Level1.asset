@@ -29,12 +29,12 @@ MonoBehaviour:
       observabilityExpectation: 
     - entryId: dummy_prototype
       role: 3
-      configurationReference: {fileID: 100000, guid: e9ccfebb5ac66364a9197dc8cc07ffd6, type: 3}
+      configurationReference: {fileID: 1188741042885028564, guid: e9ccfebb5ac66364a9197dc8cc07ffd6, type: 3}
       materializationExpectation: 
       observabilityExpectation: 
   hasIntroStage: 1
   introPresenterPrefab: {fileID: 0}
-  hasPostGameReactionHook: 0
+  hasPostRunReactionHook: 1
   allowLocalCurtainIn: 1
   allowLocalCurtainOut: 1
   bgmCue: {fileID: 11400000, guid: 8bdd0f6cc3520b24bae1d6e1e1b57835, type: 2}

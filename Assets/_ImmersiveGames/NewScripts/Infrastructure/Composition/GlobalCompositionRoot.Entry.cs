@@ -17,7 +17,6 @@
  * - Arquivo reordenado por seções (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.
  */
 
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Core.Logging.Config;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;

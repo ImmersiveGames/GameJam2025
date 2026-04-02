@@ -9,6 +9,7 @@ using System.Text;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime
 {
+    // Active seam for manifest resolution; the surrounding LevelFlow folder remains historical.
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LevelFlowContentService : ILevelFlowContentService
     {

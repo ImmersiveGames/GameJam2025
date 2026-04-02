@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime

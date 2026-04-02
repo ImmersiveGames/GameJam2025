@@ -108,14 +108,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (enableDevManualTriggers)
             {
-                if (UnityEngine.Input.GetKeyDown(devVictoryKey))
+                if (Input.GetKeyDown(devVictoryKey))
                 {
                     _requested = true;
                     _endRequest.RequestRunEnd(GameRunOutcome.Victory, devVictoryReason);
                     return;
                 }
 
-                if (UnityEngine.Input.GetKeyDown(devDefeatKey))
+                if (Input.GetKeyDown(devDefeatKey))
                 {
                     _requested = true;
                     _endRequest.RequestRunEnd(GameRunOutcome.Defeat, devDefeatReason);

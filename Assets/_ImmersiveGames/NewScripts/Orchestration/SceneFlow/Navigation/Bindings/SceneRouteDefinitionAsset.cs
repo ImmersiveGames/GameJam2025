@@ -231,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
                 return -1;
             }
 
-            EditorBuildSettingsScene[] scenes = UnityEditor.EditorBuildSettings.scenes;
+            EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes;
             for (int i = 0; i < scenes.Length; i++)
             {
                 var scene = scenes[i];

@@ -1,6 +1,5 @@
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime.Phases
 {
     internal sealed class ScopedParticipantsResetPhase : ISceneResetPhase

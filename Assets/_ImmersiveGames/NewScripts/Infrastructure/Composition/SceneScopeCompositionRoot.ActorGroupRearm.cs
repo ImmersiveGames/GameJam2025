@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;

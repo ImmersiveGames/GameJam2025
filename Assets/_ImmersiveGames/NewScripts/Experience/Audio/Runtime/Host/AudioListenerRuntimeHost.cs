@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Host
 
         public static AudioListenerRuntimeHost EnsureCreated()
         {
-            AudioListenerRuntimeHost[] existingHosts = Object.FindObjectsByType<AudioListenerRuntimeHost>(
+            AudioListenerRuntimeHost[] existingHosts = FindObjectsByType<AudioListenerRuntimeHost>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Host
             {
                 var host = existingHosts[0];
                 host.EnsureListenerComponent();
-                Object.DontDestroyOnLoad(host.gameObject);
+                DontDestroyOnLoad(host.gameObject);
 
                 if (existingHosts.Length > 1)
                 {
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Host
                             continue;
                         }
 
-                        Object.Destroy(extraHost.gameObject);
+                        Destroy(extraHost.gameObject);
                     }
 
                     DebugUtility.LogWarning(typeof(AudioListenerRuntimeHost),
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Host
             var runtimeObject = new GameObject(HostObjectName);
             var createdHost = runtimeObject.AddComponent<AudioListenerRuntimeHost>();
             createdHost.EnsureListenerComponent();
-            Object.DontDestroyOnLoad(runtimeObject);
+            DontDestroyOnLoad(runtimeObject);
             createdHost.EnforceSingleListenerPolicy();
 
             DebugUtility.LogVerbose(typeof(AudioListenerRuntimeHost),
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Host
                 return;
             }
 
-            AudioListener[] listeners = Object.FindObjectsByType<AudioListener>(
+            AudioListener[] listeners = FindObjectsByType<AudioListener>(
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 

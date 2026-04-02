@@ -1,0 +1,102 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
+using _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime
+{
+    // Historical compat facade for the legacy reset entrypoint.
+    /// <summary>
+    /// Facade fina do trilho local de reset.
+    /// Mantem a superficie historica do modulo, mas delega a execucao para o pipeline explicito de SceneReset.
+    /// </summary>
+    public sealed class SceneResetFacade
+    {
+        private readonly ISimulationGateService _gateService;
+        private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
+        private readonly IActorRegistry _actorRegistry;
+        private readonly IDependencyProvider _provider;
+        private readonly string _sceneName;
+        private readonly SceneResetHookRegistry _hookRegistry;
+        private readonly SceneResetPipeline _pipeline;
+
+        internal SceneResetFacade(
+            ISimulationGateService gateService,
+            IReadOnlyList<IWorldSpawnService> spawnServices,
+            IActorRegistry actorRegistry,
+            IDependencyProvider provider = null,
+            string sceneName = null,
+            SceneResetHookRegistry hookRegistry = null,
+            SceneResetPipeline pipeline = null)
+        {
+            _gateService = gateService;
+            _spawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
+            _actorRegistry = actorRegistry;
+            _provider = provider;
+            _sceneName = sceneName;
+            _hookRegistry = hookRegistry;
+            _pipeline = pipeline ?? SceneResetPipeline.CreateDefault();
+        }
+
+        public Task ResetWorldAsync()
+        {
+            return ExecuteAsync(
+                resetContext: null,
+                gateToken: WorldResetTokens.WorldResetToken,
+                startLog: "World Reset Started",
+                completionLog: "World Reset Completed");
+        }
+
+        public Task ResetScopesAsync(IReadOnlyList<WorldResetScope> scopes, string reason)
+        {
+            if (scopes == null || scopes.Count == 0)
+            {
+                Core.Logging.DebugUtility.LogWarning(typeof(SceneResetFacade),
+                    "Scoped reset ignored: scopes vazios ou nulos.");
+                return Task.CompletedTask;
+            }
+
+            if (System.Linq.Enumerable.Any(scopes, scope => scope == WorldResetScope.World))
+            {
+                Core.Logging.DebugUtility.LogError(typeof(SceneResetFacade),
+                    "WorldResetScope.World nao e suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
+                return Task.CompletedTask;
+            }
+
+            var context = new WorldResetContext(reason, scopes, WorldResetFlags.SoftReset);
+            return ExecuteAsync(
+                resetContext: context,
+                gateToken: SimulationGateTokens.SoftReset,
+                startLog: $"Scoped Reset Started ({context})",
+                completionLog: "Scoped Reset Completed");
+        }
+
+        private Task ExecuteAsync(
+            WorldResetContext? resetContext,
+            string gateToken,
+            string startLog,
+            string completionLog)
+        {
+            var context = new SceneResetContext(
+                _gateService,
+                _spawnServices,
+                _actorRegistry,
+                _provider,
+                _sceneName,
+                _hookRegistry,
+                resetContext,
+                gateToken,
+                startLog,
+                completionLog);
+
+            return _pipeline.ExecuteAsync(context, CancellationToken.None);
+        }
+    }
+}

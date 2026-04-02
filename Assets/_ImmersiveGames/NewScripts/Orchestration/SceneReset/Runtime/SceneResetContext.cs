@@ -7,7 +7,8 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Spawn;
+using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
+using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Compat.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime

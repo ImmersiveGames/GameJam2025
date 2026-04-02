@@ -11,12 +11,12 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Experience.GameplayCamera
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(UnityEngine.Camera))]
+    [RequireComponent(typeof(Camera))]
     public sealed class GameplayCameraBinder : MonoBehaviour
     {
         [SerializeField] private int playerId;
 
-        private UnityEngine.Camera _camera;
+        private Camera _camera;
         private IGameplayCameraResolver _resolver;
 
         private bool _registered;
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Experience.GameplayCamera
 
         private void Awake()
         {
-            _camera = GetComponent<UnityEngine.Camera>();
+            _camera = GetComponent<Camera>();
             TryResolveResolver("Awake");
         }
 

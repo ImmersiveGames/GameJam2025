@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;
-using _ImmersiveGames.NewScripts.Game.Gameplay.State;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement
