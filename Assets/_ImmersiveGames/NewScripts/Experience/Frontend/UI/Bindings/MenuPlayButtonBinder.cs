@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
 {
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
         protected override bool OnClickCore(string actionReason)
         {
             string normalizedReason = string.IsNullOrWhiteSpace(actionReason) ? "Menu/PlayButton" : actionReason.Trim();
+            GameplaySessionFlowSmokeReporter.ReportCurrentState("MenuPlayButton/BeforeRaise", normalizedReason);
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
                 $"[OBS][FrontendUI][Intent] MenuPlay -> GamePlayRequestedEvent reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);

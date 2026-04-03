@@ -3,6 +3,7 @@
 ## Status documental
 
 - Referencia operacional dos hooks ativos.
+- O contrato canonico vigente do gameplay esta em `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`, `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md` e `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`.
 - `LevelFlow` e nome historico de fronteira; a camada ativa e `LevelLifecycle`.
 - Use hooks operacionais primeiro e hooks tecnicos so quando o ponto do pipeline realmente importar.
 
@@ -35,10 +36,19 @@
 | iniciar o PostStage | `PostStageStartRequestedEvent` | `Experience/PostRun/Handoff` | validar o pos-run depois do outcome |
 | assumir o PostStage | `PostStageStartedEvent` | `Experience/PostRun/Handoff` | mostrar presenter opcional da cena atual |
 | concluir o PostStage | `PostStageCompletedEvent` | `Experience/PostRun/Handoff` | liberar o handoff final do pos-run |
-| entrar no PostRun | `PostRunEnteredEvent` | `Experience/PostRun/Ownership` | abrir overlay e aplicar ownership do pos-game |
+| entrar no PostRun | `PostRunEnteredEvent` | `Experience/PostRun/Ownership` | iniciar apenas o rail local de `PostRun` e bloquear a gameplay |
+| concluir o PostRun | `PostRunCompletedEvent` | `Experience/PostRun/Ownership` | liberar a entrada semantica em `RunDecision` |
+| entrar em RunDecision | `RunDecisionEnteredEvent` | `Experience/PostRun/Ownership` | permitir a abertura do overlay final de decisao |
 | integrar save no fim da run | `ISaveOrchestrationService.TryHandleGameRunEnded(...)` | `Experience/Save` | persistir progression e preferences quando cabivel |
 | integrar save apos reset do mundo | `ISaveOrchestrationService.TryHandleWorldResetCompleted(...)` | `Experience/Save` | atualizar rail de save apos reset completo |
 | integrar save apos transicao concluida | `ISaveOrchestrationService.TryHandleSceneTransitionCompleted(...)` | `Experience/Save` | registrar save quando a transicao macro fecha |
+
+## Regra de separacao entre PostRun e RunDecision
+
+- `PostRunEnteredEvent` inicia o rail local de `PostRun`.
+- `PostRunCompleted` e a fronteira que libera a entrada em `RunDecision`.
+- O overlay final e consequencia de `RunDecisionEntered`.
+- Nao trate `PostRunEnteredEvent` como gatilho visual do overlay.
 
 ## Hooks tecnicos do pipeline
 

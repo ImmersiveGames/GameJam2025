@@ -8,44 +8,51 @@
 ## Contexto
 
 `Gameplay Runtime Composition` ja e o centro semantico do gameplay.
-`GameplaySessionFlow` ja foi fechado como o primeiro bloco interno desse centro.
+`GameplaySessionFlow` ja foi fechado como o primeiro bloco interno desse centro e o V1 de runtime ja foi exercitado.
 
 ## Relacao com os ADRs anteriores
 
 - `ADR-0045` define a direcao macro: `Gameplay Runtime Composition` como centro semantico do gameplay.
 - `ADR-0046` define o primeiro bloco interno desse centro: `GameplaySessionFlow`.
-- Este ADR define o pipeline minimo de construcao de fase dentro desse bloco.
+- Este ADR registra o pipeline minimo de construcao de fase dentro desse bloco.
 
-O problema agora nao e mais definir o owner macro, mas formalizar o pipeline minimo que construi a fase jogavel em nivel de conjunto, antes de qualquer desdobramento para objetos individuais, presentation ou detalhes de implementacao.
+O problema agora nao e mais definir o owner macro, mas registrar o pipeline minimo ja consolidado que constrói a fase jogavel em nivel de conjunto, antes de qualquer desdobramento para objetos individuais, presentation ou detalhes de implementacao.
 
 ## Decisao
 
-Adotar um pipeline minimo de construcao de fase dentro de `GameplaySessionFlow` que organize a sessao jogavel como uma sequencia semantica unica, da definicao de contexto ate a liberacao para `Playing`.
+Adotar um pipeline minimo de construcao de fase dentro de `GameplaySessionFlow` que organiza a sessao jogavel como uma sequencia semantica unica, da definicao de contexto ate a liberacao para `Playing`.
 
-Esse pipeline passa a ser a leitura canonica da montagem inicial da fase.
+Esse pipeline e a leitura canonica da montagem inicial da fase no V1 ja exercitado.
+
+## Leitura vigente
+
+- A forma minima aplicada hoje e: `SessionContext -> PhaseRuntime -> Players -> Rules/Objectives -> InitialState`.
+- `Players` inicia em forma solo-first, com participacao canonica minima da fase.
+- A sequencia pratica validada ate `Playing` e: `SessionContext -> PhaseRuntime -> Players -> Rules/Objectives -> InitialState -> intro / enter stage -> Playing`.
 
 ## Pipeline minimo
 
-O pipeline minimo recomendado e:
+O pipeline minimo consolidado e:
 
 1. Definir o contexto da sessao
 2. Selecionar o phase / level runtime
 3. Determinar a participacao de players
 4. Fixar regras e objetivos do conjunto
 5. Seedar o estado inicial da fase
-6. Materializar o conteudo necessario
+6. Definir semanticamente o conteudo necessario e pedir sua viabilizacao operacional ao backbone
 7. Executar intro / enter stage
 8. Liberar para `Playing`
 
 ## Contrato semantico minimo da V1
 
-Esta V1 precisa fechar, no minimo, estes quatro eixos:
-- contexto da sessao
-- phase / level runtime
-- participacao de players
-- regras / estado inicial do conjunto
+Esta V1 ja consolidada fecha, no minimo, estes cinco eixos:
+- `SessionContext`
+- `PhaseRuntime`
+- `Players`
+- `Rules/Objectives`
+- `InitialState`
 
-Sem esses quatro eixos, ainda nao ha uma fase jogavel lida como conjunto.
+Sem esses eixos, ainda nao ha uma fase jogavel lida como conjunto.
 
 ## O que pertence ao GameplaySessionFlow
 
@@ -74,6 +81,7 @@ Isso inclui:
 - garantia tecnica de readiness
 
 O backbone nao define a semantica da fase.
+Ele viabiliza operacionalmente o que `GameplaySessionFlow` decidiu que precisa existir para a fase ficar jogavel.
 
 ## O que pode comecar mockado
 
@@ -85,7 +93,7 @@ Pode comecar mockado:
 - materializacao de conteudo
 - intro / enter stage como sequencia semantica
 
-O mock existe apenas para permitir a leitura do pipeline antes da integracao real.
+O mock existe apenas para permitir a leitura do pipeline da proxima frente de authoring/configuration, nao do V1 ja fechado.
 
 ## Fora de escopo deste corte
 
@@ -110,7 +118,7 @@ Ficam explicitamente fora:
 
 ## Proximos passos
 
-1. Consolidar a leitura de fase como unidade de composicao dentro de `GameplaySessionFlow`
-2. Derivar o contrato semantico minimo entre contexto, players, objetivos e estado inicial
-3. Separar o que sera ponte transitiva do que sera ownership real
-4. Somente depois disso abrir o corte de implementacao
+1. Tratar o runtime V1 como base consolidada, nao mais como corte em definicao.
+2. Evoluir para o modelo de authoring/configuration da fase.
+3. Separar o que sera ponte transitiva do que sera ownership real apenas quando a nova camada de authoring exigir.
+4. Somente depois disso abrir o corte de implementacao.

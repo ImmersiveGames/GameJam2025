@@ -2,6 +2,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndConditions
 {
@@ -10,16 +11,27 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
     {
         private const string VictoryReason = "QA/BaselineV3/VictoryButton";
         private const string DefeatReason = "QA/BaselineV3/DefeatButton";
+        private const float MinPanelWidth = 460f;
+        private const float MinPanelHeight = 260f;
 
         [Header("Layout")]
-        [SerializeField] private Rect panelRect = new(16f, 16f, 260f, 120f);
+        [SerializeField] private Rect panelRect = new(16f, 16f, 460f, 240f);
         [SerializeField] private string title = "Baseline V3 Outcome Mock";
 
         [Inject] private IGameRunEndRequestService _endRequest;
         [Inject] private IGameLoopService _gameLoopService;
+        [Inject] private IGameplaySessionContextService _sessionContextService;
+        [Inject] private IGameplayPhaseRuntimeService _phaseRuntimeService;
+        [Inject] private IGameplayPhasePlayerParticipationService _phasePlayersService;
+        [Inject] private IGameplayPhaseRulesObjectivesService _phaseRulesObjectivesService;
+        [Inject] private IGameplayPhaseInitialStateService _phaseInitialStateService;
 
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
+        private EventBinding<GamePlayRequestedEvent> _gamePlayRequestedBinding;
+        private EventBinding<LevelSelectedEvent> _levelSelectedBinding;
+        private EventBinding<LevelEnteredEvent> _levelEnteredBinding;
+        private EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
         private bool _registered;
         private bool _runEnded;
 
@@ -27,12 +39,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
         {
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(_ => _runEnded = false);
             _runEndedBinding = new EventBinding<GameRunEndedEvent>(_ => _runEnded = true);
+            _gamePlayRequestedBinding = new EventBinding<GamePlayRequestedEvent>(evt => ReportSmoke("GamePlayRequestedEvent", evt.Reason));
+            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(evt => ReportSmoke("LevelSelectedEvent", evt.Reason));
+            _levelEnteredBinding = new EventBinding<LevelEnteredEvent>(evt => ReportSmoke("LevelEnteredEvent", evt.Session.Reason));
+            _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(evt => ReportSmoke("LevelIntroCompletedEvent", evt.Reason));
         }
 
         private void OnEnable()
         {
             EnsureDependenciesInjected();
             RegisterBindings();
+            ReportSmoke("OnEnable", "panel_enabled");
         }
 
         private void OnDisable()
@@ -52,8 +69,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
                 return;
             }
 
+            EnsurePanelBounds();
             GUILayout.BeginArea(panelRect, GUI.skin.box);
-            GUILayout.Label(title);
+            GUILayout.BeginVertical();
+            GUILayout.Label(title, GUI.skin.label);
+            GUILayout.Space(4f);
+            GUILayout.Label(BuildSmokeSummary(), GUI.skin.label);
+            GUILayout.Space(8f);
 
             if (GUILayout.Button("Victory"))
             {
@@ -65,6 +87,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
                 RequestOutcome(GameRunOutcome.Defeat, DefeatReason);
             }
 
+            GUILayout.EndVertical();
             GUILayout.EndArea();
         }
 
@@ -119,6 +142,44 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             {
                 DependencyManager.Provider.TryGetGlobal(out _gameLoopService);
             }
+
+            if (_sessionContextService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _sessionContextService);
+            }
+
+            if (_phaseRuntimeService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _phaseRuntimeService);
+            }
+
+            if (_phasePlayersService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _phasePlayersService);
+            }
+
+            if (_phaseRulesObjectivesService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _phaseRulesObjectivesService);
+            }
+
+            if (_phaseInitialStateService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _phaseInitialStateService);
+            }
+        }
+
+        private void EnsurePanelBounds()
+        {
+            if (panelRect.width < MinPanelWidth)
+            {
+                panelRect.width = MinPanelWidth;
+            }
+
+            if (panelRect.height < MinPanelHeight)
+            {
+                panelRect.height = MinPanelHeight;
+            }
         }
 
         private void RegisterBindings()
@@ -130,6 +191,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
 
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
             EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
+            EventBus<GamePlayRequestedEvent>.Register(_gamePlayRequestedBinding);
+            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
+            EventBus<LevelEnteredEvent>.Register(_levelEnteredBinding);
+            EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
             _registered = true;
         }
 
@@ -142,7 +207,108 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
 
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
             EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
+            EventBus<GamePlayRequestedEvent>.Unregister(_gamePlayRequestedBinding);
+            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
+            EventBus<LevelEnteredEvent>.Unregister(_levelEnteredBinding);
+            EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
             _registered = false;
+        }
+
+        [ContextMenu("Smoke/GameplaySession/Report")]
+        private void ReportGameplaySessionSmoke()
+        {
+            ReportSmoke("ContextMenu/Report", "manual");
+        }
+
+        [ContextMenu("Smoke/GameplaySession/Clear")]
+        private void ClearGameplaySessionSmoke()
+        {
+            GameplaySessionFlowSmokeReporter.ClearCurrentState("GameplayOutcomeQaPanel/ContextMenuClear");
+            ReportSmoke("ContextMenu/Clear", "manual");
+        }
+
+        private void ReportSmoke(string stage, string reason)
+        {
+            EnsureDependenciesInjected();
+            GameplaySessionFlowSmokeReporter.ReportCurrentState(stage, reason);
+        }
+
+        private string BuildSmokeSummary()
+        {
+            GameplaySessionContextSnapshot session = GameplaySessionContextSnapshot.Empty;
+            GameplayPhaseRuntimeSnapshot phase = GameplayPhaseRuntimeSnapshot.Empty;
+            GameplayPhasePlayerParticipationSnapshot players = GameplayPhasePlayerParticipationSnapshot.Empty;
+            GameplayPhaseRulesObjectivesSnapshot rulesObjectives = GameplayPhaseRulesObjectivesSnapshot.Empty;
+            GameplayPhaseInitialStateSnapshot initialState = GameplayPhaseInitialStateSnapshot.Empty;
+
+            bool hasSession = _sessionContextService != null && _sessionContextService.TryGetCurrent(out session);
+            bool hasPhase = _phaseRuntimeService != null && _phaseRuntimeService.TryGetCurrent(out phase);
+            bool hasPlayers = _phasePlayersService != null && _phasePlayersService.TryGetCurrent(out players);
+            bool hasRulesObjectives = _phaseRulesObjectivesService != null && _phaseRulesObjectivesService.TryGetCurrent(out rulesObjectives);
+            bool hasInitialState = _phaseInitialStateService != null && _phaseInitialStateService.TryGetCurrent(out initialState);
+
+            string sessionLabel = hasSession
+                ? $"Session: OK [{session.MacroRouteId}] v{session.SelectionVersion}"
+                : "Session: empty";
+
+            string phaseLabel = hasPhase
+                ? $"Phase: OK [{(phase.LevelSession.LevelRef != null ? phase.LevelSession.LevelRef.name : "<none>")}] v{phase.LevelSession.SelectionVersion}"
+                : "Phase: empty";
+
+            string playersLabel = hasPlayers
+                ? $"Players: OK [{players.ParticipationMode}] x{players.ParticipatingPlayerCount} primary={players.PrimaryParticipantId}"
+                : "Players: empty";
+
+            string rulesObjectivesLabel = hasRulesObjectives
+                ? $"Rules/Objectives: OK rules={rulesObjectives.RuleEntryCount} objectives={rulesObjectives.ObjectiveEntryCount} primary={rulesObjectives.PrimaryObjectiveId}"
+                : "Rules/Objectives: empty";
+
+            string initialStateLabel = hasInitialState
+                ? $"InitialState: OK seed={initialState.SeedSource}"
+                : "InitialState: empty";
+
+            string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasPlayers, hasRulesObjectives, hasInitialState, session, phase, players, rulesObjectives, initialState);
+
+            return $"{sessionLabel} | {phaseLabel} | {playersLabel} | {rulesObjectivesLabel} | {initialStateLabel} | {linkLabel}";
+        }
+
+        private static string BuildLinkSummary(
+            bool hasSession,
+            bool hasPhase,
+            bool hasPlayers,
+            bool hasRulesObjectives,
+            bool hasInitialState,
+            GameplaySessionContextSnapshot session,
+            GameplayPhaseRuntimeSnapshot phase,
+            GameplayPhasePlayerParticipationSnapshot players,
+            GameplayPhaseRulesObjectivesSnapshot rulesObjectives,
+            GameplayPhaseInitialStateSnapshot initialState)
+        {
+            string sessionPhase = hasSession && hasPhase
+                ? string.Equals(session.SessionSignature, phase.SessionContext.SessionSignature, System.StringComparison.Ordinal)
+                    ? "S-P: linked"
+                    : "S-P: mismatch"
+                : (hasSession ? "S-P: phase empty" : (hasPhase ? "S-P: session empty" : "S-P: empty"));
+
+            string phasePlayers = hasPhase && hasPlayers
+                ? string.Equals(phase.PhaseRuntimeSignature, players.PhaseRuntime.PhaseRuntimeSignature, System.StringComparison.Ordinal)
+                    ? "P-Players: linked"
+                    : "P-Players: mismatch"
+                : (hasPhase ? "P-Players: players empty" : (hasPlayers ? "P-Players: phase empty" : "P-Players: empty"));
+
+            string phaseRules = hasPhase && hasRulesObjectives
+                ? string.Equals(phase.PhaseRuntimeSignature, rulesObjectives.PhaseRuntime.PhaseRuntimeSignature, System.StringComparison.Ordinal)
+                    ? "P-Rules: linked"
+                    : "P-Rules: mismatch"
+                : (hasPhase ? "P-Rules: rules empty" : (hasRulesObjectives ? "P-Rules: phase empty" : "P-Rules: empty"));
+
+            string rulesInitial = hasRulesObjectives && hasInitialState
+                ? string.Equals(rulesObjectives.RulesSignature, initialState.RulesObjectives.RulesSignature, System.StringComparison.Ordinal)
+                    ? "Rules-Initial: linked"
+                    : "Rules-Initial: mismatch"
+                : (hasRulesObjectives ? "Rules-Initial: initial empty" : (hasInitialState ? "Rules-Initial: rules empty" : "Rules-Initial: empty"));
+
+            return $"{sessionPhase} | {phasePlayers} | {phaseRules} | {rulesInitial}";
         }
     }
 }

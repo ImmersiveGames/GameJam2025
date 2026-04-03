@@ -8,12 +8,13 @@ Evidencia canonica vigente: `Docs/Reports/Evidence/2026-04-02/RunOutcome-PostRun
 - `Docs/Reports/Evidence/2026-04-02/RunOutcome-PostRun-RunDecision-Snapshot.md` registra o fluxo canonico funcional observado nesta conversa.
 - `Docs/Reports/Audits/2026-03-30/Structural-Freeze-Snapshot.md` continua como referencia estrutural anterior.
 - `Docs/Reports/Audits/2026-03-30/Docs-Consolidation-Baseline-4.0.md` continua como referencia da consolidacao documental.
-- A evidencia confirma o trilho `Boot/Menu -> Gameplay -> IntroStage -> Playing -> RunOutcome -> PostRun -> RunDecision -> Restart`.
+- A evidencia confirma o trilho `Boot/Menu -> Gameplay -> IntroStage -> Playing -> RunOutcome -> PostRun -> RunDecision -> Restart` e separa `PostRunCompleted` de `RunDecisionEntered`.
 
 ## O que isso confirma
 
 - a cadeia canonica ficou curta e explicita
 - `PostRun` local conclui antes de `RunDecision`
+- `RunDecisionEntered` e o ponto em que o overlay final pode aparecer
 - `LevelPostRunHookPresenterCompleted` e `Dismissed` antecedem `RunDecisionEntered`
 - `Save` em `GameRunEnded` salva `PreferencesAndProgression`
 - `SceneTransitionCompleted` gameplay faz `no_op` delegado ao `WorldReset`

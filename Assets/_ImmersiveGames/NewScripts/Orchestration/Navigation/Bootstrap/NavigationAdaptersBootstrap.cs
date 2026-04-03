@@ -9,8 +9,8 @@ using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
     /// <summary>
-    /// Adapter runtime for Navigation.
-    /// Owns the external integrations that surround the canonical navigation core.
+    /// Runtime de adaptadores operacionais para Navigation.
+    /// Sedia as integracoes externas que cercam o core de dispatch/transportes.
     /// </summary>
     public static class NavigationAdaptersBootstrap
     {
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(NavigationAdaptersBootstrap),
-                "[OBS][NavigationAdapters] Runtime composition completed. scope='GameLoopInputCommandBridge + FrontendQuitService'.",
+                "[OBS][NavigationAdapters][Operational] Runtime composition completed. scope='GameLoopInputCommandBridge + FrontendQuitService'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             DependencyManager.Provider.RegisterGlobal<IFrontendQuitService>(service);
 
             DebugUtility.LogVerbose(typeof(NavigationAdaptersBootstrap),
-                "[OBS][NavigationAdapters] FrontendQuitService composed at runtime.",
+                "[OBS][NavigationAdapters][Operational] FrontendQuitService composed at runtime.",
                 DebugUtility.Colors.Info);
         }
 
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(NavigationAdaptersBootstrap),
-                "[OBS][NavigationAdapters] GameLoopInputCommandBridge composed after NavigationService became available.",
+                "[OBS][NavigationAdapters][Operational] GameLoopInputCommandBridge composed after NavigationService became available.",
                 DebugUtility.Colors.Info);
         }
     }

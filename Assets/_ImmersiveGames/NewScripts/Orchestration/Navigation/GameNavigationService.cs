@@ -8,8 +8,8 @@ using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
     /// <summary>
-    /// Canonical navigation service.
-    /// Owns core intent resolution and dispatch through SceneFlow.
+    /// Servico operacional de navigation.
+    /// Resolve intents core e faz dispatch atraves do SceneFlow.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameNavigationService : IGameNavigationService
@@ -26,14 +26,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[NavigationCore] GameNavigationService initialized. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
+                $"[OBS][NavigationCore][Operational] GameNavigationService initialized. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
                 DebugUtility.Colors.Info);
         }
 
         public Task GoToMenuAsync(string reason = null)
         {
             DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[OBS][NavigationCore] GoToMenuRequested reason='{reason ?? "<null>"}'.",
+                $"[OBS][NavigationCore][Operational] GoToMenuRequested reason='{reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
             return NavigateAsync(GameNavigationIntentKind.Menu, reason);
         }
@@ -67,14 +67,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                "[OBS][NavigationCore] StartGameplayRouteAsync dispatched without explicit level selection; LevelFlow owns default selection in LevelPrepare.",
+                "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched without explicit level selection; LevelLifecycle prepara a selecao padrao como suporte operacional.",
                 DebugUtility.Colors.Info);
 
             var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty, gameplayEntry.RouteRef);
             TransitionStyleDefinition definition = ResolveStyle(routeEntry);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][NavigationCore] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', style='{routeEntry.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{(definition.Profile != null ? definition.Profile.name : "<null>")}'.",
+                $"[OBS][NavigationCore][Operational] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', style='{routeEntry.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{(definition.Profile != null ? definition.Profile.name : "<null>")}'.",
                 DebugUtility.Colors.Info);
 
             await ExecuteEntryAsync(GetCoreIntentId(GameNavigationIntentKind.Gameplay), routeEntry, normalizedReason);
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[NavigationCore] Navigation already in progress. Ignoring core intent='{intent}'.");
+                    $"[NavigationCore][Operational] Navigation already in progress. Ignoring core intent='{intent}'.");
                 return Task.CompletedTask;
             }
 
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[NavigationCore] Exception while navigating (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
+                    $"[NavigationCore][Operational] Exception while navigating (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {

@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 {
     public readonly struct PostRunOwnershipContext
@@ -52,39 +53,84 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostRunOwnershipService : IPostRunOwnershipService
     {
-        private const string RunDecisionGateToken = "state.rundecision";
+        private const string PostRunGateToken = "state.postrun";
 
-        private bool _isActive;
+        private bool _isPostRunActive;
+        private bool _isRunDecisionActive;
+        private bool _postRunCompleted;
         private bool _loggedMissingGate;
         private IDisposable _gateHandle;
 
         public bool IsOwnerEnabled => true;
-        public bool IsActive => _isActive;
+        public bool IsActive => _isPostRunActive || _isRunDecisionActive;
+        public bool IsRunDecisionActive => _isRunDecisionActive;
 
         public void OnPostRunEntered(PostRunOwnershipContext context)
         {
-            if (_isActive)
+            if (_isPostRunActive)
             {
                 return;
             }
 
-            _isActive = true;
+            _isPostRunActive = true;
+            _postRunCompleted = false;
             DebugUtility.Log<PostRunOwnershipService>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered downstreamFrom='PostRun' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                $"[OBS][GameplaySessionFlow][PostRun] PostRunEntered downstreamFrom='RunOutcome' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
                 DebugUtility.Colors.Info);
-            ApplyRunDecisionInputMode(context);
             AcquireGate();
             EventBus<PostRunEnteredEvent>.Raise(new PostRunEnteredEvent(context));
         }
 
-        public void OnPostRunExited(PostRunOwnershipExitContext context)
+        public void OnPostRunCompleted(PostRunOwnershipContext context)
         {
-            if (!_isActive)
+            if (!_isPostRunActive)
+            {
+                HardFailFastH1.Trigger(typeof(PostRunOwnershipService),
+                    $"[FATAL][H1][GameplaySessionFlow] PostRunCompleted recebido antes de PostRun entrar. signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.");
+            }
+
+            _postRunCompleted = true;
+
+            DebugUtility.Log<PostRunOwnershipService>(
+                $"[OBS][GameplaySessionFlow][PostRun] PostRunCompleted acknowledged signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info);
+
+            ClearPhaseRuntimeAxesOrFail(context);
+            EventBus<PostRunCompletedEvent>.Raise(new PostRunCompletedEvent(context));
+        }
+
+        public void OnRunDecisionEntered(PostRunOwnershipContext context)
+        {
+            if (!_postRunCompleted)
+            {
+                HardFailFastH1.Trigger(typeof(PostRunOwnershipService),
+                    $"[FATAL][H1][GameplaySessionFlow] RunDecisionEntered antes de PostRunCompleted. signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.");
+            }
+
+            if (_isRunDecisionActive)
             {
                 return;
             }
 
-            _isActive = false;
+            _isRunDecisionActive = true;
+
+            DebugUtility.Log<PostRunOwnershipService>(
+                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered downstreamFrom='PostRun' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info);
+            ApplyRunDecisionInputMode(context);
+            EventBus<RunDecisionEnteredEvent>.Raise(new RunDecisionEnteredEvent(context));
+        }
+
+        public void OnPostRunExited(PostRunOwnershipExitContext context)
+        {
+            if (!_isPostRunActive && !_isRunDecisionActive)
+            {
+                return;
+            }
+
+            _isPostRunActive = false;
+            _isRunDecisionActive = false;
+            _postRunCompleted = false;
             DebugUtility.Log<PostRunOwnershipService>(
                 $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionExited downstreamTo='{context.NextState}' signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
                 DebugUtility.Colors.Info);
@@ -138,8 +184,8 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
                 return;
             }
 
-            _gateHandle = gateService.Acquire(RunDecisionGateToken);
-            DebugUtility.Log<PostRunOwnershipService>($"[OBS][GameplaySessionFlow][RunDecision] Gate adquirido token='{RunDecisionGateToken}'.", DebugUtility.Colors.Info);
+            _gateHandle = gateService.Acquire(PostRunGateToken);
+            DebugUtility.Log<PostRunOwnershipService>($"[OBS][GameplaySessionFlow][PostRun] Gate adquirido token='{PostRunGateToken}'.", DebugUtility.Colors.Info);
         }
 
         private void ReleaseGate(string reason)
@@ -159,7 +205,43 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             }
 
             _gateHandle = null;
-            DebugUtility.Log<PostRunOwnershipService>($"[OBS][GameplaySessionFlow][RunDecision] Gate liberado token='{RunDecisionGateToken}'.", DebugUtility.Colors.Info);
+            DebugUtility.Log<PostRunOwnershipService>($"[OBS][GameplaySessionFlow][PostRun] Gate liberado token='{PostRunGateToken}'.", DebugUtility.Colors.Info);
+        }
+
+        private static void ClearPhaseRuntimeAxesOrFail(PostRunOwnershipContext context)
+        {
+            DebugUtility.Log<PostRunOwnershipService>(
+                $"[OBS][GameplaySessionFlow][PostRun] PhaseRuntimeAxesCleanupStarted signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info);
+
+            ClearPhaseAxisOrFail<IGameplayPhaseRulesObjectivesService>(
+                context,
+                "RulesObjectives",
+                service => service.Clear(context.Reason));
+
+            ClearPhaseAxisOrFail<IGameplayPhaseInitialStateService>(
+                context,
+                "InitialState",
+                service => service.Clear(context.Reason));
+
+            DebugUtility.Log<PostRunOwnershipService>(
+                $"[OBS][GameplaySessionFlow][PostRun] PhaseRuntimeAxesCleanupCompleted signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void ClearPhaseAxisOrFail<TService>(
+            PostRunOwnershipContext context,
+            string axisName,
+            Action<TService> clearAction)
+            where TService : class
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<TService>(out var service) || service == null)
+            {
+                HardFailFastH1.Trigger(typeof(PostRunOwnershipService),
+                    $"[FATAL][H1][GameplaySessionFlow] PostRunCompleted requires {axisName} service to be registered before phase cleanup. signature='{context.Signature}' scene='{context.SceneName}' frame={context.Frame} result='{context.Result}' reason='{context.Reason}'.");
+            }
+
+            clearAction(service);
         }
 
         private static ISimulationGateService ResolveGateService()

@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _subscriptions.Register(_worldResetCompletedBinding);
 
             DebugUtility.Log(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', UseFade={_startPlan.UseFade}, Style='{_startPlan.StyleLabel}'.");
+                $"[OBS][GameLoopSceneFlow][Operational] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', UseFade={_startPlan.UseFade}, Style='{_startPlan.StyleLabel}'.");
         }
 
         public void Dispose()
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             if (_startInProgress)
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    "[GameLoopSceneFlow] Start REQUEST ignorado (ja em progresso).",
+                    "[OBS][GameLoopSceneFlow][Operational] Start REQUEST ignorado (ja em progresso).",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             ResetStartState();
 
             DebugUtility.Log(typeof(GameLoopSceneFlowSyncCoordinator),
-                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transicao de cenas...");
+                "[OBS][GameLoopSceneFlow][Operational] Start REQUEST recebido. Disparando transicao de cenas...");
 
             _ = StartTransitionAsync();
         }
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             }
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[GameLoopSceneFlow] TransitionStarted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
+                $"[OBS][GameLoopSceneFlow][Operational] TransitionStarted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 !string.Equals(ctxSig, _expectedContextSignature, StringComparison.Ordinal))
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[GameLoopSceneFlow] TransitionCompleted ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{ctxSig}'.",
+                    $"[OBS][GameLoopSceneFlow][Operational] TransitionCompleted ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{ctxSig}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _transitionCompleted = true;
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[GameLoopSceneFlow] TransitionCompleted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
+                $"[OBS][GameLoopSceneFlow][Operational] TransitionCompleted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
 
             TryIssueGameLoopSync();
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 else if (!string.Equals(evt.ContextSignature, _expectedContextSignature, StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        $"[GameLoopSceneFlow] WorldResetCompletedEvent ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+                        $"[OBS][GameLoopSceneFlow][Operational] WorldResetCompletedEvent ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -183,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             else if (!string.IsNullOrEmpty(_expectedContextSignature))
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[GameLoopSceneFlow] WorldResetCompletedEvent ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+                    $"[OBS][GameLoopSceneFlow][Operational] WorldResetCompletedEvent ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -191,7 +191,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _worldResetCompleted = true;
 
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[GameLoopSceneFlow] WorldReset concluido (ou skip). outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+                $"[OBS][GameLoopSceneFlow][Operational] WorldReset concluido (ou skip). outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
 
             TryIssueGameLoopSync();
@@ -270,7 +270,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             gameLoop.Initialize();
 
             DebugUtility.LogVerbose<GameLoopSceneFlowSyncCoordinator>(
-                $"[GameLoopSceneFlow] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReady() no GameLoop.",
+                $"[OBS][GameLoopSceneFlow][Operational] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReady() no GameLoop.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestReady();

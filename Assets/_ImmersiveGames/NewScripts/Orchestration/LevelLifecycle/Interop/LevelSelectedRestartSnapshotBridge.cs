@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Interop
             EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
 
             DebugUtility.LogVerbose<LevelSelectedRestartSnapshotBridge>(
-                "[LevelFlow] LevelSelectedRestartSnapshotBridge registered (LevelSelectedEvent -> GameplayStartSnapshot).",
+                "[OBS][LevelLifecycle][Operational] LevelSelectedRestartSnapshotBridge registered as compatibility bridge (LevelSelectedEvent -> GameplayStartSnapshot).",
                 DebugUtility.Colors.Info);
         }
 
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Interop
             bool serviceResolved = DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext) && restartContext != null;
 
             DebugUtility.Log(typeof(LevelSelectedRestartSnapshotBridge),
-                $"[OBS][LevelFlow] LevelSelectedEventConsumed levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' routeId='{evt.MacroRouteId}' routeRef='{(evt.MacroRouteRef != null ? evt.MacroRouteRef.name : "<none>")}' contentId='{evt.LocalContentId}' v='{evt.SelectionVersion}' levelSignature='{evt.LevelSignature}' restartContextResolved='{serviceResolved}'.",
+                $"[OBS][LevelLifecycle][Operational] LevelSelectedEventConsumed levelRef='{(evt.LevelRef != null ? evt.LevelRef.name : "<none>")}' routeId='{evt.MacroRouteId}' routeRef='{(evt.MacroRouteRef != null ? evt.MacroRouteRef.name : "<none>")}' contentId='{evt.LocalContentId}' v='{evt.SelectionVersion}' levelSignature='{evt.LevelSignature}' restartContextResolved='{serviceResolved}'.",
                 DebugUtility.Colors.Info);
 
             if (!serviceResolved)

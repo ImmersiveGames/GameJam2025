@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
             }
 
             DebugUtility.Log<GameLoopService>(
-                "[OBS][Gameplay] RequestStart accepted for slice rail 'GameplaySessionFlow -> Level -> EnterStage -> Playing' handshake='GameLoopIntroStageBridge'.",
+                "[OBS][GameLoop][Operational] RequestStart accepted for compatibility rail 'GameplaySessionFlow -> Level -> EnterStage -> Playing' handshake='GameLoopIntroStageBridge'.",
                 DebugUtility.Colors.Info);
 
             _signals.MarkStart();
@@ -172,9 +172,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
                 return;
             }
 
-            // Boundary note: Playing is the canonical final signal that gameplay is actually released.
+            // Boundary note: Playing is the operational release signal of the loop; semantic ownership lives above this layer.
             DebugUtility.Log<GameLoopService>(
-                "[OBS][Gameplay] PlayingEntered state='Playing' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' canonical='final_release'.",
+                "[OBS][GameLoop][Operational] PlayingEntered state='Playing' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' canonical='operational_release'.",
                 DebugUtility.Colors.Success);
 
             _signals.ClearStartPending();
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
             {
                 _runStartedEmittedThisRun = true;
                 DebugUtility.Log<GameLoopService>(
-                    "[OBS][GameLoop] RunStartPublished state='Playing' handshake='GameplaySessionFlow' canonical='run_start'.",
+                    "[OBS][GameLoop][Operational] RunStartPublished state='Playing' handshake='GameplaySessionFlow' canonical='run_start'.",
                     DebugUtility.Colors.Info);
                 EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
             }

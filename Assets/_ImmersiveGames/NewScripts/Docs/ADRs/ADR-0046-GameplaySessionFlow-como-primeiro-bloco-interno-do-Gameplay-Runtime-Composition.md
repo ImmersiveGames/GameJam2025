@@ -2,8 +2,8 @@
 
 ## 1. Resumo executivo
 
-`GameplaySessionFlow` passa a ser o primeiro corte semantico interno acima do backbone dentro de `Gameplay Runtime Composition`.
-Ele fecha a fronteira da sessao jogavel: entrada, preparacao do level, outcome, post-run e operacoes de retry/restart/advance ficam lidos a partir deste bloco, sem reatribuir ao backbone a semantica principal do gameplay.
+`GameplaySessionFlow` e o primeiro bloco semantico interno acima do backbone dentro de `Gameplay Runtime Composition`.
+Ele fecha a fronteira da sessao jogavel ja consolidada no runtime: entrada, preparacao do level, outcome, post-run e operacoes de retry/restart/advance ficam lidos a partir deste bloco, sem reatribuir ao backbone a semantica principal do gameplay.
 
 ## 2. Papel do bloco
 
@@ -22,7 +22,17 @@ Fica fora o que apenas executa suporte tecnico do runtime, transporte de cena, n
 
 ## 4. O que entra no primeiro corte
 
-Entram neste primeiro corte:
+### Ownership semantico do bloco
+
+`GameplaySessionFlow` e o dono da orquestracao da sessao ativa do jogo.
+Ele concentra a leitura canonica da experiencia jogavel e separa:
+- infraestrutura operacional do backbone
+- composicao semantica da sessao jogavel
+- pontes temporarias que ainda conectam os dois lados
+
+### Pecas atuais e transitórias reaproveitadas
+
+As pecas abaixo continuam sendo reaproveitadas como suporte operacional abaixo do ownership semantico:
 - `LevelMacroPrepareService`
 - `LevelStageOrchestrator` como ponte de sequencing
 - `GameRunOutcomeService`
@@ -34,11 +44,12 @@ Entram neste primeiro corte:
 
 ## 4.1 Contrato semantico minimo da V1
 
-O primeiro corte fecha quatro eixos semanticos obrigatorios:
-- contexto da sessao
-- phase / level runtime
-- participacao de players
-- regras / estado inicial do conjunto
+O V1 ja consolidado fecha estes eixos semanticos obrigatorios:
+- `SessionContext`
+- `PhaseRuntime`
+- `Players`
+- `Rules/Objectives`
+- `InitialState`
 
 Esses eixos sao o minimo necessario para dizer que a fase foi montada em termos de conjunto, e nao apenas preparada em termos tecnicos.
 
@@ -67,6 +78,9 @@ Relacao futura com os eixos internos:
 - `players`: entram como participantes da sessao ativa, com ownership semantico do bloco
 - `objetivos/estado de fase`: ficam sob a composicao da sessao, incluindo resultado, progresso local e continuidade entre fases
 
+As pecas listadas acima sao meios de execucao e transicao do corte atual, nao a definicao canonica do bloco.
+O cleanup explicito de `Rules/Objectives` e `InitialState` no fim da run tambem faz parte do bloco consolidado.
+
 ## 7. Bridges transitorias
 
 Continuam como bridges transitorias por enquanto:
@@ -83,4 +97,4 @@ Elas nao devem virar o novo centro de ownership.
 ## 8. Fechamento
 
 Com este documento, `GameplaySessionFlow` fica formalmente definido como o primeiro bloco interno do `Gameplay Runtime Composition`.
-O proximo passo arquitetural e aplicar `ADR-0047` como pipeline minimo da construcao de fase sem reabrir a decisao macro nem a fronteira agora fechada.
+O proximo passo arquitetural e evoluir para o modelo de authoring/configuration da fase sem reabrir a decisao macro nem a fronteira agora fechada.

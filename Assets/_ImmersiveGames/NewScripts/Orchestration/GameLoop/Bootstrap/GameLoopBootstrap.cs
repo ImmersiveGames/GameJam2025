@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(GameLoopBootstrap),
-                "[GameLoop] Runtime composition concluida.",
+                "[OBS][GameLoop][Operational] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
         }
 
@@ -229,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, gameLoopService, fadeService, startPlan);
 
             DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                $"[GameLoopSceneFlow] Coordinator composto (startPlan production, routeId='{bootStartRoute.RouteId}', routeRef='{bootStartRoute.name}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
+                $"[GameLoopSceneFlow][Operational] Coordinator composto para boot/start-plan compatibility (routeId='{bootStartRoute.RouteId}', routeRef='{bootStartRoute.name}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
                 DebugUtility.Colors.Info);
         }
 
@@ -251,7 +251,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             }
 
             DebugUtility.Log(typeof(GameLoopBootstrap),
-                "[OBS][GameLoop] Runtime composition consolidada. scope='lifecycle macro -> play/pause/resume -> run-start/run-end'.",
+                "[OBS][GameLoop][Operational] Runtime composition consolidada. scope='flow/run/pause executor + bridges + sync'.",
                 DebugUtility.Colors.Info);
         }
 

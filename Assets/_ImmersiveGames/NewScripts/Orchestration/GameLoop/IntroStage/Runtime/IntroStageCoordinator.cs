@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 {
@@ -113,6 +114,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                         DebugUtility.Colors.Info);
                 }
 
+                if (context.IsValid && TryResolveGameLoopService(out var gameLoopService) && gameLoopService != null)
+                {
+                    DebugUtility.Log<IntroStageCoordinator>(
+                        $"[OBS][EnterStageController] GameLoopStartRequested signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' (after gameplay unblock).",
+                        DebugUtility.Colors.Info);
+
+                    gameLoopService.RequestStart();
+                }
+
                 controlService.MarkSessionClosed();
 
                 ReleaseContext(signature);
@@ -130,6 +140,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 "[FATAL][H1][GameLoop] IIntroStageControlService obrigatorio ausente para executar IntroStage.");
 
             throw new InvalidOperationException("IIntroStageControlService is required.");
+        }
+
+        private static bool TryResolveGameLoopService(out IGameLoopService? gameLoopService)
+        {
+            gameLoopService = null;
+            return DependencyManager.Provider.TryGetGlobal(out gameLoopService) && gameLoopService != null;
         }
 
         private static IIntroStageStep ResolveStepOrFail()

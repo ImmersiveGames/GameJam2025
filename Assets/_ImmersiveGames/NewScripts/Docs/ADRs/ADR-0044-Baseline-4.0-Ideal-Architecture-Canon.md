@@ -12,6 +12,8 @@ O ADR-0043 estabeleceu o Baseline 4.0 como realinhamento conceitual + adequacao 
 
 O documento `Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md` consolida a arquitetura ideal do Baseline 4.0 a partir dessas bases e passa a ser a referencia principal de arquitetura-alvo.
 
+Este ADR funciona como canon guarda-chuva. Os ADRs `ADR-0045`, `ADR-0046` e `ADR-0047` refinam depois a semantica de composicao da gameplay sem rebaixar o papel estrutural deste baseline.
+
 O codigo atual continua valioso como inventario de comportamento e reaproveitamento, mas nao define o contrato final da arquitetura.
 
 ## Decisao
@@ -20,7 +22,8 @@ O Baseline 4.0 passa a adotar como referencia canonica de arquitetura:
 
 - a espinha conceitual do ADR-0001;
 - a direcao estrutural do ADR-0043;
-- a arquitetura ideal consolidada no blueprint do Baseline 4.0.
+- a arquitetura ideal consolidada no blueprint do Baseline 4.0;
+- a leitura de composicao da gameplay refinada pelos ADRs `ADR-0045`, `ADR-0046` e `ADR-0047`.
 
 ## Coluna dorsal conceitual
 
@@ -46,6 +49,8 @@ O dominio deve ser lido a partir dos seguintes conceitos canonicos:
 - `Restart` / `ExitToMenu` sao `Intencoes Derivadas`.
 - `Pause` e `Estado Transversal`.
 
+A leitura canonica do runtime de gameplay abaixo e intencionalmente de alto nivel. A composicao semantica fina da sessao jogavel e detalhada depois por `ADR-0045`, `ADR-0046` e `ADR-0047`, sem reatribuir ao backbone o centro do significado do gameplay.
+
 ## Coluna dorsal do runtime
 
 Sequencia canonica do runtime:
@@ -57,14 +62,17 @@ Sequencia canonica do runtime:
 ### GameLoop
 - Estado de fluxo, run e pausa.
 - Nao deve possuir ownership de pos-run visual, route dispatch ou audio precedence.
+- Nao e eixo semantico primario concorrente ao `Gameplay Runtime Composition`.
 
 ### PostRun
 - Ownership do pos-run, projecao do resultado e contexto visual local.
 - Nao deve possuir a maquina de estados do gameplay nem a politica primara de navegacao.
+- Nao e eixo primario concorrente ao `Gameplay Runtime Composition`.
 
 ### LevelFlow
 - Conteudo local do gameplay, restart context e acoes pos-level.
 - Nao deve possuir resultado terminal, ownership pos-run ou dispatch global.
+- Nao e eixo primario concorrente ao `Gameplay Runtime Composition`.
 
 ### Navigation
 - Resolucao de intent para route/style e dispatch primario.

@@ -2,7 +2,8 @@
 
 ## Status documental
 
-- Parcial / leitura junto do runtime atual.
+- Parcial / historico para a camada antiga de gameplay.
+- O centro semantico vigente do gameplay esta em `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`, `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md` e `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`.
 - `Gameplay` ainda concentra setup de mundo, spawn, state, GameplayReset e apoio de camera.
 - A camera de gameplay saiu para `Experience/GameplayCamera`.
 

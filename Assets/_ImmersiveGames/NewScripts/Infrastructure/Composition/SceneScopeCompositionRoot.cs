@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
     public sealed partial class SceneScopeCompositionRoot : MonoBehaviour
     {
         [SerializeField]
+        [Tooltip("Input de authoring/bootstrap de conteudo para o escopo de cena. Nao e owner semantico do gameplay.")]
         private WorldDefinition worldDefinition;
 
         private string _sceneName = string.Empty;
@@ -53,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 allowOverride: false);
 
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                $"WorldRoot ready: {BuildTransformPath(worldRoot)}");
+                $"Scene bootstrap root ready: {BuildTransformPath(worldRoot)}");
 
             var actorRegistry = new ActorRegistry();
             provider.RegisterForScene<IActorRegistry>(
@@ -128,12 +129,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                     "Isto é permitido em cenas sem spawn (ex.: Ready). Serviços de spawn não serão registrados.");
 
                 DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                    "Spawn services registered from definition: 0");
+                    "Spawn services registered from authoring input: 0");
                 return;
             }
 
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                $"WorldDefinition loaded: {worldDefinition.name}");
+                $"Authoring input loaded: {worldDefinition.name}");
 
             int registeredCount = 0;
             int enabledCount = 0;
@@ -145,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             int totalEntries = entries?.Count ?? 0;
 
             DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"WorldDefinition entries count: {totalEntries}");
+                $"Authoring input entries count: {totalEntries}");
 
             if (entries != null)
             {
@@ -187,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 }
 
                 DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                    $"Spawn services registered from definition: {registeredCount}");
+                    $"Spawn services registered from authoring input: {registeredCount}");
             }
 
             DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),

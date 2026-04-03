@@ -17,11 +17,11 @@ using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 {
     /// <summary>
-    /// Installer canonico do LevelLifecycle.
+    /// Installer operacional do LevelLifecycle.
     /// O nome historico do arquivo permanece apenas por compatibilidade.
     ///
     /// Responsabilidade:
-    /// - registrar contratos, servicos e wiring pre-runtime do modulo;
+    /// - registrar contratos, servicos e wiring pre-runtime de suporte ao GameplaySessionFlow;
     /// - nao depender de IGameNavigationService;
     /// - nao compor runtime operacional do stack.
     /// </summary>
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             _installed = true;
 
             DebugUtility.Log(typeof(LevelLifecycleInstaller),
-                "[LevelLifecycle] Module installer concluido.",
+                "[OBS][LevelLifecycle][Operational] Module installer concluido como suporte pre-runtime ao GameplaySessionFlow.",
                 DebugUtility.Colors.Info);
         }
 
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelFlowContentService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelFlowContentService registrado no DI global (LevelFlowContentService).",
+                "[OBS][LevelLifecycle][Operational] ILevelFlowContentService registrado no DI global (LevelFlowContentService).",
                 DebugUtility.Colors.Info);
 
             return service;
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<IRestartContextService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] RestartContextService registrado no DI global.",
+                "[OBS][LevelLifecycle][Operational] RestartContextService registrado no DI global.",
                 DebugUtility.Colors.Info);
 
             return service;
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelIntroStageSessionService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelIntroStageSessionService registrado no DI global (LevelIntroStageSessionService).",
+                "[OBS][LevelLifecycle][Operational] ILevelIntroStageSessionService registrado no DI global (LevelIntroStageSessionService).",
                 DebugUtility.Colors.Info);
         }
 
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelStagePresentationService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelStagePresentationService registrado no DI global (LevelLifecycleStagePresentationService).",
+                "[OBS][LevelLifecycle][Operational] ILevelStagePresentationService registrado no DI global (LevelLifecycleStagePresentationService).",
                 DebugUtility.Colors.Info);
         }
 
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelIntroStagePresenterRegistry>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelIntroStagePresenterRegistry registrado no DI global (LevelIntroStagePresenterHost).",
+                "[OBS][LevelLifecycle][Operational] ILevelIntroStagePresenterRegistry registrado no DI global (LevelIntroStagePresenterHost).",
                 DebugUtility.Colors.Info);
         }
 
@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelIntroStagePresenterScopeResolver>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelIntroStagePresenterScopeResolver registrado no DI global (LevelIntroStagePresenterScopeResolver).",
+                "[OBS][LevelLifecycle][Operational] ILevelIntroStagePresenterScopeResolver registrado no DI global (LevelIntroStagePresenterScopeResolver).",
                 DebugUtility.Colors.Info);
         }
 
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelPostRunHookPresenterScopeResolver>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelPostRunHookPresenterScopeResolver registrado no DI global (LevelPostRunHookPresenterScopeResolver).",
+                "[OBS][LevelLifecycle][Operational] ILevelPostRunHookPresenterScopeResolver registrado no DI global (LevelPostRunHookPresenterScopeResolver).",
                 DebugUtility.Colors.Info);
         }
 
@@ -219,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelPostRunHookPresenterRegistry>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelPostRunHookPresenterRegistry registrado no DI global (LevelPostRunHookPresenterHost).",
+                "[OBS][LevelLifecycle][Operational] ILevelPostRunHookPresenterRegistry registrado no DI global (LevelPostRunHookPresenterHost).",
                 DebugUtility.Colors.Info);
         }
 
@@ -249,7 +249,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelPostRunHookService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelPostRunHookService registrado no DI global (LevelPostRunHookService).",
+                "[OBS][LevelLifecycle][Operational] ILevelPostRunHookService registrado no DI global (LevelPostRunHookService).",
                 DebugUtility.Colors.Info);
         }
 
@@ -257,6 +257,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
         {
             RegisterGameplaySessionContextService();
             RegisterGameplayPhaseRuntimeService();
+            RegisterGameplayPhasePlayerParticipationService();
+            RegisterGameplayPhaseRulesObjectivesService();
+            RegisterGameplayPhaseInitialStateService();
             RegisterGameRunOutcomeService();
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
@@ -264,7 +267,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RegisterDefaultIntroStageStep();
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][GameplaySessionFlow] Session rail services registrados no DI global (Intro/Outcome).",
+                "[OBS][GameplaySessionFlow] Session rail services registrados no DI global (Intro/Outcome/RulesObjectives/InitialState) como base operacional.",
                 DebugUtility.Colors.Info);
         }
 
@@ -298,6 +301,51 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterGameplayPhasePlayerParticipationService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplayPhasePlayerParticipationService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new GameplayPhasePlayerParticipationService();
+            DependencyManager.Provider.RegisterGlobal<IGameplayPhasePlayerParticipationService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IGameplayPhasePlayerParticipationService registrado no DI global (GameplayPhasePlayerParticipationService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameplayPhaseRulesObjectivesService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRulesObjectivesService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new GameplayPhaseRulesObjectivesService();
+            DependencyManager.Provider.RegisterGlobal<IGameplayPhaseRulesObjectivesService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IGameplayPhaseRulesObjectivesService registrado no DI global (GameplayPhaseRulesObjectivesService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameplayPhaseInitialStateService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplayPhaseInitialStateService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new GameplayPhaseInitialStateService();
+            DependencyManager.Provider.RegisterGlobal<IGameplayPhaseInitialStateService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IGameplayPhaseInitialStateService registrado no DI global (GameplayPhaseInitialStateService).",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterLevelSwapLocalService(
             IRestartContextService restartContextService,
             ILevelFlowContentService contentService,
@@ -320,7 +368,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelSwapLocalService registrado (LevelSwapLocalService).",
+                "[OBS][LevelLifecycle][Operational] ILevelSwapLocalService registrado (LevelSwapLocalService).",
                 DebugUtility.Colors.Info);
         }
 
@@ -344,7 +392,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelMacroPrepareService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle] ILevelMacroPrepareService registrado (LevelMacroPrepareService).",
+                "[OBS][LevelLifecycle][Operational] ILevelMacroPrepareService registrado (LevelMacroPrepareService).",
                 DebugUtility.Colors.Info);
         }
 

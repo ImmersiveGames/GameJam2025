@@ -8,11 +8,11 @@ using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
     /// <summary>
-    /// Runtime composer for Navigation.
+    /// Compositor operacional de Navigation.
     ///
-    /// Responsibility:
-    /// - compose and activate the module runtime after the relevant installers finish;
-    /// - do not register boot contracts.
+    /// Responsabilidade:
+    /// - compor e ativar o runtime de transporte/dispatch depois que os installers relevantes terminam;
+    /// - nao registrar contratos de boot.
     /// </summary>
     public static class NavigationBootstrap
     {
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(NavigationBootstrap),
-                "[NavigationCore] Runtime composition completed.",
+                "[OBS][NavigationCore][Operational] Runtime composition completed.",
                 DebugUtility.Colors.Info);
         }
 
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                $"[OBS][NavigationCore] GameNavigationService composed at runtime (Catalog={catalog.GetType().Name}).",
+                $"[OBS][NavigationCore][Operational] GameNavigationService composed at runtime (Catalog={catalog.GetType().Name}).",
                 DebugUtility.Colors.Info);
         }
 
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             }
 
             DebugUtility.Log(typeof(NavigationBootstrap),
-                "[OBS][NavigationCore] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters'.",
+                "[OBS][NavigationCore][Operational] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters'.",
                 DebugUtility.Colors.Info);
         }
     }

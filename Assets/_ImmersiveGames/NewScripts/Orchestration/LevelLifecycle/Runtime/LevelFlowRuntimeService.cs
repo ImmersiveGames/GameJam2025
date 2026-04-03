@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             DebugUtility.Log<LevelLifecycleRuntimeService>(
-                $"[OBS][LevelLifecycle] LevelEntryRequested source='GameplaySessionFlow' routeId='{gameplayRouteId}' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' dispatch='Navigation' reason='{normalizedReason}'.",
+                $"[OBS][LevelLifecycle][Operational] LevelEntryRequested source='GameplaySessionFlow' routeId='{gameplayRouteId}' rail='compatibility/operational: GameplaySessionFlow -> Level -> EnterStage -> Playing' dispatch='Navigation' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             await _navigationService.StartGameplayRouteAsync(gameplayRouteId, SceneTransitionPayload.Empty, normalizedReason);
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (_levelSwapLocalService == null)
             {
                 DebugUtility.LogWarning<LevelLifecycleRuntimeService>(
-                    $"[OBS][LevelLifecycle] SwapLocalRejected levelRef='{(levelRef != null ? levelRef.name : "<none>")}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
+                    $"[OBS][LevelLifecycle][Operational] SwapLocalRejected levelRef='{(levelRef != null ? levelRef.name : "<none>")}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
                 return;
             }
 
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             DebugUtility.Log<LevelLifecycleRuntimeService>(
-                $"[OBS][LevelLifecycle] ResetCurrentLevelRequested levelRef='{snapshot.LevelRef.name}' routeId='{snapshot.MacroRouteId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                $"[OBS][LevelLifecycle][Operational] ResetCurrentLevelRequested levelRef='{snapshot.LevelRef.name}' routeId='{snapshot.MacroRouteId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
                 DebugUtility.Colors.Info);
 
             await SwapLevelLocalAsync(snapshot.LevelRef, normalizedReason, ct);
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             _restartContextService.Clear(normalizedReason);
 
             DebugUtility.Log<LevelLifecycleRuntimeService>(
-                $"[OBS][LevelLifecycle] RestartFromFirstLevelRequested reason='{normalizedReason}' dispatch='Navigation.StartGameplayDefaultAsync'.",
+                $"[OBS][LevelLifecycle][Operational] RestartFromFirstLevelRequested reason='{normalizedReason}' dispatch='Navigation.StartGameplayDefaultAsync'.",
                 DebugUtility.Colors.Info);
 
             await StartGameplayDefaultAsync(normalizedReason, ct);

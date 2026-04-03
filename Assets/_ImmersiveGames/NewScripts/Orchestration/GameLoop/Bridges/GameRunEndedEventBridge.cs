@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
     /// Bridge fino do fim de run.
     ///
     /// O contrato explicito do handoff vive em IPostRunHandoffService.
-    /// Este componente apenas traduz o evento do GameLoop para o seam canonico do PostRun.
+    /// Este componente apenas traduz o evento operacional do GameLoop para o seam canonico do PostRun.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             if (_postStagePending)
             {
                 DebugUtility.LogVerbose<GameRunEndedEventBridge>(
-                    "[OBS][GameplaySessionFlow] ExitStageRunEndIgnored reason='already_pending'.",
+                    "[OBS][GameplaySessionFlow][Operational] ExitStageRunEndIgnored reason='already_pending'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -94,8 +94,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
         {
             try
             {
-                await Task.Yield();
-
                 if (!DependencyManager.Provider.TryGetGlobal<IPostRunHandoffService>(out var postRunHandoffService) || postRunHandoffService == null)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
@@ -114,25 +112,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                     isGameplayScene: IsGameplayScene());
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow] ExitStageDispatchRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handoff='PostRunHandoffService'.");
+                    $"[OBS][GameplaySessionFlow][Operational] ExitStageDispatchRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handoff='PostRunHandoffService'.");
+
+                if (DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) && gameLoopService != null)
+                {
+                    gameLoopService.RequestRunEnd();
+
+                    DebugUtility.Log<GameRunEndedEventBridge>(
+                        $"[OBS][GameplaySessionFlow][Operational] GameLoopRunEndRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handshake='GameLoop.RequestRunEnd'.",
+                        DebugUtility.Colors.Info);
+                }
+                else
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent processado, mas IGameLoopService nao foi encontrado para sincronizar o fim da run.");
+                }
 
                 await postRunHandoffService.HandleRunEndedAsync(context);
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame} handoff='PostRunHandoffService'.",
-                    DebugUtility.Colors.Info);
-
-                if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
-                {
-                    DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent processado, mas IGameLoopService nao foi encontrado para sincronizar o fim da run.");
-                    return;
-                }
-
-                gameLoopService.RequestRunEnd();
-
-                DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow] GameLoopRunEndRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handshake='GameLoop.RequestRunEnd'.",
+                    $"[OBS][GameplaySessionFlow][Operational] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame} handoff='PostRunHandoffService'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)

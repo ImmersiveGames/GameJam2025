@@ -17,12 +17,12 @@ using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 {
     /// <summary>
-    /// Runtime composer canonico do LevelLifecycle.
+    /// Compositor operacional do LevelLifecycle.
     /// O nome historico do arquivo permanece apenas por compatibilidade.
     ///
     /// Responsabilidade:
-    /// - compor as partes do LevelLifecycle que dependem de Navigation depois que o DI ja esta preenchido;
-    /// - nao registrar contratos de boot.
+    /// - compor as partes operacionais do LevelLifecycle que viabilizam o GameplaySessionFlow depois que o DI ja esta preenchido;
+    /// - nao registrar contratos de boot nem ownership semantico do gameplay.
     /// </summary>
     public static class LevelLifecycleBootstrap
     {
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal<ILevelFlowRuntimeService>(runtimeService);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleBootstrap),
-                "[OBS][LevelLifecycle] LevelLifecycleRuntimeService registrado no runtime.",
+                "[OBS][LevelLifecycle][Operational] LevelLifecycleRuntimeService registrado no runtime como ponte operacional para GameplaySessionFlow.",
                 DebugUtility.Colors.Info);
 
             return runtimeService;
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             _levelFlowGateComposed = true;
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleBootstrap),
-                "[OBS][LevelLifecycle] Gate de LevelPrepare/Clear acoplado ao completion gate macro do SceneFlow.",
+                "[OBS][LevelLifecycle][Operational] Gate de LevelPrepare/Clear acoplado ao completion gate macro do SceneFlow como viabilizacao operacional.",
                 DebugUtility.Colors.Info);
         }
 
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DependencyManager.Provider.RegisterGlobal(postLevelActions);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleBootstrap),
-                "[OBS][LevelLifecycle] IPostLevelActionsService registrado no runtime.",
+                "[OBS][LevelLifecycle][Operational] IPostLevelActionsService registrado no runtime como support service de continuidade.",
                 DebugUtility.Colors.Info);
         }
 
@@ -210,6 +210,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
         {
             RequireGlobal<IGameplaySessionContextService>("IGameplaySessionContextService");
             RequireGlobal<IGameplayPhaseRuntimeService>("IGameplayPhaseRuntimeService");
+            RequireGlobal<IGameplayPhasePlayerParticipationService>("IGameplayPhasePlayerParticipationService");
+            RequireGlobal<IGameplayPhaseRulesObjectivesService>("IGameplayPhaseRulesObjectivesService");
+            RequireGlobal<IGameplayPhaseInitialStateService>("IGameplayPhaseInitialStateService");
             RequireGlobal<ILevelMacroPrepareService>("ILevelMacroPrepareService");
             RequireGlobal<LevelLifecycleStageOrchestrator>("LevelLifecycleStageOrchestrator");
             RequireGlobal<IIntroStageCoordinator>("IIntroStageCoordinator");
@@ -224,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RequireGlobal<IPostLevelActionsService>("IPostLevelActionsService");
 
             DebugUtility.Log(typeof(LevelLifecycleBootstrap),
-                "[OBS][GameplaySessionFlow] Runtime composition consolidada. scope='SessionContext -> PhaseRuntime -> Prepare -> Intro -> Playing -> Outcome -> PostRun -> Continuity'.",
+                "[OBS][GameplaySessionFlow] Runtime composition consolidada. scope='SessionContext -> PhaseRuntime -> Players -> RulesObjectives -> InitialState -> Prepare -> Intro -> Playing -> Outcome -> PostRun -> Continuity'.",
                 DebugUtility.Colors.Info);
         }
 

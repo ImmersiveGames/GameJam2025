@@ -23,19 +23,22 @@ A linguagem final do projeto nao deve girar em torno de swap de conteudo.
 
 O centro semantico do gameplay passa a ser o **Gameplay Runtime Composition**.
 
-Esse subsistema e o ponto de leitura canonica para:
-- sessao ativa
-- level runtime ativo
-- players
-- objetivos
-- itens e estado local
-- timers e contadores
-- retry / restart / respawn / advance
-- persistencia parcial entre fases e run
+Esse subsistema e o ponto de leitura canonica para o V1 ja consolidado:
+- `SessionContext`
+- `PhaseRuntime`
+- `Players`
+- `Rules/Objectives`
+- `InitialState`
+- `Prepare`
+- `Intro`
+- `Playing`
+- `Outcome`
+- `PostRun`
+- `Continuity`
 
 ## Relacao com os ADRs seguintes
 
-Este ADR fecha a direcao macro.
+Este ADR fecha a direcao macro e congela o V1 ja exercitado no runtime.
 
 - `ADR-0046` fecha o primeiro bloco interno do centro semantico.
 - `ADR-0047` fecha o pipeline minimo de construcao de fase dentro desse bloco.
@@ -56,16 +59,18 @@ Ele deixa de ser o lugar onde mora a semantica principal do gameplay.
 
 ## O que sobe para o Gameplay Runtime Composition
 
-Sobem para o novo centro semantico:
-- sessao de jogo atual
-- level runtime atual
-- participacao de players
-- objetivos e condicoes de vitoria/derrota
-- itens e estado local de fase
-- timers e contadores de gameplay
-- checkpoints
-- regras de retry/restart/respawn/advance
-- persistencia parcial entre fases e run
+Sobem para o novo centro semantico ja consolidado no V1:
+- `SessionContext`
+- `PhaseRuntime`
+- `Players`
+- `Rules/Objectives`
+- `InitialState`
+- `Prepare`
+- `Intro`
+- `Playing`
+- `Outcome`
+- `PostRun`
+- `Continuity`
 
 ## O que passa a ser linguagem historica
 
@@ -85,7 +90,6 @@ Passam a ser lidos como historicos, transitivos ou de menor peso semantico:
 
 ## Proximos passos arquiteturais imediatos
 
-1. Revisar `Modules/GameLoop` sob a nova leitura canonica.
-2. Revisar `Modules/PostRun` como parte interna do fluxo da composicao.
-3. Revisar `Modules/LevelFlow` como contexto local de conteudo dentro da composicao.
-4. Usar esta leitura como base para `ADR-0046` e `ADR-0047`.
+1. Tratar o runtime V1 como base consolidada, nao mais como corte em definicao.
+2. Evoluir para o modelo de authoring/configuration da fase.
+3. Revisar `Modules/GameLoop`, `Modules/PostRun` e `Modules/LevelFlow` apenas sob essa leitura ja congelada.

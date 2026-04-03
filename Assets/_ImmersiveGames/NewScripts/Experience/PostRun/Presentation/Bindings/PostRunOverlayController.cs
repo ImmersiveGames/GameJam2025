@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
         [Inject] private IPostLevelActionsService _postLevelActionsService;
 
         private bool _dependenciesInjected;
-        private EventBinding<PostRunEnteredEvent> _postRunEnteredBinding;
+        private EventBinding<RunDecisionEnteredEvent> _runDecisionEnteredBinding;
         private EventBinding<PostRunExitedEvent> _postRunExitedBinding;
         private EventBinding<PostRunResultUpdatedEvent> _postRunResultUpdatedBinding;
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
                 rootCanvasGroup = GetComponent<CanvasGroup>();
             }
 
-            _postRunEnteredBinding = new EventBinding<PostRunEnteredEvent>(OnPostRunEntered);
+            _runDecisionEnteredBinding = new EventBinding<RunDecisionEnteredEvent>(OnRunDecisionEntered);
             _postRunExitedBinding = new EventBinding<PostRunExitedEvent>(OnPostRunExited);
             _postRunResultUpdatedBinding = new EventBinding<PostRunResultUpdatedEvent>(OnPostRunResultUpdated);
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
@@ -78,6 +78,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             {
                 ApplyStatus(ResolveRequiredResultService("Start"));
                 Show();
+                LogOverlayOpened("Start");
             }
         }
 
@@ -179,14 +180,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
                 return;
             }
 
-            EventBus<PostRunEnteredEvent>.Register(_postRunEnteredBinding);
+            EventBus<RunDecisionEnteredEvent>.Register(_runDecisionEnteredBinding);
             EventBus<PostRunExitedEvent>.Register(_postRunExitedBinding);
             EventBus<PostRunResultUpdatedEvent>.Register(_postRunResultUpdatedBinding);
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
             _registered = true;
 
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[OBS][GameplaySessionFlow][RunDecision] Bindings de PostRunEntered/PostRunExited/PostRunResultUpdated/GameRunStarted registrados.",
+                "[OBS][GameplaySessionFlow][RunDecision] Bindings de RunDecisionEntered/PostRunExited/PostRunResultUpdated/GameRunStarted registrados.",
                 DebugUtility.Colors.Info);
         }
 
@@ -197,14 +198,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
                 return;
             }
 
-            EventBus<PostRunEnteredEvent>.Unregister(_postRunEnteredBinding);
+            EventBus<RunDecisionEnteredEvent>.Unregister(_runDecisionEnteredBinding);
             EventBus<PostRunExitedEvent>.Unregister(_postRunExitedBinding);
             EventBus<PostRunResultUpdatedEvent>.Unregister(_postRunResultUpdatedBinding);
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
             _registered = false;
 
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[OBS][GameplaySessionFlow][RunDecision] Bindings de PostRunEntered/PostRunExited/PostRunResultUpdated/GameRunStarted removidos.",
+                "[OBS][GameplaySessionFlow][RunDecision] Bindings de RunDecisionEntered/PostRunExited/PostRunResultUpdated/GameRunStarted removidos.",
                 DebugUtility.Colors.Info);
         }
 
@@ -218,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             HideImmediate();
         }
 
-        private void OnPostRunEntered(PostRunEnteredEvent evt)
+        private void OnRunDecisionEntered(RunDecisionEnteredEvent evt)
         {
             if (_actionRequested)
             {
@@ -229,8 +230,9 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
                 "[OBS][GameplaySessionFlow][RunDecision] RunDecisionEnteredEvent recebido. Exibindo contexto visual local.",
                 DebugUtility.Colors.Info);
 
-            ApplyStatus(ResolveRequiredResultService("OnPostRunEntered"));
+            ApplyStatus(ResolveRequiredResultService("OnRunDecisionEntered"));
             Show();
+            LogOverlayOpened("RunDecisionEntered");
         }
 
         private void OnPostRunExited(PostRunExitedEvent evt)
@@ -376,13 +378,20 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
 
         private bool ShouldShowOverlayOnStart()
         {
-            if (_postRunOwnership == null || !_postRunOwnership.IsActive)
+            if (_postRunOwnership == null || !_postRunOwnership.IsRunDecisionActive)
             {
                 return false;
             }
 
             var resultService = ResolveRequiredResultService("Start");
             return resultService.HasResult;
+        }
+
+        private void LogOverlayOpened(string reason)
+        {
+            DebugUtility.Log<PostRunOverlayController>(
+                $"[OBS][GameplaySessionFlow][RunDecision] OverlayOpened reason='{reason}' scene='{SceneManager.GetActiveScene().name}'.",
+                DebugUtility.Colors.Info);
         }
 
         private IPostRunResultService ResolveRequiredResultService(string reason)

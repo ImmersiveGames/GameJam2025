@@ -25,12 +25,15 @@
 
 - `GameRunEndedEvent` continua sendo o evento terminal de outcome.
 - O log funcional mostra `RunOutcome` aceito antes de `PostRun`.
-- O `LevelPostRunHookPresenterCompleted` e o `LevelPostRunHookPresenterDismissed` ocorrem antes de `RunDecisionEntered`.
-- O `PostRunOverlayController` nao abre antes de `RunDecisionEntered`.
+- `PostRunHandoffStarted` bloqueia a gameplay de forma imediata e inicia o rail local de `PostRun`.
+- O `LevelPostRunHookPresenterCompleted` e o `LevelPostRunHookPresenterDismissed` ocorrem antes de `PostRunCompleted`.
+- `RunDecisionEntered` ocorre apenas depois de `PostRunCompleted`.
+- O `PostRunOverlayController` abre apenas depois de `RunDecisionEntered`.
+- O gate operacional de gameplay fica com `PostRun`; o overlay e a decisao downstream ficam com `RunDecision`.
 - O save em `GameRunEnded` registra `PreferencesAndProgression`.
 - `SceneTransitionCompleted` no caminho gameplay faz `no_op` delegado ao `WorldReset`.
 - `WorldResetCompleted` de nivel executa save.
-- `Experience/PostRun` e o owner do `PostRun` local e do `RunDecision` final.
+- `Experience/PostRun` e o owner do `PostRun` local; o `RunDecision` final pertence ao `PostRunOverlayController`.
 - `GameLoop` nao e owner do `PostRun`; ele e apenas consumidor do handoff final.
 - `LevelFlow` nao orquestra o `PostRun`; ele apenas fornece contexto/conteudo/presenter da cena atual quando aplicavel.
 
@@ -47,7 +50,8 @@
 9. `LevelPostRunHookCompleted`
 10. `PostRunCompleted`
 11. `RunDecisionEntered`
-12. `Restart`
+12. abertura do overlay final
+13. `Restart` ou `ExitToMenu`
 
 ## Owners e fronteiras
 
@@ -58,7 +62,8 @@
   - coordenar o fluxo local de pos-run
   - controlar completion one-shot
   - resolver/adotar presenter opcional da cena/conteudo atual
-  - segurar a passagem para o overlay final ate a conclusao do presenter local
+  - bloquear a gameplay imediatamente no inicio do handoff de `PostRun`
+  - segurar a passagem para o overlay final ate a conclusao do presenter local e a entrada em `RunDecision`
   - expor o contrato operacional do rail local
 
 ### Owner do RunDecision
@@ -66,7 +71,7 @@
 - `PostRunOverlayController`
 - Responsavel por:
   - apresentar o overlay final de escolha
-  - consumir o handoff apos o `PostRun` local
+  - consumir o handoff apenas depois de `RunDecisionEntered`
   - manter o menu final separado do rail local
 
 ### Papel do GameLoop
@@ -89,8 +94,9 @@
 ## Seam de interceptacao
 
 - O seam canonico e `GameRunEndedEventBridge.OnGameRunEnded(...)`, antes da transferencia de ownership para `PostRun`.
-- Nesse ponto, `Experience/PostRun` inicia o rail local, resolve o presenter opcional e segura a entrada em `RunDecision` ate a conclusao do owner local.
+- Nesse ponto, `Experience/PostRun` inicia o rail local, bloqueia a gameplay e segura a entrada em `RunDecision` ate a conclusao do owner local.
 - O runtime validado mostra que esse seam funciona tanto para skip observavel quanto para presenter real de cena.
+- `RunDecisionEntered` e o momento semantico em que o overlay pode surgir.
 
 ## Contrato minimo do PostRun local
 
@@ -157,7 +163,7 @@ Deve transportar, no minimo:
   - `Completion.Kind`
   - `Completion.Reason`
   - `Outcome`
-- E o gatilho formal para a transferencia de ownership ao `RunDecision`.
+- E a fronteira formal que libera a transferencia de ownership ao `RunDecision`.
 
 ## Politica de completion
 
@@ -192,9 +198,10 @@ O fluxo deve parar com erro deterministico quando:
 
 ## Integracao com PostRun atual
 
-- O overlay de `RunDecision` nao e mais consumidor direto de `GameRunEndedEvent` no fluxo final.
-- O overlay surge apenas depois do handoff final e do `RunDecisionEnteredEvent`.
+- O overlay de `RunDecision` nao e consumidor direto de `GameRunEndedEvent` no fluxo final.
+- O overlay surge apenas depois de `PostRunCompleted` e de `RunDecisionEntered`.
 - O `ILevelPostRunHookService` continua como complemento de nivel, nao como owner da orquestracao.
+- `PostRunEnteredEvent` e seam operacional do rail local de `PostRun`; nao e o gatilho visual do overlay.
 
 ## Nao-objetivos
 

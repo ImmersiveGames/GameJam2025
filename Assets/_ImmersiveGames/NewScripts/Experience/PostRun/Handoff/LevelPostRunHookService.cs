@@ -69,17 +69,16 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
                 $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookCompleted levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.",
                 DebugUtility.Colors.Info);
 
-            DebugUtility.Log<LevelPostRunHookService>(
-                $"[OBS][GameplaySessionFlow][RunDecision] TransferOwnershipFromPostRun signature='{context.PostRunSignature}' levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.",
-                DebugUtility.Colors.Info);
-
-            _postRunOwnershipService.OnPostRunEntered(new PostRunOwnershipContext(
-                signature: context.PostRunSignature,
-                sceneName: context.SceneName,
-                profile: string.Empty,
-                frame: context.Frame,
-                result: context.Result,
-                reason: context.Reason));
+            if (!_postRunOwnershipService.IsActive)
+            {
+                DebugUtility.LogWarning<LevelPostRunHookService>(
+                    $"[OBS][GameplaySessionFlow][RunDecision] Ownership nao estava ativo ao final do PostRunHook. signature='{context.PostRunSignature}' levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.");
+            }
+            else
+            {
+                DebugUtility.LogVerbose<LevelPostRunHookService>(
+                    $"[OBS][GameplaySessionFlow][RunDecision] Ownership already active when PostRunHook completed. signature='{context.PostRunSignature}' levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.");
+            }
         }
 
         private static string Normalize(string value)

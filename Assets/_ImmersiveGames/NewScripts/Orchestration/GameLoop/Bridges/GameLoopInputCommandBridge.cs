@@ -46,10 +46,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _subscriptions.Register(_onResume);
 
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
-                "[OBS][NavigationAdapters] GameLoopInputCommandBridge registrado no EventBus (play/pause/resume) como adapter de entrada.",
+                "[OBS][NavigationAdapters][Operational] GameLoopInputCommandBridge registrado no EventBus (play/pause/resume) como adapter de entrada operacional.",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
-                "[OBS][NavigationAdapters] Restart/ExitToMenu nao passam por este bridge; owners canonicos ficam em GameplaySessionFlow/Navigation.",
+                "[OBS][NavigationAdapters][Operational] Restart/ExitToMenu nao passam por este bridge; owners canonicos ficam em GameplaySessionFlow/Navigation.",
                 DebugUtility.Colors.Info);
         }
 
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             EventBus<LevelIntroCompletedEvent>.Register(_binding);
 
             DebugUtility.LogVerbose<GameLoopIntroStageBridge>(
-                "[GameLoop] Bridge de LevelIntroCompleted -> RequestStart registrado.",
+                "[OBS][GameLoop][Operational] Bridge de LevelIntroCompleted -> RequestStart registrado.",
                 DebugUtility.Colors.Info);
         }
 
@@ -190,23 +190,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 return;
             }
 
-            if (!TryResolveGameLoop(out var gameLoop))
-            {
-                DebugUtility.LogWarning<GameLoopIntroStageBridge>(
-                    "[GameLoop] LevelIntroCompleted recebido, mas IGameLoopService indisponivel no DI global.");
-                return;
-            }
-
-            if (string.Equals(gameLoop.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
-            {
-                return;
-            }
-
             DebugUtility.Log<GameLoopIntroStageBridge>(
-                $"[OBS][GameplaySessionFlow] LevelHandoffAccepted source='{evt.Source}' target='GameLoop.RequestStart' levelRef='{evt.Session.LevelRef.name}' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state='{gameLoop.CurrentStateIdName}'.",
+                $"[OBS][GameplaySessionFlow][Operational] LevelHandoffAccepted source='{evt.Source}' target='GameLoop.RequestStart' rail='compatibility/operational: GameplaySessionFlow -> Level -> EnterStage -> Playing' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state='deferred_to_intro_coordinator'.",
                 DebugUtility.Colors.Info);
-
-            gameLoop.RequestStart();
         }
     }
 }

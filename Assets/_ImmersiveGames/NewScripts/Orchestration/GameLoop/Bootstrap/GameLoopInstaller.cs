@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             _installed = true;
 
             DebugUtility.Log(typeof(GameLoopInstaller),
-                "[GameLoop] Module installer concluido.",
+                "[OBS][GameLoop][Operational] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }
 
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             if (DependencyManager.Provider.TryGetGlobal<IPauseStateService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[GameLoop] IPauseStateService ja registrado no DI global.",
+                    "[OBS][GameLoop][Operational] IPauseStateService ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 
             DependencyManager.Provider.RegisterGlobal(pauseStateService);
             DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                "[GameLoop] IPauseStateService registrado no DI global.",
+                "[OBS][GameLoop][Operational] IPauseStateService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             if (DependencyManager.Provider.TryGetGlobal<IPauseCommands>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[GameLoop] IPauseCommands ja registrado no DI global.",
+                    "[OBS][GameLoop][Operational] IPauseCommands ja registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 
             DependencyManager.Provider.RegisterGlobal(pauseCommands);
             DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                "[GameLoop] IPauseCommands registrado no DI global.",
+                "[OBS][GameLoop][Operational] IPauseCommands registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

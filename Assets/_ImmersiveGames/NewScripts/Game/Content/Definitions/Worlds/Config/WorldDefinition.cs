@@ -5,7 +5,8 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Worlds.Config
 {
     /// <summary>
-    /// Define a ordem de spawn do mundo, utilizada pelo bootstrap de cena para registrar serviços.
+    /// Input de authoring/bootstrap de conteudo para a ordem de spawn do mundo.
+    /// Utilizado pelo bootstrap de cena como configuracao operacional, nao como ownership semantico do gameplay.
     /// </summary>
     [CreateAssetMenu(
         fileName = "WorldDefinition",
@@ -31,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Worlds.Config
             private GameObject prefab;
 
             [SerializeField]
-            [Tooltip("Notas apenas para depuração/inspector. Não utilizado em runtime.")]
+            [Tooltip("Notas apenas para depuracao/inspector. Nao utilizado em runtime.")]
             public string notes;
 
             public WorldSpawnServiceKind Kind => kind;
@@ -44,4 +45,3 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Worlds.Config
         }
     }
 }
-

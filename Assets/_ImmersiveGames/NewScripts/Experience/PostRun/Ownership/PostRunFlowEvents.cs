@@ -3,9 +3,7 @@ using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 {
     /// <summary>
-    /// Eventos de bridge temporária do contexto visual de PostRunMenu.
-    ///
-    /// Mantém o runtime observável sem transformar o menu em um segundo rail público.
+    /// Eventos observáveis do rail local de PostRun e da entrada semântica em RunDecision.
     /// </summary>
     public readonly struct PostRunEnteredEvent : IEvent
     {
@@ -37,6 +35,26 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 
         public PostRunResult Result { get; }
         public string Reason { get; }
+    }
+
+    public readonly struct PostRunCompletedEvent : IEvent
+    {
+        public PostRunCompletedEvent(PostRunOwnershipContext context)
+        {
+            Context = context;
+        }
+
+        public PostRunOwnershipContext Context { get; }
+    }
+
+    public readonly struct RunDecisionEnteredEvent : IEvent
+    {
+        public RunDecisionEnteredEvent(PostRunOwnershipContext context)
+        {
+            Context = context;
+        }
+
+        public PostRunOwnershipContext Context { get; }
     }
 }
 

@@ -69,6 +69,102 @@ Domínio de apresentação, adaptação e conexão na borda do sistema. Inclui U
 - o glossário continua sendo a fonte de significado dos termos
 - a taxonomia adiciona uma leitura de ownership arquitetural para orientar módulos, arquivos e decisões futuras
 
+## Camada de composição da sessão jogável
+
+Esta camada não cria um novo domínio taxonômico.
+Ela é uma leitura semântica interna do `Game Domain` para explicar como a sessão jogável é composta no runtime atual e no `GameplaySessionFlow`.
+
+Ela precisa coexistir com o glossário estrutural:
+- o glossário estrutural define o vocabulário base
+- a composição da sessão jogável define como esse vocabulário é montado durante a gameplay ativa
+
+Os termos centrais dessa camada são:
+
+### 1. `SessionContext`
+
+**SessionContext** é o contexto semântico da sessão de gameplay ativa.
+
+Ele liga a run corrente ao conteúdo, ao runtime local e à participação ativa daquela fase.
+
+Não é:
+- Contexto Macro
+- Contexto Local de Conteúdo
+- Estado de Fluxo
+- Resultado da Run
+
+Ele representa o contexto de sessão dentro do `Gameplay Runtime Composition`.
+
+### 2. `PhaseRuntime`
+
+**PhaseRuntime** é a abreviação canônica de `phase / level runtime`.
+
+Ele representa o runtime local da fase ou do level ativo dentro de uma sessão.
+
+Não é:
+- Contexto Macro
+- Rota Macro
+- Contexto Local de Conteúdo em si
+- Resultado da Run
+
+Ele é a leitura ativa do level/fase enquanto a sessão está em montagem ou execução.
+
+### 3. `Players`
+
+**Players** é o conjunto de participantes canônicos da fase/sessão ativa.
+
+Na V1, esse conjunto pode começar em forma `solo-first`, desde que a forma do contrato continue compatível com evolução posterior.
+
+Ele não substitui:
+- identidade do ator
+- entidades individuais
+- regras de spawn por si só
+
+Ele define a participação semântica da sessão jogável.
+
+### 4. `Rules/Objectives`
+
+**Rules/Objectives** são as regras e os objetivos do conjunto jogável.
+
+Eles definem o que vale para a fase atual como conjunto, incluindo condições de sucesso, falha e progresso.
+
+Não são:
+- definição authoring isolada
+- resultado final da run
+- contexto visual
+
+### 5. `InitialState`
+
+**InitialState** é o estado inicial seeding da fase.
+
+Ele define o ponto de partida operacional e semântico da fase antes da entrada em `Playing`.
+
+Não é:
+- resultado da run
+- persistência definitiva
+- estado transversal
+
+### Relação com gameplay, level e fluxo
+
+- `Gameplay` é o **Contexto Macro** da experiência jogável.
+- `Level` é o **Contexto Local de Conteúdo** hospedado dentro de `Gameplay`.
+- `EnterStage` e `ExitStage` são estágios locais do conteúdo que preparam entrada e saída da fase.
+- `Playing` é o **Estado de Fluxo** principal da sessão jogável depois da preparação semântica e da liberação operacional.
+- `RunResult` é o mesmo conceito de `Resultado da Run`: a consolidação final do que aconteceu na run.
+- `PostRun` é o rail local intermediário entre `RunResult` e `RunDecision`.
+- `PostRunMenu` é um **Contexto Local Visual** de pós-run, não o resultado da run.
+- `Restart` e `ExitToMenu` são **Intenções Derivadas** emitidas depois que o resultado já foi consolidado.
+
+### Relação prática com `GameplaySessionFlow`
+
+- `SessionContext` organiza a sessão ativa.
+- `PhaseRuntime` organiza o level/fase ativa dentro da sessão.
+- `Players` registra quem participa daquela fase.
+- `Rules/Objectives` fecham o conjunto jogável.
+- `InitialState` sementeia o ponto de partida.
+- `EnterStage` leva o conteúdo local até o momento em que `Playing` pode ser liberado.
+
+Essa camada de composição é a base semântica que `ADR-0047` detalha para a fase jogável.
+
 ---
 
 ## Definições fundamentais
@@ -392,6 +488,8 @@ Exemplos:
 - `Victory`
 - `Defeat`
 
+No runtime e nos documentos de fluxo, esse conceito pode aparecer como `RunResult`.
+
 Resultado da Run não é:
 - Contexto Macro
 - Contexto Local
@@ -440,8 +538,9 @@ A leitura conceitual preferida é:
 
 1. `ExitStage`
 2. consolidação do `Resultado da Run`
-3. ativação do contexto visual local de pós-run, como `PostRunMenu`
-4. emissão de intenções derivadas, como `Restart` ou `ExitToMenu`
+3. entrada em `PostRun`
+4. ativação do contexto visual local de pós-run, como `PostRunMenu`
+5. emissão de intenções derivadas, como `Restart` ou `ExitToMenu`
 
 ---
 
@@ -483,9 +582,10 @@ O termo **slot** não entra como conceito central do domínio.
 Se existir no projeto, ele deve ser tratado apenas como detalhe técnico ou de configuração, e não como parte principal do vocabulário arquitetural.
 
 ### Exclusão 2
-`PostPlay` / `PostRun`, quando usados apenas como forma global de se referir ao resultado da run, não devem ser tratados como fase própria de domínio.
+`PostPlay` permanece histórico.
+`PostRun` não deve ser usado como sinônimo global de `Resultado da Run`; ele é válido como rail local intermediário entre `RunResult` e `RunDecision`.
 
-Se existirem no código atual, devem ser lidos como nomenclatura técnica legado ou conveniência de implementação, e não como conceito central do glossário.
+Se existirem no código atual, devem ser lidos conforme essa distinção e não como conveniência de implementação que apague a fronteira entre pós-run local e decisão final.
 
 ---
 

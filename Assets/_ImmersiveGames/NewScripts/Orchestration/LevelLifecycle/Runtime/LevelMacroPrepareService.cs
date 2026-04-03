@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (hasCurrentSnapshot && !snapshotBelongsToMacro)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(currentSnapshot.LevelRef != null ? currentSnapshot.LevelRef.name : "<none>")}' snapshotRouteId='{currentSnapshot.MacroRouteId}' reason='not_in_collection_or_macro'.",
+                    $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(currentSnapshot.LevelRef != null ? currentSnapshot.LevelRef.name : "<none>")}' snapshotRouteId='{currentSnapshot.MacroRouteId}' reason='not_in_collection_or_macro'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (!useSnapshot)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] LevelDefaultSelected source='catalog_index_0' index=0 levelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelDefaultSelected source='catalog_index_0' index=0 levelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (!hasCurrentSnapshot && hasLastSnapshot)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] SelectionVersionSource source='last_snapshot' prev='{lastSnapshot.SelectionVersion}' next='{selectionVersion}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][LevelLifecycle] SelectionVersionSource source='last_snapshot' prev='{lastSnapshot.SelectionVersion}' next='{selectionVersion}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             GameplayStartSnapshot gameplayStartSnapshot = GameplayStartSnapshot.FromLevelSelectedEvent(selectedEvent);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelSelectedCanonical levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' macroRouteId='{macroRouteId}' signature='{levelSignature}' reason='{normalizedReason}' snapshot='{gameplayStartSnapshot}'.",
+                $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelSelectedCanonical levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' macroRouteId='{macroRouteId}' signature='{levelSignature}' reason='{normalizedReason}' snapshot='{gameplayStartSnapshot}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<LevelSelectedEvent>.Raise(selectedEvent);
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 : (fallbackAppliedLevelRef != null ? fallbackAppliedLevelRef.name : "<none>");
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelPreparePreviousResolved source='{previousSource}' prevLevelRef='{previousRefLabel}' targetLevelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelPreparePreviousResolved source='{previousSource}' prevLevelRef='{previousRefLabel}' targetLevelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(
@@ -176,15 +176,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             LevelAdditiveSceneRuntimeApplier.RecordAppliedLevel(selectedLevelRef);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelApplied levelRef='{selectedLevelRef.name}' contentId='{localContentId}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}'.",
+                $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelApplied levelRef='{selectedLevelRef.name}' contentId='{localContentId}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelEntered source='GameplaySessionFlow' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
+                $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelEntered source='GameplaySessionFlow' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<LevelEnteredEvent>.Raise(new LevelEnteredEvent(
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 }
 
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][LevelFlow] LevelClearSkipped reason='no_active_level' destinationRouteId='{destinationRouteId}' reason='{reason}'.",
+                    $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelClearSkipped reason='no_active_level' destinationRouteId='{destinationRouteId}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -235,7 +235,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             _restartContextService.Clear($"LevelFlow/ClearOnMacroExit/{reason}");
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelCleared macroRouteId='{destinationRouteId}' previousLevelRef='{previousLevelRef.name}' scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][LevelLifecycle] LevelCleared macroRouteId='{destinationRouteId}' previousLevelRef='{previousLevelRef.name}' scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         private static void FailFastConfig(SceneRouteId routeId, SceneRouteKind routeKind, string signature, string reason, string configReason)
         {
             HardFailFastH1.Trigger(typeof(LevelMacroPrepareService),
-                $"[FATAL][H1][LevelFlow] LevelPrepare configuration error. routeId='{routeId}' routeKind='{routeKind}' signature='{signature}' reason='{reason}' detail='{configReason}'");
+                $"[FATAL][H1][LevelLifecycle] LevelPrepare configuration error. routeId='{routeId}' routeKind='{routeKind}' signature='{signature}' reason='{reason}' detail='{configReason}'");
         }
     }
 }
