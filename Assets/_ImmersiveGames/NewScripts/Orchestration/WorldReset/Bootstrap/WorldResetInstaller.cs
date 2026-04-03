@@ -31,6 +31,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
             RegisterWorldResetCommands();
             RegisterSceneFlowWorldResetDriver();
             RegisterWorldResetRequestService();
+            EnsureWorldResetModuleComposition();
 
             _installed = true;
 
@@ -78,6 +79,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
                 "[WorldReset] WorldResetRequestService registrado no DI global.");
         }
 
+        private static void EnsureWorldResetModuleComposition()
+        {
+            ResolveRequiredWorldResetService();
+            ResolveRequired<IWorldResetCommands>("IWorldResetCommands");
+            ResolveRequired<IWorldResetRequestService>("IWorldResetRequestService");
+            ResolveRequired<SceneFlowWorldResetDriver>("SceneFlowWorldResetDriver");
+
+            DebugUtility.Log(typeof(WorldResetInstaller),
+                "[OBS][WorldReset] Runtime composition consolidada. scope='reset lifecycle -> dispatch/skip/dedupe/completion -> SceneFlow handoff'.",
+                DebugUtility.Colors.Info);
+        }
+
         private static WorldResetService ResolveOrCreateWorldResetService()
         {
             if (DependencyManager.Provider.TryGetGlobal<WorldResetService>(out var existingConcrete) && existingConcrete != null)
@@ -116,6 +129,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
             }
 
             throw new InvalidOperationException("[FATAL][Config][WorldReset] ISimulationGateService obrigatorio ausente no DI global.");
+        }
+
+        private static T ResolveRequired<T>(string serviceName)
+            where T : class
+        {
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var service) && service != null)
+            {
+                return service;
+            }
+
+            throw new InvalidOperationException($"[FATAL][Config][WorldReset] {serviceName} obrigatorio ausente para compor o WorldReset runtime.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

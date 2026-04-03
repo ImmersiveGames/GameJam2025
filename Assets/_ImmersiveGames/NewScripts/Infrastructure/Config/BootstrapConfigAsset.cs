@@ -26,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private RuntimeModeConfig runtimeModeConfig;
         [SerializeField] private AudioDefaultsAsset audioDefaults;
         [SerializeField] private VideoDefaultsAsset videoDefaults;
-        [SerializeField] private EntityAudioSemanticMapAsset entityAudioSemanticMap;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
         public TransitionStyleAsset StartupTransitionStyleRef => startupTransitionStyleRef;
@@ -36,8 +35,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         public RuntimeModeConfig RuntimeModeConfig => runtimeModeConfig;
         public AudioDefaultsAsset AudioDefaults => audioDefaults;
         public VideoDefaultsAsset VideoDefaults => videoDefaults;
-        public EntityAudioSemanticMapAsset EntityAudioSemanticMap => entityAudioSemanticMap;
-
 #if UNITY_EDITOR
         private void OnValidate()
         {

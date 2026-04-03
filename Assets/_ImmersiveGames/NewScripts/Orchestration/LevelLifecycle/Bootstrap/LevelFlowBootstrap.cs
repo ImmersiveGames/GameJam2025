@@ -2,6 +2,11 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Interop;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
@@ -38,11 +43,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
             }
 
+            var navigationService = ResolveRequiredNavigationService();
+            var restartContextService = ResolveRequiredRestartContextService();
+            var levelSwapLocalService = ResolveRequiredLevelSwapLocalService();
+            var levelFlowContentService = ResolveRequiredLevelFlowContentService();
+
             EnsureLevelFlowCompletionGate();
-            EnsureLevelFlowRuntimeService();
+            var levelFlowRuntime = EnsureLevelFlowRuntimeService(
+                navigationService,
+                restartContextService,
+                levelSwapLocalService);
             EnsureLevelSelectedRestartSnapshotBridge();
-            EnsurePostLevelActionsService(bootstrapConfig);
+            EnsurePostLevelActionsService(
+                levelFlowRuntime,
+                levelSwapLocalService,
+                restartContextService,
+                navigationService,
+                levelFlowContentService);
             EnsureLevelStageOrchestrator();
+            EnsureGameplaySessionFlowComposition();
+            EnsureGameplaySessionContinuityComposition();
 
             _runtimeComposed = true;
 
@@ -51,16 +71,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureLevelFlowRuntimeService()
+        private static ILevelFlowRuntimeService EnsureLevelFlowRuntimeService(
+            IGameNavigationService navigationService,
+            IRestartContextService restartContextService,
+            ILevelSwapLocalService levelSwapLocalService)
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var existingRuntime) && existingRuntime != null)
             {
-                return;
+                return existingRuntime;
             }
-
-            var navigationService = ResolveRequiredNavigationService();
-            var restartContextService = ResolveRequiredRestartContextService();
-            var levelSwapLocalService = ResolveRequiredLevelSwapLocalService();
 
             var runtimeService = new LevelLifecycleRuntimeService(
                 navigationService,
@@ -72,6 +91,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             DebugUtility.LogVerbose(typeof(LevelLifecycleBootstrap),
                 "[OBS][LevelLifecycle] LevelLifecycleRuntimeService registrado no runtime.",
                 DebugUtility.Colors.Info);
+
+            return runtimeService;
         }
 
         private static void EnsureLevelFlowCompletionGate()
@@ -101,23 +122,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsurePostLevelActionsService(BootstrapConfigAsset bootstrapConfig)
+        private static void EnsurePostLevelActionsService(
+            ILevelFlowRuntimeService levelFlowRuntime,
+            ILevelSwapLocalService levelSwapLocalService,
+            IRestartContextService restartContextService,
+            IGameNavigationService navigationService,
+            ILevelFlowContentService levelFlowContentService)
         {
             if (DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var existingPostActions) && existingPostActions != null)
             {
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelFlowRuntimeService>(out var levelFlowRuntime) || levelFlowRuntime == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelFlowRuntimeService ausente no DI global antes da composicao runtime.");
-            }
-
-            var levelSwapLocalService = ResolveRequiredLevelSwapLocalService();
-            var restartContextService = ResolveRequiredRestartContextService();
-            var levelFlowContentService = ResolveRequiredLevelFlowContentService();
-
-            var navigationService = ResolveRequiredNavigationService();
             var postLevelActions = new PostLevelActionsService(
                 levelFlowRuntime,
                 levelSwapLocalService,
@@ -190,6 +206,38 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 "[LevelLifecycle] LevelLifecycleStageOrchestrator registrado (LevelEntered hook).");
         }
 
+        private static void EnsureGameplaySessionFlowComposition()
+        {
+            RequireGlobal<ILevelMacroPrepareService>("ILevelMacroPrepareService");
+            RequireGlobal<LevelLifecycleStageOrchestrator>("LevelLifecycleStageOrchestrator");
+            RequireGlobal<IIntroStageCoordinator>("IIntroStageCoordinator");
+            RequireGlobal<IIntroStageControlService>("IIntroStageControlService");
+            RequireGlobal<IGameRunOutcomeService>("IGameRunOutcomeService");
+            RequireGlobal<IRestartContextService>("IRestartContextService");
+            RequireGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
+            RequireGlobal<ILevelStagePresentationService>("ILevelStagePresentationService");
+            RequireGlobal<IPostRunHandoffService>("IPostRunHandoffService");
+            RequireGlobal<IPostRunOwnershipService>("IPostRunOwnershipService");
+            RequireGlobal<ILevelPostRunHookService>("ILevelPostRunHookService");
+            RequireGlobal<IPostLevelActionsService>("IPostLevelActionsService");
+
+            DebugUtility.Log(typeof(LevelLifecycleBootstrap),
+                "[OBS][GameplaySessionFlow] Runtime composition consolidada. scope='Prepare -> Intro -> Playing -> Outcome -> PostRun -> Continuity'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureGameplaySessionContinuityComposition()
+        {
+            RequireGlobal<IPostRunHandoffService>("IPostRunHandoffService");
+            RequireGlobal<IPostRunOwnershipService>("IPostRunOwnershipService");
+            RequireGlobal<IPostRunResultService>("IPostRunResultService");
+            RequireGlobal<IPostLevelActionsService>("IPostLevelActionsService");
+
+            DebugUtility.Log(typeof(LevelLifecycleBootstrap),
+                "[OBS][GameplaySessionFlow][Continuity] Runtime composition consolidada. scope='PostRun -> Continuity -> exit/menu handoff'.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterIfMissing<T>(Func<T> factory, Type contextType, string alreadyRegisteredMessage, string registeredMessage)
             where T : class
         {
@@ -207,6 +255,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(contextType, registeredMessage, DebugUtility.Colors.Info);
+        }
+
+        private static void RequireGlobal<T>(string serviceName)
+            where T : class
+        {
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException($"[FATAL][Config][LevelLifecycle] {serviceName} obrigatorio ausente para compor o GameplaySessionFlow runtime.");
         }
 
         private sealed class LevelFlowMacroPrepareCompletionGate : ISceneTransitionCompletionGate
@@ -253,12 +312,4 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
         }
     }
 
-    [Obsolete("Historical wrapper. Use LevelLifecycleBootstrap instead.")]
-    public static class LevelFlowBootstrap
-    {
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
-        {
-            LevelLifecycleBootstrap.ComposeRuntime(bootstrapConfig);
-        }
-    }
 }

@@ -19,6 +19,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed partial class SceneTransitionService : ISceneTransitionService
     {
+        private enum MacroTransitionCheckpoint
+        {
+            Started,
+            FadeInCompleted,
+            ScenesReady,
+            BeforeFadeOut,
+            Completed
+        }
+
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
         private readonly ISceneTransitionCompletionGate _completionGate;
@@ -119,6 +128,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
             }
 
             long transitionId = Interlocked.Increment(ref _transitionIdSeq);
+            LogBoundaryHandshake("Navigation", "policy_and_route_guard_resolved", transitionId, signature, context);
 
             try
             {
@@ -128,28 +138,38 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
                     $"[SceneFlow] TransitionStarted id={transitionId} signature='{signature}' routeId='{context.RouteId}', style='{context.StyleLabel}', profile='{context.TransitionProfileName}', reason='{Sanitize(hydratedRequest.Reason)}', requestedBy='{Sanitize(hydratedRequest.RequestedBy)}' {context}",
                     DebugUtility.Colors.Info);
 
+                LogMacroCheckpoint(MacroTransitionCheckpoint.Started, transitionId, signature, context);
                 LogLifecycleEvent("SceneTransitionStartedEvent", transitionId, signature, context);
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
+                LogBoundaryHandshake("Loading-Fade", "fade_in_requested", transitionId, signature, context);
                 await RunFadeInIfNeeded(context, transitionId, signature);
 
                 if (context.UseFade)
                 {
+                    LogMacroCheckpoint(MacroTransitionCheckpoint.FadeInCompleted, transitionId, signature, context);
+                    LogBoundaryHandshake("Loading-Fade", "fade_in_completed", transitionId, signature, context);
                     LogLifecycleEvent("SceneTransitionFadeInCompletedEvent", transitionId, signature, context);
                     EventBus<SceneTransitionFadeInCompletedEvent>.Raise(new SceneTransitionFadeInCompletedEvent(context));
                 }
 
                 await RunSceneOperationsAsync(context);
+                LogMacroCheckpoint(MacroTransitionCheckpoint.ScenesReady, transitionId, signature, context);
                 LogLifecycleEvent("SceneTransitionScenesReadyEvent", transitionId, signature, context);
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
+                LogBoundaryHandshake("Navigation", "scene_composition_committed", transitionId, signature, context);
 
                 DebugUtility.Log<SceneTransitionService>(
                     $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' routeId='{context.RouteId}', style='{context.StyleLabel}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Info);
 
                 await AwaitCompletionGateAsync(context);
+                LogMacroCheckpoint(MacroTransitionCheckpoint.BeforeFadeOut, transitionId, signature, context);
+                LogBoundaryHandshake("Loading-Fade", "fade_out_requested", transitionId, signature, context);
                 LogLifecycleEvent("SceneTransitionBeforeFadeOutEvent", transitionId, signature, context);
                 EventBus<SceneTransitionBeforeFadeOutEvent>.Raise(new SceneTransitionBeforeFadeOutEvent(context));
                 await RunFadeOutIfNeeded(context, transitionId, signature);
+                LogMacroCheckpoint(MacroTransitionCheckpoint.Completed, transitionId, signature, context);
+                LogBoundaryHandshake("Loading-Fade", "fade_out_completed", transitionId, signature, context);
                 LogLifecycleEvent("SceneTransitionCompletedEvent", transitionId, signature, context);
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
                 MarkCompleted(signature);
@@ -414,6 +434,22 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
             string normalizedSignature = string.IsNullOrWhiteSpace(signature) ? "n/a" : signature;
             DebugUtility.Log<SceneTransitionService>(
                 $"[OBS][SceneFlow] {eventName} id={transitionId} signature='{normalizedSignature}' routeId='{context.RouteId}' routeKind='{context.RouteKind}' style='{context.StyleLabel}' profile='{context.TransitionProfileName}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogBoundaryHandshake(string boundary, string stage, long transitionId, string? signature, SceneTransitionContext context)
+        {
+            string normalizedSignature = string.IsNullOrWhiteSpace(signature) ? "n/a" : signature;
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow][Handshake] boundary='{boundary}' stage='{stage}' id={transitionId} signature='{normalizedSignature}' routeId='{context.RouteId}' routeKind='{context.RouteKind}' profile='{context.TransitionProfileName}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogMacroCheckpoint(MacroTransitionCheckpoint checkpoint, long transitionId, string? signature, SceneTransitionContext context)
+        {
+            string normalizedSignature = string.IsNullOrWhiteSpace(signature) ? "n/a" : signature;
+            DebugUtility.Log<SceneTransitionService>(
+                $"[OBS][SceneFlow][Macro] checkpoint='{checkpoint}' id={transitionId} signature='{normalizedSignature}' routeId='{context.RouteId}' routeKind='{context.RouteKind}' style='{context.StyleLabel}' profile='{context.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -46,10 +46,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _subscriptions.Register(_onResume);
 
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
-                "[GameLoop] Bridge de entrada registrado no EventBus (play/pause/resume) com owners IGameLoopService e IGameNavigationService explícitos.",
+                "[OBS][NavigationAdapters] GameLoopInputCommandBridge registrado no EventBus (play/pause/resume) como adapter de entrada.",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose<GameLoopInputCommandBridge>(
-                "[OBS][LEGACY] Restart/ExitToMenu nao passam por este bridge; owners canonicos ficam em LevelFlow/Navigation.",
+                "[OBS][NavigationAdapters] Restart/ExitToMenu nao passam por este bridge; owners canonicos ficam em GameplaySessionFlow/Navigation.",
                 DebugUtility.Colors.Info);
         }
 
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             }
 
             DebugUtility.Log<GameLoopIntroStageBridge>(
-                $"[OBS][Gameplay] LevelHandoffAccepted source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' rail='Gameplay -> Level -> EnterStage -> Playing' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state='{gameLoop.CurrentStateIdName}'.",
+                $"[OBS][GameplaySessionFlow] LevelHandoffAccepted source='{evt.Source}' target='GameLoop.RequestStart' levelRef='{evt.Session.LevelRef.name}' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state='{gameLoop.CurrentStateIdName}'.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestStart();

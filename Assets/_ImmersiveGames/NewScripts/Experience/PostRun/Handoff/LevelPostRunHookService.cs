@@ -30,29 +30,29 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
                 contract.LevelRef == null)
             {
                 DebugUtility.LogVerbose<LevelPostRunHookService>(
-                    $"[OBS][PostRun] LevelPostRunHookSkipped reason='missing_current_level_contract' result='{context.Result}'.");
+                    $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookSkipped reason='missing_current_level_contract' result='{context.Result}'.");
                 return;
             }
 
             if (!contract.HasPostRunReactionHook)
             {
                 DebugUtility.LogVerbose<LevelPostRunHookService>(
-                    $"[OBS][PostRun] LevelPostRunHookSkipped reason='hook_disabled' levelRef='{contract.LevelRef.name}' result='{context.Result}'.");
+                    $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookSkipped reason='hook_disabled' levelRef='{contract.LevelRef.name}' result='{context.Result}'.");
                 return;
             }
 
             DebugUtility.Log<LevelPostRunHookService>(
-                $"[OBS][PostRun] LevelPostRunHookStarted levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
+                $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookStarted levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                 DebugUtility.Colors.Info);
 
             if (_presenterRegistry.TryEnsureCurrentPresenter(context, nameof(LevelPostRunHookService), out ILevelPostRunHookPresenter presenter))
             {
                 DebugUtility.Log<LevelPostRunHookService>(
-                    $"[OBS][PostRun] LevelPostRunHookPresenterAdopted levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}' presenter='{presenter.GetType().FullName}'.",
+                    $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookPresenterAdopted levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}' presenter='{presenter.GetType().FullName}'.",
                     DebugUtility.Colors.Info);
 
                 DebugUtility.Log<LevelPostRunHookService>(
-                    $"[OBS][PostRun] LevelPostRunHookPresenterAwaitingCompletion levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}' presenter='{presenter.GetType().FullName}'.",
+                    $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookPresenterAwaitingCompletion levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}' presenter='{presenter.GetType().FullName}'.",
                     DebugUtility.Colors.Info);
 
                 await presenter.WaitForCompletionAsync(cancellationToken).ConfigureAwait(true);
@@ -62,15 +62,15 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
                 // Comentário: o presenter canônico local ainda pode não existir na cena.
                 // Neste caso, mantemos o skip observável para smoke e validação arquitetural.
                 DebugUtility.LogVerbose<LevelPostRunHookService>(
-                    $"[OBS][PostRun] LevelPostRunHookMockVisualSkipped levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.");
+                    $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookMockVisualSkipped levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.");
             }
 
             DebugUtility.Log<LevelPostRunHookService>(
-                $"[OBS][PostRun] LevelPostRunHookCompleted levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.",
+                $"[OBS][GameplaySessionFlow][PostRun] LevelPostRunHookCompleted levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelPostRunHookService>(
-                $"[OBS][RunDecision] TransferOwnershipFromPostRun signature='{context.PostRunSignature}' levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.",
+                $"[OBS][GameplaySessionFlow][RunDecision] TransferOwnershipFromPostRun signature='{context.PostRunSignature}' levelRef='{contract.LevelRef.name}' result='{context.Result}' reason='{Normalize(context.Reason)}'.",
                 DebugUtility.Colors.Info);
 
             _postRunOwnershipService.OnPostRunEntered(new PostRunOwnershipContext(

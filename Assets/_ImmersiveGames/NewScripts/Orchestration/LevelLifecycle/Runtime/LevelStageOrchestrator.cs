@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             DebugUtility.Log<LevelLifecycleStageOrchestrator>(
-                $"[OBS][LevelLifecycle] EnterStageStartRequested source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' rail='Gameplay -> Level -> EnterStage -> Playing' v='{evt.Session.SelectionVersion}' reason='{Normalize(evt.Session.Reason)}' levelSignature='{Normalize(evt.Session.LevelSignature)}'.",
+                $"[OBS][LevelLifecycle] EnterStageStartRequested source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' v='{evt.Session.SelectionVersion}' reason='{Normalize(evt.Session.Reason)}' levelSignature='{Normalize(evt.Session.LevelSignature)}'.",
                 DebugUtility.Colors.Info);
 
             if (!TryAdvanceDedupe(evt.Session.SelectionVersion, evt.Session.LevelSignature, evt.Source))

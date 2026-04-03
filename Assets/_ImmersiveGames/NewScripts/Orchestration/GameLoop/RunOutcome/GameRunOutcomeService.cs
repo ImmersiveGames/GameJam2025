@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome
             _subscriptions.Register(_runEndedObservedBinding);
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
-                "[GameLoop] GameRunOutcomeService registrado no EventBus<GameRunStartedEvent> e observando EventBus<GameRunEndedEvent>.");
+                "[OBS][GameplaySessionFlow] GameRunOutcomeService registrado no EventBus<GameRunStartedEvent> e observando EventBus<GameRunEndedEvent>.");
         }
 
         public bool TryEnd(GameRunOutcome outcome, string reason = null)
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome
             _hasEndedThisRun = true;
 
             DebugUtility.Log<GameRunOutcomeService>(
-                $"[OBS][ExitStage] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent'.");
+                $"[OBS][GameplaySessionFlow] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent'.");
 
             EventBus<GameRunEndedEvent>.Raise(new GameRunEndedEvent(outcome, reason));
             return true;
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome
             _hasEndedThisRun = false;
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
-                $"[GameLoop] GameRunStartedEvent observado -> rearmando GameRunOutcomeService. state={evt?.StateId}");
+                $"[OBS][GameplaySessionFlow] GameRunStartedEvent observado -> rearmando GameRunOutcomeService. state={evt?.StateId}");
         }
 
         private void OnRunEndedObserved(GameRunEndedEvent evt)
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome
             _hasEndedThisRun = true;
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
-                $"[GameLoop] GameRunEndedEvent observado externamente -> marcando HasEnded=true. Outcome={evt.Outcome}, Reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
+                $"[OBS][GameplaySessionFlow] GameRunEndedEvent observado externamente -> marcando HasEnded=true. Outcome={evt.Outcome}, Reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
         }
 
         public void Dispose()

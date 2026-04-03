@@ -3,13 +3,13 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Models;
-using _ImmersiveGames.NewScripts.Experience.Audio.Semantics;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
 {
     /// <summary>
     /// Binding estrutural mínimo de contexto local para EntityAudio.
-    /// Não resolve semântica e não faz authoring de comportamento.
+    /// Não resolve semântica e não carrega authoring de domínio.
     /// </summary>
     public sealed class EntityAudioEmitter : MonoBehaviour
     {
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
         [SerializeField] [Min(0f)] private float defaultVolumeScale = 1f;
         [SerializeField] private AudioSfxVoiceProfileAsset defaultVoiceProfile;
 
-        private IEntityAudioService _entityAudioService;
+        private IGlobalAudioService _globalAudioService;
 
         public Transform SpatialAnchor => ResolveSpatialAnchor();
         public float DefaultVolumeScale => Mathf.Max(0f, defaultVolumeScale);
@@ -32,15 +32,15 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
             defaultVolumeScale = 1f;
         }
 
-        public bool TryResolveService(out IEntityAudioService entityAudioService)
+        public bool TryResolveService(out IGlobalAudioService globalAudioService)
         {
-            if (_entityAudioService != null)
+            if (_globalAudioService != null)
             {
-                entityAudioService = _entityAudioService;
+                globalAudioService = _globalAudioService;
                 return true;
             }
 
-            entityAudioService = null;
+            globalAudioService = null;
 
             if (!Application.isPlaying)
             {
@@ -52,13 +52,13 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal(out _entityAudioService) || _entityAudioService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _globalAudioService) || _globalAudioService == null)
             {
-                _entityAudioService = null;
+                _globalAudioService = null;
                 return false;
             }
 
-            entityAudioService = _entityAudioService;
+            globalAudioService = _globalAudioService;
             return true;
         }
 
@@ -81,21 +81,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
             return resolvedContext;
         }
 
-        public IAudioPlaybackHandle PlayPurpose(string purpose, string reason = null)
-        {
-            return PlayPurpose(purpose, CreateLocalContext(reason));
-        }
-
-        public IAudioPlaybackHandle PlayPurpose(string purpose, AudioPlaybackContext context)
-        {
-            if (!TryPreparePlayback("PlayPurpose", "purpose", purpose, context, out var entityAudioService, out var resolvedContext))
-            {
-                return NullAudioPlaybackHandle.Instance;
-            }
-
-            return entityAudioService.PlayPurpose(purpose, ResolveSpatialAnchor(), resolvedContext);
-        }
-
         public IAudioPlaybackHandle PlayCue(AudioSfxCueAsset cue, string reason = null)
         {
             return PlayCue(cue, CreateLocalContext(reason));
@@ -103,12 +88,12 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
 
         public IAudioPlaybackHandle PlayCue(AudioSfxCueAsset cue, AudioPlaybackContext context)
         {
-            if (!TryPreparePlayback("PlayCue", "cue", cue != null ? cue.name : null, context, out var entityAudioService, out var resolvedContext))
+            if (!TryPreparePlayback("PlayCue", cue, context, out var globalAudioService, out var resolvedContext))
             {
                 return NullAudioPlaybackHandle.Instance;
             }
 
-            return entityAudioService.PlayCue(cue, resolvedContext);
+            return globalAudioService.Play(cue, resolvedContext);
         }
 
         private Transform ResolveSpatialAnchor()
@@ -136,17 +121,23 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
 
         private bool TryPreparePlayback(
             string action,
-            string subjectName,
-            string subjectValue,
+            AudioSfxCueAsset cue,
             AudioPlaybackContext context,
-            out IEntityAudioService entityAudioService,
+            out IGlobalAudioService globalAudioService,
             out AudioPlaybackContext resolvedContext)
         {
             resolvedContext = default;
 
-            if (!TryResolveService(out entityAudioService) || entityAudioService == null)
+            if (cue == null)
             {
-                LogPlaybackBlocked(action, subjectName, subjectValue);
+                LogPlaybackBlocked(action, "cue", "null", "cue_missing");
+                globalAudioService = null;
+                return false;
+            }
+
+            if (!TryResolveService(out globalAudioService) || globalAudioService == null)
+            {
+                LogPlaybackBlocked(action, "cue", cue.name, "global_audio_service_unavailable");
                 return false;
             }
 
@@ -183,10 +174,10 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bindings
             }
         }
 
-        private void LogPlaybackBlocked(string action, string subjectName, string subjectValue)
+        private void LogPlaybackBlocked(string action, string subjectName, string subjectValue, string reason)
         {
             DebugUtility.LogWarning(typeof(EntityAudioEmitter),
-                $"{LogPrefix} {action} blocked: IEntityAudioService unavailable emitter='{name}' {subjectName}='{subjectValue ?? "null"}'.");
+                $"{LogPrefix} {action} blocked: {reason} emitter='{name}' {subjectName}='{subjectValue ?? "null"}'.");
         }
     }
 }

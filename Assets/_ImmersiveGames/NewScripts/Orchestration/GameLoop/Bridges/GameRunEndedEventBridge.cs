@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             if (_postStagePending)
             {
                 DebugUtility.LogVerbose<GameRunEndedEventBridge>(
-                    "[OBS][ExitStage] ExitStageRunEndIgnored reason='already_pending'.",
+                    "[OBS][GameplaySessionFlow] ExitStageRunEndIgnored reason='already_pending'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 if (!DependencyManager.Provider.TryGetGlobal<IPostRunHandoffService>(out var postRunHandoffService) || postRunHandoffService == null)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][ExitStage] GameRunEndedEvent recebido mas IPostRunHandoffService nao foi encontrado no escopo global.");
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IPostRunHandoffService nao foi encontrado no escopo global.");
                     return;
                 }
 
@@ -114,31 +114,31 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                     isGameplayScene: IsGameplayScene());
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][ExitStage] ExitStageDispatchRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount}.");
+                    $"[OBS][GameplaySessionFlow] ExitStageDispatchRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handoff='PostRunHandoffService'.");
 
                 await postRunHandoffService.HandleRunEndedAsync(context);
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][ExitStage] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame}.",
+                    $"[OBS][GameplaySessionFlow] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame} handoff='PostRunHandoffService'.",
                     DebugUtility.Colors.Info);
 
                 if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][ExitStage] GameRunEndedEvent processado, mas IGameLoopService nao foi encontrado para sincronizar o fim da run.");
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent processado, mas IGameLoopService nao foi encontrado para sincronizar o fim da run.");
                     return;
                 }
 
                 gameLoopService.RequestRunEnd();
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][ExitStage] GameLoopRunEndRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount}.",
+                    $"[OBS][GameplaySessionFlow] GameLoopRunEndRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handshake='GameLoop.RequestRunEnd'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<GameRunEndedEventBridge>(
-                    $"[FATAL][ExitStage] Falha inesperada ao executar PostRunHandoff. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[FATAL][GameplaySessionFlow] Falha inesperada ao executar PostRunHandoff. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

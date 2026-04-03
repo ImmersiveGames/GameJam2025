@@ -27,9 +27,23 @@ namespace _ImmersiveGames.NewScripts.Modules.Navigation.Editor.IdSources
 
         private static void AddFromCode(HashSet<string> values, HashSet<string> duplicates)
         {
-            for (int i = 0; i < GameNavigationIntents.AllCanonicalAndAliases.Count; i++)
+            for (int i = 0; i < GameNavigationIntents.AllCanonical.Count; i++)
             {
-                string normalized = NavigationIntentId.Normalize(GameNavigationIntents.AllCanonicalAndAliases[i].Value);
+                string normalized = NavigationIntentId.Normalize(GameNavigationIntents.AllCanonical[i].Value);
+                if (string.IsNullOrEmpty(normalized))
+                {
+                    continue;
+                }
+
+                if (!values.Add(normalized))
+                {
+                    duplicates.Add(normalized);
+                }
+            }
+
+            for (int i = 0; i < GameNavigationCompatibility.AllAliases.Count; i++)
+            {
+                string normalized = NavigationIntentId.Normalize(GameNavigationCompatibility.AllAliases[i].Value);
                 if (string.IsNullOrEmpty(normalized))
                 {
                     continue;

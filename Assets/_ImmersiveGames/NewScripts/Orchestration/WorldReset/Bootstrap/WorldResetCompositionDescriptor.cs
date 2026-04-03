@@ -14,6 +14,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap
                 installerEntry: "WorldResetInstaller.Install",
                 runtimeComposerEntry: null,
                 installerOnly: true,
-                description: "Reset macro installer-only.");
+                description: "WorldReset boundary: reset lifecycle, dispatch, skip, dedupe, completion.");
     }
 }

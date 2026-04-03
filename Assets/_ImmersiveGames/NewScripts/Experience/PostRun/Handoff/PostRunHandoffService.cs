@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
             if (!context.IsGameplayScene)
             {
                 DebugUtility.LogVerbose<PostRunHandoffService>(
-                    $"[OBS][PostRun][Bridge] PostRunHandoffSkipped reason='scene_not_gameplay' scene='{Normalize(context.SceneName)}'.",
+                    $"[OBS][GameplaySessionFlow][Bridge] PostRunHandoffSkipped reason='scene_not_gameplay' scene='{Normalize(context.SceneName)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -47,30 +47,30 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
             try
             {
                 DebugUtility.Log<PostRunHandoffService>(
-                    $"[OBS][ExitStage] PostRunHandoffStarted outcome={context.Outcome} reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
+                    $"[OBS][GameplaySessionFlow] PostRunHandoffStarted outcome={context.Outcome} reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);
 
                 await _postStageCoordinator.RunAsync(stageContext, cancellationToken);
 
                 DebugUtility.Log<PostRunHandoffService>(
-                    $"[OBS][ExitStage] PostStageCompleted signature='{stageContext.Signature}' outcome='{stageContext.Outcome}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
+                    $"[OBS][GameplaySessionFlow] PostStageCompleted signature='{stageContext.Signature}' outcome='{stageContext.Outcome}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
                     DebugUtility.Colors.Info);
 
                 if (!TryMapToPostRunResult(context.Outcome, out PostRunResult postRunResult))
                 {
                     DebugUtility.LogError<PostRunHandoffService>(
-                        $"[FATAL][ExitStage] Handoff recebido com outcome nao terminal='{context.Outcome}' reason='{Normalize(context.Reason)}'.");
+                        $"[FATAL][GameplaySessionFlow] Handoff recebido com outcome nao terminal='{context.Outcome}' reason='{Normalize(context.Reason)}'.");
                     return;
                 }
 
                 _postRunResultService.TrySetRunOutcome(context.Outcome, context.Reason);
 
                 DebugUtility.Log<PostRunHandoffService>(
-                    $"[OBS][RunOutcome] RunOutcomeAccepted outcome='{context.Outcome}' result='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
+                    $"[OBS][GameplaySessionFlow][RunOutcome] RunOutcomeAccepted outcome='{context.Outcome}' result='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{Normalize(context.SceneName)}' frame={context.Frame}.",
                     DebugUtility.Colors.Info);
 
                 DebugUtility.Log<PostRunHandoffService>(
-                    $"[OBS][PostRun] PostRunStarted signature='{stageContext.Signature}' outcome='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
+                    $"[OBS][GameplaySessionFlow] PostRunStarted signature='{stageContext.Signature}' outcome='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
                     DebugUtility.Colors.Info);
 
                 if (TryResolveCurrentLevelContract(out LevelStagePresentationContract contract) &&
@@ -81,11 +81,11 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
                     if (!DependencyManager.Provider.TryGetGlobal<ILevelPostRunHookService>(out var levelPostRunHookService) || levelPostRunHookService == null)
                     {
                         DebugUtility.LogVerbose<PostRunHandoffService>(
-                            $"[OBS][PostRun] PostRunCompletedBypass reason='level_postrun_hook_service_missing' signature='{stageContext.Signature}' outcome='{postRunResult}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
+                            $"[OBS][GameplaySessionFlow] PostRunCompletedBypass reason='level_postrun_hook_service_missing' signature='{stageContext.Signature}' outcome='{postRunResult}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
                             DebugUtility.Colors.Info);
 
                         DebugUtility.Log<PostRunHandoffService>(
-                            $"[OBS][PostRun] PostRunCompleted signature='{stageContext.Signature}' outcome='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
+                            $"[OBS][GameplaySessionFlow] PostRunCompleted signature='{stageContext.Signature}' outcome='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
                             DebugUtility.Colors.Info);
 
                         _postRunOwnershipService.OnPostRunEntered(new PostRunOwnershipContext(
@@ -112,11 +112,11 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
                 else
                 {
                     DebugUtility.LogVerbose<PostRunHandoffService>(
-                        $"[OBS][PostRun] PostRunCompletedBypass reason='missing_current_level_contract_or_hook_disabled' signature='{stageContext.Signature}' outcome='{postRunResult}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
+                        $"[OBS][GameplaySessionFlow] PostRunCompletedBypass reason='missing_current_level_contract_or_hook_disabled' signature='{stageContext.Signature}' outcome='{postRunResult}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
                         DebugUtility.Colors.Info);
 
                     DebugUtility.Log<PostRunHandoffService>(
-                        $"[OBS][PostRun] PostRunCompleted signature='{stageContext.Signature}' outcome='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
+                        $"[OBS][GameplaySessionFlow] PostRunCompleted signature='{stageContext.Signature}' outcome='{postRunResult}' reason='{Normalize(context.Reason)}' scene='{stageContext.SceneName}' frame={stageContext.Frame}.",
                         DebugUtility.Colors.Info);
 
                     _postRunOwnershipService.OnPostRunEntered(new PostRunOwnershipContext(
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Handoff
             catch (Exception ex)
             {
                 DebugUtility.LogError<PostRunHandoffService>(
-                    $"[FATAL][ExitStage] Falha inesperada ao executar PostRunHandoff. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[FATAL][GameplaySessionFlow] Falha inesperada ao executar PostRunHandoff. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

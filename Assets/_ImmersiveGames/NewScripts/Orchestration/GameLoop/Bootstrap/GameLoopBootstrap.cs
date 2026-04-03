@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Bridges;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
@@ -61,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             EnsureRunEndEventBridge();
             EnsureDriver();
             EnsureSceneFlowSyncCoordinator(bootstrapConfig, gameLoopService);
+            EnsureGameLoopModuleComposition();
 
             _runtimeComposed = true;
 
@@ -231,6 +233,28 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
+        private static void EnsureGameLoopModuleComposition()
+        {
+            RequireGlobal<IGameLoopService>("IGameLoopService");
+            RequireGlobal<IPauseStateService>("IPauseStateService");
+            RequireGlobal<IGameRunEndRequestService>("IGameRunEndRequestService");
+            RequireGlobal<IGameRunPlayingStateGuard>("IGameRunPlayingStateGuard");
+            RequireGlobal<IGameRunOutcomeService>("IGameRunOutcomeService");
+            RequireGlobal<IGameLoopCommands>("IGameLoopCommands");
+            RequireGlobal<IPauseCommands>("IPauseCommands");
+            RequireGlobal<GameLoopIntroStageBridge>("GameLoopIntroStageBridge");
+            RequireGlobal<GameRunOutcomeRequestBridge>("GameRunOutcomeRequestBridge");
+
+            if (_sceneFlowSyncCoordinator == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] GameLoopSceneFlowSyncCoordinator nao foi composto.");
+            }
+
+            DebugUtility.Log(typeof(GameLoopBootstrap),
+                "[OBS][GameLoop] Runtime composition consolidada. scope='lifecycle macro -> play/pause/resume -> run-start/run-end'.",
+                DebugUtility.Colors.Info);
+        }
+
         private static void RegisterIfMissing<T>(Func<T> factory, Type contextType, string alreadyRegisteredMessage, string registeredMessage)
             where T : class
         {
@@ -297,6 +321,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             }
 
             throw new InvalidOperationException("[FATAL][Config][GameLoop] IFadeService ausente no DI global antes da composicao do SceneFlow sync.");
+        }
+
+        private static void RequireGlobal<T>(string serviceName)
+            where T : class
+        {
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException($"[FATAL][Config][GameLoop] {serviceName} obrigatorio ausente para compor o GameLoop runtime.");
         }
 
         private readonly struct StartupTransitionResolution

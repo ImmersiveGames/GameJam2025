@@ -8,9 +8,8 @@ using _ImmersiveGames.NewScripts.Experience.Audio.Context;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Host;
-using _ImmersiveGames.NewScripts.Experience.Audio.Semantics;
+using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Experience.Preferences.Contracts;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
 {
@@ -44,9 +43,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
             EnsureAudioBgmContextService(bootstrapConfig);
-            EnsureNavigationLevelRouteBgmBridge(bootstrapConfig);
+            EnsureNavigationLevelRouteBgmBridge();
             EnsureGlobalAudioService();
-            EnsureEntityAudioService(bootstrapConfig);
 
             _runtimeComposed = true;
 
@@ -100,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
                 registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
         }
 
-        private static void EnsureNavigationLevelRouteBgmBridge(BootstrapConfigAsset bootstrapConfig)
+        private static void EnsureNavigationLevelRouteBgmBridge()
         {
             if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmContextService>(out var bgmContextService) || bgmContextService == null)
             {
@@ -132,16 +130,19 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
                 return;
             }
 
-            DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContext);
-
             RegisterIfMissing<IAudioBgmContextService>(
-                () => new AudioBgmContextService(bgmService, navigationCatalog, restartContext),
+                () => new AudioBgmContextService(bgmService, navigationCatalog),
                 "[Audio][BGM][Context] IAudioBgmContextService already registered in global DI.",
                 "[Audio][BGM][Context] IAudioBgmContextService registered in global DI.");
         }
 
         private static void EnsureGlobalAudioService()
         {
+            if (!DependencyManager.Provider.TryGetGlobal<IPoolService>(out var poolService) || poolService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Pooling] IPoolService obrigatorio ausente antes de compor o AudioGlobalSfxService.");
+            }
+
             RegisterIfMissing(
                 factory: () =>
                 {
@@ -149,31 +150,10 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
                     DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var settings);
                     DependencyManager.Provider.TryGetGlobal<IAudioRoutingResolver>(out var routing);
 
-                    return AudioGlobalSfxService.Create(defaults, settings, routing);
+                    return AudioGlobalSfxService.Create(defaults, settings, routing, poolService);
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IGlobalAudioService already registered.",
                 registeredMessage: "[Audio][BOOT] IGlobalAudioService registered (F4/F5 direct + pooled SFX runtime).");
-        }
-
-        private static void EnsureEntityAudioService(BootstrapConfigAsset bootstrapConfig)
-        {
-            RegisterIfMissing<IEntityAudioService>(
-                factory: () =>
-                {
-                    DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out var globalAudio);
-                    var semanticMap = bootstrapConfig.EntityAudioSemanticMap;
-
-                    var service = new AudioEntitySemanticService(globalAudio, semanticMap);
-
-                    DebugUtility.LogVerbose(
-                        typeof(AudioRuntimeComposer),
-                        $"[Audio][BOOT] IEntityAudioService semantic map asset='{(semanticMap != null ? semanticMap.name : "null")}'.",
-                        DebugUtility.Colors.Info);
-
-                    return service;
-                },
-                alreadyRegisteredMessage: "[Audio][BOOT] IEntityAudioService already registered.",
-                registeredMessage: "[Audio][BOOT] IEntityAudioService registered (F6 semantic standalone runtime).");
         }
 
         private static void RegisterIfMissing<T>(

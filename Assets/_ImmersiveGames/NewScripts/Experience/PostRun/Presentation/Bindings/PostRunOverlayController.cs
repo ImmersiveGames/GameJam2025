@@ -101,20 +101,20 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<PostRunOverlayController>(
-                    "[RunDecision] Restart ignorado (acao ja solicitada).",
+                    "[OBS][GameplaySessionFlow][RunDecision] Restart ignorado (acao ja solicitada).",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _actionRequested = true;
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[RunDecision][Intent] Restart solicitado. Delegando downstream via IPostLevelActionsService.",
+                "[OBS][GameplaySessionFlow][RunDecision][Intent] Restart solicitado. Intent capturada e encaminhada ao executor downstream.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision("Playing", RestartReason);
             HideImmediate();
 
-            _ = ExecutePostLevelActionAsync(
+            _ = ExecuteDownstreamActionAsync(
                 actionName: "RestartLevel",
                 reason: RestartReason,
                 action: ct => _postLevelActionsService.RestartLevelAsync(RestartReason, ct));
@@ -128,26 +128,26 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<PostRunOverlayController>(
-                    "[RunDecision] ExitToMenu ignorado (acao ja solicitada).",
+                    "[OBS][GameplaySessionFlow][RunDecision] ExitToMenu ignorado (acao ja solicitada).",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _actionRequested = true;
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[RunDecision][Intent] ExitToMenu solicitado. Delegando downstream via IPostLevelActionsService.",
+                "[OBS][GameplaySessionFlow][RunDecision][Intent] ExitToMenu solicitado. Intent capturada e encaminhada ao executor downstream.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision("FrontendMenu", ExitToMenuReason);
             HideImmediate();
 
-            _ = ExecutePostLevelActionAsync(
+            _ = ExecuteDownstreamActionAsync(
                 actionName: "ExitToMenu",
                 reason: ExitToMenuReason,
                 action: ct => _postLevelActionsService.ExitToMenuAsync(ExitToMenuReason, ct));
         }
 
-        private async Task ExecutePostLevelActionAsync(string actionName, string reason, Func<CancellationToken, Task> action)
+        private async Task ExecuteDownstreamActionAsync(string actionName, string reason, Func<CancellationToken, Task> action)
         {
             if (_postLevelActionsService == null)
             {
@@ -159,16 +159,16 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             try
             {
                 DebugUtility.Log<PostRunOverlayController>(
-                    $"[RunDecision][Delegate] {actionName} entregue ao executor real IPostLevelActionsService. reason='{reason}'.");
+                    $"[OBS][GameplaySessionFlow][RunDecision][Delegate] {actionName} entregue ao executor downstream real IPostLevelActionsService. reason='{reason}'.");
                 await action(CancellationToken.None);
                 DebugUtility.Log<PostRunOverlayController>(
-                    $"[RunDecision][Execute] {actionName} executado downstream. reason='{reason}'.");
+                    $"[OBS][GameplaySessionFlow][RunDecision][Execute] {actionName} executado pelo executor downstream. reason='{reason}'.");
             }
             catch (Exception ex)
             {
                 _actionRequested = false;
                 DebugUtility.LogWarning<PostRunOverlayController>(
-                    $"[RunDecision] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
+                    $"[OBS][GameplaySessionFlow][RunDecision] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
             }
         }
 
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             _registered = true;
 
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[RunDecision] Bindings de PostRunEntered/PostRunExited/PostRunResultUpdated/GameRunStarted registrados.",
+                "[OBS][GameplaySessionFlow][RunDecision] Bindings de PostRunEntered/PostRunExited/PostRunResultUpdated/GameRunStarted registrados.",
                 DebugUtility.Colors.Info);
         }
 
@@ -204,14 +204,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             _registered = false;
 
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[RunDecision] Bindings de PostRunEntered/PostRunExited/PostRunResultUpdated/GameRunStarted removidos.",
+                "[OBS][GameplaySessionFlow][RunDecision] Bindings de PostRunEntered/PostRunExited/PostRunResultUpdated/GameRunStarted removidos.",
                 DebugUtility.Colors.Info);
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[RunDecision] GameRunStartedEvent recebido. Ocultando contexto visual local.",
+                "[OBS][GameplaySessionFlow][RunDecision] GameRunStartedEvent recebido. Ocultando contexto visual local.",
                 DebugUtility.Colors.Info);
 
             _actionRequested = false;
@@ -226,7 +226,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             }
 
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[RunDecision] RunDecisionEnteredEvent recebido. Exibindo contexto visual local.",
+                "[OBS][GameplaySessionFlow][RunDecision] RunDecisionEnteredEvent recebido. Exibindo contexto visual local.",
                 DebugUtility.Colors.Info);
 
             ApplyStatus(ResolveRequiredResultService("OnPostRunEntered"));
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
         private void OnPostRunExited(PostRunExitedEvent evt)
         {
             DebugUtility.LogVerbose<PostRunOverlayController>(
-                "[RunDecision] RunDecisionExitedEvent recebido. Ocultando contexto visual.",
+                "[OBS][GameplaySessionFlow][RunDecision] RunDecisionExitedEvent recebido. Ocultando contexto visual.",
                 DebugUtility.Colors.Info);
 
             _actionRequested = false;
@@ -335,7 +335,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             if (rootCanvasGroup == null)
             {
                 DebugUtility.LogWarning<PostRunOverlayController>(
-                    "[RunDecision] CanvasGroup nao configurado. Nao foi possivel alterar visibilidade.");
+                    "[OBS][GameplaySessionFlow][RunDecision] CanvasGroup nao configurado. Nao foi possivel alterar visibilidade.");
                 return;
             }
 
@@ -353,14 +353,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             if (result == PostRunResult.None)
             {
                 HardFailFastH1.Trigger(typeof(PostRunOverlayController),
-                    $"[FATAL][H1][RunDecision] Resultado do post-run nao consolidado ao fechar. nextState='{nextState}' reason='{reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow] Resultado do post-run nao consolidado ao fechar. nextState='{nextState}' reason='{reason}'.");
                 return;
             }
 
             if (_postRunOwnership == null)
             {
                 HardFailFastH1.Trigger(typeof(PostRunOverlayController),
-                    $"[FATAL][H1][RunDecision] IPostRunOwnershipService indisponivel ao fechar post-run. nextState='{nextState}' reason='{reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow] IPostRunOwnershipService indisponivel ao fechar post-run. nextState='{nextState}' reason='{reason}'.");
                 return;
             }
 
@@ -427,27 +427,27 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
         {
             if (rootCanvasGroup == null)
             {
-                DebugUtility.LogWarning<PostRunOverlayController>("[RunDecision] rootCanvasGroup nao configurado no Inspector.");
+                DebugUtility.LogWarning<PostRunOverlayController>("[OBS][GameplaySessionFlow][RunDecision] rootCanvasGroup nao configurado no Inspector.");
             }
 
             if (titleText == null)
             {
-                DebugUtility.LogWarning<PostRunOverlayController>("[RunDecision] titleText nao configurado no Inspector.");
+                DebugUtility.LogWarning<PostRunOverlayController>("[OBS][GameplaySessionFlow][RunDecision] titleText nao configurado no Inspector.");
             }
 
             if (reasonText == null)
             {
-                DebugUtility.LogWarning<PostRunOverlayController>("[RunDecision] reasonText nao configurado no Inspector.");
+                DebugUtility.LogWarning<PostRunOverlayController>("[OBS][GameplaySessionFlow][RunDecision] reasonText nao configurado no Inspector.");
             }
 
             if (restartButton == null)
             {
-                DebugUtility.LogWarning<PostRunOverlayController>("[RunDecision] restartButton nao configurado no Inspector.");
+                DebugUtility.LogWarning<PostRunOverlayController>("[OBS][GameplaySessionFlow][RunDecision] restartButton nao configurado no Inspector.");
             }
 
             if (exitToMenuButton == null)
             {
-                DebugUtility.LogWarning<PostRunOverlayController>("[RunDecision] exitToMenuButton nao configurado no Inspector.");
+                DebugUtility.LogWarning<PostRunOverlayController>("[OBS][GameplaySessionFlow][RunDecision] exitToMenuButton nao configurado no Inspector.");
             }
         }
 

@@ -18,6 +18,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
     /// </summary>
     public sealed class WorldResetOrchestrator
     {
+        private enum LifecycleCheckpoint
+        {
+            Dispatch,
+            Guard,
+            Validation,
+            Execution,
+            Completion
+        }
+
         private readonly IWorldResetPolicy _policy;
         private readonly IReadOnlyList<IWorldResetGuard> _guards;
         private readonly WorldResetValidationPipeline _validation;
@@ -78,18 +87,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 
         public async Task<WorldResetResult> ExecuteAsync(WorldResetRequest request)
         {
+            LogLifecycleCheckpoint(LifecycleCheckpoint.Dispatch, request, "received");
             ResetDecision decision = EvaluateGuards(request);
             if (!decision.ShouldProceed)
             {
+                LogLifecycleCheckpoint(LifecycleCheckpoint.Guard, request, "blocked");
+                LogDecisionFlow("skip", "guard", request, decision);
                 return HandleDecision("Guard", decision, request);
             }
 
+            LogLifecycleCheckpoint(LifecycleCheckpoint.Guard, request, "passed");
             decision = _validation.Validate(request, _policy);
             if (!decision.ShouldProceed)
             {
+                LogLifecycleCheckpoint(LifecycleCheckpoint.Validation, request, "blocked");
+                LogDecisionFlow("skip", "validation", request, decision);
                 return HandleDecision("Validation", decision, request);
             }
 
+            LogLifecycleCheckpoint(LifecycleCheckpoint.Validation, request, "passed");
             if (!_executor.TryResolveExecutors(request.TargetScene, out IReadOnlyList<IWorldResetLocalExecutor> executors) ||
                 executors == null ||
                 executors.Count == 0)
@@ -97,11 +113,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
                 string target = string.IsNullOrWhiteSpace(request.TargetScene) ? "<unknown>" : request.TargetScene;
                 string detail = $"{WorldResetReasons.FailedNoLocalExecutorPrefix}:{target}";
                 LogDegraded($"Nenhum executor local neutro encontrado para reset. targetScene='{target}'.");
+                LogLifecycleCheckpoint(LifecycleCheckpoint.Execution, request, "missing_local_executor");
                 _lifecyclePublisher.PublishCompleted(request, WorldResetOutcome.FailedNoLocalExecutor, detail);
+                LogLifecycleCheckpoint(LifecycleCheckpoint.Completion, request, "published_failed_no_local_executor");
+                LogCompletionFlow("failed_no_local_executor", request, detail);
                 return WorldResetResult.Failed;
             }
 
             _lifecyclePublisher.PublishStarted(request);
+            LogLifecycleCheckpoint(LifecycleCheckpoint.Execution, request, "started");
 
             WorldResetResult result = WorldResetResult.Completed;
             WorldResetOutcome outcome = WorldResetOutcome.Completed;
@@ -123,6 +143,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
             finally
             {
                 _lifecyclePublisher.PublishCompleted(request, outcome, detailMessage);
+                LogLifecycleCheckpoint(LifecycleCheckpoint.Completion, request, outcome.ToString());
+                LogCompletionFlow(outcome.ToString(), request, detailMessage);
             }
 
             return result;
@@ -216,6 +238,27 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
                 ResetFeatureIds.WorldReset,
                 "WorldResetDegraded",
                 message);
+        }
+
+        private static void LogLifecycleCheckpoint(LifecycleCheckpoint checkpoint, WorldResetRequest request, string detail)
+        {
+            DebugUtility.Log<WorldResetOrchestrator>(
+                $"[OBS][WorldReset][Lifecycle] checkpoint='{checkpoint}' kind='{request.Kind}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' targetScene='{request.TargetScene}' origin='{request.Origin}' detail='{detail}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogDecisionFlow(string decisionType, string stage, WorldResetRequest request, ResetDecision decision)
+        {
+            DebugUtility.Log<WorldResetOrchestrator>(
+                $"[OBS][WorldReset][Decision] type='{decisionType}' stage='{stage}' shouldProceed={decision.ShouldProceed} shouldPublishCompletion={decision.ShouldPublishCompletion} isViolation={decision.IsViolation} routeId='{request.MacroRouteId}' signature='{request.ContextSignature}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogCompletionFlow(string completionKind, WorldResetRequest request, string detail)
+        {
+            DebugUtility.Log<WorldResetOrchestrator>(
+                $"[OBS][WorldReset][CompletionFlow] kind='{completionKind}' routeId='{request.MacroRouteId}' signature='{request.ContextSignature}' targetScene='{request.TargetScene}' detail='{detail}'.",
+                DebugUtility.Colors.Info);
         }
     }
 }

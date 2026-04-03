@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _subscriptions.Register(_binding);
 
             DebugUtility.LogVerbose<GameRunOutcomeRequestBridge>(
-                "GameRunOutcomeRequestBridge registered.");
+                "[OBS][GameplaySessionFlow] GameRunOutcomeRequestBridge registered.");
         }
 
         private void OnEndRequested(GameRunEndRequestedEvent evt)
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             }
 
             DebugUtility.Log<GameRunOutcomeRequestBridge>(
-                $"[OBS][ExitStage] GameRunEndRequestedEvent recebido outcome='{evt.Outcome}' reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
+                $"[OBS][GameplaySessionFlow] GameRunEndRequestedEvent recebido outcome='{evt.Outcome}' reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
 
             switch (evt.Outcome)
             {
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
                 default:
                     DebugUtility.LogWarning<GameRunOutcomeRequestBridge>(
-                        $"Ignored GameRunEndRequestedEvent with Outcome={evt.Outcome}. Reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
+                        $"[OBS][GameplaySessionFlow] Ignored GameRunEndRequestedEvent with Outcome={evt.Outcome}. Reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
                     break;
             }
         }

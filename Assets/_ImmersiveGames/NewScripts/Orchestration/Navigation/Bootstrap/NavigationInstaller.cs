@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             _installed = true;
 
             DebugUtility.Log(typeof(NavigationInstaller),
-                "[Navigation] Module installer concluido.",
+                "[Navigation][Core] Module installer concluido.",
                 DebugUtility.Colors.Info);
         }
 
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 
                 catalogAsset.GetObservabilitySnapshot(out int rawRoutesCount, out int builtRouteIdsCount, out bool hasToGameplay);
                 DebugUtility.LogVerbose(typeof(NavigationInstaller),
-                    $"[OBS][Navigation] CatalogResolvedVia=BootstrapConfig field=navigationCatalog asset={catalogAsset.name} rawRoutesCount={rawRoutesCount} builtRouteIdsCount={builtRouteIdsCount} hasToGameplay={hasToGameplay}.",
+                    $"[OBS][Navigation][Core] CatalogResolvedVia=BootstrapConfig field=navigationCatalog asset={catalogAsset.name} rawRoutesCount={rawRoutesCount} builtRouteIdsCount={builtRouteIdsCount} hasToGameplay={hasToGameplay}.",
                     DebugUtility.Colors.Info);
                 return;
             }

@@ -12,6 +12,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
                 bootstrap: bootstrapConfig => GameLoopBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "GameLoopInstaller.Install",
                 runtimeComposerEntry: "GameLoopBootstrap.ComposeRuntime",
-                description: "Runtime do GameLoop e start plan canonico.");
+                description: "GameLoop boundary: lifecycle macro, play, pause, resume, run-start, run-end.");
     }
 }

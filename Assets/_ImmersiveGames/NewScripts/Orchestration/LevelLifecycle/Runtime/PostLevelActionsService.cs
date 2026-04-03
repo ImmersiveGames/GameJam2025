@@ -44,15 +44,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartLevel" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartRequested action='Restart' scope='current_level' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='Restart' scope='current_level' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
 
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='Restart' scope='current_level' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
             await _levelFlowRuntimeService.RestartLastGameplayAsync(normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartApplied action='Restart' scope='current_level' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='Restart' scope='current_level' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -61,15 +64,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/RestartFromFirstLevel" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartRequested action='RestartFromFirstLevel' scope='first_level' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='RestartFromFirstLevel' scope='first_level' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
 
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='RestartFromFirstLevel' scope='first_level' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
             await _levelFlowRuntimeService.RestartFromFirstLevelAsync(normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] RestartApplied action='RestartFromFirstLevel' scope='first_level' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='RestartFromFirstLevel' scope='first_level' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -78,15 +84,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelFlow/ResetCurrentLevel" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionRequested action='ResetCurrentLevel' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='ResetCurrentLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
 
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='ResetCurrentLevel' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
             await _levelFlowRuntimeService.ResetCurrentLevelAsync(normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='ResetCurrentLevel' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='ResetCurrentLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -95,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostLevel/NextLevel" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionRequested action='NextLevel' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='NextLevel' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
@@ -105,16 +114,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 snapshot.MacroRouteRef.LevelCollection == null)
             {
                 DebugUtility.LogWarning<PostLevelActionsService>(
-                    $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_snapshot_or_collection'.");
+                    $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_snapshot_or_collection'.");
                 return;
             }
 
             var nextLevelRef = _levelFlowContentService.ResolveNextLevelOrFail(snapshot, normalizedReason);
 
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='NextLevel' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
             await _levelSwapLocalService.SwapLocalAsync(nextLevelRef, normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] PostLevelActionApplied action='NextLevel' reason='{normalizedReason}' nextLevelRef='{nextLevelRef.name}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='NextLevel' reason='{normalizedReason}' nextLevelRef='{nextLevelRef.name}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -123,18 +135,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "PostLevel/ExitToMenu" : reason.Trim();
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][LevelFlow] ExitToMenuRequested action='ExitToMenu' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='ExitToMenu' reason='{normalizedReason}' handoff='Navigation'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
-            DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][Navigation] ExitToMenuDispatch action='GoToMenuAsync' reason='{normalizedReason}'.",
-                DebugUtility.Colors.Info);
-            await _navigationService.GoToMenuAsync(normalizedReason);
+            await DispatchExitToMenuHandoffAsync(normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][Navigation] ExitToMenuApplied action='GoToMenuAsync' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='GoToMenuAsync' reason='{normalizedReason}' handoff='Navigation'.",
                 DebugUtility.Colors.Success);
+        }
+
+        private async Task DispatchExitToMenuHandoffAsync(string reason, CancellationToken ct)
+        {
+            DebugUtility.Log<PostLevelActionsService>(
+                $"[OBS][GameplaySessionFlow][Handoff] ExitToMenuDispatch action='GoToMenuAsync' reason='{reason}' target='Navigation'.",
+                DebugUtility.Colors.Info);
+
+            ct.ThrowIfCancellationRequested();
+            await _navigationService.GoToMenuAsync(reason);
         }
     }
 }

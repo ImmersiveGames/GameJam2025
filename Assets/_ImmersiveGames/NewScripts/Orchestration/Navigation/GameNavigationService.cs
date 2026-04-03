@@ -26,14 +26,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
 
             DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[Navigation] GameNavigationService initialized. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
+                $"[NavigationCore] GameNavigationService initialized. Entries: [{string.Join(", ", _catalog.RouteIds)}]",
                 DebugUtility.Colors.Info);
         }
 
         public Task GoToMenuAsync(string reason = null)
         {
             DebugUtility.LogVerbose(typeof(GameNavigationService),
-                $"[OBS][Navigation] GoToMenuRequested reason='{reason ?? "<null>"}'.",
+                $"[OBS][NavigationCore] GoToMenuRequested reason='{reason ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
             return NavigateAsync(GameNavigationIntentKind.Menu, reason);
         }
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid || gameplayEntry.RouteRef == null)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] Missing gameplay intent entry while resolving canonical gameplay route. intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
+                    $"[FATAL][H1][NavigationCore] Missing gameplay intent entry while resolving canonical gameplay route. intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
             }
 
             return gameplayEntry.RouteId;
@@ -54,27 +54,27 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             if (!routeId.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] StartGameplayRouteAsync with invalid routeId. routeId='{routeId}' reason='{reason ?? "<null>"}'.");
+                    $"[FATAL][H1][NavigationCore] StartGameplayRouteAsync with invalid routeId. routeId='{routeId}' reason='{reason ?? "<null>"}'.");
             }
 
             if (!TryResolveCoreEntry(GameNavigationIntentKind.Gameplay, out var gameplayEntry) || !gameplayEntry.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] Missing gameplay intent entry for StartGameplayRouteAsync. intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
+                    $"[FATAL][H1][NavigationCore] Missing gameplay intent entry for StartGameplayRouteAsync. intentId='{GetCoreIntentId(GameNavigationIntentKind.Gameplay)}'.");
             }
 
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "Navigation/StartGameplayRoute" : reason.Trim();
             ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                "[OBS][Navigation] StartGameplayRouteAsync dispatched without explicit level selection; LevelFlow owns default selection in LevelPrepare.",
+                "[OBS][NavigationCore] StartGameplayRouteAsync dispatched without explicit level selection; LevelFlow owns default selection in LevelPrepare.",
                 DebugUtility.Colors.Info);
 
             var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty, gameplayEntry.RouteRef);
             TransitionStyleDefinition definition = ResolveStyle(routeEntry);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', style='{routeEntry.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{(definition.Profile != null ? definition.Profile.name : "<null>")}'.",
+                $"[OBS][NavigationCore] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', style='{routeEntry.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{(definition.Profile != null ? definition.Profile.name : "<null>")}'.",
                 DebugUtility.Colors.Info);
 
             await ExecuteEntryAsync(GetCoreIntentId(GameNavigationIntentKind.Gameplay), routeEntry, normalizedReason);
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
             {
                 DebugUtility.LogWarning(typeof(GameNavigationService),
-                    $"[Navigation] Navigation already in progress. Ignoring core intent='{intent}'.");
+                    $"[NavigationCore] Navigation already in progress. Ignoring core intent='{intent}'.");
                 return Task.CompletedTask;
             }
 
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             {
                 if (!TryResolveCoreEntry(intent, out GameNavigationEntry entry) || !entry.IsValid)
                 {
-                    throw new InvalidOperationException($"[FATAL][Config] Missing core intent entry '{intentId}'.");
+                throw new InvalidOperationException($"[FATAL][Config][NavigationCore] Missing core intent entry '{intentId}'.");
                 }
 
                 await ExecuteEntryAsync(intentId, entry, reason);
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(GameNavigationService),
-                    $"[Navigation] Exception while navigating (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
+                    $"[NavigationCore] Exception while navigating (core). intent='{intent}', reason='{reason ?? "<null>"}', ex={ex}");
             }
             finally
             {
@@ -132,7 +132,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             NavigationIntentId intentId = GameNavigationIntents.GetCoreId(intent);
             if (!intentId.IsValid)
             {
-                string message = $"[FATAL][Config] GameNavigationIntents invalid for core intent. intent='{intent}', intentId='<empty>'.";
+                string message = $"[FATAL][Config][NavigationCore] GameNavigationIntents invalid for core intent. intent='{intent}', intentId='<empty>'.";
                 DebugUtility.LogError(typeof(GameNavigationService), message);
                 throw new InvalidOperationException(message);
             }
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             TransitionStyleDefinition definition = ResolveStyle(entry);
             if (entry.RouteRef == null)
             {
-                throw new InvalidOperationException($"[FATAL][Config] Navigation without direct routeRef. routeId='{entry.RouteId}'.");
+                throw new InvalidOperationException($"[FATAL][Config][NavigationCore] Navigation without direct routeRef. routeId='{entry.RouteId}'.");
             }
 
             SceneRouteDefinition routeDefinition = entry.RouteRef.ToDefinition();
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 
             string signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][Navigation] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
+                $"[OBS][NavigationCore] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
@@ -174,19 +174,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             if (gameplayEntry.RouteRef == null)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] Gameplay route validation requires direct routeRef. routeId='{routeId}' reason='{reason}'.");
+                    $"[FATAL][H1][NavigationCore] Gameplay route validation requires direct routeRef. routeId='{routeId}' reason='{reason}'.");
             }
 
             if (gameplayEntry.RouteRef.RouteId != routeId)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] Gameplay routeId mismatch against direct routeRef. routeId='{routeId}' routeRefRouteId='{gameplayEntry.RouteRef.RouteId}' reason='{reason}'.");
+                    $"[FATAL][H1][NavigationCore] Gameplay routeId mismatch against direct routeRef. routeId='{routeId}' routeRefRouteId='{gameplayEntry.RouteRef.RouteId}' reason='{reason}'.");
             }
 
             if (gameplayEntry.RouteRef.RouteKind != SceneRouteKind.Gameplay)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] Gameplay routeRef with invalid RouteKind. routeId='{routeId}' routeKind='{gameplayEntry.RouteRef.RouteKind}' reason='{reason}'.");
+                    $"[FATAL][H1][NavigationCore] Gameplay routeRef with invalid RouteKind. routeId='{routeId}' routeKind='{gameplayEntry.RouteRef.RouteKind}' reason='{reason}'.");
             }
 
             if (gameplayEntry.RouteRef.LevelCollection == null ||
@@ -194,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
                 gameplayEntry.RouteRef.LevelCollection.Levels.Count == 0)
             {
                 HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][Navigation] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
+                    $"[FATAL][H1][NavigationCore] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
             }
         }
 
@@ -202,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
         {
             if (entry.StyleRef == null)
             {
-                throw new InvalidOperationException($"[FATAL][Config] Navigation without TransitionStyleAsset direct. routeId='{entry.RouteId}'.");
+                throw new InvalidOperationException($"[FATAL][Config][NavigationCore] Navigation without TransitionStyleAsset direct. routeId='{entry.RouteId}'.");
             }
 
             return entry.StyleRef.ToDefinitionOrFail(nameof(GameNavigationService), $"routeId='{entry.RouteId}'");

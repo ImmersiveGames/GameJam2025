@@ -43,6 +43,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         string CurrentStateIdName { get; }
     }
 
+    /// <summary>
+    /// Helpers canônicos para classificar o ciclo macro do GameLoop.
+    /// Mantém a leitura dos estados explícita sem alterar os contratos públicos existentes.
+    /// </summary>
+    public static class GameLoopStateIdExtensions
+    {
+        public static bool IsPreGameplayState(this GameLoopStateId stateId)
+            => stateId == GameLoopStateId.Boot || stateId == GameLoopStateId.Ready;
+
+        public static bool IsActiveGameplayState(this GameLoopStateId stateId)
+            => stateId == GameLoopStateId.Playing;
+
+        public static bool IsPausedState(this GameLoopStateId stateId)
+            => stateId == GameLoopStateId.Paused;
+
+        public static bool IsTerminalRunState(this GameLoopStateId stateId)
+            => stateId == GameLoopStateId.RunEnded;
+    }
+
     public interface IPauseStateService
     {
         bool IsPaused { get; }

@@ -2,11 +2,8 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands;
-using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
-using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
-using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 {
     /// <summary>
@@ -31,13 +28,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             RegisterPauseStateService();
             RegisterGameRunEndRequestService();
             RegisterGameRunPlayingStateGuard();
-            RegisterGameRunOutcomeService();
             RegisterGameLoopCommands();
             RegisterPauseCommands();
-            RegisterIntroStageCoordinator();
-            RegisterIntroStageControlService();
-            RegisterGameplaySceneClassifier();
-            RegisterDefaultIntroStageStep();
 
             _installed = true;
 
@@ -130,22 +122,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterGameRunOutcomeService()
-        {
-            RegisterIfMissing<IGameRunOutcomeService>(
-                () =>
-                {
-                    if (!DependencyManager.Provider.TryGetGlobal<IGameRunPlayingStateGuard>(out var gameplayStateGuard) || gameplayStateGuard == null)
-                    {
-                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunPlayingStateGuard ausente ao registrar IGameRunOutcomeService.");
-                    }
-
-                    return new GameRunOutcomeService(gameplayStateGuard);
-                },
-                "[GameLoop] IGameRunOutcomeService ja registrado no DI global.",
-                "[GameLoop] GameRunOutcomeService registrado no DI global.");
-        }
-
         private static void RegisterGameLoopCommands()
         {
             RegisterIfMissing<IGameLoopCommands>(
@@ -160,38 +136,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
                 },
                 "[GameLoop] IGameLoopCommands ja registrado no DI global.",
                 "[GameLoop] GameLoopCommands registrado no DI global.");
-        }
-
-        private static void RegisterIntroStageCoordinator()
-        {
-            RegisterIfMissing<IIntroStageCoordinator>(
-                () => new IntroStageCoordinator(),
-                "[IntroStageController] IIntroStageCoordinator ja registrado no DI global.",
-                "[IntroStageController] IntroStageCoordinator registrado no DI global.");
-        }
-
-        private static void RegisterIntroStageControlService()
-        {
-            RegisterIfMissing<IIntroStageControlService>(
-                () => new IntroStageControlService(),
-                "[IntroStageController] IIntroStageControlService ja registrado no DI global.",
-                "[IntroStageController] IntroStageControlService registrado no DI global.");
-        }
-
-        private static void RegisterGameplaySceneClassifier()
-        {
-            RegisterIfMissing<IGameplaySceneClassifier>(
-                () => new DefaultGameplaySceneClassifier(),
-                "[Gameplay] IGameplaySceneClassifier ja registrado no DI global.",
-                "[Gameplay] IGameplaySceneClassifier registrado no DI global.");
-        }
-
-        private static void RegisterDefaultIntroStageStep()
-        {
-            RegisterIfMissing<IIntroStageStep>(
-                () => new ConfirmToStartIntroStageStep(),
-                "[IntroStageController] IIntroStageStep ja registrado no DI global.",
-                "[IntroStageController] ConfirmToStartIntroStageStep registrado no DI global.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

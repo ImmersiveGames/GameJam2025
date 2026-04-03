@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         private readonly IGameLoopStateObserver _observer;
 
         public GameLoopStateId Current { get; private set; } = GameLoopStateId.Boot;
-        public bool IsGameActive => Current == GameLoopStateId.Playing;
+        public bool IsGameActive => Current.IsActiveGameplayState();
 
         private bool _lastIsGameActive;
 
@@ -40,9 +40,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
             // Evita capturar reset/restart durante transicoes em gameplay.
             if (_signals.ReadyRequested)
             {
-                if (Current is GameLoopStateId.Boot
-                    or GameLoopStateId.Paused
-                    or GameLoopStateId.RunEnded)
+                if (Current.IsPreGameplayState()
+                    || Current.IsPausedState()
+                    || Current.IsTerminalRunState())
                 {
                     return TransitionTo(GameLoopStateId.Ready);
                 }
@@ -123,21 +123,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         /// - A decisao final deve ocorrer em IGameplayStateGate (gate-aware).
         /// </summary>
         public bool IsGameplayActionAllowedByLoopState(GameplayAction action)
-            => Current == GameLoopStateId.Playing;
+            => Current.IsActiveGameplayState();
 
         public bool IsUiActionAllowedByLoopState(UiAction action) => Current switch
         {
-            GameLoopStateId.Boot => true,
-            GameLoopStateId.Ready => true,
-            GameLoopStateId.Paused => true,
+            _ when Current.IsPreGameplayState() => true,
+            _ when Current.IsPausedState() => true,
             _ => false
         };
 
         public bool IsSystemActionAllowedByLoopState(SystemAction action) => Current switch
         {
-            GameLoopStateId.Boot => true,
-            GameLoopStateId.Ready => true,
-            GameLoopStateId.Paused => true,
+            _ when Current.IsPreGameplayState() => true,
+            _ when Current.IsPausedState() => true,
             _ => false
         };
 

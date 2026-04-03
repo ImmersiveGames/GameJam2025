@@ -177,12 +177,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
                 if (context.IsValid)
                 {
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][EnterStageController] EnterStageCompletedPublished source='IntroStageControlService' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
+                        $"[OBS][EnterStageController] EnterStageCompletedPublished source='GameplaySessionFlow' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
                         DebugUtility.Colors.Info);
 
                     EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(
                         context.Session,
-                        "IntroStageControlService",
+                        "GameplaySessionFlow",
                         wasSkipped,
                         normalizedReason));
                 }

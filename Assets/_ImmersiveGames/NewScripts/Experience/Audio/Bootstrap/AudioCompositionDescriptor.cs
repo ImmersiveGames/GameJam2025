@@ -12,6 +12,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap
                 bootstrap: AudioRuntimeComposer.ComposeRuntime,
                 installerEntry: "AudioInstaller.Install",
                 runtimeComposerEntry: "AudioRuntimeComposer.ComposeRuntime",
-                description: "Audio defaults, services and runtime wiring.");
+                description: "Audio core runtime, thin bridges and explicit cue playback wiring.");
     }
 }

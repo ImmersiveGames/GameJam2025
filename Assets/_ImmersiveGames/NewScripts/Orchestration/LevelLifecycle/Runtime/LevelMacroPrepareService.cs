@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][LevelFlow] LevelEntered source='LevelPrepare' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
+                $"[OBS][LevelFlow] LevelEntered source='GameplaySessionFlow' levelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<LevelEnteredEvent>.Raise(new LevelEnteredEvent(
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     normalizedReason,
                     selectionVersion,
                     levelSignature),
-                "LevelPrepare",
+                "GameplaySessionFlow",
                 routeKind));
         }
 

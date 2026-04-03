@@ -12,6 +12,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
                 bootstrap: bootstrapConfig => NavigationBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "NavigationInstaller.Install",
                 runtimeComposerEntry: "NavigationBootstrap.ComposeRuntime",
-                description: "Navigation catalog e runtime de dispatch.");
+                description: "Navigation boundary: NavigationCore + NavigationAdapters + NavigationCompatibility.");
     }
 }

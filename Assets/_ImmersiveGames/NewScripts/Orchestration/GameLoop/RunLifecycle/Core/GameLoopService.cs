@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
             }
 
             DebugUtility.Log<GameLoopService>(
-                "[OBS][Gameplay] RequestStart accepted for slice rail 'Gameplay -> Level -> EnterStage -> Playing'.",
+                "[OBS][Gameplay] RequestStart accepted for slice rail 'GameplaySessionFlow -> Level -> EnterStage -> Playing' handshake='GameLoopIntroStageBridge'.",
                 DebugUtility.Colors.Info);
 
             _signals.MarkStart();
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         public void RequestRunEnd()
         {
             DebugUtility.LogVerbose<GameLoopService>(
-                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}'.");
+                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}' handshake='GameRunEndedEventBridge'.");
 
             _signals.MarkEnd();
         }
@@ -159,9 +159,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
 
         private void UpdateRunStartedFlag(GameLoopStateId stateId)
         {
-            if (stateId == GameLoopStateId.Boot ||
-                stateId == GameLoopStateId.Ready ||
-                stateId == GameLoopStateId.RunEnded)
+            if (stateId.IsPreGameplayState() || stateId.IsTerminalRunState())
             {
                 _runStartedEmittedThisRun = false;
             }
@@ -169,14 +167,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
 
         private void HandlePlayingEnteredIfNeeded(GameLoopStateId stateId)
         {
-            if (stateId != GameLoopStateId.Playing)
+            if (!stateId.IsActiveGameplayState())
             {
                 return;
             }
 
             // Boundary note: Playing is the canonical final signal that gameplay is actually released.
             DebugUtility.Log<GameLoopService>(
-                "[OBS][Gameplay] PlayingEntered state='Playing' rail='Gameplay -> Level -> EnterStage -> Playing' canonical='final_release'.",
+                "[OBS][Gameplay] PlayingEntered state='Playing' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' canonical='final_release'.",
                 DebugUtility.Colors.Success);
 
             _signals.ClearStartPending();
@@ -186,6 +184,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
             if (!_runStartedEmittedThisRun)
             {
                 _runStartedEmittedThisRun = true;
+                DebugUtility.Log<GameLoopService>(
+                    "[OBS][GameLoop] RunStartPublished state='Playing' handshake='GameplaySessionFlow' canonical='run_start'.",
+                    DebugUtility.Colors.Info);
                 EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
             }
         }

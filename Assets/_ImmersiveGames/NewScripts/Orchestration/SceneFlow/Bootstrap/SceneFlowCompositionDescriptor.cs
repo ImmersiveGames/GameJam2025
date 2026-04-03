@@ -12,6 +12,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
                 bootstrap: bootstrapConfig => SceneFlowBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "SceneFlowInstaller.Install",
                 runtimeComposerEntry: "SceneFlowBootstrap.ComposeRuntime",
-                description: "Scene transition, loading subcapability e fade runtime.");
+                description: "SceneFlow boundary: transition macro, loading, fade, navigation.");
     }
 }

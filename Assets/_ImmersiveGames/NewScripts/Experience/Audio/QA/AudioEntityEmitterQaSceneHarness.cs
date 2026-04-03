@@ -5,28 +5,24 @@ using _ImmersiveGames.NewScripts.Experience.Audio.Bindings;
 using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Models;
-using _ImmersiveGames.NewScripts.Experience.Audio.Semantics;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 {
     /// <summary>
-    /// Harness de QA para F7: emitter mínimo + prova de uso com e sem emitter.
+    /// Harness de QA para validar o emitter como binding puro de contexto.
     /// </summary>
     public sealed class AudioEntityEmitterQaSceneHarness : MonoBehaviour
     {
         [Header("Emitter Under Test")]
         [SerializeField] private EntityAudioEmitter emitterUnderTest;
-        [SerializeField] private string emitterPurpose = "semantic_spatial_direct";
 
-        [Header("No Emitter Path")]
-        [SerializeField] private Transform ownerTransform;
-        [SerializeField] private string noEmitterPurpose = "semantic_spatial_direct";
-        [SerializeField] private Vector3 fallbackSpatialPosition = new Vector3(0f, 1.5f, 2f);
-        [SerializeField] [Min(0f)] private float noEmitterVolumeScale = 1f;
-
-        [Header("Shared Authoring")]
-        [SerializeField] private EntityAudioSemanticMapAsset semanticMap;
+        [Header("Cue Under Test")]
         [SerializeField] private AudioSfxCueAsset explicitCue;
+
+        [Header("Owner Context")]
+        [SerializeField] private Transform ownerTransform;
+        [SerializeField] private Vector3 fallbackSpatialPosition = new Vector3(0f, 1.5f, 2f);
 
         [Header("Auto Stop QA")]
         [SerializeField] [Min(0f)] private float autoStopDelaySeconds = 0.05f;
@@ -34,54 +30,19 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 
         [SerializeField] private bool verboseLogs = true;
 
-        private IEntityAudioService _entityAudioService;
         private IAudioPlaybackHandle _lastHandle = NullAudioPlaybackHandle.Instance;
         private Coroutine _autoStopRoutine;
 
         [ContextMenu("QA/Audio/EntityEmitter/Validate Setup")]
         private void ValidateSetup()
         {
-            bool serviceResolved = TryEnsureService();
-            bool emitterResolved = emitterUnderTest != null && emitterUnderTest.TryResolveService(out _);
-            Transform effectiveOwner = ResolveNoEmitterOwner(out string ownerSource);
-
+            Transform effectiveOwner = ResolveOwner(out string ownerSource);
             LogInfo("ValidateSetup",
-                $"serviceResolved={serviceResolved} emitter='{SafeName(emitterUnderTest)}' emitterResolved={emitterResolved} configuredOwner='{SafeName(ownerTransform)}' effectiveOwner='{SafeName(effectiveOwner)}' ownerSource='{ownerSource}' semanticMap='{SafeName(semanticMap)}' emitterPurpose='{emitterPurpose}' noEmitterPurpose='{noEmitterPurpose}' explicitCue='{SafeName(explicitCue)}'");
+                $"emitter='{SafeName(emitterUnderTest)}' explicitCue='{SafeName(explicitCue)}' configuredOwner='{SafeName(ownerTransform)}' effectiveOwner='{SafeName(effectiveOwner)}' ownerSource='{ownerSource}'");
         }
 
-        [ContextMenu("QA/Audio/EntityEmitter/Play Purpose Via Emitter")]
-        private void PlayPurposeViaEmitter()
-        {
-            if (!TryEnsureEmitter())
-            {
-                return;
-            }
-
-            var handle = emitterUnderTest.PlayPurpose(
-                purpose: emitterPurpose,
-                reason: "qa_entity_emitter_purpose");
-
-            LogHandle("PlayPurposeViaEmitter", handle, emitterPurpose);
-        }
-
-        [ContextMenu("QA/Audio/EntityEmitter/Play Purpose Via Emitter And Auto Stop")]
-        private void PlayPurposeViaEmitterAndAutoStop()
-        {
-            if (!TryEnsureEmitter())
-            {
-                return;
-            }
-
-            var handle = emitterUnderTest.PlayPurpose(
-                purpose: emitterPurpose,
-                reason: "qa_entity_emitter_purpose_auto_stop");
-
-            LogHandle("PlayPurposeViaEmitterAndAutoStop", handle, emitterPurpose);
-            ScheduleAutoStop("PlayPurposeViaEmitterAndAutoStop");
-        }
-
-        [ContextMenu("QA/Audio/EntityEmitter/Play Cue Via Emitter")]
-        private void PlayCueViaEmitter()
+        [ContextMenu("QA/Audio/EntityEmitter/Play Cue Local")]
+        private void PlayCueLocal()
         {
             if (!TryEnsureEmitter())
             {
@@ -90,19 +51,20 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 
             if (explicitCue == null)
             {
-                LogError("PlayCueViaEmitter", "explicitCue is null");
+                LogError("PlayCueLocal", "explicitCue is null");
                 return;
             }
 
             var handle = emitterUnderTest.PlayCue(
                 cue: explicitCue,
-                reason: "qa_entity_emitter_cue");
+                reason: "qa_entity_emitter_cue_local");
 
-            LogHandle("PlayCueViaEmitter", handle, explicitCue.name);
+            LogHandle("PlayCueLocal", handle, explicitCue.name);
+            ScheduleAutoStop(nameof(PlayCueLocal));
         }
 
-        [ContextMenu("QA/Audio/EntityEmitter/Play Cue Via Emitter And Auto Stop")]
-        private void PlayCueViaEmitterAndAutoStop()
+        [ContextMenu("QA/Audio/EntityEmitter/Play Cue Spatial")]
+        private void PlayCueSpatial()
         {
             if (!TryEnsureEmitter())
             {
@@ -111,64 +73,20 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
 
             if (explicitCue == null)
             {
-                LogError("PlayCueViaEmitterAndAutoStop", "explicitCue is null");
+                LogError("PlayCueSpatial", "explicitCue is null");
                 return;
             }
 
-            var handle = emitterUnderTest.PlayCue(
-                cue: explicitCue,
-                reason: "qa_entity_emitter_cue_auto_stop");
-
-            LogHandle("PlayCueViaEmitterAndAutoStop", handle, explicitCue.name);
-            ScheduleAutoStop("PlayCueViaEmitterAndAutoStop");
-        }
-
-        [ContextMenu("QA/Audio/EntityEmitter/Play Purpose Without Emitter")]
-        private void PlayPurposeWithoutEmitter()
-        {
-            if (!TryEnsureService())
-            {
-                LogError("PlayPurposeWithoutEmitter", "IEntityAudioService not available in global DI");
-                return;
-            }
-
-            Transform owner = ResolveNoEmitterOwner(out string ownerSource);
+            Transform owner = ResolveOwner(out string ownerSource);
             Vector3 position = owner != null ? owner.position : fallbackSpatialPosition;
-            var context = AudioPlaybackContext.Spatial(
+            AudioPlaybackContext context = AudioPlaybackContext.Spatial(
                 worldPosition: position,
                 followTarget: owner,
-                reason: "qa_entity_no_emitter_purpose",
-                volumeScale: Mathf.Max(0f, noEmitterVolumeScale));
+                reason: "qa_entity_emitter_cue_spatial");
 
-            var handle = _entityAudioService.PlayPurpose(noEmitterPurpose, owner, context);
-            LogHandle("PlayPurposeWithoutEmitter", handle, $"purpose='{noEmitterPurpose}' owner='{SafeName(owner)}' ownerSource='{ownerSource}'");
-        }
-
-        [ContextMenu("QA/Audio/EntityEmitter/Play Cue Without Emitter")]
-        private void PlayCueWithoutEmitter()
-        {
-            if (!TryEnsureService())
-            {
-                LogError("PlayCueWithoutEmitter", "IEntityAudioService not available in global DI");
-                return;
-            }
-
-            if (explicitCue == null)
-            {
-                LogError("PlayCueWithoutEmitter", "explicitCue is null");
-                return;
-            }
-
-            Transform owner = ResolveNoEmitterOwner(out string ownerSource);
-            Vector3 position = owner != null ? owner.position : fallbackSpatialPosition;
-            var context = AudioPlaybackContext.Spatial(
-                worldPosition: position,
-                followTarget: owner,
-                reason: "qa_entity_no_emitter_cue",
-                volumeScale: Mathf.Max(0f, noEmitterVolumeScale));
-
-            var handle = _entityAudioService.PlayCue(explicitCue, context);
-            LogHandle("PlayCueWithoutEmitter", handle, $"cue='{explicitCue.name}' owner='{SafeName(owner)}' ownerSource='{ownerSource}'");
+            var handle = emitterUnderTest.PlayCue(explicitCue, context);
+            LogHandle("PlayCueSpatial", handle, $"cue='{explicitCue.name}' owner='{SafeName(owner)}' ownerSource='{ownerSource}'");
+            ScheduleAutoStop(nameof(PlayCueSpatial));
         }
 
         [ContextMenu("QA/Audio/EntityEmitter/Stop Last Handle")]
@@ -187,68 +105,24 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
         [ContextMenu("QA/Audio/EntityEmitter/Log Harness State")]
         private void LogHarnessState()
         {
-            bool serviceResolved = TryEnsureService();
             bool handleValid = _lastHandle != null && _lastHandle.IsValid;
             bool handlePlaying = _lastHandle != null && _lastHandle.IsPlaying;
-            Transform effectiveOwner = ResolveNoEmitterOwner(out string ownerSource);
+            Transform effectiveOwner = ResolveOwner(out string ownerSource);
 
             DebugUtility.Log(typeof(AudioEntityEmitterQaSceneHarness),
-                $"[QA][Audio][EntityEmitter] action='LogHarnessState' serviceResolved={serviceResolved} emitter='{SafeName(emitterUnderTest)}' configuredOwner='{SafeName(ownerTransform)}' effectiveOwner='{SafeName(effectiveOwner)}' ownerSource='{ownerSource}' semanticMap='{SafeName(semanticMap)}' explicitCue='{SafeName(explicitCue)}' autoStopDelaySeconds={autoStopDelaySeconds:0.###} autoStopUseUnscaledTime={autoStopUseUnscaledTime} lastHandleValid={handleValid} lastHandlePlaying={handlePlaying}.",
+                $"[QA][Audio][EntityEmitter] action='LogHarnessState' emitter='{SafeName(emitterUnderTest)}' explicitCue='{SafeName(explicitCue)}' configuredOwner='{SafeName(ownerTransform)}' effectiveOwner='{SafeName(effectiveOwner)}' ownerSource='{ownerSource}' autoStopDelaySeconds={autoStopDelaySeconds:0.###} autoStopUseUnscaledTime={autoStopUseUnscaledTime} lastHandleValid={handleValid} lastHandlePlaying={handlePlaying}.",
                 DebugUtility.Colors.Info);
         }
 
         private bool TryEnsureEmitter()
         {
-            if (emitterUnderTest == null)
-            {
-                LogError("ResolveEmitter", "emitterUnderTest is null");
-                return false;
-            }
-
-            if (!TryEnsureService())
-            {
-                LogError("ResolveEmitter", "IEntityAudioService not available in global DI");
-                return false;
-            }
-
-            if (!emitterUnderTest.TryResolveService(out var entityAudioService) || entityAudioService == null)
-            {
-                LogError("ResolveEmitter", "EntityAudioEmitter could not resolve IEntityAudioService");
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool TryEnsureService()
-        {
-            if (_entityAudioService != null)
+            if (emitterUnderTest != null)
             {
                 return true;
             }
 
-            if (!Application.isPlaying)
-            {
-                return false;
-            }
-
-            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
-            {
-                return false;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal(out _entityAudioService) || _entityAudioService == null)
-            {
-                return false;
-            }
-
-            if (_entityAudioService is AudioEntitySemanticService semanticService)
-            {
-                semanticService.SetSemanticMap(semanticMap, "qa_entity_emitter_harness");
-            }
-
-            LogInfo("ResolveService", "IEntityAudioService resolved from global DI");
-            return true;
+            LogError("ResolveEmitter", "emitterUnderTest is null");
+            return false;
         }
 
         private void LogHandle(string action, IAudioPlaybackHandle handle, string payload)
@@ -313,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.QA
             _autoStopRoutine = null;
         }
 
-        private Transform ResolveNoEmitterOwner(out string ownerSource)
+        private Transform ResolveOwner(out string ownerSource)
         {
             if (ownerTransform != null)
             {

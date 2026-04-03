@@ -2,9 +2,8 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
-using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
@@ -30,21 +29,21 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 
             if (bootstrapConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] BootstrapConfigAsset required and missing to compose runtime.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] BootstrapConfigAsset required and missing to compose runtime.");
             }
 
-            EnsureNavigationService();
-            EnsureGameLoopInputBridge();
-            EnsureFrontendQuitService();
+            EnsureNavigationCoreComposition();
+            NavigationAdaptersBootstrap.ComposeRuntime(bootstrapConfig);
+            EnsureNavigationModuleComposition();
 
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(NavigationBootstrap),
-                "[Navigation] Runtime composition completed.",
+                "[NavigationCore] Runtime composition completed.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureNavigationService()
+        private static void EnsureNavigationCoreComposition()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var existingService) && existingService != null)
             {
@@ -53,12 +52,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] ISceneTransitionService missing from global DI before runtime composition.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] ISceneTransitionService missing from global DI before runtime composition.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationCatalog>(out var catalog) || catalog == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] IGameNavigationCatalog missing from global DI before runtime composition.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationCatalog missing from global DI before runtime composition.");
             }
 
             var service = new GameNavigationService(sceneFlow, catalog);
@@ -66,47 +65,34 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                $"[Navigation] GameNavigationService composed at runtime (Catalog={catalog.GetType().Name}).",
+                $"[OBS][NavigationCore] GameNavigationService composed at runtime (Catalog={catalog.GetType().Name}).",
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureFrontendQuitService()
+        private static void EnsureNavigationModuleComposition()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IFrontendQuitService>(out var existingService) && existingService != null)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationCatalog>(out var catalog) || catalog == null)
             {
-                return;
-            }
-
-            var service = new FrontendQuitService();
-            DependencyManager.Provider.RegisterGlobal<IFrontendQuitService>(service);
-
-            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                "[FrontendUI] FrontendQuitService composed at runtime.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void EnsureGameLoopInputBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<GameLoopInputCommandBridge>(out _))
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] IGameLoopService missing from global DI before composing GameLoopInputCommandBridge.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationCatalog missing from global DI before module composition checkpoint.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Navigation] IGameNavigationService missing from global DI before composing GameLoopInputCommandBridge.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService missing from global DI before module composition checkpoint.");
             }
 
-            var bridge = new GameLoopInputCommandBridge(gameLoopService, navigationService);
-            DependencyManager.Provider.RegisterGlobal(bridge);
+            if (!DependencyManager.Provider.TryGetGlobal<GameLoopInputCommandBridge>(out var inputBridge) || inputBridge == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] GameLoopInputCommandBridge missing from global DI before module composition checkpoint.");
+            }
 
-            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                "[GameLoop] GameLoopInputCommandBridge composed after NavigationService became available.",
+            if (!DependencyManager.Provider.TryGetGlobal<IFrontendQuitService>(out var frontendQuitService) || frontendQuitService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] IFrontendQuitService missing from global DI before module composition checkpoint.");
+            }
+
+            DebugUtility.Log(typeof(NavigationBootstrap),
+                "[OBS][NavigationCore] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters'.",
                 DebugUtility.Colors.Info);
         }
     }

@@ -54,17 +54,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
             {
                 if (IsRecentlyCompletedLocked(ctx))
                 {
-                    DebugUtility.LogVerbose<WorldResetService>(
-                        $"[{ResetLogTags.Skipped}] Reset duplicado ignorado (recent completed). signature='{ctx}' reason='{rsn}'.",
-                        DebugUtility.Colors.Info);
+                    LogLifecycleDedupe("recent_completed", ctx, rsn);
                     return WorldResetResult.Completed;
                 }
 
                 if (!_inFlight.Add(ctx))
                 {
-                    DebugUtility.LogVerbose<WorldResetService>(
-                        $"[{ResetLogTags.Guarded}][DEGRADED_MODE] Reset duplicado ignorado (in-flight). signature='{ctx}' reason='{rsn}'.",
-                        DebugUtility.Colors.Info);
+                    LogLifecycleDedupe("in_flight", ctx, rsn);
                     return WorldResetResult.Completed;
                 }
             }
@@ -104,6 +100,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 
         public void PublishResetCompleted(WorldResetRequest request, WorldResetOutcome outcome, string detail)
         {
+            DebugUtility.LogVerbose<WorldResetService>(
+                $"[OBS][WorldReset][Completion] lifecycle='canonical' outcome='{outcome}' signature='{request.ContextSignature}' routeId='{request.MacroRouteId}' targetScene='{request.TargetScene}' detail='{detail}'.",
+                outcome == WorldResetOutcome.Completed || outcome == WorldResetOutcome.SkippedByPolicy || outcome == WorldResetOutcome.SkippedValidation
+                    ? DebugUtility.Colors.Success
+                    : DebugUtility.Colors.Info);
             _lifecyclePublisher.PublishCompleted(request, outcome, detail);
         }
 
@@ -151,6 +152,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
             _orchestrator = WorldResetOrchestrator.CreateDefault(provider, _lifecyclePublisher);
 
             _dependenciesResolved = true;
+        }
+
+        private static void LogLifecycleDedupe(string dedupeKind, string contextSignature, string reason)
+        {
+            DebugUtility.LogVerbose<WorldResetService>(
+                $"[OBS][WorldReset][Dedupe] lifecycle='dedupe' kind='{dedupeKind}' signature='{contextSignature}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
     }
 }

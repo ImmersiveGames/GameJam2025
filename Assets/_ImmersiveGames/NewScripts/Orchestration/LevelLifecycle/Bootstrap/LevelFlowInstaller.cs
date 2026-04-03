@@ -1,6 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
 using _ImmersiveGames.NewScripts.Orchestration.SceneComposition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -8,6 +12,7 @@ using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 {
@@ -49,6 +54,20 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
         {
             var contentService = ResolveOrRegisterLevelFlowContentService();
             var restartContextService = ResolveOrRegisterRestartContextService();
+            DependencyManager.Provider.TryGetGlobal(out IWorldResetCommands worldResetCommands);
+            if (worldResetCommands == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] Missing required IWorldResetCommands in global DI before LevelLifecycle installation.");
+            }
+
+            DependencyManager.Provider.TryGetGlobal(out ISceneCompositionExecutor sceneCompositionExecutor);
+            if (sceneCompositionExecutor == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] Missing required ISceneCompositionExecutor in global DI before LevelLifecycle installation.");
+            }
+
+            DependencyManager.Provider.TryGetGlobal(out ISimulationGateService simulationGateService);
+
             RegisterLevelIntroStageSessionService();
             RegisterLevelIntroStagePresenterScopeResolver();
             RegisterLevelIntroStagePresenterRegistry();
@@ -56,8 +75,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RegisterLevelPostRunHookPresenterRegistry();
             RegisterLevelStagePresentationService();
             RegisterLevelPostRunHookService();
-            RegisterLevelSwapLocalService(restartContextService, contentService);
-            RegisterLevelMacroPrepareService(restartContextService, contentService);
+            RegisterGameplaySessionFlowServices();
+            RegisterLevelSwapLocalService(
+                restartContextService,
+                contentService,
+                worldResetCommands,
+                sceneCompositionExecutor,
+                simulationGateService);
+            RegisterLevelMacroPrepareService(
+                restartContextService,
+                contentService,
+                worldResetCommands,
+                sceneCompositionExecutor);
         }
 
         private static ILevelFlowContentService ResolveOrRegisterLevelFlowContentService()
@@ -224,25 +253,29 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLevelSwapLocalService(IRestartContextService restartContextService, ILevelFlowContentService contentService)
+        private static void RegisterGameplaySessionFlowServices()
+        {
+            RegisterGameRunOutcomeService();
+            RegisterIntroStageCoordinator();
+            RegisterIntroStageControlService();
+            RegisterGameplaySceneClassifier();
+            RegisterDefaultIntroStageStep();
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] Session rail services registrados no DI global (Intro/Outcome).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLevelSwapLocalService(
+            IRestartContextService restartContextService,
+            ILevelFlowContentService contentService,
+            IWorldResetCommands worldResetCommands,
+            ISceneCompositionExecutor sceneCompositionExecutor,
+            ISimulationGateService simulationGateService)
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelSwapLocalService>(out var existing) && existing != null)
             {
                 return;
-            }
-
-            DependencyManager.Provider.TryGetGlobal(out IWorldResetCommands worldResetCommands);
-            if (worldResetCommands == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] Missing required IWorldResetCommands in global DI before LevelLifecycle installation.");
-            }
-
-            DependencyManager.Provider.TryGetGlobal(out ISimulationGateService simulationGateService);
-
-            DependencyManager.Provider.TryGetGlobal(out ISceneCompositionExecutor sceneCompositionExecutor);
-            if (sceneCompositionExecutor == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] Missing required ISceneCompositionExecutor in global DI before LevelLifecycle installation.");
             }
 
             var service = new LevelSwapLocalService(
@@ -259,23 +292,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLevelMacroPrepareService(IRestartContextService restartContextService, ILevelFlowContentService contentService)
+        private static void RegisterLevelMacroPrepareService(
+            IRestartContextService restartContextService,
+            ILevelFlowContentService contentService,
+            IWorldResetCommands worldResetCommands,
+            ISceneCompositionExecutor sceneCompositionExecutor)
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var existing) && existing != null)
             {
                 return;
-            }
-
-            DependencyManager.Provider.TryGetGlobal(out IWorldResetCommands worldResetCommands);
-            if (worldResetCommands == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] Missing required IWorldResetCommands in global DI before LevelLifecycle installation.");
-            }
-
-            DependencyManager.Provider.TryGetGlobal(out ISceneCompositionExecutor sceneCompositionExecutor);
-            if (sceneCompositionExecutor == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] Missing required ISceneCompositionExecutor in global DI before LevelLifecycle installation.");
             }
 
             var service = new LevelMacroPrepareService(
@@ -291,15 +316,87 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterGameRunOutcomeService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunPlayingStateGuard>(out var gameplayStateGuard) || gameplayStateGuard == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameRunPlayingStateGuard obrigatorio ausente ao registrar IGameRunOutcomeService.");
+            }
+
+            var service = new GameRunOutcomeService(gameplayStateGuard);
+            DependencyManager.Provider.RegisterGlobal<IGameRunOutcomeService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IGameRunOutcomeService registrado no DI global (GameRunOutcomeService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterIntroStageCoordinator()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new IntroStageCoordinator();
+            DependencyManager.Provider.RegisterGlobal<IIntroStageCoordinator>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IIntroStageCoordinator registrado no DI global (IntroStageCoordinator).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterIntroStageControlService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageControlService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new IntroStageControlService();
+            DependencyManager.Provider.RegisterGlobal<IIntroStageControlService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IIntroStageControlService registrado no DI global (IntroStageControlService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameplaySceneClassifier()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new DefaultGameplaySceneClassifier();
+            DependencyManager.Provider.RegisterGlobal<IGameplaySceneClassifier>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IGameplaySceneClassifier registrado no DI global (DefaultGameplaySceneClassifier).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterDefaultIntroStageStep()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStageStep>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new ConfirmToStartIntroStageStep();
+            DependencyManager.Provider.RegisterGlobal<IIntroStageStep>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IIntroStageStep registrado no DI global (ConfirmToStartIntroStageStep).",
+                DebugUtility.Colors.Info);
+        }
+
     }
 
-    [Obsolete("Historical wrapper. Use LevelLifecycleInstaller instead.")]
-    public static class LevelFlowInstaller
-    {
-        public static void Install(BootstrapConfigAsset bootstrapConfig)
-        {
-            LevelLifecycleInstaller.Install(bootstrapConfig);
-        }
-    }
 }
 

@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
             EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
 
             DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
-                $"[ResetInterop] Driver registrado: SceneFlow ScenesReady -> WorldResetService. reason='{WorldResetReasons.SceneFlowScenesReady}'.",
+                $"[OBS][ResetInterop] SceneFlow -> WorldReset handshake registrado. source='SceneTransitionScenesReadyEvent' target='WorldResetService' reason='{WorldResetReasons.SceneFlowScenesReady}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -74,10 +74,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
                 string decisionReason = NormalizeDecisionReason(context.ResetDecisionReason);
                 var request = BuildSceneFlowRequest(signature, targetScene, routeId, decisionReason);
 
+                LogHandshake("received", signature, targetScene, routeId.Value, context.RouteKind, context.TransitionProfileName);
+
                 if (string.IsNullOrWhiteSpace(signature))
                 {
                     DebugUtility.LogWarning<SceneFlowWorldResetDriver>(
                         "[ResetInterop] ScenesReady recebido com ContextSignature vazia. Liberando gate sem reset.");
+                    DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                        $"[OBS][ResetInterop] SceneFlow -> WorldReset handshake skipped. signature='<empty>' target='{targetScene}' routeId='{routeId.Value}' routeKind='{context.RouteKind}'.",
+                        DebugUtility.Colors.Info);
+                    LogHandshake("skipped_empty_signature", string.Empty, targetScene, routeId.Value, context.RouteKind, context.TransitionProfileName);
                     LogObsResetRequested(
                         signature: string.Empty,
                         sourceSignature: string.Empty,
@@ -99,6 +105,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
 
                 if (!requiresWorldReset)
                 {
+                    DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                        $"[OBS][ResetInterop] SceneFlow -> WorldReset handshake skipped. signature='{signature}' target='{targetScene}' routeId='{routeId.Value}' routeKind='{context.RouteKind}' profileLabel='{context.TransitionProfileName}'.",
+                        DebugUtility.Colors.Info);
+                    LogHandshake("skipped_policy", signature, targetScene, routeId.Value, context.RouteKind, context.TransitionProfileName);
                     string skippedReason = string.IsNullOrWhiteSpace(decisionReason)
                         ? $"{WorldResetReasons.SkippedNonGameplayRoutePrefix}:routeKind={context.RouteKind};route={routeId};scene={targetScene}"
                         : decisionReason;
@@ -131,7 +141,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
                     decisionSource: decisionSource,
                     reason: decisionReason);
 
+                DebugUtility.LogVerbose<SceneFlowWorldResetDriver>(
+                    $"[OBS][ResetInterop] SceneFlow -> WorldReset handshake dispatching. signature='{signature}' target='{targetScene}' routeId='{routeId.Value}' routeKind='{context.RouteKind}' profileLabel='{context.TransitionProfileName}'.",
+                    DebugUtility.Colors.Info);
+                LogHandshake("dispatching", signature, targetScene, routeId.Value, context.RouteKind, context.TransitionProfileName);
                 await _worldResetService.TriggerResetAsync(request);
+                LogHandshake("completed", signature, targetScene, routeId.Value, context.RouteKind, context.TransitionProfileName);
             }
             catch (Exception ex)
             {
@@ -181,6 +196,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
         {
             DebugUtility.LogVerbose(typeof(SceneFlowWorldResetDriver),
                 $"[OBS][ResetInterop] ResetRequested signature='{signature ?? string.Empty}' sourceSignature='{sourceSignature ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}' target='{target ?? string.Empty}' decisionSource='{decisionSource ?? string.Empty}' reason='{reason ?? string.Empty}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void LogHandshake(string stage, string signature, string targetScene, string routeId, SceneRouteKind routeKind, string profileLabel)
+        {
+            DebugUtility.LogVerbose(typeof(SceneFlowWorldResetDriver),
+                $"[OBS][ResetInterop][Handshake] boundary='SceneFlow->WorldReset' stage='{stage}' signature='{signature ?? string.Empty}' target='{targetScene ?? string.Empty}' routeId='{routeId ?? string.Empty}' routeKind='{routeKind}' profileLabel='{profileLabel ?? string.Empty}'.",
                 DebugUtility.Colors.Info);
         }
 

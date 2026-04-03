@@ -44,6 +44,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
             EnsureInputModeBridge();
             EnsureLoadingOrchestrators();
             EnsureFadeReadyAsync();
+            EnsureSceneFlowModuleComposition();
 
             _runtimeComposed = true;
 
@@ -169,6 +170,24 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
                 DebugUtility.LogError(typeof(SceneFlowBootstrap),
                     $"[ERROR][Fade] Failed to preload FadeScene during SceneFlow runtime bootstrap. ex='{ex.GetType().Name}: {ex.Message}'");
             }
+        }
+
+        private static void EnsureSceneFlowModuleComposition()
+        {
+            ResolveRequired<ISceneTransitionService>();
+            ResolveRequired<INavigationPolicy>();
+            ResolveRequired<IRouteGuard>();
+            ResolveRequired<IRouteResetPolicy>();
+            ResolveRequired<ILoadingPresentationService>();
+            ResolveRequired<ILoadingHudService>();
+            ResolveRequired<IFadeService>();
+            ResolveRequired<SceneFlowInputModeBridge>();
+            ResolveRequired<LoadingHudOrchestrator>();
+            ResolveRequired<LoadingProgressOrchestrator>();
+
+            DebugUtility.Log(typeof(SceneFlowBootstrap),
+                "[OBS][SceneFlow] Runtime composition consolidada. scope='transition macro -> loading/fade -> navigation'.",
+                DebugUtility.Colors.Info);
         }
 
         private static T ResolveRequired<T>() where T : class
