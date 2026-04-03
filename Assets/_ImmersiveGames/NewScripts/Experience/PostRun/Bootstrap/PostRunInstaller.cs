@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
     /// Installer do PostRun.
     ///
     /// Responsabilidade:
-/// - registrar contratos e serviços de post-run no boot;
+    /// - registrar contratos e servicos do rail interno de post-run no boot;
     /// - nao compor runtime nem criar bridges.
     /// </summary>
     public static class PostRunInstaller
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
             _installed = true;
 
             DebugUtility.Log(typeof(PostRunInstaller),
-                "[PostRun] Module installer concluido.",
+                "[PostRun] Rail interno concluido.",
                 DebugUtility.Colors.Info);
         }
 
@@ -164,4 +164,3 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
         }
     }
 }
-

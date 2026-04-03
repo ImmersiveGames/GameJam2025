@@ -107,8 +107,42 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
             IReadOnlyList<IPostStagePresenter> resolvedPresenters,
             out IReadOnlyList<IPostStagePresenter> presenters)
         {
-            presenters = resolvedPresenters;
+            var canonicalPresenters = new List<IPostStagePresenter>();
+            var historicalCompatPresenters = new List<IPostStagePresenter>();
+
+            foreach (IPostStagePresenter presenter in resolvedPresenters)
+            {
+                if (IsHistoricalCompatPresenter(presenter))
+                {
+                    historicalCompatPresenters.Add(presenter);
+                    continue;
+                }
+
+                canonicalPresenters.Add(presenter);
+            }
+
+            if (canonicalPresenters.Count > 0)
+            {
+                presenters = canonicalPresenters;
+                return true;
+            }
+
+            presenters = historicalCompatPresenters.Count > 0 ? historicalCompatPresenters : resolvedPresenters;
             return false;
+        }
+
+        private static bool IsHistoricalCompatPresenter(IPostStagePresenter presenter)
+        {
+            if (presenter == null)
+            {
+                return false;
+            }
+
+            System.Type presenterType = presenter.GetType();
+            string namespaceName = presenterType.Namespace ?? string.Empty;
+
+            return namespaceName.IndexOf(".Presentation.Compat", System.StringComparison.Ordinal) >= 0 ||
+                   presenterType.Name.IndexOf("Mock", System.StringComparison.Ordinal) >= 0;
         }
 
         private static void CollectPresentersFromScene(Scene scene, ICollection<IPostStagePresenter> resolvedPresenters)

@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Compat
 {
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
-    // Historical compat mock presenter for the PostStage visual seam.
+    // Historical compat-only mock presenter for the PostStage visual seam.
     public sealed class LevelPostStageMockPresenter : MonoBehaviour, IPostStagePresenter
     {
         private const float PanelWidth = 360f;

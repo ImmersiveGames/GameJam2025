@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
                 installerEntry: "PostRunInstaller.Install",
                 runtimeComposerEntry: null,
                 installerOnly: true,
-                description: "PostRun installer-only.");
+                description: "PostRun internal gameplay rail.");
     }
 }
 
