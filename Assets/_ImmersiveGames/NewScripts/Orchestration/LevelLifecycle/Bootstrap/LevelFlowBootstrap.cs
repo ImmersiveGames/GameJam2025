@@ -208,6 +208,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
         private static void EnsureGameplaySessionFlowComposition()
         {
+            RequireGlobal<IGameplaySessionContextService>("IGameplaySessionContextService");
+            RequireGlobal<IGameplayPhaseRuntimeService>("IGameplayPhaseRuntimeService");
             RequireGlobal<ILevelMacroPrepareService>("ILevelMacroPrepareService");
             RequireGlobal<LevelLifecycleStageOrchestrator>("LevelLifecycleStageOrchestrator");
             RequireGlobal<IIntroStageCoordinator>("IIntroStageCoordinator");
@@ -222,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RequireGlobal<IPostLevelActionsService>("IPostLevelActionsService");
 
             DebugUtility.Log(typeof(LevelLifecycleBootstrap),
-                "[OBS][GameplaySessionFlow] Runtime composition consolidada. scope='Prepare -> Intro -> Playing -> Outcome -> PostRun -> Continuity'.",
+                "[OBS][GameplaySessionFlow] Runtime composition consolidada. scope='SessionContext -> PhaseRuntime -> Prepare -> Intro -> Playing -> Outcome -> PostRun -> Continuity'.",
                 DebugUtility.Colors.Info);
         }
 

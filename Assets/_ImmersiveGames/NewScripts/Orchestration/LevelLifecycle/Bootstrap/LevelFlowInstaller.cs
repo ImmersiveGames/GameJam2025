@@ -255,6 +255,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
         private static void RegisterGameplaySessionFlowServices()
         {
+            RegisterGameplaySessionContextService();
+            RegisterGameplayPhaseRuntimeService();
             RegisterGameRunOutcomeService();
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
@@ -263,6 +265,36 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
                 "[OBS][GameplaySessionFlow] Session rail services registrados no DI global (Intro/Outcome).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameplaySessionContextService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionContextService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new GameplaySessionContextService();
+            DependencyManager.Provider.RegisterGlobal<IGameplaySessionContextService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IGameplaySessionContextService registrado no DI global (GameplaySessionContextService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameplayPhaseRuntimeService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var service = new GameplayPhaseRuntimeService();
+            DependencyManager.Provider.RegisterGlobal<IGameplayPhaseRuntimeService>(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] IGameplayPhaseRuntimeService registrado no DI global (GameplayPhaseRuntimeService).",
                 DebugUtility.Colors.Info);
         }
 
