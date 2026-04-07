@@ -1,0 +1,126 @@
+# ADR-0049 - Fluxo canonico de fim de run e postrun
+
+## Status
+- Estado: Aceito
+- Data: 2026-04-06
+- Tipo: Direction / Canonical architecture
+
+## 1. Objetivo
+
+`RunEndIntent(reason)` marca a entrada da run em termino.
+
+`RunResultStage` e `RunDecision` sao os dois estagios canonicos do fim de run.
+
+Este ADR congela o contrato pos-`Playing` como fluxo positivo, tipado e operacional, separando o fim de run da IntroStage e da montagem inicial da fase.
+
+`RunResultStage` e `phase-owned`, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
+
+`RunDecision` e `macro-owned` e decide a acao downstream final.
+
+## 2. Escopo
+
+Este ADR cobre:
+
+- a entrada da run em `RunEndIntent(reason)`
+- o processamento local de `RunResultStage`
+- a continuidade macro em `RunDecision`
+- a saida final para a acao downstream
+
+## 3. Estrutura do fim de run
+
+O fim de run e estruturado em tres pontos canonicos:
+
+1. `RunEndIntent(reason)`
+2. `RunResultStage`
+3. `RunDecision`
+
+O fluxo se completa quando `RunResultStage` entrega `Continue` e a decisao macro escolhe a acao final downstream.
+
+## 4. Ownership
+
+`RunResultStage` e `phase-owned`.
+
+`RunDecision` e `macro-owned`.
+
+O owner local fecha o resultado da phase, e o owner macro decide a continuidade final da run.
+
+## 5. Fluxo canonico
+
+O fluxo canonico ocorre assim:
+
+1. `Playing`
+2. `RunEndIntent(reason)`
+3. `RunResultStage`
+4. `Continue`
+5. `RunDecision`
+6. acao final downstream
+
+Esse fluxo preserva a transicao entre o encerramento local da phase e a decisao macro de continuidade.
+
+## 6. Lifecycle de `RunResultStage`
+
+`RunResultStage` recebe a reason do fim de run, executa o fechamento local da phase e termina por `Continue`.
+
+O presenter local de `RunResultStage` existe previamente como conteudo local da phase/cena e e adotado pelo host tipado no escopo correto.
+
+Lifecycle:
+
+1. recebe `RunEndIntent(reason)`
+2. adota a `reason` como contrato de entrada
+3. executa o conteudo local da phase
+4. apresenta o resultado local da phase por presenter tipado
+5. conclui o stage por `Continue`
+
+Semantica:
+
+- `Continue` encerra o stage e segue para `RunDecision`
+
+## 7. Lifecycle de `RunDecision`
+
+`RunDecision` recebe a continuidade apos `RunResultStage` e materializa a decisao macro final.
+
+Lifecycle:
+
+1. recebe a continuidade apos `RunResultStage`
+2. adota o contexto final da continuidade da run
+3. resolve o presenter tipado de decisao no escopo macro correto
+4. apresenta restart, menu ou acao macro equivalente
+5. conclui o stage com a acao downstream escolhida
+
+## 8. Tipagem, registro e cardinalidade
+
+Os contratos sao tipados separadamente:
+
+- `RunResult`
+- `RunDecision`
+
+Cada tipo possui infraestrutura propria, registro proprio e resolucao deterministica.
+
+Cardinalidade:
+
+- existe no maximo 1 presenter valido para `RunResult` no escopo correto
+- existe no maximo 1 presenter valido para `RunDecision` no escopo correto
+- a resolucao por tipo e registro e deterministica
+
+## 9. Hand-offs canonicos
+
+Os hand-offs canonicos sao:
+
+- `Playing` -> `RunEndIntent(reason)`
+- `RunEndIntent(reason)` -> `RunResultStage`
+- `RunResultStage` -> `Continue`
+- `Continue` -> `RunDecision`
+- `RunDecision` -> acao final downstream
+
+## 10. Consequencias arquiteturais
+
+Este contrato estabiliza o fim de run como uma sequencia clara entre phase e macro.
+
+Consequencias principais:
+
+- o resultado local da run permanece phase-owned
+- o fechamento local da run termina por `Continue` e segue para a decisao macro
+- a decisao final permanece macro-owned
+- o fluxo pos-run fica separado da IntroStage
+- a tipagem de resultado e decisao fica isolada por contrato
+- o fim de run pode evoluir sem reabrir a entrada da phase

@@ -2,14 +2,13 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Interop;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
@@ -53,7 +52,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 navigationService,
                 restartContextService,
                 levelSwapLocalService);
-            EnsureLevelSelectedRestartSnapshotBridge();
             EnsurePostLevelActionsService(
                 levelFlowRuntime,
                 levelSwapLocalService,
@@ -148,15 +146,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureLevelSelectedRestartSnapshotBridge()
-        {
-            RegisterIfMissing(
-                () => new LevelSelectedRestartSnapshotBridge(),
-                typeof(LevelSelectedRestartSnapshotBridge),
-                "[LevelLifecycle] LevelSelectedRestartSnapshotBridge ja registrado no DI global.",
-                "[LevelLifecycle] LevelSelectedRestartSnapshotBridge registrado no DI global.");
-        }
-
         private static IGameNavigationService ResolveRequiredNavigationService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) && navigationService != null)
@@ -208,11 +197,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
         private static void EnsureGameplaySessionFlowComposition()
         {
+            RequireGlobal<IPhaseDefinitionSelectionService>("IPhaseDefinitionSelectionService");
             RequireGlobal<IGameplaySessionContextService>("IGameplaySessionContextService");
             RequireGlobal<IGameplayPhaseRuntimeService>("IGameplayPhaseRuntimeService");
             RequireGlobal<IGameplayPhasePlayerParticipationService>("IGameplayPhasePlayerParticipationService");
             RequireGlobal<IGameplayPhaseRulesObjectivesService>("IGameplayPhaseRulesObjectivesService");
             RequireGlobal<IGameplayPhaseInitialStateService>("IGameplayPhaseInitialStateService");
+            RequireGlobal<GameplaySessionFlowPhaseConsumptionService>("GameplaySessionFlowPhaseConsumptionService");
             RequireGlobal<ILevelMacroPrepareService>("ILevelMacroPrepareService");
             RequireGlobal<LevelLifecycleStageOrchestrator>("LevelLifecycleStageOrchestrator");
             RequireGlobal<IIntroStageCoordinator>("IIntroStageCoordinator");
@@ -220,26 +211,22 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RequireGlobal<IGameRunOutcomeService>("IGameRunOutcomeService");
             RequireGlobal<IRestartContextService>("IRestartContextService");
             RequireGlobal<ILevelFlowRuntimeService>("ILevelFlowRuntimeService");
-            RequireGlobal<ILevelStagePresentationService>("ILevelStagePresentationService");
-            RequireGlobal<IPostRunHandoffService>("IPostRunHandoffService");
-            RequireGlobal<IPostRunOwnershipService>("IPostRunOwnershipService");
-            RequireGlobal<ILevelPostRunHookService>("ILevelPostRunHookService");
+            RequireGlobal<IRunEndIntentOwnershipService>("IRunEndIntentOwnershipService");
             RequireGlobal<IPostLevelActionsService>("IPostLevelActionsService");
 
             DebugUtility.Log(typeof(LevelLifecycleBootstrap),
-                "[OBS][GameplaySessionFlow] Runtime composition consolidada. scope='SessionContext -> PhaseRuntime -> Players -> RulesObjectives -> InitialState -> Prepare -> Intro -> Playing -> Outcome -> PostRun -> Continuity'.",
+                "[OBS][GameplaySessionFlow] Runtime composition consolidada. scope='SessionContext -> PhaseRuntime -> Players -> RulesObjectives -> InitialState -> Prepare -> Intro -> Playing -> Outcome -> RunEndRail -> Continuity'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void EnsureGameplaySessionContinuityComposition()
         {
-            RequireGlobal<IPostRunHandoffService>("IPostRunHandoffService");
-            RequireGlobal<IPostRunOwnershipService>("IPostRunOwnershipService");
-            RequireGlobal<IPostRunResultService>("IPostRunResultService");
+            RequireGlobal<IRunEndIntentOwnershipService>("IRunEndIntentOwnershipService");
+            RequireGlobal<IPostRunResultService>("RunEndRailResultService");
             RequireGlobal<IPostLevelActionsService>("IPostLevelActionsService");
 
             DebugUtility.Log(typeof(LevelLifecycleBootstrap),
-                "[OBS][GameplaySessionFlow][Continuity] Runtime composition consolidada. scope='PostRun -> Continuity -> exit/menu handoff'.",
+                "[OBS][GameplaySessionFlow][Continuity] Runtime composition consolidada. scope='RunEndRail -> Continuity -> exit/menu handoff'.",
                 DebugUtility.Colors.Info);
         }
 

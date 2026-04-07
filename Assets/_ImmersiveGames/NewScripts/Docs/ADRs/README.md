@@ -22,7 +22,7 @@ A partir desta reorganizacao, o eixo SceneFlow/LevelFlow deve ser lido principal
 | `ADR-0032` | semantica canonica de route, level, reset e dedupe |
 | `ADR-0033` | politica canonica de resiliencia de fade e loading |
 
-Para IntroStage, a leitura operacional principal e `ADR-0027`. Para hooks oficiais, use `ADR-0037`. Para o fluxo implementado de PostStage, use `ADR-0012`.
+Para `PhaseDefinition`, a leitura documental canonica e `ADR-0048`. Para o fim de run, a leitura documental canonica e `ADR-0049`. Para IntroStage, a leitura operacional principal e `ADR-0050`. O `ADR-0027` e historico / superseded. Para hooks oficiais, use `ADR-0037`; o `ADR-0012` e historico / superseded.
 
 ## Leitura minima recomendada para entender o modulo
 
@@ -30,11 +30,14 @@ Para IntroStage, a leitura operacional principal e `ADR-0027`. Para hooks oficia
 2. `ADR-0031`
 3. `ADR-0032`
 4. `ADR-0033`
-5. `ADR-0012`
-6. `ADR-0027`
-7. `ADR-0037`
+5. `ADR-0037`
+6. `ADR-0045`
+7. `ADR-0046`
+8. `ADR-0048`
+9. `ADR-0049`
+10. `ADR-0050`
 
-Com isso, nao e mais necessario usar a baseline `ADR-0009` a `ADR-0026` como leitura primaria do stack; para IntroStage, leia `ADR-0027`.
+Com isso, nao e mais necessario usar a baseline `ADR-0009` a `ADR-0026` como leitura primaria do stack.
 
 ## Historico consolidado
 

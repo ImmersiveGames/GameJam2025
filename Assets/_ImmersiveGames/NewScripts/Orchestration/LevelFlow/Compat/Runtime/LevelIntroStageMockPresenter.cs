@@ -4,88 +4,136 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu("ImmersiveGames/NewScripts/Compat/LevelFlow/EnterStage/Level EnterStage Presenter Mock")]
-    // Historical compat presenter kept for the EnterStage seam.
+    [AddComponentMenu("ImmersiveGames/NewScripts/IntroStage/IntroStage Presenter Content")]
+    // Presenter local de conteudo da IntroStage. A projeção visual é ativada pelo host.
     public sealed class LevelIntroStageMockPresenter : MonoBehaviour, ILevelIntroStagePresenter
     {
         [Header("Layout")]
         [SerializeField] private float margin = 16f;
-        [SerializeField] private float panelWidth = 360f;
-        [SerializeField] private float panelHeight = 220f;
+        [SerializeField] private float panelWidth = 420f;
+        [SerializeField] private float panelHeight = 200f;
 
-        private ILevelStagePresentationService? _stagePresentationService;
         private IIntroStageControlService? _controlService;
-        private ILevelIntroStagePresenterRegistry? _presenterRegistry;
+        private GameObject? _visualSurfaceRoot;
+        private LevelStagePresentationContract _presentationContract;
         private string _presenterSignature = string.Empty;
-        private bool _isRegistered;
+        private bool _isPresentationAttached;
+        private bool _isPresentationClosed;
 
         public string PresenterSignature => _presenterSignature;
-        public bool IsReady => _isRegistered && gameObject.activeInHierarchy;
 
-        public void BindToSession(string sessionSignature)
+        public bool IsPresentationAttached => _isPresentationAttached && !_isPresentationClosed;
+
+        public bool CanServe(string sessionSignature)
+            => !string.IsNullOrWhiteSpace(_presenterSignature) &&
+               string.Equals(_presenterSignature, Normalize(sessionSignature), System.StringComparison.Ordinal);
+
+        public void AttachPresentation(LevelStagePresentationContract contract)
         {
-            _presenterSignature = Normalize(sessionSignature);
+            if (!contract.IsValid || contract.LevelRef == null || string.IsNullOrWhiteSpace(contract.LevelSignature) ||
+                string.IsNullOrWhiteSpace(contract.LocalContentId) || !contract.HasIntroStage)
+            {
+                HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
+                    "[FATAL][H1][IntroStage] Presenter attach recebeu contrato invalido ou sem IntroStage.");
+            }
+
+            if (_isPresentationAttached)
+            {
+                if (!string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal))
+                {
+                    HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
+                        $"[FATAL][H1][IntroStage] Presenter attach tentou trocar contrato sem detach previo. current='{_presenterSignature}' next='{contract.LevelSignature}'.");
+                }
+
+                _presentationContract = contract;
+                _presenterSignature = contract.LevelSignature;
+                _isPresentationClosed = false;
+                ResolveDependencies();
+                EnsureVisualSurface();
+                return;
+            }
+
+            _presentationContract = contract;
+            _presenterSignature = contract.LevelSignature;
+            _isPresentationClosed = false;
+            _isPresentationAttached = true;
             ResolveDependencies();
-            TryRegister();
+
+            if (_controlService == null)
+            {
+                HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
+                    "[FATAL][H1][IntroStage] IIntroStageControlService ausente. O presenter da intro nao pode ser ativado.");
+            }
+
+            string contractContentName = ResolveContractContentName(contract);
+            DebugUtility.Log<LevelIntroStageMockPresenter>(
+                $"[OBS][IntroStage][Compat] IntroStagePresenterAttached presenterType='{GetType().Name}' contentName='{contractContentName}' contentId='{contract.LocalContentId}' signature='{contract.LevelSignature}' compatResidual='true'.",
+                DebugUtility.Colors.Info);
+
+            EnsureVisualSurface();
+        }
+
+        public void DetachPresentation(string reason)
+        {
+            ReleasePresentationState(logDetached: true, reason);
         }
 
         private void OnEnable()
         {
             ResolveDependencies();
-            TryRegister();
         }
 
         private void OnDisable()
         {
-            if (_presenterRegistry != null && _isRegistered)
-            {
-                _presenterRegistry.Unregister(this);
-                _isRegistered = false;
-            }
+            ReleasePresentationState(logDetached: false, "OnDisable");
         }
 
-        private void OnGUI()
+        public void OnClickContinue()
         {
-            if (!_isRegistered)
+            if (_controlService == null)
             {
-                TryRegister();
+                HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
+                    "[FATAL][H1][IntroStage] IIntroStageControlService ausente. O presenter da intro nao pode confirmar.");
+                return;
             }
 
-            if (!TryBuildViewModel(out var model))
+            _controlService.CompleteIntroStage("IntroStage/ContinueButton");
+        }
+
+        internal bool TryBuildViewModel(out IntroViewModel model)
+        {
+            model = default;
+
+            if (!_isPresentationAttached || _isPresentationClosed)
             {
-                return;
+                return false;
             }
 
             if (_controlService is not IIntroStageControlService controlService)
             {
-                return;
+                return false;
             }
 
-            Rect rect = BuildPanelRect();
-            GUILayout.BeginArea(rect, GUI.skin.box);
-            GUILayout.Label("EnterStage");
-            GUILayout.Label($"levelRef: {model.LevelRefName}");
-            GUILayout.Label($"contentId: {model.ContentId}");
-            GUILayout.Label($"levelSignature: {model.LevelSignature}");
-            GUILayout.Label("Mock presentation for EnterStage.");
-
-            GUILayout.Space(8f);
-
-            bool previous = GUI.enabled;
-            GUI.enabled = model.CanContinue;
-            if (GUILayout.Button("Continue", GUILayout.Height(34f)))
+            if (!_presentationContract.IsValid || _presentationContract.LevelRef == null ||
+                string.IsNullOrWhiteSpace(_presentationContract.LevelSignature) ||
+                string.IsNullOrWhiteSpace(_presentationContract.LocalContentId))
             {
-                controlService.CompleteIntroStage("EnterStage/ContinueButton");
+                return false;
             }
 
-            GUI.enabled = previous;
-            GUILayout.EndArea();
+            model = new IntroViewModel(
+                _presentationContract.LevelRef.name,
+                _presentationContract.LocalContentId,
+                _presentationContract.LevelSignature,
+                controlService.IsIntroStageActive);
+            return true;
         }
 
-        private Rect BuildPanelRect()
+        internal Rect BuildPanelRect()
         {
             float maxWidth = Mathf.Max(320f, Screen.width - 32f);
             float width = Mathf.Clamp(panelWidth, 320f, maxWidth);
@@ -96,62 +144,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
             return new Rect(x, y, width, height);
         }
 
-        private bool TryBuildViewModel(out IntroViewModel model)
-        {
-            model = default;
-            ResolveDependencies();
-            if (!_isRegistered)
-            {
-                TryRegister();
-            }
-
-            if (_stagePresentationService is not ILevelStagePresentationService stagePresentationService ||
-                _controlService is not IIntroStageControlService controlService ||
-                _presenterRegistry is not ILevelIntroStagePresenterRegistry presenterRegistry)
-            {
-                return false;
-            }
-
-            if (!stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
-                !contract.IsValid ||
-                !contract.HasIntroStage ||
-                contract.LevelRef == null)
-            {
-                return false;
-            }
-
-            if (!controlService.IsIntroStageActive)
-            {
-                return false;
-            }
-
-            if (_isRegistered &&
-                string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal) &&
-                presenterRegistry.TryGetCurrentPresenter(out ILevelIntroStagePresenter currentPresenter) &&
-                ReferenceEquals(currentPresenter, this))
-            {
-                model = new IntroViewModel(
-                    contract.LevelRef.name,
-                    contract.LocalContentId,
-                    contract.LevelSignature,
-                    true);
-                return true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(_presenterSignature) &&
-                !string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            model = new IntroViewModel(
-                contract.LevelRef.name,
-                contract.LocalContentId,
-                contract.LevelSignature,
-                true);
-            return true;
-        }
-
         private void ResolveDependencies()
         {
             if (!DependencyManager.HasInstance)
@@ -159,85 +151,139 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
                 return;
             }
 
-            if (_stagePresentationService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _stagePresentationService);
-            }
-
             if (_controlService == null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _controlService);
             }
-
-            if (_presenterRegistry == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _presenterRegistry);
-            }
         }
 
-        private void TryRegister()
+        private void EnsureVisualSurface()
         {
-            if (_presenterRegistry is not ILevelIntroStagePresenterRegistry presenterRegistry)
-            {
-                HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
-                    "[FATAL][H1][LevelFlow] ILevelIntroStagePresenterRegistry ausente. O presenter do level nao pode se registrar.");
-                return;
-            }
-
-            if (_stagePresentationService is not ILevelStagePresentationService stagePresentationService ||
-                !stagePresentationService.TryGetCurrentContract(out LevelStagePresentationContract contract) ||
-                !contract.IsValid ||
-                !contract.HasIntroStage)
+            if (!_isPresentationAttached || _isPresentationClosed || _visualSurfaceRoot != null)
             {
                 return;
             }
 
-            if (presenterRegistry.TryGetCurrentPresenter(out ILevelIntroStagePresenter currentPresenter) &&
-                ReferenceEquals(currentPresenter, this) &&
-                string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal))
+            GameObject surfaceRoot = new GameObject("IntroStagePresenterSurface");
+            surfaceRoot.transform.SetParent(transform, false);
+            surfaceRoot.hideFlags = HideFlags.DontSave;
+            surfaceRoot.AddComponent<LevelIntroStageMockPresenterSurface>().Bind(this);
+            _visualSurfaceRoot = surfaceRoot;
+
+            string contractContentName = ResolveContractContentName(_presentationContract);
+            DebugUtility.Log<LevelIntroStageMockPresenter>(
+                $"[OBS][IntroStage][Compat] IntroStagePresenterSurfaceCreated presenterType='{GetType().Name}' contentName='{contractContentName}' contentId='{_presentationContract.LocalContentId}' signature='{_presentationContract.LevelSignature}' compatResidual='true'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void DestroyVisualSurface()
+        {
+            if (_visualSurfaceRoot == null)
             {
-                _isRegistered = true;
                 return;
             }
 
-            if (_isRegistered &&
-                string.Equals(_presenterSignature, contract.LevelSignature, System.StringComparison.Ordinal))
-            {
-                return;
-            }
+            GameObject visualSurface = _visualSurfaceRoot;
+            _visualSurfaceRoot = null;
 
-            if (_isRegistered)
+            if (Application.isPlaying)
             {
-                presenterRegistry.Unregister(this);
-                _isRegistered = false;
+                Destroy(visualSurface);
             }
-
-            _presenterSignature = contract.LevelSignature;
-            presenterRegistry.Register(this, _presenterSignature);
-            _isRegistered = true;
+            else
+            {
+                DestroyImmediate(visualSurface);
+            }
 
             DebugUtility.Log<LevelIntroStageMockPresenter>(
-                $"[OBS][LevelFlow] EnterStagePresenterRegistered levelRef='{contract.LevelRef.name}' contentId='{contract.LocalContentId}' signature='{contract.LevelSignature}' presenter='{name}'.",
+                $"[OBS][IntroStage][Compat] IntroStagePresenterSurfaceDestroyed presenterType='{GetType().Name}' signature='{_presenterSignature}' compatResidual='true'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void ReleasePresentationState(bool logDetached, string reason)
+        {
+            if (!_isPresentationAttached && _visualSurfaceRoot == null)
+            {
+                return;
+            }
+
+            DestroyVisualSurface();
+
+            if (logDetached)
+            {
+                DebugUtility.Log<LevelIntroStageMockPresenter>(
+                    $"[OBS][IntroStage][Compat] IntroStagePresenterDetached presenterType='{GetType().Name}' signature='{_presenterSignature}' reason='{Normalize(reason)}' compatResidual='true'.",
+                    DebugUtility.Colors.Info);
+            }
+
+            _isPresentationAttached = false;
+            _isPresentationClosed = true;
+            _presenterSignature = string.Empty;
+            _presentationContract = default;
         }
 
         private static string Normalize(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
 
-        private readonly struct IntroViewModel
+        private static string ResolveContractContentName(LevelStagePresentationContract contract)
+            => contract.LevelRef != null ? contract.LevelRef.name : "<none>";
+
+        internal readonly struct IntroViewModel
         {
-            public IntroViewModel(string levelRefName, string contentId, string levelSignature, bool canContinue)
+            public IntroViewModel(string contentName, string contentId, string sessionSignature, bool canContinue)
             {
-                LevelRefName = string.IsNullOrWhiteSpace(levelRefName) ? "<none>" : levelRefName.Trim();
+                ContentName = string.IsNullOrWhiteSpace(contentName) ? "<none>" : contentName.Trim();
                 ContentId = string.IsNullOrWhiteSpace(contentId) ? "<none>" : contentId.Trim();
-                LevelSignature = string.IsNullOrWhiteSpace(levelSignature) ? "<none>" : levelSignature.Trim();
+                SessionSignature = string.IsNullOrWhiteSpace(sessionSignature) ? "<none>" : sessionSignature.Trim();
                 CanContinue = canContinue;
             }
 
-            public string LevelRefName { get; }
+            public string ContentName { get; }
             public string ContentId { get; }
-            public string LevelSignature { get; }
+            public string SessionSignature { get; }
             public bool CanContinue { get; }
+        }
+    }
+
+    [DisallowMultipleComponent]
+    internal sealed class LevelIntroStageMockPresenterSurface : MonoBehaviour
+    {
+        private LevelIntroStageMockPresenter? _owner;
+
+        public void Bind(LevelIntroStageMockPresenter owner)
+        {
+            _owner = owner;
+        }
+
+        private void OnGUI()
+        {
+            if (_owner == null)
+            {
+                return;
+            }
+
+            if (!_owner.TryBuildViewModel(out LevelIntroStageMockPresenter.IntroViewModel model))
+            {
+                return;
+            }
+
+            Rect rect = _owner.BuildPanelRect();
+            GUILayout.BeginArea(rect, GUI.skin.box);
+            GUILayout.Label("IntroStage");
+            GUILayout.Label($"content: {model.ContentName}");
+            GUILayout.Label($"contentId: {model.ContentId}");
+            GUILayout.Label($"signature: {model.SessionSignature}");
+            GUILayout.Space(8f);
+
+            bool previous = GUI.enabled;
+            GUI.enabled = model.CanContinue;
+            if (GUILayout.Button("Continue", GUILayout.Height(34f)))
+            {
+                _owner.OnClickContinue();
+            }
+
+            GUI.enabled = previous;
+            GUILayout.EndArea();
         }
     }
 }

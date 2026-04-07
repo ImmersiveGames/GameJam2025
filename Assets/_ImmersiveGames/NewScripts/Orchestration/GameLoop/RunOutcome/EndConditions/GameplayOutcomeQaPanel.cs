@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndConditions
 {
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
         private EventBinding<GamePlayRequestedEvent> _gamePlayRequestedBinding;
-        private EventBinding<LevelSelectedEvent> _levelSelectedBinding;
+        private EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
         private EventBinding<LevelEnteredEvent> _levelEnteredBinding;
         private EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
         private bool _registered;
@@ -40,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(_ => _runEnded = false);
             _runEndedBinding = new EventBinding<GameRunEndedEvent>(_ => _runEnded = true);
             _gamePlayRequestedBinding = new EventBinding<GamePlayRequestedEvent>(evt => ReportSmoke("GamePlayRequestedEvent", evt.Reason));
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(evt => ReportSmoke("LevelSelectedEvent", evt.Reason));
+            _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(evt => ReportSmoke("PhaseDefinitionSelectedEvent", evt.Reason));
             _levelEnteredBinding = new EventBinding<LevelEnteredEvent>(evt => ReportSmoke("LevelEnteredEvent", evt.Session.Reason));
             _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(evt => ReportSmoke("LevelIntroCompletedEvent", evt.Reason));
         }
@@ -192,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
             EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
             EventBus<GamePlayRequestedEvent>.Register(_gamePlayRequestedBinding);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
+            EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
             EventBus<LevelEnteredEvent>.Register(_levelEnteredBinding);
             EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
             _registered = true;
@@ -208,7 +209,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
             EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
             EventBus<GamePlayRequestedEvent>.Unregister(_gamePlayRequestedBinding);
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
+            EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
             EventBus<LevelEnteredEvent>.Unregister(_levelEnteredBinding);
             EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
             _registered = false;
@@ -248,11 +249,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             bool hasInitialState = _phaseInitialStateService != null && _phaseInitialStateService.TryGetCurrent(out initialState);
 
             string sessionLabel = hasSession
-                ? $"Session: OK [{session.MacroRouteId}] v{session.SelectionVersion}"
+                ? $"Session: OK [phase:{session.PhaseId}] v{session.SelectionVersion}"
                 : "Session: empty";
 
             string phaseLabel = hasPhase
-                ? $"Phase: OK [{(phase.LevelSession.LevelRef != null ? phase.LevelSession.LevelRef.name : "<none>")}] v{phase.LevelSession.SelectionVersion}"
+                ? $"Phase: OK [{(phase.PhaseDefinitionRef != null ? phase.PhaseDefinitionRef.name : "<none>")}] v{phase.SessionContext.SelectionVersion}"
                 : "Phase: empty";
 
             string playersLabel = hasPlayers

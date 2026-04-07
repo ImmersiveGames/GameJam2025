@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Result
 {
     public enum PostRunResult
@@ -20,4 +21,3 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Result
         bool TrySetExit(string reason = null);
     }
 }
-

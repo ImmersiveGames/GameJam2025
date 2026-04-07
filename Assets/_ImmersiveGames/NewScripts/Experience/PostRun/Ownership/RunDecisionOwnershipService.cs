@@ -1,0 +1,107 @@
+using System;
+using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Presentation;
+using NewRunDecisionCompletedEvent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunDecisionCompletedEvent;
+using NewRunDecisionEnteredEvent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunDecisionEnteredEvent;
+
+namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
+{
+    public interface IRunDecisionOwnershipService
+    {
+        bool IsActive { get; }
+        bool HasCompleted { get; }
+        RunDecision CurrentDecision { get; }
+        void EnterRunDecision(RunDecision decision);
+        void ExitRunDecision(RunDecisionCompletion completion);
+    }
+
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class RunDecisionOwnershipService : IRunDecisionOwnershipService
+    {
+        private readonly IRunDecisionStagePresenterHost _presenterHost;
+        private IRunDecisionStagePresenter _currentPresenter;
+
+        public RunDecisionOwnershipService(IRunDecisionStagePresenterHost presenterHost)
+        {
+            _presenterHost = presenterHost ?? throw new ArgumentNullException(nameof(presenterHost));
+        }
+
+        public bool IsActive { get; private set; }
+        public bool HasCompleted { get; private set; }
+        public RunDecision CurrentDecision { get; private set; }
+
+        public void EnterRunDecision(RunDecision decision)
+        {
+            if (IsActive)
+            {
+                return;
+            }
+
+            CurrentDecision = decision;
+
+            AttachPresenterOrFail(decision);
+
+            if (_currentPresenter == null)
+            {
+                CurrentDecision = default;
+                IsActive = false;
+                HasCompleted = false;
+                return;
+            }
+
+            IsActive = true;
+            HasCompleted = false;
+
+            DebugUtility.Log<RunDecisionOwnershipService>(
+                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered signature='{decision.Signature}' scene='{decision.SceneName}' frame={decision.Frame} result='{decision.Result}' reason='{decision.Reason}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<NewRunDecisionEnteredEvent>.Raise(new NewRunDecisionEnteredEvent(decision));
+        }
+
+        public void ExitRunDecision(RunDecisionCompletion completion)
+        {
+            if (!IsActive)
+            {
+                return;
+            }
+
+            IsActive = false;
+            HasCompleted = true;
+
+            DebugUtility.Log<RunDecisionOwnershipService>(
+                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionCompleted signature='{CurrentDecision.Signature}' scene='{CurrentDecision.SceneName}' frame='{CurrentDecision.Frame}' result='{CurrentDecision.Result}' reason='{completion.Reason}' handoff='{completion.NextState}' kind='{completion.Kind}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<NewRunDecisionCompletedEvent>.Raise(new NewRunDecisionCompletedEvent(CurrentDecision, completion));
+
+            if (_currentPresenter != null)
+            {
+                // O presenter macro vive em UIGlobalScene e deve permanecer adotado pelo host
+                // entre ciclos. Aqui soltamos apenas o bind da decisão corrente.
+                _currentPresenter.DetachFromRunDecision(completion.Reason);
+                _currentPresenter = null;
+            }
+        }
+
+        private void AttachPresenterOrFail(RunDecision decision)
+        {
+            if (!_presenterHost.TryGetCurrentPresenter(out var presenter) || presenter == null)
+            {
+                HardFailFastH1.Trigger(typeof(RunDecisionOwnershipService),
+                    $"[FATAL][H1][RunDecision] Presenter obrigatorio ausente. signature='{Normalize(decision.Signature)}' scene='{Normalize(decision.SceneName)}'.");
+                return;
+            }
+
+            _currentPresenter = presenter;
+            presenter.BindToRunDecision(decision);
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+}

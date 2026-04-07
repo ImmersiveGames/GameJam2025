@@ -55,7 +55,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             gameLoopService.Initialize();
 
             EnsureAudioPauseDuckingBridge();
-            EnsureIntroStageBridge();
             EnsurePauseBridge();
             EnsureGameRunRuntimeServices();
             EnsureOutcomeEventInputBridge();
@@ -89,17 +88,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             }
 
             throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService ausente no DI global antes da composicao runtime.");
-        }
-
-        private static void EnsureIntroStageBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<GameLoopIntroStageBridge>(out _))
-            {
-                return;
-            }
-
-            var bridge = new GameLoopIntroStageBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
         }
 
         private static void EnsureAudioPauseDuckingBridge()
@@ -229,7 +217,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, gameLoopService, fadeService, startPlan);
 
             DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                $"[GameLoopSceneFlow][Operational] Coordinator composto para boot/start-plan compatibility (routeId='{bootStartRoute.RouteId}', routeRef='{bootStartRoute.name}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
+                $"[GameLoopSceneFlow][Operational] Coordinator composto para boot/start-plan canonical rail (routeId='{bootStartRoute.RouteId}', routeRef='{bootStartRoute.name}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
                 DebugUtility.Colors.Info);
         }
 
@@ -242,7 +230,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             RequireGlobal<IGameRunOutcomeService>("IGameRunOutcomeService");
             RequireGlobal<IGameLoopCommands>("IGameLoopCommands");
             RequireGlobal<IPauseCommands>("IPauseCommands");
-            RequireGlobal<GameLoopIntroStageBridge>("GameLoopIntroStageBridge");
             RequireGlobal<GameRunOutcomeRequestBridge>("GameRunOutcomeRequestBridge");
 
             if (_sceneFlowSyncCoordinator == null)

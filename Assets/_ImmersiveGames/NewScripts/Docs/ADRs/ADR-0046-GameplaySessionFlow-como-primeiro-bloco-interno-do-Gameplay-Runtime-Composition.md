@@ -3,7 +3,8 @@
 ## 1. Resumo executivo
 
 `GameplaySessionFlow` e o primeiro bloco semantico interno acima do backbone dentro de `Gameplay Runtime Composition`.
-Ele fecha a fronteira da sessao jogavel ja consolidada no runtime: entrada, preparacao do level, outcome, post-run e operacoes de retry/restart/advance ficam lidos a partir deste bloco, sem reatribuir ao backbone a semantica principal do gameplay.
+Ele fecha a fronteira da sessao jogavel ja consolidada no runtime: entrada, preparacao do level, outcome, fim de run e operacoes de retry/restart/advance ficam lidos a partir deste bloco, sem reatribuir ao backbone a semantica principal do gameplay.
+O owner documental do fim de run dentro desse centro e `ADR-0049`.
 
 ## 2. Papel do bloco
 
@@ -15,7 +16,7 @@ Ele existe para tornar explicita a leitura canonica da experiencia jogavel, sepa
 
 ## 3. Fronteira
 
-A fronteira do bloco e a faixa da sessao jogavel que vai da entrada na experiencia ativa ate o fechamento de post-run e das intencoes de continuidade da run.
+A fronteira do bloco e a faixa da sessao jogavel que vai da entrada na experiencia ativa ate o fechamento do fim de run e das intencoes de continuidade da run.
 
 Entra no bloco o que define a sessao jogavel.
 Fica fora o que apenas executa suporte tecnico do runtime, transporte de cena, navegacao ou reset operacional.
@@ -41,6 +42,9 @@ As pecas abaixo continuam sendo reaproveitadas como suporte operacional abaixo d
 - `PostRunResultService`
 - `RestartContextService`
 - `LevelFlowRuntimeService` como leitura interna de runtime de level dentro da sessao
+
+O modelo canonico alvo do fim de run e `RunEndIntent -> RunResultStage -> RunDecision`, documentado em `ADR-0049`.
+Os nomes `PostRun*` acima permanecem apenas como bridges historicas da ponte atual, nao como centro semantico do rail final.
 
 ## 4.1 Contrato semantico minimo da V1
 

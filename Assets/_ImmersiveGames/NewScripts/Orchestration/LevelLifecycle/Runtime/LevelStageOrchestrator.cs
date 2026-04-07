@@ -1,9 +1,11 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
@@ -11,17 +13,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     public class LevelLifecycleStageOrchestrator : IDisposable
     {
         private readonly EventBinding<LevelEnteredEvent> _levelEnteredBinding;
+        private readonly EventBinding<SceneTransitionCompletedEvent> _sceneTransitionCompletedBinding;
+        private readonly object _sync = new();
         private int _lastProcessedSelectionVersion = -1;
+        private LevelIntroStageSession _pendingGameplaySession;
+        private string _pendingGameplaySource = string.Empty;
+        private string _pendingGameplayReason = string.Empty;
+        private bool _hasPendingGameplayIntro;
 
         public LevelLifecycleStageOrchestrator()
         {
             _levelEnteredBinding = new EventBinding<LevelEnteredEvent>(OnLevelEntered);
+            _sceneTransitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
             EventBus<LevelEnteredEvent>.Register(_levelEnteredBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(_sceneTransitionCompletedBinding);
         }
 
         public void Dispose()
         {
             EventBus<LevelEnteredEvent>.Unregister(_levelEnteredBinding);
+            EventBus<SceneTransitionCompletedEvent>.Unregister(_sceneTransitionCompletedBinding);
         }
 
         private void OnLevelEntered(LevelEnteredEvent evt)
@@ -32,32 +43,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     "[FATAL][H1][LevelLifecycle] Invalid LevelEnteredEvent received.");
             }
 
-            DebugUtility.Log<LevelLifecycleStageOrchestrator>(
-                $"[OBS][LevelLifecycle] EnterStageStartRequested source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' v='{evt.Session.SelectionVersion}' reason='{Normalize(evt.Session.Reason)}' levelSignature='{Normalize(evt.Session.LevelSignature)}'.",
-                DebugUtility.Colors.Info);
-
             if (!TryAdvanceDedupe(evt.Session.SelectionVersion, evt.Session.LevelSignature, evt.Source))
             {
                 return;
             }
 
-            if (!evt.Session.HasIntroStage)
+            if (ShouldDeferGameplayIntro(evt))
             {
-                PublishLevelIntroCompleted(evt.Session, evt.Source, wasSkipped: true, reason: "LevelIntro/NoIntro");
+                QueuePendingGameplayIntro(evt);
                 return;
-            }
-
-            if (!TryResolvePresenterRegistry(out var presenterRegistry))
-            {
-                return;
-            }
-
-            if (!presenterRegistry.TryEnsureCurrentPresenter(evt.Session, evt.Source, out var presenter) ||
-                !presenter.IsReady ||
-                !string.Equals(presenter.PresenterSignature, evt.Session.LevelSignature, StringComparison.Ordinal))
-            {
-                HardFailFastH1.Trigger(typeof(LevelLifecycleStageOrchestrator),
-                    $"[FATAL][H1][LevelLifecycle] Intro session requires a canonical level presenter but none is registered. source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' signature='{evt.Session.LevelSignature}'.");
             }
 
             DispatchIntroStage(
@@ -66,6 +60,45 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 evt.RouteKind,
                 Normalize(evt.Session.Reason),
                 isLocalSwap: string.Equals(evt.Source, "LevelSwapLocal", StringComparison.Ordinal));
+        }
+
+        private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
+        {
+            if (evt.context.RouteKind != SceneRouteKind.Gameplay)
+            {
+                return;
+            }
+
+            LevelIntroStageSession pendingSession;
+            string pendingSource;
+            string pendingReason;
+
+            lock (_sync)
+            {
+                if (!_hasPendingGameplayIntro)
+                {
+                    return;
+                }
+
+                pendingSession = _pendingGameplaySession;
+                pendingSource = _pendingGameplaySource;
+                pendingReason = _pendingGameplayReason;
+                _hasPendingGameplayIntro = false;
+                _pendingGameplaySession = default;
+                _pendingGameplaySource = string.Empty;
+                _pendingGameplayReason = string.Empty;
+            }
+
+            DebugUtility.Log<LevelLifecycleStageOrchestrator>(
+                $"[OBS][LevelLifecycle] EnterStageReleasedOnSceneTransitionCompleted source='{pendingSource}' levelRef='{pendingSession.LevelRef.name}' v='{pendingSession.SelectionVersion}' reason='{Normalize(pendingReason)}' levelSignature='{Normalize(pendingSession.LevelSignature)}' routeKind='{evt.context.RouteKind}' sceneTransitionSignature='{SceneTransitionSignature.Compute(evt.context)}'.",
+                DebugUtility.Colors.Info);
+
+            DispatchIntroStage(
+                pendingSource,
+                pendingSession,
+                evt.context.RouteKind,
+                pendingReason,
+                isLocalSwap: string.Equals(pendingSource, "LevelSwapLocal", StringComparison.Ordinal));
         }
 
         private bool TryAdvanceDedupe(int selectionVersion, string levelSignature, string source)
@@ -89,6 +122,27 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         private static string Normalize(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+
+        private static bool ShouldDeferGameplayIntro(LevelEnteredEvent evt)
+        {
+            return evt.RouteKind == SceneRouteKind.Gameplay
+                   && string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal);
+        }
+
+        private void QueuePendingGameplayIntro(LevelEnteredEvent evt)
+        {
+            lock (_sync)
+            {
+                _pendingGameplaySession = evt.Session;
+                _pendingGameplaySource = evt.Source;
+                _pendingGameplayReason = Normalize(evt.Session.Reason);
+                _hasPendingGameplayIntro = true;
+            }
+
+            DebugUtility.Log<LevelLifecycleStageOrchestrator>(
+                $"[OBS][LevelLifecycle] EnterStageDeferred source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' v='{evt.Session.SelectionVersion}' disposition='{evt.Session.Disposition}' reason='{Normalize(evt.Session.Reason)}' levelSignature='{Normalize(evt.Session.LevelSignature)}' gate='SceneTransitionCompletedEvent'.",
+                DebugUtility.Colors.Info);
+        }
 
         private static bool TryResolvePresenterRegistry(out ILevelIntroStagePresenterRegistry presenterRegistry)
         {
@@ -117,6 +171,23 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 DebugUtility.LogVerbose<LevelLifecycleStageOrchestrator>(
                     $"[OBS][LevelLifecycle] EnterStageLocalSwapDispatch source='{source}' levelRef='{session.LevelRef.name}' v='{session.SelectionVersion}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
                     DebugUtility.Colors.Info);
+            }
+
+            if (!session.HasIntroStage)
+            {
+                PublishLevelIntroCompleted(session, source, wasSkipped: true, reason: "LevelIntro/NoIntro");
+                return;
+            }
+
+            if (!TryResolvePresenterRegistry(out var presenterRegistry))
+            {
+                return;
+            }
+
+            if (!presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
+            {
+                HardFailFastH1.Trigger(typeof(LevelLifecycleStageOrchestrator),
+                    $"[FATAL][H1][LevelLifecycle] Intro session requires a canonical level presenter but none is registered. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}'.");
             }
 
             string activeSceneName = SceneManager.GetActiveScene().name;

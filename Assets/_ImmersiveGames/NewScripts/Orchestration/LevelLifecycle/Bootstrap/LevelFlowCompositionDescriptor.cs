@@ -12,6 +12,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 bootstrap: bootstrapConfig => LevelLifecycleBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "LevelLifecycleInstaller.Install",
                 runtimeComposerEntry: "LevelLifecycleBootstrap.ComposeRuntime",
-                description: "GameplaySessionFlow boundary: prepare, intro, playing, outcome, post-run, continuity downstream.");
+                description: "GameplaySessionFlow boundary: prepare, intro, playing, outcome, RunEndRail, continuity downstream.");
     }
 }

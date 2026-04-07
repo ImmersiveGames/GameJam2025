@@ -48,7 +48,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
     {
         bool IsIntroStageActive { get; }
         void BeginIntroStage(IntroStageContext context);
-        Task<IntroStageCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken);
         void CompleteIntroStage(string reason);
         void SkipIntroStage(string reason);
         void MarkSessionClosed();

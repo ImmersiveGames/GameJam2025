@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 {
     /// <summary>
     /// Emite BootStartPlanRequestedEvent (REQUEST) uma unica vez ao iniciar a cena.
-    /// Esta emissao existe como compatibilidade operacional de boot, nao como leitura canonica do gameplay.
+    /// Esta emissao existe como contrato canônico de boot/start-plan.
     /// </summary>
     [DefaultExecutionOrder(-900)]
     [DebugLevel(DebugLevel.Verbose)]
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _hasRequested = true;
 
             DebugUtility.Log<BootStartPlanRequestEmitter>(
-                "[OBS][Gameplay][Compatibility] BootStartPlanRequestedEvent emitted for boot/start-plan compatibility rail. Canonical gameplay semantics remain under GameplayRuntimeComposition/GameplaySessionFlow.",
+                "[OBS][Gameplay] BootStartPlanRequestedEvent emitted for canonical boot/start-plan rail. Canonical gameplay semantics remain under GameplayRuntimeComposition/GameplaySessionFlow.",
                 DebugUtility.Colors.Info);
 
             EventBus<BootStartPlanRequestedEvent>.Raise(new BootStartPlanRequestedEvent());

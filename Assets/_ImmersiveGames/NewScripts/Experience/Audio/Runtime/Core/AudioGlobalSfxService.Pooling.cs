@@ -4,9 +4,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Models;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Config;
-using _ImmersiveGames.NewScripts.Infrastructure.Pooling.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core

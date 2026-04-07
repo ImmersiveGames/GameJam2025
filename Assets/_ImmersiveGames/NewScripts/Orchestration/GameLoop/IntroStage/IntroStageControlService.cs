@@ -1,7 +1,5 @@
 #nullable enable
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -27,8 +25,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
         }
 
         private readonly object _sync = new();
-        private TaskCompletionSource<IntroStageCompletionResult> _completionSource =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
         private bool _isActive;
         private IntroStageContext _activeContext;
         private IntroStageExecutionState _state = IntroStageExecutionState.Idle;
@@ -46,52 +42,35 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 
         public void BeginIntroStage(IntroStageContext context)
         {
-            TaskCompletionSource<IntroStageCompletionResult>? previousSource = null;
             bool hadActiveContext;
+            IntroStageContext previousContext = default;
 
             lock (_sync)
             {
                 hadActiveContext = _isActive;
                 if (hadActiveContext)
                 {
-                    previousSource = _completionSource;
+                    previousContext = _activeContext;
                     _state = IntroStageExecutionState.Superseded;
-                }
-
-                if (_isActive)
-                {
-                    DebugUtility.LogWarning<IntroStageControlService>(
-                        "[OBS][EnterStageController] BeginEnterStage chamado enquanto outro EnterStage ainda esta ativo. GameplayResetando para o novo contexto.");
                 }
 
                 _isActive = true;
                 _activeContext = context;
                 _state = IntroStageExecutionState.Beginning;
-                _completionSource = new TaskCompletionSource<IntroStageCompletionResult>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
                 _state = IntroStageExecutionState.WaitingConfirm;
             }
 
-            if (hadActiveContext && previousSource != null && !previousSource.Task.IsCompleted)
-            {
-                previousSource.TrySetResult(new IntroStageCompletionResult("superseded", wasSkipped: true));
-            }
-        }
+                if (hadActiveContext && previousContext.IsValid)
+                {
+                    DebugUtility.LogWarning<IntroStageControlService>(
+                        $"[OBS][IntroStageControlService] BeginIntroStage chamado enquanto outra IntroStage ainda esta ativa. Intro antiga sera superseded signature='{NormalizeValue(previousContext.ContextSignature)}'.");
 
-        public Task<IntroStageCompletionResult> WaitForCompletionAsync(CancellationToken cancellationToken)
-        {
-            TaskCompletionSource<IntroStageCompletionResult> source;
-            lock (_sync)
-            {
-                source = _completionSource;
+                EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(
+                    previousContext.Session,
+                    "GameplaySessionFlow",
+                    wasSkipped: true,
+                    "superseded"));
             }
-
-            if (!cancellationToken.CanBeCanceled)
-            {
-                return source.Task;
-            }
-
-            return AwaitWithCancellationAsync(source.Task, cancellationToken);
         }
 
         public void CompleteIntroStage(string reason)
@@ -124,17 +103,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
         {
             try
             {
-                TaskCompletionSource<IntroStageCompletionResult> source;
                 IntroStageContext context = default;
                 bool wasActive;
-                bool alreadyCompleted;
                 IntroStageExecutionState previousState;
 
                 lock (_sync)
                 {
-                    source = _completionSource;
                     wasActive = _isActive;
-                    alreadyCompleted = source.Task.IsCompleted;
                     previousState = _state;
 
                     if (_isActive)
@@ -155,29 +130,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 
                 if (!wasActive)
                 {
-                    string ignoreReason = alreadyCompleted ? "already_completed" : "not_active";
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][EnterStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' ignoreReason='{ignoreReason}' state='{gameLoopState}' executionState='{previousState}' isActive=false signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
+                        $"[OBS][IntroStageControlService] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' ignoreReason='not_active' state='{gameLoopState}' executionState='{previousState}' isActive=false signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 DebugUtility.Log<IntroStageControlService>(
-                    $"[OBS][EnterStageController] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' state='{gameLoopState}' executionState='{_state}' isActive=true signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
+                    $"[OBS][IntroStageControlService] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' state='{gameLoopState}' executionState='{_state}' isActive=true signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
                 {
                     DebugUtility.LogWarning<IntroStageControlService>(
-                        $"[OBS][EnterStageController] EnterStageTimedOut signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.");
+                        $"[OBS][IntroStageControlService] IntroStageTimedOut signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.");
                 }
-
-                source.TrySetResult(new IntroStageCompletionResult(normalizedReason, wasSkipped));
 
                 if (context.IsValid)
                 {
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][EnterStageController] EnterStageCompletedPublished source='GameplaySessionFlow' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
+                        $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='GameplaySessionFlow' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
                         DebugUtility.Colors.Info);
 
                     EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(
@@ -193,26 +165,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
                     $"[OBS][IntroStageController] FinishIntroStage FAILED ex='{ex.GetType().Name}: {ex.Message}'.");
                 throw;
             }
-        }
-
-        private static async Task<IntroStageCompletionResult> AwaitWithCancellationAsync(
-            Task<IntroStageCompletionResult> task,
-            CancellationToken cancellationToken)
-        {
-            if (task.IsCompleted)
-            {
-                return await task.ConfigureAwait(false);
-            }
-
-            var completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            await using var registration = cancellationToken.Register(() => completionSource.TrySetResult(true));
-
-            if (task == await Task.WhenAny(task, completionSource.Task).ConfigureAwait(false))
-            {
-                return await task.ConfigureAwait(false);
-            }
-
-            return new IntroStageCompletionResult("cancelled", wasSkipped: true);
         }
 
         private static string NormalizeValue(string? value)

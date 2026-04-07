@@ -33,7 +33,9 @@ Esse subsistema e o ponto de leitura canonica para o V1 ja consolidado:
 - `Intro`
 - `Playing`
 - `Outcome`
-- `PostRun`
+- `RunEndIntent`
+- `RunResultStage`
+- `RunDecision`
 - `Continuity`
 
 ## Relacao com os ADRs seguintes
@@ -69,7 +71,9 @@ Sobem para o novo centro semantico ja consolidado no V1:
 - `Intro`
 - `Playing`
 - `Outcome`
-- `PostRun`
+- `RunEndIntent`
+- `RunResultStage`
+- `RunDecision`
 - `Continuity`
 
 ## O que passa a ser linguagem historica
@@ -87,6 +91,8 @@ Passam a ser lidos como historicos, transitivos ou de menor peso semantico:
 - retry / restart / respawn / advance passam a nascer da semantica do gameplay.
 - o backbone permanece como executor tecnico, nao como dono do significado do gameplay.
 - a leitura dos modulos deve seguir a composicao de gameplay, nao a forma historica da pasta.
+
+O owner documental do fim de run dentro desse centro e `ADR-0049`; este ADR define apenas a direcao macro.
 
 ## Proximos passos arquiteturais imediatos
 

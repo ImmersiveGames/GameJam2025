@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
@@ -14,6 +12,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public static GameplayPhaseRulesObjectivesSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
         {
             return FromLevelSelectedEvent(evt, GameplayPhaseRuntimeSnapshot.FromLevelSelectedEvent(evt));
+        }
+
+        public static GameplayPhaseRulesObjectivesSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            return FromPhaseDefinitionSelectedEvent(evt, GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt));
         }
 
         internal static GameplayPhaseRulesObjectivesSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt, GameplayPhaseRuntimeSnapshot phaseRuntime)
@@ -83,6 +86,89 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 prototypeCount,
                 primaryObjectiveId,
                 BuildRulesSignature(phaseRuntime, totalEntries, mainCount, auxCount, prototypeCount, primaryObjectiveId),
+                BuildObjectivesSignature(phaseRuntime, objectiveIds.Count, primaryObjectiveId),
+                BuildRulesSummary(ruleIds, mainCount, auxCount, prototypeCount),
+                BuildObjectivesSummary(objectiveIds));
+        }
+
+        internal static GameplayPhaseRulesObjectivesSnapshot FromPhaseDefinitionSelectedEvent(
+            PhaseDefinitionSelectedEvent evt,
+            GameplayPhaseRuntimeSnapshot phaseRuntime)
+        {
+            if (evt.PhaseDefinitionRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseRulesObjectivesSnapshot),
+                    "[FATAL][H1][GameplaySessionFlow] PhaseDefinitionSelectedEvent requires a valid phaseDefinitionRef to build the rules/objectives snapshot.");
+            }
+
+            PhaseDefinitionAsset.PhaseRulesObjectivesBlock manifest = evt.PhaseDefinitionRef.RulesObjectives;
+            if (manifest == null || manifest.rules == null || manifest.objectives == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseRulesObjectivesSnapshot),
+                    $"[FATAL][H1][GameplaySessionFlow] PhaseDefinition phaseId='{evt.PhaseId}' has no valid rules/objectives block.");
+            }
+
+            IReadOnlyList<PhaseDefinitionAsset.PhaseRuleEntry> rules = manifest.rules;
+            IReadOnlyList<PhaseDefinitionAsset.PhaseObjectiveEntry> objectives = manifest.objectives;
+            int mainCount = 0;
+            int auxCount = 0;
+            int prototypeCount = 0;
+            List<string> ruleIds = new(rules.Count);
+            List<string> objectiveIds = new(objectives.Count);
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                PhaseDefinitionAsset.PhaseRuleEntry entry = rules[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(entry.localId))
+                {
+                    ruleIds.Add(entry.localId.Trim());
+                }
+
+                switch (entry.ruleKind)
+                {
+                    case PhaseDefinitionAsset.PhaseRuleKind.Constraint:
+                        mainCount++;
+                        break;
+                    case PhaseDefinitionAsset.PhaseRuleKind.Gate:
+                        auxCount++;
+                        break;
+                    case PhaseDefinitionAsset.PhaseRuleKind.Modifier:
+                        prototypeCount++;
+                        break;
+                }
+            }
+
+            for (int i = 0; i < objectives.Count; i++)
+            {
+                PhaseDefinitionAsset.PhaseObjectiveEntry entry = objectives[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(entry.localId))
+                {
+                    objectiveIds.Add(entry.localId.Trim());
+                }
+            }
+
+            string primaryObjectiveId = objectiveIds.Count > 0
+                ? objectiveIds[0]
+                : (ruleIds.Count > 0 ? ruleIds[0] : "<none>");
+
+            return new GameplayPhaseRulesObjectivesSnapshot(
+                phaseRuntime,
+                ruleIds.Count,
+                objectiveIds.Count,
+                auxCount,
+                prototypeCount,
+                primaryObjectiveId,
+                BuildRulesSignature(phaseRuntime, ruleIds.Count, mainCount, auxCount, prototypeCount, primaryObjectiveId),
                 BuildObjectivesSignature(phaseRuntime, objectiveIds.Count, primaryObjectiveId),
                 BuildRulesSummary(ruleIds, mainCount, auxCount, prototypeCount),
                 BuildObjectivesSummary(objectiveIds));
@@ -213,23 +299,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetLast(out GameplayPhaseRulesObjectivesSnapshot snapshot);
         GameplayPhaseRulesObjectivesSnapshot Update(GameplayPhaseRulesObjectivesSnapshot snapshot);
         GameplayPhaseRulesObjectivesSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
+        GameplayPhaseRulesObjectivesSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }
 
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameplayPhaseRulesObjectivesService : IGameplayPhaseRulesObjectivesService, IDisposable
+    public sealed class GameplayPhaseRulesObjectivesService : IGameplayPhaseRulesObjectivesService
     {
         private readonly object _sync = new();
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private GameplayPhaseRulesObjectivesSnapshot _current = GameplayPhaseRulesObjectivesSnapshot.Empty;
         private GameplayPhaseRulesObjectivesSnapshot _last = GameplayPhaseRulesObjectivesSnapshot.Empty;
-        private bool _disposed;
 
         public GameplayPhaseRulesObjectivesService()
         {
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
-
             DebugUtility.LogVerbose<GameplayPhaseRulesObjectivesService>(
                 "[OBS][GameplaySessionFlow][RulesObjectives] GameplayPhaseRulesObjectivesService registrado como owner dos rules/objectives da fase.");
         }
@@ -248,6 +330,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public GameplayPhaseRulesObjectivesSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt)
         {
             return Update(GameplayPhaseRulesObjectivesSnapshot.FromLevelSelectedEvent(evt));
+        }
+
+        public GameplayPhaseRulesObjectivesSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            return Update(GameplayPhaseRulesObjectivesSnapshot.FromPhaseDefinitionSelectedEvent(evt));
         }
 
         public GameplayPhaseRulesObjectivesSnapshot Update(GameplayPhaseRulesObjectivesSnapshot snapshot)
@@ -303,27 +390,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             DebugUtility.Log<GameplayPhaseRulesObjectivesService>(
                 $"[OBS][GameplaySessionFlow][RulesObjectives] RulesObjectivesCleared keepLast='true' lastRulesSignature='{Normalize(lastSignature)}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
-        }
-
-        public void Dispose()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
-        }
-
-        private void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            UpdateFromLevelSelectedEvent(evt);
         }
 
         private static string Normalize(string value)

@@ -1,13 +1,26 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
-    public sealed class RestartContextService : IRestartContextService
+    public sealed class RestartContextService : IRestartContextService, IDisposable
     {
         private readonly object _sync = new();
+        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private GameplayStartSnapshot _current = GameplayStartSnapshot.Empty;
         private GameplayStartSnapshot _lastGameplayStartSnapshot = GameplayStartSnapshot.Empty;
         private int _selectionVersionCounter;
+        private bool _disposed;
+
+        public RestartContextService()
+        {
+            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
+            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
+
+            DebugUtility.LogVerbose<RestartContextService>(
+                "[OBS][LevelLifecycle][Operational] RestartContextService registered as canonical LevelSelectedEvent -> GameplayStartSnapshot owner.",
+                DebugUtility.Colors.Info);
+        }
 
         public GameplayStartSnapshot Current
         {
@@ -101,6 +114,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
         }
 
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
+        }
+
         public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
         {
             lock (_sync)
@@ -135,6 +159,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             DebugUtility.Log<RestartContextService>(
                 $"[OBS][LevelFlow] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void OnLevelSelected(LevelSelectedEvent evt)
+        {
+            RegisterGameplayStart(evt);
         }
     }
 }

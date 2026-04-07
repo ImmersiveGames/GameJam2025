@@ -5,10 +5,11 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 ## Status documental
 
 - `ADR-0001` e o owner de glossario, intencao e taxonomia.
-- As paginas ativas seguem o tree fisico atual, mas algumas mantem nomes historicos por compatibilidade.
+- As paginas ativas seguem o tree fisico atual; nomes historicos devem ser lidos por supersedencia, nao por compatibilidade.
 - O eixo fisico atual separa `Core`, `Infrastructure`, `Orchestration`, `Game` e `Experience`.
 - Termos como `WorldLifecycle`, `ContentSwap`, `LevelManager`, `PostGame`, `PostPlay` e `GameOver` devem ser lidos como historicos fora do canon.
 - A superficie ativa de conclusao de run e `IntroStage`, `Run`, `RunOutcome`, `PostRun` e `RunDecision`.
+- A leitura canonica da `IntroStage` e `Docs/ADRs/ADR-0059-IntroStage-Canonical-Content-Presenter-Hook.md`.
 - `Experience/Save` deve ser lido hoje como superficie de hooks e contratos placeholder, nao como sistema final de persistencia.
 
 ## Canon atual
@@ -65,5 +66,5 @@ Esta pasta separa o canon atual, as entradas ativas e o historico arquivado do B
 
 - O canon atual prevalece sobre docs antigos ou intermediarios.
 - `Docs/Archive/` e historico e nao compete com o canon.
-- As linhas de compatibilidade ainda vivas sao parte do estado atual, nao do alvo final.
+- As linhas historicas restantes nao devem ser lidas como contracto operacional primario.
 - A proxima direcao do projeto sai da consolidacao atual, nao de um redesenho idealizado.

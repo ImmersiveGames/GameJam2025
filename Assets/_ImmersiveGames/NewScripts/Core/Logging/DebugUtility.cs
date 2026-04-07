@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging.Config;
 using UnityEngine;
@@ -56,7 +58,6 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static DebugLevel _defaultDebugLevel = DebugLevel.Logs;
         private static string _lastPolicyKey;
         private static int _lastPolicyFrame = -1;
-        private static int _policyApplyTick;
         private static bool _hasAppliedPolicy;
         private static bool _lastAppliedGlobalDebugEnabled;
         private static bool _lastAppliedVerboseEnabled;
@@ -65,6 +66,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static DebugLevel _lastAppliedDefaultLevel = DebugLevel.Logs;
         private static string _lastAppliedSource;
         private static bool _lastAppliedEarlyDefault;
+        private static int _mainThreadId = -1;
 
         private static readonly Dictionary<Type, DebugLevel> _scriptDebugLevels = new();
         private static readonly Dictionary<object, DebugLevel> _localLevels = new();
@@ -78,6 +80,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         private static readonly HashSet<(string key, int frame)> _callTracker = new();
         private static readonly HashSet<(string key, int frame)> _repeatedCallTracker = new();
         private static int _lastTrackedFrame = -1;
+        private static readonly object _verboseLogLock = new();
 
         private static readonly StringBuilder _stringBuilder = new(256);
         private static readonly Dictionary<string, string> _messagePool = new();
@@ -113,7 +116,6 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _lastTrackedFrame = -1;
             _lastPolicyFrame = -1;
             _lastPolicyKey = null;
-            _policyApplyTick = 0;
             _hasAppliedPolicy = false;
             _lastAppliedGlobalDebugEnabled = true;
             _lastAppliedVerboseEnabled = false;
@@ -122,6 +124,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
             _lastAppliedDefaultLevel = DebugLevel.Logs;
             _lastAppliedSource = null;
             _lastAppliedEarlyDefault = true;
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
 
             _messagePool.Clear();
 
@@ -273,17 +276,20 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
         public static void LogVerbose(Type type, string message, string color = null, Object context = null, bool isFallback = false, bool deduplicate = false)
         {
-            if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose))
+            lock (_verboseLogLock)
             {
-                return;
-            }
+                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose))
+                {
+                    return;
+                }
 
-            if (!TrackCall(type, message, context, deduplicate))
-            {
-                return;
-            }
+                if (!TrackCall(type, message, context, deduplicate))
+                {
+                    return;
+                }
 
-            Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
+                Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
+            }
         }
         #endregion
 
@@ -324,17 +330,20 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
         public static void LogVerbose<T>(string message, string color = null, Object context = null, T instance = null, bool isFallback = false, bool deduplicate = false) where T : class
         {
             var type = typeof(T);
-            if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose))
+            lock (_verboseLogLock)
             {
-                return;
-            }
+                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose))
+                {
+                    return;
+                }
 
-            if (!TrackCall(type, message, context, deduplicate))
-            {
-                return;
-            }
+                if (!TrackCall(type, message, context, deduplicate))
+                {
+                    return;
+                }
 
-            Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
+                Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
+            }
         }
         #endregion
 
@@ -632,7 +641,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
             _stringBuilder.Clear();
             _stringBuilder.Append(baseMessage)
-                .Append(" (@ ").Append(Time.realtimeSinceStartup.ToString("F2")).Append("s)");
+                .Append(" (@ ").Append(GetTimestampSuffix()).Append("s)");
             return _stringBuilder.ToString();
         }
 
@@ -643,14 +652,29 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
         private static int GetPolicyFrame()
         {
-            int frame = Time.frameCount;
-            if (frame >= 0)
+            if (IsMainThread())
             {
+                int frame = Time.frameCount;
+                _lastTrackedFrame = frame;
                 return frame;
             }
 
-            _policyApplyTick++;
-            return -_policyApplyTick;
+            return _lastTrackedFrame >= 0 ? _lastTrackedFrame : -1;
+        }
+
+        private static bool IsMainThread()
+        {
+            return _mainThreadId > 0 && Thread.CurrentThread.ManagedThreadId == _mainThreadId;
+        }
+
+        private static string GetTimestampSuffix()
+        {
+            if (IsMainThread())
+            {
+                return Time.realtimeSinceStartup.ToString("F2", CultureInfo.InvariantCulture);
+            }
+
+            return DateTime.UtcNow.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture);
         }
 
         private static string GetBuildVariant()
@@ -692,7 +716,7 @@ namespace _ImmersiveGames.NewScripts.Core.Logging
 
         private static bool TrackCall(Type type, string message, Object context, bool deduplicate)
         {
-            int frame = Time.frameCount;
+            int frame = GetPolicyFrame();
 
             // Limpamos 1x por frame (mais barato do que RemoveWhere em toda chamada).
             if (_lastTrackedFrame != frame)

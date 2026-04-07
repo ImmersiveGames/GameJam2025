@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
@@ -55,9 +55,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
         private readonly EventBinding<PauseWillExitEvent> _pauseWillExit;
         private readonly EventBinding<PauseStateChangedEvent> _pauseStateChanged;
 
-        private readonly EventBinding<PostStageStartRequestedEvent> _postStageStartRequested;
-        private readonly EventBinding<PostStageStartedEvent> _postStageStarted;
-        private readonly EventBinding<PostStageCompletedEvent> _postStageCompleted;
+        private readonly EventBinding<RunResultStageEnteredEvent> _runResultStageEntered;
+        private readonly EventBinding<RunResultStageCompletedEvent> _runResultStageCompleted;
 
         // Captura dos buses usados (para Unregister consistente)
         private IEventBus<SceneTransitionStartedEvent> _startedBus;
@@ -73,9 +72,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
         private IEventBus<PauseWillExitEvent> _pauseWillExitBus;
         private IEventBus<PauseStateChangedEvent> _pauseStateChangedBus;
 
-        private IEventBus<PostStageStartRequestedEvent> _postStageStartRequestedBus;
-        private IEventBus<PostStageStartedEvent> _postStageStartedBus;
-        private IEventBus<PostStageCompletedEvent> _postStageCompletedBus;
+        private IEventBus<RunResultStageEnteredEvent> _runResultStageEnteredBus;
+        private IEventBus<RunResultStageCompletedEvent> _runResultStageCompletedBus;
 
         private bool _bindingsRegistered;
 
@@ -136,9 +134,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             _pauseWillExit = new EventBinding<PauseWillExitEvent>(OnPauseWillExit);
             _pauseStateChanged = new EventBinding<PauseStateChangedEvent>(OnPauseStateChanged);
 
-            _postStageStartRequested = new EventBinding<PostStageStartRequestedEvent>(OnPostStageStartRequested);
-            _postStageStarted = new EventBinding<PostStageStartedEvent>(OnPostStageStarted);
-            _postStageCompleted = new EventBinding<PostStageCompletedEvent>(OnPostStageCompleted);
+            _runResultStageEntered = new EventBinding<RunResultStageEnteredEvent>(OnRunResultStageEntered);
+            _runResultStageCompleted = new EventBinding<RunResultStageCompletedEvent>(OnRunResultStageCompleted);
 
             EnsureActive();
         }
@@ -174,9 +171,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                     SafeUnregister(_pauseWillExitBus, _pauseWillExit);
                     SafeUnregister(_pauseStateChangedBus, _pauseStateChanged);
 
-                    SafeUnregister(_postStageStartRequestedBus, _postStageStartRequested);
-                    SafeUnregister(_postStageStartedBus, _postStageStarted);
-                    SafeUnregister(_postStageCompletedBus, _postStageCompleted);
+                    SafeUnregister(_runResultStageEnteredBus, _runResultStageEntered);
+                    SafeUnregister(_runResultStageCompletedBus, _runResultStageCompleted);
                 }
 
                 TryRegisterBindings();
@@ -197,9 +193,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 _pauseWillEnterBus != EventBus<PauseWillEnterEvent>.GlobalBus ||
                 _pauseWillExitBus != EventBus<PauseWillExitEvent>.GlobalBus ||
                 _pauseStateChangedBus != EventBus<PauseStateChangedEvent>.GlobalBus ||
-                _postStageStartRequestedBus != EventBus<PostStageStartRequestedEvent>.GlobalBus ||
-                _postStageStartedBus != EventBus<PostStageStartedEvent>.GlobalBus ||
-                _postStageCompletedBus != EventBus<PostStageCompletedEvent>.GlobalBus;
+                _runResultStageEnteredBus != EventBus<RunResultStageEnteredEvent>.GlobalBus ||
+                _runResultStageCompletedBus != EventBus<RunResultStageCompletedEvent>.GlobalBus;
         }
 
         public void Dispose()
@@ -227,9 +222,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 SafeUnregister(_pauseWillExitBus, _pauseWillExit);
                 SafeUnregister(_pauseStateChangedBus, _pauseStateChanged);
 
-                SafeUnregister(_postStageStartRequestedBus, _postStageStartRequested);
-                SafeUnregister(_postStageStartedBus, _postStageStarted);
-                SafeUnregister(_postStageCompletedBus, _postStageCompleted);
+                SafeUnregister(_runResultStageEnteredBus, _runResultStageEntered);
+                SafeUnregister(_runResultStageCompletedBus, _runResultStageCompleted);
 
                 _bindingsRegistered = false;
             }
@@ -263,9 +257,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 _pauseWillExitBus = EventBus<PauseWillExitEvent>.GlobalBus;
                 _pauseStateChangedBus = EventBus<PauseStateChangedEvent>.GlobalBus;
 
-                _postStageStartRequestedBus = EventBus<PostStageStartRequestedEvent>.GlobalBus;
-                _postStageStartedBus = EventBus<PostStageStartedEvent>.GlobalBus;
-                _postStageCompletedBus = EventBus<PostStageCompletedEvent>.GlobalBus;
+                _runResultStageEnteredBus = EventBus<RunResultStageEnteredEvent>.GlobalBus;
+                _runResultStageCompletedBus = EventBus<RunResultStageCompletedEvent>.GlobalBus;
 
                 SafeRegister(_startedBus, _started);
                 SafeRegister(_scenesReadyBus, _scenesReady);
@@ -280,14 +273,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 SafeRegister(_pauseWillExitBus, _pauseWillExit);
                 SafeRegister(_pauseStateChangedBus, _pauseStateChanged);
 
-                SafeRegister(_postStageStartRequestedBus, _postStageStartRequested);
-                SafeRegister(_postStageStartedBus, _postStageStarted);
-                SafeRegister(_postStageCompletedBus, _postStageCompleted);
+                SafeRegister(_runResultStageEnteredBus, _runResultStageEntered);
+                SafeRegister(_runResultStageCompletedBus, _runResultStageCompleted);
 
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<BaselineInvariantAsserter>(
-                    "[Baseline] Bindings registrados (SceneFlow + WorldLifecycle + GameLoop + Pause + PostRun).",
+                    "[Baseline] Bindings registrados (SceneFlow + WorldLifecycle + GameLoop + Pause + RunEndRail).",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
@@ -545,62 +537,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 DebugUtility.Colors.Info);
         }
 
-        private void OnPostStageStartRequested(PostStageStartRequestedEvent evt)
+        private void OnRunResultStageEntered(RunResultStageEnteredEvent evt)
         {
-            string sig = evt.Context.Signature;
+            string sig = evt.Stage.Signature;
             var state = GetOrCreate(sig);
 
-            state.postStageStarted = false;
-            state.postStageCompleted = false;
-            state.postStageStartedFrame = 0;
-            state.postStageCompletedFrame = 0;
-            state.postStageCompletionKind = PostStageCompletionKind.Unknown;
-            state.postStageStartRequested = true;
-            state.postStageStartRequestedFrame = UnityEngine.Time.frameCount;
+            state.runResultStageCompleted = false;
+            state.runResultStageCompletedFrame = 0;
+            state.runResultStageCompletionKind = RunResultStageCompletionKind.Unknown;
+            state.runResultStageEntered = true;
+            state.runResultStageEnteredFrame = UnityEngine.Time.frameCount;
 
             DebugUtility.LogVerbose<BaselineInvariantAsserter>(
-                $"[Baseline] PostStageStartRequested signature='{sig}' scene='{evt.Context.SceneName}' outcome='{evt.Context.Outcome}'.",
+                $"[Baseline] RunResultStageEntered signature='{sig}' scene='{evt.Stage.SceneName}' result='{evt.Stage.Result}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private void OnPostStageStarted(PostStageStartedEvent evt)
+        private void OnRunResultStageCompleted(RunResultStageCompletedEvent evt)
         {
-            string sig = evt.Context.Signature;
+            string sig = evt.Stage.Signature;
             var state = GetOrCreate(sig);
 
-            if (!state.postStageStartRequested)
+            if (!state.runResultStageEntered)
             {
                 Fail(sig, "I7",
-                    "PostStageStarted observado antes de PostStageStartRequested.",
-                    evt.Context.ToString());
+                    "RunResultStageCompleted observado antes de RunResultStageEntered.",
+                    evt.Stage.ToString());
             }
 
-            state.postStageStarted = true;
-            state.postStageStartedFrame = UnityEngine.Time.frameCount;
+            state.runResultStageCompleted = true;
+            state.runResultStageCompletedFrame = UnityEngine.Time.frameCount;
+            state.runResultStageCompletionKind = evt.Completion.Kind;
 
             DebugUtility.LogVerbose<BaselineInvariantAsserter>(
-                $"[Baseline] PostStageStarted signature='{sig}' scene='{evt.Context.SceneName}' outcome='{evt.Context.Outcome}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        private void OnPostStageCompleted(PostStageCompletedEvent evt)
-        {
-            string sig = evt.Context.Signature;
-            var state = GetOrCreate(sig);
-
-            if (!state.postStageStarted)
-            {
-                Fail(sig, "I7",
-                    "PostStageCompleted observado antes de PostStageStarted.",
-                    evt.Context.ToString());
-            }
-
-            state.postStageCompleted = true;
-            state.postStageCompletedFrame = UnityEngine.Time.frameCount;
-            state.postStageCompletionKind = evt.Completion.Kind;
-
-            DebugUtility.LogVerbose<BaselineInvariantAsserter>(
-                $"[Baseline] PostStageCompleted signature='{sig}' kind='{evt.Completion.Kind}' reason='{evt.Completion.Reason}'.",
+                $"[Baseline] RunResultStageCompleted signature='{sig}' kind='{evt.Completion.Kind}' reason='{evt.Completion.Reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -675,21 +645,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
             public bool resetCompleted;
             public bool beforeFadeOut;
             public bool completed;
-            public bool postStageStartRequested;
-            public bool postStageStarted;
-            public bool postStageCompleted;
+            public bool runResultStageEntered;
+            public bool runResultStageCompleted;
 
             public int startedFrame;
             public int scenesReadyFrame;
             public int resetCompletedFrame;
             public int beforeFadeOutFrame;
             public int completedFrame;
-            public int postStageStartRequestedFrame;
-            public int postStageStartedFrame;
-            public int postStageCompletedFrame;
+            public int runResultStageEnteredFrame;
+            public int runResultStageCompletedFrame;
 
             public string resetReason = string.Empty;
-            public PostStageCompletionKind postStageCompletionKind = PostStageCompletionKind.Unknown;
+            public RunResultStageCompletionKind runResultStageCompletionKind = RunResultStageCompletionKind.Unknown;
 
             public void Reset()
             {
@@ -698,21 +666,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Observability.Baseline
                 resetCompleted = false;
                 beforeFadeOut = false;
                 completed = false;
-                postStageStartRequested = false;
-                postStageStarted = false;
-                postStageCompleted = false;
+                runResultStageEntered = false;
+                runResultStageCompleted = false;
 
                 startedFrame = 0;
                 scenesReadyFrame = 0;
                 resetCompletedFrame = 0;
                 beforeFadeOutFrame = 0;
                 completedFrame = 0;
-                postStageStartRequestedFrame = 0;
-                postStageStartedFrame = 0;
-                postStageCompletedFrame = 0;
+                runResultStageEnteredFrame = 0;
+                runResultStageCompletedFrame = 0;
 
                 resetReason = string.Empty;
-                postStageCompletionKind = PostStageCompletionKind.Unknown;
+                runResultStageCompletionKind = RunResultStageCompletionKind.Unknown;
             }
         }
     }

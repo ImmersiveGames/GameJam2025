@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        // Historical file name kept for composition routing compatibility.
+        // Historical file name kept only for composition routing.
         private static void InstallLevelLifecycleServices(BootstrapConfigAsset bootstrapConfig)
         {
             LevelLifecycleInstaller.Install(bootstrapConfig);

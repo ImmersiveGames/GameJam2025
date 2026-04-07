@@ -1,124 +1,86 @@
-# ADR - Gameplay Phase Construction Pipeline dentro do GameplaySessionFlow
+# ADR-0047 - Pipeline canonico de montagem da fase em `GameplaySessionFlow`
 
 ## Status
 - Estado: Aceito
 - Data: 2026-04-03
 - Tipo: Direction / Canonical architecture
 
-## Contexto
+## 1. Objetivo
 
-`Gameplay Runtime Composition` ja e o centro semantico do gameplay.
-`GameplaySessionFlow` ja foi fechado como o primeiro bloco interno desse centro e o V1 de runtime ja foi exercitado.
+Este ADR congela o pipeline canonico de montagem da fase em `GameplaySessionFlow`.
 
-## Relacao com os ADRs anteriores
+Ele define, de forma positiva e operacional, como a fase entra em `IntroStage`, como transita para `Playing` e como a leitura runtime da phase e derivada a partir de `PhaseDefinition`.
 
-- `ADR-0045` define a direcao macro: `Gameplay Runtime Composition` como centro semantico do gameplay.
-- `ADR-0046` define o primeiro bloco interno desse centro: `GameplaySessionFlow`.
-- Este ADR registra o pipeline minimo de construcao de fase dentro desse bloco.
+## 2. Escopo
 
-O problema agora nao e mais definir o owner macro, mas registrar o pipeline minimo ja consolidado que constrói a fase jogavel em nivel de conjunto, antes de qualquer desdobramento para objetos individuais, presentation ou detalhes de implementacao.
+Este ADR cobre o fluxo de montagem da fase em `GameplaySessionFlow`, incluindo:
 
-## Decisao
+- a entrada canonica via `SceneTransitionCompleted`
+- a entrada operacional da `IntroStage`
+- a liberacao para `Playing`
+- a derivacao de `PhaseRuntime`
+- a composicao de `Players`
+- a fixacao de `Rules/Objectives`
+- a seed de `InitialState`
+- a leitura de `PhaseDefinition` ja resolvida
 
-Adotar um pipeline minimo de construcao de fase dentro de `GameplaySessionFlow` que organiza a sessao jogavel como uma sequencia semantica unica, da definicao de contexto ate a liberacao para `Playing`.
+## 3. Estrutura do pipeline
 
-Esse pipeline e a leitura canonica da montagem inicial da fase no V1 ja exercitado.
+O pipeline canonico da fase e estruturado em uma sequencia unica:
 
-## Leitura vigente
+1. `SceneTransitionCompleted`
+2. `IntroStage`
+3. `Playing`
+4. derivacao de `PhaseRuntime`
+5. composicao de `Players`
+6. fixacao de `Rules/Objectives`
+7. seed de `InitialState`
 
-- A forma minima aplicada hoje e: `SessionContext -> PhaseRuntime -> Players -> Rules/Objectives -> InitialState`.
-- `Players` inicia em forma solo-first, com participacao canonica minima da fase.
-- A sequencia pratica validada ate `Playing` e: `SessionContext -> PhaseRuntime -> Players -> Rules/Objectives -> InitialState -> intro / enter stage -> Playing`.
+Cada bloco possui contrato proprio, ciclo proprio e infraestrutura tipada propria.
 
-## Pipeline minimo
+## 4. Ownership
 
-O pipeline minimo consolidado e:
+`IntroStage` e `phase-owned`.
 
-1. Definir o contexto da sessao
-2. Selecionar o phase / level runtime
-3. Determinar a participacao de players
-4. Fixar regras e objetivos do conjunto
-5. Seedar o estado inicial da fase
-6. Definir semanticamente o conteudo necessario e pedir sua viabilizacao operacional ao backbone
-7. Executar intro / enter stage
-8. Liberar para `Playing`
+O pipeline de montagem da fase e `phase-owned` no trecho de entrada e derivacao runtime.
 
-## Contrato semantico minimo da V1
+O ownership do significado da fase permanece na `PhaseDefinition`, e a execucao operacional permanece no `GameplaySessionFlow`.
 
-Esta V1 ja consolidada fecha, no minimo, estes cinco eixos:
-- `SessionContext`
-- `PhaseRuntime`
-- `Players`
-- `Rules/Objectives`
-- `InitialState`
+## 5. Fluxo canonico
 
-Sem esses eixos, ainda nao ha uma fase jogavel lida como conjunto.
+O fluxo canonico de montagem ocorre assim:
 
-## O que pertence ao GameplaySessionFlow
+1. `SceneTransitionCompleted`
+2. entrada da `IntroStage`
+3. transicao para `Playing`
+4. derivacao da leitura runtime da phase
 
-`GameplaySessionFlow` e dono da semantica do conjunto que monta a fase jogavel.
+## 6. Handoff para o fim de run
 
-Isso inclui:
-- contexto de sessao
-- selecao do runtime de fase
-- composicao dos participantes
-- regras e objetivos ativos
-- seed de estado inicial
-- decisao sobre o que precisa existir para a fase ficar jogavel
-- entrada canonica na fase
-- transicao semantica ate `Playing`
+O handoff canonico para o fim de run ocorre quando `Playing` publica `RunEndIntent(reason)`.
 
-## O que continua no backbone
+Esse handoff transfere a continuidade da run para o owner canonico do fim de run, que passa a ser `ADR-0049`.
 
-O backbone continua responsavel apenas pela execucao operacional segura que viabiliza o fluxo.
+## 7. Lifecycle de `IntroStage`
 
-Isso inclui:
-- boot
-- SceneFlow
-- Fade / Loading
-- gates
-- reset e materializacao operacional
-- garantia tecnica de readiness
+`IntroStage` e o stage canonico de entrada da phase.
 
-O backbone nao define a semantica da fase.
-Ele viabiliza operacionalmente o que `GameplaySessionFlow` decidiu que precisa existir para a fase ficar jogavel.
+Lifecycle:
 
-## O que pode comecar mockado
+1. recebe a transicao depois de `SceneTransitionCompleted`
+2. adota o contrato tipado da intro da phase
+3. resolve o presenter valido da intro no escopo correto
+4. executa a apresentacao local da entrada
+5. confirma a liberacao operacional para `Playing`
+6. encerra o stage quando a entrada foi concluida
 
-Pode comecar mockado:
-- selecao de phase / level runtime
-- composicao de players
-- regras e objetivos do conjunto
-- seed de estado inicial
-- materializacao de conteudo
-- intro / enter stage como sequencia semantica
+## 8. Consequencias arquiteturais
 
-O mock existe apenas para permitir a leitura do pipeline da proxima frente de authoring/configuration, nao do V1 ja fechado.
+Este contrato consolida `GameplaySessionFlow` como leitor operacional da fase.
 
-## Fora de escopo deste corte
+Consequencias principais:
 
-Ficam explicitamente fora:
-- objeto individual
-- presentation
-- UI local
-- input detalhado
-- camera
-- audio contextual
-- persistencia fina
-- regras de lifecycle por entidade
-- micro-orquestracao de spawn
-- detalhes de layout ou runtime visual
-
-## Consequencias praticas
-
-- a fase passa a ser lida como um conjunto construido por semantica, nao como soma de modulos soltos
-- `GameplaySessionFlow` ganha fronteira clara para a construcao inicial da experiencia jogavel
-- o backbone continua abaixo, como executor tecnico
-- o pipeline pode ser discutido e refinado sem reintroduzir o backbone como dono do significado da fase
-
-## Proximos passos
-
-1. Tratar o runtime V1 como base consolidada, nao mais como corte em definicao.
-2. Evoluir para o modelo de authoring/configuration da fase.
-3. Separar o que sera ponte transitiva do que sera ownership real apenas quando a nova camada de authoring exigir.
-4. Somente depois disso abrir o corte de implementacao.
+- a fase passa a ser lida como conjunto autoral derivado de `PhaseDefinition`
+- o pipeline de entrada e montagem fica claro e tipado
+- `GameplaySessionFlow` preserva a fronteira entre definicao e runtime
+- o handoff para o fim de run fica explicitado como continuidade downstream

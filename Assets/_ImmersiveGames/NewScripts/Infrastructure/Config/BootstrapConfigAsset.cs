@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Core.Logging.Config;
 using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using _ImmersiveGames.NewScripts.Experience.Preferences.Config;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Config
@@ -19,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
     public sealed class BootstrapConfigAsset : ScriptableObject
     {
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
+        [SerializeField] private PhaseDefinitionCatalogAsset phaseDefinitionCatalog;
+        [SerializeField] private PhaseDefinitionId selectedPhaseDefinitionId;
         [SerializeField] private TransitionStyleAsset startupTransitionStyleRef;
         [SerializeField] private SceneKeyAsset fadeSceneKey;
         [SerializeField] private SceneKeyAsset loadingHudSceneKey;
@@ -28,6 +31,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
         [SerializeField] private VideoDefaultsAsset videoDefaults;
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
+        public PhaseDefinitionCatalogAsset PhaseDefinitionCatalog => phaseDefinitionCatalog;
+        public PhaseDefinitionId SelectedPhaseDefinitionId => selectedPhaseDefinitionId;
         public TransitionStyleAsset StartupTransitionStyleRef => startupTransitionStyleRef;
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
         public SceneKeyAsset LoadingHudSceneKey => loadingHudSceneKey;
@@ -41,6 +46,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
             if (navigationCatalog != null)
             {
                 navigationCatalog.ValidateCriticalIntentsInEditor();
+            }
+
+            if (phaseDefinitionCatalog != null)
+            {
+                phaseDefinitionCatalog.ValidateOrFail();
+            }
+
+            if (!selectedPhaseDefinitionId.IsValid)
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure selectedPhaseDefinitionId with a valid PhaseDefinitionId. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (phaseDefinitionCatalog != null && !phaseDefinitionCatalog.TryGet(selectedPhaseDefinitionId.Value, out _))
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: selectedPhaseDefinitionId='{selectedPhaseDefinitionId}' is missing from phaseDefinitionCatalog='{phaseDefinitionCatalog.name}'. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
             }
 
             if (startupTransitionStyleRef == null || startupTransitionStyleRef.Profile == null)

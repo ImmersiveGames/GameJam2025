@@ -1,23 +1,25 @@
-# ADR-0012 - Fluxo de RunOutcome, PostRun, RunDecision e Restart
+# ADR-0012 - Fluxo historico de RunOutcome, PostRun, RunDecision e Restart
 
 ## Status documental
 
-- Canonico atual para o fluxo de conclusao da run.
-- `PostGame`, `GameOver` e `PostPlay` sao nomenclatura historica; a superficie ativa usa `IntroStage`, `Run`, `RunOutcome`, `PostRun` e `RunDecision`.
+- Historico / obsoleto. O owner documental canonico do fim de run e `ADR-0049`.
+- `ADR-0001`, `ADR-0044`, `ADR-0045` e `ADR-0046` ficam como suporte de linguagem e contexto, nao como owner do fim de run.
+- `ADR-0049` e a fonte canonica do fim de run; `ADR-0047` fica como ponte de montagem e `ADR-0050` como IntroStage.
+- `PostGame`, `GameOver` e `PostPlay` sao nomenclatura historica; o canon atual do fim de run usa `RunEndIntent`, `RunResultStage`, `RunDecision` e `Overlay`.
 
 ## Status
 
-- Estado: Implementado e validado
+- Estado: Historico / obsoleto
 - Data (decisao): 2026-03-27
 - Ultima atualizacao: 2026-04-02
 - Tipo: Arquitetura / Contrato
-- Escopo: RunOutcome + PostRun + RunDecision + handoff final para GameLoop
+- Escopo: RunOutcome + PostRun + RunDecision + handoff final historico para GameLoop
 
 ## Fonte unica de verdade
 
-- Este ADR documenta o fluxo canonico atualmente observado no log funcional de 2026-04-02.
-- Se outro documento mencionar o fluxo de conclusao, ele deve apontar para este ADR e nao redefinir o contrato.
-- O runtime validado cobre dois casos:
+- Este ADR preserva o fluxo legado de `PostRun` como evidencia historica, nao como canon.
+- Se outro documento mencionar o fluxo de conclusao, ele deve apontar para `ADR-0049` como fonte canonica do fim de run e nao para este modelo legado.
+- O runtime historico cobria dois casos:
   - level com presenter explicito: executa `PostRun` local real e bloqueante
   - level sem presenter: faz skip observavel e continua para `RunDecision`
 
@@ -37,7 +39,7 @@
 - `GameLoop` nao e owner do `PostRun`; ele e apenas consumidor do handoff final.
 - `LevelFlow` nao orquestra o `PostRun`; ele apenas fornece contexto/conteudo/presenter da cena atual quando aplicavel.
 
-## Fluxo validado
+## Fluxo historico validado
 
 1. `Boot/Menu`
 2. `Gameplay`
@@ -53,9 +55,9 @@
 12. abertura do overlay final
 13. `Restart` ou `ExitToMenu`
 
-## Owners e fronteiras
+## Owners e fronteiras historicas
 
-### Owner do PostRun local
+### Owner do PostRun local historico
 
 - `Experience/PostRun`
 - Responsavel por:
@@ -66,7 +68,7 @@
   - segurar a passagem para o overlay final ate a conclusao do presenter local e a entrada em `RunDecision`
   - expor o contrato operacional do rail local
 
-### Owner do RunDecision
+### Owner do RunDecision historico
 
 - `PostRunOverlayController`
 - Responsavel por:
@@ -185,7 +187,7 @@ O fluxo deve parar com erro deterministico quando:
 
 ## Reuso do padrao da IntroStage
 
-- Sim, o shape arquitetural deve ser reutilizado:
+- Sim, o shape arquitetural pode ser reutilizado como analogia estrutural, mas nao a semantica de negocio da IntroStage:
   - presenter canonico
   - coordinator
   - control service
@@ -195,6 +197,7 @@ O fluxo deve parar com erro deterministico quando:
 - Nao deve ser copiado o ownership:
   - `IntroStage` e pre-run e bloqueia gameplay
   - `PostRun` e pos-outcome e bloqueia apenas a entrada em `RunDecision`
+- `Task` aqui continua sendo um detalhe tecnico do fluxo de PostRun, nao um contrato de negocio da IntroStage.
 
 ## Integracao com PostRun atual
 

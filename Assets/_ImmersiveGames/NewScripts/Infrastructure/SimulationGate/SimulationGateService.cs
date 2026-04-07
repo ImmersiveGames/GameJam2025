@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using _ImmersiveGames.NewScripts.Core.Logging;
 namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate
 {
@@ -17,9 +18,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate
     {
         private readonly Dictionary<string, int> _tokenCounts = new(StringComparer.Ordinal);
         private readonly object _lock = new();
+        private readonly SynchronizationContext _mainThreadContext;
+        private readonly int _mainThreadId;
 
         // Mantemos contador de "tokens distintos ativos" por performance e clareza.
         private int _activeTokenTypes;
+
+        public SimulationGateService()
+        {
+            _mainThreadContext = SynchronizationContext.Current
+                ?? throw new InvalidOperationException("SimulationGateService exige SynchronizationContext da main thread.");
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+        }
 
         public bool IsOpen
         {
@@ -214,12 +224,46 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SimulationGate
         {
             try
             {
+                if (Thread.CurrentThread.ManagedThreadId == _mainThreadId)
+                {
+                    GateChanged?.Invoke(isOpen);
+                    return;
+                }
+
+                _mainThreadContext.Post(static state =>
+                {
+                    var payload = (GateChangedDispatchState)state;
+                    payload.Service.DispatchGateChanged(payload.IsOpen);
+                }, new GateChangedDispatchState(this, isOpen));
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<SimulationGateService>($"Exception ao disparar GateChanged: {ex}");
+            }
+        }
+
+        private void DispatchGateChanged(bool isOpen)
+        {
+            try
+            {
                 GateChanged?.Invoke(isOpen);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<SimulationGateService>($"Exception ao disparar GateChanged: {ex}");
             }
+        }
+
+        private readonly struct GateChangedDispatchState
+        {
+            public GateChangedDispatchState(SimulationGateService service, bool isOpen)
+            {
+                Service = service;
+                IsOpen = isOpen;
+            }
+
+            public SimulationGateService Service { get; }
+            public bool IsOpen { get; }
         }
 
         [DebugLevel(DebugLevel.Verbose)]

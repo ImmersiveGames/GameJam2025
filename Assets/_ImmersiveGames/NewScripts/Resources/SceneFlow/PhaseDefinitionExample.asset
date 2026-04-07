@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c906ec60375d8946b130edfe0fae2ed, type: 3}
+  m_Name: PhaseDefinitionExample
+  m_EditorClassIdentifier: 
+  identity:
+    phaseId:
+      value: phase_test_slice_01
+    displayName: Phase Test Slice 01
+    description: Minimal example phase for slice testing.
+  content:
+    entries:
+    - localId: main_scene
+      sceneRef: {fileID: 11400000, guid: 89114ef409cf4af59d0d6f93d318fa28, type: 2}
+      role: 1
+      tags:
+      - main
+      - slice
+  players:
+    entries:
+    - localId: solo_player
+      role: 1
+  rulesObjectives:
+    rules:
+    - localId: solo_constraint
+      ruleKind: 1
+      parameters: []
+    objectives:
+    - localId: primary_objective
+      objectiveKind: 1
+      parameters: []
+  initialState:
+    entries:
+    - localId: phase_ready
+      stateKind: 1
+      parameters: []
+  closure:
+    resultKind: 1
+    continuityPolicyKind: 2
+    parameters: []

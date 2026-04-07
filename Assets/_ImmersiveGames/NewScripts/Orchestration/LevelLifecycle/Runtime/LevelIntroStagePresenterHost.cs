@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using UnityEngine;
@@ -12,11 +13,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     {
         private readonly object _sync = new();
         private readonly ILevelIntroStagePresenterScopeResolver _presenterScopeResolver;
+        private readonly EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
 
         private GameObject? _currentPresenterInstance;
         private ILevelIntroStagePresenter? _currentPresenter;
         private bool _currentPresenterOwnedByHost;
         private string _currentSessionSignature = string.Empty;
+        private bool _disposed;
 
         public LevelIntroStagePresenterHost()
             : this(ResolvePresenterScopeResolverOrFail())
@@ -26,8 +29,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public LevelIntroStagePresenterHost(ILevelIntroStagePresenterScopeResolver presenterScopeResolver)
         {
             _presenterScopeResolver = presenterScopeResolver ?? throw new ArgumentNullException(nameof(presenterScopeResolver));
+            _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(OnLevelIntroCompleted);
+            EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
+
             DebugUtility.LogVerbose<LevelIntroStagePresenterHost>(
-                "[OBS][LevelFlow] LevelIntroStagePresenterHost registrado (EnterStage presenter lifecycle bridge).",
+                "[OBS][IntroStage] LevelIntroStagePresenterHost registrado (IntroStage presenter lifecycle bridge).",
                 DebugUtility.Colors.Info);
         }
 
@@ -35,30 +41,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         {
             lock (_sync)
             {
-                if (_currentPresenter != null &&
-                    _currentPresenter.IsReady &&
-                    string.Equals(_currentPresenter.PresenterSignature, _currentSessionSignature, StringComparison.Ordinal))
+                if (IsCurrentPresenterQueryable(_currentSessionSignature))
                 {
-                    presenter = _currentPresenter;
+                    presenter = _currentPresenter!;
                     return true;
                 }
 
                 presenter = null!;
                 return false;
-            }
-        }
-
-        public void Register(ILevelIntroStagePresenter presenter, string sessionSignature)
-        {
-            if (presenter == null)
-            {
-                return;
-            }
-
-            lock (_sync)
-            {
-                _currentSessionSignature = Normalize(sessionSignature);
-                _currentPresenter = presenter;
             }
         }
 
@@ -75,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             {
                 if (!session.HasIntroStage)
                 {
-                    DestroyCurrentPresenterLocked();
+                    DestroyCurrentPresenterLocked("session_no_intro");
                     return false;
                 }
 
@@ -85,13 +75,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     return true;
                 }
 
-                DestroyCurrentPresenterLocked();
+                DestroyCurrentPresenterLocked("session_changed");
                 CreatePresenterInstanceLocked(session, source);
 
                 if (!IsCurrentPresenterQueryable(session.LevelSignature))
                 {
                     HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                        $"[FATAL][H1][LevelFlow] Intro presenter contract not queryable after adoption/bind. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}' registered='{(_currentPresenter != null).ToString().ToLowerInvariant()}' ready='{(_currentPresenter != null && _currentPresenter.IsReady).ToString().ToLowerInvariant()}' presenterSignature='{Normalize(_currentPresenter?.PresenterSignature ?? string.Empty)}' currentSignature='{_currentSessionSignature}'.");
+                        $"[FATAL][H1][IntroStage] Intro presenter contract not queryable after adoption/bind. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}' registered='{(_currentPresenter != null).ToString().ToLowerInvariant()}' queryable='{(_currentPresenter != null && _currentPresenter.CanServe(session.LevelSignature)).ToString().ToLowerInvariant()}' presenterSignature='{Normalize(_currentPresenter?.PresenterSignature ?? string.Empty)}' currentSignature='{_currentSessionSignature}'.");
                     return false;
                 }
 
@@ -100,32 +90,24 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
         }
 
-        public void Unregister(ILevelIntroStagePresenter presenter)
+        public void Dispose()
         {
-            if (presenter == null)
+            if (_disposed)
             {
                 return;
             }
 
-            lock (_sync)
-            {
-                if (ReferenceEquals(_currentPresenter, presenter))
-                {
-                    ClearCurrentPresenterLocked(destroyOwnedInstance: _currentPresenterOwnedByHost);
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            DestroyCurrentPresenter();
+            _disposed = true;
+            EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
+            DestroyCurrentPresenter("dispose");
         }
 
         private bool IsCurrentPresenterQueryable(string sessionSignature)
         {
             return _currentPresenterInstance != null &&
                    _currentPresenter != null &&
-                   _currentPresenter.IsReady &&
+                   _currentPresenter.IsPresentationAttached &&
+                   _currentPresenter.CanServe(sessionSignature) &&
                    string.Equals(_currentPresenter.PresenterSignature, sessionSignature, StringComparison.Ordinal) &&
                    string.Equals(_currentSessionSignature, sessionSignature, StringComparison.Ordinal);
         }
@@ -137,20 +119,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 if (scopedPresenters.Count > 1)
                 {
                     HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                        $"[FATAL][H1][LevelFlow] Multiple ILevelIntroStagePresenter components found in level content. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}' contentId='{session.LocalContentId}' presenters='{DescribePresenters(scopedPresenters)}'.");
+                        $"[FATAL][H1][IntroStage] Multiple ILevelIntroStagePresenter components found in local content. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}' contentId='{session.LocalContentId}' presenters='{DescribePresenters(scopedPresenters)}'.");
                     return;
                 }
 
                 if (scopedPresenters.Count == 1 && scopedPresenters[0] != null)
                 {
                     ILevelIntroStagePresenter existingPresenter = scopedPresenters[0];
-                    existingPresenter.BindToSession(session.LevelSignature);
                     AdoptPresenterLocked(existingPresenter, session, source, ownedByHost: false);
 
                     if (!IsCurrentPresenterQueryable(session.LevelSignature))
                     {
                         HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                            $"[FATAL][H1][LevelFlow] Intro presenter from level content bound but not queryable. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}'.");
+                            $"[FATAL][H1][IntroStage] Intro presenter from local content bound but not queryable. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}'.");
                         return;
                     }
 
@@ -160,14 +141,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             if (session.PresenterPrefab == null)
             {
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false);
+                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "missing_presenter_prefab");
                 return;
             }
 
             GameObject? prefab = session.PresenterPrefab;
             if (prefab == null)
             {
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false);
+                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "missing_presenter_prefab");
                 return;
             }
 
@@ -178,18 +159,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (!TryFindPresentersOnObject(instance, out List<ILevelIntroStagePresenter> presenters))
             {
                 UnityEngine.Object.Destroy(instance);
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false);
+                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "prefab_missing_presenter");
                 HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                    $"[FATAL][H1][LevelFlow] Intro presenter prefab does not expose ILevelIntroStagePresenter. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}' prefab='{prefab.name}'.");
+                    $"[FATAL][H1][IntroStage] Intro presenter prefab does not expose ILevelIntroStagePresenter. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}' prefabType='GameObject'.");
                 return;
             }
 
             if (presenters.Count > 1)
             {
                 UnityEngine.Object.Destroy(instance);
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false);
+                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "prefab_multiple_presenters");
                 HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                    $"[FATAL][H1][LevelFlow] Intro presenter prefab exposes multiple ILevelIntroStagePresenter components. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}' prefab='{prefab.name}' presenters='{DescribePresenters(presenters)}'.");
+                    $"[FATAL][H1][IntroStage] Intro presenter prefab exposes multiple ILevelIntroStagePresenter components. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}' presenters='{DescribePresenters(presenters)}'.");
                 return;
             }
 
@@ -197,42 +178,43 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (presenter is not MonoBehaviour presenterComponent)
             {
                 UnityEngine.Object.Destroy(instance);
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false);
+                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "prefab_non_monobehaviour");
                 HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                    $"[FATAL][H1][LevelFlow] Intro presenter prefab does not derive from MonoBehaviour. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}' prefab='{prefab.name}' presenterType='{presenter.GetType().FullName}'.");
+                    $"[FATAL][H1][IntroStage] Intro presenter prefab does not derive from MonoBehaviour. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}' presenterType='{presenter.GetType().FullName}'.");
                 return;
             }
 
-            presenter.BindToSession(session.LevelSignature);
             AdoptPresenterLocked(presenter, session, source, ownedByHost: true, presenterComponent.gameObject);
 
             if (!IsCurrentPresenterQueryable(session.LevelSignature))
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                    $"[FATAL][H1][LevelFlow] Intro presenter prefab bound but not queryable. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}' prefab='{prefab.name}'.");
+                    $"[FATAL][H1][IntroStage] Intro presenter prefab bound but not queryable. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}' presenterType='{presenter.GetType().Name}'.");
                 return;
             }
 
             DebugUtility.Log<LevelIntroStagePresenterHost>(
-                $"[OBS][LevelFlow] EnterStagePresenterSpawned source='{source}' levelRef='{session.LevelRef.name}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}' presenter='{prefab.name}'.",
+                $"[OBS][IntroStage] IntroStagePresenterSpawned source='{source}' contentName='{session.LevelRef.name}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}' presenterType='{presenter.GetType().Name}' scope='scene_local'.",
                 DebugUtility.Colors.Info);
         }
 
-        private void DestroyCurrentPresenter()
+        private void DestroyCurrentPresenter(string reason)
         {
             lock (_sync)
             {
-                DestroyCurrentPresenterLocked();
+                DestroyCurrentPresenterLocked(reason);
             }
         }
 
-        private void DestroyCurrentPresenterLocked()
+        private void DestroyCurrentPresenterLocked(string reason)
         {
-            ClearCurrentPresenterLocked(destroyOwnedInstance: true);
+            ClearCurrentPresenterLocked(destroyOwnedInstance: true, reason: reason);
         }
 
-        private void ClearCurrentPresenterLocked(bool destroyOwnedInstance)
+        private void ClearCurrentPresenterLocked(bool destroyOwnedInstance, string reason)
         {
+            DetachCurrentPresenterLocked(reason);
+
             if (destroyOwnedInstance && _currentPresenterInstance != null && _currentPresenterOwnedByHost)
             {
                 UnityEngine.Object.Destroy(_currentPresenterInstance);
@@ -264,19 +246,81 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (presenter is not MonoBehaviour presenterComponent)
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
-                    $"[FATAL][H1][LevelFlow] Intro presenter does not derive from MonoBehaviour. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}' presenterType='{presenter.GetType().FullName}'.");
+                    $"[FATAL][H1][IntroStage] Intro presenter does not derive from MonoBehaviour. source='{source}' contentName='{session.LevelRef.name}' signature='{session.LevelSignature}' presenterType='{presenter.GetType().FullName}'.");
                 return;
             }
 
-            MonoBehaviour presenterBehaviour = presenterComponent;
+            LevelStagePresentationContract contract = BuildPresentationContract(session);
+            presenter.AttachPresentation(contract);
+
             _currentPresenterInstance = presenterInstanceOverride ?? presenterComponent.gameObject;
             _currentPresenterOwnedByHost = ownedByHost;
             _currentSessionSignature = session.LevelSignature;
             _currentPresenter = presenter;
 
             DebugUtility.Log<LevelIntroStagePresenterHost>(
-                $"[OBS][LevelFlow] IntroPresenterAdopted source='{source}' levelRef='{session.LevelRef.name}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}' presenter='{presenterBehaviour.name}'.",
+                $"[OBS][IntroStage] IntroStagePresenterRegistered source='{source}' contentName='{session.LevelRef.name}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}' presenterType='{presenter.GetType().Name}' scope='{(ownedByHost ? "host_owned" : "scene_local")}'.",
                 DebugUtility.Colors.Info);
+
+            DebugUtility.Log<LevelIntroStagePresenterHost>(
+                $"[OBS][IntroStage] IntroStagePresenterAdopted source='{source}' contentName='{session.LevelRef.name}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}' presenterType='{presenter.GetType().Name}' scope='{(ownedByHost ? "host_owned" : "scene_local")}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void OnLevelIntroCompleted(LevelIntroCompletedEvent evt)
+        {
+            if (!evt.Session.IsValid)
+            {
+                return;
+            }
+
+            lock (_sync)
+            {
+                if (!string.Equals(_currentSessionSignature, evt.Session.LevelSignature, StringComparison.Ordinal) ||
+                    _currentPresenter == null)
+                {
+                    return;
+                }
+
+                string detachReason = Normalize(evt.Reason);
+                string presenterType = _currentPresenter.GetType().Name;
+                bool destroyOwnedInstance = _currentPresenterOwnedByHost;
+
+                ClearCurrentPresenterLocked(destroyOwnedInstance, detachReason);
+
+                DebugUtility.Log<LevelIntroStagePresenterHost>(
+                    $"[OBS][IntroStage] IntroStagePresenterDetached reason='{detachReason}' signature='{Normalize(evt.Session.LevelSignature)}' presenterType='{presenterType}'.",
+                    DebugUtility.Colors.Info);
+            }
+        }
+
+        private static LevelStagePresentationContract BuildPresentationContract(_ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session)
+        {
+            return new LevelStagePresentationContract(
+                session.LevelRef,
+                session.LevelSignature,
+                session.SelectionVersion,
+                session.LocalContentId,
+                session.HasIntroStage,
+                hasPostRunReactionHook: false);
+        }
+
+        private void DetachCurrentPresenterLocked(string reason)
+        {
+            if (_currentPresenter == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _currentPresenter.DetachPresentation(reason);
+            }
+            catch (Exception ex)
+            {
+                HardFailFastH1.Trigger(typeof(LevelIntroStagePresenterHost),
+                    $"[FATAL][H1][IntroStage] Presenter detach failed. reason='{reason}' presenter='{_currentPresenter.GetType().FullName}' ex='{ex.GetType().Name}: {ex.Message}'.");
+            }
         }
 
         private static string DescribePresenters(IEnumerable<ILevelIntroStagePresenter> presenters)
@@ -284,12 +328,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         private static string DescribePresenter(ILevelIntroStagePresenter presenter)
         {
-            if (presenter is MonoBehaviour monoBehaviour)
-            {
-                return $"{monoBehaviour.GetType().Name}('{monoBehaviour.name}')";
-            }
-
-            return presenter.GetType().FullName ?? presenter.GetType().Name;
+            return presenter.GetType().Name;
         }
 
         private static string Normalize(string value)
@@ -302,7 +341,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 return resolver;
             }
 
-            throw new InvalidOperationException("[FATAL][Config][LevelFlow] ILevelIntroStagePresenterScopeResolver obrigatorio ausente.");
+            throw new InvalidOperationException("[FATAL][Config][IntroStage] ILevelIntroStagePresenterScopeResolver obrigatorio ausente.");
         }
     }
 }

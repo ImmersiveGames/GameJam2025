@@ -1,10 +1,9 @@
 using System;
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
@@ -12,18 +11,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     public sealed class GameplaySessionContextService : IGameplaySessionContextService, IDisposable
     {
         private readonly object _sync = new();
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private GameplaySessionContextSnapshot _current = GameplaySessionContextSnapshot.Empty;
         private GameplaySessionContextSnapshot _last = GameplaySessionContextSnapshot.Empty;
-        private bool _disposed;
 
         public GameplaySessionContextService()
         {
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
-
             DebugUtility.LogVerbose<GameplaySessionContextService>(
-                "[OBS][GameplaySessionFlow][SessionContext] GameplaySessionContextService registrado como owner do contexto da sessao.");
+                "[OBS][GameplaySessionFlow][SessionContext] GameplaySessionContextService registrado como owner do contexto da fase.");
         }
 
         public GameplaySessionContextSnapshot Current
@@ -42,6 +36,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             return Update(GameplaySessionContextSnapshot.FromLevelSelectedEvent(evt));
         }
 
+        public GameplaySessionContextSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            return Update(GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt));
+        }
+
         public GameplaySessionContextSnapshot Update(GameplaySessionContextSnapshot snapshot)
         {
             lock (_sync)
@@ -56,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 _last = snapshot;
 
                 DebugUtility.Log<GameplaySessionContextService>(
-                    $"[OBS][GameplaySessionFlow][SessionContext] SessionContextUpdated routeId='{snapshot.MacroRouteId}' routeRef='{snapshot.MacroRouteRef.name}' v='{snapshot.SelectionVersion}' reason='{snapshot.Reason}' signature='{snapshot.SessionSignature}'.",
+                    $"[OBS][GameplaySessionFlow][SessionContext] SessionContextUpdated phaseId='{snapshot.PhaseId}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' routeRef='{(snapshot.MacroRouteRef != null ? snapshot.MacroRouteRef.name : "<none>")}' v='{snapshot.SelectionVersion}' reason='{snapshot.Reason}' signature='{snapshot.SessionSignature}'.",
                     DebugUtility.Colors.Info);
 
                 return _current;
@@ -98,23 +97,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         public void Dispose()
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
-        }
-
-        private void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            UpdateFromLevelSelectedEvent(evt);
         }
 
         private static string Normalize(string value)
@@ -123,10 +105,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         }
     }
 
-    public readonly struct GameplayPhaseRuntimeSnapshot
-    {
-        public static GameplayPhaseRuntimeSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
+        public readonly struct GameplayPhaseRuntimeSnapshot
         {
+            public static GameplayPhaseRuntimeSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
+            {
             if (evt.LevelRef == null)
             {
                 HardFailFastH1.Trigger(typeof(GameplayPhaseRuntimeSnapshot),
@@ -140,33 +122,112 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 evt.SelectionVersion,
                 evt.LevelSignature);
 
-            return new GameplayPhaseRuntimeSnapshot(sessionContext, levelSession);
+            return new GameplayPhaseRuntimeSnapshot(sessionContext, levelSession, false);
+        }
+
+        public static GameplayPhaseRuntimeSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            if (evt.PhaseDefinitionRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseRuntimeSnapshot),
+                    "[FATAL][H1][GameplaySessionFlow] PhaseDefinitionSelectedEvent requires a valid phaseDefinitionRef to build the phase runtime snapshot.");
+            }
+
+            GameplaySessionContextSnapshot sessionContext = GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt);
+            PhaseDefinitionAsset phaseDefinitionRef = evt.PhaseDefinitionRef;
+
+            int contentEntryCount = phaseDefinitionRef.Content != null && phaseDefinitionRef.Content.entries != null ? phaseDefinitionRef.Content.entries.Count : 0;
+            int playerEntryCount = phaseDefinitionRef.Players != null && phaseDefinitionRef.Players.entries != null ? phaseDefinitionRef.Players.entries.Count : 0;
+            int ruleEntryCount = phaseDefinitionRef.RulesObjectives != null && phaseDefinitionRef.RulesObjectives.rules != null ? phaseDefinitionRef.RulesObjectives.rules.Count : 0;
+            int objectiveEntryCount = phaseDefinitionRef.RulesObjectives != null && phaseDefinitionRef.RulesObjectives.objectives != null ? phaseDefinitionRef.RulesObjectives.objectives.Count : 0;
+            int initialStateEntryCount = phaseDefinitionRef.InitialState != null && phaseDefinitionRef.InitialState.entries != null ? phaseDefinitionRef.InitialState.entries.Count : 0;
+            bool hasRunResultStage = phaseDefinitionRef.RunResultStage != null && phaseDefinitionRef.RunResultStage.hasRunResultStage;
+
+            return new GameplayPhaseRuntimeSnapshot(
+                sessionContext,
+                LevelIntroStageSession.Empty,
+                phaseDefinitionRef,
+                contentEntryCount,
+                playerEntryCount,
+                ruleEntryCount,
+                objectiveEntryCount,
+                initialStateEntryCount,
+                hasRunResultStage);
         }
 
         public GameplayPhaseRuntimeSnapshot(
             GameplaySessionContextSnapshot sessionContext,
-            LevelIntroStageSession levelSession)
+            LevelIntroStageSession levelSession,
+            bool hasRunResultStage)
         {
             SessionContext = sessionContext;
             LevelSession = levelSession;
+            PhaseDefinitionRef = null;
+            ContentEntryCount = 0;
+            PlayerEntryCount = 0;
+            RuleEntryCount = 0;
+            ObjectiveEntryCount = 0;
+            InitialStateEntryCount = 0;
+            HasRunResultStage = hasRunResultStage;
             PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession);
+        }
+
+        public GameplayPhaseRuntimeSnapshot(
+            GameplaySessionContextSnapshot sessionContext,
+            LevelIntroStageSession levelSession,
+            PhaseDefinitionAsset phaseDefinitionRef,
+            int contentEntryCount,
+            int playerEntryCount,
+            int ruleEntryCount,
+            int objectiveEntryCount,
+            int initialStateEntryCount,
+            bool hasRunResultStage)
+        {
+            SessionContext = sessionContext;
+            LevelSession = levelSession;
+            PhaseDefinitionRef = phaseDefinitionRef;
+            ContentEntryCount = contentEntryCount < 0 ? 0 : contentEntryCount;
+            PlayerEntryCount = playerEntryCount < 0 ? 0 : playerEntryCount;
+            RuleEntryCount = ruleEntryCount < 0 ? 0 : ruleEntryCount;
+            ObjectiveEntryCount = objectiveEntryCount < 0 ? 0 : objectiveEntryCount;
+            InitialStateEntryCount = initialStateEntryCount < 0 ? 0 : initialStateEntryCount;
+            HasRunResultStage = hasRunResultStage;
+            PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession, phaseDefinitionRef, ContentEntryCount, PlayerEntryCount, RuleEntryCount, ObjectiveEntryCount, InitialStateEntryCount);
         }
 
         public GameplaySessionContextSnapshot SessionContext { get; }
         public LevelIntroStageSession LevelSession { get; }
+        public PhaseDefinitionAsset PhaseDefinitionRef { get; }
+        public int ContentEntryCount { get; }
+        public int PlayerEntryCount { get; }
+        public int RuleEntryCount { get; }
+        public int ObjectiveEntryCount { get; }
+        public int InitialStateEntryCount { get; }
+        public bool HasRunResultStage { get; }
         public string PhaseRuntimeSignature { get; }
 
-        public bool IsValid => SessionContext.IsValid && LevelSession.IsValid;
+        public bool IsValid =>
+            SessionContext.IsValid &&
+            ((LevelSession.IsValid && PhaseDefinitionRef == null) || (PhaseDefinitionRef != null && PhaseDefinitionRef.PhaseId.IsValid));
         public bool HasLevelRef => LevelSession.HasLevelRef;
+        public bool HasPhaseDefinitionRef => PhaseDefinitionRef != null;
         public bool HasPhaseRuntimeSignature => !string.IsNullOrWhiteSpace(PhaseRuntimeSignature);
 
         public static GameplayPhaseRuntimeSnapshot Empty => new(
             GameplaySessionContextSnapshot.Empty,
-            LevelIntroStageSession.Empty);
+            LevelIntroStageSession.Empty,
+            null,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false);
 
         public override string ToString()
         {
-            return $"sessionContext='{SessionContext}', levelSession='{LevelSession}', phaseRuntimeSignature='{(string.IsNullOrWhiteSpace(PhaseRuntimeSignature) ? "<none>" : PhaseRuntimeSignature)}'";
+            string phaseName = PhaseDefinitionRef != null ? PhaseDefinitionRef.name : "<none>";
+            return $"sessionContext='{SessionContext}', phaseRef='{phaseName}', contentCount='{ContentEntryCount}', playerCount='{PlayerEntryCount}', ruleCount='{RuleEntryCount}', objectiveCount='{ObjectiveEntryCount}', initialStateCount='{InitialStateEntryCount}', runResultStage='{HasRunResultStage}', phaseRuntimeSignature='{(string.IsNullOrWhiteSpace(PhaseRuntimeSignature) ? "<none>" : PhaseRuntimeSignature)}'";
         }
 
         private static string BuildPhaseRuntimeSignature(
@@ -177,6 +238,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string levelSignature = string.IsNullOrWhiteSpace(levelSession.LevelSignature) ? "<no-level>" : levelSession.LevelSignature;
             return $"{sessionSignature}|{levelSignature}";
         }
+
+        private static string BuildPhaseRuntimeSignature(
+            GameplaySessionContextSnapshot sessionContext,
+            LevelIntroStageSession levelSession,
+            PhaseDefinitionAsset phaseDefinitionRef,
+            int contentEntryCount,
+            int playerEntryCount,
+            int ruleEntryCount,
+            int objectiveEntryCount,
+            int initialStateEntryCount)
+        {
+            if (phaseDefinitionRef == null)
+            {
+                return BuildPhaseRuntimeSignature(sessionContext, levelSession);
+            }
+
+            string sessionSignature = sessionContext.HasSessionSignature ? sessionContext.SessionSignature : "<no-session>";
+            string phaseId = phaseDefinitionRef.PhaseId.IsValid ? phaseDefinitionRef.PhaseId.Value : "<no-phase>";
+            return $"{sessionSignature}|{phaseId}|content:{contentEntryCount}|players:{playerEntryCount}|rules:{ruleEntryCount}|objectives:{objectiveEntryCount}|initial:{initialStateEntryCount}";
+        }
     }
 
     public interface IGameplayPhaseRuntimeService
@@ -186,6 +267,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetLast(out GameplayPhaseRuntimeSnapshot snapshot);
         GameplayPhaseRuntimeSnapshot Update(GameplayPhaseRuntimeSnapshot snapshot);
         GameplayPhaseRuntimeSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
+        GameplayPhaseRuntimeSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }
 
@@ -193,18 +275,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     public sealed class GameplayPhaseRuntimeService : IGameplayPhaseRuntimeService, IDisposable
     {
         private readonly object _sync = new();
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private GameplayPhaseRuntimeSnapshot _current = GameplayPhaseRuntimeSnapshot.Empty;
         private GameplayPhaseRuntimeSnapshot _last = GameplayPhaseRuntimeSnapshot.Empty;
-        private bool _disposed;
 
         public GameplayPhaseRuntimeService()
         {
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
-
             DebugUtility.LogVerbose<GameplayPhaseRuntimeService>(
-                "[OBS][GameplaySessionFlow][PhaseRuntime] GameplayPhaseRuntimeService registrado como owner do phase / level runtime.");
+                "[OBS][GameplaySessionFlow][PhaseRuntime] GameplayPhaseRuntimeService registrado como owner do runtime da fase.");
         }
 
         public GameplayPhaseRuntimeSnapshot Current
@@ -223,6 +300,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             return Update(GameplayPhaseRuntimeSnapshot.FromLevelSelectedEvent(evt));
         }
 
+        public GameplayPhaseRuntimeSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            return Update(GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt));
+        }
+
         public GameplayPhaseRuntimeSnapshot Update(GameplayPhaseRuntimeSnapshot snapshot)
         {
             lock (_sync)
@@ -237,7 +319,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 _last = snapshot;
 
                 DebugUtility.Log<GameplayPhaseRuntimeService>(
-                    $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated sessionSignature='{snapshot.SessionContext.SessionSignature}' levelRef='{snapshot.LevelSession.LevelRef.name}' selectionVersion='{snapshot.LevelSession.SelectionVersion}' levelSignature='{snapshot.LevelSession.LevelSignature}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
+                    $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseId='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.PhaseId : PhaseDefinitionId.None)}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' runResultStage='{snapshot.HasRunResultStage}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
                     DebugUtility.Colors.Info);
 
                 return _current;
@@ -280,23 +362,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         public void Dispose()
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
-        }
-
-        private void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            UpdateFromLevelSelectedEvent(evt);
         }
 
         private static string Normalize(string value)
@@ -308,7 +373,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     public enum GameplayPhasePlayerParticipationMode
     {
         None = 0,
-        SoloCanonical = 1
+        SoloCanonical = 1,
+        ConfiguredRoster = 2
     }
 
     public readonly struct GameplayPhasePlayerParticipationSnapshot
@@ -316,6 +382,82 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public static GameplayPhasePlayerParticipationSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
         {
             return SoloCanonical(GameplayPhaseRuntimeSnapshot.FromLevelSelectedEvent(evt));
+        }
+
+        public static GameplayPhasePlayerParticipationSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            return FromPhaseDefinitionSelectedEvent(evt, GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt));
+        }
+
+        internal static GameplayPhasePlayerParticipationSnapshot FromPhaseDefinitionSelectedEvent(
+            PhaseDefinitionSelectedEvent evt,
+            GameplayPhaseRuntimeSnapshot phaseRuntime)
+        {
+            if (evt.PhaseDefinitionRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhasePlayerParticipationSnapshot),
+                    "[FATAL][H1][GameplaySessionFlow] PhaseDefinitionSelectedEvent requires a valid phaseDefinitionRef to build the players snapshot.");
+            }
+
+            PhaseDefinitionAsset.PhasePlayersBlock playersBlock = evt.PhaseDefinitionRef.Players;
+            if (playersBlock == null || playersBlock.entries == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhasePlayerParticipationSnapshot),
+                    $"[FATAL][H1][GameplaySessionFlow] PhaseDefinition phaseId='{evt.PhaseId}' has no valid players block.");
+            }
+
+            int participantCount = 0;
+            string primaryParticipantId = string.Empty;
+            string primaryParticipantLabel = string.Empty;
+            GameplayPhasePlayerParticipationMode participationMode = GameplayPhasePlayerParticipationMode.ConfiguredRoster;
+
+            for (int i = 0; i < playersBlock.entries.Count; i++)
+            {
+                PhaseDefinitionAsset.PhasePlayerEntry entry = playersBlock.entries[i];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                participantCount++;
+                if (string.IsNullOrWhiteSpace(primaryParticipantId))
+                {
+                    primaryParticipantId = string.IsNullOrWhiteSpace(entry.localId) ? $"player_{i + 1}" : entry.localId.Trim();
+                    primaryParticipantLabel = entry.role.ToString();
+                }
+
+                if (entry.role == PhaseDefinitionAsset.PhasePlayerRole.Local)
+                {
+                    primaryParticipantId = string.IsNullOrWhiteSpace(entry.localId) ? $"player_{i + 1}" : entry.localId.Trim();
+                    primaryParticipantLabel = "Player";
+                    participationMode = participantCount == 1 ? GameplayPhasePlayerParticipationMode.SoloCanonical : GameplayPhasePlayerParticipationMode.ConfiguredRoster;
+                    break;
+                }
+            }
+
+            if (participantCount <= 0)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhasePlayerParticipationSnapshot),
+                    $"[FATAL][H1][GameplaySessionFlow] PhaseDefinition phaseId='{evt.PhaseId}' has an empty players block.");
+            }
+
+            if (string.IsNullOrWhiteSpace(primaryParticipantId))
+            {
+                primaryParticipantId = "primary_player";
+                primaryParticipantLabel = "Player";
+            }
+
+            if (participantCount == 1)
+            {
+                participationMode = GameplayPhasePlayerParticipationMode.SoloCanonical;
+            }
+
+            return new GameplayPhasePlayerParticipationSnapshot(
+                phaseRuntime,
+                participationMode,
+                participantCount,
+                primaryParticipantId,
+                primaryParticipantLabel);
         }
 
         public static GameplayPhasePlayerParticipationSnapshot SoloCanonical(GameplayPhaseRuntimeSnapshot phaseRuntime)
@@ -356,7 +498,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         public bool HasParticipants => ParticipatingPlayerCount > 0;
         public bool HasCanonicalSoloParticipation => ParticipationMode == GameplayPhasePlayerParticipationMode.SoloCanonical && ParticipatingPlayerCount == 1;
-        public bool IsValid => PhaseRuntime.IsValid && HasParticipants;
+        public bool IsValid => PhaseRuntime.IsValid && HasParticipants && !string.IsNullOrWhiteSpace(PrimaryParticipantId);
 
         public static GameplayPhasePlayerParticipationSnapshot Empty => new(
             GameplayPhaseRuntimeSnapshot.Empty,
@@ -395,6 +537,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetLast(out GameplayPhasePlayerParticipationSnapshot snapshot);
         GameplayPhasePlayerParticipationSnapshot Update(GameplayPhasePlayerParticipationSnapshot snapshot);
         GameplayPhasePlayerParticipationSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
+        GameplayPhasePlayerParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }
 
@@ -402,16 +545,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     public sealed class GameplayPhasePlayerParticipationService : IGameplayPhasePlayerParticipationService, IDisposable
     {
         private readonly object _sync = new();
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private GameplayPhasePlayerParticipationSnapshot _current = GameplayPhasePlayerParticipationSnapshot.Empty;
         private GameplayPhasePlayerParticipationSnapshot _last = GameplayPhasePlayerParticipationSnapshot.Empty;
-        private bool _disposed;
 
         public GameplayPhasePlayerParticipationService()
         {
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
-
             DebugUtility.LogVerbose<GameplayPhasePlayerParticipationService>(
                 "[OBS][GameplaySessionFlow][Players] GameplayPhasePlayerParticipationService registrado como owner da participacao de players na fase.");
         }
@@ -430,6 +568,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public GameplayPhasePlayerParticipationSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt)
         {
             return Update(GameplayPhasePlayerParticipationSnapshot.FromLevelSelectedEvent(evt));
+        }
+
+        public GameplayPhasePlayerParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            return Update(GameplayPhasePlayerParticipationSnapshot.FromPhaseDefinitionSelectedEvent(evt));
         }
 
         public GameplayPhasePlayerParticipationSnapshot Update(GameplayPhasePlayerParticipationSnapshot snapshot)
@@ -489,23 +632,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         public void Dispose()
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
-        }
-
-        private void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            UpdateFromLevelSelectedEvent(evt);
         }
 
         private static string Normalize(string value)
@@ -651,14 +777,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         private static string DescribeSessionContext(GameplaySessionContextSnapshot snapshot)
         {
             return snapshot.IsValid
-                ? $"filled signature='{snapshot.SessionSignature}' routeId='{snapshot.MacroRouteId}' v='{snapshot.SelectionVersion}'"
+                ? $"filled signature='{snapshot.SessionSignature}' phaseId='{snapshot.PhaseId}' routeId='{snapshot.MacroRouteId}' v='{snapshot.SelectionVersion}'"
                 : "empty";
         }
 
         private static string DescribePhaseRuntime(GameplayPhaseRuntimeSnapshot snapshot)
         {
             return snapshot.IsValid
-                ? $"filled signature='{snapshot.PhaseRuntimeSignature}' sessionSignature='{snapshot.SessionContext.SessionSignature}' levelSignature='{snapshot.LevelSession.LevelSignature}'"
+                ? $"filled signature='{snapshot.PhaseRuntimeSignature}' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' runResultStage='{snapshot.HasRunResultStage}'"
                 : "empty";
         }
 

@@ -41,8 +41,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         }
     }
 
-    [Obsolete("Use LevelLifecycleStagePresentationService instead.")]
-    public sealed class LevelStagePresentationService : LevelLifecycleStagePresentationService
+        [Obsolete("Compat alias only. Use LevelLifecycleStagePresentationService instead.")]
+        public sealed class LevelStagePresentationService : LevelLifecycleStagePresentationService
     {
         public LevelStagePresentationService(ILevelIntroStageSessionService introStageSessionService)
             : base(introStageSessionService)

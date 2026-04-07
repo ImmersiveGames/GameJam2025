@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
             }
 
             DebugUtility.Log<GameLoopService>(
-                "[OBS][GameLoop][Operational] RequestStart accepted for compatibility rail 'GameplaySessionFlow -> Level -> EnterStage -> Playing' handshake='GameLoopIntroStageBridge'.",
+                "[OBS][GameLoop][Operational] RequestStart accepted for canonical rail 'GameplaySessionFlow -> Level -> EnterStage -> Playing' handshake='IntroStageCoordinator'.",
                 DebugUtility.Colors.Info);
 
             _signals.MarkStart();
@@ -65,11 +65,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
         }
         public void RequestReady() => _signals.MarkReady();
 
-        public void RequestReset() => _signals.MarkReset();
+        public void RequestReset()
+        {
+            // Reset canonico deve invalidar qualquer start pendente anterior.
+            // Isso impede carregar StartRequested de uma run anterior para a reentrada atual.
+            _signals.ClearStartPending();
+            _signals.MarkReset();
+        }
         public void RequestRunEnd()
         {
             DebugUtility.LogVerbose<GameLoopService>(
-                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}' handshake='GameRunEndedEventBridge'.");
+                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}' handshake='RunResultStage'.");
 
             _signals.MarkEnd();
         }

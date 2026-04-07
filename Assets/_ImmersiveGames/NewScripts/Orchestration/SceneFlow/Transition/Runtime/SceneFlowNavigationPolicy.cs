@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 {

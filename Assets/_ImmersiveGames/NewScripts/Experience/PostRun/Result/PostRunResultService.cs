@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Result
 {
@@ -28,9 +27,10 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Result
             Reason = string.Empty;
 
             DebugUtility.LogVerbose<PostRunResultService>(
-                $"[OBS][PostRun] RunResultCleared reason='{Normalize(reason)}'.");
+                $"[OBS][RunResultStage] RunResultCleared reason='{Normalize(reason)}'.");
         }
 
+        // Único ponto de consolidação canônica do resultado da run.
         public bool TrySetRunOutcome(GameRunOutcome outcome, string reason = null)
         {
             if (_disposed)
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Result
             if (HasResult)
             {
                 DebugUtility.LogVerbose<PostRunResultService>(
-                    $"[OBS][PostRun] RunResultIgnored result='{result}' reason='{Normalize(reason)}' source='{source}' already='{Result}'.");
+                    $"[OBS][RunResultStage] RunResultIgnored result='{result}' reason='{Normalize(reason)}' source='{source}' already='{Result}'.");
                 return false;
             }
 
@@ -93,10 +93,9 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Result
             Reason = Normalize(reason);
 
             DebugUtility.Log<PostRunResultService>(
-                $"[OBS][PostRun] RunResultUpdated result='{Result}' reason='{Reason}' source='{source}'.",
+                $"[OBS][RunResultStage] RunResultUpdated result='{Result}' reason='{Reason}' source='{source}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<PostRunResultUpdatedEvent>.Raise(new PostRunResultUpdatedEvent(Result, Reason));
             return true;
         }
 

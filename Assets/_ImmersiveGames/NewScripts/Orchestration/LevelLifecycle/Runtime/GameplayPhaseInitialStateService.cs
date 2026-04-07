@@ -1,8 +1,9 @@
 using System;
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
@@ -23,6 +24,32 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 seedSource,
                 evt.LevelRef,
                 evt.LocalContentId,
+                evt.SelectionVersion,
+                rulesObjectives);
+
+            return new GameplayPhaseInitialStateSnapshot(
+                phaseRuntime,
+                rulesObjectives,
+                seedSource,
+                initialStateSignature,
+                initialStateSummary);
+        }
+
+        public static GameplayPhaseInitialStateSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt);
+            GameplayPhaseRulesObjectivesSnapshot rulesObjectives = ResolveRulesObjectivesSnapshot(evt, phaseRuntime);
+
+            string seedSource = "PhaseDefinition";
+            string initialStateSignature = BuildInitialStateSignature(
+                phaseRuntime,
+                rulesObjectives,
+                evt.PhaseId.Value,
+                evt.SelectionVersion);
+            string initialStateSummary = BuildInitialStateSummary(
+                seedSource,
+                evt.PhaseDefinitionRef,
+                evt.PhaseId.Value,
                 evt.SelectionVersion,
                 rulesObjectives);
 
@@ -83,6 +110,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             return GameplayPhaseRulesObjectivesSnapshot.FromLevelSelectedEvent(evt, phaseRuntime);
         }
 
+        private static GameplayPhaseRulesObjectivesSnapshot ResolveRulesObjectivesSnapshot(PhaseDefinitionSelectedEvent evt, GameplayPhaseRuntimeSnapshot phaseRuntime)
+        {
+            if (TryResolveRulesObjectivesService(out var service) &&
+                service.TryGetCurrent(out GameplayPhaseRulesObjectivesSnapshot current) &&
+                current.IsValid &&
+                string.Equals(current.PhaseRuntime.PhaseRuntimeSignature, phaseRuntime.PhaseRuntimeSignature, StringComparison.Ordinal))
+            {
+                return current;
+            }
+
+            return GameplayPhaseRulesObjectivesSnapshot.FromPhaseDefinitionSelectedEvent(evt, phaseRuntime);
+        }
+
         private static bool TryResolveRulesObjectivesService(out IGameplayPhaseRulesObjectivesService service)
         {
             service = null;
@@ -104,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         private static string BuildInitialStateSummary(
             string seedSource,
-            _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config.LevelDefinitionAsset levelRef,
+            LevelDefinitionAsset levelRef,
             string localContentId,
             int selectionVersion,
             GameplayPhaseRulesObjectivesSnapshot rulesObjectives)
@@ -114,6 +154,20 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string normalizedSeedSource = string.IsNullOrWhiteSpace(seedSource) ? "<none>" : seedSource.Trim();
 
             return $"seedSource='{normalizedSeedSource}' levelRef='{levelName}' contentId='{normalizedContentId}' selectionVersion='{selectionVersion}' rulesSignature='{rulesObjectives.RulesSignature}' objectivesSignature='{rulesObjectives.ObjectivesSignature}'";
+        }
+
+        private static string BuildInitialStateSummary(
+            string seedSource,
+            PhaseDefinitionAsset phaseDefinitionRef,
+            string localContentId,
+            int selectionVersion,
+            GameplayPhaseRulesObjectivesSnapshot rulesObjectives)
+        {
+            string phaseName = phaseDefinitionRef != null ? phaseDefinitionRef.name : "<null>";
+            string normalizedContentId = string.IsNullOrWhiteSpace(localContentId) ? "<none>" : localContentId.Trim();
+            string normalizedSeedSource = string.IsNullOrWhiteSpace(seedSource) ? "<none>" : seedSource.Trim();
+
+            return $"seedSource='{normalizedSeedSource}' phaseRef='{phaseName}' contentId='{normalizedContentId}' selectionVersion='{selectionVersion}' rulesSignature='{rulesObjectives.RulesSignature}' objectivesSignature='{rulesObjectives.ObjectivesSignature}'";
         }
 
         private static string Normalize(string value)
@@ -129,23 +183,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetLast(out GameplayPhaseInitialStateSnapshot snapshot);
         GameplayPhaseInitialStateSnapshot Update(GameplayPhaseInitialStateSnapshot snapshot);
         GameplayPhaseInitialStateSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
+        GameplayPhaseInitialStateSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }
 
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameplayPhaseInitialStateService : IGameplayPhaseInitialStateService, IDisposable
+    public sealed class GameplayPhaseInitialStateService : IGameplayPhaseInitialStateService
     {
         private readonly object _sync = new();
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private GameplayPhaseInitialStateSnapshot _current = GameplayPhaseInitialStateSnapshot.Empty;
         private GameplayPhaseInitialStateSnapshot _last = GameplayPhaseInitialStateSnapshot.Empty;
-        private bool _disposed;
 
         public GameplayPhaseInitialStateService()
         {
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
-
             DebugUtility.LogVerbose<GameplayPhaseInitialStateService>(
                 "[OBS][GameplaySessionFlow][InitialState] GameplayPhaseInitialStateService registrado como owner do initial state da fase.");
         }
@@ -164,6 +214,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public GameplayPhaseInitialStateSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt)
         {
             return Update(GameplayPhaseInitialStateSnapshot.FromLevelSelectedEvent(evt));
+        }
+
+        public GameplayPhaseInitialStateSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            return Update(GameplayPhaseInitialStateSnapshot.FromPhaseDefinitionSelectedEvent(evt));
         }
 
         public GameplayPhaseInitialStateSnapshot Update(GameplayPhaseInitialStateSnapshot snapshot)
@@ -219,27 +274,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             DebugUtility.Log<GameplayPhaseInitialStateService>(
                 $"[OBS][GameplaySessionFlow][InitialState] InitialStateCleared keepLast='true' lastInitialStateSignature='{Normalize(lastSignature)}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
-        }
-
-        public void Dispose()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
-        }
-
-        private void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            UpdateFromLevelSelectedEvent(evt);
         }
 
         private static string Normalize(string value)

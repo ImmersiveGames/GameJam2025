@@ -1,9 +1,7 @@
 using System;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 {
@@ -143,56 +141,5 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
         private static string BuildResumeKey(GameResumeRequestedEvent evt)
             => $"resume|reason={GameLoopReasonFormatter.Format(evt?.Reason)}";
-    }
-
-    /// <summary>
-    /// Bridge fino entre LevelLifecycle/IntroStage e o owner canonico da run.
-    ///
-    /// Traduz a conclusao do intro stage em RequestStart() do GameLoop sem
-    /// embutir semantica de level no core do loop.
-    /// </summary>
-    public sealed class GameLoopIntroStageBridge : IDisposable
-    {
-        private readonly EventBinding<LevelIntroCompletedEvent> _binding;
-        private bool _disposed;
-
-        public GameLoopIntroStageBridge()
-        {
-            _binding = new EventBinding<LevelIntroCompletedEvent>(OnLevelIntroCompleted);
-            EventBus<LevelIntroCompletedEvent>.Register(_binding);
-
-            DebugUtility.LogVerbose<GameLoopIntroStageBridge>(
-                "[OBS][GameLoop][Operational] Bridge de LevelIntroCompleted -> RequestStart registrado.",
-                DebugUtility.Colors.Info);
-        }
-
-        public void Dispose()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            EventBus<LevelIntroCompletedEvent>.Unregister(_binding);
-        }
-
-        private static bool TryResolveGameLoop(out IGameLoopService gameLoop)
-        {
-            gameLoop = null;
-            return DependencyManager.Provider.TryGetGlobal(out gameLoop) && gameLoop != null;
-        }
-
-        private void OnLevelIntroCompleted(LevelIntroCompletedEvent evt)
-        {
-            if (!evt.Session.IsValid)
-            {
-                return;
-            }
-
-            DebugUtility.Log<GameLoopIntroStageBridge>(
-                $"[OBS][GameplaySessionFlow][Operational] LevelHandoffAccepted source='{evt.Source}' target='GameLoop.RequestStart' rail='compatibility/operational: GameplaySessionFlow -> Level -> EnterStage -> Playing' skipped={evt.WasSkipped.ToString().ToLowerInvariant()} reason='{evt.Reason}' state='deferred_to_intro_coordinator'.",
-                DebugUtility.Colors.Info);
-        }
     }
 }

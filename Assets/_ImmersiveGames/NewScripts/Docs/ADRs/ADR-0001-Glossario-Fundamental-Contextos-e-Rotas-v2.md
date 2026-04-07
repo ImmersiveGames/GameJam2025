@@ -150,8 +150,11 @@ Não é:
 - `EnterStage` e `ExitStage` são estágios locais do conteúdo que preparam entrada e saída da fase.
 - `Playing` é o **Estado de Fluxo** principal da sessão jogável depois da preparação semântica e da liberação operacional.
 - `RunResult` é o mesmo conceito de `Resultado da Run`: a consolidação final do que aconteceu na run.
-- `PostRun` é o rail local intermediário entre `RunResult` e `RunDecision`.
-- `PostRunMenu` é um **Contexto Local Visual** de pós-run, não o resultado da run.
+- `RunEndIntent` é a intencao de encerrar a run atual e carrega a `reason`.
+- `RunResultStage` e o **Estagio Local** / phase-owned do fim da run, estruturalmente equivalente ao `IntroStage`.
+- `RunDecision` e a etapa distinta macro-route-owned que vem depois do `RunResultStage`.
+- `Overlay` e o contexto local visual downstream de `RunDecision`; `PostRunMenu` e nomenclatura historica desse visual.
+- `PostRun` e um alias historico do rail final antigo, nao o conceito central do fim de run.
 - `Restart` e `ExitToMenu` são **Intenções Derivadas** emitidas depois que o resultado já foi consolidado.
 
 ### Relação prática com `GameplaySessionFlow`
@@ -335,7 +338,7 @@ Ele responde à pergunta:
 
 Exemplos:
 - `PauseMenu`
-- `PostRunMenu`
+- overlay de `RunDecision`
 - overlays
 - painéis locais
 - menus locais
@@ -370,7 +373,7 @@ O domínio dono do momento é quem ativa o **Contexto Local Visual** corresponde
 
 Exemplos:
 - `Pause` pode ativar `PauseMenu`
-- o resultado de run pode ativar `PostRunMenu`
+- o resultado de run pode ativar o overlay de `RunDecision`
 - o frontend local pode ativar painéis e abas
 
 Isso não deve ser responsabilidade do core de navegação.
@@ -501,6 +504,41 @@ Ele é a consolidação final do que aconteceu na run.
 
 ---
 
+## Encerramento de Run
+
+### 14.5 RunEndIntent
+
+**RunEndIntent** e a intencao de encerrar a run atual depois que o resultado terminal foi aceito e carrega a `reason`.
+
+Ela nao e:
+- Resultado da Run
+- Estagio Local
+- Intencao Derivada
+- Contexto Local Visual
+
+Ela representa a transicao semantica que leva do fim operacional da run para o rail final de decisao.
+
+### 14.6 RunResultStage
+
+**RunResultStage** e o estagio local phase-owned do fim da run.
+
+Ele e:
+- simetrico ao `IntroStage`
+- parte do contrato canonico do fim de run da phase
+- decidido pela `PhaseDefinition`
+- executado antes de `RunDecision`
+
+Ele nao e:
+- o resultado da run em si
+- o overlay
+- a decisao final
+- um conceito opcional
+
+`RunDecision` nao e phase-owned; e macro-route-owned / macro-stage-owned.
+`RunResultStage` nao depende de `Task` como semantica de negocio.
+
+---
+
 ## Intenções Derivadas
 
 ### 15. Intenção Derivada
@@ -511,7 +549,7 @@ Exemplos:
 - `Restart`
 - `ExitToMenu`
 
-No caso de gameplay, essas intenções podem surgir a partir de um contexto visual local como `PostRunMenu`, depois que o Resultado da Run já foi definido.
+No caso de gameplay, essas intenções surgem depois de `RunDecision`, a partir do contexto visual local correspondente ao `Overlay`.
 
 ---
 
@@ -538,9 +576,11 @@ A leitura conceitual preferida é:
 
 1. `ExitStage`
 2. consolidação do `Resultado da Run`
-3. entrada em `PostRun`
-4. ativação do contexto visual local de pós-run, como `PostRunMenu`
-5. emissão de intenções derivadas, como `Restart` ou `ExitToMenu`
+3. `RunEndIntent`
+4. `RunResultStage`
+5. `RunDecision`
+6. `Overlay`
+7. emissão de intenções derivadas, como `Restart` ou `ExitToMenu`
 
 ---
 
@@ -583,7 +623,7 @@ Se existir no projeto, ele deve ser tratado apenas como detalhe técnico ou de c
 
 ### Exclusão 2
 `PostPlay` permanece histórico.
-`PostRun` não deve ser usado como sinônimo global de `Resultado da Run`; ele é válido como rail local intermediário entre `RunResult` e `RunDecision`.
+`PostRun` e `PostRunMenu` permanecem como aliases historicos do modelo antigo; nao devem ser usados como conceito central nem como nome do rail canônico.
 
 Se existirem no código atual, devem ser lidos conforme essa distinção e não como conveniência de implementação que apague a fronteira entre pós-run local e decisão final.
 
@@ -594,7 +634,7 @@ Se existirem no código atual, devem ser lidos conforme essa distinção e não 
 ### Positivas
 - reduz ambiguidades conceituais
 - facilita discutir ownership entre módulos
-- melhora a leitura de Navigation, Audio, SceneFlow, LevelFlow, GameLoop, PostRun e Frontend
+- melhora a leitura de Navigation, Audio, SceneFlow, LevelFlow, GameLoop, RunResultStage e Frontend
 - reduz o risco de usar termos diferentes para o mesmo problema
 - separa com mais clareza conteúdo, interface, fluxo, resultado e intenção derivada
 

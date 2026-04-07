@@ -17,8 +17,11 @@ A direcao central e:
 - `EnterStage` e `ExitStage` sao `Estagios Locais`.
 - `Playing` e o `Estado de Fluxo`.
 - `RunOutcome` e o `Resultado da Run`.
-- `PostRun` e o `Contexto Local Visual`.
-- `RunDecision` e o overlay/menu final.
+- `RunEndIntent` expressa a intencao de encerrar a run.
+- `RunResultStage` e o estagio local opcional do fim da run, simetrico ao `IntroStage`.
+- `RunDecision` e a etapa distinta de decisao downstream.
+- `Overlay` e a projeção visual de `RunDecision`.
+- `PostRun` e nomenclatura historica do rail antigo, nao o conceito central.
 - `Restart` / `ExitToMenu` sao `Intencoes Derivadas`.
 - `Pause` e `Estado Transversal`.
 
@@ -32,7 +35,7 @@ O Baseline 4.0 ideal nao preserva nomes ou splits atuais por compatibilidade aut
 |---|---|---|
 | `Contexto Macro` | onde a aplicacao esta | define palco, entrada, saida e regras maiores |
 | `Contexto Local de Conteudo` | o conteudo ativo dentro do macro | no gameplay, o `Level` |
-| `Contexto Local Visual` | a camada visual/interativa sobreposta | exemplo: `PauseMenu`, `PostRunMenu` |
+| `Contexto Local Visual` | a camada visual/interativa sobreposta | exemplo: `PauseMenu`, overlay de `RunDecision` |
 | `Estagio Local` | fase delimitada do conteudo local | `EnterStage` e `ExitStage` |
 | `Estado de Fluxo` | fase principal da experiencia | `Playing` |
 | `Resultado da Run` | conclusao consolidada da run | `Victory` / `Defeat` |
@@ -47,8 +50,10 @@ O Baseline 4.0 ideal nao preserva nomes ou splits atuais por compatibilidade aut
 - `Playing` e a fase principal.
 - `ExitStage` fecha o conteudo local.
 - `RunOutcome` consolida a run.
-- `PostRun` aparece depois do resultado.
-- `RunDecision` aparece depois de `PostRun`.
+- `RunEndIntent` inicia o fechamento da run.
+- `RunResultStage` pode existir como etapa local opcional.
+- `RunDecision` aparece depois de `RunResultStage` ou diretamente depois de `RunEndIntent`.
+- `Overlay` projeta visualmente `RunDecision`.
 - `Restart` e `ExitToMenu` nascem do pos-run.
 - `Pause` modifica o fluxo sem virar contexto macro.
 
@@ -63,8 +68,10 @@ Gameplay
 -> Playing
 -> ExitStage
 -> RunOutcome
--> PostRun
+-> RunEndIntent
+-> RunResultStage (optional)
 -> RunDecision
+-> Overlay
 -> Restart / ExitToMenu
 -> Navigation primary dispatch
 -> Audio contextual reactions
@@ -130,7 +137,7 @@ Owner da maquina de estados de fluxo, da run e da pausa.
 
 #### Ideal role
 
-Owner do pos-run: ownership de input/gate, apresentacao do resultado e contexto visual local de pos-run.
+Alias historico do rail final legado. O canon atual usa `RunResultStage` e `RunDecision`.
 
 #### Main services
 
@@ -145,8 +152,8 @@ Owner do pos-run: ownership de input/gate, apresentacao do resultado e contexto 
 - `PostStageStartRequested`
 - `PostStageStarted`
 - `PostStageCompleted`
-- `PostRunEntered`
-- `PostRunExited`
+- `PostRunEntered` legacy alias for the canonical end-of-run seam
+- `PostRunExited` legacy alias for the canonical end-of-run seam
 
 #### Main assets/config
 
@@ -400,17 +407,17 @@ As regras abaixo sao permanentes e nao constituem roadmap.
 ### Permanent rules
 
 - `PostPlay` is technical retention, not a domain phase.
-- `PostRun` means post-run ownership, not macro context.
-- `PostRunMenu` is the conceptual label for the visual layer, even if the runtime name differs.
-- Separate post-run ownership from result projection if they remain coupled.
-- Move any post-run overlay ownership out of flow state owners.
+- `PostRun` is historical retention, not the canonical rail name.
+- `PostRunMenu` is a historical visual label; the canonical visual projection is downstream of `RunDecision`.
+- Separate result consolidation, `RunResultStage`, `RunDecision` and overlay projection.
+- Move any overlay ownership out of flow state owners.
 - Isolate audio precedence from navigation.
 - Keep SceneFlow strictly technical.
 - Reduce or split `EntityAudioSemanticMapAsset` if it still carries non-entity semantics.
 - Keep route and style assets in navigation or scene-flow only.
-- Keep post-run presentation assets out of gameplay flow ownership.
+- Keep end-of-run presentation assets out of gameplay flow ownership.
 - Collapse duplicate result projection surfaces.
-- Choose one canonical exit-to-menu execution path for post-run.
+- Choose one canonical exit-to-menu execution path after `RunDecision`.
 - Avoid duplicated post-run gate/input ownership.
 - Gameplay-to-post-run handoff, post-run visual adoption and audio contextual bridges are only acceptable when explicitly temporary and justified by the canonical target.
 

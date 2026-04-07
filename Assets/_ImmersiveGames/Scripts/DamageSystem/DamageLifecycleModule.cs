@@ -1,5 +1,3 @@
-
-using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 

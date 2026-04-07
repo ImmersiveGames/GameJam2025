@@ -2,7 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
         private readonly EventBinding<SceneFlowRouteLoadingProgressEvent> _routeProgressBinding;
         private readonly EventBinding<WorldResetStartedEvent> _resetStartedBinding;
         private readonly EventBinding<WorldResetCompletedEvent> _resetCompletedBinding;
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
+        private readonly EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
 
         private ILoadingPresentationService _presentationService;
         private ActiveLoadingProgress _active;
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
             _routeProgressBinding = new EventBinding<SceneFlowRouteLoadingProgressEvent>(OnRouteProgress);
             _resetStartedBinding = new EventBinding<WorldResetStartedEvent>(OnResetStarted);
             _resetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnResetCompleted);
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
+            _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(OnPhaseSelected);
 
             EnsureRegistered();
         }
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
             EventBus<SceneFlowRouteLoadingProgressEvent>.Register(_routeProgressBinding);
             EventBus<WorldResetStartedEvent>.Register(_resetStartedBinding);
             EventBus<WorldResetCompletedEvent>.Register(_resetCompletedBinding);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
+            EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
 
             _isRegistered = true;
 
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
                 EventBus<SceneFlowRouteLoadingProgressEvent>.Unregister(_routeProgressBinding);
                 EventBus<WorldResetStartedEvent>.Unregister(_resetStartedBinding);
                 EventBus<WorldResetCompletedEvent>.Unregister(_resetCompletedBinding);
-                EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
+                EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
                 _isRegistered = false;
 
                 DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
@@ -139,18 +139,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime
             PublishCurrent();
         }
 
-        private void OnLevelSelected(LevelSelectedEvent evt)
+        private void OnPhaseSelected(PhaseDefinitionSelectedEvent evt)
         {
             if (_active == null || _active.RouteKind != SceneRouteKind.Gameplay)
             {
-                LogIgnoredProgress("LevelSelectedEvent", _active?.Signature ?? string.Empty, "inactive_or_non_gameplay_route");
+                LogIgnoredProgress("PhaseDefinitionSelectedEvent", _active?.Signature ?? string.Empty, "inactive_or_non_gameplay_route");
                 return;
             }
 
             _active.PrepareProgress = 1f;
-            string levelName = evt.LevelRef != null ? evt.LevelRef.name : "current level";
-            _active.StepLabel = $"Preparing level: {levelName}";
-            LogProgressEvent("LevelSelectedEvent", _active.Signature, _active.RouteKind, _active.RequiresWorldReset, _active.Reason, _active.StepLabel);
+            string phaseName = evt.PhaseDefinitionRef != null ? evt.PhaseDefinitionRef.name : "current phase";
+            _active.StepLabel = $"Preparing phase: {phaseName}";
+            LogProgressEvent("PhaseDefinitionSelectedEvent", _active.Signature, _active.RouteKind, _active.RequiresWorldReset, _active.Reason, _active.StepLabel);
             PublishCurrent();
         }
 

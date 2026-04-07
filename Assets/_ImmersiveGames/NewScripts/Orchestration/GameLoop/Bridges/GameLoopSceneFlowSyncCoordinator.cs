@@ -270,10 +270,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             gameLoop.Initialize();
 
             DebugUtility.LogVerbose<GameLoopSceneFlowSyncCoordinator>(
-                $"[OBS][GameLoopSceneFlow][Operational] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReady() no GameLoop.",
+                $"[OBS][GameLoopSceneFlow][Operational] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReset() no GameLoop.",
                 DebugUtility.Colors.Info);
 
-            gameLoop.RequestReady();
+            gameLoop.RequestReset();
             _startInProgress = false;
         }
 

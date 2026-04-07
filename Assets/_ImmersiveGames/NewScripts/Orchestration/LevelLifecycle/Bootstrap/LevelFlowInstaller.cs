@@ -8,10 +8,9 @@ using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
 using _ImmersiveGames.NewScripts.Orchestration.SceneComposition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
@@ -71,10 +70,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RegisterLevelIntroStageSessionService();
             RegisterLevelIntroStagePresenterScopeResolver();
             RegisterLevelIntroStagePresenterRegistry();
-            RegisterLevelPostRunHookPresenterScopeResolver();
-            RegisterLevelPostRunHookPresenterRegistry();
-            RegisterLevelStagePresentationService();
-            RegisterLevelPostRunHookService();
             RegisterGameplaySessionFlowServices();
             RegisterLevelSwapLocalService(
                 restartContextService,
@@ -85,7 +80,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RegisterLevelMacroPrepareService(
                 restartContextService,
                 contentService,
-                worldResetCommands,
                 sceneCompositionExecutor);
         }
 
@@ -138,26 +132,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLevelStagePresentationService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelIntroStageSessionService>(out var sessionService) || sessionService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelIntroStageSessionService obrigatorio ausente ao registrar ILevelStagePresentationService.");
-            }
-
-            var service = new LevelLifecycleStagePresentationService(sessionService);
-            DependencyManager.Provider.RegisterGlobal<ILevelStagePresentationService>(service);
-
-            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle][Operational] ILevelStagePresentationService registrado no DI global (LevelLifecycleStagePresentationService).",
-                DebugUtility.Colors.Info);
-        }
-
         private static void RegisterLevelIntroStagePresenterRegistry()
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelIntroStagePresenterRegistry>(out var existing) && existing != null)
@@ -188,71 +162,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLevelPostRunHookPresenterScopeResolver()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ILevelPostRunHookPresenterScopeResolver>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            var service = new LevelPostRunHookPresenterScopeResolver();
-            DependencyManager.Provider.RegisterGlobal<ILevelPostRunHookPresenterScopeResolver>(service);
-
-            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle][Operational] ILevelPostRunHookPresenterScopeResolver registrado no DI global (LevelPostRunHookPresenterScopeResolver).",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterLevelPostRunHookPresenterRegistry()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ILevelPostRunHookPresenterRegistry>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelPostRunHookPresenterScopeResolver>(out var scopeResolver) || scopeResolver == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelPostRunHookPresenterScopeResolver obrigatorio ausente ao registrar ILevelPostRunHookPresenterRegistry.");
-            }
-
-            var service = new LevelPostRunHookPresenterHost(scopeResolver);
-            DependencyManager.Provider.RegisterGlobal<ILevelPostRunHookPresenterRegistry>(service);
-
-            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle][Operational] ILevelPostRunHookPresenterRegistry registrado no DI global (LevelPostRunHookPresenterHost).",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterLevelPostRunHookService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ILevelPostRunHookService>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelStagePresentationService>(out var stagePresentationService) || stagePresentationService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelStagePresentationService obrigatorio ausente ao registrar ILevelPostRunHookService.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILevelPostRunHookPresenterRegistry>(out var presenterRegistry) || presenterRegistry == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] ILevelPostRunHookPresenterRegistry obrigatorio ausente ao registrar ILevelPostRunHookService.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPostRunOwnershipService>(out var postRunOwnershipService) || postRunOwnershipService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IPostRunOwnershipService obrigatorio ausente ao registrar ILevelPostRunHookService.");
-            }
-
-            var service = new LevelPostRunHookService(stagePresentationService, presenterRegistry, postRunOwnershipService);
-            DependencyManager.Provider.RegisterGlobal<ILevelPostRunHookService>(service);
-
-            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
-                "[OBS][LevelLifecycle][Operational] ILevelPostRunHookService registrado no DI global (LevelPostRunHookService).",
-                DebugUtility.Colors.Info);
-        }
-
         private static void RegisterGameplaySessionFlowServices()
         {
             RegisterGameplaySessionContextService();
@@ -260,6 +169,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             RegisterGameplayPhasePlayerParticipationService();
             RegisterGameplayPhaseRulesObjectivesService();
             RegisterGameplayPhaseInitialStateService();
+            RegisterGameplaySessionFlowPhaseConsumptionService();
             RegisterGameRunOutcomeService();
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
@@ -375,7 +285,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
         private static void RegisterLevelMacroPrepareService(
             IRestartContextService restartContextService,
             ILevelFlowContentService contentService,
-            IWorldResetCommands worldResetCommands,
             ISceneCompositionExecutor sceneCompositionExecutor)
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var existing) && existing != null)
@@ -385,14 +294,69 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
             var service = new LevelMacroPrepareService(
                 restartContextService,
-                worldResetCommands,
                 sceneCompositionExecutor,
-                contentService);
+                contentService,
+                ResolveRequiredPhaseDefinitionSelectionService());
 
             DependencyManager.Provider.RegisterGlobal<ILevelMacroPrepareService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
                 "[OBS][LevelLifecycle][Operational] ILevelMacroPrepareService registrado (LevelMacroPrepareService).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static IPhaseDefinitionSelectionService ResolveRequiredPhaseDefinitionSelectionService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionSelectionService>(out var phaseDefinitionSelectionService) && phaseDefinitionSelectionService != null)
+            {
+                return phaseDefinitionSelectionService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IPhaseDefinitionSelectionService ausente no DI global antes da composicao do LevelMacroPrepareService.");
+        }
+
+        private static void RegisterGameplaySessionFlowPhaseConsumptionService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<GameplaySessionFlowPhaseConsumptionService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionContextService>(out var sessionContextService) || sessionContextService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameplaySessionContextService obrigatorio ausente ao registrar GameplaySessionFlowPhaseConsumptionService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out var phaseRuntimeService) || phaseRuntimeService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameplayPhaseRuntimeService obrigatorio ausente ao registrar GameplaySessionFlowPhaseConsumptionService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhasePlayerParticipationService>(out var phasePlayersService) || phasePlayersService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameplayPhasePlayerParticipationService obrigatorio ausente ao registrar GameplaySessionFlowPhaseConsumptionService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRulesObjectivesService>(out var phaseRulesObjectivesService) || phaseRulesObjectivesService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameplayPhaseRulesObjectivesService obrigatorio ausente ao registrar GameplaySessionFlowPhaseConsumptionService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseInitialStateService>(out var phaseInitialStateService) || phaseInitialStateService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameplayPhaseInitialStateService obrigatorio ausente ao registrar GameplaySessionFlowPhaseConsumptionService.");
+            }
+
+            var service = new GameplaySessionFlowPhaseConsumptionService(
+                sessionContextService,
+                phaseRuntimeService,
+                phasePlayersService,
+                phaseRulesObjectivesService,
+                phaseInitialStateService);
+            DependencyManager.Provider.RegisterGlobal(service);
+
+            DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),
+                "[OBS][GameplaySessionFlow] GameplaySessionFlowPhaseConsumptionService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
@@ -408,7 +372,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameRunPlayingStateGuard obrigatorio ausente ao registrar IGameRunOutcomeService.");
             }
 
-            var service = new GameRunOutcomeService(gameplayStateGuard);
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][LevelLifecycle] IGameLoopService obrigatorio ausente ao registrar IGameRunOutcomeService.");
+            }
+
+            var service = new GameRunOutcomeService(gameplayStateGuard, gameLoopService);
             DependencyManager.Provider.RegisterGlobal<IGameRunOutcomeService>(service);
 
             DebugUtility.LogVerbose(typeof(LevelLifecycleInstaller),

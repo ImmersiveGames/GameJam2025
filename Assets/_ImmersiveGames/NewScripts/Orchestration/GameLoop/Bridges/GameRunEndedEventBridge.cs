@@ -1,21 +1,19 @@
 using System;
-using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Handoff;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CanonicalRunEndIntent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunEndIntent;
+
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 {
-    /// <summary>
-    /// Bridge fino do fim de run.
-    ///
-    /// O contrato explicito do handoff vive em IPostRunHandoffService.
-    /// Este componente apenas traduz o evento operacional do GameLoop para o seam canonico do PostRun.
-    /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunEndedEventBridge : MonoBehaviour
@@ -32,20 +30,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             RegisterBinding();
         }
 
-        private void OnEnable()
-        {
-            RegisterBinding();
-        }
+        private void OnEnable() => RegisterBinding();
 
-        private void OnDisable()
-        {
-            UnregisterBinding();
-        }
+        private void OnDisable() => UnregisterBinding();
 
-        private void OnDestroy()
-        {
-            UnregisterBinding();
-        }
+        private void OnDestroy() => UnregisterBinding();
 
         private void RegisterBinding()
         {
@@ -82,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             }
 
             _postStagePending = true;
-            _ = HandleGameRunEndedAsync(evt);
+            HandleGameRunEnded(evt);
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
@@ -90,54 +79,86 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             _postStagePending = false;
         }
 
-        private async Task HandleGameRunEndedAsync(GameRunEndedEvent evt)
+        private void HandleGameRunEnded(GameRunEndedEvent evt)
         {
             try
             {
-                if (!DependencyManager.Provider.TryGetGlobal<IPostRunHandoffService>(out var postRunHandoffService) || postRunHandoffService == null)
+                if (!TryMapToRunResult(evt?.Outcome ?? GameRunOutcome.Unknown, out var runResult))
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IPostRunHandoffService nao foi encontrado no escopo global.");
+                        $"[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido com outcome nao terminal='{evt?.Outcome}' reason='{GameLoopReasonFormatter.Format(evt?.Reason)}'.");
                     return;
                 }
 
                 string reason = GameLoopReasonFormatter.Format(evt?.Reason);
                 string sceneName = SceneManager.GetActiveScene().name;
-                var context = new PostRunHandoffContext(
-                    signature: sceneName,
-                    sceneName: sceneName,
-                    frame: Time.frameCount,
-                    outcome: evt?.Outcome ?? GameRunOutcome.Unknown,
-                    reason: reason,
-                    isGameplayScene: IsGameplayScene());
+                bool isGameplayScene = IsGameplayScene();
 
-                DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow][Operational] ExitStageDispatchRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handoff='PostRunHandoffService'.");
-
-                if (DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) && gameLoopService != null)
-                {
-                    gameLoopService.RequestRunEnd();
-
-                    DebugUtility.Log<GameRunEndedEventBridge>(
-                        $"[OBS][GameplaySessionFlow][Operational] GameLoopRunEndRequested outcome={evt?.Outcome} reason='{reason}' scene='{sceneName}' frame={Time.frameCount} handshake='GameLoop.RequestRunEnd'.",
-                        DebugUtility.Colors.Info);
-                }
-                else
+                if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out var phaseRuntimeService) ||
+                    phaseRuntimeService == null)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent processado, mas IGameLoopService nao foi encontrado para sincronizar o fim da run.");
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IGameplayPhaseRuntimeService nao foi encontrado no escopo global.");
+                    return;
                 }
 
-                await postRunHandoffService.HandleRunEndedAsync(context);
+                if (!phaseRuntimeService.TryGetCurrent(out var phaseRuntime) || !phaseRuntime.IsValid)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas o runtime da phase e invalido.");
+                    return;
+                }
+
+                if (!phaseRuntime.HasRunResultStage)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        $"[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido em phase sem RunResultStage. scene='{sceneName}' frame={Time.frameCount} phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.");
+                    return;
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<IPostRunResultService>(out var resultService) || resultService == null)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IPostRunResultService nao foi encontrado no escopo global.");
+                    return;
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<IRunEndIntentOwnershipService>(out var runEndIntentOwner) || runEndIntentOwner == null)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunEndIntentOwnershipService nao foi encontrado no escopo global.");
+                    return;
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<IRunResultStageOwnershipService>(out var runResultStageOwner) || runResultStageOwner == null)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunResultStageOwnershipService nao foi encontrado no escopo global.");
+                    return;
+                }
+
+                var intent = new CanonicalRunEndIntent(
+                    signature: phaseRuntime.PhaseRuntimeSignature,
+                    sceneName: sceneName,
+                    profile: string.Empty,
+                    frame: Time.frameCount,
+                    reason: reason,
+                    isGameplayScene: isGameplayScene);
+
+                resultService.TrySetRunOutcome(evt.Outcome, reason);
+                runEndIntentOwner.AcceptRunEndIntent(intent);
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow][Operational] ExitStageCompleted signature='{context.Signature}' outcome='{context.Outcome}' reason='{reason}' scene='{context.SceneName}' frame={context.Frame} handoff='PostRunHandoffService'.",
+                    $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageDispatchRequested outcome='{evt?.Outcome}' result='{runResult}' reason='{reason}' scene='{sceneName}' frame={Time.frameCount} isGameplayScene='{isGameplayScene}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.",
                     DebugUtility.Colors.Info);
+
+                runResultStageOwner.EnterRunResultStage(new RunResultStage(intent, runResult));
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<GameRunEndedEventBridge>(
-                    $"[FATAL][GameplaySessionFlow] Falha inesperada ao executar PostRunHandoff. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[FATAL][GameplaySessionFlow] Falha inesperada ao executar RunResultStage. ex='{ex.GetType().Name}: {ex.Message}'.");
+                _postStagePending = false;
             }
         }
 
@@ -150,6 +171,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
             return false;
         }
+
+        private static bool TryMapToRunResult(GameRunOutcome outcome, out RunResult result)
+        {
+            result = outcome switch
+            {
+                GameRunOutcome.Victory => RunResult.Victory,
+                GameRunOutcome.Defeat => RunResult.Defeat,
+                _ => RunResult.Unknown,
+            };
+
+            return result != RunResult.Unknown;
+        }
     }
 }
-

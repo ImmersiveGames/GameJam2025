@@ -4,6 +4,7 @@
 
 - Referencia operacional dos hooks ativos.
 - O contrato canonico vigente do gameplay esta em `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`, `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md` e `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`.
+- O fim de run canonico e `RunEndIntent -> RunResultStage` opcional -> `RunDecision -> Overlay`; `PostRun*` e alias historico da ponte legada.
 - `LevelFlow` e nome historico de fronteira; a camada ativa e `LevelLifecycle`.
 - Use hooks operacionais primeiro e hooks tecnicos so quando o ponto do pipeline realmente importar.
 
@@ -33,10 +34,10 @@
 | saber que o pause vai entrar | `PauseWillEnterEvent` | `Orchestration/GameLoop/Pause` | reagir antes da entrada final em pause |
 | saber que o pause vai sair | `PauseWillExitEvent` | `Orchestration/GameLoop/Pause` | reagir antes da saida final de pause |
 | saber que o pause mudou de estado | `PauseStateChangedEvent` | `Orchestration/GameLoop/Pause` | observar o estado final de pause |
-| iniciar o PostStage | `PostStageStartRequestedEvent` | `Experience/PostRun/Handoff` | validar o pos-run depois do outcome |
+| iniciar o PostStage | `PostStageStartRequestedEvent` | `Experience/PostRun/Handoff` | validar o pos-run legado depois do outcome |
 | assumir o PostStage | `PostStageStartedEvent` | `Experience/PostRun/Handoff` | mostrar presenter opcional da cena atual |
-| concluir o PostStage | `PostStageCompletedEvent` | `Experience/PostRun/Handoff` | liberar o handoff final do pos-run |
-| entrar no PostRun | `PostRunEnteredEvent` | `Experience/PostRun/Ownership` | iniciar apenas o rail local de `PostRun` e bloquear a gameplay |
+| concluir o PostStage | `PostStageCompletedEvent` | `Experience/PostRun/Handoff` | liberar o handoff final do rail legado |
+| entrar no PostRun | `PostRunEnteredEvent` | `Experience/PostRun/Ownership` | alias historico do rail final; leitura canônica atual e `RunResultStage` opcional |
 | concluir o PostRun | `PostRunCompletedEvent` | `Experience/PostRun/Ownership` | liberar a entrada semantica em `RunDecision` |
 | entrar em RunDecision | `RunDecisionEnteredEvent` | `Experience/PostRun/Ownership` | permitir a abertura do overlay final de decisao |
 | integrar save no fim da run | `ISaveOrchestrationService.TryHandleGameRunEnded(...)` | `Experience/Save` | persistir progression e preferences quando cabivel |
@@ -49,6 +50,7 @@
 - `PostRunCompleted` e a fronteira que libera a entrada em `RunDecision`.
 - O overlay final e consequencia de `RunDecisionEntered`.
 - Nao trate `PostRunEnteredEvent` como gatilho visual do overlay.
+- A leitura canônica atual do final da run e `RunEndIntent -> RunResultStage` opcional -> `RunDecision -> Overlay`.
 
 ## Hooks tecnicos do pipeline
 

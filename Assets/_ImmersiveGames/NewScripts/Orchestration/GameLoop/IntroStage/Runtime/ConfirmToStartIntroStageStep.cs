@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
@@ -7,23 +8,30 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 {
     /// <summary>
-    /// Passo minimo da IntroStage que apenas aguarda a confirmacao canonica do presenter de level.
+    /// Passo minimo da IntroStage que valida a ativacao canonica e deixa o wait
+    /// operacional para o coordinator, via adapter de completion por execucao.
     /// </summary>
     public sealed class ConfirmToStartIntroStageStep : IIntroStageStep
     {
         public bool HasContent => true;
 
-        public async Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
+        public Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
         {
             _ = context;
+            _ = cancellationToken;
 
             IIntroStageControlService controlService = ResolveIntroStageControlService();
 
+            if (!controlService.IsIntroStageActive)
+            {
+                throw new InvalidOperationException("[FATAL][H1][GameLoop] ConfirmToStartIntroStageStep executado sem IntroStage ativa.");
+            }
+
             DebugUtility.Log<ConfirmToStartIntroStageStep>(
-                $"[OBS][EnterStageController] Waiting for canonical level presenter confirmation. scene='{SceneManager.GetActiveScene().name}'.",
+                $"[OBS][IntroStageStep] Waiting for canonical IntroStage presenter confirmation. scene='{SceneManager.GetActiveScene().name}'.",
                 DebugUtility.Colors.Info);
 
-            await controlService.WaitForCompletionAsync(cancellationToken);
+            return Task.CompletedTask;
         }
 
         private static IIntroStageControlService ResolveIntroStageControlService()
@@ -33,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 return service;
             }
 
-            throw new System.InvalidOperationException("IIntroStageControlService is required.");
+            throw new InvalidOperationException("IIntroStageControlService is required.");
         }
     }
 }

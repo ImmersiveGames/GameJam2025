@@ -45,8 +45,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     {
         bool TryGetCurrentPresenter(out ILevelIntroStagePresenter presenter);
         bool TryEnsureCurrentPresenter(LevelIntroStageSession session, string source, out ILevelIntroStagePresenter presenter);
-        void Register(ILevelIntroStagePresenter presenter, string sessionSignature);
-        void Unregister(ILevelIntroStagePresenter presenter);
     }
 
     public interface ILevelIntroStagePresenterScopeResolver
@@ -57,8 +55,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     public interface ILevelIntroStagePresenter
     {
         string PresenterSignature { get; }
-        bool IsReady { get; }
-        void BindToSession(string sessionSignature);
+        bool IsPresentationAttached { get; }
+        bool CanServe(string sessionSignature);
+        void AttachPresentation(LevelStagePresentationContract contract);
+        void DetachPresentation(string reason);
     }
 
     public sealed class LevelIntroStageSessionService : ILevelIntroStageSessionService, System.IDisposable
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
 
             DebugUtility.LogVerbose<LevelIntroStageSessionService>(
-                "[OBS][LevelFlow] LevelIntroStageSessionService registrado (LevelSelectedEvent -> EnterStage session bridge canonica).",
+                "[OBS][IntroStage] LevelIntroStageSessionService registrado (LevelSelectedEvent -> IntroStage session bridge canonica).",
                 DebugUtility.Colors.Info);
         }
 
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (levelRef == null)
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStageSessionService),
-                    "[FATAL][H1][LevelFlow] LevelSelectedEvent sem levelRef ao materializar intro session.");
+                    "[FATAL][H1][IntroStage] LevelSelectedEvent sem contentName ao materializar intro session.");
             }
 
             LevelIntroStageSession session = evt.LevelRef.CreateIntroStageSession(
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             DebugUtility.Log<LevelIntroStageSessionService>(
-                $"[OBS][LevelFlow] EnterStageSessionUpdated levelRef='{levelName}' routeId='{evt.MacroRouteId}' disposition='{session.Disposition}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' reason='{session.Reason}'.",
+                $"[OBS][IntroStage] IntroStageSessionUpdated contentName='{levelName}' routeId='{evt.MacroRouteId}' disposition='{session.Disposition}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' reason='{session.Reason}'.",
                 DebugUtility.Colors.Info);
         }
     }

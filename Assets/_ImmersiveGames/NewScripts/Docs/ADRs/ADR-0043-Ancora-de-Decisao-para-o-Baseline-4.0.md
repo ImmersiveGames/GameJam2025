@@ -29,15 +29,17 @@ As auditorias seguintes mostraram que o código atual ainda mistura esses concei
 - `Modules/LevelFlow`
 - `Modules/SceneFlow`
 - `Modules/GameLoop`
-- `Modules/PostRun`
+- `Modules/PostRun` como legado historico
 - `Modules/Frontend/UI`
 
 Os conflitos principais observados foram:
 
 1. `Navigation` ainda carrega mistura entre intenção, rota e, em alguns pontos, áudio contextual.
-2. `GameLoop` e `PostRun` ainda precisam ser lidos à luz de:
+2. `GameLoop` e o seam legado de fim de run ainda precisam ser lidos à luz de:
    - Estado de Fluxo
    - Resultado da Run
+   - `RunResultStage` phase-owned
+   - `RunDecision`
    - Intenção Derivada
    - Estado Transversal
 3. `LevelFlow` ainda é peça central para:
@@ -108,9 +110,20 @@ Para efeito do Baseline 4.0, a leitura preferida de `Gameplay` é:
 - `EnterStage` / `ExitStage` = Estágios Locais
 - `Playing` = Estado de Fluxo
 - `Victory` / `Defeat` = Resultado da Run
+- `RunEndIntent` = intenção de encerrar a run
+- `RunResultStage` = estágio local phase-owned do fim da run
+- `RunDecision` = etapa distinta de decisão downstream, macro-route-owned
+- `Overlay` = projeção visual de `RunDecision`
 - `Restart` / `ExitToMenu` = Intenções Derivadas
 - `Pause` = Estado Transversal
 - `PauseMenu` / `PostRunMenu` = Contextos Locais Visuais
+
+### Leitura canônica do fim de run
+
+- `RunEndIntent` carrega a razão da saída da run.
+- `RunResultStage` recebe a mesma `reason` e permanece como estágio local da phase.
+- `RunDecision` continua a mesma `reason` para a decisão macro final.
+- `PostRun` fica apenas como nome histórico do rail antigo.
 
 ### Observação importante
 `Victory` e `Defeat` não devem ser tratados como Contextos Macro por padrão.  
@@ -212,6 +225,6 @@ O Baseline 4.0 pode ser considerado atingido quando:
 
 1. Registrar este ADR como âncora do Baseline 4.0.
 2. Abrir análise individual de `Modules/GameLoop`.
-3. Em seguida, `Modules/PostRun`.
+3. Em seguida, `Modules/PostRun` como legado historico.
 4. Prosseguir na ordem definida acima.
 

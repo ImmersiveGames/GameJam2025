@@ -2,6 +2,7 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
@@ -28,6 +29,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
             EventBus<LevelSelectedEvent>.Clear();
+            EventBus<PhaseDefinitionSelectedEvent>.Clear();
+            PhaseContentSceneRuntimeApplier.RecordCleared();
 
             // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
             EventBus<SceneTransitionStartedEvent>.Clear();

@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome
     public sealed class GameRunOutcomeService : IGameRunOutcomeService, IDisposable
     {
         private readonly IGameRunPlayingStateGuard _playingStateGuard;
+        private readonly IGameLoopService _gameLoopService;
         private readonly GameLoopEventSubscriptionSet _subscriptions = new();
         private readonly EventBinding<GameRunStartedEvent> _runStartedBinding;
         private readonly EventBinding<GameRunEndedEvent> _runEndedObservedBinding;
@@ -25,9 +26,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome
 
         public bool HasEnded => _hasEndedThisRun;
 
-        public GameRunOutcomeService(IGameRunPlayingStateGuard playingStateGuard)
+        public GameRunOutcomeService(IGameRunPlayingStateGuard playingStateGuard, IGameLoopService gameLoopService)
         {
-            _playingStateGuard = playingStateGuard;
+            _playingStateGuard = playingStateGuard ?? throw new ArgumentNullException(nameof(playingStateGuard));
+            _gameLoopService = gameLoopService ?? throw new ArgumentNullException(nameof(gameLoopService));
 
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnRunStarted);
             _runEndedObservedBinding = new EventBinding<GameRunEndedEvent>(OnRunEndedObserved);
@@ -69,8 +71,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome
 
             _hasEndedThisRun = true;
 
+            _gameLoopService.RequestRunEnd();
+
             DebugUtility.Log<GameRunOutcomeService>(
-                $"[OBS][GameLoop][Operational] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent'.");
+                $"[OBS][GameLoop][Operational] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent' handshake='GameLoop.RequestRunEnd'.");
 
             EventBus<GameRunEndedEvent>.Raise(new GameRunEndedEvent(outcome, reason));
             return true;

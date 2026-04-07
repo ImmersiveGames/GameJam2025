@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             DebugUtility.Log<LevelLifecycleRuntimeService>(
-                $"[OBS][LevelLifecycle][Operational] LevelEntryRequested source='GameplaySessionFlow' routeId='{gameplayRouteId}' rail='compatibility/operational: GameplaySessionFlow -> Level -> EnterStage -> Playing' dispatch='Navigation' reason='{normalizedReason}'.",
+                $"[OBS][LevelLifecycle][Operational] LevelEntryRequested source='GameplaySessionFlow' routeId='{gameplayRouteId}' rail='GameplaySessionFlow -> Level -> EnterStage -> Playing' dispatch='Navigation' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             await _navigationService.StartGameplayRouteAsync(gameplayRouteId, SceneTransitionPayload.Empty, normalizedReason);

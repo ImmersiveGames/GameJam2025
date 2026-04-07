@@ -45,17 +45,17 @@ O dominio deve ser lido a partir dos seguintes conceitos canonicos:
 - `EnterStage` e `ExitStage` sao `Estagios Locais`.
 - `Playing` e o `Estado de Fluxo`.
 - `Victory` / `Defeat` sao `Resultado da Run`.
-- `PostRunMenu` e `Contexto Local Visual`.
+- `Overlay` / visual de `RunDecision` e `Contexto Local Visual`.
 - `Restart` / `ExitToMenu` sao `Intencoes Derivadas`.
 - `Pause` e `Estado Transversal`.
 
-A leitura canonica do runtime de gameplay abaixo e intencionalmente de alto nivel. A composicao semantica fina da sessao jogavel e detalhada depois por `ADR-0045`, `ADR-0046` e `ADR-0047`, sem reatribuir ao backbone o centro do significado do gameplay.
+A leitura canonica do runtime de gameplay abaixo e intencionalmente de alto nivel. A composicao semantica fina da sessao jogavel e detalhada depois por `ADR-0045`, `ADR-0046` e `ADR-0047`, sem reatribuir ao backbone o centro do significado do gameplay. Para o fim de run, `ADR-0047` e o owner documental canonico.
 
 ## Coluna dorsal do runtime
 
 Sequencia canonica do runtime:
 
-`Gameplay -> Level -> EnterStage -> Playing -> ExitStage -> RunResult -> PostRunMenu -> Restart / ExitToMenu -> Navigation primary dispatch -> Audio contextual reactions`
+`Gameplay -> Level -> EnterStage -> Playing -> ExitStage -> RunEndIntent -> RunResultStage -> RunDecision -> Overlay -> Restart / ExitToMenu -> Navigation primary dispatch -> Audio contextual reactions`
 
 ## Dominios-alvo
 
@@ -64,10 +64,15 @@ Sequencia canonica do runtime:
 - Nao deve possuir ownership de pos-run visual, route dispatch ou audio precedence.
 - Nao e eixo semantico primario concorrente ao `Gameplay Runtime Composition`.
 
-### PostRun
-- Ownership do pos-run, projecao do resultado e contexto visual local.
-- Nao deve possuir a maquina de estados do gameplay nem a politica primara de navegacao.
-- Nao e eixo primario concorrente ao `Gameplay Runtime Composition`.
+### RunResultStage / RunDecision
+- `RunResultStage` e phase-owned e simetrico ao `IntroStage`.
+- `RunDecision` e macro-route-owned / macro-stage-owned e representa a decisao downstream.
+- `RunEndIntent` e a intencao com `reason` que inicia a trilha de fim de run.
+- `RunResultStage` pode variar o conteudo conforme a `reason`.
+- `RunResultStage` sai apenas por acao explicita de encerramento.
+- `RunResultStage` nao depende de `Task` como semantica de negocio.
+- `Overlay` e apenas projecao visual de `RunDecision`.
+- `PostRun` permanece apenas como alias historico de compatibilidade.
 
 ### LevelFlow
 - Conteudo local do gameplay, restart context e acoes pos-level.
