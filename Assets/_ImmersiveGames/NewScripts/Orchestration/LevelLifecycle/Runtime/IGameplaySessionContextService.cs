@@ -8,7 +8,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetCurrent(out GameplaySessionContextSnapshot snapshot);
         bool TryGetLast(out GameplaySessionContextSnapshot snapshot);
         GameplaySessionContextSnapshot Update(GameplaySessionContextSnapshot snapshot);
-        GameplaySessionContextSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
         GameplaySessionContextSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }

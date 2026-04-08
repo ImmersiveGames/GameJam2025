@@ -9,86 +9,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
     public readonly struct GameplayPhaseRulesObjectivesSnapshot
     {
-        public static GameplayPhaseRulesObjectivesSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
-        {
-            return FromLevelSelectedEvent(evt, GameplayPhaseRuntimeSnapshot.FromLevelSelectedEvent(evt));
-        }
-
         public static GameplayPhaseRulesObjectivesSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
             return FromPhaseDefinitionSelectedEvent(evt, GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt));
-        }
-
-        internal static GameplayPhaseRulesObjectivesSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt, GameplayPhaseRuntimeSnapshot phaseRuntime)
-        {
-            if (evt.LevelRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseRulesObjectivesSnapshot),
-                    "[FATAL][H1][GameplaySessionFlow] LevelSelectedEvent requires a valid levelRef to build the rules/objectives snapshot.");
-            }
-
-            GameplayContentManifest manifest = evt.LevelRef.ContentManifest;
-            if (manifest == null || manifest.Entries == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseRulesObjectivesSnapshot),
-                    $"[FATAL][H1][GameplaySessionFlow] LevelSelectedEvent levelRef='{evt.LevelRef.name}' has no valid gameplay content manifest for rules/objectives.");
-            }
-
-            IReadOnlyList<GameplayContentEntry> entries = manifest.Entries;
-            int totalEntries = entries.Count;
-            int mainCount = 0;
-            int auxCount = 0;
-            int prototypeCount = 0;
-            List<string> ruleIds = new(totalEntries);
-            List<string> objectiveIds = new();
-
-            for (int i = 0; i < entries.Count; i++)
-            {
-                GameplayContentEntry entry = entries[i];
-                if (entry == null)
-                {
-                    continue;
-                }
-
-                string entryId = entry.EntryId;
-                if (!string.IsNullOrWhiteSpace(entryId))
-                {
-                    ruleIds.Add(entryId);
-                }
-
-                switch (entry.Role)
-                {
-                    case GameplayContentEntryRole.Main:
-                        mainCount++;
-                        if (!string.IsNullOrWhiteSpace(entryId))
-                        {
-                            objectiveIds.Add(entryId);
-                        }
-                        break;
-                    case GameplayContentEntryRole.Aux:
-                        auxCount++;
-                        break;
-                    case GameplayContentEntryRole.Prototype:
-                        prototypeCount++;
-                        break;
-                }
-            }
-
-            string primaryObjectiveId = objectiveIds.Count > 0
-                ? objectiveIds[0]
-                : (ruleIds.Count > 0 ? ruleIds[0] : "<none>");
-
-            return new GameplayPhaseRulesObjectivesSnapshot(
-                phaseRuntime,
-                totalEntries,
-                mainCount,
-                auxCount,
-                prototypeCount,
-                primaryObjectiveId,
-                BuildRulesSignature(phaseRuntime, totalEntries, mainCount, auxCount, prototypeCount, primaryObjectiveId),
-                BuildObjectivesSignature(phaseRuntime, objectiveIds.Count, primaryObjectiveId),
-                BuildRulesSummary(ruleIds, mainCount, auxCount, prototypeCount),
-                BuildObjectivesSummary(objectiveIds));
         }
 
         internal static GameplayPhaseRulesObjectivesSnapshot FromPhaseDefinitionSelectedEvent(
@@ -298,7 +221,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetCurrent(out GameplayPhaseRulesObjectivesSnapshot snapshot);
         bool TryGetLast(out GameplayPhaseRulesObjectivesSnapshot snapshot);
         GameplayPhaseRulesObjectivesSnapshot Update(GameplayPhaseRulesObjectivesSnapshot snapshot);
-        GameplayPhaseRulesObjectivesSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
         GameplayPhaseRulesObjectivesSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }
@@ -325,11 +247,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     return _current;
                 }
             }
-        }
-
-        public GameplayPhaseRulesObjectivesSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt)
-        {
-            return Update(GameplayPhaseRulesObjectivesSnapshot.FromLevelSelectedEvent(evt));
         }
 
         public GameplayPhaseRulesObjectivesSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)

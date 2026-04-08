@@ -7,15 +7,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
     public readonly struct GameplaySessionContextSnapshot
     {
-        public static GameplaySessionContextSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
-        {
-            return new GameplaySessionContextSnapshot(
-                evt.MacroRouteId,
-                evt.MacroRouteRef,
-                evt.Reason,
-                evt.SelectionVersion);
-        }
-
         public static GameplaySessionContextSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
             return new GameplaySessionContextSnapshot(

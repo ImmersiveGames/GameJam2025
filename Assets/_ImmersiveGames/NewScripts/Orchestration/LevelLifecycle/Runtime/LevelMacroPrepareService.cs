@@ -151,10 +151,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 normalizedReason);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelected phaseId='{phaseSelectedEvent.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' routeId='{macroRouteId}' v='{selectionVersion}' reason='{normalizedReason}' selectionSignature='{phaseSelectedEvent.SelectionSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelected rail='canonical' phaseId='{phaseSelectedEvent.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' routeId='{macroRouteId}' v='{selectionVersion}' reason='{normalizedReason}' selectionSignature='{phaseSelectedEvent.SelectionSignature}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<PhaseDefinitionSelectedEvent>.Raise(phaseSelectedEvent);
+
+            DebugUtility.Log<LevelMacroPrepareService>(
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] LevelSelectedCompat rail='compat-only' phaseId='{selectedPhaseDefinitionRef.PhaseId}' levelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
 
             EventBus<LevelSelectedEvent>.Raise(selectedEvent);
 

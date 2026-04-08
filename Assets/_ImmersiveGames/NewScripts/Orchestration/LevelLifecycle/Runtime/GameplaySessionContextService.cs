@@ -31,11 +31,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
         }
 
-        public GameplaySessionContextSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt)
-        {
-            return Update(GameplaySessionContextSnapshot.FromLevelSelectedEvent(evt));
-        }
-
         public GameplaySessionContextSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
             return Update(GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt));
@@ -105,26 +100,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         }
     }
 
-        public readonly struct GameplayPhaseRuntimeSnapshot
-        {
-            public static GameplayPhaseRuntimeSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
-            {
-            if (evt.LevelRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseRuntimeSnapshot),
-                    "[FATAL][H1][GameplaySessionFlow] LevelSelectedEvent requires a valid levelRef to build the phase runtime snapshot.");
-            }
-
-            GameplaySessionContextSnapshot sessionContext = GameplaySessionContextSnapshot.FromLevelSelectedEvent(evt);
-            LevelIntroStageSession levelSession = evt.LevelRef.CreateIntroStageSession(
-                evt.LocalContentId,
-                evt.Reason,
-                evt.SelectionVersion,
-                evt.LevelSignature);
-
-            return new GameplayPhaseRuntimeSnapshot(sessionContext, levelSession, false);
-        }
-
+    public readonly struct GameplayPhaseRuntimeSnapshot
+    {
         public static GameplayPhaseRuntimeSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
             if (evt.PhaseDefinitionRef == null)
@@ -266,7 +243,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetCurrent(out GameplayPhaseRuntimeSnapshot snapshot);
         bool TryGetLast(out GameplayPhaseRuntimeSnapshot snapshot);
         GameplayPhaseRuntimeSnapshot Update(GameplayPhaseRuntimeSnapshot snapshot);
-        GameplayPhaseRuntimeSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
         GameplayPhaseRuntimeSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }
@@ -293,11 +269,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     return _current;
                 }
             }
-        }
-
-        public GameplayPhaseRuntimeSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt)
-        {
-            return Update(GameplayPhaseRuntimeSnapshot.FromLevelSelectedEvent(evt));
         }
 
         public GameplayPhaseRuntimeSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
@@ -379,11 +350,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
     public readonly struct GameplayPhasePlayerParticipationSnapshot
     {
-        public static GameplayPhasePlayerParticipationSnapshot FromLevelSelectedEvent(LevelSelectedEvent evt)
-        {
-            return SoloCanonical(GameplayPhaseRuntimeSnapshot.FromLevelSelectedEvent(evt));
-        }
-
         public static GameplayPhasePlayerParticipationSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
             return FromPhaseDefinitionSelectedEvent(evt, GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt));
@@ -536,7 +502,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         bool TryGetCurrent(out GameplayPhasePlayerParticipationSnapshot snapshot);
         bool TryGetLast(out GameplayPhasePlayerParticipationSnapshot snapshot);
         GameplayPhasePlayerParticipationSnapshot Update(GameplayPhasePlayerParticipationSnapshot snapshot);
-        GameplayPhasePlayerParticipationSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt);
         GameplayPhasePlayerParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
     }
@@ -563,11 +528,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     return _current;
                 }
             }
-        }
-
-        public GameplayPhasePlayerParticipationSnapshot UpdateFromLevelSelectedEvent(LevelSelectedEvent evt)
-        {
-            return Update(GameplayPhasePlayerParticipationSnapshot.FromLevelSelectedEvent(evt));
         }
 
         public GameplayPhasePlayerParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
