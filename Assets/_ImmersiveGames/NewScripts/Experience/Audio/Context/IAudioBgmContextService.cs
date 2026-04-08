@@ -11,8 +11,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Context
 
         void OnSceneTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt);
 
-        void OnLevelSelected(LevelSelectedEvent evt);
-
         void OnLevelSwapLocalApplied(LevelSwapLocalAppliedEvent evt);
     }
 }

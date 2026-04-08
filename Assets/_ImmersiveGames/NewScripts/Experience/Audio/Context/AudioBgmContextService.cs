@@ -50,11 +50,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Context
                 $"bgm_bridge_scene_transition_before_fade_out:{evt.context.RouteKind}");
         }
 
-        public void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            _ = evt;
-        }
-
         public void OnLevelSwapLocalApplied(LevelSwapLocalAppliedEvent evt)
         {
             _ = evt;

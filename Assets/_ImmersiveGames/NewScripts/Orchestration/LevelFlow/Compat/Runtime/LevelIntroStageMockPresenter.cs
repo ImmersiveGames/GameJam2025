@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
 
         public void AttachPresentation(LevelStagePresentationContract contract)
         {
-            if (!contract.IsValid || contract.LevelRef == null || string.IsNullOrWhiteSpace(contract.LevelSignature) ||
+            if (!contract.IsValid || (contract.PhaseDefinitionRef == null && contract.LevelRef == null) || string.IsNullOrWhiteSpace(contract.LevelSignature) ||
                 string.IsNullOrWhiteSpace(contract.LocalContentId) || !contract.HasIntroStage)
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
@@ -118,15 +118,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
                 return false;
             }
 
-            if (!_presentationContract.IsValid || _presentationContract.LevelRef == null ||
+            if (!_presentationContract.IsValid || (_presentationContract.PhaseDefinitionRef == null && _presentationContract.LevelRef == null) ||
                 string.IsNullOrWhiteSpace(_presentationContract.LevelSignature) ||
                 string.IsNullOrWhiteSpace(_presentationContract.LocalContentId))
             {
                 return false;
             }
 
+            string contentName = ResolveContractContentName(_presentationContract);
             model = new IntroViewModel(
-                _presentationContract.LevelRef.name,
+                contentName,
                 _presentationContract.LocalContentId,
                 _presentationContract.LevelSignature,
                 controlService.IsIntroStageActive);
@@ -226,7 +227,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
 
         private static string ResolveContractContentName(LevelStagePresentationContract contract)
-            => contract.LevelRef != null ? contract.LevelRef.name : "<none>";
+        {
+            if (contract.PhaseDefinitionRef != null)
+            {
+                return contract.PhaseDefinitionRef.name;
+            }
+
+            return contract.LevelRef != null ? contract.LevelRef.name : "<none>";
+        }
 
         internal readonly struct IntroViewModel
         {

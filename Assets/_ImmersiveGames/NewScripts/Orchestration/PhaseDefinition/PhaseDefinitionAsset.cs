@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEngine;
 
@@ -153,6 +154,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         }
 
         [Serializable]
+        public sealed class PhaseIntroBlock
+        {
+            public bool hasIntroStage = true;
+            public GameObject introPresenterPrefab;
+        }
+
+        [Serializable]
         public sealed class PhaseInitialStateEntry
         {
             public string localId = string.Empty;
@@ -186,6 +194,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [Header("Run Result Stage")]
         [SerializeField] private PhaseRunResultStageBlock runResultStage = new();
 
+        [Header("Intro")]
+        [SerializeField] private PhaseIntroBlock intro = new();
+
         [Header("Closure")]
         [SerializeField] private PhaseClosureBlock closure = new();
 
@@ -195,6 +206,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public PhaseRulesObjectivesBlock RulesObjectives => rulesObjectives;
         public PhaseInitialStateBlock InitialState => initialState;
         public PhaseRunResultStageBlock RunResultStage => runResultStage;
+        public PhaseIntroBlock Intro => intro;
         public PhaseClosureBlock Closure => closure;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
@@ -227,6 +239,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             ValidateRulesObjectivesBlock(assetOwner);
             ValidateInitialStateBlock(assetOwner);
             ValidateRunResultStageBlock(assetOwner);
+            ValidateIntroBlock(assetOwner);
             ValidateClosureBlock(assetOwner);
         }
 
@@ -355,6 +368,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             ValidateParameters(runResultStage.parameters, assetOwner, "runResultStage", PhaseId.Value);
         }
 
+        private void ValidateIntroBlock(string assetOwner)
+        {
+            if (intro == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing intro block. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+        }
+
         private void ValidateClosureBlock(string assetOwner)
         {
             if (closure == null)
@@ -431,6 +452,36 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        public string BuildCanonicalIntroContentId()
+        {
+            return PhaseId.IsValid
+                ? $"phase-content:{PhaseId.Value}"
+                : "phase-content:default";
+        }
+
+        public LevelIntroStageSession CreateIntroStageSession(
+            string localContentId,
+            string reason,
+            int selectionVersion,
+            string levelSignature)
+        {
+            string normalizedContentId = string.IsNullOrWhiteSpace(localContentId)
+                ? BuildCanonicalIntroContentId()
+                : localContentId;
+
+            return new LevelIntroStageSession(
+                this,
+                null,
+                normalizedContentId,
+                reason,
+                selectionVersion,
+                levelSignature,
+                intro != null ? intro.introPresenterPrefab : null,
+                intro != null && intro.hasIntroStage
+                    ? LevelIntroStageDisposition.HasIntro
+                    : LevelIntroStageDisposition.NoIntro);
         }
     }
 }

@@ -79,36 +79,35 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             PhaseDefinitionAsset selectedPhaseDefinitionRef = _phaseDefinitionSelectionService.ResolveOrFail();
 
             GameplayStartSnapshot currentSnapshot = GameplayStartSnapshot.Empty;
-            bool hasCurrentSnapshot = _restartContextService.TryGetCurrent(out currentSnapshot) && currentSnapshot.IsValid && currentSnapshot.HasLevelRef;
+            bool hasCurrentSnapshot = _restartContextService.TryGetCurrent(out currentSnapshot) && currentSnapshot.IsValid;
 
             GameplayStartSnapshot lastSnapshot = GameplayStartSnapshot.Empty;
             bool hasLastSnapshot = _restartContextService.TryGetLastGameplayStartSnapshot(out lastSnapshot) &&
                                    lastSnapshot.IsValid &&
-                                   lastSnapshot.HasLevelRef;
+                                   (lastSnapshot.HasPhaseDefinitionRef || lastSnapshot.HasLevelRef);
 
-            bool snapshotBelongsToMacro = hasCurrentSnapshot &&
-                                          currentSnapshot.MacroRouteId.IsValid &&
-                                          currentSnapshot.MacroRouteId == macroRouteId &&
-                                          currentSnapshot.LevelRef != null &&
-                                          levelCollection.Contains(currentSnapshot.LevelRef);
+            LevelDefinitionAsset compatLevelRef = ResolveCompatLevelRef(levelCollection, currentSnapshot, macroRouteId, prepareSignature, normalizedReason);
+            compatLevelRef.ValidateOrFailFast($"LevelPrepare compat routeId='{macroRouteId}' reason='{normalizedReason}'");
 
-            if (hasCurrentSnapshot && !snapshotBelongsToMacro)
+            bool reusedRestartSnapshot = hasCurrentSnapshot &&
+                                         currentSnapshot.MacroRouteId.IsValid &&
+                                         currentSnapshot.MacroRouteId == macroRouteId &&
+                                         currentSnapshot.HasPhaseDefinitionRef &&
+                                         ReferenceEquals(currentSnapshot.PhaseDefinitionRef, selectedPhaseDefinitionRef);
+
+            string source = reusedRestartSnapshot ? "restart_snapshot" : "catalog_default";
+
+            if (hasCurrentSnapshot && !reusedRestartSnapshot)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(currentSnapshot.LevelRef != null ? currentSnapshot.LevelRef.name : "<none>")}' snapshotRouteId='{currentSnapshot.MacroRouteId}' reason='not_in_collection_or_macro'.",
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionPreparedSnapshotIgnored macroRouteId='{macroRouteId}' snapshotLevelRef='{(currentSnapshot.LevelRef != null ? currentSnapshot.LevelRef.name : "<none>")}' snapshotRouteId='{currentSnapshot.MacroRouteId}' reason='not_selected_for_compat_payload'.",
                     DebugUtility.Colors.Info);
             }
 
-            bool useSnapshot = snapshotBelongsToMacro;
-            string source = useSnapshot ? "snapshot" : "catalog_index_0";
-
-            LevelDefinitionAsset selectedLevelRef = _levelFlowContentService.ResolveSelectedLevelDefinitionOrFail(levelCollection, useSnapshot, currentSnapshot, macroRouteId, routeKind, prepareSignature, normalizedReason);
-            selectedLevelRef.ValidateOrFailFast($"LevelPrepare routeId='{macroRouteId}' reason='{normalizedReason}'");
-
-            if (!useSnapshot)
+            if (!reusedRestartSnapshot)
             {
                 DebugUtility.Log<LevelMacroPrepareService>(
-                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionDefaultSelected source='catalog_index_0' index=0 phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' compatLevelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelected source='catalog_default' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -123,25 +122,22 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     DebugUtility.Colors.Info);
             }
 
-            string localContentId = useSnapshot && currentSnapshot.HasLocalContentId
-                ? _levelFlowContentService.BuildLocalContentId(selectedLevelRef, currentSnapshot.LocalContentId)
-                : _levelFlowContentService.BuildLocalContentId(selectedLevelRef);
-            string levelSignature = _levelFlowContentService.BuildLevelSignature(selectedLevelRef, macroRouteId, normalizedReason);
+            string phaseLocalContentId = reusedRestartSnapshot && currentSnapshot.HasLocalContentId
+                ? currentSnapshot.LocalContentId
+                : selectedPhaseDefinitionRef.BuildCanonicalIntroContentId();
+            string compatLocalContentId = reusedRestartSnapshot && currentSnapshot.HasLevelRef && currentSnapshot.HasLocalContentId
+                ? currentSnapshot.LocalContentId
+                : _levelFlowContentService.BuildLocalContentId(compatLevelRef);
+            string levelSignature = BuildPhaseSignature(selectedPhaseDefinitionRef, macroRouteId, normalizedReason);
 
             LevelSelectedEvent selectedEvent = new LevelSelectedEvent(
                 macroRouteId,
                 routeRef,
-                selectedLevelRef,
+                compatLevelRef,
                 selectionVersion,
-                localContentId,
+                compatLocalContentId,
                 normalizedReason,
                 levelSignature);
-
-            GameplayStartSnapshot gameplayStartSnapshot = GameplayStartSnapshot.FromLevelSelectedEvent(selectedEvent);
-
-            DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelectedCanonical phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' contentId='{localContentId}' v='{selectionVersion}' macroRouteId='{macroRouteId}' signature='{levelSignature}' reason='{normalizedReason}' snapshot='{gameplayStartSnapshot}'.",
-                DebugUtility.Colors.Info);
 
             PhaseDefinitionSelectedEvent phaseSelectedEvent = new PhaseDefinitionSelectedEvent(
                 selectedPhaseDefinitionRef,
@@ -150,6 +146,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 selectionVersion,
                 normalizedReason);
 
+            GameplayStartSnapshot gameplayStartSnapshot = GameplayStartSnapshot.FromPhaseDefinitionSelectedEvent(phaseSelectedEvent);
+
+            DebugUtility.Log<LevelMacroPrepareService>(
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelectedCanonical rail='phase' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' contentId='{phaseLocalContentId}' v='{selectionVersion}' macroRouteId='{macroRouteId}' signature='{levelSignature}' reason='{normalizedReason}' snapshot='{gameplayStartSnapshot}'.",
+                DebugUtility.Colors.Info);
+
             DebugUtility.Log<LevelMacroPrepareService>(
                 $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelected rail='canonical' phaseId='{phaseSelectedEvent.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' routeId='{macroRouteId}' v='{selectionVersion}' reason='{normalizedReason}' selectionSignature='{phaseSelectedEvent.SelectionSignature}'.",
                 DebugUtility.Colors.Info);
@@ -157,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             EventBus<PhaseDefinitionSelectedEvent>.Raise(phaseSelectedEvent);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] LevelSelectedCompat rail='compat-only' phaseId='{selectedPhaseDefinitionRef.PhaseId}' levelRef='{selectedLevelRef.name}' macroRouteId='{macroRouteId}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] LevelSelectedCompat rail='compat-only' phaseId='{selectedPhaseDefinitionRef.PhaseId}' levelRef='{compatLevelRef.name}' macroRouteId='{macroRouteId}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<LevelSelectedEvent>.Raise(selectedEvent);
@@ -184,16 +186,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' compatLevelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionPrepared source='{source}' macroRouteId='{macroRouteId}' routeKind='{routeKind}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' compatLevelRef='{compatLevelRef.name}' contentId='{phaseLocalContentId}' v='{selectionVersion}' signature='{prepareSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionEntered source='GameplaySessionFlow' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' compatLevelRef='{selectedLevelRef.name}' contentId='{localContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionEntered source='GameplaySessionFlow' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' contentId='{phaseLocalContentId}' v='{selectionVersion}' signature='{levelSignature}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<LevelEnteredEvent>.Raise(new LevelEnteredEvent(
-                selectedLevelRef.CreateIntroStageSession(
-                    localContentId,
+                selectedPhaseDefinitionRef.CreateIntroStageSession(
+                    phaseLocalContentId,
                     normalizedReason,
                     selectionVersion,
                     levelSignature),
@@ -212,8 +214,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             if (!_restartContextService.TryGetCurrent(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
-                !snapshot.HasLevelRef ||
-                snapshot.LevelRef == null)
+                (!snapshot.HasPhaseDefinitionRef && !snapshot.HasLevelRef))
             {
                 if (hasActivePhaseContent)
                 {
@@ -227,8 +228,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 return;
             }
 
+            PhaseDefinitionAsset previousPhaseRef = snapshot.PhaseDefinitionRef;
             LevelDefinitionAsset previousLevelRef = snapshot.LevelRef;
-            previousLevelRef.ValidateOrFailFast($"LevelClear destinationRouteId='{destinationRouteId}' reason='{reason}'");
+
+            if (previousPhaseRef != null)
+            {
+                previousPhaseRef.ValidateOrFail($"PhaseClear destinationRouteId='{destinationRouteId}' reason='{reason}'");
+            }
+            else
+            {
+                previousLevelRef.ValidateOrFailFast($"LevelClear destinationRouteId='{destinationRouteId}' reason='{reason}'");
+            }
 
             SceneCompositionRequest phaseClearRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateClearRequest(reason, signature);
 
@@ -242,13 +252,44 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             _restartContextService.Clear($"LevelFlow/ClearOnMacroExit/{reason}");
 
             DebugUtility.Log<LevelMacroPrepareService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionContentCleared macroRouteId='{destinationRouteId}' previousLevelRef='{previousLevelRef.name}' scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionContentCleared macroRouteId='{destinationRouteId}' previousContentName='{(previousPhaseRef != null ? previousPhaseRef.name : previousLevelRef.name)}' scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static LevelDefinitionAsset ResolveCompatLevelRef(
+            LevelCollectionAsset levelCollection,
+            GameplayStartSnapshot currentSnapshot,
+            SceneRouteId macroRouteId,
+            string signature,
+            string reason)
+        {
+            if (currentSnapshot.IsValid &&
+                currentSnapshot.MacroRouteId.IsValid &&
+                currentSnapshot.MacroRouteId == macroRouteId &&
+                currentSnapshot.LevelRef != null)
+            {
+                return currentSnapshot.LevelRef;
+            }
+
+            LevelDefinitionAsset defaultLevelRef = levelCollection != null ? levelCollection.GetDefaultOrNull() : null;
+            if (defaultLevelRef == null)
+            {
+                FailFastConfig(macroRouteId, SceneRouteKind.Gameplay, signature, reason, "Compat level payload could not be resolved from route LevelCollection.");
+            }
+
+            return defaultLevelRef;
         }
 
         private static string ComputeSignature(SceneRouteId routeId, SceneRouteKind routeKind, string reason)
         {
             return $"{routeId}|{routeKind}|{reason ?? DefaultReason}";
+        }
+
+        private static string BuildPhaseSignature(PhaseDefinitionAsset phaseDefinitionRef, SceneRouteId routeId, string reason)
+        {
+            string phaseName = phaseDefinitionRef != null ? phaseDefinitionRef.name : "<null>";
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? DefaultReason : reason.Trim();
+            return $"phase:{phaseName}|route:{routeId}|reason:{normalizedReason}";
         }
 
         private static void FailFastConfig(SceneRouteId routeId, SceneRouteKind routeKind, string signature, string reason, string configReason)

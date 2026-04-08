@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             DebugUtility.Log<LevelLifecycleStageOrchestrator>(
-                $"[OBS][LevelLifecycle] EnterStageReleasedOnSceneTransitionCompleted source='{pendingSource}' levelRef='{pendingSession.LevelRef.name}' v='{pendingSession.SelectionVersion}' reason='{Normalize(pendingReason)}' levelSignature='{Normalize(pendingSession.LevelSignature)}' routeKind='{evt.context.RouteKind}' sceneTransitionSignature='{SceneTransitionSignature.Compute(evt.context)}'.",
+                $"[OBS][LevelLifecycle] EnterStageReleasedOnSceneTransitionCompleted source='{pendingSource}' contentName='{DescribeSessionContentName(pendingSession)}' v='{pendingSession.SelectionVersion}' reason='{Normalize(pendingReason)}' levelSignature='{Normalize(pendingSession.LevelSignature)}' routeKind='{evt.context.RouteKind}' sceneTransitionSignature='{SceneTransitionSignature.Compute(evt.context)}'.",
                 DebugUtility.Colors.Info);
 
             DispatchIntroStage(
@@ -123,6 +123,21 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         private static string Normalize(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
 
+        private static string DescribeSessionContentName(LevelIntroStageSession session)
+        {
+            if (session.PhaseDefinitionRef != null)
+            {
+                return session.PhaseDefinitionRef.name;
+            }
+
+            if (session.LevelRef != null)
+            {
+                return session.LevelRef.name;
+            }
+
+            return "<none>";
+        }
+
         private static bool ShouldDeferGameplayIntro(LevelEnteredEvent evt)
         {
             return evt.RouteKind == SceneRouteKind.Gameplay
@@ -140,7 +155,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             DebugUtility.Log<LevelLifecycleStageOrchestrator>(
-                $"[OBS][LevelLifecycle] EnterStageDeferred source='{evt.Source}' levelRef='{evt.Session.LevelRef.name}' v='{evt.Session.SelectionVersion}' disposition='{evt.Session.Disposition}' reason='{Normalize(evt.Session.Reason)}' levelSignature='{Normalize(evt.Session.LevelSignature)}' gate='SceneTransitionCompletedEvent'.",
+                $"[OBS][LevelLifecycle] EnterStageDeferred source='{evt.Source}' contentName='{DescribeSessionContentName(evt.Session)}' v='{evt.Session.SelectionVersion}' disposition='{evt.Session.Disposition}' reason='{Normalize(evt.Session.Reason)}' levelSignature='{Normalize(evt.Session.LevelSignature)}' gate='SceneTransitionCompletedEvent'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -161,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         private void DispatchIntroStage(
             string source,
-            _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session,
+            LevelIntroStageSession session,
             SceneRouteKind routeKind,
             string reason,
             bool isLocalSwap)
@@ -169,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (isLocalSwap)
             {
                 DebugUtility.LogVerbose<LevelLifecycleStageOrchestrator>(
-                    $"[OBS][LevelLifecycle] EnterStageLocalSwapDispatch source='{source}' levelRef='{session.LevelRef.name}' v='{session.SelectionVersion}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
+                    $"[OBS][LevelLifecycle] EnterStageLocalSwapDispatch source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -187,14 +202,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (!presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
             {
                 HardFailFastH1.Trigger(typeof(LevelLifecycleStageOrchestrator),
-                    $"[FATAL][H1][LevelLifecycle] Intro session requires a canonical level presenter but none is registered. source='{source}' levelRef='{session.LevelRef.name}' signature='{session.LevelSignature}'.");
+                    $"[FATAL][H1][LevelLifecycle] Intro session requires a canonical level presenter but none is registered. source='{source}' contentName='{DescribeSessionContentName(session)}' signature='{session.LevelSignature}'.");
             }
 
             string activeSceneName = SceneManager.GetActiveScene().name;
-            string levelName = session.LevelRef != null ? session.LevelRef.name : "<none>";
+            string contentName = DescribeSessionContentName(session);
 
             DebugUtility.Log<LevelLifecycleStageOrchestrator>(
-                $"[OBS][LevelLifecycle] EnterStageStartRequested source='{source}' levelRef='{levelName}' v='{session.SelectionVersion}' disposition='{session.Disposition}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
+                $"[OBS][LevelLifecycle] EnterStageStartRequested source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' disposition='{session.Disposition}' reason='{reason}' levelSignature='{session.LevelSignature}'.",
                 DebugUtility.Colors.Info);
 
             var context = new IntroStageContext(
@@ -215,11 +230,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
         }
 
-        private static void PublishLevelIntroCompleted(_ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session, string source, bool wasSkipped, string reason)
+        private static void PublishLevelIntroCompleted(LevelIntroStageSession session, string source, bool wasSkipped, string reason)
         {
-            string levelName = session.LevelRef != null ? session.LevelRef.name : "<none>";
+            string contentName = DescribeSessionContentName(session);
             DebugUtility.Log<LevelLifecycleStageOrchestrator>(
-                $"[OBS][LevelLifecycle] EnterStageCompletedPublished source='{source}' levelRef='{levelName}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
+                $"[OBS][LevelLifecycle] EnterStageCompletedPublished source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(session, source, wasSkipped, reason));
