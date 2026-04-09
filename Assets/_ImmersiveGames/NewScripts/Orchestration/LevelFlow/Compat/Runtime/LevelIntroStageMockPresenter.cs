@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
 
         public void AttachPresentation(LevelStagePresentationContract contract)
         {
-            if (!contract.IsValid || (contract.PhaseDefinitionRef == null && contract.LevelRef == null) || string.IsNullOrWhiteSpace(contract.LevelSignature) ||
+            if (!contract.IsValid || contract.PhaseDefinitionRef == null || string.IsNullOrWhiteSpace(contract.LevelSignature) ||
                 string.IsNullOrWhiteSpace(contract.LocalContentId) || !contract.HasIntroStage)
             {
                 HardFailFastH1.Trigger(typeof(LevelIntroStageMockPresenter),
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
                 return false;
             }
 
-            if (!_presentationContract.IsValid || (_presentationContract.PhaseDefinitionRef == null && _presentationContract.LevelRef == null) ||
+            if (!_presentationContract.IsValid || _presentationContract.PhaseDefinitionRef == null ||
                 string.IsNullOrWhiteSpace(_presentationContract.LevelSignature) ||
                 string.IsNullOrWhiteSpace(_presentationContract.LocalContentId))
             {
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Compat.Runtime
                 return contract.PhaseDefinitionRef.name;
             }
 
-            return contract.LevelRef != null ? contract.LevelRef.name : "<none>";
+            return "<none>";
         }
 
         internal readonly struct IntroViewModel

@@ -79,7 +79,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
                 simulationGateService);
             RegisterLevelMacroPrepareService(
                 restartContextService,
-                contentService,
                 sceneCompositionExecutor);
         }
 
@@ -284,7 +283,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
 
         private static void RegisterLevelMacroPrepareService(
             IRestartContextService restartContextService,
-            ILevelFlowContentService contentService,
             ISceneCompositionExecutor sceneCompositionExecutor)
         {
             if (DependencyManager.Provider.TryGetGlobal<ILevelMacroPrepareService>(out var existing) && existing != null)
@@ -295,7 +293,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
             var service = new LevelMacroPrepareService(
                 restartContextService,
                 sceneCompositionExecutor,
-                contentService,
                 ResolveRequiredPhaseDefinitionSelectionService());
 
             DependencyManager.Provider.RegisterGlobal<ILevelMacroPrepareService>(service);
@@ -448,4 +445,3 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap
     }
 
 }
-

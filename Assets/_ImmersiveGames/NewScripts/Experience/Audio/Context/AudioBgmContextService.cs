@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using _ImmersiveGames.NewScripts.Experience.Audio.Runtime.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
@@ -48,11 +47,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Context
                 "final_confirm",
                 transitionSignature,
                 $"bgm_bridge_scene_transition_before_fade_out:{evt.context.RouteKind}");
-        }
-
-        public void OnLevelSwapLocalApplied(LevelSwapLocalAppliedEvent evt)
-        {
-            _ = evt;
         }
 
         private void ApplyResolvedCue(

@@ -5,26 +5,21 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     public sealed class PhaseDefinitionSelectionService : IPhaseDefinitionSelectionService
     {
-        private readonly IPhaseDefinitionResolver _resolver;
         private readonly PhaseDefinitionId _selectedPhaseDefinitionId;
         private readonly PhaseDefinitionAsset _current;
 
-        public PhaseDefinitionSelectionService(
-            IPhaseDefinitionResolver resolver,
-            PhaseDefinitionId selectedPhaseDefinitionId)
+        public PhaseDefinitionSelectionService(PhaseDefinitionAsset selectedPhaseDefinitionRef)
         {
-            _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
-            _selectedPhaseDefinitionId = selectedPhaseDefinitionId;
+            _current = selectedPhaseDefinitionRef ?? throw new ArgumentNullException(nameof(selectedPhaseDefinitionRef));
+            _selectedPhaseDefinitionId = _current.PhaseId;
 
             if (!_selectedPhaseDefinitionId.IsValid)
             {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] Selected phase id is required.");
+                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] Selected phase reference is invalid.");
             }
 
-            _current = _resolver.ResolveOrFail(_selectedPhaseDefinitionId.Value);
-
-            DebugUtility.LogVerbose(typeof(PhaseDefinitionSelectionService),
-                $"[OBS][PhaseDefinition] Selected phase resolved id='{_selectedPhaseDefinitionId}' asset='{_current.name}'.",
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionSelectionService),
+                $"[OBS][PhaseDefinition] Selected phase set by reference id='{_selectedPhaseDefinitionId}' asset='{_current.name}'.",
                 DebugUtility.Colors.Info);
         }
 

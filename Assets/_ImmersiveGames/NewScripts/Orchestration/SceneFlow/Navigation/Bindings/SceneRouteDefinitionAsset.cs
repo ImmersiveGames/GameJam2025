@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -32,12 +31,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
         [Header("Route Policy")]
         [SerializeField] private SceneRouteKind routeKind = SceneRouteKind.Unspecified;
         [SerializeField] private bool requiresWorldReset;
-        [SerializeField] private LevelCollectionAsset levelCollection;
 
         public SceneRouteId RouteId => routeId;
         public SceneRouteKind RouteKind => routeKind;
         public bool RequiresWorldReset => requiresWorldReset;
-        public LevelCollectionAsset LevelCollection => levelCollection;
 
         public SceneRouteDefinition ToDefinition()
         {
@@ -103,24 +100,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
             if (routeKind == SceneRouteKind.Frontend && requiresWorldReset)
             {
                 return $"routeId='{routeId}' Frontend/Menu exige requiresWorldReset=false.";
-            }
-
-            if (routeKind == SceneRouteKind.Gameplay)
-            {
-                if (levelCollection == null)
-                {
-                    return $"routeId='{routeId}' Gameplay exige levelCollection configurado.";
-                }
-
-                if (!levelCollection.TryValidateRuntime(out string collectionError))
-                {
-                    return $"routeId='{routeId}' Gameplay com levelCollection invalida. detail='{collectionError}'.";
-                }
-            }
-
-            if (routeKind == SceneRouteKind.Frontend && levelCollection != null)
-            {
-                return $"routeId='{routeId}' Frontend/Menu exige levelCollection=null.";
             }
 
             return string.Empty;

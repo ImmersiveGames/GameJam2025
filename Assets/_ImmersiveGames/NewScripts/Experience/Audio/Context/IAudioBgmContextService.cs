@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Experience.Audio.Context
 {
@@ -10,7 +9,5 @@ namespace _ImmersiveGames.NewScripts.Experience.Audio.Context
         void OnSceneTransitionStarted(SceneTransitionStartedEvent evt);
 
         void OnSceneTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt);
-
-        void OnLevelSwapLocalApplied(LevelSwapLocalAppliedEvent evt);
     }
 }

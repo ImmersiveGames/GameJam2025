@@ -1,9 +1,9 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
@@ -186,7 +186,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public bool IsValid =>
             SessionContext.IsValid &&
             ((LevelSession.IsValid && PhaseDefinitionRef == null) || (PhaseDefinitionRef != null && PhaseDefinitionRef.PhaseId.IsValid));
-        public bool HasLevelRef => LevelSession.HasLevelRef;
         public bool HasPhaseDefinitionRef => PhaseDefinitionRef != null;
         public bool HasPhaseRuntimeSignature => !string.IsNullOrWhiteSpace(PhaseRuntimeSignature);
 

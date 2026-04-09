@@ -28,7 +28,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<GameRunStartedEvent>.Clear();
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
-            EventBus<LevelSelectedEvent>.Clear();
             EventBus<PhaseDefinitionSelectedEvent>.Clear();
             PhaseContentSceneRuntimeApplier.RecordCleared();
 

@@ -25,6 +25,27 @@ MonoBehaviour:
       tags:
       - main
       - slice
+  swap:
+    contentManifest:
+      entries:
+      - entryId: player_main
+        role: 1
+        configurationReference: {fileID: 100000, guid: a92dfce9d9c24c34b1b217f3f0d2f08d, type: 3}
+        materializationExpectation: 
+        observabilityExpectation: 
+      - entryId: eater_aux
+        role: 2
+        configurationReference: {fileID: 100000, guid: 0744eef234e55034895662d2373a6d62, type: 3}
+        materializationExpectation: 
+        observabilityExpectation: 
+      - entryId: dummy_prototype
+        role: 3
+        configurationReference: {fileID: 1188741042885028564, guid: e9ccfebb5ac66364a9197dc8cc07ffd6, type: 3}
+        materializationExpectation: 
+        observabilityExpectation: 
+    additiveScenes:
+    - buildIndex: 7
+      sceneName: SceneTest
   players:
     entries:
     - localId: solo_player

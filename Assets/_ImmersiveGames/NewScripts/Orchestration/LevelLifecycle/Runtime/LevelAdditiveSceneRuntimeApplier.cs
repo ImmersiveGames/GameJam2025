@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
     public static class LevelAdditiveSceneRuntimeApplier
     {
         private static readonly object StateSync = new object();
         private static readonly HashSet<int> _activeAppliedBuildIndexes = new HashSet<int>();
-        private static LevelDefinitionAsset _activeAppliedLevelRef;
+        private static PhaseDefinitionAsset _activeAppliedPhaseDefinitionRef;
 
         public static bool HasActiveAppliedLevelContent
         {
@@ -31,28 +32,34 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
         }
 
-        public static LevelDefinitionAsset ActiveAppliedLevelRef
+        public static PhaseDefinitionAsset ActiveAppliedPhaseDefinitionRef
         {
             get
             {
                 lock (StateSync)
                 {
-                    return _activeAppliedLevelRef;
+                    return _activeAppliedPhaseDefinitionRef;
                 }
             }
         }
 
 
-        public static void RecordAppliedLevel(LevelDefinitionAsset targetLevelRef)
+        public static void RecordAppliedPhaseDefinition(PhaseDefinitionAsset targetPhaseDefinitionRef)
         {
-            if (targetLevelRef == null)
+            if (targetPhaseDefinitionRef == null)
             {
-                HardFailFastH1.Trigger(typeof(LevelAdditiveSceneRuntimeApplier), "RecordAppliedLevel target levelRef is null.");
+                HardFailFastH1.Trigger(typeof(LevelAdditiveSceneRuntimeApplier), "RecordAppliedPhaseDefinition target phaseDefinitionRef is null.");
             }
 
-            targetLevelRef.ValidateOrFailFast("LevelAdditiveState/RecordApplied");
-            HashSet<int> targetBuildIndexes = BuildBuildIndexSetOrFail(targetLevelRef.AdditiveScenes, "RecordApplied");
-            UpdateActiveState(targetBuildIndexes, targetLevelRef);
+            targetPhaseDefinitionRef.ValidateOrFail("LevelAdditiveState/RecordApplied");
+            PhaseDefinitionAsset.PhaseSwapBlock swap = targetPhaseDefinitionRef.Swap;
+            if (swap == null)
+            {
+                HardFailFastH1.Trigger(typeof(LevelAdditiveSceneRuntimeApplier), $"RecordAppliedPhaseDefinition phase '{targetPhaseDefinitionRef.name}' has no swap block.");
+            }
+
+            HashSet<int> targetBuildIndexes = BuildBuildIndexSetOrFail(swap.additiveScenes, "RecordApplied");
+            UpdateActiveState(targetBuildIndexes, targetPhaseDefinitionRef);
         }
 
         public static void RecordCleared()
@@ -60,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             ClearActiveState();
         }
 
-        private static void UpdateActiveState(HashSet<int> buildIndexes, LevelDefinitionAsset activeLevelRef)
+        private static void UpdateActiveState(HashSet<int> buildIndexes, PhaseDefinitionAsset activePhaseDefinitionRef)
         {
             lock (StateSync)
             {
@@ -70,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     _activeAppliedBuildIndexes.Add(index);
                 }
 
-                _activeAppliedLevelRef = activeLevelRef;
+                _activeAppliedPhaseDefinitionRef = activePhaseDefinitionRef;
             }
         }
 
@@ -79,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             lock (StateSync)
             {
                 _activeAppliedBuildIndexes.Clear();
-                _activeAppliedLevelRef = null;
+                _activeAppliedPhaseDefinitionRef = null;
             }
         }
 

@@ -303,7 +303,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             return new LevelStagePresentationContract(
                 session.PhaseDefinitionRef,
-                session.LevelRef,
                 session.LevelSignature,
                 session.SelectionVersion,
                 session.LocalContentId,
@@ -345,11 +344,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (session.PhaseDefinitionRef != null)
             {
                 return session.PhaseDefinitionRef.name;
-            }
-
-            if (session.LevelRef != null)
-            {
-                return session.LevelRef.name;
             }
 
             return "<none>";

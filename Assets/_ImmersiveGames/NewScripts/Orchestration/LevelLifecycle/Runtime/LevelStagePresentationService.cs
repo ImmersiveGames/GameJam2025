@@ -33,7 +33,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             contract = new LevelStagePresentationContract(
                 phaseDefinitionRef,
-                session.LevelRef,
                 session.LevelSignature,
                 session.SelectionVersion,
                 session.LocalContentId,

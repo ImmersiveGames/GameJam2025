@@ -1,5 +1,4 @@
 #nullable enable
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using UnityEngine;
 
@@ -15,7 +14,6 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime
     {
         public LevelIntroStageSession(
             PhaseDefinitionAsset? phaseDefinitionRef,
-            LevelDefinitionAsset? compatLevelRef,
             string localContentId,
             string reason,
             int selectionVersion,
@@ -24,7 +22,6 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime
             LevelIntroStageDisposition disposition)
         {
             PhaseDefinitionRef = phaseDefinitionRef;
-            CompatLevelRef = compatLevelRef;
             LocalContentId = string.IsNullOrWhiteSpace(localContentId) ? string.Empty : localContentId.Trim();
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
@@ -33,21 +30,7 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime
             Disposition = disposition;
         }
 
-        public LevelIntroStageSession(
-            LevelDefinitionAsset? levelRef,
-            string localContentId,
-            string reason,
-            int selectionVersion,
-            string levelSignature,
-            GameObject? presenterPrefab,
-            LevelIntroStageDisposition disposition)
-            : this(null, levelRef, localContentId, reason, selectionVersion, levelSignature, presenterPrefab, disposition)
-        {
-        }
-
         public PhaseDefinitionAsset? PhaseDefinitionRef { get; }
-        public LevelDefinitionAsset? CompatLevelRef { get; }
-        public LevelDefinitionAsset? LevelRef => CompatLevelRef;
         public string LocalContentId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
@@ -58,9 +41,8 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime
 
         public bool HasIntroStage => Disposition == LevelIntroStageDisposition.HasIntro;
         public bool HasPhaseDefinitionRef => PhaseDefinitionRef != null;
-        public bool HasLevelRef => CompatLevelRef != null;
         public bool HasPresenterPrefab => IntroPresenterPrefab != null;
-        public bool IsValid => HasPhaseDefinitionRef || HasLevelRef;
+        public bool IsValid => HasPhaseDefinitionRef;
 
         public static LevelIntroStageSession Empty => default;
     }

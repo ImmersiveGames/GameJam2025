@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
     public class LevelLifecycleStageOrchestrator : IDisposable
     {
-        private readonly EventBinding<LevelEnteredEvent> _levelEnteredBinding;
+        private readonly EventBinding<PhaseIntroStageEntryEvent> _phaseIntroStageEntryBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _sceneTransitionCompletedBinding;
         private readonly object _sync = new();
         private int _lastProcessedSelectionVersion = -1;
@@ -23,24 +23,24 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
         public LevelLifecycleStageOrchestrator()
         {
-            _levelEnteredBinding = new EventBinding<LevelEnteredEvent>(OnLevelEntered);
+            _phaseIntroStageEntryBinding = new EventBinding<PhaseIntroStageEntryEvent>(OnPhaseIntroStageEntry);
             _sceneTransitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
-            EventBus<LevelEnteredEvent>.Register(_levelEnteredBinding);
+            EventBus<PhaseIntroStageEntryEvent>.Register(_phaseIntroStageEntryBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_sceneTransitionCompletedBinding);
         }
 
         public void Dispose()
         {
-            EventBus<LevelEnteredEvent>.Unregister(_levelEnteredBinding);
+            EventBus<PhaseIntroStageEntryEvent>.Unregister(_phaseIntroStageEntryBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_sceneTransitionCompletedBinding);
         }
 
-        private void OnLevelEntered(LevelEnteredEvent evt)
+        private void OnPhaseIntroStageEntry(PhaseIntroStageEntryEvent evt)
         {
             if (!evt.Session.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(LevelLifecycleStageOrchestrator),
-                    "[FATAL][H1][LevelLifecycle] Invalid LevelEnteredEvent received.");
+                    "[FATAL][H1][LevelLifecycle] Invalid PhaseIntroStageEntryEvent received.");
             }
 
             if (!TryAdvanceDedupe(evt.Session.SelectionVersion, evt.Session.LevelSignature, evt.Source))
@@ -130,21 +130,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 return session.PhaseDefinitionRef.name;
             }
 
-            if (session.LevelRef != null)
-            {
-                return session.LevelRef.name;
-            }
-
             return "<none>";
         }
 
-        private static bool ShouldDeferGameplayIntro(LevelEnteredEvent evt)
+        private static bool ShouldDeferGameplayIntro(PhaseIntroStageEntryEvent evt)
         {
             return evt.RouteKind == SceneRouteKind.Gameplay
                    && string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal);
         }
 
-        private void QueuePendingGameplayIntro(LevelEnteredEvent evt)
+        private void QueuePendingGameplayIntro(PhaseIntroStageEntryEvent evt)
         {
             lock (_sync)
             {

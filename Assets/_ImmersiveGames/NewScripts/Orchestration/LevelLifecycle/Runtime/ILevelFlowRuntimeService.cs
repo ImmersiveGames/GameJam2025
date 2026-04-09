@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
     public interface ILevelFlowRuntimeService
@@ -9,6 +9,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default);
         Task RestartFromFirstLevelAsync(string reason = null, CancellationToken ct = default);
         Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default);
-        Task SwapLevelLocalAsync(LevelDefinitionAsset levelRef, string reason = null, CancellationToken ct = default);
+        Task SwapLevelLocalAsync(PhaseDefinitionSelectedEvent phaseSelection, string reason = null, CancellationToken ct = default);
     }
 }

@@ -1,5 +1,6 @@
 #nullable enable
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,13 +18,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 ResolveFromPhaseContent(session, resolvedPresenters);
             }
 
-            if (resolvedPresenters.Count == 0 && session.LevelRef != null)
-            {
-                ResolveFromLegacyLevel(session, resolvedPresenters);
-            }
-
             if (resolvedPresenters.Count == 0)
             {
+                DebugUtility.LogWarning<LevelIntroStagePresenterScopeResolver>(
+                    $"[WARN][OBS][IntroStage] No phase presenter could be resolved. phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' contentId='{session.LocalContentId}' signature='{session.LevelSignature}'.");
                 presenters = new List<ILevelIntroStagePresenter>();
                 return false;
             }
@@ -58,33 +56,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 }
 
                 Scene loadedScene = SceneManager.GetSceneByName(entry.sceneRef.SceneName);
-                if (!loadedScene.IsValid() || !loadedScene.isLoaded)
-                {
-                    continue;
-                }
-
-                AppendPresentersFromScene(loadedScene, resolvedPresenters);
-            }
-        }
-
-        private static void ResolveFromLegacyLevel(
-            _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime.LevelIntroStageSession session,
-            List<ILevelIntroStagePresenter> resolvedPresenters)
-        {
-            _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config.LevelDefinitionAsset? levelRef = session.LevelRef;
-            if (levelRef == null)
-            {
-                return;
-            }
-
-            foreach (var sceneRef in levelRef.AdditiveScenes)
-            {
-                if (sceneRef == null || sceneRef.BuildIndex < 0)
-                {
-                    continue;
-                }
-
-                Scene loadedScene = SceneManager.GetSceneByBuildIndex(sceneRef.BuildIndex);
                 if (!loadedScene.IsValid() || !loadedScene.isLoaded)
                 {
                     continue;

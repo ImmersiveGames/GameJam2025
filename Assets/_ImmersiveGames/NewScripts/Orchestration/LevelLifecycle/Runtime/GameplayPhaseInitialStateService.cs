@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
@@ -101,20 +100,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             string phaseSignature = phaseRuntime.HasPhaseRuntimeSignature ? phaseRuntime.PhaseRuntimeSignature : "<no-phase>";
             string normalizedContentId = string.IsNullOrWhiteSpace(localContentId) ? "<none>" : localContentId.Trim();
             return $"{phaseSignature}|initial-state|rules:{rulesObjectives.RulesSignature}|objectives:{rulesObjectives.ObjectivesSignature}|contentId:{normalizedContentId}|selectionVersion:{selectionVersion}";
-        }
-
-        private static string BuildInitialStateSummary(
-            string seedSource,
-            LevelDefinitionAsset levelRef,
-            string localContentId,
-            int selectionVersion,
-            GameplayPhaseRulesObjectivesSnapshot rulesObjectives)
-        {
-            string levelName = levelRef != null ? levelRef.name : "<null>";
-            string normalizedContentId = string.IsNullOrWhiteSpace(localContentId) ? "<none>" : localContentId.Trim();
-            string normalizedSeedSource = string.IsNullOrWhiteSpace(seedSource) ? "<none>" : seedSource.Trim();
-
-            return $"seedSource='{normalizedSeedSource}' levelRef='{levelName}' contentId='{normalizedContentId}' selectionVersion='{selectionVersion}' rulesSignature='{rulesObjectives.RulesSignature}' objectivesSignature='{rulesObjectives.ObjectivesSignature}'";
         }
 
         private static string BuildInitialStateSummary(

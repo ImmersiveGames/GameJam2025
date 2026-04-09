@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.LevelFlow.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -109,24 +111,30 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             if (!_restartContextService.TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
-                !snapshot.HasLevelRef ||
-                snapshot.MacroRouteRef == null ||
-                snapshot.MacroRouteRef.LevelCollection == null)
+                !snapshot.HasPhaseDefinitionRef ||
+                snapshot.PhaseDefinitionRef == null ||
+                snapshot.MacroRouteRef == null)
             {
                 DebugUtility.LogWarning<PostLevelActionsService>(
-                    $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_snapshot_or_collection'.");
+                    $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='NextLevel' success=False reason='{normalizedReason}' notes='no_valid_phase_snapshot'.");
                 return;
             }
 
-            var nextLevelRef = _levelFlowContentService.ResolveNextLevelOrFail(snapshot, normalizedReason);
+            PhaseDefinitionAsset nextPhaseRef = _levelFlowContentService.ResolveNextPhaseOrFail(snapshot, normalizedReason);
+            PhaseDefinitionSelectedEvent nextPhaseSelection = new PhaseDefinitionSelectedEvent(
+                nextPhaseRef,
+                snapshot.MacroRouteId,
+                snapshot.MacroRouteRef,
+                Math.Max(snapshot.SelectionVersion + 1, 1),
+                normalizedReason);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='NextLevel' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='NextLevel' rail='phase-first' phaseRef='{snapshot.PhaseDefinitionRef.name}' nextPhaseRef='{nextPhaseRef.name}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
-            await _levelSwapLocalService.SwapLocalAsync(nextLevelRef, normalizedReason, ct);
+            await _levelFlowRuntimeService.SwapLevelLocalAsync(nextPhaseSelection, normalizedReason, ct);
 
             DebugUtility.Log<PostLevelActionsService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='NextLevel' reason='{normalizedReason}' nextLevelRef='{nextLevelRef.name}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='NextLevel' rail='phase-first' phaseRef='{snapshot.PhaseDefinitionRef.name}' reason='{normalizedReason}' nextPhaseRef='{nextPhaseRef.name}'.",
                 DebugUtility.Colors.Success);
         }
 

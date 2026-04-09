@@ -8,7 +8,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     {
         private readonly object _sync = new();
         private readonly EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private GameplayStartSnapshot _current = GameplayStartSnapshot.Empty;
         private GameplayStartSnapshot _lastGameplayStartSnapshot = GameplayStartSnapshot.Empty;
         private int _selectionVersionCounter;
@@ -17,9 +16,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         public RestartContextService()
         {
             _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(OnPhaseDefinitionSelected);
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
             EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
 
             DebugUtility.LogVerbose<RestartContextService>(
                 "[OBS][LevelLifecycle][Operational] RestartContextService registered as canonical PhaseDefinitionSelectedEvent -> GameplayStartSnapshot owner.",
@@ -47,27 +44,22 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             return UpdateGameplayStartSnapshot(GameplayStartSnapshot.FromPhaseDefinitionSelectedEvent(evt));
         }
 
-        public GameplayStartSnapshot RegisterGameplayStart(LevelSelectedEvent evt)
-        {
-            return UpdateGameplayStartSnapshot(GameplayStartSnapshot.FromLevelSelectedEvent(evt));
-        }
-
         public GameplayStartSnapshot UpdateGameplayStartSnapshot(GameplayStartSnapshot snapshot)
         {
             lock (_sync)
             {
-                if ((!snapshot.HasPhaseDefinitionRef && !snapshot.HasLevelRef) || !snapshot.MacroRouteId.IsValid || snapshot.MacroRouteRef == null)
+                if (!snapshot.HasPhaseDefinitionRef || !snapshot.MacroRouteId.IsValid || snapshot.MacroRouteRef == null)
                 {
-                    string invalidReason = !snapshot.HasPhaseDefinitionRef && !snapshot.HasLevelRef && !snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef == null
-                        ? "missing-phaseRef-and-levelRef-and-invalid-routeId-and-routeRef"
-                        : (!snapshot.HasPhaseDefinitionRef && !snapshot.HasLevelRef && snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef != null
-                            ? "missing-phaseRef-and-levelRef"
-                            : (!snapshot.MacroRouteId.IsValid && (snapshot.HasPhaseDefinitionRef || snapshot.HasLevelRef) && snapshot.MacroRouteRef != null
+                    string invalidReason = !snapshot.HasPhaseDefinitionRef && !snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef == null
+                        ? "missing-phaseRef-and-invalid-routeId-and-routeRef"
+                        : (!snapshot.HasPhaseDefinitionRef
+                            ? "missing-phaseRef"
+                            : (!snapshot.MacroRouteId.IsValid && snapshot.MacroRouteRef != null
                                 ? "invalid-routeId"
                                 : "missing-routeRef"));
 
                     DebugUtility.Log<RestartContextService>(
-                        $"[WARN][LevelFlow] Ignored invalid GameplayStartSnapshot. phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<null>")}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' routeId='{snapshot.MacroRouteId}' routeRef='{(snapshot.MacroRouteRef != null ? snapshot.MacroRouteRef.name : "<null>")}' reason='{invalidReason}'.",
+                        $"[WARN][LevelFlow] Ignored invalid GameplayStartSnapshot. phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<null>")}' routeId='{snapshot.MacroRouteId}' routeRef='{(snapshot.MacroRouteRef != null ? snapshot.MacroRouteRef.name : "<null>")}' reason='{invalidReason}'.",
                         DebugUtility.Colors.Warning);
 
                     return _current;
@@ -89,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     if (incoming == _selectionVersionCounter)
                     {
                         DebugUtility.Log<RestartContextService>(
-                            $"[OBS][LevelFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<none>")}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<null>")}' localContentId='{snapshot.LocalContentId}'",
+                            $"[OBS][LevelFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<none>")}' localContentId='{snapshot.LocalContentId}'",
                             DebugUtility.Colors.Info);
                     }
 
@@ -98,7 +90,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
                 _current = new GameplayStartSnapshot(
                     snapshot.PhaseDefinitionRef,
-                    snapshot.LevelRef,
                     snapshot.MacroRouteId,
                     snapshot.MacroRouteRef,
                     snapshot.LocalContentId,
@@ -133,7 +124,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             _disposed = true;
             EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
         }
 
         public bool TryGetLastGameplayStartSnapshot(out GameplayStartSnapshot snapshot)
@@ -161,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         private static void LogSnapshotUpdated(GameplayStartSnapshot snapshot)
         {
             DebugUtility.Log<RestartContextService>(
-                $"[OBS][LevelFlow] GameplayStartSnapshotUpdated phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<none>")}' levelRef='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' contentId='{snapshot.LocalContentId}' v='{snapshot.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(snapshot.Reason) ? "<none>" : snapshot.Reason)}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                $"[OBS][LevelFlow] GameplayStartSnapshotUpdated phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' contentId='{snapshot.LocalContentId}' v='{snapshot.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(snapshot.Reason) ? "<none>" : snapshot.Reason)}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -170,11 +160,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             DebugUtility.Log<RestartContextService>(
                 $"[OBS][LevelFlow] RestartContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{(string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim())}'.",
                 DebugUtility.Colors.Info);
-        }
-
-        private void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            RegisterGameplayStart(evt);
         }
 
         private void OnPhaseDefinitionSelected(PhaseDefinitionSelectedEvent evt)

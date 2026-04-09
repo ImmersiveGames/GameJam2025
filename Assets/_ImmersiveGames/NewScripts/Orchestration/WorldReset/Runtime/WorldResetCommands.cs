@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application;
@@ -50,44 +49,57 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
             await resetService.TriggerResetAsync(request);
         }
 
-        public Task ResetLevelAsync(LevelDefinitionAsset levelRef, string reason, LevelContextSignature levelSignature, CancellationToken ct)
+        public Task ResetLevelAsync(PhaseResetContext resetContext, string reason, CancellationToken ct)
         {
             try
             {
                 ct.ThrowIfCancellationRequested();
 
-                if (levelRef == null)
+                if (!resetContext.IsValid)
                 {
-                    FailFastConfig($"ResetLevelAsync received null levelRef. reason='{reason ?? "<null>"}'.");
+                    FailFastConfig($"ResetLevelAsync received invalid phase reset context. reason='{reason ?? "<null>"}'.");
                 }
 
-                if (!levelSignature.IsValid)
+                if (resetContext.PhaseDefinitionRef == null)
                 {
-                    FailFastConfig($"ResetLevelAsync received empty levelSignature. levelRef='{levelRef.name}', reason='{reason ?? "<null>"}'.");
+                    FailFastConfig($"ResetLevelAsync received null phaseDefinitionRef. routeId='{resetContext.MacroRouteId}', reason='{reason ?? "<null>"}'.");
+                }
+
+                if (!resetContext.LevelSignature.IsValid)
+                {
+                    FailFastConfig($"ResetLevelAsync received empty levelSignature. phaseRef='{resetContext.PhaseDefinitionRef.name}', reason='{reason ?? "<null>"}'.");
                 }
 
                 string normalizedReason = NormalizeReason(reason, "WorldReset/Level");
                 IRestartContextService restartContext = ResolveGlobalOrFail<IRestartContextService>("IRestartContextService");
-                if (!restartContext.TryGetCurrent(out GameplayStartSnapshot snapshot) || !snapshot.IsValid)
+                if (!restartContext.TryGetCurrent(out GameplayStartSnapshot snapshot) || !snapshot.IsValid || !snapshot.HasPhaseDefinitionRef)
                 {
-                    FailFastConfig($"ResetLevelAsync without valid gameplay snapshot. levelRef='{levelRef.name}', reason='{normalizedReason}'.");
+                    FailFastConfig($"ResetLevelAsync without valid gameplay phase snapshot. phaseRef='{resetContext.PhaseDefinitionRef.name}', reason='{normalizedReason}'.");
                 }
 
-                if (!snapshot.HasLevelRef || !ReferenceEquals(snapshot.LevelRef, levelRef))
+                if (!ReferenceEquals(snapshot.PhaseDefinitionRef, resetContext.PhaseDefinitionRef))
                 {
-                    FailFastConfig($"ResetLevelAsync levelRef mismatch. expected='{(snapshot.HasLevelRef ? snapshot.LevelRef.name : "<none>")}', got='{levelRef.name}', reason='{normalizedReason}'.");
+                    FailFastConfig($"ResetLevelAsync phaseDefinitionRef mismatch. expected='{snapshot.PhaseDefinitionRef.name}', got='{resetContext.PhaseDefinitionRef.name}', reason='{normalizedReason}'.");
                 }
 
-                SceneRouteId macroRouteId = snapshot.MacroRouteId;
+                if (snapshot.MacroRouteId != resetContext.MacroRouteId)
+                {
+                    FailFastConfig($"ResetLevelAsync macroRouteId mismatch. expected='{snapshot.MacroRouteId}', got='{resetContext.MacroRouteId}', reason='{normalizedReason}'.");
+                }
+
+                DebugUtility.Log<WorldResetCommands>(
+                    $"[OBS][WorldReset] ResetLevel phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' levelSignature='{resetContext.LevelSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Info);
+
                 var request = new WorldResetRequest(
                     kind: ResetKind.Level,
-                    contextSignature: string.Empty,
+                    contextSignature: resetContext.ResetSignature,
                     reason: normalizedReason,
                     targetScene: string.Empty,
                     origin: WorldResetOrigin.Command,
-                    macroRouteId: macroRouteId,
-                    levelSignature: levelSignature,
-                    sourceSignature: string.Empty);
+                    macroRouteId: resetContext.MacroRouteId,
+                    levelSignature: resetContext.LevelSignature,
+                    sourceSignature: resetContext.ResetSignature);
 
                 _lifecyclePublisher.PublishStarted(request);
                 _lifecyclePublisher.PublishCompleted(request, WorldResetOutcome.Completed, string.Empty);

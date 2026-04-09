@@ -189,13 +189,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
                     $"[FATAL][H1][NavigationCore] Gameplay routeRef with invalid RouteKind. routeId='{routeId}' routeKind='{gameplayEntry.RouteRef.RouteKind}' reason='{reason}'.");
             }
 
-            if (gameplayEntry.RouteRef.LevelCollection == null ||
-                gameplayEntry.RouteRef.LevelCollection.Levels == null ||
-                gameplayEntry.RouteRef.LevelCollection.Levels.Count == 0)
-            {
-                HardFailFastH1.Trigger(typeof(GameNavigationService),
-                    $"[FATAL][H1][NavigationCore] Gameplay route without LevelCollection. routeId='{routeId}' reason='{reason}'.");
-            }
         }
 
         private static TransitionStyleDefinition ResolveStyle(GameNavigationEntry entry)

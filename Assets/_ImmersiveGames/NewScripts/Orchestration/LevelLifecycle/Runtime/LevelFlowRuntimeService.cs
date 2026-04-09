@@ -2,9 +2,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
@@ -47,39 +49,56 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             await _navigationService.StartGameplayRouteAsync(gameplayRouteId, SceneTransitionPayload.Empty, normalizedReason);
         }
 
-        public async Task SwapLevelLocalAsync(LevelDefinitionAsset levelRef, string reason = null, CancellationToken ct = default)
+        public async Task SwapLevelLocalAsync(PhaseDefinitionSelectedEvent phaseSelection, string reason = null, CancellationToken ct = default)
         {
             if (_levelSwapLocalService == null)
             {
                 DebugUtility.LogWarning<LevelLifecycleRuntimeService>(
-                    $"[OBS][LevelLifecycle][Operational] SwapLocalRejected levelRef='{(levelRef != null ? levelRef.name : "<none>")}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
+                    $"[OBS][LevelLifecycle][Operational] SwapLocalRejected phaseRef='{(phaseSelection.PhaseDefinitionRef != null ? phaseSelection.PhaseDefinitionRef.name : "<none>")}' reason='missing_level_swap_local_service' requestedReason='{reason ?? "<null>"}'.");
                 return;
             }
 
-            await _levelSwapLocalService.SwapLocalAsync(levelRef, reason, ct);
+            await _levelSwapLocalService.SwapLocalAsync(phaseSelection, reason, ct);
         }
 
         public async Task ResetCurrentLevelAsync(string reason = null, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelLifecycle/ResetCurrentLevel" : reason.Trim();
-            GameplayStartSnapshot snapshot = default;
+            string normalizedReason = string.IsNullOrWhiteSpace(reason)
+                ? "LevelLifecycle/ResetCurrentLevel"
+                : reason.Trim();
 
-            if (_restartContextService == null ||
-                !_restartContextService.TryGetCurrent(out snapshot) ||
+            if (_restartContextService == null)
+            {
+                HardFailFastH1.Trigger(typeof(LevelLifecycleRuntimeService),
+                    $"[FATAL][H1][LevelLifecycle] ResetCurrentLevelAsync requires a valid current gameplay snapshot. reason='{normalizedReason}'.");
+            }
+
+            if (!_restartContextService.TryGetCurrent(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
-                !snapshot.HasLevelRef)
+                !snapshot.HasPhaseDefinitionRef ||
+                snapshot.PhaseDefinitionRef == null ||
+                snapshot.MacroRouteRef == null ||
+                !snapshot.MacroRouteId.IsValid ||
+                string.IsNullOrWhiteSpace(snapshot.LevelSignature))
             {
                 HardFailFastH1.Trigger(typeof(LevelLifecycleRuntimeService),
                     $"[FATAL][H1][LevelLifecycle] ResetCurrentLevelAsync requires a valid current gameplay snapshot. reason='{normalizedReason}'.");
             }
 
             DebugUtility.Log<LevelLifecycleRuntimeService>(
-                $"[OBS][LevelLifecycle][Operational] ResetCurrentLevelRequested levelRef='{snapshot.LevelRef.name}' routeId='{snapshot.MacroRouteId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                $"[OBS][LevelLifecycle][Operational] ResetCurrentLevelRequested rail='phase' phaseRef='{snapshot.PhaseDefinitionRef.name}' routeId='{snapshot.MacroRouteId}' v='{snapshot.SelectionVersion}' reason='{normalizedReason}' levelSignature='{snapshot.LevelSignature}'.",
                 DebugUtility.Colors.Info);
 
-            await SwapLevelLocalAsync(snapshot.LevelRef, normalizedReason, ct);
+            PhaseResetContext resetContext = new PhaseResetContext(
+                snapshot.PhaseDefinitionRef,
+                snapshot.MacroRouteId,
+                new LevelContextSignature(snapshot.LevelSignature),
+                snapshot.LevelSignature);
+
+            IWorldResetCommands worldResetCommands = ResolveGlobalOrFail<IWorldResetCommands>("IWorldResetCommands");
+            await worldResetCommands.ResetLevelAsync(resetContext, normalizedReason, ct);
         }
 
         public async Task RestartLastGameplayAsync(string reason = null, CancellationToken ct = default)
@@ -103,7 +122,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         {
             ct.ThrowIfCancellationRequested();
 
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "LevelLifecycle/RestartFromFirstLevel" : reason.Trim();
+            string normalizedReason = string.IsNullOrWhiteSpace(reason)
+                ? "LevelLifecycle/RestartFromFirstLevel"
+                : reason.Trim();
 
             if (_restartContextService == null)
             {
@@ -119,6 +140,22 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             await StartGameplayDefaultAsync(normalizedReason, ct);
         }
-    }
 
+        private static T ResolveGlobalOrFail<T>(string label) where T : class
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(LevelLifecycleRuntimeService),
+                    $"[FATAL][H1][LevelLifecycle] DependencyManager.Provider is null while resolving {label}.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
+            {
+                HardFailFastH1.Trigger(typeof(LevelLifecycleRuntimeService),
+                    $"[FATAL][H1][LevelLifecycle] Missing required global service: {label}.");
+            }
+
+            return service;
+        }
+    }
 }

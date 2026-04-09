@@ -88,32 +88,27 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
 
         private static void RegisterPhaseDefinitionSelectionService(BootstrapConfigAsset bootstrapConfig)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionResolver>(out var resolver) || resolver == null)
+            PhaseDefinitionAsset selectedPhaseDefinitionRef = bootstrapConfig.SelectedPhaseDefinitionRef;
+            if (selectedPhaseDefinitionRef == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseDefinitionResolver missing from global DI before selection service registration.");
-            }
-
-            PhaseDefinitionId selectedPhaseDefinitionId = bootstrapConfig.SelectedPhaseDefinitionId;
-            if (!selectedPhaseDefinitionId.IsValid)
-            {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] BootstrapConfigAsset.selectedPhaseDefinitionId is required.");
+                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] BootstrapConfigAsset.selectedPhaseDefinitionRef is required.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionSelectionService>(out var existingSelectionService) || existingSelectionService == null)
             {
-                var selectionService = new PhaseDefinitionSelectionService(resolver, selectedPhaseDefinitionId);
+                var selectionService = new PhaseDefinitionSelectionService(selectedPhaseDefinitionRef);
                 DependencyManager.Provider.RegisterGlobal<IPhaseDefinitionSelectionService>(selectionService);
 
                 DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
-                    $"[OBS][PhaseDefinition][Core] Selection service registered phaseId='{selectedPhaseDefinitionId}'.",
+                    $"[OBS][PhaseDefinition][Core] Selection service registered phaseId='{selectionService.SelectedPhaseDefinitionId}' asset='{selectedPhaseDefinitionRef.name}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            if (existingSelectionService.SelectedPhaseDefinitionId != selectedPhaseDefinitionId)
+            if (!ReferenceEquals(existingSelectionService.Current, selectedPhaseDefinitionRef))
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][PhaseDefinition] Selection service mismatch: DI has selectedPhaseDefinitionId='{existingSelectionService.SelectedPhaseDefinitionId}' but BootstrapConfig has '{selectedPhaseDefinitionId}'.");
+                    $"[FATAL][Config][PhaseDefinition] Selection service mismatch: DI has phaseAsset='{existingSelectionService.Current?.name ?? "<none>"}' but BootstrapConfig has '{selectedPhaseDefinitionRef.name}'.");
             }
         }
     }

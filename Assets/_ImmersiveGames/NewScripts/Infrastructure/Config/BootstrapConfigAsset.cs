@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
     {
         [SerializeField] private GameNavigationCatalogAsset navigationCatalog;
         [SerializeField] private PhaseDefinitionCatalogAsset phaseDefinitionCatalog;
-        [SerializeField] private PhaseDefinitionId selectedPhaseDefinitionId;
+        [SerializeField] private PhaseDefinitionAsset selectedPhaseDefinitionRef;
         [SerializeField] private TransitionStyleAsset startupTransitionStyleRef;
         [SerializeField] private SceneKeyAsset fadeSceneKey;
         [SerializeField] private SceneKeyAsset loadingHudSceneKey;
@@ -32,7 +32,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
 
         public GameNavigationCatalogAsset NavigationCatalog => navigationCatalog;
         public PhaseDefinitionCatalogAsset PhaseDefinitionCatalog => phaseDefinitionCatalog;
-        public PhaseDefinitionId SelectedPhaseDefinitionId => selectedPhaseDefinitionId;
+        public PhaseDefinitionAsset SelectedPhaseDefinitionRef => selectedPhaseDefinitionRef;
+        public PhaseDefinitionId SelectedPhaseDefinitionId => selectedPhaseDefinitionRef?.PhaseId ?? default;
         public TransitionStyleAsset StartupTransitionStyleRef => startupTransitionStyleRef;
         public SceneKeyAsset FadeSceneKey => fadeSceneKey;
         public SceneKeyAsset LoadingHudSceneKey => loadingHudSceneKey;
@@ -53,19 +54,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Config
                 phaseDefinitionCatalog.ValidateOrFail();
             }
 
-            if (!selectedPhaseDefinitionId.IsValid)
+            if (selectedPhaseDefinitionRef == null)
             {
                 string message =
-                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure selectedPhaseDefinitionId with a valid PhaseDefinitionId. asset='{name}'.";
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure selectedPhaseDefinitionRef with a valid PhaseDefinitionAsset. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);
             }
 
-            if (phaseDefinitionCatalog != null && !phaseDefinitionCatalog.TryGet(selectedPhaseDefinitionId.Value, out _))
+            selectedPhaseDefinitionRef.ValidateOrFail(name);
+
+            PhaseDefinitionAsset catalogPhase = null;
+            if (phaseDefinitionCatalog != null && !phaseDefinitionCatalog.TryGet(selectedPhaseDefinitionRef.PhaseId.Value, out catalogPhase))
             {
                 string message =
-                    $"[FATAL][Config] BootstrapConfigAsset invalid: selectedPhaseDefinitionId='{selectedPhaseDefinitionId}' is missing from phaseDefinitionCatalog='{phaseDefinitionCatalog.name}'. asset='{name}'.";
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: selectedPhaseDefinitionRef.phaseId='{selectedPhaseDefinitionRef.PhaseId}' is missing from phaseDefinitionCatalog='{phaseDefinitionCatalog.name}'. asset='{name}'.";
+
+                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (phaseDefinitionCatalog != null && !ReferenceEquals(catalogPhase, selectedPhaseDefinitionRef))
+            {
+                string message =
+                    $"[FATAL][Config] BootstrapConfigAsset invalid: selectedPhaseDefinitionRef='{selectedPhaseDefinitionRef.name}' is not the catalog entry for phaseDefinitionCatalog='{phaseDefinitionCatalog.name}'. asset='{name}'.";
 
                 DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
                 throw new InvalidOperationException(message);

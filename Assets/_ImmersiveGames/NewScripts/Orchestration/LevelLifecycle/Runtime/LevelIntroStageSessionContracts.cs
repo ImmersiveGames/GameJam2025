@@ -2,15 +2,14 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
-    public readonly struct LevelEnteredEvent : IEvent
+    public readonly struct PhaseIntroStageEntryEvent : IEvent
     {
-        public LevelEnteredEvent(LevelIntroStageSession session, string source, _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime.SceneRouteKind routeKind)
+        public PhaseIntroStageEntryEvent(LevelIntroStageSession session, string source, _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime.SceneRouteKind routeKind)
         {
             Session = session;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
@@ -67,16 +66,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
     {
         private readonly object _sync = new();
         private readonly EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
-        private readonly EventBinding<LevelSelectedEvent> _levelSelectedBinding;
         private LevelIntroStageSession _currentSession;
         private bool _disposed;
 
         public LevelIntroStageSessionService()
         {
             _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(OnPhaseDefinitionSelected);
-            _levelSelectedBinding = new EventBinding<LevelSelectedEvent>(OnLevelSelected);
             EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
-            EventBus<LevelSelectedEvent>.Register(_levelSelectedBinding);
 
             DebugUtility.LogVerbose<LevelIntroStageSessionService>(
                 "[OBS][IntroStage] LevelIntroStageSessionService registrado (PhaseDefinitionSelectedEvent -> IntroStage session bridge canonica).",
@@ -101,7 +97,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 
             _disposed = true;
             EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
-            EventBus<LevelSelectedEvent>.Unregister(_levelSelectedBinding);
         }
 
         private void OnPhaseDefinitionSelected(PhaseDefinitionSelectedEvent evt)
@@ -117,11 +112,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             }
 
             string localContentId = phaseDefinitionRef.BuildCanonicalIntroContentId();
-            LevelIntroStageSession session = phaseDefinitionRef.CreateIntroStageSession(
+
+            LevelIntroStageDisposition disposition = phaseDefinitionRef.Intro != null && phaseDefinitionRef.Intro.hasIntroStage
+                ? LevelIntroStageDisposition.HasIntro
+                : LevelIntroStageDisposition.NoIntro;
+
+            LevelIntroStageSession session = new LevelIntroStageSession(
+                phaseDefinitionRef,
                 localContentId,
                 evt.Reason,
                 evt.SelectionVersion,
-                evt.SelectionSignature);
+                evt.SelectionSignature,
+                phaseDefinitionRef.Intro != null ? phaseDefinitionRef.Intro.introPresenterPrefab : null,
+                disposition);
 
             lock (_sync)
             {
@@ -133,32 +136,5 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 DebugUtility.Colors.Info);
         }
 
-        private void OnLevelSelected(LevelSelectedEvent evt)
-        {
-            LevelDefinitionAsset levelRef = evt.LevelRef;
-            string levelName = levelRef != null ? levelRef.name : "<none>";
-
-            if (levelRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(LevelIntroStageSessionService),
-                    "[FATAL][H1][IntroStage] LevelSelectedEvent sem contentName ao materializar intro session.");
-                return;
-            }
-
-            LevelIntroStageSession session = evt.LevelRef.CreateIntroStageSession(
-                evt.LocalContentId,
-                evt.Reason,
-                evt.SelectionVersion,
-                evt.LevelSignature);
-
-            lock (_sync)
-            {
-                _currentSession = session;
-            }
-
-            DebugUtility.Log<LevelIntroStageSessionService>(
-                $"[OBS][IntroStage] IntroStageSessionUpdated rail='compat-level' contentName='{levelName}' routeId='{evt.MacroRouteId}' disposition='{session.Disposition}' v='{session.SelectionVersion}' signature='{session.LevelSignature}' reason='{session.Reason}'.",
-                DebugUtility.Colors.Info);
-        }
     }
 }

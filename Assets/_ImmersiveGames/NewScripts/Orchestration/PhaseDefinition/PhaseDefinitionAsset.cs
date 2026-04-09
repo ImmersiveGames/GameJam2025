@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEngine;
@@ -161,6 +162,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         }
 
         [Serializable]
+        public sealed class PhaseSwapBlock
+        {
+            public GameplayContentManifest contentManifest = new();
+            public List<SceneBuildIndexRef> additiveScenes = new();
+        }
+
+        [Serializable]
         public sealed class PhaseInitialStateEntry
         {
             public string localId = string.Empty;
@@ -174,6 +182,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             public PhaseClosureResultKind resultKind;
             public PhaseContinuityPolicyKind continuityPolicyKind;
             public List<PhaseParameterEntry> parameters = new();
+        }
+
+        [Serializable]
+        public sealed class PhaseContinuityBlock
+        {
+            public bool hasNextPhase;
+            public PhaseDefinitionAsset nextPhaseRef;
         }
 
         [Header("Identity")]
@@ -197,8 +212,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [Header("Intro")]
         [SerializeField] private PhaseIntroBlock intro = new();
 
+        [Header("Swap")]
+        [SerializeField] private PhaseSwapBlock swap = new();
+
         [Header("Closure")]
         [SerializeField] private PhaseClosureBlock closure = new();
+
+        [Header("Continuity")]
+        [SerializeField] private PhaseContinuityBlock continuity = new();
 
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
@@ -207,7 +228,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public PhaseInitialStateBlock InitialState => initialState;
         public PhaseRunResultStageBlock RunResultStage => runResultStage;
         public PhaseIntroBlock Intro => intro;
+        public PhaseSwapBlock Swap => swap;
         public PhaseClosureBlock Closure => closure;
+        public PhaseContinuityBlock Continuity => continuity;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -240,7 +263,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             ValidateInitialStateBlock(assetOwner);
             ValidateRunResultStageBlock(assetOwner);
             ValidateIntroBlock(assetOwner);
+            ValidateSwapBlock(assetOwner);
             ValidateClosureBlock(assetOwner);
+            ValidateContinuityBlock(assetOwner);
         }
 
 #if UNITY_EDITOR
@@ -376,6 +401,63 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             }
         }
 
+        private void ValidateSwapBlock(string assetOwner)
+        {
+            if (swap == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing swap block. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            if (swap.contentManifest == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing swap.contentManifest. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            swap.contentManifest.ValidateOrFailFast($"PhaseSwap asset='{assetOwner}' phaseId='{PhaseId}'", assetOwner);
+
+            if (swap.additiveScenes == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing swap.additiveScenes. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            if (swap.additiveScenes.Count == 0)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Empty swap.additiveScenes. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            HashSet<int> seenBuildIndexes = new HashSet<int>();
+            HashSet<string> seenSceneNames = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < swap.additiveScenes.Count; i++)
+            {
+                SceneBuildIndexRef sceneRef = swap.additiveScenes[i];
+                if (sceneRef == null)
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Null swap additive scene ref. asset='{assetOwner}', phaseId='{PhaseId}', index={i}.");
+                }
+
+                if (sceneRef.BuildIndex < 0)
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Invalid swap additive scene buildIndex. asset='{assetOwner}', phaseId='{PhaseId}', index={i}, buildIndex='{sceneRef.BuildIndex}'.");
+                }
+
+                string sceneName = Normalize(sceneRef.SceneName);
+                if (string.IsNullOrWhiteSpace(sceneName))
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Empty swap additive scene name. asset='{assetOwner}', phaseId='{PhaseId}', index={i}, buildIndex='{sceneRef.BuildIndex}'.");
+                }
+
+                if (!seenBuildIndexes.Add(sceneRef.BuildIndex))
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Duplicate swap additive scene buildIndex='{sceneRef.BuildIndex}'. asset='{assetOwner}', phaseId='{PhaseId}'.");
+                }
+
+                if (!seenSceneNames.Add(sceneName))
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Duplicate swap additive scene name='{sceneName}'. asset='{assetOwner}', phaseId='{PhaseId}'.");
+                }
+            }
+        }
+
         private void ValidateClosureBlock(string assetOwner)
         {
             if (closure == null)
@@ -394,6 +476,29 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             }
 
             ValidateParameters(closure.parameters, assetOwner, "closure", PhaseId.Value);
+        }
+
+        private void ValidateContinuityBlock(string assetOwner)
+        {
+            if (continuity == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing continuity block. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            if (continuity.hasNextPhase && continuity.nextPhaseRef == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Continuity marked as having a next phase but nextPhaseRef is null. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            if (!continuity.hasNextPhase && continuity.nextPhaseRef != null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Continuity nextPhaseRef is configured but hasNextPhase is false. asset='{assetOwner}', phaseId='{PhaseId}', nextPhaseRef='{continuity.nextPhaseRef.name}'.");
+            }
+
+            if (continuity.nextPhaseRef != null)
+            {
+                continuity.nextPhaseRef.ValidateOrFail($"PhaseContinuity asset='{assetOwner}' phaseId='{PhaseId}'");
+            }
         }
 
         private static void ValidateEntries<T>(
@@ -461,6 +566,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                 : "phase-content:default";
         }
 
+        public string BuildCanonicalSwapContentId()
+        {
+            return PhaseId.IsValid
+                ? $"phase-swap:{PhaseId.Value}"
+                : "phase-swap:default";
+        }
+
         public LevelIntroStageSession CreateIntroStageSession(
             string localContentId,
             string reason,
@@ -473,7 +585,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
 
             return new LevelIntroStageSession(
                 this,
-                null,
                 normalizedContentId,
                 reason,
                 selectionVersion,

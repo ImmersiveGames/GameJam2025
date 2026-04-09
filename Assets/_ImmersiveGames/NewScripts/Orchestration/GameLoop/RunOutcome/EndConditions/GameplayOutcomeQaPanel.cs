@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
         private EventBinding<GamePlayRequestedEvent> _gamePlayRequestedBinding;
         private EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
-        private EventBinding<LevelEnteredEvent> _levelEnteredBinding;
+        private EventBinding<PhaseIntroStageEntryEvent> _phaseIntroStageEntryBinding;
         private EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
         private bool _registered;
         private bool _runEnded;
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             _runEndedBinding = new EventBinding<GameRunEndedEvent>(_ => _runEnded = true);
             _gamePlayRequestedBinding = new EventBinding<GamePlayRequestedEvent>(evt => ReportSmoke("GamePlayRequestedEvent", evt.Reason));
             _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(evt => ReportSmoke("PhaseDefinitionSelectedEvent", evt.Reason));
-            _levelEnteredBinding = new EventBinding<LevelEnteredEvent>(evt => ReportSmoke("LevelEnteredEvent", evt.Session.Reason));
+            _phaseIntroStageEntryBinding = new EventBinding<PhaseIntroStageEntryEvent>(evt => ReportSmoke("PhaseIntroStageEntryEvent", evt.Session.Reason));
             _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(evt => ReportSmoke("LevelIntroCompletedEvent", evt.Reason));
         }
 
@@ -194,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
             EventBus<GamePlayRequestedEvent>.Register(_gamePlayRequestedBinding);
             EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
-            EventBus<LevelEnteredEvent>.Register(_levelEnteredBinding);
+            EventBus<PhaseIntroStageEntryEvent>.Register(_phaseIntroStageEntryBinding);
             EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
             _registered = true;
         }
@@ -210,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
             EventBus<GamePlayRequestedEvent>.Unregister(_gamePlayRequestedBinding);
             EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
-            EventBus<LevelEnteredEvent>.Unregister(_levelEnteredBinding);
+            EventBus<PhaseIntroStageEntryEvent>.Unregister(_phaseIntroStageEntryBinding);
             EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
             _registered = false;
         }
