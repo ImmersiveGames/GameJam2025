@@ -8,9 +8,10 @@
 
 ## 1. Objetivo
 
-`IntroStage` e a etapa canonica de entrada da phase.
+`IntroStage` e a etapa canonica de entrada da phase, depois que ela ja foi montada semanticamente.
 
-Este ADR congela o contrato positivo da IntroStage como rail de entrada, apresentacao local e liberacao operacional para `Playing`.
+Este ADR congela o contrato positivo da IntroStage como rail post-reveal de apresentacao local e liberacao operacional para `Playing`.
+`IntroStage` acontece depois de `SceneTransitionCompleted` e antes de `Playing`, quando a phase fornece intro concreta. A ausencia de intro nao invalida a phase nem reclassifica o rail; nesse caso, o lifecycle faz `skip/no-content` explicito.
 
 ## 2. Escopo
 
@@ -43,24 +44,33 @@ O rail governa o estado canonico da IntroStage, enquanto o presenter local gover
 
 O fluxo canonico ocorre assim:
 
-1. `SceneTransitionCompleted`
-2. `IntroStage`
-3. `Playing`
+1. `PhaseSelected`
+2. `ContentApplied`
+3. derivacao de `SessionContext`, `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState`
+4. `SceneTransitionCompleted`
+5. `IntroStage`
+6. `Playing`
 
-Esse fluxo descreve a entrada post-reveal da phase e a liberacao operacional para gameplay.
+Esse fluxo descreve a montagem semantica protegida da phase antes do reveal e a entrada post-reveal da `IntroStage` para liberacao operacional do gameplay.
+
+O sucesso da entrada da phase ocorre quando o conteudo local foi aplicado e o runtime minimo ja existe; os contratos de `Intro` e `RunResult`, quando presentes, seguem o rail tipado/canonico.
+Por isso, `IntroStage` e parte do lifecycle da phase, mas nao a fronteira unica nem obrigatoria de sucesso.
 
 ## 6. Lifecycle da IntroStage
 
-`IntroStage` recebe a transicao da cena, resolve o presenter local e conclui a entrada para `Playing`.
+`IntroStage` recebe a transicao apos `SceneTransitionCompleted`, com a phase ja montada semanticamente, resolve o presenter local quando ele existir e conclui a entrada para `Playing`.
 
 Lifecycle:
 
 1. recebe `SceneTransitionCompleted`
-2. adota o contrato tipado da intro da phase
-3. resolve o presenter valido no escopo correto
-4. executa a apresentacao local da entrada
-5. confirma a liberacao operacional para `Playing`
-6. encerra o stage quando a entrada foi concluida
+2. recebe a phase ja montada semanticamente
+3. adota o contrato tipado da intro da phase
+4. resolve o presenter valido no escopo correto, quando houver intro concreta
+5. executa a apresentacao local da entrada
+6. confirma a liberacao operacional para `Playing`
+7. encerra o stage quando a entrada foi concluida
+
+Se a phase nao fornecer intro concreta, o lifecycle registra `skip/no-content` explicito e segue para `Playing` sem fatal.
 
 ## 7. Presenter/hook local da phase
 
@@ -72,6 +82,7 @@ Leitura canonica:
 - o host resolve e adota uma instancia valida
 - o presenter renderiza e emite intencao de complete/skip
 - a assinatura canonica da session orienta a resolucao
+- o presenter nao aplica conteudo local nem deriva runtime
 
 ## 8. Rearme/restart
 
@@ -97,12 +108,12 @@ Cardinalidade:
 
 Os hand-offs canonicos sao:
 
-- `SceneTransitionCompleted` -> `IntroStage`
+- `PhaseSelected` -> `ContentApplied` -> derivacao runtime -> `SceneTransitionCompleted` -> `IntroStage`
 - `IntroStage` -> `Playing`
 
 ## 11. Consequencias arquiteturais
 
-Este contrato estabiliza a IntroStage como entrada canonica da phase.
+Este contrato estabiliza a IntroStage como entrada canonica da phase, sem reatribuir a ela o loading/preparation.
 
 Consequencias principais:
 
@@ -111,3 +122,9 @@ Consequencias principais:
 - o restart preserva coerencia operacional
 - a resolucao por session fica deterministica
 - a IntroStage pode evoluir sem reabrir a fronteira da entrada
+- o loading/preparation semantico fica fora da IntroStage
+
+## 12. Observacao de lifecycle
+
+Se no futuro houver skip ou resumo de intro, o contrato de sucesso da phase continua valido desde que o conteudo local tenha sido aplicado, o runtime minimo exista e os registros de lifecycle tenham sido feitos.
+O presenter/hook local continua sendo a projecao concreta da entrada, nao o owner da phase.

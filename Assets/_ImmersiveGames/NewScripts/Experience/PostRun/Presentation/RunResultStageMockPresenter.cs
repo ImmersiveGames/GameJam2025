@@ -2,7 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
                 $"[OBS][RunResultStage] RunResultStagePresenterActionRequested presenter='{DescribePresenterLabel()}' kind='Continue' reason='{Normalize(reason)}' signature='{_presenterSignature}'.",
                 DebugUtility.Colors.Info);
 
-            _runResultStageControl.TryComplete(reason);
+            _runResultStageControl?.TryComplete(reason);
         }
 
         private string DescribePhaseName()

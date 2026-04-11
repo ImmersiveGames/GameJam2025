@@ -119,81 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &312800927
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 312800929}
-  - component: {fileID: 312800928}
-  - component: {fileID: 312800930}
-  m_Layer: 0
-  m_Name: Teste
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &312800928
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312800927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc1c08bff4564e57be553fa46bda8f2c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  enableTimeout: 0
-  timeoutSeconds: 60
-  timeoutOutcome: 2
-  timeoutReason: QA/BaselineV3/TimeoutMock
-  useUnscaledTime: 0
-  enableDevManualTriggers: 1
-  devVictoryKey: 290
-  devDefeatKey: 291
-  devVictoryReason: Gameplay/DevManualVictory
-  devDefeatReason: Gameplay/DevManualDefeat
-  rearmOnGameRunStarted: 1
---- !u!4 &312800929
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312800927}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &312800930
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312800927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 33fa53c5fdca4f9bb2e492f8d9a0170a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  panelRect:
-    serializedVersion: 2
-    x: 16
-    y: 16
-    width: 260
-    height: 120
-  title: Baseline V3 Outcome Mock
 --- !u!1 &628275651
 GameObject:
   m_ObjectHideFlags: 0
@@ -254,6 +179,77 @@ Transform:
   - {fileID: 2079554368}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &724335456
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 724335458}
+  - component: {fileID: 724335457}
+  - component: {fileID: 724335459}
+  m_Layer: 0
+  m_Name: Outcame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &724335457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 724335456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33fa53c5fdca4f9bb2e492f8d9a0170a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelRect:
+    serializedVersion: 2
+    x: 16
+    y: 16
+    width: 260
+    height: 120
+  title: Baseline V3 Outcome Mock
+--- !u!4 &724335458
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 724335456}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &724335459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 724335456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a8f7a6b9e41480bb7a3fb657a2fd4d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelRect:
+    serializedVersion: 2
+    x: 500
+    y: 16
+    width: 400
+    height: 300
+  title: Phase Navigation QA Mock
 --- !u!1 &772402748
 GameObject:
   m_ObjectHideFlags: 0
@@ -871,5 +867,5 @@ SceneRoots:
   - {fileID: 2013597643}
   - {fileID: 1171078547}
   - {fileID: 1164878014}
-  - {fileID: 312800929}
+  - {fileID: 724335458}
   - {fileID: 628275653}

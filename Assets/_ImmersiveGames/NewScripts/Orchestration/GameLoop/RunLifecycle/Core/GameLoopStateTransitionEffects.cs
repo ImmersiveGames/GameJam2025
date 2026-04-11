@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
     /// Efeitos auxiliares do GameLoop.
     ///
     /// Mantém apenas a projeção de input mode do estado Playing.
-    /// O handoff de pós-run pertence a PostRun.
+    /// O handoff de pós-run pertence ao rail canônico de RunResultStage/RunDecision.
     /// </summary>
     public sealed class GameLoopStateTransitionEffects
     {

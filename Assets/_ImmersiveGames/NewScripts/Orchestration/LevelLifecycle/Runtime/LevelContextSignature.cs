@@ -2,7 +2,7 @@ using System;
 namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
 {
     /// <summary>
-    /// Assinatura de contexto do dominio LevelFlow.
+    /// Assinatura de contexto do dominio GameplaySessionFlow.
     /// Nao deve ser reutilizada como MacroSignature do SceneFlow.
     /// </summary>
     public readonly struct LevelContextSignature : IEquatable<LevelContextSignature>

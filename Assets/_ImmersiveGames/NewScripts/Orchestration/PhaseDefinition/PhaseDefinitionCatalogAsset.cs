@@ -13,14 +13,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [SerializeField] private List<PhaseDefinitionAsset> phaseDefinitions = new();
 
         private readonly Dictionary<string, PhaseDefinitionAsset> _cache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, int> _phaseIndexById = new(StringComparer.OrdinalIgnoreCase);
+        private readonly List<string> _orderedPhaseIds = new();
         private bool _built;
 
-        public IReadOnlyCollection<string> PhaseIds
+        public IReadOnlyList<string> PhaseIds
         {
             get
             {
                 EnsureBuilt();
-                return _cache.Keys;
+                return _orderedPhaseIds;
             }
         }
 
@@ -40,6 +42,56 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public void ValidateOrFail()
         {
             EnsureBuilt();
+        }
+
+        public PhaseDefinitionAsset ResolveInitialOrFail()
+        {
+            EnsureBuilt();
+
+            if (phaseDefinitions.Count == 0)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Catalog has no phaseDefinitions entries. asset='{name}'.");
+            }
+
+            return phaseDefinitions[0];
+        }
+
+        public PhaseDefinitionAsset ResolveNextOrFail(string phaseId)
+        {
+            if (!TryGetNext(phaseId, out PhaseDefinitionAsset nextPhaseDefinition))
+            {
+                string normalizedPhaseId = PhaseDefinitionId.Normalize(phaseId);
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing next phase for phaseId='{normalizedPhaseId}' in catalog '{name}'.");
+            }
+
+            return nextPhaseDefinition;
+        }
+
+        public bool TryGetNext(string phaseId, out PhaseDefinitionAsset nextPhaseDefinition)
+        {
+            nextPhaseDefinition = null;
+
+            if (string.IsNullOrWhiteSpace(phaseId))
+            {
+                return false;
+            }
+
+            EnsureBuilt();
+
+            string normalizedPhaseId = PhaseDefinitionId.Normalize(phaseId);
+            if (!_phaseIndexById.TryGetValue(normalizedPhaseId, out int index))
+            {
+                return false;
+            }
+
+            int nextIndex = index + 1;
+            if (nextIndex >= phaseDefinitions.Count)
+            {
+                return false;
+            }
+
+            nextPhaseDefinition = phaseDefinitions[nextIndex];
+            return nextPhaseDefinition != null;
         }
 
 #if UNITY_EDITOR
@@ -73,10 +125,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         private void BuildCache()
         {
             _cache.Clear();
+            _phaseIndexById.Clear();
+            _orderedPhaseIds.Clear();
 
             if (phaseDefinitions == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing phaseDefinitions list. asset='{name}'.");
+            }
+
+            if (phaseDefinitions.Count == 0)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Empty phaseDefinitions list. asset='{name}'.");
             }
 
             for (int i = 0; i < phaseDefinitions.Count; i++)
@@ -101,6 +160,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                 }
 
                 _cache.Add(phaseId, phaseDefinition);
+                _phaseIndexById.Add(phaseId, i);
+                _orderedPhaseIds.Add(phaseId);
             }
         }
     }

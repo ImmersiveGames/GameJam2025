@@ -42,6 +42,8 @@ O dominio deve ser lido a partir dos seguintes conceitos canonicos:
 
 - `Gameplay` e o `Contexto Macro`.
 - `Level` e o `Contexto Local de Conteudo`.
+- `PhaseDefinitionAsset` responde por "o que a phase e".
+- `PhaseDefinitionCatalogAsset` responde por "como as phases se encadeiam".
 - `EnterStage` e `ExitStage` sao `Estagios Locais`.
 - `Playing` e o `Estado de Fluxo`.
 - `Victory` / `Defeat` sao `Resultado da Run`.
@@ -49,7 +51,7 @@ O dominio deve ser lido a partir dos seguintes conceitos canonicos:
 - `Restart` / `ExitToMenu` sao `Intencoes Derivadas`.
 - `Pause` e `Estado Transversal`.
 
-A leitura canonica do runtime de gameplay abaixo e intencionalmente de alto nivel. A composicao semantica fina da sessao jogavel e detalhada depois por `ADR-0045`, `ADR-0046` e `ADR-0047`, sem reatribuir ao backbone o centro do significado do gameplay. Para o fim de run, `ADR-0047` e o owner documental canonico.
+A leitura canonica do runtime de gameplay abaixo e intencionalmente de alto nivel. A composicao semantica fina da sessao jogavel e detalhada depois por `ADR-0045`, `ADR-0046` e `ADR-0047`, sem reatribuir ao backbone o centro do significado do gameplay. A progressao entre phases fica no catalogo; a phase individual nao assume ownership de ordem, initial, next ou previous. Para o fim de run, `ADR-0049` e o owner documental canonico.
 
 ## Coluna dorsal do runtime
 
@@ -76,6 +78,7 @@ Sequencia canonica do runtime:
 
 ### LevelFlow
 - Conteudo local do gameplay, restart context e acoes pos-level.
+- `Continuity`, quando lida no gameplay runtime, e downstream semantico de fechamento; a ordem entre phases nao nasce aqui.
 - Nao deve possuir resultado terminal, ownership pos-run ou dispatch global.
 - Nao e eixo primario concorrente ao `Gameplay Runtime Composition`.
 

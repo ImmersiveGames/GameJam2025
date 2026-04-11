@@ -1,24 +1,20 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.Bindings
 {
     /// <summary>
     /// Binder (produção) para a intent visual "Play" do Frontend/UI.
     /// - OnClick() deve ser ligado no Inspector.
-    /// - Sem corrotinas.
+    /// - Sem coroutines.
     ///
-    /// Emite intent visual de start e delega a execução downstream para o backbone.
+    /// Emite intent visual de start e delega a execução downstream para a backbone.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MenuPlayButtonBinder : FrontendButtonBinderBase
     {
-        protected override void Awake()
-        {
-            base.Awake();
-        }
 
         protected override bool OnClickCore(string actionReason)
         {

@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<WorldResetCompletedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[EventBus] EventBus inicializado (GameLoop + SceneFlow + LevelFlow + WorldReset).",
+                "[EventBus] EventBus inicializado (GameLoop + GameplaySessionFlow + SceneFlow + WorldReset).",
                 DebugUtility.Colors.Info);
 
             EnsureLoadingOrchestratorsRegisteredAfterEventBusReset();

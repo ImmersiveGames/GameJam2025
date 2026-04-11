@@ -13,7 +13,7 @@
 
 Este ADR congela o contrato pos-`Playing` como fluxo positivo, tipado e operacional, separando o fim de run da IntroStage e da montagem inicial da fase.
 
-`RunResultStage` e `phase-owned`, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
+`RunResultStage` e `phase-owned` quando presente, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
 
 `RunDecision` e `macro-owned` e decide a acao downstream final.
 
@@ -35,6 +35,7 @@ O fim de run e estruturado em tres pontos canonicos:
 3. `RunDecision`
 
 O fluxo se completa quando `RunResultStage` entrega `Continue` e a decisao macro escolhe a acao final downstream.
+Quando a phase nao fornecer `RunResultStage`, o lifecycle deve registrar `skip/no-content` explicito e seguir para `RunDecision`.
 
 ## 4. Ownership
 
@@ -61,15 +62,17 @@ Esse fluxo preserva a transicao entre o encerramento local da phase e a decisao 
 
 `RunResultStage` recebe a reason do fim de run, executa o fechamento local da phase e termina por `Continue`.
 
-O presenter local de `RunResultStage` existe previamente como conteudo local da phase/cena e e adotado pelo host tipado no escopo correto.
+O presenter local de `RunResultStage`, quando presente, existe como conteudo local da phase/cena e e adotado pelo host tipado no escopo correto.
 
 Lifecycle:
 
 1. recebe `RunEndIntent(reason)`
 2. adota a `reason` como contrato de entrada
 3. executa o conteudo local da phase
-4. apresenta o resultado local da phase por presenter tipado
+4. apresenta o resultado local da phase por presenter tipado, quando presente
 5. conclui o stage por `Continue`
+
+Se nao houver presenter/conteudo local de `RunResultStage`, o lifecycle faz `skip/no-content` explicito e segue o contrato canonico sem fatal.
 
 Semantica:
 
@@ -98,7 +101,7 @@ Cada tipo possui infraestrutura propria, registro proprio e resolucao determinis
 
 Cardinalidade:
 
-- existe no maximo 1 presenter valido para `RunResult` no escopo correto
+- existe no maximo 1 presenter valido para `RunResult` no escopo correto, quando o stage estiver presente
 - existe no maximo 1 presenter valido para `RunDecision` no escopo correto
 - a resolucao por tipo e registro e deterministica
 
@@ -109,6 +112,7 @@ Os hand-offs canonicos sao:
 - `Playing` -> `RunEndIntent(reason)`
 - `RunEndIntent(reason)` -> `RunResultStage`
 - `RunResultStage` -> `Continue`
+- `skip/no-content` -> `RunDecision` quando `RunResultStage` nao estiver presente
 - `Continue` -> `RunDecision`
 - `RunDecision` -> acao final downstream
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
@@ -60,7 +61,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public static void RecordAppliedPhaseDefinition(
             PhaseDefinitionAsset phaseDefinitionRef,
             IReadOnlyList<string> appliedSceneNames,
-            string activeSceneName)
+            string activeSceneName,
+            string source = "PhaseContentSceneRuntimeApplier")
         {
             if (phaseDefinitionRef == null)
             {
@@ -74,8 +76,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             UpdateActiveState(targetSceneNames, phaseDefinitionRef);
 
+            EventBus<PhaseContentAppliedEvent>.Raise(new PhaseContentAppliedEvent(
+                phaseDefinitionRef,
+                appliedSceneNames,
+                normalizedActiveScene,
+                source));
+
             DebugUtility.Log(typeof(PhaseContentSceneRuntimeApplier),
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionContentRecorded phaseId='{phaseDefinitionRef.PhaseId}' phaseRef='{phaseDefinitionRef.name}' activeScenes=[{string.Join(",", targetSceneNames)}] activeScene='{normalizedActiveScene}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentReadModelCommitted owner='PhaseContentSceneRuntimeApplier' phaseId='{phaseDefinitionRef.PhaseId}' activeScenes=[{string.Join(",", targetSceneNames)}] activeScene='{normalizedActiveScene}' source='{source}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(PhaseContentSceneRuntimeApplier),
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentApplied phaseId='{phaseDefinitionRef.PhaseId}' activeScenes=[{string.Join(",", targetSceneNames)}] activeScene='{normalizedActiveScene}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -84,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             ClearActiveState();
 
             DebugUtility.Log(typeof(PhaseContentSceneRuntimeApplier),
-                "[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionContentCleared.",
+                "[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentCleared.",
                 DebugUtility.Colors.Info);
         }
 
@@ -140,5 +152,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             return set;
         }
+    }
+
+    public readonly struct PhaseContentAppliedEvent : IEvent
+    {
+        public PhaseContentAppliedEvent(
+            PhaseDefinitionAsset phaseDefinitionRef,
+            IReadOnlyList<string> appliedSceneNames,
+            string activeSceneName,
+            string source)
+        {
+            PhaseDefinitionRef = phaseDefinitionRef;
+            AppliedSceneNames = appliedSceneNames;
+            ActiveSceneName = string.IsNullOrWhiteSpace(activeSceneName) ? string.Empty : activeSceneName.Trim();
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+        }
+
+        public PhaseDefinitionAsset PhaseDefinitionRef { get; }
+        public IReadOnlyList<string> AppliedSceneNames { get; }
+        public string ActiveSceneName { get; }
+        public string Source { get; }
     }
 }

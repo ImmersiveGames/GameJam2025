@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
 
         public override string ToString()
         {
-            return $"WorldResetStartedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', LevelSignature='{LevelSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Origin='{Origin}')";
+            return $"WorldResetStartedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', PhaseSignature='{LevelSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Origin='{Origin}')";
         }
 
         private static string Normalize(string value)

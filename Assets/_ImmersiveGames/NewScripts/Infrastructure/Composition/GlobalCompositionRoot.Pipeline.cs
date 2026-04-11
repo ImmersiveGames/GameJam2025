@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void ExecuteInstallerPipeline(BootstrapConfigAsset bootstrapConfig)
         {
-            var steps = GetCompositionPipelineSteps();
+            var steps = GetCompositionPipelineSteps(bootstrapConfig);
             CompositionPipelineExecutor.ExecuteInstallers(steps, bootstrapConfig);
 
             RegisterInputModesFromRuntimeConfig();
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 
         private static void ExecuteBootstrapPipeline(BootstrapConfigAsset bootstrapConfig)
         {
-            var steps = GetCompositionPipelineSteps();
+            var steps = GetCompositionPipelineSteps(bootstrapConfig);
             CompositionPipelineExecutor.ExecuteBootstraps(steps, bootstrapConfig);
         }
 

@@ -86,8 +86,9 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
             {
                 if (_registeredPresenter == null)
                 {
-                    HardFailFastH1.Trigger(typeof(RunResultStagePresenterHost),
-                        $"[FATAL][H1][RunResultStage] RunResultStage presenter obrigatorio ausente. source='{Normalize(source)}' signature='{Normalize(stage.Signature)}' scene='{Normalize(stage.SceneName)}'.");
+                    DebugUtility.Log<RunResultStagePresenterHost>(
+                        $"[OBS][RunResultStage] RunResultStageSkipped reason='no_content' source='{Normalize(source)}' signature='{Normalize(stage.Signature)}' scene='{Normalize(stage.SceneName)}' detail='presenter_not_registered'.",
+                        DebugUtility.Colors.Info);
                     return false;
                 }
 

@@ -151,7 +151,7 @@ Não é:
 - `Playing` é o **Estado de Fluxo** principal da sessão jogável depois da preparação semântica e da liberação operacional.
 - `RunResult` é o mesmo conceito de `Resultado da Run`: a consolidação final do que aconteceu na run.
 - `RunEndIntent` é a intencao de encerrar a run atual e carrega a `reason`.
-- `RunResultStage` e o **Estagio Local** / phase-owned do fim da run, estruturalmente equivalente ao `IntroStage`.
+- `RunResultStage` e o **Estagio Local** / phase-owned do fim da run, quando presente, estruturalmente equivalente ao `IntroStage`.
 - `RunDecision` e a etapa distinta macro-route-owned que vem depois do `RunResultStage`.
 - `Overlay` e o contexto local visual downstream de `RunDecision`; `PostRunMenu` e nomenclatura historica desse visual.
 - `PostRun` e um alias historico do rail final antigo, nao o conceito central do fim de run.
@@ -520,19 +520,21 @@ Ela representa a transicao semantica que leva do fim operacional da run para o r
 
 ### 14.6 RunResultStage
 
-**RunResultStage** e o estagio local phase-owned do fim da run.
+**RunResultStage** e o estagio local phase-owned possivel do fim da run.
 
 Ele e:
-- simetrico ao `IntroStage`
-- parte do contrato canonico do fim de run da phase
-- decidido pela `PhaseDefinition`
+- simetrico ao `IntroStage` quando ambos estiverem presentes
+- parte do contrato canonico do fim de run da phase quando presente
+- decidido pela `PhaseDefinition` quando presente
 - executado antes de `RunDecision`
 
 Ele nao e:
 - o resultado da run em si
 - o overlay
 - a decisao final
-- um conceito opcional
+- um conceito obrigatorio em toda phase
+
+Quando `RunResultStage` nao existir, o lifecycle deve tratar a ausencia como `skip/no-content` explicito, sem invalidar a phase autoral.
 
 `RunDecision` nao e phase-owned; e macro-route-owned / macro-stage-owned.
 `RunResultStage` nao depende de `Task` como semantica de negocio.

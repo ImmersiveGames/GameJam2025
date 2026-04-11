@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Config;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 {
@@ -129,6 +130,46 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 
             EnsureBuilt();
             return _cache.TryGetValue(normalizedIntentId, out entry);
+        }
+
+        public SceneRouteDefinitionAsset ResolveGameplayRouteRefOrFail()
+        {
+            GameNavigationEntry gameplayEntry = ResolveCoreOrFail(GameNavigationIntentKind.Gameplay);
+            if (gameplayEntry.RouteRef == null)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog gameplay core intent sem routeRef obrigatorio. asset='{name}', intentId='{GetIntentId(GameNavigationIntentKind.Gameplay)}'.");
+            }
+
+            if (gameplayEntry.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog gameplay core intent exige RouteKind.Gameplay. asset='{name}', intentId='{GetIntentId(GameNavigationIntentKind.Gameplay)}', routeId='{gameplayEntry.RouteRef.RouteId}', routeKind='{gameplayEntry.RouteRef.RouteKind}'.");
+            }
+
+            return gameplayEntry.RouteRef;
+        }
+
+        public bool IsGameplayPhaseEnabledOrFail()
+        {
+            SceneRouteDefinitionAsset gameplayRouteRef = ResolveGameplayRouteRefOrFail();
+            bool phaseEnabled = gameplayRouteRef.PhaseDefinitionCatalog != null;
+
+            DebugUtility.LogVerbose(typeof(GameNavigationCatalogAsset),
+                $"[OBS][NavigationCore] route-driven phase enablement resolved routeKind='{gameplayRouteRef.RouteKind}' phaseCatalogPresent={phaseEnabled} phaseEnabled={phaseEnabled}.",
+                DebugUtility.Colors.Info);
+
+            return phaseEnabled;
+        }
+
+        public PhaseDefinitionCatalogAsset ResolveGameplayPhaseCatalogOrFail()
+        {
+            SceneRouteDefinitionAsset gameplayRouteRef = ResolveGameplayRouteRefOrFail();
+            PhaseDefinitionCatalogAsset phaseDefinitionCatalog = gameplayRouteRef.PhaseDefinitionCatalog;
+            if (phaseDefinitionCatalog == null)
+            {
+                FailFastConfig($"[FATAL][Config] GameNavigationCatalog gameplay core intent requires PhaseDefinitionCatalog when phase-enabled. asset='{name}', intentId='{GetIntentId(GameNavigationIntentKind.Gameplay)}', routeId='{gameplayRouteRef.RouteId}'.");
+            }
+
+            return phaseDefinitionCatalog;
         }
 
         public GameNavigationEntry ResolveIntentOrFail(string intentId)

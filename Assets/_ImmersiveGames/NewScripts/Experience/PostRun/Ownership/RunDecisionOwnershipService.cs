@@ -3,8 +3,8 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Presentation;
-using NewRunDecisionCompletedEvent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunDecisionCompletedEvent;
-using NewRunDecisionEnteredEvent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunDecisionEnteredEvent;
+//using NewRunDecisionCompletedEvent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunDecisionCompletedEvent;
+//using NewRunDecisionEnteredEvent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunDecisionEnteredEvent;
 
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 {
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
                 $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered signature='{decision.Signature}' scene='{decision.SceneName}' frame={decision.Frame} result='{decision.Result}' reason='{decision.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<NewRunDecisionEnteredEvent>.Raise(new NewRunDecisionEnteredEvent(decision));
+            EventBus<RunDecisionEnteredEvent>.Raise(new RunDecisionEnteredEvent(decision));
         }
 
         public void ExitRunDecision(RunDecisionCompletion completion)
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
                 $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionCompleted signature='{CurrentDecision.Signature}' scene='{CurrentDecision.SceneName}' frame='{CurrentDecision.Frame}' result='{CurrentDecision.Result}' reason='{completion.Reason}' handoff='{completion.NextState}' kind='{completion.Kind}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<NewRunDecisionCompletedEvent>.Raise(new NewRunDecisionCompletedEvent(CurrentDecision, completion));
+            EventBus<RunDecisionCompletedEvent>.Raise(new RunDecisionCompletedEvent(CurrentDecision, completion));
 
             if (_currentPresenter != null)
             {

@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
 
         public override string ToString()
         {
-            return $"WorldResetRequest(Kind='{Kind}', Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', LevelSignature='{LevelSignature}')";
+            return $"WorldResetRequest(Kind='{Kind}', Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', PhaseSignature='{LevelSignature}')";
         }
     }
 }

@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 {
     /// <summary>
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
                     DebugUtility.LogWarning<IntroStageControlService>(
                         $"[OBS][IntroStageControlService] BeginIntroStage chamado enquanto outra IntroStage ainda esta ativa. Intro antiga sera superseded signature='{NormalizeValue(previousContext.ContextSignature)}'.");
 
-                EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(
+                EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
                     previousContext.Session,
                     "GameplaySessionFlow",
                     wasSkipped: true,
@@ -152,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
                         $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='GameplaySessionFlow' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
                         DebugUtility.Colors.Info);
 
-                    EventBus<LevelIntroCompletedEvent>.Raise(new LevelIntroCompletedEvent(
+                    EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
                         context.Session,
                         "GameplaySessionFlow",
                         wasSkipped,

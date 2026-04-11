@@ -1,9 +1,14 @@
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
 {
     /// <summary>
@@ -30,6 +35,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
             RegisterGameRunPlayingStateGuard();
             RegisterGameLoopCommands();
             RegisterPauseCommands();
+            RegisterGameRunOutcomeService();
+            RegisterGameplaySessionOperationalSeams();
 
             _installed = true;
 
@@ -136,6 +143,103 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap
                 },
                 "[GameLoop] IGameLoopCommands ja registrado no DI global.",
                 "[GameLoop] GameLoopCommands registrado no DI global.");
+        }
+
+        private static void RegisterGameRunOutcomeService()
+        {
+            RegisterIfMissing<IGameRunOutcomeService>(
+                () =>
+                {
+                    if (!DependencyManager.Provider.TryGetGlobal<IGameRunPlayingStateGuard>(out var gameplayStateGuard) || gameplayStateGuard == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunPlayingStateGuard ausente ao registrar IGameRunOutcomeService.");
+                    }
+
+                    if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService ausente ao registrar IGameRunOutcomeService.");
+                    }
+
+                    return new GameRunOutcomeService(gameplayStateGuard, gameLoopService);
+                },
+                "[GameLoop] IGameRunOutcomeService ja registrado no DI global.",
+                "[GameLoop] GameRunOutcomeService registrado no DI global.");
+        }
+
+        private static void RegisterGameplaySessionOperationalSeams()
+        {
+            RegisterIntroStagePresenterScopeResolver();
+            RegisterIntroStageSessionService();
+            RegisterIntroStagePresenterRegistry();
+            RegisterIntroStageCoordinator();
+            RegisterIntroStageControlService();
+            RegisterGameplaySceneClassifier();
+            RegisterDefaultIntroStageStep();
+            RegisterIntroStageLifecycleOrchestrator();
+        }
+
+        private static void RegisterIntroStagePresenterScopeResolver()
+        {
+            RegisterIfMissing<IIntroStagePresenterScopeResolver>(
+                () => new IntroStagePresenterScopeResolver(),
+                "[GameLoop] IIntroStagePresenterScopeResolver ja registrado no DI global.",
+                "[GameLoop] IntroStagePresenterScopeResolver registrado no DI global como seam operacional scene-local.");
+        }
+
+        private static void RegisterIntroStageSessionService()
+        {
+            RegisterIfMissing<IIntroStageSessionService>(
+                () => new IntroStageSessionService(),
+                "[GameLoop] IIntroStageSessionService ja registrado no DI global.",
+                "[GameLoop] IntroStageSessionService registrado no DI global como seam operacional de GameplaySessionFlow.");
+        }
+
+        private static void RegisterIntroStagePresenterRegistry()
+        {
+            RegisterIfMissing<IIntroStagePresenterRegistry>(
+                () => new IntroStagePresenterHost(),
+                "[GameLoop] IIntroStagePresenterRegistry ja registrado no DI global.",
+                "[GameLoop] IntroStagePresenterHost registrado no DI global como resolver scene-local de GameplaySessionFlow.");
+        }
+
+        private static void RegisterIntroStageCoordinator()
+        {
+            RegisterIfMissing<IIntroStageCoordinator>(
+                () => new IntroStageCoordinator(),
+                "[GameLoop] IIntroStageCoordinator ja registrado no DI global.",
+                "[GameLoop] IntroStageCoordinator registrado no DI global como support service de GameplaySessionFlow.");
+        }
+
+        private static void RegisterIntroStageControlService()
+        {
+            RegisterIfMissing<IIntroStageControlService>(
+                () => new IntroStageControlService(),
+                "[GameLoop] IIntroStageControlService ja registrado no DI global.",
+                "[GameLoop] IntroStageControlService registrado no DI global como support service de GameplaySessionFlow.");
+        }
+
+        private static void RegisterGameplaySceneClassifier()
+        {
+            RegisterIfMissing<IGameplaySceneClassifier>(
+                () => new DefaultGameplaySceneClassifier(),
+                "[GameLoop] IGameplaySceneClassifier ja registrado no DI global.",
+                "[GameLoop] DefaultGameplaySceneClassifier registrado no DI global como support service de GameplaySessionFlow.");
+        }
+
+        private static void RegisterDefaultIntroStageStep()
+        {
+            RegisterIfMissing<IIntroStageStep>(
+                () => new ConfirmToStartIntroStageStep(),
+                "[GameLoop] IIntroStageStep ja registrado no DI global.",
+                "[GameLoop] ConfirmToStartIntroStageStep registrado no DI global como support service de IntroStage.");
+        }
+
+        private static void RegisterIntroStageLifecycleOrchestrator()
+        {
+            RegisterIfMissing<IntroStageLifecycleOrchestrator>(
+                () => new IntroStageLifecycleOrchestrator(),
+                "[GameLoop] IntroStageLifecycleOrchestrator ja registrado no DI global.",
+                "[GameLoop] IntroStageLifecycleOrchestrator registrado no DI global como gate operacional de GameplaySessionFlow.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

@@ -1,9 +1,8 @@
-﻿# Gameplay
+# Gameplay
 
 ## Status documental
 
-- Parcial / historico para a camada antiga de gameplay.
-- O centro semantico vigente do gameplay esta em `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`, `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md` e `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`.
+- O canon vivo do gameplay esta em `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`, `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md`, `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`, `Docs/ADRs/ADR-0049-Fluxo-Canonico-de-Fim-de-Run-e-PostRun.md` e `Docs/ADRs/ADR-0050-IntroStage-Canonical-Content-Presenter-Hook.md`.
 - `Gameplay` ainda concentra setup de mundo, spawn, state, GameplayReset e apoio de camera.
 - A camera de gameplay saiu para `Experience/GameplayCamera`.
 
@@ -26,12 +25,12 @@
 - `PlayerActorGroupGameplayResetWorldParticipant` e a ponte de GameplayReset de players para `ByActorKind(Player)`.
 - `Experience/GameplayCamera` resolve a camera gameplay fora do owner de gameplay.
 
-## Dependências e limites
+## Dependencias e limites
 
 - `SceneReset` e `WorldReset` continuam sendo o trilho material de reset.
 - `ActorGroupGameplayReset` depende de `ActorKind` e `ActorIdSet`.
 - `Game/Content/Definitions/Levels` guarda definitions/content de level; `Gameplay` nao e owner desse boundary.
-- `Gameplay` ainda mistura entidade, mecanica e orquestracao local em vez de separa-las completamente.
+- `GameplaySessionFlow` e o bloco interno que organiza a composicao da sessao e o handoff para phase.
 
 ## Fora de escopo
 
@@ -56,7 +55,7 @@
 
 - Prefira `ByActorKind` como trilho principal.
 - Use `ActorIdSet` apenas quando a selecao tecnica explicita for necessaria.
-- Continue nomeando esse fluxo como `ActorGroupGameplayReset`.
+- `GameplaySessionFlow` e a leitura canonica para composicao da sessao; `Gameplay` nao e owner de phase.
 
 ## Leitura cruzada
 

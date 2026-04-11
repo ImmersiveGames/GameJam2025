@@ -2,7 +2,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndConditions
@@ -31,8 +31,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
         private EventBinding<GamePlayRequestedEvent> _gamePlayRequestedBinding;
         private EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
-        private EventBinding<PhaseIntroStageEntryEvent> _phaseIntroStageEntryBinding;
-        private EventBinding<LevelIntroCompletedEvent> _levelIntroCompletedBinding;
+        private EventBinding<IntroStageEntryEvent> _introStageEntryBinding;
+        private EventBinding<IntroStageCompletedEvent> _introStageCompletedBinding;
         private bool _registered;
         private bool _runEnded;
 
@@ -42,8 +42,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             _runEndedBinding = new EventBinding<GameRunEndedEvent>(_ => _runEnded = true);
             _gamePlayRequestedBinding = new EventBinding<GamePlayRequestedEvent>(evt => ReportSmoke("GamePlayRequestedEvent", evt.Reason));
             _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(evt => ReportSmoke("PhaseDefinitionSelectedEvent", evt.Reason));
-            _phaseIntroStageEntryBinding = new EventBinding<PhaseIntroStageEntryEvent>(evt => ReportSmoke("PhaseIntroStageEntryEvent", evt.Session.Reason));
-            _levelIntroCompletedBinding = new EventBinding<LevelIntroCompletedEvent>(evt => ReportSmoke("LevelIntroCompletedEvent", evt.Reason));
+            _introStageEntryBinding = new EventBinding<IntroStageEntryEvent>(evt => ReportSmoke("IntroStageEntryEvent", evt.Session.Reason));
+            _introStageCompletedBinding = new EventBinding<IntroStageCompletedEvent>(evt => ReportSmoke("IntroStageCompletedEvent", evt.Reason));
         }
 
         private void OnEnable()
@@ -194,8 +194,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             EventBus<GameRunEndedEvent>.Register(_runEndedBinding);
             EventBus<GamePlayRequestedEvent>.Register(_gamePlayRequestedBinding);
             EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
-            EventBus<PhaseIntroStageEntryEvent>.Register(_phaseIntroStageEntryBinding);
-            EventBus<LevelIntroCompletedEvent>.Register(_levelIntroCompletedBinding);
+            EventBus<IntroStageEntryEvent>.Register(_introStageEntryBinding);
+            EventBus<IntroStageCompletedEvent>.Register(_introStageCompletedBinding);
             _registered = true;
         }
 
@@ -210,8 +210,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             EventBus<GameRunEndedEvent>.Unregister(_runEndedBinding);
             EventBus<GamePlayRequestedEvent>.Unregister(_gamePlayRequestedBinding);
             EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
-            EventBus<PhaseIntroStageEntryEvent>.Unregister(_phaseIntroStageEntryBinding);
-            EventBus<LevelIntroCompletedEvent>.Unregister(_levelIntroCompletedBinding);
+            EventBus<IntroStageEntryEvent>.Unregister(_introStageEntryBinding);
+            EventBus<IntroStageCompletedEvent>.Unregister(_introStageCompletedBinding);
             _registered = false;
         }
 

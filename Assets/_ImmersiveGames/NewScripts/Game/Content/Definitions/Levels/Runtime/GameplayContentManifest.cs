@@ -56,9 +56,9 @@ namespace _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime
                 return;
             }
 
-            string normalizedOwnerLabel = string.IsNullOrWhiteSpace(ownerLabel) ? "<unnamed-level>" : ownerLabel.Trim();
+            string normalizedOwnerLabel = string.IsNullOrWhiteSpace(ownerLabel) ? "<unnamed-phase>" : ownerLabel.Trim();
             HardFailFastH1.Trigger(typeof(GameplayContentManifest),
-                $"[FATAL][H1][LevelFlow] Invalid GameplayContentManifest '{normalizedOwnerLabel}'. context='{context}' detail='{error}'");
+                $"[FATAL][H1][GameplaySessionFlow] Invalid GameplayContentManifest '{normalizedOwnerLabel}'. context='{context}' detail='{error}'");
         }
     }
 }

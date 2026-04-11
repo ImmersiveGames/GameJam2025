@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c906ec60375d8946b130edfe0fae2ed, type: 3}
+  m_Name: PhaseDefinitionExample02
+  m_EditorClassIdentifier:
+  identity:
+    phaseId:
+      value: phase_test_slice_02
+    displayName: Phase Test Slice 02
+    description: Minimal second example phase for slice testing.
+  content:
+    entries:
+    - localId: main_scene
+      sceneRef: {fileID: 11400000, guid: c1b6a27df6a1135469faf6a28782ab22, type: 2}
+      role: 1
+      tags:
+      - main
+      - slice
+  swap:
+    contentManifest:
+      entries:
+      - entryId: player_main
+        role: 1
+        configurationReference: {fileID: 100000, guid: a92dfce9d9c24c34b1b217f3f0d2f08d, type: 3}
+        materializationExpectation:
+        observabilityExpectation:
+      - entryId: eater_aux
+        role: 2
+        configurationReference: {fileID: 100000, guid: 0744eef234e55034895662d2373a6d62, type: 3}
+        materializationExpectation:
+        observabilityExpectation:
+      - entryId: dummy_prototype
+        role: 3
+        configurationReference: {fileID: 1188741042885028564, guid: e9ccfebb5ac66364a9197dc8cc07ffd6, type: 3}
+        materializationExpectation:
+        observabilityExpectation:
+    additiveScenes:
+    - buildIndex: 7
+      sceneName: SceneTest
+  players:
+    entries:
+    - localId: solo_player
+      role: 1
+  rulesObjectives:
+    rules:
+    - localId: solo_constraint
+      ruleKind: 1
+      parameters: []
+    objectives:
+    - localId: primary_objective
+      objectiveKind: 1
+      parameters: []
+  initialState:
+    entries:
+    - localId: phase_ready
+      stateKind: 1
+      parameters: []
+  closure:
+    resultKind: 1
+    continuityPolicyKind: 2
+    parameters: []

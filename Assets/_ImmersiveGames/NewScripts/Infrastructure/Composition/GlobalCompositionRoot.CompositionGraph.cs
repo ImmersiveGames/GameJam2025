@@ -1,12 +1,13 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Audio.Bootstrap;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap;
 using _ImmersiveGames.NewScripts.Experience.Preferences.Bootstrap;
 using _ImmersiveGames.NewScripts.Experience.Save.Bootstrap;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Bootstrap;
+using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bootstrap;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Bootstrap;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Bootstrap;
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static IReadOnlyList<CompositionPipelineStep> GetCompositionPipelineSteps()
+        private static IReadOnlyList<CompositionPipelineStep> GetCompositionPipelineSteps(BootstrapConfigAsset bootstrapConfig)
         {
             var steps = new List<CompositionPipelineStep>(16);
 
@@ -39,7 +40,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
                 bootstrap: null,
                 bootstrapDependencies: System.Array.Empty<string>()));
 
-            steps.AddRange(GetModuleCompositionSteps());
+            bool phaseEnabled = ResolveGameplayPhaseEnablementOrFail(bootstrapConfig);
+
+            steps.AddRange(GetModuleCompositionSteps(phaseEnabled));
 
             steps.Add(new CompositionPipelineStep(
                 id: "SceneComposition",
@@ -51,25 +54,58 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             return steps;
         }
 
-        private static IReadOnlyList<CompositionPipelineStep> GetModuleCompositionSteps()
+        private static IReadOnlyList<CompositionPipelineStep> GetModuleCompositionSteps(bool phaseEnabled)
         {
             // Ordem intencional:
             // - Installer: Audio antes de Preferences (Preferences depende do Audio instalado).
             // - Bootstrap: Preferences antes de Audio (Audio depende do snapshot de Preferences).
-            return new[] 
+            var steps = new List<CompositionPipelineStep>(10)
             {
                 CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(PhaseDefinitionCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(LevelFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(RunEndRailCompositionDescriptor.Descriptor),
             };
+
+            if (phaseEnabled)
+            {
+                steps.Insert(2, CompositionPipelineStep.FromDescriptor(PhaseDefinitionCompositionDescriptor.Descriptor));
+                DebugUtility.Log(typeof(GlobalCompositionRoot),
+                    "[OBS][Composition][GameplaySessionFlow] Phase rail enabled at seam='GameplaySessionFlow/PhaseDefinition'.",
+                    DebugUtility.Colors.Info);
+            }
+            else
+            {
+                DebugUtility.Log(typeof(GlobalCompositionRoot),
+                    "[OBS][Composition][GameplaySessionFlow] Phase rail skipped because route/context is phase-disabled. seam='GameplaySessionFlow/PhaseDefinition'.",
+                    DebugUtility.Colors.Info);
+            }
+
+            return steps;
+        }
+
+        private static bool ResolveGameplayPhaseEnablementOrFail(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (bootstrapConfig == null)
+            {
+                throw new System.InvalidOperationException("[FATAL][Config][Composition] BootstrapConfigAsset obrigatorio ausente para resolver phase-enabled/phase-disabled.");
+            }
+
+            if (bootstrapConfig.NavigationCatalog == null)
+            {
+                throw new System.InvalidOperationException("[FATAL][Config][Composition] GameNavigationCatalog obrigatorio ausente para resolver phase-enabled/phase-disabled.");
+            }
+
+            bool phaseEnabled = bootstrapConfig.NavigationCatalog.IsGameplayPhaseEnabledOrFail();
+            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
+                $"[OBS][Composition][GameplaySessionFlow] route-driven phase enablement resolved phaseEnabled={phaseEnabled}.",
+                DebugUtility.Colors.Info);
+            return phaseEnabled;
         }
     }
 }

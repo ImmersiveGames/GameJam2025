@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
      * - GameRunEndRequestedEvent(GameRunOutcome outcome, string reason) -> IGameRunEndRequestService.RequestRunEnd(...)
      *   (publica EventBus<GameRunEndRequestedEvent> dentro do serviço).
      * - GameRunEndedEvent(GameRunOutcome outcome, string reason) -> publicado pelo GameRunOutcomeService via EventBus<GameRunEndedEvent>.
-     * - Restart/ExitToMenu => dispatch direto ao owner canonico downstream (LevelFlow/Navigation).
+     * - Restart/ExitToMenu => dispatch direto ao owner canonico downstream (GameplaySessionFlow/Navigation).
      */
     public sealed class GameLoopCommands : IGameLoopCommands
     {
@@ -110,13 +110,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
             if (DependencyManager.Provider == null)
             {
                 HardFailFastH1.Trigger(typeof(GameLoopCommands),
-                    $"[FATAL][H1][LevelFlow] Restart requested without DependencyManager.Provider. reason='{reason}'.");
+                    $"[FATAL][H1][GameLoop] Restart requested without DependencyManager.Provider. reason='{reason}'.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var postLevelActions) || postLevelActions == null)
             {
                 HardFailFastH1.Trigger(typeof(GameLoopCommands),
-                    $"[FATAL][H1][LevelFlow] Restart requested without IPostLevelActionsService. reason='{reason}'.");
+                    $"[FATAL][H1][GameLoop] Restart requested without IPostLevelActionsService. reason='{reason}'.");
             }
 
             return postLevelActions;

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
@@ -88,8 +89,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
                 }
 
                 DebugUtility.Log<WorldResetCommands>(
-                    $"[OBS][WorldReset] ResetLevel phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' levelSignature='{resetContext.LevelSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Info);
+                $"[OBS][WorldReset] ResetPhase phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' phaseSignature='{resetContext.LevelSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
                     kind: ResetKind.Level,
@@ -157,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
 
         private static void FailFastConfig(string detail)
         {
-            HardFailFastH1.Trigger(typeof(WorldResetCommands), $"[FATAL][H1][LevelFlow] {detail}");
+            HardFailFastH1.Trigger(typeof(WorldResetCommands), $"[FATAL][H1][WorldReset] {detail}");
         }
     }
 }

@@ -6,7 +6,7 @@ using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -111,8 +111,42 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
                 if (!phaseRuntime.HasRunResultStage)
                 {
-                    DebugUtility.LogError<GameRunEndedEventBridge>(
-                        $"[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido em phase sem RunResultStage. scene='{sceneName}' frame={Time.frameCount} phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.");
+                    DebugUtility.Log<GameRunEndedEventBridge>(
+                        $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageSkipped reason='no_content' source='GameplaySessionFlow' scene='{sceneName}' frame={Time.frameCount} phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.",
+                        DebugUtility.Colors.Info);
+
+                    if (!DependencyManager.Provider.TryGetGlobal<IPostRunResultService>(out var noResultService) || noResultService == null)
+                    {
+                        DebugUtility.LogError<GameRunEndedEventBridge>(
+                            "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IPostRunResultService nao foi encontrado no escopo global para phase sem RunResultStage.");
+                        return;
+                    }
+
+                    if (!DependencyManager.Provider.TryGetGlobal<IRunEndIntentOwnershipService>(out var noResultIntentOwner) || noResultIntentOwner == null)
+                    {
+                        DebugUtility.LogError<GameRunEndedEventBridge>(
+                            "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunEndIntentOwnershipService nao foi encontrado no escopo global para phase sem RunResultStage.");
+                        return;
+                    }
+
+                    if (!DependencyManager.Provider.TryGetGlobal<IRunDecisionOwnershipService>(out var noResultDecisionOwner) || noResultDecisionOwner == null)
+                    {
+                        DebugUtility.LogError<GameRunEndedEventBridge>(
+                            "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunDecisionOwnershipService nao foi encontrado no escopo global para phase sem RunResultStage.");
+                        return;
+                    }
+
+                    var noResultIntent = new CanonicalRunEndIntent(
+                        signature: phaseRuntime.PhaseRuntimeSignature,
+                        sceneName: sceneName,
+                        profile: string.Empty,
+                        frame: Time.frameCount,
+                        reason: reason,
+                        isGameplayScene: isGameplayScene);
+
+                    noResultService.TrySetRunOutcome(evt.Outcome, reason);
+                    noResultIntentOwner.AcceptRunEndIntent(noResultIntent);
+                    noResultDecisionOwner.EnterRunDecision(new RunDecision(noResultIntent, runResult));
                     return;
                 }
 

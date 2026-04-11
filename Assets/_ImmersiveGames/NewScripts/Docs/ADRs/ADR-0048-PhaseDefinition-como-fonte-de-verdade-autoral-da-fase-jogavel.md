@@ -1,4 +1,4 @@
-# ADR-0048 - PhaseDefinition como fonte de verdade autoral da fase jogavel
+﻿# ADR-0048 - PhaseDefinition como fonte de verdade autoral da fase jogavel
 
 ## Status
 - Estado: Aceito
@@ -28,26 +28,26 @@ Este ADR cobre:
 `PhaseDefinition` e a definicao canonicamente autoral da fase jogavel.
 
 Ele alimenta `GameplaySessionFlow` e separa a definicao da fase da leitura runtime.
+Ele nao define, por si so, a ordem entre phases nem a politica de encadeamento macro da experiencia.
 
 Leitura canonica:
 
 - `PhaseDefinition` representa a fase como contrato autoral
+- `PhaseDefinition` responde pelo que a phase e
 - `GameplaySessionFlow` consome a definicao ja resolvida
 - o runtime deriva uma versao operacional em memoria
 - a definicao autoral permanece estavel enquanto o runtime executa
 
 ## 4. Estrutura conceitual minima no V1
 
-O V1 do `PhaseDefinition` tem shape minimo e simples, embutido no proprio asset, com estes blocos de primeiro nivel:
+O minimo autoral de uma phase e simples, embutido no proprio asset, com estes blocos obrigatorios:
 
 1. identidade / metadados
-2. conteudo da fase
-3. players
-4. rules/objectives
-5. initial state
-6. fechamento da fase
+2. conteudo da phase
+3. ao menos uma cena de conteudo carregavel em additive
 
-Cada bloco e declarativo e forma um contrato legivel da fase como conjunto.
+Esse e o menor contrato necessario para dizer que a phase existe.
+Os demais eixos de lifecycle, incluindo `IntroStage` e `RunResultStage`, podem aparecer acima desse minimo, mas nao devem ser confundidos com o recorte basal da phase.
 
 ## 5. Blocos do `PhaseDefinition`
 
@@ -83,18 +83,18 @@ Estrutura minima de cada entrada:
 
 ### 5.3 Players
 
-Esse bloco declara quem participa semanticamente da phase.
+Esse eixo declara quem participa semanticamente da phase.
 
 Leitura canonica:
 
-- o bloco e uma lista explicita de participantes
+- o eixo e uma lista explicita de participantes
 - cada participante possui id local semantico
 - cada participante possui papel / tipo de participacao forte
-- o bloco e declarativo e nao operacional
+- o eixo e declarativo e nao operacional
 
 ### 5.4 Rules/Objectives
 
-Esse bloco declara o que vale e o que precisa ser alcancado na phase.
+Esse eixo declara o que vale e o que precisa ser alcancado na phase.
 
 Leitura canonica:
 
@@ -105,12 +105,12 @@ Leitura canonica:
 
 ### 5.5 Initial State
 
-Esse bloco declara como a phase nasce semanticamente.
+Esse eixo declara como a phase nasce semanticamente.
 
 Leitura canonica:
 
 - `InitialState` e um bloco declarativo unico
-- internamente, o bloco e organizado como lista de entradas de estado inicial
+- internamente, o eixo e organizado como lista de entradas de estado inicial
 - cada entrada comeca com id local, tipo forte e parametros declarativos
 
 ### 5.6 Fechamento da fase
@@ -120,7 +120,7 @@ Esse bloco declara como a phase consolida semanticamente seu encerramento.
 Leitura canonica:
 
 - o bloco de fechamento e declarativo e unico
-- ele declara o resultado da run e a politica de continuidade pos-run
+- ele declara o resultado da run e sinais semanticos locais de fechamento
 - o shape tecnico final desse bloco permanece separado do contrato autoral
 
 ## 6. Tipagem, registro e cardinalidade
@@ -130,7 +130,7 @@ Os contratos internos do `PhaseDefinition` usam ids estaveis, tipagem por domini
 Regras canonicas:
 
 - a identidade principal pertence a propria `PhaseDefinition`
-- o catalogo organiza e expõe, mas nao cria uma identidade paralela
+- o catalogo organiza, ordena, encadeia e expõe as phases, mas nao cria uma identidade paralela
 - o id interno e a chave principal de resolucao da phase
 - o label externo, quando existir, e apoio editorial
 - cada bloco pode ter sua propria tipagem forte e seu proprio contrato
@@ -154,12 +154,18 @@ Leitura canonica:
 
 Leitura canonica:
 
-- o catalogo organiza e orienta a selecao da phase
+- o catalogo organiza, ordena e encadeia as phases
+- o catalogo define initial, next, previous e progressao editorial entre phases
+- o catalogo orienta a selecao da phase
 - a identidade principal continua sendo da propria `PhaseDefinition`
 - o catalogo nao cria um id paralelo para a phase
 - a resolucao acontece principalmente por id interno da phase
 - multiplos catalogos podem referenciar a mesma phase
 - catalogo e resolucao permanecem separados conceitualmente
+- qualquer relacao entre phases deve ser lida pelo catalogo, nao por um asset individual isolado
+
+`NextPhase` e um contrato de lifecycle da phase e nao navegacao macro.
+A politica concreta de troca local permanece pluggable e pode ser resolvida por um owner semantico explicito do lifecycle, por exemplo `PhaseFlowService`, sem reatribuir ao backbone a ownership da phase.
 
 ## 9. Consumo por `GameplaySessionFlow`
 
@@ -169,9 +175,15 @@ Leitura canonica:
 
 - a entrada principal do `GameplaySessionFlow` e a propria `PhaseDefinition` ja resolvida
 - o runtime nao muta o asset autoral
-- os blocos runtime nascem por derivacao a partir da definicao
-- `SessionContext`, `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState` podem ser lidos como parte dessa derivacao
-- a sequencia de derivacao permanece alinhada ao runtime ja consolidado
+- `SessionContext` nasce em `PhaseSelected`
+- `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState` nascem em `ContentApplied`
+- `IntroStage`, quando presente, acontece antes de `Playing`
+- `RunResultStage`, quando presente, acontece depois de `Playing`
+- `RunResult` acontece depois de `Playing`
+- a sequencia de derivacao permanece alinhada ao lifecycle canonico da phase
+
+`RestartCurrent` e um contrato de lifecycle da phase.
+`RestartFromFirst` e um restart macro do gameplay com reseed da first phase.
 
 ## 10. Consequencias
 
@@ -183,9 +195,11 @@ Consequencias principais:
 - a separacao entre definicao e runtime fica clara
 - o projeto evita identidade paralela desnecessaria no catalogo
 - os blocos internos podem evoluir sem reabrir o owner da fase
+- a progressao entre phases fica no catalogo, preservando o `PhaseDefinitionAsset` como owner apenas do que a phase e
 - `GameplaySessionFlow` continua sendo consumidor da definicao, nao o owner da semantica autoral
 
 ## 11. Contexto historico curto
 
 `Level` permanece como nome historico do estado atual visivel no runtime.
-O contrato canônico do futuro fica centrado em `PhaseDefinition`.
+O contrato canÃ´nico do futuro fica centrado em `PhaseDefinition`.
+

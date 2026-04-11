@@ -1,50 +1,52 @@
-﻿# Modules
+# Modules
 
 ## Status documental
 
 - Index ativo de `Docs/Modules/**`.
 - Os roots fisicos atuais sao `Core`, `Orchestration`, `Game`, `Experience` e `Docs`.
-- A documentacao mantem alguns nomes historicos, mas o owner real e o runtime atual.
+- A documentacao ativa deve refletir o canon vivo; nomes historicos aparecem apenas como aliases ou notas de migracao.
 
 ## Leitura primaria
 
+- `Gameplay.md`
 - `SceneFlow.md`
 - `WorldReset.md`
 - `ResetInterop.md`
-- `LevelFlow.md`
 - `GameLoop.md`
-- `PostRun.md`
-- `Gameplay.md`
-- `Save.md`
 - `Navigation.md`
+- `Save.md`
 - `SceneReset.md`
 - `InputModes.md`
 
-## Owners e seams atuais
+## Owners atuais
 
-- `Orchestration/LevelLifecycle`: owner operacional do lifecycle local.
-- `Game/Content/Definitions/Levels`: owner de definitions/content de level.
-- `Orchestration/GameLoop`: runtime core, outcome, pause, intro, commands e bridges.
-- `Experience/PostRun`: handoff, ownership, result e presentation do pos-run.
+- `Gameplay/PhaseDefinition`: composicao semantica do gameplay, selecao de phase, runtime materializado e handoff de fase.
+- `Orchestration/SceneFlow`: transicao macro, route policy, loading e completion gate.
+- `Orchestration/Navigation`: dispatch macro de intents.
+- `Orchestration/GameLoop`: loop, pause, intro handoff e outcome terminal.
+- `Experience/PostRun`: rail de `RunResultStage` e `RunDecision` com presentation local.
 - `Game/Gameplay/State`: `Core`, `RuntimeSignals` e `Gate`.
 - `Game/Gameplay/GameplayReset`: `Coordination`, `Policy`, `Discovery` e `Execution`.
 - `Experience/Audio`: `Runtime`, `Context`, `Semantics` e `Bridges`.
 - `Experience/Save`: hook surface oficial, orchestration placeholder, `Progression`, `Checkpoint` e `Models` como placeholders de integracao.
 - `Experience/GameplayCamera`: fronteira de camera fora de `Gameplay`.
-- `Experience/Save` reserva `IManualCheckpointRequestService` como seam oficial para checkpoint manual futuro.
 
-## Compatibilidade temporaria
+## Historico e compatibilidade temporaria
 
-- `Orchestration/LevelFlow/Runtime` continua vivo por transicao.
-- `SceneResetFacade` e `FilteredEventBus.Legacy` continuam como compat, nao como alvo final.
+- `LevelFlow`, `LevelLifecycle`, `LevelManager` e `ContentSwap` sao nomes historicos.
+- `SceneResetFacade` e `FilteredEventBus.Legacy` continuam como compat historica quando o runtime ainda precisa deles.
 - `Experience/Save` continua como superficie de hooks e contratos estaveis; `Progression` e `Checkpoint` ainda nao sao features finais.
-- Namespaces antigos podem permanecer por seguranca ate a limpeza final.
+
+## Historico fisico separado
+
+- `Archive/Modules/LevelFlow.md`
+- `Archive/Modules/PostRun.md`
 
 ## Normalizacao terminologica
 
 - `WorldLifecycle` -> `WorldReset` + `SceneReset`
 - `PostPlay` -> `PostRun`
-- `LevelManager` -> `LevelLifecycle`
+- `LevelManager` -> historico / residual
+- `LevelLifecycle` -> historico / seam operacional
 - `ContentSwap` -> historico / residual
 - `LevelFlow` -> nome historico da fronteira local de lifecycle
-

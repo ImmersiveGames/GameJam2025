@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEngine;
 
@@ -150,14 +151,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [Serializable]
         public sealed class PhaseRunResultStageBlock
         {
-            public bool hasRunResultStage = true;
+            public bool hasRunResultStage = false;
             public List<PhaseParameterEntry> parameters = new();
         }
 
         [Serializable]
         public sealed class PhaseIntroBlock
         {
-            public bool hasIntroStage = true;
+            public bool hasIntroStage = false;
             public GameObject introPresenterPrefab;
         }
 
@@ -182,13 +183,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             public PhaseClosureResultKind resultKind;
             public PhaseContinuityPolicyKind continuityPolicyKind;
             public List<PhaseParameterEntry> parameters = new();
-        }
-
-        [Serializable]
-        public sealed class PhaseContinuityBlock
-        {
-            public bool hasNextPhase;
-            public PhaseDefinitionAsset nextPhaseRef;
         }
 
         [Header("Identity")]
@@ -218,9 +212,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [Header("Closure")]
         [SerializeField] private PhaseClosureBlock closure = new();
 
-        [Header("Continuity")]
-        [SerializeField] private PhaseContinuityBlock continuity = new();
-
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
         public PhasePlayersBlock Players => players;
@@ -230,7 +221,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public PhaseIntroBlock Intro => intro;
         public PhaseSwapBlock Swap => swap;
         public PhaseClosureBlock Closure => closure;
-        public PhaseContinuityBlock Continuity => continuity;
+
+        public bool HasRunResultStage => runResultStage != null;
+        public bool HasIntroStage => intro != null;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -265,7 +258,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             ValidateIntroBlock(assetOwner);
             ValidateSwapBlock(assetOwner);
             ValidateClosureBlock(assetOwner);
-            ValidateContinuityBlock(assetOwner);
         }
 
 #if UNITY_EDITOR
@@ -478,29 +470,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             ValidateParameters(closure.parameters, assetOwner, "closure", PhaseId.Value);
         }
 
-        private void ValidateContinuityBlock(string assetOwner)
-        {
-            if (continuity == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing continuity block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            if (continuity.hasNextPhase && continuity.nextPhaseRef == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Continuity marked as having a next phase but nextPhaseRef is null. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            if (!continuity.hasNextPhase && continuity.nextPhaseRef != null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Continuity nextPhaseRef is configured but hasNextPhase is false. asset='{assetOwner}', phaseId='{PhaseId}', nextPhaseRef='{continuity.nextPhaseRef.name}'.");
-            }
-
-            if (continuity.nextPhaseRef != null)
-            {
-                continuity.nextPhaseRef.ValidateOrFail($"PhaseContinuity asset='{assetOwner}' phaseId='{PhaseId}'");
-            }
-        }
-
         private static void ValidateEntries<T>(
             List<T> entries,
             string assetOwner,
@@ -573,7 +542,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                 : "phase-swap:default";
         }
 
-        public LevelIntroStageSession CreateIntroStageSession(
+        public IntroStageSession CreateIntroStageSession(
             string localContentId,
             string reason,
             int selectionVersion,
@@ -583,16 +552,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                 ? BuildCanonicalIntroContentId()
                 : localContentId;
 
-            return new LevelIntroStageSession(
+            return new IntroStageSession(
                 this,
                 normalizedContentId,
                 reason,
                 selectionVersion,
                 levelSignature,
                 intro != null ? intro.introPresenterPrefab : null,
-                intro != null && intro.hasIntroStage
-                    ? LevelIntroStageDisposition.HasIntro
-                    : LevelIntroStageDisposition.NoIntro);
+                HasIntroStage,
+                HasRunResultStage);
         }
     }
 }

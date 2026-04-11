@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
@@ -34,6 +33,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             string targetScene = NormalizeValue(context.TargetScene);
             string reason = NormalizeReason(context.Reason);
             IDisposable? gateLease = null;
+            Exception? fatalIntroFailure = null;
 
             if (!TryEnterContext(signature))
             {
@@ -43,12 +43,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             try
             {
                 DebugUtility.Log<IntroStageCoordinator>(
-                    $"[OBS][IntroStageCoordinator] IntroStageStarted signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' disposition='{context.Session.Disposition}'.",
+                    $"[OBS][IntroStageCoordinator] IntroStageStarted signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' hasIntroStage='{context.Session.HasIntroStage}' hasRunResultStage='{context.Session.HasRunResultStage}'.",
                     DebugUtility.Colors.Info);
 
                 if (!context.HasIntroStage)
                 {
-                    LogSkipped("session_no_intro_stage", context);
+                    LogSkipped("no_content", context);
                     return;
                 }
 
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 
                 if (step.HasContent)
                 {
-                    await RunStepSafelyAsync(step, context, controlService);
+                    await RunStepSafelyAsync(step, context);
                 }
                 else
                 {
@@ -100,12 +100,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             }
             catch (Exception ex)
             {
+                fatalIntroFailure = ex;
                 DebugUtility.LogWarning<IntroStageCoordinator>(
                     $"[IntroStageCoordinator] Falha ao executar IntroStage. signature='{signature}', ex='{ex.GetType().Name}: {ex.Message}'.");
-
-                controlService.SkipIntroStage("IntroStageCoordinator/ErrorFallback");
-
-                LogCompletion(signature, targetScene, routeLabel, IntroStageRunResult.Failed);
             }
             finally
             {
@@ -117,8 +114,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                         DebugUtility.Colors.Info);
                 }
 
-                if (context.IsValid && TryResolveGameLoopService(out var gameLoopService) && gameLoopService != null)
+                if (fatalIntroFailure == null &&
+                    context.IsValid &&
+                    TryResolveGameLoopService(out var gameLoopService) &&
+                    gameLoopService != null)
                 {
+                    if (!context.HasIntroStage)
+                    {
+                        DebugUtility.Log<IntroStageCoordinator>(
+                            $"[OBS][IntroStageCoordinator] PlayingReleased reason='IntroStage/NoContent' signature='{signature}' routeKind='{routeLabel}' target='{targetScene}'.",
+                            DebugUtility.Colors.Info);
+                    }
+
                     DebugUtility.Log<IntroStageCoordinator>(
                         $"[OBS][IntroStageCoordinator] GameLoopStartRequested signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' (after gameplay unblock).",
                         DebugUtility.Colors.Info);
@@ -129,6 +136,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 controlService.MarkSessionClosed();
 
                 ReleaseContext(signature);
+            }
+
+            if (fatalIntroFailure != null)
+            {
+                HardFailFastH1.Trigger(typeof(IntroStageCoordinator),
+                    $"[FATAL][H1][GameLoop] IntroStage execution failed. signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' ex='{fatalIntroFailure.GetType().Name}: {fatalIntroFailure.Message}'.",
+                    fatalIntroFailure);
             }
         }
 
@@ -214,8 +228,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 
         private static async Task RunStepSafelyAsync(
             IIntroStageStep step,
-            IntroStageContext context,
-            IIntroStageControlService controlService)
+            IntroStageContext context)
         {
             string stepName = step.GetType().Name;
 
@@ -231,8 +244,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             {
                 DebugUtility.LogWarning<IntroStageCoordinator>(
                     $"[IntroStageController] Falha ao executar step. step='{stepName}', ex='{ex.GetType().Name}: {ex.Message}'.");
-
-                controlService.SkipIntroStage("step_failed");
+                throw;
             }
         }
 
@@ -241,15 +253,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             CancellationToken cancellationToken)
         {
             var completionSource = new TaskCompletionSource<IntroStageCompletionResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            EventBinding<LevelIntroCompletedEvent> binding = null!;
-            binding = new EventBinding<LevelIntroCompletedEvent>(evt =>
+            EventBinding<IntroStageCompletedEvent> binding = null!;
+            binding = new EventBinding<IntroStageCompletedEvent>(evt =>
             {
                 if (!evt.Session.IsValid)
                 {
                     return;
                 }
 
-                if (!string.Equals(evt.Session.LevelSignature, context.ContextSignature, StringComparison.Ordinal))
+                if (!string.Equals(evt.Session.SessionSignature, context.ContextSignature, StringComparison.Ordinal))
                 {
                     return;
                 }
@@ -257,7 +269,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 completionSource.TrySetResult(new IntroStageCompletionResult(evt.Reason, evt.WasSkipped));
             });
 
-            EventBus<LevelIntroCompletedEvent>.Register(binding);
+            EventBus<IntroStageCompletedEvent>.Register(binding);
 
             try
             {
@@ -271,7 +283,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             }
             finally
             {
-                EventBus<LevelIntroCompletedEvent>.Unregister(binding);
+                EventBus<IntroStageCompletedEvent>.Unregister(binding);
             }
         }
 
@@ -293,9 +305,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 
         private static void LogCompletion(string signature, string targetScene, string routeKind, IntroStageRunResult result)
         {
-                DebugUtility.Log<IntroStageCoordinator>(
-                    $"[OBS][IntroStageCoordinator] IntroStageCompleted signature='{signature}' result='{FormatResult(result)}' routeKind='{routeKind}' target='{targetScene}'.",
-                    DebugUtility.Colors.Info);
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStageCoordinator] IntroStageCompleted signature='{signature}' result='{FormatResult(result)}' routeKind='{routeKind}' target='{targetScene}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void LogSkipped(string reason, IntroStageContext context)
@@ -311,7 +323,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             {
                 IntroStageRunResult.Completed => "completed",
                 IntroStageRunResult.Skipped => "skipped",
-                IntroStageRunResult.Failed => "failed",
                 _ => "unknown"
             };
         }
@@ -319,8 +330,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
         private enum IntroStageRunResult
         {
             Completed,
-            Skipped,
-            Failed
+            Skipped
         }
     }
 }

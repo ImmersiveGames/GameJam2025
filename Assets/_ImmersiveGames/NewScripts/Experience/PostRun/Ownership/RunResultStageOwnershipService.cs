@@ -46,11 +46,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             if (!_presenterHost.TryEnsureCurrentPresenter(stage, this, nameof(RunResultStageOwnershipService), out IRunResultStagePresenter presenter) ||
                 presenter == null)
             {
-                HardFailFastH1.Trigger(typeof(RunResultStageOwnershipService),
-                    $"[FATAL][H1][RunResultStage] Presenter obrigatorio ausente. signature='{Normalize(stage.Signature)}' scene='{Normalize(stage.SceneName)}'.");
+                DebugUtility.Log<RunResultStageOwnershipService>(
+                    $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageSkipped reason='no_content' signature='{Normalize(stage.Signature)}' scene='{Normalize(stage.SceneName)}' result='{stage.Result}' reasonText='{Normalize(stage.Reason)}'.",
+                    DebugUtility.Colors.Info);
+
                 CurrentStage = default;
                 IsActive = false;
-                HasCompleted = false;
+                HasCompleted = true;
+                _runDecisionOwnershipService.EnterRunDecision(new RunDecision(stage.Intent, stage.Result));
                 return;
             }
 

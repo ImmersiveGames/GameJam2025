@@ -3,10 +3,14 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Fade.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Interop;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneComposition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
@@ -86,20 +90,32 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
         {
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) && existingGate != null)
             {
-                if (existingGate is MacroLevelPrepareCompletionGate macroGate)
+                if (existingGate is GameplaySessionFlowCompletionGate sessionFlowGate)
                 {
-                    return macroGate;
+                    EnsureGameplaySessionFlowGate(sessionFlowGate);
+                    return sessionFlowGate;
                 }
 
                 DebugUtility.LogVerbose(typeof(SceneFlowBootstrap),
-                    $"[SceneFlow] ISceneTransitionCompletionGate existente sera substituido por MacroLevelPrepareCompletionGate (tipo='{existingGate.GetType().Name}').",
+                    $"[SceneFlow] ISceneTransitionCompletionGate existente sera substituido por GameplaySessionFlowCompletionGate (tipo='{existingGate.GetType().Name}').",
                     DebugUtility.Colors.Info);
             }
 
             var fallbackGate = new WorldResetCompletionGate(timeoutMs: 20000);
-            var composedGate = new MacroLevelPrepareCompletionGate(fallbackGate);
+            var composedGate = new GameplaySessionFlowCompletionGate(fallbackGate);
+            EnsureGameplaySessionFlowGate(composedGate);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionCompletionGate>(composedGate, allowOverride: true);
             return composedGate;
+        }
+
+        private static void EnsureGameplaySessionFlowGate(GameplaySessionFlowCompletionGate sessionFlowGate)
+        {
+            if (sessionFlowGate == null)
+            {
+                throw new ArgumentNullException(nameof(sessionFlowGate));
+            }
+
+            sessionFlowGate.ConfigureGameplaySessionFlowGate(new GameplaySessionFlowPrepareCompletionGate());
         }
 
         private static void EnsureInputModeBridge()
@@ -188,6 +204,92 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
             DebugUtility.Log(typeof(SceneFlowBootstrap),
                 "[OBS][SceneFlow] Runtime composition consolidada. scope='transition macro -> loading/fade -> navigation'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private sealed class GameplaySessionFlowPrepareCompletionGate : ISceneTransitionCompletionGate
+        {
+            public async System.Threading.Tasks.Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
+            {
+                if (!context.RouteId.IsValid)
+                {
+                    return;
+                }
+
+                if (context.RouteRef == null)
+                {
+                    DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                        $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' reason='routeRef_missing'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                if (context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+                {
+                    DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                        $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' reason='non_gameplay_route'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                if (DependencyManager.Provider == null)
+                {
+                    FailFastConfig(context, "DependencyManager.Provider unavailable.");
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionSelectionService>(out var phaseSelectionService) || phaseSelectionService == null)
+                {
+                    FailFastConfig(context, "IPhaseDefinitionSelectionService missing.");
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<GameplayPhaseFlowService>(out var gameplayPhaseFlowService) || gameplayPhaseFlowService == null)
+                {
+                    FailFastConfig(context, "GameplayPhaseFlowService missing.");
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<ISceneCompositionExecutor>(out var sceneCompositionExecutor) || sceneCompositionExecutor == null)
+                {
+                    FailFastConfig(context, "ISceneCompositionExecutor missing.");
+                }
+
+                string reason = string.IsNullOrWhiteSpace(context.Reason)
+                    ? "SceneFlow/GameplaySessionPrepare"
+                    : context.Reason.Trim();
+                string signature = SceneTransitionSignature.Compute(context);
+
+                DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
+                    $"[OBS][GameplaySessionFlow][Operational] MacroLoadingPhase='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+
+                PhaseDefinitionAsset selectedPhaseDefinitionRef = phaseSelectionService.ResolveOrFail();
+                PhaseDefinitionSelectedEvent phaseSelectedEvent = gameplayPhaseFlowService.PublishPhaseDefinitionSelected(
+                    selectedPhaseDefinitionRef,
+                    context.RouteId,
+                    context.RouteRef,
+                    reason);
+
+                SceneCompositionRequest phaseCompositionRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
+                    selectedPhaseDefinitionRef,
+                    reason,
+                    phaseSelectedEvent.SelectionSignature);
+
+                SceneCompositionResult compositionResult = await sceneCompositionExecutor.ApplyAsync(phaseCompositionRequest);
+
+                PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
+                    selectedPhaseDefinitionRef,
+                    phaseCompositionRequest.ScenesToLoad,
+                    phaseCompositionRequest.ActiveScene,
+                    "GameplaySessionFlow");
+
+                DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
+                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareCompleted phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' routeId='{context.RouteId}' signature='{signature}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
+                    DebugUtility.Colors.Success);
+            }
+
+            private static void FailFastConfig(SceneTransitionContext context, string detail)
+            {
+                HardFailFastH1.Trigger(typeof(GameplaySessionFlowPrepareCompletionGate),
+                    $"[FATAL][H1][SceneFlow] GameplaySessionFlow completion gate misconfigured: {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+            }
         }
 
         private static T ResolveRequired<T>() where T : class

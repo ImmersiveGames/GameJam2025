@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (targetPhaseDefinitionRef == null)
             {
                 HardFailFastH1.Trigger(typeof(LevelSceneCompositionRequestFactory),
-                    $"[FATAL][H1][LevelFlow] Target phaseDefinitionRef is null for local scene composition. correlationId='{correlationId}' reason='{reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow] Target phaseDefinitionRef is null for local scene composition. correlationId='{correlationId}' reason='{reason}'.");
             }
 
             targetPhaseDefinitionRef.ValidateOrFail($"LevelSceneCompositionRequestFactory/Apply correlationId='{correlationId}'");
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (swap == null)
             {
                 HardFailFastH1.Trigger(typeof(LevelSceneCompositionRequestFactory),
-                    $"[FATAL][H1][LevelFlow] Target phaseDefinitionRef '{targetPhaseDefinitionRef.name}' has no swap block. correlationId='{correlationId}' reason='{reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow] Target phaseDefinitionRef '{targetPhaseDefinitionRef.name}' has no swap block. correlationId='{correlationId}' reason='{reason}'.");
             }
 
             return new SceneCompositionRequest(
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             if (additiveScenes == null || additiveScenes.Count == 0)
             {
                 HardFailFastH1.Trigger(typeof(LevelSceneCompositionRequestFactory),
-                    $"[FATAL][H1][LevelFlow] Level '{ownerName}' has no additive scenes for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow] Phase '{ownerName}' has no additive scenes for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
             }
 
             for (int i = 0; i < additiveScenes.Count; i++)
@@ -65,20 +65,20 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 if (sceneRef == null)
                 {
                     HardFailFastH1.Trigger(typeof(LevelSceneCompositionRequestFactory),
-                        $"[FATAL][H1][LevelFlow] Level '{ownerName}' has null additive scene ref at index='{i}' for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
+                        $"[FATAL][H1][GameplaySessionFlow] Phase '{ownerName}' has null additive scene ref at index='{i}' for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
                 }
 
                 string sceneName = string.IsNullOrWhiteSpace(sceneRef.SceneName) ? string.Empty : sceneRef.SceneName.Trim();
                 if (string.IsNullOrEmpty(sceneName))
                 {
                     HardFailFastH1.Trigger(typeof(LevelSceneCompositionRequestFactory),
-                        $"[FATAL][H1][LevelFlow] Level '{ownerName}' has empty additive scene name at index='{i}' buildIndex='{sceneRef.BuildIndex}' for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
+                        $"[FATAL][H1][GameplaySessionFlow] Phase '{ownerName}' has empty additive scene name at index='{i}' buildIndex='{sceneRef.BuildIndex}' for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
                 }
 
                 if (!seenNames.Add(sceneName))
                 {
                     HardFailFastH1.Trigger(typeof(LevelSceneCompositionRequestFactory),
-                        $"[FATAL][H1][LevelFlow] Level '{ownerName}' has duplicate additive scene name='{sceneName}' for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
+                        $"[FATAL][H1][GameplaySessionFlow] Phase '{ownerName}' has duplicate additive scene name='{sceneName}' for label='{label}'. correlationId='{correlationId}' reason='{reason}'.");
                 }
 
                 sceneNames.Add(sceneName);

@@ -222,8 +222,8 @@ O fluxo deve parar com erro deterministico quando:
 
 ## Referencias de leitura
 
-- `Docs/Modules/PostRun.md`
+- `Docs/Archive/Modules/PostRun.md`
 - `Docs/Modules/GameLoop.md`
-- `Docs/Modules/LevelFlow.md`
+- `Docs/Archive/Modules/LevelFlow.md`
 - `Docs/Canon/Canon-Index.md`
 - `Docs/Guides/Event-Hooks-Reference.md`

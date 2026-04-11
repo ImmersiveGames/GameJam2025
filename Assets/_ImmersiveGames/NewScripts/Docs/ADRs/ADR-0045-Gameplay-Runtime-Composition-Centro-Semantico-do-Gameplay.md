@@ -36,7 +36,7 @@ Esse subsistema e o ponto de leitura canonica para o V1 ja consolidado:
 - `RunEndIntent`
 - `RunResultStage`
 - `RunDecision`
-- `Continuity`
+- `Continuity` como sinal downstream de fechamento da run, nao como ownership da ordem entre phases
 
 ## Relacao com os ADRs seguintes
 
@@ -74,7 +74,7 @@ Sobem para o novo centro semantico ja consolidado no V1:
 - `RunEndIntent`
 - `RunResultStage`
 - `RunDecision`
-- `Continuity`
+- `Continuity` como linguagem de fechamento downstream, nao como ownership de progressao entre phases
 
 ## O que passa a ser linguagem historica
 
@@ -91,6 +91,7 @@ Passam a ser lidos como historicos, transitivos ou de menor peso semantico:
 - retry / restart / respawn / advance passam a nascer da semantica do gameplay.
 - o backbone permanece como executor tecnico, nao como dono do significado do gameplay.
 - a leitura dos modulos deve seguir a composicao de gameplay, nao a forma historica da pasta.
+- a ordem entre phases e a progressao editorial ficam no catalogo de `PhaseDefinition`, enquanto `GameplaySessionFlow` apenas consome a phase ja resolvida.
 
 O owner documental do fim de run dentro desse centro e `ADR-0049`; este ADR define apenas a direcao macro.
 

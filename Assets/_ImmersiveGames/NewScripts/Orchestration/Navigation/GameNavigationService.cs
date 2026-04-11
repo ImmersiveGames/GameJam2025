@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
@@ -67,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched without explicit level selection; LevelLifecycle prepara a selecao padrao como suporte operacional.",
+                "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched without explicit selection; GameplaySessionFlow prepara a selecao padrao como suporte operacional.",
                 DebugUtility.Colors.Info);
 
             var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty, gameplayEntry.RouteRef);
@@ -142,6 +143,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
 
         private async Task ExecuteEntryAsync(string intentId, GameNavigationEntry entry, string reason)
         {
+            ValidateOfficialGameplayPhaseCatalogOrFail(intentId, entry, reason);
+
             TransitionStyleDefinition definition = ResolveStyle(entry);
             if (entry.RouteRef == null)
             {
@@ -167,6 +170,36 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
+        }
+
+        private void ValidateOfficialGameplayPhaseCatalogOrFail(string intentId, GameNavigationEntry entry, string reason)
+        {
+            if (entry.RouteRef == null || entry.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                return;
+            }
+
+            if (_catalog is not GameNavigationCatalogAsset catalogAsset)
+            {
+                return;
+            }
+
+            SceneRouteDefinitionAsset canonicalGameplayRouteRef = catalogAsset.ResolveGameplayRouteRefOrFail();
+            if (!entry.RouteId.IsValid || entry.RouteId != canonicalGameplayRouteRef.RouteId)
+            {
+                return;
+            }
+
+            if (entry.RouteRef.PhaseDefinitionCatalog != null)
+            {
+                DebugUtility.LogVerbose(typeof(GameNavigationService),
+                    $"[OBS][NavigationCore][Operational] Official gameplay phase catalog validated routeId='{entry.RouteId}' routeKind='{entry.RouteRef.RouteKind}' phaseCatalogPresent=True reason='{reason ?? "<null>"}' intentId='{intentId}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            HardFailFastH1.Trigger(typeof(GameNavigationService),
+                $"[FATAL][H1][NavigationCore] Official gameplay requires PhaseDefinitionCatalog before gameplay entry. routeId='{entry.RouteId}' routeKind='{entry.RouteRef.RouteKind}' intentId='{intentId}' reason='{reason ?? "<null>"}' detail='canonical gameplay route without phaseDefinitionCatalog'.");
         }
 
         private static void ValidateGameplayRouteOrFail(SceneRouteId routeId, GameNavigationEntry gameplayEntry, string reason)

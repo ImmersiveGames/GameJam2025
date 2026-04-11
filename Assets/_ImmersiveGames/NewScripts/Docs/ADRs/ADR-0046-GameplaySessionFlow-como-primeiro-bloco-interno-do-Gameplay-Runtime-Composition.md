@@ -45,6 +45,8 @@ As pecas abaixo continuam sendo reaproveitadas como suporte operacional abaixo d
 
 O modelo canonico alvo do fim de run e `RunEndIntent -> RunResultStage -> RunDecision`, documentado em `ADR-0049`.
 Os nomes `PostRun*` acima permanecem apenas como bridges historicas da ponte atual, nao como centro semantico do rail final.
+`GameplaySessionFlow` consome a phase ja resolvida; a progressao entre phases e leitura editorial do catalogo, nao ownership deste bloco.
+Os eixos semanticos minimos da phase sao montados na preparacao protegida antes de `SceneTransitionCompleted`, e nao depois do reveal.
 
 ## 4.1 Contrato semantico minimo da V1
 
@@ -56,6 +58,7 @@ O V1 ja consolidado fecha estes eixos semanticos obrigatorios:
 - `InitialState`
 
 Esses eixos sao o minimo necessario para dizer que a fase foi montada em termos de conjunto, e nao apenas preparada em termos tecnicos.
+Eles fazem parte da montagem semantica protegida da phase antes de `SceneTransitionCompleted`.
 
 ## 5. O que fica fora
 
@@ -80,7 +83,8 @@ O backbone continua como executor tecnico e dono do fluxo macro, mas nao como do
 Relacao futura com os eixos internos:
 - `level runtime`: passa a ser parte interna do `GameplaySessionFlow`, nao eixo separado de mesmo peso
 - `players`: entram como participantes da sessao ativa, com ownership semantico do bloco
-- `objetivos/estado de fase`: ficam sob a composicao da sessao, incluindo resultado, progresso local e continuidade entre fases
+- `objetivos/estado de fase`: ficam sob a composicao da sessao, incluindo resultado e progresso local
+- `continuity` e lida como downstream semantico do fechamento da sessao, nao como motor de progressao entre phases
 
 As pecas listadas acima sao meios de execucao e transicao do corte atual, nao a definicao canonica do bloco.
 O cleanup explicito de `Rules/Objectives` e `InitialState` no fim da run tambem faz parte do bloco consolidado.
@@ -101,4 +105,5 @@ Elas nao devem virar o novo centro de ownership.
 ## 8. Fechamento
 
 Com este documento, `GameplaySessionFlow` fica formalmente definido como o primeiro bloco interno do `Gameplay Runtime Composition`.
+Ele nao e owner da progressao editorial entre phases.
 O proximo passo arquitetural e evoluir para o modelo de authoring/configuration da fase sem reabrir a decisao macro nem a fronteira agora fechada.

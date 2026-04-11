@@ -1,17 +1,17 @@
 #nullable enable
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
 {
     /// <summary>
     /// Contexto minimo para execucao da IntroStage antes da revelacao da cena.
-    /// O contrato canonico de level vem de LevelFlow; este contexto apenas o transporta ate o executor.
+    /// O contrato canonico da IntroStage vem do rail phase-owned; este contexto apenas o transporta ate o executor.
     /// </summary>
     public readonly struct IntroStageContext
     {
-        public LevelIntroStageSession Session { get; }
+        public IntroStageSession Session { get; }
         public string ContextSignature { get; }
         public SceneRouteKind RouteKind { get; }
         public string TargetScene { get; }
@@ -20,13 +20,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage
         public bool IsValid => Session.IsValid;
 
         public IntroStageContext(
-            LevelIntroStageSession session,
+            IntroStageSession session,
             SceneRouteKind routeKind,
             string? targetScene,
             string? reason)
         {
             Session = session;
-            ContextSignature = session.LevelSignature;
+            ContextSignature = session.SessionSignature;
             RouteKind = routeKind;
             TargetScene = targetScene ?? string.Empty;
             Reason = reason ?? string.Empty;

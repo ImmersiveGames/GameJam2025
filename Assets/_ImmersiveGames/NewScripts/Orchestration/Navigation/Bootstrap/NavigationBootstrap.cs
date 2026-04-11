@@ -3,7 +3,9 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
@@ -33,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             }
 
             EnsureNavigationCoreComposition();
+            EnsurePostLevelActionsService(bootstrapConfig);
             NavigationAdaptersBootstrap.ComposeRuntime(bootstrapConfig);
             EnsureNavigationModuleComposition();
 
@@ -91,9 +94,60 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] IFrontendQuitService missing from global DI before module composition checkpoint.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var postLevelActionsService) || postLevelActionsService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IPostLevelActionsService missing from global DI before module composition checkpoint.");
+            }
+
             DebugUtility.Log(typeof(NavigationBootstrap),
-                "[OBS][NavigationCore][Operational] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters'.",
+                "[OBS][NavigationCore][Operational] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters + continuity seam'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void EnsurePostLevelActionsService(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService ausente no DI global antes de registrar o IPostLevelActionsService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRestartContextService ausente no DI global antes de registrar o IPostLevelActionsService.");
+            }
+
+            IPhaseDefinitionCatalog phaseDefinitionCatalog = ResolveOptionalPhaseDefinitionCatalog(bootstrapConfig);
+
+            var service = new PostLevelActionsService(
+                navigationService,
+                restartContextService,
+                phaseDefinitionCatalog);
+
+            DependencyManager.Provider.RegisterGlobal<IPostLevelActionsService>(service);
+
+            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
+                "[OBS][NavigationCore][Operational] IPostLevelActionsService registrado como continuity seam canonical.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static IPhaseDefinitionCatalog ResolveOptionalPhaseDefinitionCatalog(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (bootstrapConfig?.NavigationCatalog is not GameNavigationCatalogAsset navigationCatalog)
+            {
+                return null;
+            }
+
+            if (!navigationCatalog.IsGameplayPhaseEnabledOrFail())
+            {
+                return null;
+            }
+
+            return navigationCatalog.ResolveGameplayPhaseCatalogOrFail();
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -31,10 +32,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
         [Header("Route Policy")]
         [SerializeField] private SceneRouteKind routeKind = SceneRouteKind.Unspecified;
         [SerializeField] private bool requiresWorldReset;
+        [SerializeField] private PhaseDefinitionCatalogAsset phaseDefinitionCatalog;
 
         public SceneRouteId RouteId => routeId;
         public SceneRouteKind RouteKind => routeKind;
         public bool RequiresWorldReset => requiresWorldReset;
+        public PhaseDefinitionCatalogAsset PhaseDefinitionCatalog => phaseDefinitionCatalog;
 
         public SceneRouteDefinition ToDefinition()
         {
@@ -48,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
                 $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{nameof(scenesToUnloadKeys)}' scenes=[{FormatSceneDetails(unload)}].",
                 DebugUtility.Colors.Info);
 
-            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset);
+            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset, phaseDefinitionCatalog);
         }
 
         public void ValidateRoutePolicyOrFailFast()
@@ -100,6 +103,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings
             if (routeKind == SceneRouteKind.Frontend && requiresWorldReset)
             {
                 return $"routeId='{routeId}' Frontend/Menu exige requiresWorldReset=false.";
+            }
+
+            if (routeKind != SceneRouteKind.Gameplay && phaseDefinitionCatalog != null)
+            {
+                return $"routeId='{routeId}' RouteKind='{routeKind}' nao pode carregar PhaseDefinitionCatalog. phaseDefinitionCatalog='{phaseDefinitionCatalog.name}'.";
             }
 
             return string.Empty;
