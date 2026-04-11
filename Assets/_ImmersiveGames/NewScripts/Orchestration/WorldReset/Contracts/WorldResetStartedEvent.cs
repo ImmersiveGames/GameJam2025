@@ -1,5 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
             SceneRouteId macroRouteId,
             string reason,
             string contextSignature,
-            LevelContextSignature levelSignature,
+            PhaseContextSignature phaseSignature,
             WorldResetOrigin origin,
             string targetScene,
             string sourceSignature = null)
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
             MacroRouteId = macroRouteId;
             Reason = Normalize(reason);
             ContextSignature = Normalize(contextSignature);
-            LevelSignature = levelSignature;
+            PhaseSignature = phaseSignature;
             TargetScene = Normalize(targetScene);
             Origin = origin;
             SourceSignature = Normalize(sourceSignature);
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
                 SceneRouteId.None,
                 reason,
                 contextSignature,
-                LevelContextSignature.Empty,
+                PhaseContextSignature.Empty,
                 WorldResetOrigin.Unknown,
                 string.Empty,
                 contextSignature)
@@ -49,17 +49,17 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
         public string Reason { get; }
         public string ContextSignature { get; }
         public string SourceSignature { get; }
-        public LevelContextSignature LevelSignature { get; }
+        public PhaseContextSignature PhaseSignature { get; }
         public string TargetScene { get; }
         public WorldResetOrigin Origin { get; }
 
         public string MacroSignature => ContextSignature;
         public bool HasContextSignature => !string.IsNullOrWhiteSpace(ContextSignature);
-        public bool HasLevelSignature => LevelSignature.IsValid;
+        public bool HasPhaseSignature => PhaseSignature.IsValid;
 
         public override string ToString()
         {
-            return $"WorldResetStartedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', PhaseSignature='{LevelSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Origin='{Origin}')";
+            return $"WorldResetStartedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', PhaseSignature='{PhaseSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Origin='{Origin}')";
         }
 
         private static string Normalize(string value)

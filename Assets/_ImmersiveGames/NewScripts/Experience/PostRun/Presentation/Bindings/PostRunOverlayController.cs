@@ -8,7 +8,7 @@ using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
 
         [Inject] private IRunDecisionOwnershipService _runDecisionOwnershipService;
         [Inject] private IPostRunResultService _postRunResultService;
-        [Inject] private IPostLevelActionsService _postLevelActionsService;
+        [Inject] private IGameplaySessionFlowContinuityService _sessionFlowContinuityService;
         [Inject] private IRunDecisionStagePresenterHost _presenterHost;
 
         private bool _dependenciesInjected;
@@ -143,9 +143,9 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             HideImmediate();
 
             _ = ExecuteDownstreamActionAsync(
-                actionName: "RestartLevel",
+                actionName: "RestartGameplay",
                 reason: RestartReason,
-                action: ct => _postLevelActionsService.RestartLevelAsync(RestartReason, ct));
+                action: ct => _sessionFlowContinuityService.RestartGameplayAsync(RestartReason, ct));
         }
 
         /// <summary>
@@ -172,22 +172,22 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             _ = ExecuteDownstreamActionAsync(
                 actionName: "ExitToMenu",
                 reason: ExitToMenuReason,
-                action: ct => _postLevelActionsService.ExitToMenuAsync(ExitToMenuReason, ct));
+                action: ct => _sessionFlowContinuityService.ExitToMenuAsync(ExitToMenuReason, ct));
         }
 
         private async Task ExecuteDownstreamActionAsync(string actionName, string reason, Func<CancellationToken, Task> action)
         {
-            if (_postLevelActionsService == null)
+            if (_sessionFlowContinuityService == null)
             {
                 HardFailFastH1.Trigger(typeof(IRunDecisionStagePresenter),
-                    $"[FATAL][H1][RunDecision] IPostLevelActionsService indisponivel. action='{actionName}' reason='{reason}'.");
+                    $"[FATAL][H1][RunDecision] IGameplaySessionFlowContinuityService indisponivel. action='{actionName}' reason='{reason}'.");
                 return;
             }
 
             try
             {
                 DebugUtility.Log<IRunDecisionStagePresenter>(
-                    $"[OBS][GameplaySessionFlow][RunDecision][Delegate] {actionName} entregue ao executor downstream real IPostLevelActionsService. reason='{reason}'.");
+                    $"[OBS][GameplaySessionFlow][RunDecision][Delegate] {actionName} entregue ao executor downstream real IGameplaySessionFlowContinuityService. reason='{reason}'.");
                 await action(CancellationToken.None);
                 DebugUtility.Log<IRunDecisionStagePresenter>(
                     $"[OBS][GameplaySessionFlow][RunDecision][Execute] {actionName} executado pelo executor downstream. reason='{reason}'.");

@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
                 targetScene,
                 origin,
                 SceneRouteId.None,
-                LevelContextSignature.Empty,
+                PhaseContextSignature.Empty,
                 sourceSignature)
         {
         }
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
             string targetScene,
             WorldResetOrigin origin,
             SceneRouteId macroRouteId,
-            LevelContextSignature levelSignature,
+            PhaseContextSignature phaseSignature,
             string sourceSignature = null)
         {
             Kind = kind;
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
             TargetScene = targetScene ?? string.Empty;
             Origin = origin;
             MacroRouteId = macroRouteId;
-            LevelSignature = levelSignature;
+            PhaseSignature = phaseSignature;
             SourceSignature = sourceSignature ?? string.Empty;
             CreatedUtc = DateTime.UtcNow;
         }
@@ -57,14 +57,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain
         public string TargetScene { get; }
         public WorldResetOrigin Origin { get; }
         public SceneRouteId MacroRouteId { get; }
-        public LevelContextSignature LevelSignature { get; }
+        public PhaseContextSignature PhaseSignature { get; }
         public DateTime CreatedUtc { get; }
 
         public bool HasSignature => !string.IsNullOrWhiteSpace(ContextSignature);
 
         public override string ToString()
         {
-            return $"WorldResetRequest(Kind='{Kind}', Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', PhaseSignature='{LevelSignature}')";
+            return $"WorldResetRequest(Kind='{Kind}', Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', PhaseSignature='{PhaseSignature}')";
         }
     }
 }

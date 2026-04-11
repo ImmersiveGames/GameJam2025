@@ -64,6 +64,12 @@ MonoBehaviour:
     - localId: phase_ready
       stateKind: 1
       parameters: []
+  runResultStage:
+    hasRunResultStage: 0
+    parameters: []
+  intro:
+    hasIntroStage: 0
+    introPresenterPrefab: {fileID: 0}
   closure:
     resultKind: 1
     continuityPolicyKind: 2

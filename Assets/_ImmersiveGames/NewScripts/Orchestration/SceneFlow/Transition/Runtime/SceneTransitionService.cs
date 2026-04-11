@@ -493,9 +493,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
             string signature = SceneTransitionSignature.Compute(context);
             LogLoadedScenesSnapshot("before_apply_route");
 
-            IReadOnlyList<string> reloadScenes = GetReloadScenes(context.ScenesToLoad, context.ScenesToUnload);
             IReadOnlyList<string> loadScenes = NormalizeSceneList(context.ScenesToLoad);
-            IReadOnlyList<string> unloadScenes = BuildUnloadPlan(context, reloadScenes);
+            IReadOnlyList<string> routeUnloadScenes = NormalizeSceneList(context.ScenesToUnload);
+            IReadOnlyList<string> supplementalUnloadScenes = ResolveSupplementalUnloadScenes(context);
+            IReadOnlyList<string> combinedUnloadScenes = MergeSceneLists(routeUnloadScenes, supplementalUnloadScenes);
+            IReadOnlyList<string> reloadScenes = GetReloadScenes(loadScenes, combinedUnloadScenes);
+            IReadOnlyList<string> unloadScenes = BuildUnloadPlan(context, combinedUnloadScenes, reloadScenes);
             LogRouteExecutionPlan(context, loadScenes, unloadScenes, reloadScenes);
 
             ReportRouteLoadingProgress(signature, 0f, "Preparing route scenes", context.Reason);
@@ -619,19 +622,21 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
             return false;
         }
 
-        private static IReadOnlyList<string> BuildUnloadPlan(SceneTransitionContext context, IReadOnlyList<string> reloadScenes)
+        private static IReadOnlyList<string> BuildUnloadPlan(
+            SceneTransitionContext context,
+            IReadOnlyList<string> unloadScenes,
+            IReadOnlyList<string> reloadScenes)
         {
-            IReadOnlyList<string> normalizedUnload = NormalizeSceneList(context.ScenesToUnload);
-            if (normalizedUnload.Count == 0)
+            if (unloadScenes == null || unloadScenes.Count == 0)
             {
-                return normalizedUnload;
+                return Array.Empty<string>();
             }
 
             var reloadSet = new HashSet<string>(reloadScenes ?? Array.Empty<string>(), StringComparer.Ordinal);
             string targetActive = string.IsNullOrWhiteSpace(context.TargetActiveScene) ? string.Empty : context.TargetActiveScene.Trim();
 
-            var plan = new List<string>(normalizedUnload.Count);
-            foreach (string sceneName in normalizedUnload)
+            var plan = new List<string>(unloadScenes.Count);
+            foreach (string sceneName in unloadScenes)
             {
                 bool isTargetActive = targetActive.Length > 0 && string.Equals(sceneName, targetActive, StringComparison.Ordinal);
                 bool isReload = reloadSet.Contains(sceneName);
@@ -647,6 +652,56 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
             }
 
             return plan;
+        }
+
+        private static IReadOnlyList<string> MergeSceneLists(params IReadOnlyList<string>[] lists)
+        {
+            if (lists == null || lists.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            HashSet<string> dedupe = new HashSet<string>(StringComparer.Ordinal);
+            List<string> merged = new List<string>();
+
+            for (int i = 0; i < lists.Length; i++)
+            {
+                IReadOnlyList<string> list = lists[i];
+                if (list == null || list.Count == 0)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < list.Count; j++)
+                {
+                    string sceneName = list[j];
+                    if (string.IsNullOrWhiteSpace(sceneName))
+                    {
+                        continue;
+                    }
+
+                    string normalized = sceneName.Trim();
+                    if (normalized.Length == 0 || !dedupe.Add(normalized))
+                    {
+                        continue;
+                    }
+
+                    merged.Add(normalized);
+                }
+            }
+
+            return merged.Count == 0 ? Array.Empty<string>() : merged;
+        }
+
+        private static IReadOnlyList<string> ResolveSupplementalUnloadScenes(SceneTransitionContext context)
+        {
+            IReadOnlyList<string> supplementalScenes = SceneTransitionUnloadSupplementRegistry.GetSupplementalScenesToUnload(context);
+            if (supplementalScenes == null || supplementalScenes.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            return NormalizeSceneList(supplementalScenes);
         }
 
         private static IReadOnlyList<string> GetReloadScenes(IReadOnlyList<string>? scenesToLoad, IReadOnlyList<string>? scenesToUnload)
@@ -723,5 +778,96 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime
 
         private static string Sanitize(string s)
             => string.IsNullOrWhiteSpace(s) ? "n/a" : s.Replace("\n", " ").Replace("\r", " ").Trim();
+    }
+
+    public interface ISceneTransitionUnloadSupplementProvider
+    {
+        IReadOnlyList<string> GetSupplementalScenesToUnload(SceneTransitionContext context);
+    }
+
+    public static class SceneTransitionUnloadSupplementRegistry
+    {
+        private static readonly object Sync = new object();
+        private static readonly List<ISceneTransitionUnloadSupplementProvider> Providers = new List<ISceneTransitionUnloadSupplementProvider>();
+
+        public static void Register(ISceneTransitionUnloadSupplementProvider provider)
+        {
+            if (provider == null)
+            {
+                throw new ArgumentNullException(nameof(provider));
+            }
+
+            lock (Sync)
+            {
+                if (!Providers.Contains(provider))
+                {
+                    Providers.Add(provider);
+                }
+            }
+        }
+
+        public static void Unregister(ISceneTransitionUnloadSupplementProvider provider)
+        {
+            if (provider == null)
+            {
+                return;
+            }
+
+            lock (Sync)
+            {
+                Providers.Remove(provider);
+            }
+        }
+
+        public static IReadOnlyList<string> GetSupplementalScenesToUnload(SceneTransitionContext context)
+        {
+            ISceneTransitionUnloadSupplementProvider[] providersSnapshot;
+
+            lock (Sync)
+            {
+                if (Providers.Count == 0)
+                {
+                    return Array.Empty<string>();
+                }
+
+                providersSnapshot = Providers.ToArray();
+            }
+
+            if (providersSnapshot.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            HashSet<string> dedupe = new HashSet<string>(StringComparer.Ordinal);
+            List<string> scenesToUnload = new List<string>();
+
+            for (int i = 0; i < providersSnapshot.Length; i++)
+            {
+                IReadOnlyList<string> providerScenes = providersSnapshot[i].GetSupplementalScenesToUnload(context);
+                if (providerScenes == null || providerScenes.Count == 0)
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < providerScenes.Count; j++)
+                {
+                    string sceneName = providerScenes[j];
+                    if (string.IsNullOrWhiteSpace(sceneName))
+                    {
+                        continue;
+                    }
+
+                    string normalized = sceneName.Trim();
+                    if (normalized.Length == 0 || !dedupe.Add(normalized))
+                    {
+                        continue;
+                    }
+
+                    scenesToUnload.Add(normalized);
+                }
+            }
+
+            return scenesToUnload.Count == 0 ? Array.Empty<string>() : scenesToUnload;
+        }
     }
 }

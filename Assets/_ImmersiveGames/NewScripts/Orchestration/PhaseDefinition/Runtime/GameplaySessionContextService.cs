@@ -5,99 +5,6 @@ using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
-    [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameplaySessionContextService : IGameplaySessionContextService, IDisposable
-    {
-        private readonly object _sync = new();
-        private GameplaySessionContextSnapshot _current = GameplaySessionContextSnapshot.Empty;
-        private GameplaySessionContextSnapshot _last = GameplaySessionContextSnapshot.Empty;
-
-        public GameplaySessionContextService()
-        {
-            DebugUtility.LogVerbose<GameplaySessionContextService>(
-                "[OBS][GameplaySessionFlow][SessionContext] GameplaySessionContextService registrado como owner do contexto da fase.");
-        }
-
-        public GameplaySessionContextSnapshot Current
-        {
-            get
-            {
-                lock (_sync)
-                {
-                    return _current;
-                }
-            }
-        }
-
-        public GameplaySessionContextSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
-        {
-            return Update(GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt));
-        }
-
-        public GameplaySessionContextSnapshot Update(GameplaySessionContextSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                if (!snapshot.IsValid)
-                {
-                    HardFailFastH1.Trigger(typeof(GameplaySessionContextService),
-                        "[FATAL][H1][GameplaySessionFlow] Invalid gameplay session context snapshot received.");
-                }
-
-                _current = snapshot;
-                _last = snapshot;
-
-                DebugUtility.Log<GameplaySessionContextService>(
-                    $"[OBS][GameplaySessionFlow][SessionContext] SessionContextUpdated phaseId='{snapshot.PhaseId}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' routeRef='{(snapshot.MacroRouteRef != null ? snapshot.MacroRouteRef.name : "<none>")}' v='{snapshot.SelectionVersion}' reason='{snapshot.Reason}' signature='{snapshot.SessionSignature}'.",
-                    DebugUtility.Colors.Info);
-
-                return _current;
-            }
-        }
-
-        public bool TryGetCurrent(out GameplaySessionContextSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                snapshot = _current;
-                return _current.IsValid;
-            }
-        }
-
-        public bool TryGetLast(out GameplaySessionContextSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                snapshot = _last;
-                return _last.IsValid;
-            }
-        }
-
-        public void Clear(string reason = null)
-        {
-            int lastSelectionVersion;
-
-            lock (_sync)
-            {
-                _current = GameplaySessionContextSnapshot.Empty;
-                lastSelectionVersion = _last.SelectionVersion;
-            }
-
-            DebugUtility.Log<GameplaySessionContextService>(
-                $"[OBS][GameplaySessionFlow][SessionContext] SessionContextCleared keepLast='true' lastSelectionV='{lastSelectionVersion}' reason='{Normalize(reason)}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        public void Dispose()
-        {
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? "<null>" : value.Trim();
-        }
-    }
-
     public readonly struct GameplayPhaseRuntimeMaterializedEvent : _ImmersiveGames.NewScripts.Core.Events.IEvent
     {
         public GameplayPhaseRuntimeMaterializedEvent(GameplayPhaseRuntimeSnapshot runtime, string source)
@@ -150,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             string localContentId,
             string reason,
             int selectionVersion,
-            string levelSignature)
+            string phaseSignature)
         {
             if (PhaseDefinitionRef == null)
             {
@@ -166,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 normalizedContentId,
                 reason,
                 selectionVersion,
-                levelSignature,
+                phaseSignature,
                 IntroPresenterPrefab,
                 HasIntroStage,
                 HasRunResultStage);
@@ -260,16 +167,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
         private static string BuildPhaseRuntimeSignature(
             GameplaySessionContextSnapshot sessionContext,
-            IntroStageSession levelSession)
+            IntroStageSession introStageSession)
         {
             string sessionSignature = sessionContext.HasSessionSignature ? sessionContext.SessionSignature : "<no-session>";
-            string sessionLevelSignature = string.IsNullOrWhiteSpace(levelSession.SessionSignature) ? "<no-session>" : levelSession.SessionSignature;
-            return $"{sessionSignature}|{sessionLevelSignature}";
+            string sessionIntroSignature = string.IsNullOrWhiteSpace(introStageSession.SessionSignature) ? "<no-session>" : introStageSession.SessionSignature;
+            return $"{sessionSignature}|{sessionIntroSignature}";
         }
 
         private static string BuildPhaseRuntimeSignature(
             GameplaySessionContextSnapshot sessionContext,
-            IntroStageSession levelSession,
+            IntroStageSession introStageSession,
             PhaseDefinitionAsset phaseDefinitionRef,
             int contentEntryCount,
             int playerEntryCount,
@@ -279,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         {
             if (phaseDefinitionRef == null)
             {
-                return BuildPhaseRuntimeSignature(sessionContext, levelSession);
+                return BuildPhaseRuntimeSignature(sessionContext, introStageSession);
             }
 
             string sessionSignature = sessionContext.HasSessionSignature ? sessionContext.SessionSignature : "<no-session>";

@@ -1,32 +1,34 @@
 using System;
-namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
+
+namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     /// <summary>
-    /// Assinatura de contexto do dominio GameplaySessionFlow.
-    /// Nao deve ser reutilizada como MacroSignature do SceneFlow.
+    /// Assinatura canônica do contexto da phase.
+    /// Não deve ser usada como assinatura macro.
     /// </summary>
-    public readonly struct LevelContextSignature : IEquatable<LevelContextSignature>
+    public readonly struct PhaseContextSignature : IEquatable<PhaseContextSignature>
     {
-        public static readonly LevelContextSignature Empty = new(string.Empty);
+        public static readonly PhaseContextSignature Empty = new(string.Empty);
 
-        public LevelContextSignature(string value)
+        public PhaseContextSignature(string value)
         {
             Value = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         public string Value { get; }
+
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
         public override string ToString() => Value;
 
-        public bool Equals(LevelContextSignature other)
+        public bool Equals(PhaseContextSignature other)
         {
             return string.Equals(Value, other.Value, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
         {
-            return obj is LevelContextSignature other && Equals(other);
+            return obj is PhaseContextSignature other && Equals(other);
         }
 
         public override int GetHashCode()
@@ -34,12 +36,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
             return StringComparer.Ordinal.GetHashCode(Value ?? string.Empty);
         }
 
-        public static bool operator ==(LevelContextSignature left, LevelContextSignature right)
+        public static bool operator ==(PhaseContextSignature left, PhaseContextSignature right)
         {
             return left.Equals(right);
         }
 
-        public static bool operator !=(LevelContextSignature left, LevelContextSignature right)
+        public static bool operator !=(PhaseContextSignature left, PhaseContextSignature right)
         {
             return !left.Equals(right);
         }

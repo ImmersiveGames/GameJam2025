@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
 {
     /// <summary>
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
                         macroRouteId: SceneRouteId.None,
                         reason: WorldResetReasons.GateDisposed,
                         contextSignature: kv.Key,
-                        levelSignature: LevelContextSignature.Empty,
+                        phaseSignature: PhaseContextSignature.Empty,
                         outcome: WorldResetOutcome.Disposed,
                         detail: WorldResetReasons.GateDisposed,
                         origin: WorldResetOrigin.Unknown,

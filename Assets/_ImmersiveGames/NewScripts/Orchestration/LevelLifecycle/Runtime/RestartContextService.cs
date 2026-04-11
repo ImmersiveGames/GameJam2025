@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                     snapshot.LocalContentId,
                     snapshot.Reason,
                     next,
-                    snapshot.LevelSignature);
+                    snapshot.PhaseSignature);
 
                 _lastGameplayStartSnapshot = _current;
                 _selectionVersionCounter = Math.Max(_selectionVersionCounter, next);
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
         private static void LogSnapshotUpdated(GameplayStartSnapshot snapshot)
         {
             DebugUtility.Log<RestartContextService>(
-                $"[OBS][GameplaySessionFlow] GameplayStartSnapshotUpdated phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' contentId='{snapshot.LocalContentId}' v='{snapshot.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(snapshot.Reason) ? "<none>" : snapshot.Reason)}' phaseSignature='{(string.IsNullOrWhiteSpace(snapshot.LevelSignature) ? "<none>" : snapshot.LevelSignature)}'.",
+                $"[OBS][GameplaySessionFlow] GameplayStartSnapshotUpdated phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<none>")}' routeId='{snapshot.MacroRouteId}' contentId='{snapshot.LocalContentId}' v='{snapshot.SelectionVersion}' reason='{(string.IsNullOrWhiteSpace(snapshot.Reason) ? "<none>" : snapshot.Reason)}' phaseSignature='{(string.IsNullOrWhiteSpace(snapshot.PhaseSignature) ? "<none>" : snapshot.PhaseSignature)}'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
                 targetScene: string.Empty,
                 origin: WorldResetOrigin.Command,
                 macroRouteId: macroRouteId,
-                levelSignature: LevelContextSignature.Empty,
+                phaseSignature: PhaseContextSignature.Empty,
                 sourceSignature: normalizedMacroSignature);
 
             await resetService.TriggerResetAsync(request);
@@ -66,9 +66,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
                     FailFastConfig($"ResetLevelAsync received null phaseDefinitionRef. routeId='{resetContext.MacroRouteId}', reason='{reason ?? "<null>"}'.");
                 }
 
-                if (!resetContext.LevelSignature.IsValid)
+                if (!resetContext.PhaseSignature.IsValid)
                 {
-                    FailFastConfig($"ResetLevelAsync received empty levelSignature. phaseRef='{resetContext.PhaseDefinitionRef.name}', reason='{reason ?? "<null>"}'.");
+                    FailFastConfig($"ResetLevelAsync received empty phaseSignature. phaseRef='{resetContext.PhaseDefinitionRef.name}', reason='{reason ?? "<null>"}'.");
                 }
 
                 string normalizedReason = NormalizeReason(reason, "WorldReset/Level");
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
                 }
 
                 DebugUtility.Log<WorldResetCommands>(
-                $"[OBS][WorldReset] ResetPhase phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' phaseSignature='{resetContext.LevelSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
+                $"[OBS][WorldReset] ResetPhase phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' phaseSignature='{resetContext.PhaseSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
                 var request = new WorldResetRequest(
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
                     targetScene: string.Empty,
                     origin: WorldResetOrigin.Command,
                     macroRouteId: resetContext.MacroRouteId,
-                    levelSignature: resetContext.LevelSignature,
+                    phaseSignature: resetContext.PhaseSignature,
                     sourceSignature: resetContext.ResetSignature);
 
                 _lifecyclePublisher.PublishStarted(request);

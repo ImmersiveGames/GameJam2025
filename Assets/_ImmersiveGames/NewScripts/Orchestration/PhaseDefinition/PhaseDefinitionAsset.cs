@@ -222,8 +222,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public PhaseSwapBlock Swap => swap;
         public PhaseClosureBlock Closure => closure;
 
-        public bool HasRunResultStage => runResultStage != null;
-        public bool HasIntroStage => intro != null;
+        public bool HasRunResultStage => runResultStage != null && runResultStage.hasRunResultStage;
+        public bool HasIntroStage => intro != null && intro.hasIntroStage;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -546,7 +546,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             string localContentId,
             string reason,
             int selectionVersion,
-            string levelSignature)
+            string phaseSignature)
         {
             string normalizedContentId = string.IsNullOrWhiteSpace(localContentId)
                 ? BuildCanonicalIntroContentId()
@@ -557,7 +557,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                 normalizedContentId,
                 reason,
                 selectionVersion,
-                levelSignature,
+                phaseSignature,
                 intro != null ? intro.introPresenterPrefab : null,
                 HasIntroStage,
                 HasRunResultStage);

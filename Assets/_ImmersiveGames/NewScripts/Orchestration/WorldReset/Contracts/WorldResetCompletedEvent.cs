@@ -1,5 +1,5 @@
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
             SceneRouteId macroRouteId,
             string reason,
             string contextSignature,
-            LevelContextSignature levelSignature,
+            PhaseContextSignature phaseSignature,
             WorldResetOutcome outcome,
             string detail,
             WorldResetOrigin origin,
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
             MacroRouteId = macroRouteId;
             Reason = Normalize(reason);
             ContextSignature = Normalize(contextSignature);
-            LevelSignature = levelSignature;
+            PhaseSignature = phaseSignature;
             Outcome = outcome;
             Detail = Normalize(detail);
             TargetScene = Normalize(targetScene);
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
                 SceneRouteId.None,
                 reason,
                 contextSignature,
-                LevelContextSignature.Empty,
+                PhaseContextSignature.Empty,
                 WorldResetOutcome.Completed,
                 string.Empty,
                 WorldResetOrigin.Unknown,
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
         public string Reason { get; }
         public string ContextSignature { get; }
         public string SourceSignature { get; }
-        public LevelContextSignature LevelSignature { get; }
+        public PhaseContextSignature PhaseSignature { get; }
         public WorldResetOutcome Outcome { get; }
         public string Detail { get; }
         public string TargetScene { get; }
@@ -63,11 +63,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts
 
         public string MacroSignature => ContextSignature;
         public bool HasContextSignature => !string.IsNullOrWhiteSpace(ContextSignature);
-        public bool HasLevelSignature => LevelSignature.IsValid;
+        public bool HasPhaseSignature => PhaseSignature.IsValid;
 
         public override string ToString()
         {
-            return $"WorldResetCompletedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', PhaseSignature='{LevelSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Outcome='{Outcome}', Detail='{Detail}', Origin='{Origin}')";
+            return $"WorldResetCompletedEvent(Kind='{Kind}', Route='{MacroRouteId}', ContextSignature='{ContextSignature}', PhaseSignature='{PhaseSignature}', TargetScene='{TargetScene}', Reason='{Reason}', Outcome='{Outcome}', Detail='{Detail}', Origin='{Origin}')";
         }
 
         private static string Normalize(string value)

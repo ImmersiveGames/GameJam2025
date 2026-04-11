@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             string localContentId,
             string reason,
             int selectionVersion,
-            string levelSignature)
+            string phaseSignature)
         {
             PhaseDefinitionRef = phaseDefinitionRef;
             MacroRouteId = macroRouteId;
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             LocalContentId = ResolveLocalContentId(phaseDefinitionRef, localContentId);
             Reason = Sanitize(reason);
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
-            LevelSignature = NormalizeSignature(phaseDefinitionRef, macroRouteId, reason, levelSignature);
+            PhaseSignature = NormalizeSignature(phaseDefinitionRef, macroRouteId, reason, phaseSignature);
         }
 
         public PhaseDefinitionAsset PhaseDefinitionRef { get; }
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public string LocalContentId { get; }
         public string Reason { get; }
         public int SelectionVersion { get; }
-        public string LevelSignature { get; }
+        public string PhaseSignature { get; }
 
         public bool HasPhaseDefinitionRef => PhaseDefinitionRef != null;
         public bool HasLocalContentId => !string.IsNullOrWhiteSpace(LocalContentId);
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
         public override string ToString()
         {
-            return $"phaseRef='{(HasPhaseDefinitionRef ? PhaseDefinitionRef.name : "<none>")}', routeId='{MacroRouteId}', localContentId='{(HasLocalContentId ? LocalContentId : "<none>")}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', phaseSignature='{(string.IsNullOrWhiteSpace(LevelSignature) ? "<none>" : LevelSignature)}'";
+            return $"phaseRef='{(HasPhaseDefinitionRef ? PhaseDefinitionRef.name : "<none>")}', routeId='{MacroRouteId}', localContentId='{(HasLocalContentId ? LocalContentId : "<none>")}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', v='{SelectionVersion}', phaseSignature='{(string.IsNullOrWhiteSpace(PhaseSignature) ? "<none>" : PhaseSignature)}'";
         }
 
         private static string ResolveLocalContentId(PhaseDefinitionAsset phaseDefinitionRef, string localContentId)
@@ -87,9 +87,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             PhaseDefinitionAsset phaseDefinitionRef,
             SceneRouteId routeId,
             string reason,
-            string levelSignature)
+            string phaseSignature)
         {
-            string normalized = Sanitize(levelSignature);
+            string normalized = Sanitize(phaseSignature);
             if (!string.IsNullOrWhiteSpace(normalized))
             {
                 return normalized;

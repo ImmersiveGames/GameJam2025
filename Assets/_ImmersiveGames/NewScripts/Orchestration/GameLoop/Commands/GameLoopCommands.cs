@@ -4,8 +4,8 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
 {
     public interface IPauseCommands
@@ -77,8 +77,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
             DebugUtility.Log(typeof(GameLoopCommands),
                 $"[GameLoopCommands] RequestRestart reason='{normalizedReason}'");
 
-            IPostLevelActionsService postLevelActions = ResolveRequiredPostLevelActionsOrFail(normalizedReason);
-            _ = ObserveAsync(postLevelActions.RestartLevelAsync(normalizedReason, System.Threading.CancellationToken.None), normalizedReason, "Restart");
+            IGameplaySessionFlowContinuityService gameplaySessionFlowContinuity = ResolveRequiredGameplaySessionFlowContinuityOrFail(normalizedReason);
+            _ = ObserveAsync(gameplaySessionFlowContinuity.RestartGameplayAsync(normalizedReason, System.Threading.CancellationToken.None), normalizedReason, "Restart");
         }
 
         public void RequestExitToMenu(string reason)
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
             }
         }
 
-        private static IPostLevelActionsService ResolveRequiredPostLevelActionsOrFail(string reason)
+        private static IGameplaySessionFlowContinuityService ResolveRequiredGameplaySessionFlowContinuityOrFail(string reason)
         {
             if (DependencyManager.Provider == null)
             {
@@ -113,13 +113,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
                     $"[FATAL][H1][GameLoop] Restart requested without DependencyManager.Provider. reason='{reason}'.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var postLevelActions) || postLevelActions == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var gameplaySessionFlowContinuity) || gameplaySessionFlowContinuity == null)
             {
                 HardFailFastH1.Trigger(typeof(GameLoopCommands),
-                    $"[FATAL][H1][GameLoop] Restart requested without IPostLevelActionsService. reason='{reason}'.");
+                    $"[FATAL][H1][GameLoop] Restart requested without IGameplaySessionFlowContinuityService. reason='{reason}'.");
             }
 
-            return postLevelActions;
+            return gameplaySessionFlowContinuity;
         }
 
         private static IGameNavigationService ResolveRequiredNavigationServiceOrFail(string reason)

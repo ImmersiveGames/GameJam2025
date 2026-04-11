@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
@@ -40,9 +41,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
             RegisterPhaseDefinitionCatalog(bootstrapConfig);
             RegisterPhaseDefinitionResolver();
             RegisterPhaseDefinitionSelectionService();
-            RegisterPhaseNextPhaseService();
             RegisterRestartContextService();
             EnsureGameplayPhaseFlowOwner();
+            RegisterPhaseContentUnloadSupplementProvider();
+            RegisterPhaseContentCompletionCleaner();
+            RegisterPhaseNextPhaseSelectionService();
+            RegisterPhaseNextPhaseCompositionService();
 
             _installed = true;
 
@@ -136,19 +140,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
             }
         }
 
-        private static void RegisterPhaseNextPhaseService()
+        private static void RegisterPhaseNextPhaseSelectionService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseService>(out var existingService) && existingService != null)
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var existingService) || existingService == null)
             {
-                return;
+                DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseSelectionService>(new PhaseNextPhaseSelectionService());
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][Core] NextPhase selection service registered in global DI.",
+                    DebugUtility.Colors.Info);
             }
+        }
 
-            var service = new PhaseNextPhaseService();
-            DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseService>(service);
-
-            DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
-                "[OBS][PhaseDefinition][Core] NextPhase service registered in global DI.",
-                DebugUtility.Colors.Info);
+        private static void RegisterPhaseNextPhaseCompositionService()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseCompositionService>(out var existingService) || existingService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseCompositionService>(new PhaseNextPhaseCompositionService());
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][Core] NextPhase composition service registered in global DI.",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private static void RegisterRestartContextService()
@@ -185,6 +196,42 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterPhaseContentUnloadSupplementProvider()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<PhaseContentSceneTransitionUnloadSupplementProvider>(out var existingProvider) && existingProvider != null)
+            {
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][PhaseFlow] PhaseContentSceneTransitionUnloadSupplementProvider ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var provider = new PhaseContentSceneTransitionUnloadSupplementProvider();
+            DependencyManager.Provider.RegisterGlobal(provider);
+
+            DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                "[OBS][PhaseDefinition][PhaseFlow] PhaseContentSceneTransitionUnloadSupplementProvider registrado no DI global como seam operacional de Phase Content unload.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPhaseContentCompletionCleaner()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<PhaseContentSceneTransitionCompletionCleaner>(out var existingCleaner) && existingCleaner != null)
+            {
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][PhaseFlow] PhaseContentSceneTransitionCompletionCleaner ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var cleaner = new PhaseContentSceneTransitionCompletionCleaner();
+            DependencyManager.Provider.RegisterGlobal(cleaner);
+
+            DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                "[OBS][PhaseDefinition][PhaseFlow] PhaseContentSceneTransitionCompletionCleaner registrado no DI global como seam operacional de Phase Content cleanup.",
+                DebugUtility.Colors.Info);
+        }
+
         private static bool ResolveGameplayPhaseEnablementOrFail(BootstrapConfigAsset bootstrapConfig)
         {
             if (bootstrapConfig.NavigationCatalog == null)
@@ -197,6 +244,113 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
                 $"[OBS][PhaseDefinition][Core] route-driven phase enablement resolved phaseEnabled={phaseEnabled}.",
                 DebugUtility.Colors.Info);
             return phaseEnabled;
+        }
+    }
+}
+
+namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
+{
+    public sealed class PhaseContentSceneTransitionUnloadSupplementProvider : _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.ISceneTransitionUnloadSupplementProvider
+    {
+        public PhaseContentSceneTransitionUnloadSupplementProvider()
+        {
+            _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionUnloadSupplementRegistry.Register(this);
+        }
+
+        public IReadOnlyList<string> GetSupplementalScenesToUnload(_ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionContext context)
+        {
+            if (context.RouteKind == _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime.SceneRouteKind.Gameplay)
+            {
+                return Array.Empty<string>();
+            }
+
+            if (!PhaseContentSceneRuntimeApplier.HasActiveAppliedPhaseContent)
+            {
+                _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Log(typeof(PhaseContentSceneTransitionUnloadSupplementProvider),
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentSupplementalUnloadSkipped routeId='{context.RouteId}' routeKind='{context.RouteKind}' reason='no_active_phase_content'.",
+                    _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Colors.Info);
+                return Array.Empty<string>();
+            }
+
+            IReadOnlyList<string> activeScenes = PhaseContentSceneRuntimeApplier.ActiveAppliedSceneNames;
+            if (activeScenes == null || activeScenes.Count == 0)
+            {
+                _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Log(typeof(PhaseContentSceneTransitionUnloadSupplementProvider),
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentSupplementalUnloadSkipped routeId='{context.RouteId}' routeKind='{context.RouteKind}' reason='empty_active_scene_list'.",
+                    _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Colors.Info);
+                return Array.Empty<string>();
+            }
+
+            _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Log(typeof(PhaseContentSceneTransitionUnloadSupplementProvider),
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentSupplementalUnloadProvided routeId='{context.RouteId}' routeKind='{context.RouteKind}' activeScenes=[{string.Join(",", activeScenes)}].",
+                _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Colors.Info);
+
+            return activeScenes;
+        }
+    }
+
+    public sealed class PhaseContentSceneTransitionCompletionCleaner : IDisposable
+    {
+        private readonly _ImmersiveGames.NewScripts.Core.Events.EventBinding<_ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionCompletedEvent> _sceneTransitionCompletedBinding;
+        private bool _disposed;
+
+        public PhaseContentSceneTransitionCompletionCleaner()
+        {
+            _sceneTransitionCompletedBinding = new _ImmersiveGames.NewScripts.Core.Events.EventBinding<_ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
+            _ImmersiveGames.NewScripts.Core.Events.EventBus<_ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionCompletedEvent>.Register(_sceneTransitionCompletedBinding);
+        }
+
+        private static bool ShouldClearOnSceneTransitionCompleted(_ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionContext context)
+        {
+            return context.RouteKind != _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime.SceneRouteKind.Gameplay;
+        }
+
+        private void OnSceneTransitionCompleted(_ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionCompletedEvent evt)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionContext context = evt.context;
+            if (!ShouldClearOnSceneTransitionCompleted(context))
+            {
+                return;
+            }
+
+            if (!PhaseContentSceneRuntimeApplier.HasActiveAppliedPhaseContent)
+            {
+                _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Log(typeof(PhaseContentSceneTransitionCompletionCleaner),
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentClearedOnSceneTransitionCompleted routeId='{context.RouteId}' routeKind='{context.RouteKind}' reason='no_active_phase_content'.",
+                    _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Colors.Info);
+                return;
+            }
+
+            IReadOnlyList<string> activeScenes = PhaseContentSceneRuntimeApplier.ActiveAppliedSceneNames;
+            if (activeScenes == null || activeScenes.Count == 0)
+            {
+                _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Log(typeof(PhaseContentSceneTransitionCompletionCleaner),
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentClearedOnSceneTransitionCompleted routeId='{context.RouteId}' routeKind='{context.RouteKind}' reason='empty_active_scene_list'.",
+                    _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Colors.Info);
+                return;
+            }
+
+            PhaseContentSceneRuntimeApplier.RecordCleared();
+
+            _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Log(typeof(PhaseContentSceneTransitionCompletionCleaner),
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentClearedOnSceneTransitionCompleted routeId='{context.RouteId}' routeKind='{context.RouteKind}' clearedScenes=[{string.Join(",", activeScenes)}].",
+                _ImmersiveGames.NewScripts.Core.Logging.DebugUtility.Colors.Info);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _ImmersiveGames.NewScripts.Core.Events.EventBus<_ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime.SceneTransitionCompletedEvent>.Unregister(_sceneTransitionCompletedBinding);
         }
     }
 }

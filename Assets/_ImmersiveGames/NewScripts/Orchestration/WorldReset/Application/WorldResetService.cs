@@ -5,11 +5,11 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
 {
     /// <summary>
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application
                 targetScene: string.Empty,
                 origin: WorldResetOrigin.Manual,
                 macroRouteId: SceneRouteId.None,
-                levelSignature: LevelContextSignature.Empty,
+                phaseSignature: PhaseContextSignature.Empty,
                 sourceSignature: contextSignature ?? string.Empty);
 
             return await TriggerResetAsync(request);

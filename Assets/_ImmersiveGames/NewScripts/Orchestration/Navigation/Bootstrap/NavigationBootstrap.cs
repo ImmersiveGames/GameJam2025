@@ -3,10 +3,11 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
     /// <summary>
@@ -35,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             }
 
             EnsureNavigationCoreComposition();
-            EnsurePostLevelActionsService(bootstrapConfig);
+            EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
             NavigationAdaptersBootstrap.ComposeRuntime(bootstrapConfig);
             EnsureNavigationModuleComposition();
 
@@ -94,44 +95,44 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] IFrontendQuitService missing from global DI before module composition checkpoint.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var postLevelActionsService) || postLevelActionsService == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var continuityService) || continuityService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IPostLevelActionsService missing from global DI before module composition checkpoint.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameplaySessionFlowContinuityService missing from global DI before module composition checkpoint.");
             }
 
             DebugUtility.Log(typeof(NavigationBootstrap),
-                "[OBS][NavigationCore][Operational] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters + continuity seam'.",
+                "[OBS][NavigationCore][Operational] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters + GameplaySessionFlow continuity seam'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsurePostLevelActionsService(BootstrapConfigAsset bootstrapConfig)
+        private static void EnsureGameplaySessionFlowContinuityService(BootstrapConfigAsset bootstrapConfig)
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPostLevelActionsService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var existing) && existing != null)
             {
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService ausente no DI global antes de registrar o IPostLevelActionsService.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRestartContextService ausente no DI global antes de registrar o IPostLevelActionsService.");
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
             }
 
             IPhaseDefinitionCatalog phaseDefinitionCatalog = ResolveOptionalPhaseDefinitionCatalog(bootstrapConfig);
 
-            var service = new PostLevelActionsService(
+            var service = new GameplaySessionFlowContinuityService(
                 navigationService,
                 restartContextService,
                 phaseDefinitionCatalog);
 
-            DependencyManager.Provider.RegisterGlobal<IPostLevelActionsService>(service);
+            DependencyManager.Provider.RegisterGlobal<IGameplaySessionFlowContinuityService>(service);
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                "[OBS][NavigationCore][Operational] IPostLevelActionsService registrado como continuity seam canonical.",
+                "[OBS][NavigationCore][Operational] IGameplaySessionFlowContinuityService registrado como continuity seam canonical.",
                 DebugUtility.Colors.Info);
         }
 

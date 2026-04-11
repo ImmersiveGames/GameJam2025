@@ -631,7 +631,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             restartContextService.RegisterGameplayStart(gameplayStartSnapshot);
 
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] GameplayStartSnapshotLinked owner='GameplayPhaseFlowService' phaseId='{evt.PhaseId}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' reason='{evt.Reason}' signature='{gameplayStartSnapshot.LevelSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] GameplayStartSnapshotLinked owner='GameplayPhaseFlowService' phaseId='{evt.PhaseId}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' reason='{evt.Reason}' signature='{gameplayStartSnapshot.PhaseSignature}'.",
                 DebugUtility.Colors.Info);
         }
 

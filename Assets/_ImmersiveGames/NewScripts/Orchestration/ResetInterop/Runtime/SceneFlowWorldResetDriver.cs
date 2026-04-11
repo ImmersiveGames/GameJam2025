@@ -2,13 +2,13 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Application;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
 {
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime
                 targetScene: targetScene ?? string.Empty,
                 origin: WorldResetOrigin.SceneFlow,
                 macroRouteId: routeId,
-                levelSignature: LevelContextSignature.Empty,
+                phaseSignature: PhaseContextSignature.Empty,
                 sourceSignature: signature ?? string.Empty);
         }
 
