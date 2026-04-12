@@ -94,6 +94,44 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             return nextPhaseDefinition != null;
         }
 
+        public PhaseDefinitionAsset ResolvePreviousOrFail(string phaseId)
+        {
+            if (!TryGetPrevious(phaseId, out PhaseDefinitionAsset previousPhaseDefinition))
+            {
+                string normalizedPhaseId = PhaseDefinitionId.Normalize(phaseId);
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing previous phase for phaseId='{normalizedPhaseId}' in catalog '{name}'.");
+            }
+
+            return previousPhaseDefinition;
+        }
+
+        public bool TryGetPrevious(string phaseId, out PhaseDefinitionAsset previousPhaseDefinition)
+        {
+            previousPhaseDefinition = null;
+
+            if (string.IsNullOrWhiteSpace(phaseId))
+            {
+                return false;
+            }
+
+            EnsureBuilt();
+
+            string normalizedPhaseId = PhaseDefinitionId.Normalize(phaseId);
+            if (!_phaseIndexById.TryGetValue(normalizedPhaseId, out int index))
+            {
+                return false;
+            }
+
+            int previousIndex = index - 1;
+            if (previousIndex < 0)
+            {
+                return false;
+            }
+
+            previousPhaseDefinition = phaseDefinitions[previousIndex];
+            return previousPhaseDefinition != null;
+        }
+
 #if UNITY_EDITOR
         private void OnValidate()
         {

@@ -5,6 +5,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     public interface IPhaseNextPhaseService
     {
-        Task NextPhaseAsync(string reason = null, CancellationToken ct = default);
+        Task<PhaseNavigationResult> NavigateAsync(PhaseNavigationRequest request, CancellationToken ct = default);
+        Task<PhaseNavigationResult> NextPhaseAsync(string reason = null, CancellationToken ct = default);
+        Task<PhaseNavigationResult> PreviousPhaseAsync(string reason = null, CancellationToken ct = default);
     }
 }

@@ -13,6 +13,71 @@ using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
+    public enum PhaseNavigationOutcome
+    {
+        Changed = 0,
+        BlockedAtFirst = 1,
+        BlockedAtLast = 2,
+        RejectedNotReady = 3,
+        InvalidCurrentPhase = 4,
+        InvalidCatalog = 5
+    }
+
+    public readonly struct PhaseNavigationRequest
+    {
+        public PhaseNavigationRequest(PhaseNavigationDirection direction, string reason)
+        {
+            Direction = direction;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+        }
+
+        public PhaseNavigationDirection Direction { get; }
+        public string Reason { get; }
+
+        public static PhaseNavigationRequest Next(string reason = null)
+            => new(PhaseNavigationDirection.Next, reason);
+
+        public static PhaseNavigationRequest Previous(string reason = null)
+            => new(PhaseNavigationDirection.Previous, reason);
+    }
+
+    public readonly struct PhaseNavigationResult
+    {
+        public PhaseNavigationResult(
+            PhaseNavigationRequest request,
+            PhaseNavigationOutcome outcome,
+            PhaseDefinitionAsset currentPhaseRef,
+            string catalogName,
+            PhaseNavigationSelectionContext selectionContext)
+        {
+            Request = request;
+            Outcome = outcome;
+            CurrentPhaseRef = currentPhaseRef;
+            CatalogName = string.IsNullOrWhiteSpace(catalogName) ? string.Empty : catalogName.Trim();
+            SelectionContext = selectionContext;
+        }
+
+        public PhaseNavigationRequest Request { get; }
+        public PhaseNavigationOutcome Outcome { get; }
+        public PhaseDefinitionAsset CurrentPhaseRef { get; }
+        public string CatalogName { get; }
+        public PhaseNavigationSelectionContext SelectionContext { get; }
+
+        public PhaseNavigationDirection Direction => Request.Direction;
+        public string Reason => Request.Reason;
+        public PhaseDefinitionAsset TargetPhaseRef => SelectionContext.TargetPhaseRef;
+        public bool HasSelectionContext => Outcome == PhaseNavigationOutcome.Changed && SelectionContext.IsValid;
+        public bool IsBlockedAtBoundary =>
+            Outcome == PhaseNavigationOutcome.BlockedAtFirst ||
+            Outcome == PhaseNavigationOutcome.BlockedAtLast;
+    }
+
+    public enum PhaseNavigationDirection
+    {
+        Next = 0,
+        Previous = 1
+    }
+
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PhaseNextPhaseService : IPhaseNextPhaseService
     {
@@ -31,30 +96,51 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             _handoffService = handoffService ?? throw new ArgumentNullException(nameof(handoffService));
         }
 
-        public async Task NextPhaseAsync(string reason = null, CancellationToken ct = default)
+        public Task<PhaseNavigationResult> NavigateAsync(PhaseNavigationRequest request, CancellationToken ct = default)
+        {
+            return ExecuteNavigationAsync(request, ct);
+        }
+
+        public Task<PhaseNavigationResult> NextPhaseAsync(string reason = null, CancellationToken ct = default)
+        {
+            return NavigateAsync(PhaseNavigationRequest.Next(reason), ct);
+        }
+
+        public Task<PhaseNavigationResult> PreviousPhaseAsync(string reason = null, CancellationToken ct = default)
+        {
+            return NavigateAsync(PhaseNavigationRequest.Previous(reason), ct);
+        }
+
+        private async Task<PhaseNavigationResult> ExecuteNavigationAsync(PhaseNavigationRequest request, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
-            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(reason);
+            PhaseNavigationRequest normalizedRequest = new PhaseNavigationRequest(request.Direction, request.Reason);
+            string directionLabel = PhaseNextPhaseServiceSupport.DescribeDirection(normalizedRequest.Direction);
 
             DebugUtility.Log<PhaseNextPhaseService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseExecutionStarted owner='PhaseNextPhaseService' reason='{normalizedReason}'.",
+                $"[OBS][PhaseFlow] {directionLabel}Requested owner='PhaseNextPhaseService' reason='{normalizedRequest.Reason}'.",
                 DebugUtility.Colors.Info);
 
             await _gate.WaitAsync(ct);
             try
             {
-                if (!_selectionService.TrySelectNextPhase(normalizedReason, out PhaseNextPhaseSelectionContext selectionContext))
+                PhaseNavigationResult selectionResult = _selectionService.SelectPhase(normalizedRequest);
+                if (selectionResult.Outcome != PhaseNavigationOutcome.Changed)
                 {
-                    return;
+                    return selectionResult;
                 }
 
-                PhaseNextPhaseCompositionContext compositionContext = await _compositionService.ApplyNextPhaseAsync(selectionContext, ct);
+                PhaseNavigationSelectionContext selectionContext = selectionResult.SelectionContext;
+
+                PhaseNavigationCompositionContext compositionContext = await _compositionService.ApplyNavigationPhaseAsync(selectionContext, ct);
                 await _handoffService.CompleteIntroHandoffAsync(compositionContext, ct);
 
                 DebugUtility.Log<PhaseNextPhaseService>(
-                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseExecutionCompleted owner='PhaseNextPhaseService' phaseId='{selectionContext.NextPhaseRef.PhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' reason='{normalizedReason}'.",
+                    $"[OBS][PhaseFlow] PhaseChanged direction='{directionLabel}' from='{PhaseNextPhaseServiceSupport.DescribePhase(selectionContext.CurrentPhaseRef)}' to='{PhaseNextPhaseServiceSupport.DescribePhase(selectionContext.TargetPhaseRef)}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' reason='{normalizedRequest.Reason}'.",
                     DebugUtility.Colors.Success);
+
+                return selectionResult;
             }
             finally
             {
@@ -63,119 +149,161 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         }
     }
 
-    public readonly struct PhaseNextPhaseSelectionContext
+    public readonly struct PhaseNavigationSelectionContext
     {
-        public PhaseNextPhaseSelectionContext(
+        public PhaseNavigationSelectionContext(
             GameplayStartSnapshot currentSnapshot,
-            PhaseDefinitionAsset nextPhaseRef,
+            PhaseDefinitionAsset targetPhaseRef,
             PhaseDefinitionSelectedEvent phaseSelectedEvent,
             string reason,
-            string targetSceneName)
+            string targetSceneName,
+            PhaseNavigationDirection direction)
         {
             CurrentSnapshot = currentSnapshot;
-            NextPhaseRef = nextPhaseRef;
+            TargetPhaseRef = targetPhaseRef;
             PhaseSelectedEvent = phaseSelectedEvent;
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             TargetSceneName = string.IsNullOrWhiteSpace(targetSceneName) ? string.Empty : targetSceneName.Trim();
+            Direction = direction;
         }
 
         public GameplayStartSnapshot CurrentSnapshot { get; }
-        public PhaseDefinitionAsset NextPhaseRef { get; }
+        public PhaseDefinitionAsset CurrentPhaseRef => CurrentSnapshot.PhaseDefinitionRef;
+        public PhaseDefinitionAsset TargetPhaseRef { get; }
         public PhaseDefinitionSelectedEvent PhaseSelectedEvent { get; }
         public string Reason { get; }
         public string TargetSceneName { get; }
+        public PhaseNavigationDirection Direction { get; }
 
         public int SelectionVersion => PhaseSelectedEvent.SelectionVersion;
-        public string NextIntroContentId => NextPhaseRef != null ? NextPhaseRef.BuildCanonicalIntroContentId() : string.Empty;
+        public string TargetIntroContentId => TargetPhaseRef != null ? TargetPhaseRef.BuildCanonicalIntroContentId() : string.Empty;
         public bool IsValid =>
             CurrentSnapshot.IsValid &&
-            NextPhaseRef != null &&
+            TargetPhaseRef != null &&
             PhaseSelectedEvent.IsValid &&
             !string.IsNullOrWhiteSpace(TargetSceneName);
     }
 
-    public readonly struct PhaseNextPhaseCompositionContext
+    public readonly struct PhaseNavigationCompositionContext
     {
-        public PhaseNextPhaseCompositionContext(
-            PhaseNextPhaseSelectionContext selectionContext,
+        public PhaseNavigationCompositionContext(
+            PhaseNavigationSelectionContext selectionContext,
             SceneCompositionRequest applyRequest)
         {
             SelectionContext = selectionContext;
             ApplyRequest = applyRequest;
         }
 
-        public PhaseNextPhaseSelectionContext SelectionContext { get; }
+        public PhaseNavigationSelectionContext SelectionContext { get; }
         public SceneCompositionRequest ApplyRequest { get; }
         public bool IsValid => SelectionContext.IsValid;
     }
 
     public interface IPhaseNextPhaseSelectionService
     {
-        bool TrySelectNextPhase(string reason, out PhaseNextPhaseSelectionContext selectionContext);
+        PhaseNavigationResult SelectPhase(PhaseNavigationRequest request);
     }
 
     public interface IPhaseNextPhaseCompositionService
     {
-        Task<PhaseNextPhaseCompositionContext> ApplyNextPhaseAsync(PhaseNextPhaseSelectionContext selectionContext, CancellationToken ct);
+        Task<PhaseNavigationCompositionContext> ApplyNavigationPhaseAsync(PhaseNavigationSelectionContext selectionContext, CancellationToken ct);
     }
 
     public interface IPhaseNextPhaseEntryHandoffService
     {
-        Task CompleteIntroHandoffAsync(PhaseNextPhaseCompositionContext compositionContext, CancellationToken ct);
+        Task CompleteIntroHandoffAsync(PhaseNavigationCompositionContext compositionContext, CancellationToken ct);
     }
 
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PhaseNextPhaseSelectionService : IPhaseNextPhaseSelectionService
     {
-        public bool TrySelectNextPhase(string reason, out PhaseNextPhaseSelectionContext selectionContext)
+        public PhaseNavigationResult SelectPhase(PhaseNavigationRequest request)
         {
-            selectionContext = default;
+            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(request.Reason);
+            PhaseNavigationRequest normalizedRequest = new PhaseNavigationRequest(request.Direction, normalizedReason);
 
-            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(reason);
             GameplayStartSnapshot currentSnapshot = ResolveCurrentGameplaySnapshotOrFail(normalizedReason);
             IPhaseDefinitionCatalog catalog = PhaseNextPhaseServiceSupport.ResolveRequiredGlobal<IPhaseDefinitionCatalog>("IPhaseDefinitionCatalog");
+            PhaseDefinitionAsset currentPhaseRef = currentSnapshot.PhaseDefinitionRef;
+            string catalogName = PhaseNextPhaseServiceSupport.DescribeCatalog(catalog);
 
-            if (!catalog.TryGetNext(currentSnapshot.PhaseDefinitionRef.PhaseId.Value, out PhaseDefinitionAsset nextPhaseRef) ||
-                nextPhaseRef == null)
+            if (normalizedRequest.Direction == PhaseNavigationDirection.Next)
             {
-                DebugUtility.LogWarning(typeof(PhaseNextPhaseSelectionService),
-                    $"[WARN][GameplaySessionFlow][PhaseDefinition] PhaseNextUnavailable current='{currentSnapshot.PhaseDefinitionRef.PhaseId}' reason='end_of_catalog'.");
-                return false;
+                if (!catalog.TryGetNext(currentPhaseRef.PhaseId.Value, out PhaseDefinitionAsset targetPhaseRef) || targetPhaseRef == null)
+                {
+                    DebugUtility.LogWarning<PhaseNextPhaseSelectionService>(
+                        $"[WARN][PhaseFlow] NavigationBlocked outcome='BlockedAtLast' action='Next' currentPhase='{PhaseNextPhaseServiceSupport.DescribePhase(currentPhaseRef)}' catalog='{catalogName}' reason='end_of_catalog'.");
+                    return BuildBlockedResult(normalizedRequest, PhaseNavigationOutcome.BlockedAtLast, currentPhaseRef, catalogName);
+                }
+
+                return BuildChangedResult(normalizedRequest, currentSnapshot, targetPhaseRef, catalogName);
             }
 
-            string currentPhaseId = currentSnapshot.PhaseDefinitionRef.PhaseId.Value;
-            string currentPhaseName = currentSnapshot.PhaseDefinitionRef.name;
-            string nextPhaseId = nextPhaseRef.PhaseId.Value;
-            string nextPhaseName = nextPhaseRef.name;
+            if (!catalog.TryGetPrevious(currentPhaseRef.PhaseId.Value, out PhaseDefinitionAsset previousPhaseRef) || previousPhaseRef == null)
+            {
+                DebugUtility.LogWarning<PhaseNextPhaseSelectionService>(
+                    $"[WARN][PhaseFlow] NavigationBlocked outcome='BlockedAtFirst' action='Previous' currentPhase='{PhaseNextPhaseServiceSupport.DescribePhase(currentPhaseRef)}' catalog='{catalogName}' reason='start_of_catalog'.");
+                return BuildBlockedResult(normalizedRequest, PhaseNavigationOutcome.BlockedAtFirst, currentPhaseRef, catalogName);
+            }
+
+            return BuildChangedResult(normalizedRequest, currentSnapshot, previousPhaseRef, catalogName);
+        }
+
+        private static PhaseNavigationResult BuildChangedResult(
+            PhaseNavigationRequest request,
+            GameplayStartSnapshot currentSnapshot,
+            PhaseDefinitionAsset targetPhaseRef,
+            string catalogName)
+        {
             int nextSelectionVersion = Math.Max(currentSnapshot.SelectionVersion + 1, 1);
 
             PhaseDefinitionSelectedEvent phaseSelectedEvent = new PhaseDefinitionSelectedEvent(
-                nextPhaseRef,
+                targetPhaseRef,
                 currentSnapshot.MacroRouteId,
                 currentSnapshot.MacroRouteRef,
                 nextSelectionVersion,
-                normalizedReason);
-
-            DebugUtility.Log<PhaseNextPhaseSelectionService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseOwnerConfirmed owner='PhaseNextPhaseSelectionService' currentPhaseId='{currentPhaseId}' nextPhaseId='{nextPhaseId}' routeId='{currentSnapshot.MacroRouteId}' reason='{normalizedReason}'.",
-                DebugUtility.Colors.Info);
-
-            DebugUtility.Log<PhaseNextPhaseSelectionService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseSelected currentPhaseRef='{currentPhaseName}' nextPhaseRef='{nextPhaseName}' routeId='{currentSnapshot.MacroRouteId}' v='{nextSelectionVersion}' reason='{normalizedReason}' signature='{phaseSelectedEvent.SelectionSignature}'.",
-                DebugUtility.Colors.Info);
-
-            SyncRestartContextFromPhaseSelection(phaseSelectedEvent);
-            EventBus<PhaseDefinitionSelectedEvent>.Raise(phaseSelectedEvent);
+                request.Reason);
 
             string targetSceneName = SceneManager.GetActiveScene().name;
-            selectionContext = new PhaseNextPhaseSelectionContext(
+            PhaseNavigationSelectionContext selectionContext = new PhaseNavigationSelectionContext(
                 currentSnapshot,
-                nextPhaseRef,
+                targetPhaseRef,
                 phaseSelectedEvent,
-                normalizedReason,
-                targetSceneName);
+                request.Reason,
+                targetSceneName,
+                request.Direction);
 
-            return true;
+            PublishSelection(selectionContext);
+            return new PhaseNavigationResult(
+                request,
+                PhaseNavigationOutcome.Changed,
+                selectionContext.CurrentPhaseRef,
+                catalogName,
+                selectionContext);
+        }
+
+        private static PhaseNavigationResult BuildBlockedResult(
+            PhaseNavigationRequest request,
+            PhaseNavigationOutcome outcome,
+            PhaseDefinitionAsset currentPhaseRef,
+            string catalogName)
+        {
+            return new PhaseNavigationResult(
+                request,
+                outcome,
+                currentPhaseRef,
+                catalogName,
+                default);
+        }
+
+        private static void PublishSelection(PhaseNavigationSelectionContext selectionContext)
+        {
+            SyncRestartContextFromPhaseSelection(selectionContext.PhaseSelectedEvent);
+            EventBus<PhaseDefinitionSelectedEvent>.Raise(selectionContext.PhaseSelectedEvent);
+
+            DebugUtility.Log<PhaseNextPhaseSelectionService>(
+                $"[OBS][PhaseFlow] PhaseSelected direction='{PhaseNextPhaseServiceSupport.DescribeDirection(selectionContext.Direction)}' from='{PhaseNextPhaseServiceSupport.DescribePhase(selectionContext.CurrentPhaseRef)}' to='{PhaseNextPhaseServiceSupport.DescribePhase(selectionContext.TargetPhaseRef)}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static GameplayStartSnapshot ResolveCurrentGameplaySnapshotOrFail(string reason)
@@ -184,7 +312,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 restartContextService == null)
             {
                 HardFailFastH1.Trigger(typeof(PhaseNextPhaseSelectionService),
-                    $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] IRestartContextService ausente ao executar NextPhase. reason='{reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] IRestartContextService ausente ao executar phase navigation. reason='{reason}'.");
             }
 
             if (!restartContextService.TryGetCurrent(out GameplayStartSnapshot currentSnapshot) ||
@@ -197,7 +325,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 currentSnapshot.MacroRouteRef.RouteKind != SceneRouteKind.Gameplay)
             {
                 HardFailFastH1.Trigger(typeof(PhaseNextPhaseSelectionService),
-                    $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] NextPhase requer um gameplay snapshot valido. reason='{reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Phase navigation requer um gameplay snapshot valido. reason='{reason}'.");
             }
 
             return currentSnapshot;
@@ -232,20 +360,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PhaseNextPhaseCompositionService : IPhaseNextPhaseCompositionService
     {
-        public async Task<PhaseNextPhaseCompositionContext> ApplyNextPhaseAsync(PhaseNextPhaseSelectionContext selectionContext, CancellationToken ct)
+        public async Task<PhaseNavigationCompositionContext> ApplyNavigationPhaseAsync(PhaseNavigationSelectionContext selectionContext, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
             if (!selectionContext.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(PhaseNextPhaseCompositionService),
-                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Invalid selection context received by next-phase composition service.");
+                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Invalid selection context received by phase navigation composition service.");
             }
 
-            string currentPhaseId = selectionContext.CurrentSnapshot.PhaseDefinitionRef.PhaseId.Value;
-            string currentPhaseName = selectionContext.CurrentSnapshot.PhaseDefinitionRef.name;
-            string nextPhaseId = selectionContext.NextPhaseRef.PhaseId.Value;
-            string nextPhaseName = selectionContext.NextPhaseRef.name;
+            string currentPhaseId = PhaseNextPhaseServiceSupport.DescribePhase(selectionContext.CurrentPhaseRef);
+            string targetPhaseId = PhaseNextPhaseServiceSupport.DescribePhase(selectionContext.TargetPhaseRef);
 
             ISceneCompositionExecutor sceneCompositionExecutor = PhaseNextPhaseServiceSupport.ResolveRequiredGlobal<ISceneCompositionExecutor>("ISceneCompositionExecutor");
 
@@ -254,12 +380,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 DebugUtility.Colors.Info);
 
             SceneCompositionRequest applyRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
-                selectionContext.NextPhaseRef,
+                selectionContext.TargetPhaseRef,
                 selectionContext.Reason,
                 selectionContext.PhaseSelectedEvent.SelectionSignature);
 
             DebugUtility.Log<PhaseNextPhaseCompositionService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentAppliedStart from='{currentPhaseId}' to='{nextPhaseId}' scenesToLoad=[{string.Join(",", applyRequest.ScenesToLoad)}] scenesToUnload=[{string.Join(",", applyRequest.ScenesToUnload)}] correlationId='{applyRequest.CorrelationId}' reason='{selectionContext.Reason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentAppliedStart direction='{PhaseNextPhaseServiceSupport.DescribeDirection(selectionContext.Direction)}' from='{currentPhaseId}' to='{targetPhaseId}' scenesToLoad=[{string.Join(",", applyRequest.ScenesToLoad)}] scenesToUnload=[{string.Join(",", applyRequest.ScenesToUnload)}] correlationId='{applyRequest.CorrelationId}' reason='{selectionContext.Reason}'.",
                 DebugUtility.Colors.Info);
 
             await sceneCompositionExecutor.ApplyAsync(applyRequest, ct);
@@ -269,24 +395,24 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<PhaseNextPhaseCompositionService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseLegacyBridgeBypassed path='phase_enabled_next_phase' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' reason='{selectionContext.Reason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseLegacyBridgeBypassed path='phase_enabled_navigation' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' reason='{selectionContext.Reason}'.",
                 DebugUtility.Colors.Info);
 
             PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
-                selectionContext.NextPhaseRef,
+                selectionContext.TargetPhaseRef,
                 applyRequest.ScenesToLoad,
                 applyRequest.ActiveScene,
-                source: "PhaseDefinitionNextPhase");
+                source: "PhaseDefinitionNavigation");
 
             DebugUtility.Log<PhaseNextPhaseCompositionService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentReadModelCommitted owner='PhaseContentSceneRuntimeApplier' phaseId='{nextPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' reason='{selectionContext.Reason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentReadModelCommitted owner='PhaseContentSceneRuntimeApplier' phaseId='{targetPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' reason='{selectionContext.Reason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<PhaseNextPhaseCompositionService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentApplied currentPhaseRef='{currentPhaseName}' nextPhaseRef='{nextPhaseName}' phaseId='{nextPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentApplied currentPhaseRef='{currentPhaseId}' targetPhaseRef='{targetPhaseId}' phaseId='{targetPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}'.",
                 DebugUtility.Colors.Success);
 
-            return new PhaseNextPhaseCompositionContext(selectionContext, applyRequest);
+            return new PhaseNavigationCompositionContext(selectionContext, applyRequest);
         }
     }
 
@@ -304,37 +430,37 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             _introStageLifecycleDispatchService = introStageLifecycleDispatchService ?? throw new ArgumentNullException(nameof(introStageLifecycleDispatchService));
         }
 
-        public async Task CompleteIntroHandoffAsync(PhaseNextPhaseCompositionContext compositionContext, CancellationToken ct)
+        public async Task CompleteIntroHandoffAsync(PhaseNavigationCompositionContext compositionContext, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
             if (!compositionContext.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(PhaseNextPhaseEntryHandoffService),
-                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Invalid composition context received by next-phase handoff service.");
+                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Invalid composition context received by phase navigation handoff service.");
             }
 
-            PhaseNextPhaseSelectionContext selectionContext = compositionContext.SelectionContext;
+            PhaseNavigationSelectionContext selectionContext = compositionContext.SelectionContext;
             if (!_introStageSessionService.TryGetCurrentSession(out IntroStageSession introSession) || !introSession.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(PhaseNextPhaseEntryHandoffService),
-                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] IntroStageSessionService nao disponibilizou a session canonica apos a composicao da next-phase.");
+                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] IntroStageSessionService nao disponibilizou a session canonica apos a composicao da phase navigation.");
             }
 
             if (introSession.PhaseDefinitionRef == null ||
-                !string.Equals(introSession.PhaseDefinitionRef.PhaseId.Value, selectionContext.NextPhaseRef.PhaseId.Value, StringComparison.Ordinal) ||
+                !string.Equals(introSession.PhaseDefinitionRef.PhaseId.Value, selectionContext.TargetPhaseRef.PhaseId.Value, StringComparison.Ordinal) ||
                 introSession.SelectionVersion != selectionContext.SelectionVersion ||
-                !string.Equals(introSession.LocalContentId, selectionContext.NextIntroContentId, StringComparison.Ordinal))
+                !string.Equals(introSession.LocalContentId, selectionContext.TargetIntroContentId, StringComparison.Ordinal))
             {
                 HardFailFastH1.Trigger(typeof(PhaseNextPhaseEntryHandoffService),
-                    $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] IntroStageSession canonica nao corresponde a phase selecionada. expectedPhaseId='{selectionContext.NextPhaseRef.PhaseId}' expectedVersion='{selectionContext.SelectionVersion}' expectedContentId='{selectionContext.NextIntroContentId}' actualPhaseId='{(introSession.PhaseDefinitionRef != null ? introSession.PhaseDefinitionRef.PhaseId.Value : "<none>")}' actualVersion='{introSession.SelectionVersion}' actualContentId='{introSession.LocalContentId}'.");
+                    $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] IntroStageSession canonica nao corresponde a phase selecionada. expectedPhaseId='{selectionContext.TargetPhaseRef.PhaseId}' expectedVersion='{selectionContext.SelectionVersion}' expectedContentId='{selectionContext.TargetIntroContentId}' actualPhaseId='{(introSession.PhaseDefinitionRef != null ? introSession.PhaseDefinitionRef.PhaseId.Value : "<none>")}' actualVersion='{introSession.SelectionVersion}' actualContentId='{introSession.LocalContentId}'.");
             }
 
-            string nextPhaseName = selectionContext.NextPhaseRef.name;
-            string introDispatchSource = "PhaseDefinitionNextPhase";
+            string targetPhaseName = selectionContext.TargetPhaseRef.name;
+            string introDispatchSource = "PhaseDefinitionNavigation";
 
             DebugUtility.Log<PhaseNextPhaseEntryHandoffService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseIntroSessionResolved owner='IntroStageSessionService' nextPhaseRef='{nextPhaseName}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' signature='{introSession.SessionSignature}' hasIntroStage='{introSession.HasIntroStage}' hasRunResultStage='{introSession.HasRunResultStage}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseNavigationIntroSessionResolved owner='IntroStageSessionService' direction='{PhaseNextPhaseServiceSupport.DescribeDirection(selectionContext.Direction)}' targetPhaseRef='{targetPhaseName}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' signature='{introSession.SessionSignature}' hasIntroStage='{introSession.HasIntroStage}' hasRunResultStage='{introSession.HasRunResultStage}'.",
                 DebugUtility.Colors.Info);
 
             using var introWaitCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -350,9 +476,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             IntroStageCompletedEvent introCompletedEvent = await introCompletionTask;
 
-            string nextPhaseId = selectionContext.NextPhaseRef.PhaseId.Value;
+            string targetPhaseId = selectionContext.TargetPhaseRef.PhaseId.Value;
             DebugUtility.Log<PhaseNextPhaseEntryHandoffService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentAppliedCompleted current='{nextPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' introSkipped='{introCompletedEvent.WasSkipped.ToString().ToLowerInvariant()}' introReason='{PhaseNextPhaseServiceSupport.NormalizeReason(introCompletedEvent.Reason)}' source='{introCompletedEvent.Source}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentAppliedCompleted current='{targetPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' introSkipped='{introCompletedEvent.WasSkipped.ToString().ToLowerInvariant()}' introReason='{PhaseNextPhaseServiceSupport.NormalizeReason(introCompletedEvent.Reason)}' source='{introCompletedEvent.Source}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -432,6 +558,26 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         }
 
         public static string NormalizeReason(string reason)
-            => string.IsNullOrWhiteSpace(reason) ? "PhaseDefinition/NextPhase" : reason.Trim();
+            => string.IsNullOrWhiteSpace(reason) ? "PhaseDefinition/Navigation" : reason.Trim();
+
+        public static string DescribeDirection(PhaseNavigationDirection direction)
+            => direction == PhaseNavigationDirection.Previous ? "Previous" : "Next";
+
+        public static string DescribePhase(PhaseDefinitionAsset phaseDefinition)
+        {
+            return phaseDefinition != null && phaseDefinition.PhaseId.IsValid
+                ? phaseDefinition.PhaseId.Value
+                : "<none>";
+        }
+
+        public static string DescribeCatalog(IPhaseDefinitionCatalog catalog)
+        {
+            if (catalog is UnityEngine.Object unityObject)
+            {
+                return unityObject.name;
+            }
+
+            return catalog != null ? catalog.GetType().Name : "<none>";
+        }
     }
 }

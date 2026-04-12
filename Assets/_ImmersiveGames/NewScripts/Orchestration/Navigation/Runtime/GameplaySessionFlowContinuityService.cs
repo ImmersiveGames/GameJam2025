@@ -107,26 +107,39 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
                 DebugUtility.Colors.Success);
         }
 
-        public async Task NextPhaseAsync(string reason = null, CancellationToken ct = default)
+        public Task<PhaseNavigationResult> NextPhaseAsync(string reason = null, CancellationToken ct = default)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "GameplaySessionFlow/NextPhase" : reason.Trim();
+            return NavigatePhaseAsync(PhaseNavigationRequest.Next(reason), ct);
+        }
+
+        public Task<PhaseNavigationResult> PreviousPhaseAsync(string reason = null, CancellationToken ct = default)
+        {
+            return NavigatePhaseAsync(PhaseNavigationRequest.Previous(reason), ct);
+        }
+
+        public async Task<PhaseNavigationResult> NavigatePhaseAsync(PhaseNavigationRequest request, CancellationToken ct = default)
+        {
+            PhaseNavigationRequest normalizedRequest = new PhaseNavigationRequest(request.Direction, request.Reason);
+            string normalizedReason = string.IsNullOrWhiteSpace(normalizedRequest.Reason) ? "GameplaySessionFlow/NavigationPhase" : normalizedRequest.Reason;
+            string action = PhaseNextPhaseServiceSupport.DescribeDirection(normalizedRequest.Direction);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='NextPhase' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='{action}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
             ct.ThrowIfCancellationRequested();
 
             IPhaseNextPhaseService nextPhaseService = ResolveRequiredPhaseNextPhaseService(normalizedReason);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='NextPhase' rail='phase-local' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='{action}' rail='phase-local' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            await nextPhaseService.NextPhaseAsync(normalizedReason, ct);
+            PhaseNavigationResult result = await nextPhaseService.NavigateAsync(normalizedRequest, ct);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='NextPhase' rail='phase-local' reason='{normalizedReason}'.",
-                DebugUtility.Colors.Success);
+                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted outcome='{result.Outcome}' action='{action}' reason='{normalizedReason}'.",
+                result.Outcome == PhaseNavigationOutcome.Changed ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+            return result;
         }
 
         public async Task ExitToMenuAsync(string reason = null, CancellationToken ct = default)
