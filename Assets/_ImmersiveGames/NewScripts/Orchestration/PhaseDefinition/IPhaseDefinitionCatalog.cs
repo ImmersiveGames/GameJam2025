@@ -2,9 +2,17 @@ using System.Collections.Generic;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
 {
+    public enum PhaseCatalogTraversalMode
+    {
+        Finite = 0,
+        Looping = 1
+    }
+
     public interface IPhaseDefinitionCatalog
     {
         IReadOnlyList<string> PhaseIds { get; }
+
+        PhaseCatalogTraversalMode TraversalMode { get; }
 
         bool TryGet(string phaseId, out PhaseDefinitionAsset phaseDefinition);
 

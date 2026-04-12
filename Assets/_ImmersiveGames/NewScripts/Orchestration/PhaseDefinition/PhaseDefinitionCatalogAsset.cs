@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
     public sealed class PhaseDefinitionCatalogAsset : ScriptableObject, IPhaseDefinitionCatalog, ISerializationCallbackReceiver
     {
         [SerializeField] private List<PhaseDefinitionAsset> phaseDefinitions = new();
+        [SerializeField] private PhaseCatalogTraversalMode traversalMode = PhaseCatalogTraversalMode.Finite;
 
         private readonly Dictionary<string, PhaseDefinitionAsset> _cache = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, int> _phaseIndexById = new(StringComparer.OrdinalIgnoreCase);
@@ -23,6 +24,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             {
                 EnsureBuilt();
                 return _orderedPhaseIds;
+            }
+        }
+
+        public PhaseCatalogTraversalMode TraversalMode
+        {
+            get
+            {
+                EnsureBuilt();
+                return traversalMode;
             }
         }
 
@@ -42,6 +52,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public void ValidateOrFail()
         {
             EnsureBuilt();
+
+            if (!System.Enum.IsDefined(typeof(PhaseCatalogTraversalMode), traversalMode))
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Invalid traversalMode '{traversalMode}' on catalog '{name}'.");
+            }
         }
 
         public PhaseDefinitionAsset ResolveInitialOrFail()

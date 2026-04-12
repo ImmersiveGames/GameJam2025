@@ -169,6 +169,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
                     PhaseNavigationOutcome.RejectedNotReady,
                     currentPhase,
                     DescribeCatalog(),
+                    PhaseCatalogTraversalMode.Finite,
+                    false,
                     default);
 
                 DebugUtility.LogWarning<PhaseNavigationQaPanel>(
