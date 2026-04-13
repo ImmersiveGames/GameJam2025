@@ -155,7 +155,7 @@ Não é:
 - `RunDecision` e a etapa distinta macro-route-owned que vem depois do `RunResultStage`.
 - `Overlay` e o contexto local visual downstream de `RunDecision`; `PostRunMenu` e nomenclatura historica desse visual.
 - `PostRun` e um alias historico do rail final antigo, nao o conceito central do fim de run.
-- `Restart` e `ExitToMenu` são **Intenções Derivadas** emitidas depois que o resultado já foi consolidado.
+- `RunRestart` e `ExitToMenu` são **Intenções Derivadas** emitidas depois que o resultado já foi consolidado.
 
 ### Relação prática com `GameplaySessionFlow`
 
@@ -548,7 +548,7 @@ Quando `RunResultStage` nao existir, o lifecycle deve tratar a ausencia como `sk
 **Intenção Derivada** é uma decisão emitida depois de um estado ou resultado já consolidado.
 
 Exemplos:
-- `Restart`
+- `RunRestart`
 - `ExitToMenu`
 
 No caso de gameplay, essas intenções surgem depois de `RunDecision`, a partir do contexto visual local correspondente ao `Overlay`.
@@ -582,7 +582,7 @@ A leitura conceitual preferida é:
 4. `RunResultStage`
 5. `RunDecision`
 6. `Overlay`
-7. emissão de intenções derivadas, como `Restart` ou `ExitToMenu`
+7. emissão de intenções derivadas, como `RunRestart` ou `ExitToMenu`
 
 ---
 
@@ -654,5 +654,5 @@ Se existirem no código atual, devem ser lidos conforme essa distinção e não 
 - usar este ADR como base para revisar os ADRs de Navigation, Audio, SceneFlow, LevelFlow, GameLoop e PostRun
 - validar se os contratos e assets atuais respeitam essa separação conceitual
 - revisar onde o projeto ainda mistura Contexto Macro, Contexto Local, Rota, Resultado e Intenção Derivada
-- revisar nomenclaturas técnicas que ainda escondem o papel real de elementos como `Victory`, `Defeat`, `Restart`, `ExitToMenu`, `Pause`, `EnterStage` e `ExitStage`
+- revisar nomenclaturas técnicas que ainda escondem o papel real de elementos como `Victory`, `Defeat`, `RunRestart`, `ExitToMenu`, `Pause`, `EnterStage` e `ExitStage`
 

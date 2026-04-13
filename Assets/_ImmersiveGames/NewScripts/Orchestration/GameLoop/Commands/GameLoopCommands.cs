@@ -21,14 +21,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
      * - GameRunEndRequestedEvent(GameRunOutcome outcome, string reason) -> IGameRunEndRequestService.RequestRunEnd(...)
      *   (publica EventBus<GameRunEndRequestedEvent> dentro do serviço).
      * - GameRunEndedEvent(GameRunOutcome outcome, string reason) -> publicado pelo GameRunOutcomeService via EventBus<GameRunEndedEvent>.
-     * - Restart/ExitToMenu => dispatch direto ao owner canonico downstream (GameplaySessionFlow/Navigation).
+     * - ExitToMenu => dispatch direto ao owner canonico downstream (GameplaySessionFlow/Navigation).
      */
     public sealed class GameLoopCommands : IGameLoopCommands
     {
         private readonly IGameRunEndRequestService _runEndRequestService;
         private const string DefaultExitToMenuReason = "GameLoopCommands/ExitToMenu";
-        private const string DefaultRestartReason = "GameLoopCommands/Restart";
-
         public GameLoopCommands(IGameRunEndRequestService runEndRequestService)
         {
             _runEndRequestService = runEndRequestService;
@@ -70,17 +68,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
             RequestRunEnd(GameRunOutcome.Defeat, normalizedReason);
         }
 
-        public void RequestRestart(string reason)
-        {
-            string normalizedReason = GameLoopReasonFormatter.NormalizeOptional(reason, DefaultRestartReason);
-
-            DebugUtility.Log(typeof(GameLoopCommands),
-                $"[GameLoopCommands] RequestRestart reason='{normalizedReason}'");
-
-            IGameplaySessionFlowContinuityService gameplaySessionFlowContinuity = ResolveRequiredGameplaySessionFlowContinuityOrFail(normalizedReason);
-            _ = ObserveAsync(gameplaySessionFlowContinuity.RestartGameplayAsync(normalizedReason, System.Threading.CancellationToken.None), normalizedReason, "Restart");
-        }
-
         public void RequestExitToMenu(string reason)
         {
             string normalizedReason = GameLoopReasonFormatter.NormalizeOptional(reason, DefaultExitToMenuReason);
@@ -103,23 +90,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands
                 DebugUtility.LogError(typeof(GameLoopCommands),
                     $"[GameLoopCommands] {actionName} failed reason='{reason}'. ex={ex}");
             }
-        }
-
-        private static IGameplaySessionFlowContinuityService ResolveRequiredGameplaySessionFlowContinuityOrFail(string reason)
-        {
-            if (DependencyManager.Provider == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameLoopCommands),
-                    $"[FATAL][H1][GameLoop] Restart requested without DependencyManager.Provider. reason='{reason}'.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var gameplaySessionFlowContinuity) || gameplaySessionFlowContinuity == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameLoopCommands),
-                    $"[FATAL][H1][GameLoop] Restart requested without IGameplaySessionFlowContinuityService. reason='{reason}'.");
-            }
-
-            return gameplaySessionFlowContinuity;
         }
 
         private static IGameNavigationService ResolveRequiredNavigationServiceOrFail(string reason)

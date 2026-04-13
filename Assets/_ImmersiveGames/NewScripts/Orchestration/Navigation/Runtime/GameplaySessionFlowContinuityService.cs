@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
@@ -17,21 +18,30 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
     {
         private readonly IRestartContextService _restartContextService;
         private readonly IGameNavigationService _navigationService;
+        private readonly IPhaseResetExecutor _phaseResetExecutor;
         private readonly IPhaseDefinitionCatalog _phaseDefinitionCatalog;
 
         public GameplaySessionFlowContinuityService(
             IGameNavigationService navigationService,
             IRestartContextService restartContextService,
+            IPhaseResetExecutor phaseResetExecutor,
             IPhaseDefinitionCatalog phaseDefinitionCatalog = null)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _phaseResetExecutor = phaseResetExecutor ?? throw new ArgumentNullException(nameof(phaseResetExecutor));
             _phaseDefinitionCatalog = phaseDefinitionCatalog;
         }
 
-        public Task RestartGameplayAsync(string reason = null, CancellationToken ct = default)
+        public Task RestartGameplayAsync(RunRestart restart, CancellationToken ct = default)
         {
-            return RestartCurrentGameplayInternalAsync(reason, ct);
+            string normalizedReason = string.IsNullOrWhiteSpace(restart.Reason) ? "GameplaySessionFlow/RestartGameplay" : restart.Reason.Trim();
+
+            DebugUtility.Log<GameplaySessionFlowContinuityService>(
+                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='RestartGameplay' scope='run_restart' source='{restart.Source}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            return RestartCurrentGameplayInternalAsync(normalizedReason, ct);
         }
 
         public Task RestartFromFirstPhaseAsync(string reason = null, CancellationToken ct = default)
@@ -219,8 +229,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
                 new PhaseContextSignature(snapshot.PhaseSignature),
                 snapshot.PhaseSignature);
 
-            IWorldResetCommands worldResetCommands = ResolveGlobalOrFail<IWorldResetCommands>("IWorldResetCommands");
-            await worldResetCommands.ResetLevelAsync(resetContext, reason, ct);
+            await _phaseResetExecutor.ResetPhaseAsync(resetContext, reason, ct);
         }
 
         private static IPhaseNextPhaseService ResolveRequiredPhaseNextPhaseService(string reason)
@@ -235,23 +244,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
             {
                 HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
                     $"[FATAL][H1][GameplaySessionFlow] Missing required phase-local NextPhase rail. reason='{reason}'.");
-            }
-
-            return service;
-        }
-
-        private static T ResolveGlobalOrFail<T>(string label) where T : class
-        {
-            if (DependencyManager.Provider == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
-                    $"[FATAL][H1][GameplaySessionFlow] DependencyManager.Provider is null while resolving {label}.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
-                    $"[FATAL][H1][GameplaySessionFlow] Missing required global service: {label}.");
             }
 
             return service;

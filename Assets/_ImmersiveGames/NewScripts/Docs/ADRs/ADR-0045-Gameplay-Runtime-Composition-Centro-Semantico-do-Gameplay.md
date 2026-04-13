@@ -16,7 +16,7 @@ O backbone atual segue necessario e forte para:
 - estado macro transversal
 
 Mas ele nao deve continuar carregando a semantica principal do gameplay.
-O jogo ainda aparece fragmentado em WorldDefinition, LevelManager, reset/retry/restart e handoffs espalhados.
+O jogo ainda aparece fragmentado em WorldDefinition, LevelManager, reset/retry/restart e handoffs espalhados; restart, porem, nasce como intencao downstream e nao como ownership do backbone.
 A linguagem final do projeto nao deve girar em torno de swap de conteudo.
 
 ## Decisao
@@ -82,7 +82,7 @@ Passam a ser lidos como historicos, transitivos ou de menor peso semantico:
 - `WorldDefinition` como fundacao final do jogo
 - `LevelManager` como eixo separado de mesmo peso
 - linguagem central baseada em swap de conteudo
-- reset/retry/restart como responsabilidade semantica do backbone
+- reset como capacidade de execucao do backbone/orchestration; restart como intencao downstream do gameplay runtime
 
 ## Consequencias praticas
 

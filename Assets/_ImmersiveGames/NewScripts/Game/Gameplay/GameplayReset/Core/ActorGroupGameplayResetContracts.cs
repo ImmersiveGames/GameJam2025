@@ -2,6 +2,69 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Execution;
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Policies
+{
+    /// <summary>
+    /// Policy local de GameplayReset.
+    /// </summary>
+    public interface IActorGroupGameplayResetPolicy
+    {
+        string Name { get; }
+
+        bool IsStrict { get; }
+
+        bool AllowSceneScan { get; }
+
+        void ReportDegraded(string feature, string reason, string detail = null, string signature = null, string profile = null);
+    }
+
+    /// <summary>
+    /// Policy padrão do GameplayReset.
+    /// - Strict = UNITY_EDITOR/DEVELOPMENT_BUILD
+    /// - SceneScan: opt-in apenas em Strict (QA/Dev)
+    /// </summary>
+    public sealed class ProductionActorGroupGameplayResetPolicy : IActorGroupGameplayResetPolicy
+    {
+        private readonly _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode.IRuntimeModeProvider _runtimeModeProvider;
+        private readonly _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode.IDegradedModeReporter _degradedModeReporter;
+
+        public ProductionActorGroupGameplayResetPolicy(
+            _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode.IRuntimeModeProvider runtimeModeProvider,
+            _ImmersiveGames.NewScripts.Infrastructure.RuntimeMode.IDegradedModeReporter degradedModeReporter)
+        {
+            _runtimeModeProvider = runtimeModeProvider;
+            _degradedModeReporter = degradedModeReporter;
+        }
+
+        public string Name => IsStrict ? "Strict" : "Release";
+
+        public bool IsStrict => _runtimeModeProvider != null && _runtimeModeProvider.IsStrict;
+
+        public bool AllowSceneScan => IsStrict;
+
+        public void ReportDegraded(string feature, string reason, string detail = null, string signature = null, string profile = null)
+        {
+            if (_degradedModeReporter == null)
+            {
+                return;
+            }
+
+            _degradedModeReporter.Report(feature, reason, detail, signature, profile);
+        }
+    }
+}
+
+namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Observability
+{
+    /// <summary>
+    /// Identificadores canônicos de observabilidade para GameplayReset.
+    /// </summary>
+    public static class GameplayResetFeatureIds
+    {
+        public const string GameplayReset = "gameplay.reset";
+    }
+}
+
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core
 {
     /// <summary>
@@ -168,6 +231,11 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core
         /// Se já houver reset em andamento, a implementação pode ignorar (retornando false) ou aguardar.
         /// </summary>
         Task<bool> RequestResetAsync(ActorGroupGameplayResetRequest request);
+    }
+
+    internal interface IActorGroupGameplayResetPolicyAware
+    {
+        _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Policies.IActorGroupGameplayResetPolicy Policy { get; }
     }
 }
 

@@ -8,8 +8,8 @@ using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Discovery;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Execution;
-using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
-using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Policies;
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Observability;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
 {
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
         private IActorRegistry _actorRegistry;
         private IActorGroupGameplayResetTargetClassifier _classifier;
 
-        private IWorldResetPolicy _policy;
+        private IActorGroupGameplayResetPolicy _policy;
         private IActorGroupGameplayResetDiscoveryStrategy _registryDiscovery;
         private IActorGroupGameplayResetDiscoveryStrategy _sceneScanDiscovery;
 
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
                         $"[{ResetLogTags.Recovered}][RECOVERED] Scene scan discovery used (policy opt-in). request={normalized}");
 
                     _policy?.ReportDegraded(
-                        ResetFeatureIds.GameplayReset,
+                        GameplayResetFeatureIds.GameplayReset,
                         "SceneScanDiscoveryUsed",
                         normalized.ToString());
                 }
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
                     DebugUtility.LogWarning(typeof(ActorGroupGameplayResetOrchestrator),
                         $"[{ResetLogTags.DegradedMode}][DEGRADED_MODE] {msg}");
                     _policy?.ReportDegraded(
-                        ResetFeatureIds.GameplayReset,
+                        GameplayResetFeatureIds.GameplayReset,
                         "GameplayReset_NoTargets",
                         msg);
                     return true;
@@ -162,15 +162,15 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Coordination
                 _classifier = new ActorGroupGameplayResetDefaultTargetClassifier();
             }
 
-            provider.TryGetGlobal(out IWorldResetPolicy worldResetPolicy);
-            if (worldResetPolicy == null)
+            provider.TryGetGlobal(out IActorGroupGameplayResetPolicy gameplayResetPolicy);
+            if (gameplayResetPolicy == null)
             {
                 provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeModeProvider);
                 provider.TryGetGlobal<IDegradedModeReporter>(out var degradedModeReporter);
-                worldResetPolicy = new ProductionWorldResetPolicy(runtimeModeProvider, degradedModeReporter);
+                gameplayResetPolicy = new ProductionActorGroupGameplayResetPolicy(runtimeModeProvider, degradedModeReporter);
             }
 
-            _policy = worldResetPolicy;
+            _policy = gameplayResetPolicy;
             _registryDiscovery = new ActorGroupGameplayResetRegistryDiscoveryStrategy(_actorRegistry, _classifier);
             _sceneScanDiscovery = new ActorGroupGameplayResetSceneScanDiscoveryStrategy(scene);
 

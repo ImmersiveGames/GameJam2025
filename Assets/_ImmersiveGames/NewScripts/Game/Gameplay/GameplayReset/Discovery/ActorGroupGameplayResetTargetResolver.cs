@@ -2,14 +2,14 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Execution;
-using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Policies;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Discovery
 {
     internal sealed class ActorGroupGameplayResetTargetResolver
         : IActorGroupGameplayResetTargetResolver
     {
         private readonly string _sceneName;
-        private readonly IWorldResetPolicy _policy;
+        private readonly IActorGroupGameplayResetPolicy _policy;
         private readonly IActorGroupGameplayResetDiscoveryStrategy _registryDiscovery;
         private readonly IActorGroupGameplayResetDiscoveryStrategy _sceneScanDiscovery;
         private readonly List<IActor> _actorBuffer = new(32);
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Discovery
 
         public ActorGroupGameplayResetTargetResolver(
             string sceneName,
-            IWorldResetPolicy policy,
+            IActorGroupGameplayResetPolicy policy,
             IActorGroupGameplayResetDiscoveryStrategy registryDiscovery,
             IActorGroupGameplayResetDiscoveryStrategy sceneScanDiscovery)
         {

@@ -129,23 +129,24 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                    "[OBS][GameplaySessionFlow][RunDecision] Restart ignorado (acao ja solicitada).",
+                    "[OBS][GameplaySessionFlow][RunRestart] Restart ignorado (acao ja solicitada).",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunDecision][Intent] Restart solicitado. Intent capturada e encaminhada ao executor downstream.",
+                "[OBS][GameplaySessionFlow][RunRestart][Intent] Restart solicitado. Intent downstream formalizada e encaminhada ao executor.",
                 DebugUtility.Colors.Info);
 
-            CloseRunDecision(RunDecisionCompletionKind.Restart, "DownstreamHandoff", RestartReason);
+            CloseRunDecision(RunDecisionCompletionKind.Unknown, "DownstreamHandoff", RestartReason);
             HideImmediate();
 
+            var restart = new RunRestart(RestartReason, nameof(PostRunOverlayController));
             _ = ExecuteDownstreamActionAsync(
                 actionName: "RestartGameplay",
                 reason: RestartReason,
-                action: ct => _sessionFlowContinuityService.RestartGameplayAsync(RestartReason, ct));
+                action: ct => _sessionFlowContinuityService.RestartGameplayAsync(restart, ct));
         }
 
         /// <summary>
@@ -187,16 +188,16 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             try
             {
                 DebugUtility.Log<IRunDecisionStagePresenter>(
-                    $"[OBS][GameplaySessionFlow][RunDecision][Delegate] {actionName} entregue ao executor downstream real IGameplaySessionFlowContinuityService. reason='{reason}'.");
+                    $"[OBS][GameplaySessionFlow][RunRestart][Delegate] {actionName} entregue ao executor downstream real IGameplaySessionFlowContinuityService. reason='{reason}'.");
                 await action(CancellationToken.None);
                 DebugUtility.Log<IRunDecisionStagePresenter>(
-                    $"[OBS][GameplaySessionFlow][RunDecision][Execute] {actionName} executado pelo executor downstream. reason='{reason}'.");
+                    $"[OBS][GameplaySessionFlow][RunRestart][Execute] {actionName} executado pelo executor downstream. reason='{reason}'.");
             }
             catch (Exception ex)
             {
                 _actionRequested = false;
                 DebugUtility.LogWarning<IRunDecisionStagePresenter>(
-                    $"[OBS][GameplaySessionFlow][RunDecision] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
+                    $"[OBS][GameplaySessionFlow][RunRestart] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
             }
         }
 

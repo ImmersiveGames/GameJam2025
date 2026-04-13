@@ -15,7 +15,7 @@ Este ADR congela o contrato pos-`Playing` como fluxo positivo, tipado e operacio
 
 `RunResultStage` e `phase-owned` quando presente, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
 
-`RunDecision` e `macro-owned` e decide a acao downstream final.
+`RunDecision` e `macro-owned` e decide a acao downstream final, sem absorver `RunRestart` como ownership semantico.
 
 ## 2. Escopo
 
@@ -96,6 +96,7 @@ Os contratos sao tipados separadamente:
 
 - `RunResult`
 - `RunDecision`
+- `RunRestart` como intencao downstream separada do overlay final
 
 Cada tipo possui infraestrutura propria, registro proprio e resolucao deterministica.
 

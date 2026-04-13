@@ -122,11 +122,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
             }
 
+            IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService);
             IPhaseDefinitionCatalog phaseDefinitionCatalog = ResolveOptionalPhaseDefinitionCatalog(bootstrapConfig);
 
             var service = new GameplaySessionFlowContinuityService(
                 navigationService,
                 restartContextService,
+                phaseResetExecutor,
                 phaseDefinitionCatalog);
 
             DependencyManager.Provider.RegisterGlobal<IGameplaySessionFlowContinuityService>(service);

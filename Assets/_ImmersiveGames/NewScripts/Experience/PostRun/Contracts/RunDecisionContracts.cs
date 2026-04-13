@@ -23,9 +23,20 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
     public enum RunDecisionCompletionKind
     {
         Unknown = 0,
-        Restart = 1,
-        Menu = 2,
-        Macro = 3,
+        Menu = 1,
+        Macro = 2,
+    }
+
+    public readonly struct RunRestart
+    {
+        public RunRestart(string reason, string source)
+        {
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+        }
+
+        public string Reason { get; }
+        public string Source { get; }
     }
 
     public readonly struct RunDecisionCompletion

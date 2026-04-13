@@ -6,6 +6,5 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
     public interface IWorldResetCommands
     {
         Task ResetMacroAsync(SceneRouteId macroRouteId, string reason, string macroSignature, CancellationToken ct);
-        Task ResetLevelAsync(PhaseResetContext resetContext, string reason, CancellationToken ct);
     }
 }
