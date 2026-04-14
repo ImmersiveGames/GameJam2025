@@ -23,8 +23,15 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 - O centro semantico do gameplay e `Gameplay Runtime Composition`.
 - `GameplaySessionFlow` e o primeiro bloco interno desse centro.
 - `PhaseDefinition` e a fonte de verdade autoral da phase.
-- `IntroStage` e scene-local, post-`SceneTransitionCompleted`.
-- `RunResultStage` e `RunDecision` sao os owners atuais do fim de run.
+- `IntroStage` e a entrada local da phase, phase-owned, com reentrada monotonica.
+- `RunResultStage` e a saida local da phase.
+- `RunDecision` e a continuidade macro/gameplay, e entra apenas por `RunResultStageToRunDecisionHandoff`.
+
+## Precedencia documental
+
+- `ADR-0050` governa a entrada local da phase.
+- `ADR-0051` governa a saida local da phase e a continuidade macro pos-fechamento.
+- `ADR-0052` governa a camada acima do baseline / session transition.
 
 ## Historico e archive
 

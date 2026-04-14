@@ -36,8 +36,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime
         public string Source { get; }
         public SessionTransitionContext Context => Plan.Context;
         public bool IsValid => Plan.IsValid;
-        public bool IsPhaseLocalEntry =>
-            Plan.PhaseAction == SessionTransitionPhaseAction.NextPhase ||
-            Plan.ResetAction == SessionTransitionResetAction.PhaseReset;
+        public bool IsPhaseLocalEntry => Plan.EmitsPhaseLocalEntryReady;
     }
 }

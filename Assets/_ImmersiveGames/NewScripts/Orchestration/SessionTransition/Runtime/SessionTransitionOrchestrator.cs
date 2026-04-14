@@ -26,49 +26,49 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime
             }
 
             string normalizedReason = Normalize(plan.Reason);
+            bool shouldEmitPhaseLocalEntryReady = plan.EmitsPhaseLocalEntryReady;
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteStarted continuation='{plan.ResolvedContinuation}' phaseAction='{plan.PhaseAction}' resetAction='{plan.ResetAction}' reason='{normalizedReason}' nextState='{Normalize(plan.NextState)}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteStarted continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' phaseLocalEntryReady='{shouldEmitPhaseLocalEntryReady}' reason='{normalizedReason}' nextState='{Normalize(plan.NextState)}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
 
-            if (plan.PhaseAction == SessionTransitionPhaseAction.NextPhase ||
-                plan.ResetAction == SessionTransitionResetAction.PhaseReset)
+            if (shouldEmitPhaseLocalEntryReady)
             {
                 EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Raise(
                     new SessionTransitionPhaseLocalEntryReadyEvent(plan, nameof(SessionTransitionOrchestrator)));
             }
 
-            if (plan.ResetAction == SessionTransitionResetAction.PhaseReset)
+            if (plan.Execution.Kind == SessionTransitionExecutionKind.ResetCurrentPhase)
             {
                 await _continuityService.ResetCurrentPhaseAsync(normalizedReason, ct);
                 DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' phaseAction='{plan.PhaseAction}' resetAction='{plan.ResetAction}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Success);
                 return;
             }
 
-            if (plan.PhaseAction == SessionTransitionPhaseAction.NextPhase)
+            if (plan.Execution.Kind == SessionTransitionExecutionKind.NextPhase)
             {
                 await _continuityService.NextPhaseAsync(normalizedReason, ct);
                 DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' phaseAction='{plan.PhaseAction}' resetAction='{plan.ResetAction}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Success);
                 return;
             }
 
-            if (plan.HandoffAction == SessionTransitionHandoffAction.GoToMenu)
+            if (plan.Execution.Kind == SessionTransitionExecutionKind.ExitToMenu)
             {
                 await _continuityService.ExitToMenuAsync(normalizedReason, ct);
                 DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' phaseAction='{plan.PhaseAction}' resetAction='{plan.ResetAction}' handoffAction='{plan.HandoffAction}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Success);
                 return;
             }
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoContent continuation='{plan.ResolvedContinuation}' reason='{normalizedReason}' phaseAction='{plan.PhaseAction}' resetAction='{plan.ResetAction}' handoffAction='{plan.HandoffAction}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoContent continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' phaseLocalEntryReady='{shouldEmitPhaseLocalEntryReady}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Warning);
         }
 

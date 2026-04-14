@@ -531,7 +531,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseLocalEntryReady owner='GameplayPhaseFlowService' continuation='{evt.Plan.ResolvedContinuation}' phaseAction='{evt.Plan.PhaseAction}' resetAction='{evt.Plan.ResetAction}' reason='{evt.Plan.Reason}' nextState='{evt.Plan.NextState}' source='{evt.Source}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseLocalEntryReady owner='GameplayPhaseFlowService' phaseLocalEntryReady='{evt.Plan.EmitsPhaseLocalEntryReady}' continuation='{evt.Plan.ResolvedContinuation}' phaseIntent='{evt.Plan.Composition.PhaseIntent}' worldResetIntent='{evt.Plan.Composition.WorldResetIntent}' continuityShape='{evt.Plan.Composition.ContinuityShape}' reconstructionShape='{evt.Plan.Composition.ReconstructionShape}' composition='{evt.Plan.Composition}' execution='{evt.Plan.Execution}' reason='{evt.Plan.Reason}' nextState='{evt.Plan.NextState}' source='{evt.Source}'.",
                 DebugUtility.Colors.Info);
         }
 

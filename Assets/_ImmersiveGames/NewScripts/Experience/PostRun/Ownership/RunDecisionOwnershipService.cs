@@ -13,7 +13,6 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
         bool IsActive { get; }
         bool HasCompleted { get; }
         RunDecision CurrentDecision { get; }
-        void EnterRunDecision(RunContinuationContext continuationContext);
         void EnterRunDecision(RunResultStageToRunDecisionHandoff handoff);
         void ExitRunDecision(RunDecisionCompletion completion, RunContinuationKind selectedContinuation);
     }
@@ -33,11 +32,6 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
         public bool HasCompleted { get; private set; }
         public RunDecision CurrentDecision { get; private set; }
 
-        public void EnterRunDecision(RunContinuationContext continuationContext)
-        {
-            EnterRunDecisionInternal(continuationContext, "DirectContext");
-        }
-
         public void EnterRunDecision(RunResultStageToRunDecisionHandoff handoff)
         {
             if (!handoff.IsValid)
@@ -46,16 +40,17 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
                     "[FATAL][H1][RunDecision] Handoff de RunResultStage invalido recebido pelo owner canonico.");
             }
 
-            EnterRunDecisionInternal(handoff.ContinuationContext, handoff.Source);
+            EnterRunDecisionInternal(handoff);
         }
 
-        private void EnterRunDecisionInternal(RunContinuationContext continuationContext, string source)
+        private void EnterRunDecisionInternal(RunResultStageToRunDecisionHandoff handoff)
         {
             if (IsActive)
             {
                 return;
             }
 
+            RunContinuationContext continuationContext = handoff.ContinuationContext;
             if (!continuationContext.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(RunDecisionOwnershipService),
@@ -79,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             HasCompleted = false;
 
             DebugUtility.Log<RunDecisionOwnershipService>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered signature='{decision.Signature}' scene='{decision.SceneName}' frame={decision.Frame} result='{decision.Result}' reason='{decision.Reason}' source='{Normalize(source)}'.",
+                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered signature='{decision.Signature}' scene='{decision.SceneName}' frame={decision.Frame} result='{decision.Result}' reason='{decision.Reason}' source='{Normalize(handoff.Source)}' exitDisposition='{handoff.ExitDisposition}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<RunDecisionEnteredEvent>.Raise(new RunDecisionEnteredEvent(decision));

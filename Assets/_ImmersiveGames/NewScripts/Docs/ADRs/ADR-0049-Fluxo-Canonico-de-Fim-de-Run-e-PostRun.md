@@ -7,6 +7,8 @@
 
 ## 1. Objetivo
 
+O termo `PostRun` neste ADR e historico/compatibilidade de nomenclatura. O contrato canonico atual separa `RunResultStage` como saida local da phase e `RunDecision` como continuidade macro/gameplay.
+
 `RunEndIntent(reason)` marca a entrada da run em termino.
 
 `RunResultStage` e `RunDecision` sao os dois estagios canonicos do fim de run.
@@ -16,6 +18,8 @@ Este ADR congela o contrato pos-`Playing` como fluxo positivo, tipado e operacio
 `RunResultStage` e `phase-owned` quando presente, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
 
 `RunDecision` e `macro-owned` e decide a acao downstream final, sem absorver `RunRestart` como ownership semantico.
+
+`RunContinuation` pertence ao fluxo macro de continuidade apos o fechamento local da phase, nao ao "post-run local".
 
 ## 2. Escopo
 

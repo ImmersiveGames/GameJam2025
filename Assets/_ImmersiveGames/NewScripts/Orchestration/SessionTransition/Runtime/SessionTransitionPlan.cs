@@ -25,30 +25,28 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime
     {
         public SessionTransitionPlan(
             SessionTransitionContext context,
-            SessionTransitionPhaseAction phaseAction,
-            SessionTransitionResetAction resetAction,
-            SessionTransitionHandoffAction handoffAction)
+            SessionTransitionComposition composition,
+            SessionTransitionExecution execution)
         {
             Context = context;
-            PhaseAction = phaseAction;
-            ResetAction = resetAction;
-            HandoffAction = handoffAction;
+            Composition = composition;
+            Execution = execution;
         }
 
         public SessionTransitionContext Context { get; }
+        public SessionTransitionComposition Composition { get; }
+        public SessionTransitionExecution Execution { get; }
+        public bool EmitsPhaseLocalEntryReady => Composition.EmitsPhaseLocalEntryReady;
         public RunContinuationSelection ResolvedSelection => Context.ResolvedSelection;
         public RunContinuationContext ContinuationContext => Context.ContinuationContext;
         public RunContinuationKind ResolvedContinuation => Context.ResolvedContinuation;
-        public SessionTransitionPhaseAction PhaseAction { get; }
-        public SessionTransitionResetAction ResetAction { get; }
-        public SessionTransitionHandoffAction HandoffAction { get; }
         public string Reason => Context.Reason;
         public string NextState => Context.NextState;
         public bool IsValid => Context.IsValid && ResolvedContinuation != RunContinuationKind.Unknown;
 
         public override string ToString()
         {
-            return $"Continuation='{ResolvedContinuation}', PhaseAction='{PhaseAction}', ResetAction='{ResetAction}', HandoffAction='{HandoffAction}', Reason='{Reason}', NextState='{NextState}'";
+            return $"Continuation='{ResolvedContinuation}', Composition='{Composition}', EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', Execution='{Execution}', Reason='{Reason}', NextState='{NextState}'";
         }
     }
 }

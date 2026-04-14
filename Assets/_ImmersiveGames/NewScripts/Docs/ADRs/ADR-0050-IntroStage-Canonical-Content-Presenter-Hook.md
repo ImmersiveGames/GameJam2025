@@ -55,6 +55,7 @@ Regras de precedencia:
 - `RunResultStage` e a saida local da phase
 - `RunDecision` e `RunContinuation*` pertencem ao boundary macro/gameplay
 - o restart da mesma phase devolve o controle ao pipeline local da phase
+- a reentrada local usa uma identidade monotonica por entrada valida da phase
 - quando houver intro valida, a `IntroStage` volta a abrir na reentrada da phase
 
 ## 5. Fluxo canonico

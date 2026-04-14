@@ -1,7 +1,7 @@
 # ADR-0052 - Session Transition: composicao de eixos acima do baseline
 
 ## Status
-- Estado: Proposto
+- Estado: Aceito
 - Data: 2026-04-13
 - Tipo: Direction / Architectural shape
 
@@ -103,6 +103,38 @@ A camada deve compor, no minimo, estes eixos independentes:
 
 Cada eixo precisa poder existir, ser omitido ou variar sem forcar os outros a mudar de forma.
 
+### 6.1 Vocabulario congelado desta etapa
+
+- `ContinuityAxis`
+- `PhaseTransitionAxis`
+- `WorldResetAxis`
+- `ReconstructionAxis`
+- `ContentSpawnAxis`
+- `CarryOverAxis`
+
+Leitura operacional:
+
+- `SessionTransition` compoe os eixos.
+- `WorldReset` executa reset macro.
+- `SceneReset` executa reset local.
+- `GameplayReset` executa reset parcial/escopado.
+
+Shape minimo desta etapa:
+
+- `SessionTransitionComposition`: eixos + ordem logica + intenções.
+- `SessionTransitionExecution`: efeito operacional + capability concreta + handoff.
+- `SessionTransitionPlanResolver`: apenas compoe.
+- `SessionTransitionOrchestrator`: apenas executa.
+
+Mapa minimo das continuidades atuais:
+
+- `AdvancePhase` -> `ContinuityAxis + PhaseTransitionAxis + ContentSpawnAxis + CarryOverAxis`
+- `RestartCurrentPhase` -> `ContinuityAxis + PhaseTransitionAxis + WorldResetAxis + ContentSpawnAxis + CarryOverAxis`
+- `ExitToMenu` -> `ContinuityAxis + Handoff`
+- `EndRun` -> `ContinuityAxis + Terminal`
+
+Nesta etapa, `ReconstructionAxis` permanece apenas como vocabulário reservado e nao como comportamento novo.
+
 ## 7. Exemplos de combinacoes
 
 1. Continuity only: continua a sessao, sem reset, sem reconstruir mundo, com carry-over total.
@@ -155,6 +187,20 @@ Se isso nao for registrado antes da implementacao, o risco principal e a base cr
 - `RunContinuationContext` pode crescer alem do papel de entrada do baseline
 
 O custo depois e refatorar contratos ja consumidos por varios eixos ao mesmo tempo.
+
+## 10.1 Hardening
+
+- `SessionTransitionPlan` le `Composition` e `Execution` como shape principal.
+- Os atalhos antigos devem ficar apenas como ponte pontual onde ainda houver consumidor legado.
+- `ReconstructionAxis` agora tem shape tipado proprio, sem runtime novo.
+
+## 10.2 Estado final do bloco D
+
+- `SessionTransitionComposition` e `SessionTransitionExecution` continuam separados, mas `PhaseLocalEntryReady` ficou explicitamente declarado no plano/composicao.
+- `SessionTransitionPlanResolver` compoe o contrato e o `SessionTransitionOrchestrator` apenas executa e publica o handoff quando o plano o define.
+- `SessionTransitionPhaseLocalEntryReadyEvent` continua sendo o seam pequeno validado pelo smoke atual.
+- Nao houve introducao de runtime novo em reset; o shape ficou declarativo, sem reabrir `WorldReset`, `SceneResetPipeline` ou `GameplayReset`.
+
 
 ## 11. Veredito
 

@@ -138,9 +138,12 @@ Leitura pratica:
 Quando `RunResultStage` conclui, o owner local publica um handoff estreito e tipado para `RunDecision`.
 
 - `RunResultStageOwnershipService` emite `RunResultStageToRunDecisionHandoff`
+- o mesmo handoff cobre tanto `materialized_local_exit` quanto `skipped_local_exit_no_content`
 - `RunDecisionOwnershipService` consome esse handoff e materializa a continuidade macro
+- nao existe mais entrada direta canonica em `RunDecision` por `RunContinuationContext`
 - `RunResultStage` nao executa continuidade por conta propria
 - `RunDecision` nao volta a ser stage local da phase
+- `RunResultStage` e a saida local da phase, espelho util de `IntroStage`
 
 ## 6. Responsabilidades por componente
 

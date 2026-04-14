@@ -16,6 +16,13 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
         Continue = 1,
     }
 
+    public enum RunLocalExitDisposition
+    {
+        Unknown = 0,
+        MaterializedLocalExit = 1,
+        SkippedLocalExitNoContent = 2,
+    }
+
     public readonly struct RunResultStage
     {
         public RunResultStage(RunContinuationContext continuationContext)
@@ -53,20 +60,29 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
     /// </summary>
     public readonly struct RunResultStageToRunDecisionHandoff
     {
-        public RunResultStageToRunDecisionHandoff(RunResultStage stage, RunResultStageCompletion completion, string source)
+        public RunResultStageToRunDecisionHandoff(
+            RunContinuationContext continuationContext,
+            RunResultStageCompletion completion,
+            RunLocalExitDisposition exitDisposition,
+            string source,
+            RunResultStage stage = default)
         {
+            ContinuationContext = continuationContext;
             Stage = stage;
             Completion = completion;
+            ExitDisposition = exitDisposition;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
         }
 
+        public RunContinuationContext ContinuationContext { get; }
         public RunResultStage Stage { get; }
         public RunResultStageCompletion Completion { get; }
+        public RunLocalExitDisposition ExitDisposition { get; }
         public string Source { get; }
-        public RunContinuationContext ContinuationContext => Stage.ContinuationContext;
         public bool IsValid =>
-            Stage.ContinuationContext.IsValid &&
+            ContinuationContext.IsValid &&
             Completion.Kind != RunResultStageCompletionKind.Unknown &&
+            ExitDisposition != RunLocalExitDisposition.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
     }
 
